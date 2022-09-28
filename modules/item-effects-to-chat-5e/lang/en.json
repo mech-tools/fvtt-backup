@@ -1,0 +1,35 @@
+{
+  "item-effects-to-chat-5e": {
+    "MESSAGE_HEADER": "Item Temporary Effects",
+    "TARGETED": "Targeted Tokens",
+    "APPLY_ALL": "Apply All Effects",
+    "APPLY_ALL_TO_ALL": "Apply All Effects to All Targets",
+    "DURATION": {
+      "UNLIMITED": "Unlimited",
+      "ONE_TURN": "turn",
+      "MULTIPLE_TURNS": "turns",
+      "ONE_ROUND": "round",
+      "MULTIPLE_ROUNDS": "rounds",
+      "ONE_YEAR": "year",
+      "MULTIPLE_YEARS": "years",
+      "ONE_WEEK": "week",
+      "MULTIPLE_WEEKS": "weeks",
+      "ONE_DAY": "day",
+      "MULTIPLE_DAYS": "days",
+      "ONE_HOUR": "hour",
+      "MULTIPLE_HOURS": "hours",
+      "ONE_MINUTE": "minute",
+      "MULTIPLE_MINUTES": "minutes",
+      "ONE_SECOND": "second",
+      "MULTIPLE_SECONDS": "seconds"
+    },
+    "EFFECT_TAB": {
+      "TAB_TITLE": "Auto targets",
+      "SELF": "Self",
+      "TARGET": "Target",
+      "FORCE-APPLY": "Force apply",
+      "DONT-APPLY": "Do not apply",
+      "WONT-APPLY": "This item has an attack or a save configured. The effects won't be applied automatically."
+    }
+  }
+}

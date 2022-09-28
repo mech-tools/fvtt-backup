@@ -1,0 +1,35 @@
+{
+  "item-effects-to-chat-5e": {
+    "MESSAGE_HEADER": "Effect actifs de l'objet",
+    "TARGETED": "Tokens ciblés",
+    "APPLY_ALL": "Appliquer tous les effets",
+    "APPLY_ALL_TO_ALL": "Appliquer tous les effets à toutes les cibles",
+    "DURATION": {
+      "UNLIMITED": "Illimité",
+      "ONE_TURN": "tour",
+      "MULTIPLE_TURNS": "tours",
+      "ONE_ROUND": "round",
+      "MULTIPLE_ROUNDS": "rounds",
+      "ONE_YEAR": "année",
+      "MULTIPLE_YEARS": "années",
+      "ONE_WEEK": "semaine",
+      "MULTIPLE_WEEKS": "semaines",
+      "ONE_DAY": "jour",
+      "MULTIPLE_DAYS": "jours",
+      "ONE_HOUR": "heure",
+      "MULTIPLE_HOURS": "heures",
+      "ONE_MINUTE": "minute",
+      "MULTIPLE_MINUTES": "minutes",
+      "ONE_SECOND": "seconde",
+      "MULTIPLE_SECONDS": "secondes"
+    },
+    "EFFECT_TAB": {
+      "TAB_TITLE": "Cibles auto",
+      "SELF": "Soi-même",
+      "TARGET": "Cible",
+      "FORCE-APPLY": "Forcer l'application",
+      "DONT-APPLY": "Jamais appliquer",
+      "WONT-APPLY": "Cet objet a une attaque ou un sauvegarde configurée. Les effets ne seront pas appliqués automatiquement."
+    }
+  }
+}

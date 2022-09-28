@@ -1,0 +1,10 @@
+{
+	"CURSOR-HIDER.toggleCursor.title": "Tecla para Alternar o Cursor",
+	"CURSOR-HIDER.toggleCursor.hint": "Pressionar tecla para mostrar ou ocultar o cursor. Pressione a tecla desejada (com modificadores como shift/ctrl, se desejar) neste campo.",
+	"CURSOR-HIDER.minimumPermission.title": "Permissão Minima",
+	"CURSOR-HIDER.minimumPermission.hint": "A permissão mínima para permitir que os usuários ocultem seu cursor. Por exemplo, se ASSISTANT estiver selecionado, apenas Gamemasters e seus assistentes poderão ocultar o cursor.",
+	"CURSOR-HIDER.hideByDefault.title": "Oculto por Padrão",
+	"CURSOR-HIDER.hideByDefault.hint": "Se o seu cursor estiver oculto assim que você entrar no jogo.",
+	"CURSOR-HIDER.showIconAlways.title": "Always Show Players List Icon",
+	"CURSOR-HIDER.showIconAlways.hint": "If the icon in the players list should always be shown, even when not hovering over the player list."
+}

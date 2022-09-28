@@ -1,0 +1,34 @@
+{
+    "name": "world-currency-5e",
+    "title": "World Currency 5e",
+    "description": "Use currencies unique to your world in D&D 5E.",
+    "author": "cstby",
+    "version": "1.4.0",
+    "library": "false",
+    "minimumCoreVersion": "0.8.9",
+    "compatibleCoreVersion": "9",
+    "dependencies": [],
+    "conflicts": [],
+    "esmodules": [
+        "scripts/main.js"
+    ],
+    "scripts": [],
+    "styles": [],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "languages/en.json"
+        }
+    ],
+    "system": "dnd5e",
+    "url": "https://github.com/cstby/foundryvtt-world-currency-5e",
+    "manifest": "https://raw.githubusercontent.com/cstby/foundryvtt-world-currency-5e/master/module.json",
+    "download": "https://github.com/cstby/foundryvtt-world-currency-5e/archive/master.zip",
+    "media": [
+        {
+            "type": "icon",
+            "url": "https://avatars2.githubusercontent.com/u/71292812?s=400&u=ccdb4eeb7abf551ca8f314e5a9bfd0479a4d3d41&v=4"
+        }
+    ]
+}

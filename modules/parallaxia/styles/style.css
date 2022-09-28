@@ -1,0 +1,94 @@
+/* --------------------------------------- */
+/*  HUD                                    */
+/* --------------------------------------- */
+.placeable-hud .control-icon.partial {
+    border-style: dashed;
+}
+
+/* --------------------------------------- */
+/*  Parallaxia Sheet                       */
+/* --------------------------------------- */
+#parallaxia-tile-sheet {
+    min-width: 450px;
+    min-height: 700px;
+}
+#parallaxia-tile-sheet form > * {
+    flex: 0;
+}
+
+#parallaxia-tile-sheet form .tab[data-tab="base"]  .form-group {
+    margin: 0;
+    padding: 0 1px;
+    align-items: flex-start;
+    justify-content: flex-end;
+    /*flex-direction: row-reverse;*/
+    /*border-top: 1px solid rgba(0,0,0,.1);*/
+    /*transition: background .15s ease;*/
+    position: relative;
+}
+
+#parallaxia-tile-sheet form .tab[data-tab="filters"] .form-group {
+    margin: 0;
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-end;
+    /*flex-direction: row-reverse;*/
+    border-top: 1px solid rgba(0,0,0,.1);
+    transition: background .15s ease;
+    position: relative;
+}
+
+
+#parallaxia-tile-sheet .form-group.command {
+    flex: 1;
+}
+#parallaxia-tile-sheet nav.tabs {
+    flex: 0 0 32px;
+    line-height: 32px;
+    font-size: 16px;
+    border-bottom: 1px solid #000;
+}
+
+#parallaxia-tile-sheet #settings {
+    padding: 0 1rem 1rem 1rem;
+    overflow-y: auto;
+}
+
+#parallaxia-tile-sheet #settings h2 {
+    padding: 0 1rem 1rem 1rem;
+    overflow-y: auto;
+}
+
+#parallaxia-tile-sheet #parallaxia-tabs .tab[data-tab="filters"] .filter-list h2.filter-header {
+    padding-bottom: .25rem;
+    margin: 1.5rem 0 .5rem 0;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#parallaxia-tile-sheet .filter-list .filter-wrapper:first-of-type h2.module-header {
+    margin-top: 0;
+}
+
+#parallaxia-tile-sheet .filter-list h2.filter-header span {
+    color: rgba(0,0,0,.5);
+    margin-right: .5rem;
+}
+
+#parallaxia-tile-sheet .filter-list h2.filter-header.open span .fa-plus-square,
+#parallaxia-tile-sheet .filter-list h2.filter-header span .fa-minus-square {
+    display: none;
+}
+
+#parallaxia-tile-sheet .filter-list h2.filter-header.open span .fa-minus-square {
+    display: unset;
+}
+
+#parallaxia-tile-sheet .sheet-footer {
+    flex: 0;
+}
+
+/*#parallaxia-tile-sheet .parallaxia-field-row {*/
+/*    flex: 0 0 400px;*/
+/*}*/

@@ -1,0 +1,91 @@
+<form class="form-token-health" id="token-health" autocomplete="off" onsubmit="event.preventDefault();">
+    <div class="form-group" style="flex-direction: column; min-height: 260px">
+        {{#if thumbnails}}
+            <div style="flex-direction: row; white-space: nowrap; width: 380px; text-align: center;">
+                {{#each thumbnails as |t idx|}}
+                    <img src="{{t.image}}" style="border: none; margin: 5px; max-width: 100px; opacity: {{t.opacity}}"/>
+                {{/each}}
+            </div>
+        {{/if}}
+        <div class="flexrow">
+            <b><large><label style="margin: 5px" for="token-health-input">{{localize "TOKEN_HEALTH.Amount"}}</label></large></b>
+            <input id="token-health-input" type="number" data-dtype="Number" name="amount" min="0" max="999"/>
+            {{#if damageTypes}}
+                <label style="margin-left: 25px" for="token-health-checkbox">{{localize "TOKEN_HEALTH.damageTypeLabel"}}</label>
+                <select id="token-health-damageType" name="damageType">
+                    {{#each damageTypes as |t idx|}}
+                        <option value="{{t}}">{{t}}</option>
+                    {{/each}}
+                </select>
+            {{/if}}
+        </div>
+        {{#if damageSubtypes}}
+            <div class="row">
+                {{#each damageSubtypes}}
+                    <label style="margin: 15px"><input type="radio" name="damageSubtype" value="{{this}}" {{isChecked @index "0"}}>{{this}}</label>
+                {{/each}}
+            </div>
+        {{/if}}
+
+        <p class="5e-traits" style="width: 100%">
+            {{#each tokens}}
+                {{#ifSuperiorCustom tokens.length 1 }}
+                    <br>
+                    <b>{{data.name}}</b>
+                    <br>
+                {{/ifSuperiorCustom}}
+                <small>
+                    {{#if actor.data.data.traits.dv.value}}
+                        <span>
+                            <b style="color: red">• Vulnérabilités (x2 dégâts) : </b>
+                            {{#each actor.data.data.traits.dv.value}}
+                                {{localize (concatLocal "DND5E.Damage" (upperCaseFirst this))}}{{#unless @last}},{{/unless}}
+                            {{/each}}
+                        </span>
+                        <br>
+                    {{/if}}
+                    {{#if actor.data.data.traits.dv.custom}}
+                        <span>
+                            <b style="color: red">• Vulnérabilités spéciales (x2 dégâts) : </b>
+                            {{actor.data.data.traits.dv.custom}}
+                        </span>
+                        <br>
+                    {{/if}}
+                    {{#if actor.data.data.traits.dr.value}}
+                        <span>
+                            <b style="color: blue">• Résistances (1/2 dégâts) : </b>
+                            {{#each actor.data.data.traits.dr.value}}
+                                {{localize (concatLocal "DND5E.Damage" (upperCaseFirst this))}}{{#unless @last}},{{/unless}}
+                            {{/each}}
+                        </span>
+                        <br>
+                    {{/if}}
+                    {{#if actor.data.data.traits.dr.custom}}
+                        <span>
+                            <b style="color: blue">• Résistances spéciales (1/2 dégâts) : </b>
+                            {{actor.data.data.traits.dr.custom}}
+                        </span>
+                        <br>
+                    {{/if}}
+                    {{#if actor.data.data.traits.di.value}}
+                        <span>
+                            <b style="color: green">• Immunités (0 dégât) : </b>
+                            {{#each actor.data.data.traits.di.value}}
+                                {{localize (concatLocal "DND5E.Damage" (upperCaseFirst this))}}{{#unless @last}},{{/unless}}
+                            {{/each}}
+                        </span>
+                        <br>
+                    {{/if}}
+                    {{#if actor.data.data.traits.di.custom}}
+                        <span>
+                            <b style="color: green">• Immunités spéciales (0 dégât) : </b>
+                            {{actor.data.data.traits.di.custom}}
+                        </span>
+                        <br>
+                    {{/if}}
+                </small>
+            {{/each}}
+        </p>
+        <p><small>{{helpText}}</small></p>
+    </div>
+</form>

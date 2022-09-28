@@ -1,0 +1,128 @@
+.chat-message .dice-result {
+  display: flex;
+  position: relative;
+  gap: 0.25em;
+  order: 1;
+}
+
+.chat-message .dice-roll .dice-formula {
+  flex: 1 0 50%;
+  margin-bottom: 0;
+  place-content: center;
+  place-items: center;
+  display: flex;
+}
+
+.chat-message .dice-roll .dice-total {
+  flex: 0 0 8ch;
+  place-content: center;
+  place-items: center;
+  flex-direction: column;
+  display: flex;
+}
+
+/** Dice Tooltip Rework **/
+
+.chat-message .dice-roll .dice-tooltip {
+  align-items: center;
+  background: rgb(194, 192, 181) url(../../../ui/parchment.jpg) repeat;
+  border-radius: 3px;
+  bottom: 0;
+  box-shadow: 0px 1px 3px var(--color-border-dark-secondary);
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.1em;
+  left: 0;
+  min-height: 100%;
+  padding: 0 0.5em;
+  pointer-events: none;
+  position: absolute;
+  width: calc(100% - (8 * 0.5 * 1.25rem) - 0.5em);
+  z-index: 1;
+}
+
+.chat-message .dice-roll .dice-tooltip.expanded {
+  display: flex !important;
+}
+
+.chat-message .dice-formula:hover + .dice-tooltip {
+  display: flex !important;
+}
+
+/** remove the headers in the dice tooltip parts to make all dice inline **/
+.chat-message .dice-tooltip .part-header {
+  display: none;
+}
+
+.chat-message .dice-tooltip .tooltip-part {
+  display: contents;
+}
+
+.chat-message .dice-tooltip .dice {
+  display: contents;
+}
+
+.chat-message .dice-tooltip .tooltip-part:not(:last-child)::after {
+  display: inline-block;
+  content: '|';
+  opacity: 0.4;
+}
+
+.chat-message .dice-tooltip .dice-rolls {
+  margin: 0;
+  display: contents;
+}
+
+/** Make the card footer less prominent **/
+.chat-message .dnd5e.chat-card .card-footer {
+  color: var(--color-text-dark-inactive);
+}
+
+/** Make the card header sender less prominent **/
+.chat-message .message-header .message-sender {
+  font-size: var(--font-size-12);
+}
+
+/** Make the card purpose more prominent **/
+.chat-message .message-header .flavor-text {
+  font-size: var(--font-size-14);
+}
+
+.chat-message.compact-roll-card-5e-collapse-up {
+  margin-top: -6px;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
+  border-top: 2px groove #FFF;
+}
+
+.compact-roll-card-5e-collapse-up .message-header {
+  flex-wrap: nowrap;
+}
+
+.compact-roll-card-5e-collapse-up .message-sender {
+  display: none;
+}
+
+.compact-roll-card-5e-collapse-up .whisper-to {
+  display: none;
+}
+
+.compact-roll-card-5e-collapse-up .message-header .flavor-text {
+  flex: 1 1 auto;
+}
+
+.compact-roll-card-5e-collapse-up .message-header .message-timestamp {
+  display: none;
+}
+
+.compact-roll-card-5e-collapse-up .message-header .message-metadata {
+  order: 1;
+  flex: 1 0 auto;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.compact-roll-card-5e-collapse-up .message-header:hover .message-metadata {
+  opacity: 1;
+}
+

@@ -1,0 +1,42 @@
+{
+  "name": "animation-preview",
+  "title": "Animation Preview",
+  "description": "<p>This module extends the FilePicker in such a way, that you will get an actual preview of video files instead of just the video icon.</p>",
+  "url": "https://github.com/eXaminator/foundry-animation-preview",
+  "manifest": "https://github.com/eXaminator/foundry-animation-preview/releases/latest/download/module.json",
+  "download": "https://github.com/eXaminator/foundry-animation-preview/releases/download/1.0.3/module.zip",
+  "version": "1.0.3",
+  "author": "eXaminator",
+  "authors": [
+    {
+      "name": "eXaminator",
+      "discord": "eXaminator#0079",
+      "twitter": "@eXXaminator",
+      "ko-fi": "examinator"
+    }
+  ],
+  "esmodules": ["index.js"],
+  "styles": ["index.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    }
+  ],
+  "minimumCoreVersion": "0.8.6",
+  "compatibleCoreVersion": "0.8.9",
+  "manifestPlusVersion": "1.2.0",
+  "bugs": "https://github.com/eXaminator/foundry-animation-preview/issues",
+  "changelog": "https://raw.githubusercontent.com/eXaminator/foundry-animation-preview/1.0.3/CHANGELOG.md",
+  "license": "https://raw.githubusercontent.com/eXaminator/foundry-animation-preview/1.0.3/LICENSE",
+  "readme": "https://raw.githubusercontent.com/eXaminator/foundry-animation-preview/1.0.3/README.md",
+  "flags": {
+    "allowBugReporter": true
+  }
+}

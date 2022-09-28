@@ -1,0 +1,32 @@
+{
+    "name": "more-hooks-5e",
+    "title": "More Hooks D&D5e",
+    "description": "A library module which adds more Hooks for events in the 5e system.",
+    "version": "0.6.2",
+    "author": "Andrew Krigline",
+    "authors": [
+        {
+            "name": "Andrew Krigline",
+            "discord": "Calego#0914",
+            "url": "https://github.com/ElfFriend-DnD",
+            "ko-fi": "elffriend",
+            "patreon": "ElfFriend_DnD"
+        }
+    ],
+    "system": [
+        "dnd5e"
+    ],
+    "esmodules": [
+        "./init.js"
+    ],
+    "library": true,
+    "minimumCoreVersion": "9",
+    "compatibleCoreVersion": "9",
+    "url": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e",
+    "bugs": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/issues",
+    "changelog": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/releases",
+    "manifest": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/releases/latest/download/module.json",
+    "download": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/releases/download/0.6.2/module.zip",
+    "license": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/raw/main/LICENSE",
+    "readme": "https://github.com/ElfFriend-DnD/foundryvtt-more-hooks-5e/raw/main/README.md"
+}

@@ -1,0 +1,57 @@
+<div class="item-effects-to-chat-card">
+  <ul class="dnd5e chat-card item-effects-to-chat-list item-effects-to-chat-effects-list">
+    {{#each effects}}
+      <li class="card-header" data-effect-uuid="{{uuid}}" draggable="true">
+        <img class="token-image" src="{{data.icon}}" title="{{data.label}}" width="36" height="36">
+
+        <h3>{{data.label}}</h3>
+
+        <div class="statuses">
+          {{#isSelf this}}
+            <div class="status-chip self">
+              <span>{{localize "item-effects-to-chat-5e.EFFECT_TAB.SELF"}}</span>
+              <i class="fas fa-user"></i>
+            </div>
+          {{/isSelf}}
+
+          {{#if data.flags.item-effects-to-chat-5e.target}}
+            <div class="status-chip target">
+              <span>{{localize "item-effects-to-chat-5e.EFFECT_TAB.TARGET"}}</span>
+              <i class="fas fa-bullseye"></i>
+            </div>
+          {{/if}}
+
+          <div class="status-chip">
+            <span>{{durationLabel data ../item}}</span>
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+        </div>
+      </li>
+    {{/each}}
+  </ul>
+
+  {{#if targetedTokens}}
+    <details>
+      <summary class="item-effects-to-chat-combatant-summary">
+        <span class="item-effects-to-chat-combatant-summary-label">
+          {{localize "item-effects-to-chat-5e.TARGETED"}}
+        </span>
+        <button type="button" class="item-effects-to-chat-apply" data-action="apply-all-effects-to-all" title="{{localize "item-effects-to-chat-5e.APPLY_ALL_TO_ALL"}}">
+          <i class="fas fa-check-square"></i>
+        </button>
+      </summary>
+
+      <ul class="dnd5e chat-card item-effects-to-chat-list item-effects-to-chat-combatant-list">
+        {{#each targetedTokens}}
+          <li class="card-header" data-token-id="{{id}}">
+            <img class="token-image" src="{{data.img}}" title="{{hideNameDetector this}}" width="36" height="36" style="transform: rotate({{data.rotation}}deg);">
+
+            <h3>{{hideNameDetector this}}</h3>
+
+            <button type="button" class="item-effects-to-chat-apply" data-action="apply-all-effects" title="{{localize "item-effects-to-chat-5e.APPLY_ALL"}}"><i class="fas fa-check-square"></i></button>
+          </li>
+        {{/each}}
+      </ul>
+    </details>
+  {{/if}}
+</div>

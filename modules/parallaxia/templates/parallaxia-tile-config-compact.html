@@ -1,0 +1,279 @@
+<!-- HEADER -->
+<!--suppress HtmlFormInputWithoutLabel -->
+<div class="form-group">
+    <div class="form-fields parallaxia-field-row">
+        <label>ID</label>
+        <input type="text" name="id" value="{{document.id}}" readonly/>
+    </div>
+    <div class="form-fields parallaxia-field-row">
+        <label>Name</label>
+        <input type="text" name="initial.name" placeholder="Name" value="{{parallaxia.current.name}}"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <div class="form-fields parallaxia-field-row">
+        <label style="white-space: nowrap;">Texture path</label>
+        {{filePicker target="initial.texture.path" type="imagevideo"}}
+        <input class="image" type="text" name="initial.texture.path" placeholder="path/image.png"
+               value="{{parallaxia.current.texture.path}}"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <div class="form-fields" style="float:left">
+        <label style="white-space: nowrap;">Halt on game pause</label>
+        <input type="checkbox" name="initial.pauseOnPause" {{ checked parallaxia.current.pauseOnPause }}>
+    </div>
+    <div class="form-fields">
+        <label style="white-space: nowrap;">Paused</label>
+        <input type="checkbox" name="initial.paused" {{ checked parallaxia.current.paused }}>
+    </div>
+    <label><span> </span></label>
+    <div class="form-fields" style="float:right">
+        <button type="button" class="parallaxia-btnReset" title="Reset (no implemented)" disabled="disabled"><i class="fas fa-undo-alt"></i></button>
+        <button type="button" class="parallaxia-btnLoad" title="Load from file (not implemented)" disabled="disabled"><i class="fas fa-upload"></i>
+        </button>
+        <input type="file" id="parallaxia-inputFile" accept=".json" style="display: none" />
+
+        <button type="button" class="parallaxia-btnSave" title="Save to file"><i class="fas fa-download"></i></button>
+    </div>
+</div>
+
+<!--  BASE TILE PARAMETERS -->
+<h3 class="form-header">
+    <i class="fas fa-vector-square"></i> Tile Parameters
+    <a style="float: right"><i class="far fa-question-circle"></i></a>
+</h3>
+
+<div class="form-group">
+    <label></label>
+    <div class="form-fields">
+        <input type="text" value="Initial" readonly disabled="disabled" style="text-align: center; font-weight: bold"/>
+        <input type="text" value="Current" readonly disabled="disabled" style="text-align: center; font-weight: bold"/>
+    </div>
+</div>
+
+<!-- Position -->
+<div class="form-group flex-row">
+    <label>Position <span class="units">[x, y] px</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.position.x" value="{{parallaxia.initial.position.x}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial.position.y" value="{{parallaxia.initial.position.y}}"
+               data-dtype="Number"/>
+
+        <input type="text" name="curr_x" value="{{parallaxia.current.position.x}}" data-dtype="Number" readonly
+               disabled="disabled"/>
+        <input type="text" name="curr_y" value="{{parallaxia.current.position.y}}" data-dtype="Number" readonly
+               disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group flex-row">
+    <label>Speed <span class="units">[x, y] px/s</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.position.dx" value="{{parallaxia.initial.position.dx}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial.position.dy" value="{{parallaxia.initial.position.dy}}"
+               data-dtype="Number"/>
+
+        <input type="text" name="curr_dx" value="{{parallaxia.current.position.dx}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_dy" value="{{parallaxia.current.position.dy}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+
+<div class="form-group flex-row">
+    <label>Size <span class="units">[w, h] px</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.width" value="{{parallaxia.initial.width}}" data-dtype="Number"/>
+        <input type="text" name="initial.height" value="{{parallaxia.initial.height}}" data-dtype="Number"/>
+
+        <input type="text" name="curr_width" value="{{parallaxia.current.width}}" data-dtype="Number" readonly
+               disabled="disabled"/>
+        <input type="text" name="curr_height" value="{{parallaxia.current.height}}" data-dtype="Number" readonly
+               disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Rotation <span class="units">rad, deg</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.rotation.z" value="{{parallaxia.initial.rotation.z}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial_rotation_z_deg" value="" data-dtype="Text" disabled="disabled"/>
+
+        <input type="text" name="curr_rotation_z" value="{{parallaxia.current.rotation.z}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_rotation_z_deg" value="" data-dtype="Text"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+
+<div class="form-group">
+    <label>ΔRotation <span class="units">rad/s, deg/s</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.rotation.dz" value="{{parallaxia.initial.rotation.dz}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial_rotation_dz_deg" value="" data-dtype="Text" disabled="disabled"/>
+
+        <input type="text" name="current_rotation_dz" value="{{parallaxia.current.rotation.dz}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="current_rotation_dz_deg" value="" data-dtype="Text"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Tint, Alpha <span class="units"></span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input class="flex2" type='color' name='initial.tint' value="{{parallaxia.initial.tint}}"/>
+        <input type="text" name="initial.alpha" value="{{parallaxia.initial.alpha}}" data-dtype="Number"/>
+
+        <input type="text" name="curr_tint_str" value="{{parallaxia.current.tint}}" readonly
+               disabled="disabled"/>
+        <input type="text" name="curr_alpha" value="{{parallaxia.current.alpha}}" data-dtype="Number" readonly
+               disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Blend mode</label>
+    <div class="form-fields parallaxia-field-row">
+        <select name="initial.blendMode">-->
+            {{#select currentBlendMode}}
+            {{#each blendModes}}
+            <option value="{{this}}">{{this}}</option>
+            {{/each}}
+            {{/select}}
+        </select>
+    </div>
+</div>
+
+
+<!--   Texture Tiling -->
+<h3 class="form-header" style="text-align: left">
+    <i class="fas fa-chess-board"></i> Texture Parameters
+    <a class="ptransformHelp" style="float: right"><i class="far fa-question-circle"></i></a>
+</h3>
+
+<div class="form-group flex-row">
+    <label>Texture Size <span class="units">px</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="curr_texture_width" value="{{parallaxia.current.texture.width}}"
+               data-dtype="Number" readonly disabled="disabled"/>
+        <input type="text" name="curr_texture_height" value="{{parallaxia.current.texture.height}}"
+               data-dtype="Number" readonly disabled="disabled"/>
+        <input type="text" style="visibility: hidden"/>
+        <input type="text" style="visibility: hidden"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Scale <span class="units">[x, y]</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.tiling.sx" value="{{parallaxia.initial.tiling.sx}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial.tiling.sy" value="{{parallaxia.initial.tiling.sy}}"
+               data-dtype="Number"/>
+        <input type="text" name="curr_scale_x" value="{{parallaxia.current.tiling.sx}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_scale_y" value="{{parallaxia.current.tiling.sy}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>ΔScale <span class="units">[x, y] 1/s</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.tiling.sdx" value="{{parallaxia.initial.tiling.sdx}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial.tiling.sdy" value="{{parallaxia.initial.tiling.sdy}}"
+               data-dtype="Number"/>
+        <input type="text" name="curr_speed_sx" value="{{parallaxia.current.tiling.sdx}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_speed_sy" value="{{parallaxia.current.tiling.sdy}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Offset <span class="units">[x, y] px</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.tiling.x" value="{{parallaxia.initial.tiling.x}}" data-dtype="Number"/>
+        <input type="text" name="initial.tiling.y" value="{{parallaxia.initial.tiling.y}}" data-dtype="Number"/>
+
+        <input type="text" name="curr_tiling_x" value="{{parallaxia.current.tiling.x}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_tiling_y" value="{{parallaxia.current.tiling.y}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>ΔOffset <span class="units">[x, y] px/s</span></label>
+    <div class="form-fields parallaxia-field-row">
+        <input type="text" name="initial.tiling.dx" value="{{parallaxia.initial.tiling.dx}}"
+               data-dtype="Number"/>
+        <input type="text" name="initial.tiling.dy" value="{{parallaxia.initial.tiling.dy}}"
+               data-dtype="Number"/>
+
+        <input type="text" name="curr_speed_x" value="{{parallaxia.current.tiling.dx}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+        <input type="text" name="curr_speed_y" value="{{parallaxia.current.tiling.dy}}" data-dtype="Number"
+               readonly disabled="disabled"/>
+    </div>
+</div>
+
+<!-- Custom script -->
+<h3 class="form-header">
+    <i class="fas fa-bug"></i> Custom Script
+    <a class="ptransformHelp" style="float: right"><i class="far fa-question-circle"></i></a>
+</h3>
+<!--<p class="notes">Custom script to modify the tile on the fly.</p>-->
+
+<div class="form-group stacked command">
+    <label>
+        <textarea placeholder="Script to modify or animate tile client side" name="ptransform" rows="10"
+                  spellcheck="false">{{parallaxia.ptransform}}</textarea>
+    </label>
+</div>
+
+<!--        &lt;!&ndash;   Filter Settings &ndash;&gt;-->
+<!--        <div class="tab filters" data-group="parallaxia" data-tab="filters">-->
+<!--            <div class="filter-list">-->
+<!--                <article class="filter-wrapper" data-sort-name="name">-->
+<!--                    <h2 class="filter-header" onclick="$(this).toggleClass('open'); $(this).next('.filter-settings-wrapper').slideToggle(150);">-->
+<!--                        <span class="toggle-icon">-->
+<!--                            <i class="far fa-plus-square"></i>-->
+<!--                            <i class="far fa-minus-square"></i>-->
+<!--                        </span>Blend Mode-->
+<!--                    </h2>-->
+<!--                    <section class="filter-settings-wrapper" style="display: none;">-->
+<!--                        <div class="form-group">-->
+<!--                            <label>Blend Mode</label>-->
+<!--                            <select name="initial.blendMode">-->
+<!--                                {{#select currentBlendMode}}-->
+<!--                                {{#each blendModes}}-->
+<!--                                <option value="{{this}}">{{this}}</option>-->
+<!--                                {{/each}}-->
+<!--                                {{/select}}-->
+<!--                            </select>-->
+<!--                        </div>-->
+<!--                    </section>-->
+<!--                </article>-->
+
+<!--            </div>-->
+<!--        </div>-->
+<!--    </section>-->
+
+<!--        See MacroConfig for apply button functionality -->
+<footer class="sheet-footer flexrow">
+    <!--        <button type="apply" name="apply" value="1"><i class="far fa-apply"></i> Apply </button>-->
+    <!--    <button type="submit" name="submit" value="1"><i class="far fa-save"></i> {{submitText}}</button>-->
+</footer>
+

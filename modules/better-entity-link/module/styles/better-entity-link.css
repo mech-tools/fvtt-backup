@@ -1,0 +1,6 @@
+a.entity-link.context > nav#context-menu {
+    width: auto !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    color: #FFF !important;
+}

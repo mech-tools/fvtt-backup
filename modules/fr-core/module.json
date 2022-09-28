@@ -1,0 +1,27 @@
+{
+  "name": "fr-core",
+  "title": "FR - Traduction du core",
+  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
+  "version": "9.266.2", 
+  "minimumCoreVersion" : "9",  
+  "compatibleCoreVersion": "9",
+  "coreTranslation": true,
+  "author": "Discord La Fonderie (notablement : DrEygon, Rwanoux, Baktov, DamonReborn(Naoki), Galead, U~man, Thorni, deurk, Sasmira, Kristov, Mandar, CarderDC, VincentVk, admiralnlson, Shyning)",
+      
+  "scripts": [],
+  "styles": [],
+  "packs": [],
+  
+  "languages": [
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "fr.json"
+    }
+  ],
+  
+  "url": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr",
+  "manifest": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/raw/master/fr-core/module.json",
+  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-9.266.2/raw/fr-core.zip?job=build"
+}
+ 

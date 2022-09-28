@@ -1,0 +1,54 @@
+{
+    "name": "custom-css",
+    "title": "Custom Css",
+    "description": "Add custom css to your world",
+    "version": "2.2.0",
+    "minimumCoreVersion": "0.6.0",
+    "compatibleCoreVersion": "9",
+    "author": "zeel, Cody Swendrowski",
+    "authors": [
+        {
+            "name": "zeel",
+            "email": "zeel02@gmail.com",
+            "url": "https://github.com/zeel01",
+            "discord": "zeel#4200"
+        },
+        {
+            "name": "Cody Swendrowski",
+            "email": "cody@swendrowski.us"
+        }
+    ],
+    "esmodules": [
+        "./custom-css.js"
+    ],
+    "socket": true,
+    "styles": [
+        "./custom-css.css"
+    ],
+    "dependencies": [
+        {
+            "name": "_CodeMirror",
+            "type": "module",
+            "manifest": "https://raw.githubusercontent.com/League-of-Foundry-Developers/codemirror-lib/master/module.json"
+        }
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "languages/en.json"
+        }
+    ],
+    "manifest": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS/releases/latest/download/module.json",
+    "url": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS",
+    "download": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS/releases/download/v2.2.0/custom-css.zip",
+    "readme": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS/blob/master/readme.md",
+    "bugs": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS/issues",
+    "changelog": "https://github.com/cswendrowski/FoundryVTT-Custom-CSS/releases",
+    "media": [
+        {
+            "type": "icon",
+            "url": "https://avatars2.githubusercontent.com/u/1721836"
+        }
+    ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "keyboard-layout",
+  "title": "Keyboard Layout",
+  "description": "A module for Foundry Virtual Tabletop that allows users to select their keyboard layout to be used for keybindings.",
+  "authors": [
+    {
+      "name": "Johannes Loher",
+      "email": "johannes.loher@fg4f.de",
+      "discord": "ghost#2000",
+      "ko-fi": "ghostfvtt"
+    }
+  ],
+  "url": "https://github.com/ghost-fvtt/keyboard-layout",
+  "license": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.2.3/LICENSE.md",
+  "readme": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.2.3/README.md",
+  "bugs": "https://github.com/ghost-fvtt/keyboard-layout/issues",
+  "changelog": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.2.3/CHANGELOG.md",
+  "version": "1.2.3",
+  "minimumCoreVersion": "9.238",
+  "compatibleCoreVersion": "9",
+  "esmodules": ["keyboard-layout.js"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    },
+    {
+      "lang": "sv",
+      "name": "Svenska",
+      "path": "lang/sv.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "lib-wrapper",
+      "type": "module"
+    }
+  ],
+  "manifest": "https://github.com/ghost-fvtt/keyboard-layout/releases/latest/download/module.json",
+  "download": "https://github.com/ghost-fvtt/keyboard-layout/releases/download/v1.2.3/module.zip",
+  "manifestPlusVersion": "1.2.0"
+}

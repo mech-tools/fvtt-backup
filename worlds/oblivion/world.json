@@ -1,0 +1,179 @@
+{
+  "name": "oblivion",
+  "title": "Oblivion",
+  "description": "",
+  "authors": [],
+  "flags": {},
+  "version": "1.0.0",
+  "scripts": [],
+  "esmodules": [],
+  "styles": [],
+  "languages": [],
+  "packs": [
+    {
+      "label": "Autres items",
+      "entity": "Item",
+      "name": "autres-items",
+      "path": "packs/autres-items.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "absPath": "/home/ubuntu/foundry/oblivion/foundrydata/Data/worlds/oblivion/packs/autres-items.db",
+      "type": "Item"
+    },
+    {
+      "label": "Autres macros",
+      "entity": "Macro",
+      "name": "autres-macros",
+      "path": "packs/autres-macros.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Macro"
+    },
+    {
+      "label": "Autres prefabs",
+      "entity": "Actor",
+      "name": "autres-prefabs",
+      "path": "packs/autres-prefabs.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Actor"
+    },
+    {
+      "label": "Sorts - Tours de magie",
+      "entity": "Item",
+      "name": "sorts-tours-de-magie",
+      "path": "packs/sorts-tours-de-magie.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "absPath": "/home/ubuntu/foundry/oblivion/foundrydata/Data/worlds/oblivion/packs/sorts-tours-de-magie.db",
+      "type": "Item"
+    },
+    {
+      "label": "Sorts - Niveau 1",
+      "entity": "Item",
+      "name": "sorts-niveau-1",
+      "path": "packs/sorts-niveau-1.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "absPath": "/home/ubuntu/foundry/oblivion/foundrydata/Data/worlds/oblivion/packs/sorts-niveau-1.db",
+      "type": "Item"
+    },
+    {
+      "label": "Sorts - Niveau 2",
+      "entity": "Item",
+      "name": "sorts-niveau-2",
+      "path": "packs/sorts-niveau-2.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "absPath": "/home/ubuntu/foundry/oblivion/foundrydata/Data/worlds/oblivion/packs/sorts-niveau-2.db",
+      "type": "Item"
+    },
+    {
+      "label": "Sorts - Niveau 3",
+      "entity": "Item",
+      "name": "sorts-niveau-3",
+      "path": "packs/sorts-niveau-3.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Item"
+    },
+    {
+      "label": "Sorts - Niveau 4",
+      "entity": "Item",
+      "name": "sorts-niveau-4",
+      "path": "packs/sorts-niveau-4.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Item"
+    },
+    {
+      "label": "Autres items magiques",
+      "entity": "Item",
+      "name": "autres-items-magiques",
+      "path": "packs/autres-items-magiques.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "absPath": "/home/ubuntu/foundry/oblivion/foundrydata/Data/worlds/oblivion/packs/autres-items-magiques.db",
+      "type": "Item"
+    },
+    {
+      "label": "Autres capacités",
+      "entity": "Item",
+      "name": "autres-capacites",
+      "path": "packs/autres-capacites.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Item"
+    },
+    {
+      "label": "Sorts - Niveau 8",
+      "entity": "Item",
+      "name": "sorts-niveau-8",
+      "path": "packs/sorts-niveau-8.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Item"
+    },
+    {
+      "label": "Autres evocations",
+      "entity": "Macro",
+      "name": "autres-evocations",
+      "path": "packs/autres-evocations.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "Macro"
+    },
+    {
+      "label": "Autre conditions",
+      "entity": "JournalEntry",
+      "name": "autre-conditions",
+      "path": "packs/autre-conditions.db",
+      "system": "dnd5e",
+      "package": "world",
+      "private": false,
+      "type": "JournalEntry"
+    },
+    {
+      "label": "Archives - Scènes",
+      "type": "Scene",
+      "name": "archives-scenes",
+      "path": "packs/archives-scenes.db",
+      "system": "dnd5e",
+      "package": "world",
+      "entity": "Scene",
+      "private": false
+    },
+    {
+      "label": "Archives - Acteurs",
+      "type": "Actor",
+      "name": "archives-acteurs",
+      "path": "packs/archives-acteurs.db",
+      "system": "dnd5e",
+      "package": "world",
+      "entity": "Actor",
+      "private": false
+    }
+  ],
+  "system": "dnd5e",
+  "dependencies": [],
+  "socket": false,
+  "protected": false,
+  "background": "worlds/oblivion/images/home/les-enfants-d-oblivion.jpg",
+  "coreVersion": "9.269",
+  "nextSession": null,
+  "resetKeys": false,
+  "safeMode": false,
+  "systemVersion": "1.6.3"
+}

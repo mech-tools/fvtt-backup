@@ -1,0 +1,10 @@
+/**
+ * HooksExt is a general extension of the FoundryVTT Hooks class.
+ * @name HooksExt
+ * @version 1.0.0
+ * @author flamewave000
+ * @license BSD-3-Clause
+ * @see https://github.com/flamewave000/dragonflagon-fvtt
+ * @see https://github.com/flamewave000/dragonflagon-fvtt/blob/master/LICENSE
+ * * HooksExt.shim.ts, HooksExt.shim.js, HooksExt.shim.min.js, HooksExt.shim.js.map
+ */

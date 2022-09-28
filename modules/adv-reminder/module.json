@@ -1,0 +1,41 @@
+{
+    "name": "adv-reminder",
+    "title": "Advantage Reminder for dnd5e",
+    "description": "Using the active effect keys defined by Midi QOL, set the default of certain die rolls to advantage/disadvantage/critical.",
+    "author": "kaelad",
+    "version": "1.3.2.1",
+    "minimumCoreVersion": "0.8.9",
+    "compatibleCoreVersion": "9",
+    "dependencies": [
+        {
+            "name": "lib-wrapper"
+        }
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        },
+        {
+            "lang": "fr",
+            "name": "Français",
+            "path": "lang/fr.json"
+        }
+    ],
+    "systems": [
+        "dnd5e",
+        "sw5e"
+    ],
+    "esmodules": [
+        "src/module.js"
+    ],
+    "styles": [
+        "css/adv-reminder.css"
+    ],
+    "url": "https://github.com/DarKDinDoN/adv-reminder",
+    "manifest": "https://github.com/DarKDinDoN/adv-reminder/releases/latest/download/module.json",
+    "download": "https://github.com/DarKDinDoN/adv-reminder/releases/download/1.3.2.1/module.zip",
+    "changelog": "https://github.com/kaelad02/adv-reminder/blob/main/CHANGELOG.md",
+    "readme": "https://github.com/kaelad02/adv-reminder/blob/main/README.md"
+}
