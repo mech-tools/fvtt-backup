@@ -1,0 +1,13 @@
+/* Affichage Alignement feuille de personnage */
+.crb-style .sheet-body .sheet-content .character .character-details .alignment select {
+    all: initial;
+    cursor: pointer;
+    display: block;
+    font-family: var(--body-serif);
+    font-size: 13px;
+    letter-spacing: -1px;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 2px;
+    text-transform: capitalize;
+}

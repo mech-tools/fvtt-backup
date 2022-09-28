@@ -1,0 +1,24 @@
+{
+  "name": "one-journal",
+  "title": "OneJournal",
+  "description": "Open all your journals in a single window",
+  "version": "1.5.1",
+  "author": "Sunspots",
+  "scripts": [],
+  "esmodules": ["one-journal.js"],
+  "styles": ["./one-journal.css"],
+  "packs": [],
+  "languages": [
+    {"lang": "en", "name": "English", "path": "lang/en.json"},
+    {"lang": "es", "name": "Español", "path": "lang/es.json"}
+  ],
+  "minimumCoreVersion": "0.7.5",
+  "compatibleCoreVersion": "0.8.8",
+  "url": "https://gitlab.com/fvtt-modules-lab/one-journal",
+  "manifest": "https://gitlab.com/fvtt-modules-lab/one-journal/-/jobs/artifacts/master/raw/module.json?job=build-module",
+  "download": "https://gitlab.com/fvtt-modules-lab/one-journal/-/jobs/artifacts/v1.5.1/raw/one-journal-v1.5.1.zip?job=build-module",
+  "license": "MIT",
+  "readme": "https://gitlab.com/fvtt-modules-lab/one-journal",
+  "bugs": "https://gitlab.com/fvtt-modules-lab/one-journal/-/issues",
+  "changelog": "https://gitlab.com/fvtt-modules-lab/one-journal/-/blob/master/CHANGELOG.md"
+}

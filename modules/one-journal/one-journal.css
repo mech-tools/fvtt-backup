@@ -1,0 +1,896 @@
+:root {
+  --ojLightBorder: 1px solid rgba(0, 0, 0, 0.1);
+  --ojBackground: rgba(0, 0, 0, 0.03);
+  --ojBackgroundMedium: rgba(0, 0, 0, 0.1);
+  --ojBackgroundHeavy: rgba(0, 0, 0, 0.3);
+  --ojTextColor: #000;
+  --ojTextColorContrast: #d8d8d8;
+  --ojHeaderAccentBg: rgba(0, 0, 0, 0.25);
+  --ojHeaderAccentBgFullscreen: rgba(0, 0, 0, 0.05);
+  --ojSidebarWidth: 300px;
+  --ojAppHeaderHeight: 30px;
+  --ojAccentColor: #782e22;
+}
+
+/* dnd5e-dark-mode */
+.dark-mode {
+  --ojLightBorder: 1px solid rgba(0, 0, 0, 0.8);
+  --ojBackground: rgba(255, 255, 255, 0.01);
+  --ojBackgroundMedium: rgba(255, 255, 255, 0.05);
+  --ojBackgroundHeavy: rgba(255, 255, 255, 0.1);
+  --ojTextColor: #d8d8d8;
+  --ojAccentColor: #5177ab;
+}
+
+/* Global journal styles */
+.journal-sheet {
+  overflow: hidden;
+  /* Hide scrollbar */
+  /* Image with/height ratio fix */
+  /* TinyMCE header */
+  /* Edit button */
+}
+.journal-sheet * {
+  scrollbar-width: thin;
+}
+.journal-sheet form input[name=name] {
+  font-size: 2em;
+  padding-bottom: 1px;
+  border-radius: 0;
+  border-width: 0 0 2px 0;
+  border-color: var(--ojAccentColor);
+  margin-bottom: 6px;
+  width: 100%;
+  box-shadow: 0px 1px 0px transparent;
+  transition: box-shadow 50ms ease-out;
+  transition: background 50ms ease-out;
+}
+.journal-sheet form input[name=name]:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+.journal-sheet form input[name=name]:focus {
+  box-shadow: 0px 1px 0px var(--ojAccentColor);
+}
+.journal-sheet select[name=folder] {
+  border-radius: 0;
+  border: 1px solid var(--ojAccentColor);
+  transition: box-shadow 50ms ease-out;
+  box-shadow: 0px 1px 0px transparent;
+}
+.journal-sheet select[name=folder]:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+.journal-sheet select[name=folder]:focus {
+  box-shadow: 0px 1px 0px var(--ojAccentColor);
+}
+.journal-sheet .editor-content {
+  padding: 0 0.6em;
+  visibility: hidden;
+  transition: visibility 100ms;
+}
+.journal-sheet .editor:hover .editor-content,
+.journal-sheet .editor-content > * {
+  visibility: visible;
+}
+.journal-sheet .editor-edit {
+  right: 10px;
+}
+.journal-sheet .editor-content li .entity-link {
+  display: inline-block;
+}
+.journal-sheet .editor-content img {
+  height: auto;
+}
+.journal-sheet .tox.tox-tinymce,
+.journal-sheet .tox .tox-editor-container {
+  overflow: visible;
+  height: 100% !important;
+}
+.journal-sheet .tox .tox-editor-header {
+  margin: 0 -6px;
+}
+.journal-sheet .tox .tox-toolbar__group {
+  padding: 0 1em;
+}
+.journal-sheet .editor-edit {
+  /* border: none; */
+  border-color: #3336;
+  transition: all 100ms ease-out;
+  box-shadow: none;
+}
+.journal-sheet .editor-edit:hover {
+  text-shadow: none;
+  border-color: #333e;
+}
+.journal-sheet .window-content form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dark mode tweaks */
+.dark-mode .journal-sheet form input[name=name] {
+  border-color: var(--ojAccentColor);
+}
+.dark-mode .journal-sheet form input[name=name]:hover {
+  border-width: 0 0 2px 0;
+  box-shadow: none;
+}
+.dark-mode .journal-sheet form input[name=name]:focus {
+  border-width: 0 0 2px 0;
+  box-shadow: 0px 1px 0px var(--ojAccentColor);
+}
+
+body:not(.dark-mode) .journal-sheet .tox .tox-toolbar__primary {
+  background: #e8e8e8;
+}
+
+/* Attached journal styles */
+#OneJournalShell .one-journal-attached {
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  box-shadow: none;
+  margin: 0;
+  border-radius: 0;
+  z-index: 1 !important;
+  opacity: 1 !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+}
+#OneJournalShell .one-journal-attached .window-header {
+  display: none;
+}
+#OneJournalShell .one-journal-attached .window-resizable-handle {
+  display: none;
+}
+#OneJournalShell .one-journal-attached > .window-content {
+  padding: 0;
+}
+#OneJournalShell .kanka-action-row,
+#OneJournalShell form input[name=name] {
+  padding-right: 51px;
+}
+#OneJournalShell.sidebar-mode-none .kanka-action-row,
+#OneJournalShell.sidebar-mode-none form input[name=name] {
+  width: calc(100% - 17px);
+}
+#OneJournalShell.sidebar-disabled .kanka-action-row,
+#OneJournalShell.sidebar-disabled form input[name=name] {
+  width: 100%;
+}
+#OneJournalShell.sidebar-mode-left.sidebar-mode-none .kanka-action-row,
+#OneJournalShell.sidebar-mode-left.sidebar-mode-none form input[name=name] {
+  margin-left: 17px;
+}
+#OneJournalShell .one-journal-attached.journal-sheet form select {
+  display: none;
+  margin: 3px 6px;
+  width: calc(100% - 12px);
+}
+#OneJournalShell.show-folder-select .one-journal-attached.journal-sheet form select {
+  display: block;
+}
+#OneJournalShell form button[type=submit] {
+  display: none;
+}
+
+/* wtf is this really? */
+.journal-sheet form .editor {
+  overflow: visible;
+  height: 1px;
+  flex-grow: 1;
+}
+
+.one-journal-attached.journal-sheet form .editor {
+  height: 0px;
+  flex-grow: 1;
+}
+
+#OneJournalShell:not(.oj-wfrp4e) .one-journal-attached {
+  background: none;
+}
+
+#OneJournalShell:not(.oj-wfrp4e) .one-journal-attached .window-content {
+  background: none;
+}
+
+/* Journal shell */
+#OneJournalShell {
+  overflow: hidden;
+}
+
+#OneJournalShell .window-resizable-handle {
+  z-index: 1000;
+  /* above journal */
+}
+
+#OneJournalShell .fullscreen-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #f0f0e0;
+}
+
+#OneJournalShell > .window-content {
+  padding: 0;
+  max-height: calc(100% - var(--ojAppHeaderHeight));
+}
+
+#OneJournalShell .window-header > a[id^=popout_] {
+  display: none;
+}
+
+#OneJournalShell .one-journal-header {
+  display: flex;
+}
+
+#OneJournalShell .one-journal-header a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 14px;
+  flex-shrink: 1;
+  position: unset;
+}
+
+#OneJournalShell.journal-attached:not(.minimized):not(.sidebar-mode-left) > .window-header {
+  padding-right: 0;
+}
+
+#OneJournalShell.journal-attached.sidebar-mode-left:not(.minimized) > .window-header {
+  padding-left: 0;
+}
+
+#OneJournalShell.journal-attached:not(.minimized) > .window-header .one-journal-header {
+  flex: 0 1 var(--ojSidebarWidth);
+  justify-content: flex-end;
+  border-left: var(--ojLightBorder);
+  margin-left: 8px;
+  padding-right: 8px;
+  background: var(--ojHeaderAccentBg);
+  min-width: 130px;
+}
+
+#OneJournalShell.journal-attached:first-child > .window-header .one-journal-header,
+#OneJournalShell.journal-attached.maximized > .window-header .one-journal-header {
+  background: var(--ojHeaderAccentBgFullscreen);
+}
+
+#OneJournalShell > .window-header .one-journal-header .window-title {
+  flex-grow: 1;
+}
+
+#OneJournalShell.journal-attached:not(.minimized) > .window-header .one-journal-header .window-title {
+  display: none;
+}
+
+#OneJournalShell.sidebar-mode-none.journal-attached:not(.minimized) > .window-header .one-journal-header {
+  flex: 0 0 135px;
+  /* justify-content: unset; */
+}
+
+#OneJournalShell.sidebar-mode-left.journal-attached:not(.minimized) > .window-header .one-journal-header {
+  justify-content: flex-start;
+  order: -1;
+  border-left: none;
+  border-right: var(--ojLightBorder);
+  margin-left: 0;
+  margin-right: 8px;
+  padding-right: 0;
+  padding-left: 8px;
+}
+
+#OneJournalShell.sidebar-mode-left:not(.minimized) > .window-header .one-journal-header .window-title {
+  order: 1;
+  margin-left: 43px;
+}
+
+#OneJournalShell.sidebar-mode-left:not(.minimized):not(.sidebar-mode-none) > .window-header .one-journal-header .window-title {
+  margin-left: 183px;
+}
+
+#OneJournalShell:not(.journal-attached) .one-journal-header {
+  display: flex !important;
+}
+
+#OneJournalShell.minimized:not(.journal-attached) .maximize-toggle {
+  display: none;
+}
+
+#OneJournalShell > .window-header {
+  flex-wrap: nowrap;
+}
+
+.one-journal-shell {
+  display: flex;
+  max-height: 100%;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.one-journal-shell .shell-content {
+  flex: 9999 1 0%;
+  flex-wrap: wrap;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: var(--ojLightBorder);
+  position: relative;
+  min-width: 200px;
+}
+
+.one-journal-shell .shell-content .journal-sheet:not(:last-child) {
+  display: none;
+}
+
+.one-journal-shell .shell-content .placeholder {
+  display: none;
+  padding: 12px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+#OneJournalShell:not(.minimized) .one-journal-shell .shell-content .placeholder:last-child {
+  display: block;
+}
+
+.one-journal-shell .shell-sidebar {
+  flex: 1 1 var(--ojSidebarWidth);
+  max-width: var(--ojSidebarWidth);
+  height: 100%;
+  display: flex;
+  border: var(--ojLightBorder);
+}
+
+#OneJournalShell:not(.sidebar-mode-left) .shell-sidebar {
+  border-right: none;
+}
+
+#OneJournalShell.sidebar-mode-left .shell-sidebar {
+  border-left: none;
+}
+
+.one-journal-shell .shell-sidebar .sidebar-tab .directory-header {
+  border: none;
+}
+
+#OneJournalShell.sidebar-mode-none .shell-sidebar {
+  display: none;
+}
+
+#OneJournalShell.sidebar-mode-left .shell-sidebar {
+  order: -1;
+}
+
+#OneJournalShell.sidebar-mode-left .maximize-toggle {
+  margin-left: 0;
+}
+
+#OneJournalShell.maximized {
+  position: absolute;
+  width: calc(100% - 307px) !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  transition: width 50ms linear;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#OneJournalShell * {
+  scrollbar-width: thin;
+}
+
+#sidebar.collapsed ~ #OneJournalShell.maximized {
+  width: calc(100% - 37px) !important;
+}
+
+#OneJournalShell:first-child > .window-header,
+#OneJournalShell.maximized > .window-header {
+  position: absolute;
+  width: 100%;
+  color: var(--ojTextColor);
+  border-bottom: none;
+  height: var(--ojAppHeaderHeight);
+}
+
+#OneJournalShell.maximized .one-journal-attached:not(.minimized) .window-header {
+  color: var(--ojTextColor);
+  border-bottom: none;
+}
+
+#OneJournalShell:first-child > .window-content,
+#OneJournalShell.maximized > .window-content {
+  padding-top: var(--ojAppHeaderHeight);
+  max-height: 100%;
+}
+
+#OneJournalShell:first-child .window-resizable-handle,
+#OneJournalShell.maximized .window-resizable-handle {
+  display: none;
+}
+
+/* PopOut! */
+#OneJournalShell:first-child {
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 100 !important;
+}
+
+#OneJournalShell:first-child .maximize-toggle {
+  display: none;
+}
+
+#OneJournalShell:first-child .window-header a[id^=popout_] {
+  display: none;
+}
+
+#OneJournalShell:first-child.sidebar-mode-none.journal-attached:not(.minimized) > .window-header .one-journal-header {
+  display: none;
+}
+
+#OneJournalShell:first-child.journal-attached.sidebar-mode-none:not(.sidebar-mode-left) > .window-header {
+  padding-right: 8px;
+}
+
+/* Journal Directory */
+#OneJournalDirectory {
+  position: unset !important;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  margin: 0;
+  background: none;
+  box-shadow: none;
+  height: auto !important;
+  width: 100% !important;
+  z-index: inherit !important;
+  border-left: none;
+  border-top: none;
+  border: var(--ojLightBorder);
+  border: none;
+  /* Journal Directory base UI */
+  /* permission viewer */
+  /* Journal Directory compactness */
+}
+#OneJournalDirectory .header-actions {
+  border-bottom: var(--ojLightBorder);
+  align-items: center;
+}
+#OneJournalDirectory .directory-header button {
+  height: 30px;
+  overflow: hidden;
+}
+#OneJournalDirectory .directory-list {
+  padding: 0;
+  margin: 0;
+}
+#OneJournalDirectory .folder-title {
+  margin: 0;
+  line-height: 38px;
+  padding-left: 10px;
+}
+#OneJournalDirectory .folder-title > i {
+  margin-right: 10px;
+}
+#OneJournalDirectory .directory-item.active {
+  background: #cfcdc2;
+}
+#OneJournalDirectory .entity-name {
+  padding-left: 8px;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+#OneJournalDirectory .journal-detached .entity-name {
+  opacity: 0.8;
+}
+#OneJournalDirectory .journal-detached .entity-name a:hover {
+  text-shadow: none;
+}
+#OneJournalDirectory .journal-detached .entity-name i {
+  margin-left: 4px;
+}
+#OneJournalDirectory .directory-item.create-entry {
+  padding-top: 12px;
+}
+#OneJournalDirectory .directory-item.create-entry h4 {
+  padding-left: 24px;
+}
+#OneJournalDirectory .folder-menu {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex: 0 0 38px;
+  border-bottom: var(--ojLightBorder);
+}
+#OneJournalDirectory .folder-menu button {
+  flex: 1;
+  margin: 0 3px;
+  height: 30px;
+}
+#OneJournalDirectory .window-header {
+  display: none;
+}
+#OneJournalDirectory .window-content {
+  padding: 0;
+}
+#OneJournalDirectory li.folder > .folder-header {
+  background: var(--ojBackgroundMedium);
+}
+#OneJournalDirectory li.folder > .folder-header .create-folder,
+#OneJournalDirectory li.folder > .folder-header .create-entity {
+  color: var(--ojTextColor);
+}
+#OneJournalDirectory li.folder .folder-header[style*="background-color: #"] .create-folder,
+#OneJournalDirectory li.folder .folder-header[style*="background-color: #"] .create-entity,
+#OneJournalDirectory li.folder .folder-header[style*="background-color: rgb"] .create-folder,
+#OneJournalDirectory li.folder .folder-header[style*="background-color: rgb"] .create-entity {
+  color: var(--ojTextColorContrast);
+}
+#OneJournalDirectory li.folder:not(.collapsed) > .folder-header {
+  background: var(--ojBackgroundHeavy);
+}
+#OneJournalDirectory li.folder .folder-header h3 {
+  color: var(--ojTextColor);
+}
+#OneJournalDirectory li.folder .folder-header[style*="background-color: #"] h3,
+#OneJournalDirectory li.folder .folder-header[style*="background-color: r"] h3 {
+  color: var(--ojTextColorContrast);
+}
+#OneJournalDirectory li.folder > .folder-header,
+#OneJournalDirectory li.folder.collapsed > .folder-header {
+  border-top: var(--ojLightBorder);
+  border-bottom: none;
+}
+#OneJournalDirectory .subdirectory {
+  border-left: none;
+  border-bottom: 4px solid var(--ojBackgroundHeavy);
+  margin-bottom: 0px;
+}
+#OneJournalDirectory .subdirectory .subdirectory {
+  border-left: 4px solid var(--ojBackgroundHeavy);
+  margin-bottom: 0px;
+}
+#OneJournalDirectory .subdirectory .folder {
+  border-left: 6px solid transparent;
+  border-color: transparent;
+}
+#OneJournalDirectory .sidebar-tab .directory-list .entity {
+  border: none;
+}
+#OneJournalDirectory .sidebar-tab .directory-list .entity.selected {
+  background: rgba(0, 0, 0, 0.03);
+}
+#OneJournalDirectory .sidebar-tab .directory-list .entity.selected h4 {
+  font-weight: bold;
+}
+#OneJournalDirectory .permission-viewer .fa-share-alt {
+  color: var(--ojTextColor) !important;
+}
+#OneJournalDirectory.compact li.folder > .folder-header {
+  padding: 4px;
+  line-height: 22px;
+}
+#OneJournalDirectory.compact li.folder > .folder-header h3 {
+  font-size: 14px;
+}
+#OneJournalDirectory.compact .sidebar-tab .directory-list .journal {
+  line-height: 28px;
+}
+#OneJournalDirectory.compact .subdirectory .subdirectory {
+  border-width: 3px;
+}
+#OneJournalDirectory.compact .directory-header button {
+  height: 26px;
+  line-height: 22px;
+}
+
+.dark-mode #OneJournalDirectory .directory-item.active {
+  background: #101010;
+}
+
+/* History navigation */
+#OneJournalShell .history-navigation {
+  position: absolute !important;
+  z-index: 10;
+  right: 8px;
+  top: 11px;
+  display: flex;
+}
+#OneJournalShell .history-navigation .forward,
+#OneJournalShell .history-navigation .backward {
+  font-size: 110%;
+  opacity: 0.4;
+  cursor: default;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 3px;
+  transition: all 100ms ease-out;
+}
+#OneJournalShell .history-navigation .forward:hover,
+#OneJournalShell .history-navigation .backward:hover {
+  text-shadow: none;
+}
+#OneJournalShell .history-navigation .forward.active,
+#OneJournalShell .history-navigation .backward.active {
+  opacity: 0.9;
+  cursor: pointer;
+}
+#OneJournalShell .history-navigation .forward.active:hover,
+#OneJournalShell .history-navigation .backward.active:hover {
+  background: #3333;
+}
+
+#OneJournalShell.sidebar-mode-none:not(.sidebar-mode-left) .history-navigation {
+  right: 24px;
+}
+
+#OneJournalShell.sidebar-disabled .history-navigation {
+  right: 8px !important;
+}
+
+#OneJournalShell .history-navigation #context-menu {
+  width: 250px;
+  white-space: nowrap;
+  max-height: 50vh;
+  overflow-y: auto;
+  transform: translateX(-220px);
+}
+
+#OneJournalShell .history-navigation #context-menu li:first-child:not(:only-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#OneJournalShell .history-navigation #context-menu li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sidebar toggle buttons */
+.sidebar-toggle {
+  cursor: pointer;
+  flex: 0;
+}
+
+.sidebar-toggle i {
+  transform: rotateZ(90deg);
+}
+
+.one-journal-shell > .sidebar-toggle {
+  position: absolute;
+  z-index: 1001;
+  right: 0px;
+  top: calc(var(--ojAppHeaderHeight) + 10px);
+  border: var(--ojLightBorder);
+  width: 20px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#OneJournalShell:not(.sidebar-mode-none) .one-journal-shell > .sidebar-toggle {
+  display: none;
+}
+
+.sidebar-mode-left .one-journal-shell > .sidebar-toggle {
+  right: unset;
+  left: 2px;
+}
+
+.directory-header > .sidebar-toggle,
+.header-actions > .sidebar-toggle {
+  flex: 0 0 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  order: 999;
+  /* Ensure it comes after any additional controls from modules */
+}
+
+.sidebar-mode-left .header-actions > .sidebar-toggle,
+.sidebar-mode-left .header-search > .sidebar-toggle {
+  order: -1;
+}
+
+/* Outside the app */
+.sidebar-tab .directory-footer .one-journal-open {
+  /* display: none; */
+  flex-basis: 100%;
+  margin-top: 4px;
+}
+
+/* System default styles */
+#OneJournalShell.oj-wfrp4e {
+  --ojAppHeaderHeight: 45px;
+  --ojBackgroundMedium: rgba(255, 255, 255, 0.05);
+  --ojBackgroundHeavy: rgba(255, 255, 255, 0.15);
+  --ojTextColor: #fff;
+  --ojHeaderAccentBg: transparent;
+  font-family: var(--actor-input-font-family);
+}
+
+#OneJournalShell.oj-wfrp4e .placeholder {
+  color: var(--ojTextColorContrast);
+}
+
+#OneJournalShell.oj-wfrp4e > .window-content {
+  border: none;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header a {
+  line-height: 34px;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header > a.close {
+  order: unset;
+  position: unset;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header .window-title {
+  margin-right: -90px;
+  margin-left: -30px;
+  flex-basis: calc(100% - var(--ojSidebarWidth));
+}
+
+#OneJournalShell.oj-wfrp4e .window-header .share-image,
+#OneJournalShell.oj-wfrp4e .window-header .entry-text,
+#OneJournalShell.oj-wfrp4e .window-header .entry-image {
+  color: #00c2d800;
+  text-align: center;
+  height: 30px;
+  width: 30px;
+  overflow: hidden;
+  margin: 0;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header .share-image {
+  background: url(/systems/wfrp4e/ui/buttons/button-show-players.png);
+  order: -1;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header .entry-text {
+  background: url(/systems/wfrp4e/ui/buttons/button-text.png);
+}
+
+#OneJournalShell.oj-wfrp4e .window-header .entry-image {
+  background: url(/systems/wfrp4e/ui/buttons/button-image.png);
+}
+
+#OneJournalShell.oj-wfrp4e .history-navigation {
+  top: 37px;
+  right: 32px;
+}
+
+#OneJournalShell.oj-wfrp4e.sidebar-mode-none:not(.sidebar-mode-left) .history-navigation {
+  right: 51px;
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-toggle {
+  height: 28px;
+  width: 20px;
+  flex: 0 0 20px;
+  padding: 12px !important;
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-toggle:hover {
+  text-shadow: 0 0 8px #ff9f00;
+}
+
+#OneJournalShell.oj-wfrp4e .shell-sidebar .sidebar-toggle {
+  margin-right: 4px;
+}
+
+#OneJournalShell.oj-wfrp4e .one-journal-shell > .sidebar-toggle {
+  top: calc(var(--ojAppHeaderHeight) + 30px);
+  right: 12px;
+}
+
+#OneJournalShell.oj-wfrp4e.maximized {
+  width: calc(100% - 386px) !important;
+}
+
+#sidebar.oj-wfrp4e.collapsed ~ #OneJournalShell.maximized {
+  width: calc(100% - 50px) !important;
+}
+
+#OneJournalShell.oj-wfrp4e:first-child > .window-header,
+#OneJournalShell.oj-wfrp4e.maximized > .window-header {
+  color: inherit;
+}
+
+#OneJournalShell.oj-wfrp4e .one-journal-header {
+  height: 31px;
+  background: none !important;
+  border: none !important;
+}
+
+#OneJournalShell.oj-wfrp4e #OneJournalDirectory .window-content {
+  padding: 3px;
+  background: url(/systems/wfrp4e/ui/sidebar.png);
+  background-position-x: -80px;
+}
+
+#OneJournalShell.oj-wfrp4e #OneJournalDirectory h3 i {
+  display: inline-block;
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-tab.sidebar-directory .directory-list .subdirectory .directory-item {
+  margin-left: 0;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header a.maximize-toggle {
+  width: 24px;
+  overflow: hidden;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header a.maximize-toggle i {
+  color: #f4f6a3;
+  display: inline-block;
+  height: 24px;
+  width: 24px;
+  background: #290a0ad9;
+  margin-top: 4px;
+  padding: 4px;
+  border: 2px solid #564d3a;
+  text-shadow: 0 0 10px red;
+  border-radius: 100%;
+  font-size: 13px;
+  box-shadow: inset 1px 1px 10px #a01a1ad9;
+}
+
+#OneJournalShell.oj-wfrp4e .window-header a.maximize-toggle:hover i {
+  /* box-shadow: inset 1px 1px 10px #a01a1ad9, 0 0 5px #ff9f00 !important; */
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-toggle,
+#OneJournalShell.oj-wfrp4e .header-actions button {
+  background: #290a0ad9;
+  margin: 3px;
+  padding: 4px 3px 1px 3px;
+  font-family: var(--actor-input-font-family);
+  font-weight: var(--actor-input-font-weight);
+  color: #d6d6d6;
+  line-height: normal;
+  border: 3px double #564d3a;
+  /* text-shadow: 0 0 10px red; */
+  box-shadow: inset 1px 1px 10px #a01a1ad9;
+  border-radius: 0;
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-toggle:hover,
+#OneJournalShell.oj-wfrp4e .header-actions button:hover {
+  box-shadow: inset 1px 1px 10px #a01a1ad9, 0 0 5px #ff9f00 !important;
+}
+
+#OneJournalShell.oj-wfrp4e .sidebar-tab.sidebar-directory .directory-list li {
+  border-width: 0;
+  margin-right: 0;
+  box-shadow: 0 0 6px #000 inset;
+  background: #00000091;
+  color: #dadada;
+  text-shadow: 1px 1px 2px black;
+}
+
+#OneJournalShell.oj-wfrp4e #OneJournalDirectory .subdirectory .folder {
+  border-left: 6px solid transparent;
+}
+
+#OneJournalShell.oj-wfrp4e #OneJournalDirectory .sidebar-tab .directory-list .entity.selected {
+  background: #0f0000b5;
+  border-left: 2px solid #564d3a;
+}
+
+#OneJournalShell.oj-wfrp4e #OneJournalDirectory .subdirectory .subdirectory {
+  border-right: 4px solid var(--ojBackgroundHeavy);
+}

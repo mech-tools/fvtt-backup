@@ -1,0 +1,35 @@
+{
+  "name": "bs_pf2",
+  "title": "Bac a sable PF2",
+  "description": "",
+  "authors": [],
+  "flags": {},
+  "version": "1.0.0",
+  "minimumCoreVersion": "0.0.0",
+  "compatibleCoreVersion": "1.0.0",
+  "scripts": [],
+  "esmodules": [],
+  "styles": [],
+  "languages": [],
+  "packs": [
+    {
+      "label": "ADC - Macros",
+      "entity": "Macro",
+      "name": "adc-macros",
+      "path": "packs/adc-macros.db",
+      "system": "pf2e",
+      "package": "world",
+      "absPath": "/home/ubuntu/foundry/adc/foundrydata/Data/worlds/bs_pf2/packs/adc-macros.db",
+      "private": false
+    }
+  ],
+  "system": "pf2e",
+  "dependencies": [],
+  "socket": false,
+  "protected": false,
+  "background": "worlds/bs_pf2/scenes/Welcome.png",
+  "coreVersion": "0.8.9",
+  "resetKeys": false,
+  "safeMode": false,
+  "systemVersion": "2.20.2.9271"
+}

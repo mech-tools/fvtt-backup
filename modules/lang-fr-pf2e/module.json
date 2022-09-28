@@ -1,0 +1,35 @@
+{
+  "name": "lang-fr-pf2e",
+  "title": "Français [Pathfinder 2e]",
+  "description": "langue française pour le système de jeu Pathfinder 2e <p> *** Rejoignez la communauté Discord FR :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
+  "author": "rectulo",
+  "authors": [],
+  "url": "https://gitlab.com/pathfinder-fr/foundryvtt-pathfinder2e-lang-fr",
+  "flags": {},
+  "version": "2.20.1",
+  "minimumCoreVersion": "0.8.9",
+  "compatibleCoreVersion": "0.8.9",
+  "scripts": [],
+  "esmodules": [],
+  "styles": [
+    "css/pf2e.css"
+  ],
+  "languages": [
+    {
+      "lang": "fr",
+      "name": "French (Français)",
+      "path": "lang/fr.json"
+    }
+  ],
+  "packs": [],
+  "system": [
+    "pf2e"
+  ],
+  "dependencies": [],
+  "socket": false,
+  "manifest": "https://gitlab.com/pathfinder-fr/foundryvtt-pathfinder2e-lang-fr/-/raw/master/module/module.json",
+  "download": "https://gitlab.com/pathfinder-fr/foundryvtt-pathfinder2e-lang-fr/-/jobs/artifacts/v2.20.1/raw/lang-fr-pf2e.zip?job=build",
+  "protected": false,
+  "coreTranslation": false,
+  "library": false
+}

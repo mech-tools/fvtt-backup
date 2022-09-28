@@ -1,0 +1,524 @@
+{
+  "name": "pf2e",
+  "title": "Pathfinder 2nd Edition",
+  "description": "A community contributed game system for Pathfinder Second Edition.",
+  "license": "./LICENSE",
+  "version": "2.20.2.9271",
+  "minimumCoreVersion": "0.8.9",
+  "compatibleCoreVersion": "0.8.9",
+  "author": "The PF2e System Developers",
+  "esmodules": [
+    "vendor.bundle.js",
+    "main.bundle.js"
+  ],
+  "scripts": [
+    "./lib/tooltipster.bundle.min.js"
+  ],
+  "styles": [
+    "./styles/main.css",
+    "./styles/tinymce.css"
+  ],
+  "packs": [
+    {
+      "name": "abomination-vaults-bestiary",
+      "label": "Abomination Vaults",
+      "system": "pf2e",
+      "path": "packs/abomination-vaults-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "age-of-ashes-bestiary",
+      "label": "Age of Ashes",
+      "system": "pf2e",
+      "path": "packs/age-of-ashes-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "agents-of-edgewatch-bestiary",
+      "label": "Agents of Edgewatch",
+      "system": "pf2e",
+      "path": "packs/agents-of-edgewatch-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "april-fools-bestiary",
+      "label": "April Fool's Bestiary",
+      "system": "pf2e",
+      "path": "packs/april-fools-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/other"
+    },
+    {
+      "name": "blog-bestiary",
+      "label": "Paizo Blog Bestiary",
+      "system": "pf2e",
+      "path": "packs/blog-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/other"
+    },
+    {
+      "name": "extinction-curse-bestiary",
+      "label": "Extinction Curse",
+      "system": "pf2e",
+      "path": "packs/extinction-curse-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "fall-of-plaguestone-bestiary",
+      "label": "Fall of Plaguestone",
+      "system": "pf2e",
+      "path": "packs/fall-of-plaguestone.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "fists-of-the-ruby-phoenix-bestiary",
+      "label": "Fists of the Ruby Phoenix",
+      "system": "pf2e",
+      "path": "packs/fists-of-the-ruby-phoenix-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "hazards",
+      "label": "Hazards (Rulebooks)",
+      "system": "pf2e",
+      "path": "packs/hazards.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "lost-omens-mwangi-expanse-bestiary",
+      "label": "Lost Omens: Mwangi Expanse",
+      "system": "pf2e",
+      "path": "packs/mwangi-expanse-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "malevolence-bestiary",
+      "label": "Malevolence",
+      "system": "pf2e",
+      "path": "packs/malevolence-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "menace-under-otari-bestiary",
+      "label": "Menace Under Otari",
+      "system": "pf2e",
+      "path": "packs/menace-under-otari-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "npc-gallery",
+      "label": "NPC Gallery",
+      "system": "pf2e",
+      "path": "packs/npc-gallery.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "one-shot-bestiary",
+      "label": "One Shot Unique Bestiary",
+      "system": "pf2e",
+      "path": "packs/one-shot-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/other"
+    },
+    {
+      "name": "pathfinder-bestiary",
+      "label": "Bestiary 1",
+      "system": "pf2e",
+      "path": "packs/pathfinder-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "pathfinder-bestiary-2",
+      "label": "Bestiary 2",
+      "system": "pf2e",
+      "path": "packs/pathfinder-bestiary-2.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "pathfinder-bestiary-3",
+      "label": "Bestiary 3",
+      "system": "pf2e",
+      "path": "packs/pathfinder-bestiary-3.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "pfs-introductions-bestiary",
+      "label": "PFS Introductions",
+      "system": "pf2e",
+      "path": "packs/pfs-introductions-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/pfs"
+    },
+    {
+      "name": "pfs-season-1-bestiary",
+      "label": "Season 1",
+      "system": "pf2e",
+      "path": "packs/pfs-season-1-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/pfs"
+    },
+    {
+      "name": "pfs-season-2-bestiary",
+      "label": "Season 2",
+      "system": "pf2e",
+      "path": "packs/pfs-season-2-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/pfs"
+    },
+    {
+      "name": "pfs-season-3-bestiary",
+      "label": "Season 3",
+      "system": "pf2e",
+      "path": "packs/pfs-season-3-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/pfs"
+    },
+    {
+      "name": "strength-of-thousands-bestiary",
+      "label": "Strength of Thousands",
+      "system": "pf2e",
+      "path": "packs/strength-of-thousands-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "the-slithering-bestiary",
+      "label": "The Slithering",
+      "system": "pf2e",
+      "path": "packs/the-slithering-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "troubles-in-otari-bestiary",
+      "label": "Troubles in Otari",
+      "system": "pf2e",
+      "path": "packs/troubles-in-otari-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "night-of-the-gray-death-bestiary",
+      "label": "Night of the Gray Death",
+      "system": "pf2e",
+      "path": "packs/night-of-the-gray-death-bestiary.db",
+      "entity": "Actor",
+      "private": true,
+      "folder": "bestiaries/campaign"
+    },
+    {
+      "name": "vehicles",
+      "label": "Vehicles",
+      "system": "pf2e",
+      "path": "packs/vehicles.db",
+      "entity": "Actor",
+      "folder": "bestiaries/rulebook"
+    },
+    {
+      "name": "actionspf2e",
+      "label": "Actions",
+      "system": "pf2e",
+      "path": "packs/actions.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "ancestries",
+      "label": "Ancestries",
+      "system": "pf2e",
+      "path": "packs/ancestries.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "ancestryfeatures",
+      "label": "Ancestry Features",
+      "path": "packs/ancestryfeatures.db",
+      "entity": "Item",
+      "system": "pf2e",
+      "folder": "character-building"
+    },
+    {
+      "name": "backgrounds",
+      "label": "Backgrounds",
+      "path": "packs/backgrounds.db",
+      "entity": "Item",
+      "system": "pf2e",
+      "folder": "character-building"
+    },
+    {
+      "name": "classes",
+      "label": "Classes",
+      "system": "pf2e",
+      "path": "packs/classes.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "classfeatures",
+      "label": "Class Features",
+      "path": "packs/classfeatures.db",
+      "entity": "Item",
+      "system": "pf2e",
+      "folder": "character-building"
+    },
+    {
+      "name": "familiar-abilities",
+      "label": "Familiar Abilities",
+      "system": "pf2e",
+      "path": "packs/familiar-abilities.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "feats-srd",
+      "label": "Feats",
+      "system": "pf2e",
+      "path": "./packs/feats.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "spells-srd",
+      "label": "Spells",
+      "system": "pf2e",
+      "path": "./packs/spells.db",
+      "entity": "Item",
+      "folder": "character-building"
+    },
+    {
+      "name": "bestiary-effects",
+      "label": "Bestiary Effects",
+      "system": "pf2e",
+      "path": "packs/bestiary-effects.db",
+      "entity": "Item",
+      "private": true,
+      "folder": "effects"
+    },
+    {
+      "name": "domains",
+      "label": "Domains",
+      "system": "pf2e",
+      "module": "pf2e",
+      "path": "packs/domains.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "boons-and-curses",
+      "label": "Deity Boons and Curses",
+      "system": "pf2e",
+      "path": "packs/boons-and-curses.db",
+      "entity": "Item",
+      "private": true,
+      "folder": "effects"
+    },
+    {
+      "name": "conditionitems",
+      "label": "Conditions",
+      "system": "pf2e",
+      "path": "packs/conditionitems.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "consumable-effects",
+      "label": "Consumable Effects",
+      "system": "pf2e",
+      "path": "./packs/consumable-effects.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "equipment-effects",
+      "label": "Equipment Effects",
+      "system": "pf2e",
+      "path": "./packs/equipment-effects.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "feat-effects",
+      "label": "Feat Effects",
+      "system": "pf2e",
+      "path": "./packs/feat-effects.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "feature-effects",
+      "label": "Feature Effects",
+      "system": "pf2e",
+      "path": "./packs/feature-effects.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "pathfinder-society-boons",
+      "label": "Pathfinder Society Boons",
+      "system": "pf2e",
+      "path": "packs/pathfinder-society-boons.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "spell-effects",
+      "label": "Spell Effects",
+      "system": "pf2e",
+      "path": "./packs/spell-effects.db",
+      "entity": "Item",
+      "folder": "effects"
+    },
+    {
+      "name": "equipment-srd",
+      "label": "Equipment",
+      "system": "pf2e",
+      "path": "./packs/equipment.db",
+      "entity": "Item"
+    },
+    {
+      "name": "iconics",
+      "label": "Iconics",
+      "system": "pf2e",
+      "path": "packs/iconics.db",
+      "entity": "Actor",
+      "folder": "pregenerated"
+    },
+    {
+      "name": "paizo-pregens",
+      "label": "Others",
+      "system": "pf2e",
+      "path": "packs/paizo-pregens.db",
+      "entity": "Actor",
+      "folder": "pregenerated"
+    },
+    {
+      "name": "rollable-tables",
+      "label": "Rollable Tables",
+      "path": "packs/rollable-tables.db",
+      "entity": "RollTable",
+      "system": "pf2e",
+      "module": "pf2e"
+    },
+    {
+      "name": "archetypes",
+      "label": "Archetypes",
+      "system": "pf2e",
+      "path": "packs/archetypes.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "criticaldeck",
+      "label": "Critical Hit/Fumble Deck",
+      "system": "pf2e",
+      "path": "packs/criticaldeck.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "hero-point-deck",
+      "label": "Hero Point Deck",
+      "system": "pf2e",
+      "path": "packs/hero-point-deck.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "deities",
+      "label": "Deities",
+      "system": "pf2e",
+      "path": "packs/deities.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "gmg-srd",
+      "label": "Game Mastery Guide",
+      "system": "pf2e",
+      "path": "packs/gmg-srd.db",
+      "entity": "JournalEntry"
+    },
+    {
+      "name": "action-macros",
+      "label": "Action Macros",
+      "system": "pf2e",
+      "path": "packs/action-macros.db",
+      "entity": "Macro"
+    },
+    {
+      "name": "pf2e-macros",
+      "label": "PF2e Macros",
+      "system": "pf2e",
+      "path": "packs/pf2e-macros.db",
+      "entity": "Macro"
+    },
+    {
+      "name": "bestiary-ability-glossary-srd",
+      "label": "Bestiary Ability Glossary",
+      "system": "pf2e",
+      "path": "packs/bestiary-ability-glossary-srd.db",
+      "entity": "Item",
+      "private": true
+    },
+    {
+      "name": "bestiary-family-ability-glossary",
+      "label": "Creature Family Ability Glossary",
+      "system": "pf2e",
+      "path": "packs/bestiary-family-ability-glossary.db",
+      "entity": "Item",
+      "private": true
+    }
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "socket": true,
+  "templateVersion": 2,
+  "initiative": "1d20 + @attributes.perception.value + (@abilities.wis.value / 100)",
+  "gridDistance": 5,
+  "gridUnits": "ft",
+  "primaryTokenAttribute": "attributes.hp",
+  "url": "https://gitlab.com/hooking/foundry-vtt---pathfinder-2e",
+  "bugs": "https://gitlab.com/hooking/foundry-vtt---pathfinder-2e/-/issues",
+  "changelog": "https://gitlab.com/hooking/foundry-vtt---pathfinder-2e/-/raw/release-0.8.x/CHANGELOG.md",
+  "manifest": "https://gitlab.com/hooking/foundry-vtt---pathfinder-2e/-/jobs/artifacts/release-0.8.x/raw/system.json?job=build",
+  "download": "https://gitlab.com/hooking/foundry-vtt---pathfinder-2e/-/jobs/artifacts/release-0.8.x/raw/pf2e.zip?job=build"
+}

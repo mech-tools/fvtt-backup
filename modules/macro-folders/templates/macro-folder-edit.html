@@ -1,0 +1,121 @@
+<form id="folder-create" autocomplete="off" onsubmit="event.preventDefault();">
+
+    <div class="form-group">
+        <label>{{localize "FOLDER.Name"}}</label>
+        <input type="text" name="name" placeholder="Folder Name" value="{{folder.name}}"/>
+    </div>
+
+    <div class="form-group">
+        <label>{{localize "FOLDER.Color"}}</label>
+        <div class="flexrow">
+            <input type="text" name="color" value="{{folder.color}}" data-dtype="String"/>
+            <input type="color" value="{{folder.color}}" data-edit="color"/>
+        </div>
+    </div>
+        <div class="form-group">
+        <label>{{localize "MF.textColor"}}</label>
+        <div class="flexrow">
+            <input type="text" name="fontColor" value="{{folder.fontColor}}" data-dtype="String"/>
+            <input type="color" value="{{folder.fontColor}}" data-edit="fontColor"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>{{localize "MF.folderIcon"}}</label>
+        <div class="form-fields">
+            {{filePicker target="icon" type="image"}}
+            <input class="image" type="text" name="icon" placeholder="default folder" value="{{folder.icon}}"/>
+        </div>
+    </div>
+    {{#unless defaultFolder}}
+    <div class="form-group">
+        <label>{{localize "MF.playerDefault"}}</label>
+        <div class="flexrow">
+            <select name="player">
+            <option value="none">{{localize "MF.playerDefaultNone"}}</option>
+            {{#each players}}
+                <option value="{{this.id}}">{{this.name}}</option>
+            {{/each}}
+            </select>
+        </div>
+    </div>
+    {{/unless}}
+    {{#if defaultFolder}}
+        <h3 style='margin-bottom:0px;'>{{localize "MF.defaultFolderTitle"}}</h3>
+    {{/if}}
+    <div class="form-group">
+        <ul>
+            {{#if defaultFolder}}
+                <li><i>{{localize "MF.defaultFolderDialogDescriptionL1"}}</i></li>
+                <li><i>{{localize "MF.defaultFolderDialogDescriptionL2"}}</i></li>
+            {{else}}
+                <li><i>{{localize "MF.folderDialogDescriptionL1"}}</i></li>
+                <li><i>{{localize "MF.folderDialogDescriptionL2"}}</i></li>
+                <li><i>{{localize "MF.folderDialogDescriptionL3"}}</i></li>
+            {{/if}}
+        </ul>
+    </div>
+    {{#unless defaultFolder}}
+    <div class="form-group">
+        <div class='form-macro-list'>
+            <script>
+                document.querySelector("#folder-create input[name='search-macros']").addEventListener('keyup',function(event){
+                    let searchTerm = this.value;
+                    let packs = document.querySelectorAll('#folder-create .form-macro-list .macro-select')
+                    for (let pack of packs){
+                        if (pack.innerText.toLowerCase().includes(searchTerm.toLowerCase())){
+                            pack.style.display='';
+                        }else{
+                            pack.style.display='none';
+                        }
+                    }
+                })
+                if (document.querySelector('#folder-create select')!= null){
+                    let d = document.querySelector('#folder-create select[name=\'player\']');
+                    if ('{{folder.playerDefault}}'.length===0){
+                        d.value='none'
+                    }else{
+                        d.value='{{folder.playerDefault}}';
+                    }
+                }
+                document.querySelector("#folder-create input[name='tick-all-unassigned']").addEventListener('change',function(event){
+                    for (let unassigned of document.querySelectorAll('#folder-create .macro-unassigned > input')){
+                        if (unassigned.parentElement.style.display != 'none')
+                            unassigned.checked = event.target.checked;
+                    }
+                })
+                document.querySelector("#folder-create input[name='tick-all-assigned']").addEventListener('change',function(event){
+                    for (let assigned of document.querySelectorAll('#folder-create .macro-assigned > input')){
+                        if (assigned.parentElement.style.display != 'none')
+                            assigned.checked = event.target.checked;
+                    }
+                })
+            </script>
+            <div class='form-header'>
+                <i class='fas fa-search'></i><input type='text' name='search-macros' placeholder='Search'/>
+            </div>
+            <div class='flexrow'>
+                <input type="checkbox" name="tick-all-assigned"/><h2> {{localize "MF.assigned"}}</h2>
+            </div>
+            {{#each amacros}}
+                <div class='flexrow macro-select macro-assigned'>
+                    <input type="checkbox" name="{{this.id}}" {{#ifInm this.id ../folder.macroList}} checked {{/ifInm}}/>
+                    <label for="{{this.id}}" style='margin-top:2px'>{{this.data.name}}</label>
+                </div>
+            {{/each}}
+            <hr>
+            <div class='flexrow'>
+                <input type="checkbox" name="tick-all-unassigned"/><h2> {{localize "MF.unassigned"}}</h2>
+            </div>
+            {{#each umacros}}
+                <div class='flexrow macro-select macro-unassigned'>
+                    <input type="checkbox" name="{{this.id}}"/>
+                    <label for="{{this.id}}" style='margin-top:2px;color:#666;'><i>{{this.data.name}}</i></label>
+                </div>
+            {{/each}}
+        </div>
+    </div>
+    {{/unless}}
+    <div class='flexrow'>
+        <button class='mfolder-submit' type="submit"><i class="fas fa-check"></i> {{submitText}}</button>
+    </div>
+</form>
