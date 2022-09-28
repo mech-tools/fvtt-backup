@@ -1,0 +1,22 @@
+{
+  "title": "Maudit",
+  "id": "maudit",
+  "system": "coc",
+  "coreVersion": "10.286",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10.286"
+  },
+  "systemVersion": "10.274.1",
+  "packs": [
+    {
+      "type": "Macro",
+      "label": "World Scripter Macros",
+      "name": "macros",
+      "path": "packs/macros.db",
+      "private": false,
+      "system": "coc",
+      "flags": {}
+    }
+  ]
+}

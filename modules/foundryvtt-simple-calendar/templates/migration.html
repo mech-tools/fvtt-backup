@@ -1,0 +1,31 @@
+<div class="fsc-cj">
+    <h2>{{localize headingTitle}}</h2>
+    <div>{{{localize description}}}</div>
+    <ul class="fsc-dj">
+        <li>
+            <div class="fsc-ej"><span class="fa {{display.calendarMigrationStatusIcon}}"></span></div>
+            <div class="fsc-fj">
+                <span>{{localize 'FSC.Migration.v1v2.Calendar'}}</span>
+            </div>
+        </li>
+        <li>
+            <div class="fsc-ej"><span class="fa {{display.globalConfigMigrationStatusIcon}}"></span></div>
+            <div class="fsc-fj">
+                <span>{{localize 'FSC.Migration.v1v2.GlobalConfiguration'}}</span>
+            </div>
+        </li>
+        <li>
+            <div class="fsc-ej"><span class="fa {{display.notesMigrationStatusIcon}}"></span></div>
+            <div class="fsc-fj">
+                <span>{{localize 'FSC.Migration.v1v2.Notes'}}</span>
+            </div>
+        </li>
+        <li>
+            <button class="fsc-yb fsc-zb fsc-gg" {{#unless display.enableCleanUp}}disabled{{/unless}}>{{localize 'FSC.Migration.v1v2.Cleanup'}}</button>
+        </li>
+    </ul>
+    {{#if display.migrationDone}}
+        <div class="fsc-gj fsc-eh">{{localize 'FSC.Migration.v1v2.Complete' }}</div>
+    {{/if}}
+
+</div>
