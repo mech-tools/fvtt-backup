@@ -1,0 +1,33 @@
+{
+  "name": "dice-calculator",
+  "title": "Dice Tray",
+  "description": "Adds a dice tray below chat, and turns the d20 near chat into a dice calculator.",
+  "version": "1.2.1",
+  "author": "Asacolips",
+  "minimumCoreVersion": "0.7.5",
+  "compatibleCoreVersion": "0.8.8",
+  "scripts": [
+    "./scripts/js.cookie.js",
+    "./scripts/dice-calculator.js",
+    "./scripts/dice-tray.js"
+  ],
+  "styles": [
+    "./css/dice-calculator.css"
+  ],
+  "packs": [],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+  {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json"
+    }
+  ],
+  "url": "https://gitlab.com/asacolips-projects/foundry-mods/foundry-vtt-dice-calculator",
+  "manifest": "https://gitlab.com/asacolips-projects/foundry-mods/foundry-vtt-dice-calculator/raw/master/module.json",
+  "download": "https://gitlab.com/asacolips-projects/foundry-mods/foundry-vtt-dice-calculator/-/archive/1.2.1/foundry-vtt-dice-calculator-master.zip"
+}

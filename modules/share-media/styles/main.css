@@ -1,0 +1,218 @@
+.show-media.clickable-media {
+  position: relative;
+  display: inline-block;
+}
+
+.show-media.clickable-media:hover .media-actions-container {
+  opacity: 1;
+}
+
+.show-media .media-actions-container {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  opacity: 0;
+  -webkit-transition: opacity 250ms;
+  -o-transition: opacity 250ms;
+  transition: opacity 250ms;
+}
+
+.show-media .media-actions-container .media-actions {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  height: 28px;
+  margin-top: 5px;
+}
+
+.show-media .media-actions-container .media-actions:hover .actions {
+  width: auto;
+  -webkit-transform: scaleX(1);
+  -ms-transform: scaleX(1);
+  transform: scaleX(1);
+}
+
+.show-media .media-actions-container .drawer {
+  z-index: 1;
+  background-color: #bbbbbb;
+  margin-bottom: 5px;
+  padding: 8px;
+  min-width: 30px;
+  font-size: 12px;
+  color: #444444;
+  -webkit-box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.show-media .media-actions-container .actions {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  overflow: hidden;
+  width: 0;
+  -webkit-transform: scaleX(0);
+  -ms-transform: scaleX(0);
+  transform: scaleX(0);
+  -webkit-transform-origin: 0 0;
+  -ms-transform-origin: 0 0;
+  transform-origin: 0 0;
+  height: 28px;
+  margin-bottom: 5px;
+  margin-left: -2px;
+  padding-left: 2px;
+  background-color: #a2a2a2;
+  font-size: 12px;
+  color: #444444;
+  -webkit-box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, 0.5);
+  border-bottom-right-radius: 4px;
+  border-top-right-radius: 4px;
+  -webkit-transition: -webkit-transform 250ms;
+  transition: -webkit-transform 250ms;
+  -o-transition: transform 250ms;
+  transition: transform 250ms;
+  transition: transform 250ms, -webkit-transform 250ms;
+  cursor: pointer;
+}
+
+.show-media .media-actions-container .actions span[data-action] {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  height: 100%;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.show-media .media-actions-container .actions span[data-action]:hover {
+  background-color: #959595;
+}
+
+#fullscreen-layer {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-color: transparent;
+}
+
+#fullscreen-layer.hidden {
+  display: none;
+  pointer-events: none;
+}
+
+#fullscreen-layer .dismiss {
+  z-index: 3;
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  -webkit-transform: translate(-50%, 0);
+  -ms-transform: translate(-50%, 0);
+  transform: translate(-50%, 0);
+  width: auto;
+  padding: 1px 15px;
+  cursor: pointer;
+}
+
+#fullscreen-layer .background {
+  z-index: 1;
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  -webkit-filter: blur(8px);
+  filter: blur(8px);
+}
+
+#fullscreen-layer img {
+  z-index: 2;
+  position: fixed;
+  left: 0;
+  right: 0;
+  -o-object-fit: contain;
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+}
+
+#share-media-player-selection-dialog hr,
+#share-media-bounding-tile-creation-dialog hr,
+#share-media-share-bounding-tile-selection-dialog hr,
+#share-media-clear-bounding-tile-selection-dialog hr {
+  margin: 15px 0;
+}
+
+#share-media-player-selection-dialog .how-to,
+#share-media-bounding-tile-creation-dialog .how-to,
+#share-media-share-bounding-tile-selection-dialog .how-to,
+#share-media-clear-bounding-tile-selection-dialog .how-to {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  width: 75%;
+  margin: 0 auto;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  text-align: center;
+  font-weight: 700;
+}
+
+#share-media-player-selection-dialog .how-to i,
+#share-media-bounding-tile-creation-dialog .how-to i,
+#share-media-share-bounding-tile-selection-dialog .how-to i,
+#share-media-clear-bounding-tile-selection-dialog .how-to i {
+  background-image: url("../../../ui/denim075.png");
+  background-repeat: no-repeat;
+  margin-right: 15px;
+  font-size: 30px;
+  color: #bbbbbb;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+#share-media-player-selection-dialog .form-group.disabled,
+#share-media-bounding-tile-creation-dialog .form-group.disabled,
+#share-media-share-bounding-tile-selection-dialog .form-group.disabled,
+#share-media-clear-bounding-tile-selection-dialog .form-group.disabled {
+  color: #c0c0c0;
+}
+
+#share-media-player-selection-dialog .form-group,
+#share-media-share-bounding-tile-selection-dialog .form-group,
+#share-media-clear-bounding-tile-selection-dialog .form-group {
+  width: 90%;
+  margin: 0 auto;
+}
+
+#share-media-player-selection-dialog .form-group :last-child,
+#share-media-share-bounding-tile-selection-dialog .form-group :last-child,
+#share-media-clear-bounding-tile-selection-dialog .form-group :last-child {
+  -webkit-box-flex: 0;
+  -ms-flex: 0 0 20px;
+  flex: 0 0 20px;
+}
+
+#share-media-player-selection-dialog .player-color {
+  -webkit-box-flex: 0;
+  -ms-flex: 0 0 7px;
+  flex: 0 0 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c0c0c0;
+  border: 1px solid #c0c0c0;
+  margin-right: 10px;
+}

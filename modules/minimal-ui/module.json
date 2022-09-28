@@ -1,0 +1,34 @@
+{
+	"name": "minimal-ui",
+	"title": "Minimal UI",
+	"author": "JeansenVaars#2857",
+	"description": "Minimal UI allows customizing Foundry interface, by hiding, collapsing or resizing specific parts.",
+	"version": "1.1.7",
+	"minimumCoreVersion": "0.8.9",
+	"compatibleCoreVersion": "0.8.9",
+	"dependencies": [
+		{"name": "colorsettings"}
+	],
+	"esmodules": [ "minimalui.js" ],
+	"styles": [ "minimalui.css" ],
+	"languages": [
+		{
+			"lang": "en",
+			"name": "English",
+			"path": "lang/en.json"
+		},
+		{
+			"lang": "es",
+			"name": "Español",
+			"path": "lang/es.json"
+		},
+		{
+			"lang": "de",
+			"name": "Deutsch",
+			"path": "lang/de.json"
+		}
+	],
+	"url": "https://github.com/saif-ellafi/foundryvtt-minimal-ui.git",
+	"manifest": "https://github.com/saif-ellafi/foundryvtt-minimal-ui/releases/latest/download/module.json",
+	"download": "https://github.com/saif-ellafi/foundryvtt-minimal-ui/releases/download/1.1.7/foundryvtt-minimal-ui_1.1.7.zip"
+}

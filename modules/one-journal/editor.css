@@ -1,0 +1,10 @@
+/* FVTT uses non-standard webkit CSS scroll bars
+* 'thin' scrollbars on standards-compliant browsers(firefox)
+*/
+* {
+  scrollbar-width: thin;
+}
+
+.mce-content-body {
+  padding: 0 0.6em;
+}

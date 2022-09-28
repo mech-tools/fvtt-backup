@@ -1,0 +1,76 @@
+/** à copier/remplacer  dans .....\FoundryVTT\resources\app\templates\views
+    sur windows , par défaut : C:\Program Files\FoundryVTT\resources\app\templates\views
+  */
+
+<template id="notifications"></template>
+
+<section id="setup" class="join dark flexrow">
+    <header id="world-title" class="join-header app">
+        <h1><center>{{ world.title }}</center></h1>
+    </header>
+
+    <section class="join-body flexrow">
+        <div class="left flexcol">
+            <form id="join-form" class="app" autocomplete="off">
+                <h1> Rejoindre la partie</h1>
+
+                <div class="form-group split">
+                    <label><i class="fas fa-user"></i> Sélectionner le Joueur</label>
+                    <select name="userid" required>
+                        <option value=""></option>
+                        {{#each users}}
+                        <option value="{{this._id}}" {{#if this.active}}disabled{{/if}}>{{this.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+
+                <div class="form-group split">
+                    <label><i class="fas fa-key"></i> Mot de passe</label>
+                    <input type="password" name="password" placeholder="clé d'accès" value="" autocomplete="off"/>
+                </div>
+
+                <button type="submit" name="submit" data-action="join" disabled>
+                    <i class="fas fa-check"></i> Rejoindre la partie
+                </button>
+            </form>
+
+            <form id="session-schedule" class="app" autocomplete="off">
+                <h1>Détails de la Session</h1>
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> Prochaine partie<span id="next-tz"></span></label>
+                    <div class="form-fields">
+                        <input type="hidden" id="nextDatetime" value="{{nextDatetime}}"/>
+                        <input type="date" id="next-date" value="" disabled/>
+                        <input type="time" id="next-time" value="" disabled/>
+                    </div>
+                </div>
+                <div class="form-group current-players">
+                    <label><i class="fas fa-users"></i> Joueurs présents</label>
+                    <div class="form-fields">
+                        <input type="text" value="{{ usersCurrent }}" disabled/>
+                        <span> / </span>
+                        <input type="text" value="{{ usersMax }}" disabled/>
+                    </div>
+                </div>
+            </form>
+
+            <form id="shutdown" class="app" autocomplete="off">
+                <h1>Menu d'accueil  </h1>
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Mot de passe Admin</label>
+                    <input type="password" name="adminKey" value="" autocomplete="off">
+                </div>
+                <button type="submit" name="submit" data-action="shutdown" disabled>
+                    <i class="fas fa-lock"></i> Retour au menu d'accueil
+                </button>
+            </form>
+        </div>
+
+        <div class="right flexcol">
+            <div id="world-description" class="app">
+                <h1>Description du monde</h1>
+                {{{ world.description }}}
+            </div>
+        </div>
+    </section>
+</section>

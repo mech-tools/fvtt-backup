@@ -1,0 +1,18 @@
+{
+    "lib-changelogs.settings.alwaysShow.name": "DEBUG: Always show all changelogs",
+    "lib-changelogs.settings.alwaysShow.hint": "Always show all changelogs ignoring other settings",
+    "lib-changelogs.settings.warnLevel.name": "Changelog Filter",
+    "lib-changelogs.settings.warnLevel.hint": "Chose which level of filtering to use for changelogs to show only the ones of a certain importance",
+    "lib-changelogs.settings.warnLevel.all": "All",
+    "lib-changelogs.settings.warnLevel.major": "Major",
+    "lib-changelogs.settings.warnLevel.breaking": "Breaking",
+    "lib-changelogs.settings.warnLevel.critical": "Critical",
+    "lib-changelogs.settings.showAll": "Show All Changelogs & Conflicts",
+    "lib-changelogs.dialog.conflict": "Conflicts",
+    "lib-changelogs.dialog.changelog": "Changelogs",
+    "lib-changelogs.dialog.conflictcn": "Changelogs & Conflicts",
+    "lib-changelogs.settings.showConflicts": "Conflicts Detected:",
+    "CHANGELOGS.empty": "No Changelogs or Conflicts to show.",
+    "lib-changelogs.settings.communityConflicts.name": "Show Community Conflicts",
+    "lib-changelogs.settings.communityConflicts.hint": "Show conflicts provided by the community"
+}
