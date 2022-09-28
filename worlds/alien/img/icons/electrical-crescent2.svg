@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="electrical-crescent2.svg"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8">
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Invert"
+       id="filter16">
+      <feColorMatrix
+         type="hueRotate"
+         values="180"
+         result="color1"
+         id="feColorMatrix12" />
+      <feColorMatrix
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 -0.21 -0.72 -0.07 2 0 "
+         result="color2"
+         id="feColorMatrix14" />
+    </filter>
+  </defs>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="765"
+     inkscape:window-height="480"
+     id="namedview6"
+     showgrid="false"
+     inkscape:zoom="1.6796875"
+     inkscape:cx="256"
+     inkscape:cy="256"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg4" />
+  <path
+     d="m 239.17201,27.03 -0.004,0.005 -66.578,25.697 50.226,2.918 -0.584,24.53 c 0.726,12.525 5.523,14.74 18.106,12.85 l 83.516,-15.186 -56.65,39.13 c -19.067,12.847 -2.43,27.668 24.53,28.034 l 112.13001,10.512 -87.6,33.287 c -23.59501,8.37 -10.04301,38.75 12.26299,49.642 l 86.43401,39.712 -89.94001,2.92 c -30.218,0.486 -35.565,13.945 -15.768,33.873 l 99.87001,96.363 -126.15001,-68.914 c -25.672,-12.57 -41.764,-0.86 -36.208,18.104 l 22.775,66.578 -56.65,-59.568 c -12.143,-13.383 -38.997,-16.92 -40.296,0.578 l -6.424,63.074 -19.857,-67.746 c -3.37201,-15.715 -31.885,-25.995 -38.545,-11.68 l -28.616009,54.897 3.504002,-65.994 c 2.903001,-14.986 -8.960002,-28.388 -24.530001,-14.6 L 32.430001,345.32 17.246,296.264 l 2.918,68.914 35.625002,-9.346 6.425,103.955 58.399998,-65.992 54.31501,97.53 22.777,-89.354 110.377,89.352 -15.768,-95.777 L 489.712,474.972 365.31702,317.287 483.29002,298.017 347.21501,207.492 468.69102,156.1 316.26501,112.88 390.43502,47.47 243.26301,69.664 l -4.09,-42.633 z m -101.752,64.416 c 8.00799,3.085 15.954,6.974 23.69499,11.692 54.57001,33.253 78.31401,94.91 53.03001,137.715 -25.28,42.802 -90.01001,50.54 -144.580006,17.286 -22.038003,-13.43 -39.044003,-31.49 -49.830004,-51.072 1.372,6.19 3.247,12.407 5.628,18.604 12.020001,31.28 36.836002,61.6 71.633003,82.863 34.797997,21.262 72.684007,29.257 105.334007,25.348 32.65,-3.91 59.756,-19.373 75.002,-45.254 15.247,-25.884 15.917,-57.697 3.898,-88.978 -12.018,-31.28 -36.833,-61.6 -71.63,-82.863 -23.506,-14.364 -48.42,-22.668 -72.18,-25.343 z"
+     id="path2"
+     style="stroke-width:0.999999;filter:url(#filter16)" />
+</svg>

@@ -1,0 +1,5 @@
+<select class="info-value character-capacity" name="system.capacity">
+  {{#select system.capacity}}
+  {{> 'systems/anarchy/templates/common/enum-value-label.hbs' entries=ENUMS.capacities noEmpty=true}}
+  {{/select}}
+</select>

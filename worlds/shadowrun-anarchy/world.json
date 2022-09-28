@@ -1,0 +1,14 @@
+{
+  "title": "Shadowrun Anarchy",
+  "version": "1.0.0",
+  "system": "anarchy",
+  "coreVersion": "10.286",
+  "resetKeys": false,
+  "safeMode": false,
+  "systemVersion": "10.0.1",
+  "id": "shadowrun-anarchy",
+  "compatibility": {
+    "verified": "10.286",
+    "minimum": "10"
+  }
+}

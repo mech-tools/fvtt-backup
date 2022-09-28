@@ -1,0 +1,138 @@
+<form id="nameplate-config" autocomplete="off" onsubmit="event.preventDefault();">
+    <div class='form-group'>
+        <p id='nameplate-error' style='display:none;color:red'>Font size invalid. Must be between 5 and 72</p>
+    </div>
+    <script>
+        document.querySelector('#custom-nameplates-edit').style.maxHeight="560px";
+        
+        document.querySelector("input[name='globalFontSize']").addEventListener('change',(event) => {
+            if (event.srcElement.value > 5 && event.srcElement.value < 72){
+                document.querySelector("#nameplate-error").style.display='none'
+            }else{
+                document.querySelector("#nameplate-error").style.display=''
+            }
+        })
+        document.querySelector("input[name='localFontSize']").addEventListener('change',(event) => {
+            if (event.srcElement.value > 5 && event.srcElement.value < 72){
+                document.querySelector("#nameplate-error").style.display='none'
+            }else{
+                document.querySelector("#nameplate-error").style.display=''
+            }
+        })
+        //Selecting correct font family
+        document.querySelector("#globalFontFamily option[value='{{globalSettings.fontFamily}}']").selected = true;
+        document.querySelector("#localFontFamily option[value='{{localSettings.fontFamily}}']").selected = true;
+
+        
+        document.querySelector('#localConfigEnabled').addEventListener('change',function(e){
+            if (e.target.checked){
+                for (element of document.querySelector('#localConfigSettings').querySelectorAll('input,select')){
+                    element.disabled=false;
+                }
+            }else{
+                for (element of document.querySelector('#localConfigSettings').querySelectorAll('input,select')){
+                    element.disabled=true;
+                }
+            }
+        })
+    </script>
+    <h2>Global</h3>
+    <div class="form-group">
+        <label for="globalFontFamily">Font Family</label>
+        <div class="flexrow">
+            <select id="globalFontFamily" name="globalFontFamily" value="{{globalSettings.fontFamily}}">
+                {{#each fontFamilies}}
+                    <option value="{{this}}">{{this}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="globalAutoScaleFont">Auto Scale Font</label>
+        <div class="flexrow">
+            <input type="checkbox" name="globalAutoScaleFont" id='globalAutoScaleFont' {{#if globalSettings.autoScale}}checked{{/if}}/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="globalFontSize">Font Size</label>
+        <div class="flexrow">
+            <input type="number" name="globalFontSize" value="{{globalSettings.fontSize}}" data-dtype="Integer" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="globalFontColor">Font Color</label>
+        <div class="flexrow">
+            <input type="text" name="globalFontColor" value="{{globalSettings.fontColor}}" data-dtype="String"/>
+            <input type="color" value="{{globalSettings.fontColor}}" data-edit="globalFontColor"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="globalStrokeColor">Stroke Color</label>
+        <div class="flexrow">
+            <input type="text" name="globalStrokeColor" value="{{globalSettings.strokeColor}}" data-dtype="String"/>
+            <input type="color" value="{{globalSettings.strokeColor}}" data-edit="globalStrokeColor"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="globalShadowColor">Shadow Color</label>
+        <div class="flexrow">
+            <input type="text" name="globalShadowColor" value="{{globalSettings.shadowColor}}" data-dtype="String"/>
+            <input type="color" value="{{globalSettings.shadowColor}}" data-edit="globalShadowColor"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="localConfig">Scene specific config</label>
+        <div class="flexrow">
+            <input type="checkbox" name="localConfig" id='localConfigEnabled' {{#if hasLocalSettings}}checked{{/if}}/>
+        </div>
+    </div>
+    <div id="localConfigSettings">
+        <h2>Local</h2>
+        <div class="form-group">
+        <label for="localFontFamily">Font Family</label>
+        <div class="flexrow">
+            <select id="localFontFamily" name="localFontFamily" value="{{localSettings.fontFamily}}" {{#unless hasLocalSettings}}disabled{{/unless}}>
+                {{#each fontFamilies}}
+                    <option value="{{this}}">{{this}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="localAutoScaleFont">Auto Scale Font</label>
+        <div class="flexrow">
+            <input type="checkbox" name="localAutoScaleFont" id='localAutoScaleFont' {{#unless hasLocalSettings}}disabled{{/unless}} {{#if localSettings.autoScale}}checked{{/if}}/>
+        </div>
+    </div>
+        <div class="form-group">
+            <label for="localFontSize">Font Size</label>
+            <div class="flexrow">
+                <input type="number" name="localFontSize" value="{{localSettings.fontSize}}" data-dtype="Integer" {{#unless hasLocalSettings}}disabled{{/unless}}/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="localFontColor">Font Color</label>
+            <div class="flexrow">
+                <input type="text" name="localFontColor" value="{{localSettings.fontColor}}" data-dtype="String" {{#unless hasLocalSettings}}disabled{{/unless}}/>
+                <input type="color" value="{{localSettings.fontColor}}" data-edit="localFontColor"{{#unless hasLocalSettings}}disabled{{/unless}}/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="localStrokeColor">Stroke Color</label>
+            <div class="flexrow">
+                <input type="text" name="localStrokeColor" value="{{localSettings.strokeColor}}" data-dtype="String" {{#unless hasLocalSettings}}disabled{{/unless}}/>
+                <input type="color" value="{{localSettings.strokeColor}}" data-edit="localStrokeColor"{{#unless hasLocalSettings}}disabled{{/unless}}/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="localShadowColor">Shadow Color</label>
+            <div class="flexrow">
+                <input type="text" name="localShadowColor" value="{{localSettings.shadowColor}}" data-dtype="String" {{#unless hasLocalSettings}}disabled{{/unless}}/>
+                <input type="color" value="{{localSettings.shadowColor}}" data-edit="localShadowColor" {{#unless hasLocalSettings}}disabled{{/unless}}/>
+            </div>
+        </div>
+        <div class='flexrow'>    
+            <button class='cfolder-submit' type="submit"><i class="fas fa-save"></i>Save</button>
+        </div>
+    </div>
+</form>

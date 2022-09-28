@@ -1,0 +1,20 @@
+{"name":"Alien Creature Tables","type":"RollTable","sort":null,"flags":{},"parent":"rKnm53HoBKizX2sP","sorting":"a","color":"#ff0000","_id":"0BYYGa5oDUHrXJeb"}
+{"name":"Protections","type":"Item","sort":500000,"flags":{},"parent":null,"sorting":"a","color":"","_id":"2ANeUt6OdPMJ4giM"}
+{"name":"Talents","type":"Item","sort":200000,"flags":{},"parent":null,"sorting":"a","color":"","_id":"4RbtlWdJsSiByypP"}
+{"name":"Wilson","type":"Item","sort":1500000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"5nrZo4jJ3SxfnrXE"}
+{"_id":"6RJEP5LLnZRfbphS","name":"Sotillo","type":"Actor","sort":400000,"flags":{},"parent":null,"sorting":"a","color":""}
+{"name":"Armes","type":"Item","sort":100000,"flags":{},"parent":null,"sorting":"a","color":"","_id":"Ao0RMnYDlLHP7g8D"}
+{"name":"Alien Mother Tables","type":"RollTable","sort":null,"flags":{},"parent":"rKnm53HoBKizX2sP","sorting":"a","color":"#00c100","_id":"GZX6ZorqwQhesWfm"}
+{"_id":"INLLJtCvfV2u6Bxw","name":"Objectifs","type":"Item","sort":800000,"flags":{},"parent":null,"sorting":"a","color":"#882b2d"}
+{"_id":"MaI48FsisZxq8bNN","name":"Xenomorphs","type":"Actor","sort":550000,"flags":{},"parent":null,"sorting":"a","color":"#ff0000"}
+{"_id":"RbqcjjAkcILa8two","name":"Environnement","type":"Actor","sort":600000,"flags":{},"parent":null,"sorting":"a","color":"#0e691a"}
+{"_id":"XiNsY6bw4OiRsPRP","name":"Skill-Stunts","type":"Item","sort":900000,"flags":{},"parent":null,"sorting":"a","color":"#1c3d40"}
+{"_id":"cxYbi99K0rX6Mq7J","name":"USCSS Cronus","type":"Actor","sort":300000,"flags":{},"parent":null,"sorting":"a","color":""}
+{"name":"Rye","type":"Item","sort":1400000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"eaOL7Bves8IIyek7"}
+{"name":"Lucas","type":"Item","sort":1200000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"elWnvYZ2ojzjZnuy"}
+{"name":"Miller","type":"Item","sort":1300000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"euVRRNKoHL3uMz0G"}
+{"_id":"i7x1xnT9YmBg7zUn","name":"Outils / Médical","type":"Item","sort":300000,"flags":{},"parent":null,"sorting":"a","color":""}
+{"name":"Cham","type":"Item","sort":1000000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"lRhViUYS82zVeINX"}
+{"name":"Alien Tables","type":"RollTable","sort":null,"flags":{},"parent":null,"sorting":"a","color":"","_id":"rKnm53HoBKizX2sP"}
+{"name":"Divers","type":"Item","sort":600000,"flags":{},"parent":null,"sorting":"a","color":"","_id":"suzgmjJz21EsJbic"}
+{"name":"Davis","type":"Item","sort":1100000,"flags":{},"parent":"INLLJtCvfV2u6Bxw","sorting":"a","color":"","_id":"uO05pkM2LTiYfJC6"}

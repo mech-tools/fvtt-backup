@@ -1,0 +1,74 @@
+{
+  "title": "Anarchy",
+  "description": "Shadowrun Anarchy RPG, and hacks, for FoundryVTT",
+  "authors": [
+    {
+      "name": "Vincent VK",
+      "email": "vincent.vandeme@gmail.com",
+      "discord": "VincentVk#9373",
+      "flags": {}
+    }
+  ],
+  "url": "https://gitlab.com/vincent.vandeme/anarchy",
+  "bugs": "https://gitlab.com/vincent.vandeme/anarchy/-/issues",
+  "flags": {
+    "allowBugReporter": true
+  },
+  "license": "LICENSE.md",
+  "version": "10.0.1",
+  "esmodules": [
+    "module/start.js"
+  ],
+  "styles": [
+    "style/anarchy.css",
+    "style/anarchy-shadowrun.css",
+    "style/anarchy-dark.css",
+    "style/anarchy-darkglass.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    }
+  ],
+  "packs": [
+    {
+      "name": "macros",
+      "label": "Macros",
+      "path": "packs/macros.db",
+      "private": false,
+      "type": "Macro",
+      "system": "anarchy",
+      "flags": {}
+    },
+    {
+      "name": "gm-info",
+      "label": "Gamemaster information",
+      "path": "packs/gm-info.db",
+      "private": false,
+      "type": "JournalEntry",
+      "system": "anarchy",
+      "flags": {}
+    }
+  ],
+  "socket": true,
+  "manifest": "https://gitlab.com/vincent.vandeme/anarchy/raw/master/system.json",
+  "download": "https://gitlab.com/vincent.vandeme/anarchy/-/archive/10.0.1/anarchy-10.0.1.zip",
+  "gridDistance": 1,
+  "gridUnits": "m",
+  "primaryTokenAttribute": "monitors.physical",
+  "secondaryTokenAttribute": "monitors.stun",
+  "id": "anarchy",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10"
+  }
+}

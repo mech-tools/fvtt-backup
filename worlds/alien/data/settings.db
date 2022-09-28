@@ -1,0 +1,38 @@
+{"key":"gm-screen.migrated","value":"{\"status\":true,\"version\":\"2.0.1\"}","_id":"3q6g2fx1w3ykhouI"}
+{"_id":"4XWjbEfMSlp4UdGz","key":"furnace.tokenIgnoreVision","value":"false"}
+{"key":"gm-screen.drawer-height","value":"50","_id":"4ooiBuBU3ZwgAzdO"}
+{"_id":"65dmGOI3VTmf3vB7","key":"gm-screen.reset","value":"false"}
+{"_id":"7JOfMZHHHWWunWTc","key":"cursor-hider.minimumPermission","value":"\"4\""}
+{"_id":"821q72kIsAPurBuV","key":"discord-rich-presence.whatTheGMIsCurrentlyPlayingText","value":"\"Prepare [[game.system.data.title]]\""}
+{"_id":"BFGsGgqTb4A1jmt4","key":"fogmanager.userModes","value":"[{\"name\":\"Maman\",\"loadMode\":true,\"saveMode\":true},{\"name\":\"Cham\",\"loadMode\":true,\"saveMode\":true},{\"name\":\"Davis\",\"loadMode\":true,\"saveMode\":true},{\"name\":\"Miller\",\"loadMode\":true,\"saveMode\":true},{\"name\":\"Rye\",\"loadMode\":true,\"saveMode\":true},{\"name\":\"Wilson\",\"loadMode\":true,\"saveMode\":true}]"}
+{"_id":"BXIeqx84Lsg9rqQQ","key":"ernies-modern-layout.settings","value":"{\"colorPrimary\":\"#111a1c\",\"colorBackground\":\"#42887d\",\"colorBackgroundLightest\":\"#666666\",\"colorBackgroundLight\":\"#4a4a4a\",\"colorBackgroundDarkest\":\"#151515\",\"colorBackgroundButton\":\"#111a1c\",\"colorBackgroundChatMessage\":\"#666666\",\"colorBackgroundChatMessageWhisper\":\"#192628\",\"colorBackgroundChatMessageBlind\":\"#293E40\",\"colorBorder\":\"#4a4a4a\",\"colorBorderLighter\":\"#7d7d7d\",\"colorFolderHeader\":\"#4a4a4a\",\"colorFolderDirectory\":\"#151515\",\"colorFolderSubdirectory\":\"#7d7d7d\",\"colorText\":\"#f1f1f1\",\"colorTextLightest\":\"#fafafa\",\"colorTextDarker\":\"#cbcbcb\",\"toggleLogo\":true,\"toggleSceneThumbs\":false,\"toggleCombatSidebar\":false}"}
+{"_id":"Bs234oPnYjEJViQ8","key":"turnmarker.startMarker-custom","value":"\"\""}
+{"_id":"GImv1sxTqVP9Kf0Z","key":"turnmarker.turnmarker-enabled","value":"true"}
+{"key":"alienrpg.alienrpgDevMessageVersionNumber","value":"10","_id":"I9P5FEdCu9xZGdGO"}
+{"key":"core.time","value":"0","_id":"Ikgg4oifulbnIU3E"}
+{"_id":"JmlPu4YJNtAIFG09","key":"core.moduleConfiguration","value":"{\"colorsettings\":true,\"cursor-hider\":true,\"custom-nameplates\":true,\"ernies-modern-layout\":true,\"hide-gm-rolls\":true,\"permission_viewer\":true,\"pings\":true,\"zoom-pan-options\":true}"}
+{"key":"turnmarker.image","value":"\"0\"","_id":"Kro1AOjKzOcvyzWc"}
+{"key":"discord-rich-presence.whatTheGMIsCurrentlyDoingText","value":"\"GM\"","_id":"L1DUThxUvgsLklih"}
+{"_id":"LgsMi1CEtpB9aPN6","key":"pings.minMovePermission","value":"\"1\""}
+{"key":"permission_viewer.migrated","value":"1","_id":"NZx1hTT357jbTSvn"}
+{"key":"core.combatTrackerConfig","value":"{\"resource\":\"\",\"skipDefeated\":true}","_id":"RA2HbnpJYA1baxdu"}
+{"_id":"RSzJ9vmCto5LVNWq","key":"turnmarker.announce-turn","value":"false"}
+{"key":"dice-so-nice.immediatelyDisplayChatMessages","value":"true","_id":"TGz50N5RkT0liBZj"}
+{"key":"turnmarker.tm-version","value":"\"2.6.9\"","_id":"WBjDrGTDm9MDzWqK"}
+{"key":"dice-calculator.enableDiceTray","value":"false","_id":"WXFb1AYTi40XsvGo"}
+{"key":"token-health.hpSourceMax","value":"\"attributes.str.value\"","_id":"XG8SUbjnHBaP6Lbq"}
+{"_id":"ZEFdn01wA5hSZIWo","key":"core.compendiumConfiguration","value":"{\"world.personalises\":{\"private\":false,\"locked\":false},\"alienrpg.skill-stunts\":{\"private\":true,\"locked\":true},\"alienrpg.mother_instructions\":{\"private\":true,\"locked\":true},\"furnace.macros\":{\"private\":true,\"locked\":true},\"alienrpg.alien\":{\"private\":true,\"locked\":true},\"alienrpg.tables_gm\":{\"private\":true,\"locked\":true}}"}
+{"key":"furnace.playlistQoL","value":"false","_id":"fWDqIkvSVmhr2fkX"}
+{"_id":"ii6ACyB4q9u2Kq5G","key":"turnmarker.startMarker-enabled","value":"false"}
+{"key":"discord-rich-presence.whatThePartyIsCurrentlyDoingText","value":"\"Explore [[game.user.data.currentSceneName]]\"","_id":"j0HKY54T4oKlp13d"}
+{"_id":"jB4etVhaULFyUFko","key":"gm-screen.gm-screen-config","value":"{\"activeGridId\":\"default\",\"grids\":{\"default\":{\"name\":\"Main\",\"id\":\"default\",\"entries\":{\"1-1\":{\"y\":1,\"x\":1,\"entryId\":\"1-1\",\"entityUuid\":\"\"}}}}}"}
+{"_id":"lyCdubN3PZSdf6IV","key":"custom-nameplates.global-style","value":"{\"fontFamily\":\"Courier New\",\"fontSize\":24,\"fontColor\":\"#FFFFFF\",\"strokeColor\":\"#111111\",\"shadowColor\":\"#000000\"}"}
+{"_id":"mKlQkI899nThf7KY","key":"core.permissions","value":"{\"SHOW_RULER\":[1,2,3,4],\"SHOW_CURSOR\":[1,2,3,4],\"BROADCAST_AUDIO\":[2,3,4],\"BROADCAST_VIDEO\":[2,3,4],\"MACRO_SCRIPT\":[1,2,3,4],\"MESSAGE_WHISPER\":[1,2,3,4],\"TOKEN_CONFIGURE\":[2,3,4],\"JOURNAL_CREATE\":[2,3,4],\"TEMPLATE_CREATE\":[1,2,3,4],\"ITEM_CREATE\":[3,4],\"ACTOR_CREATE\":[3,4],\"TOKEN_CREATE\":[3,4],\"SETTINGS_MODIFY\":[3,4],\"WALL_DOORS\":[1,2,3,4],\"FILES_BROWSE\":[2,3,4],\"FILES_UPLOAD\":[3,4],\"DRAWING_CREATE\":[2,3,4],\"NOTE_CREATE\":[2,3,4]}"}
+{"_id":"mWBWOUkZRuXEb54f","key":"simple-dice-roller.maxDiceCount","value":"5"}
+{"_id":"nAkjbMZ795yaPlFI","key":"turnmarker.announce-image","value":"false"}
+{"_id":"qbhTOumBhjHWQQz5","key":"turnmarker.ratio","value":"\"2\""}
+{"_id":"t6HibE4Nx8RvMuMV","key":"discord-rich-presence.whatThePlayerIsCurrentlyDoingNoCharacterFoundText","value":"\"Joue a [[game.system.data.title]]\""}
+{"key":"token-health.hpSource","value":"\"header.health.value\"","_id":"wJwovxfR7Pwqzt4l"}
+{"_id":"y4Yjvngemgjcc1Up","key":"turnmarker.customimage","value":"\"worlds/alien/img/circle.png\""}
+{"key":"discord-rich-presence.whatThePlayerIsCurrentlyDoingText","value":"\"Joue [[game.user.character.name]]\"","_id":"y7tlcS0TxN75RMmg"}
+{"_id":"zCjSOnyYlEhlEmUY","key":"alienrpg.systemMigrationVersion","value":"\"2.0.9\""}

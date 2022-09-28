@@ -1,0 +1,54 @@
+{
+  "title": "✋ Raise My Hand",
+  "description": "Adds a 'Raise my hand' button that displays a small alert on GM screens that the player would like attention.",
+  "url": "https://github.com/brunocalado/raise-my-hand-plus",
+  "version": "1.3.5",
+  "esmodules": [
+    "/scripts/module.js"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português Brasileiro",
+      "path": "lang/pt-BR.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json",
+      "flags": {}
+    }
+  ],
+  "socket": true,
+  "manifest": "https://raw.githubusercontent.com/brunocalado/raise-my-hand-plus/main/module.json",
+  "download": "https://codeload.github.com/brunocalado/raise-my-hand-plus/zip/main",
+  "library": true,
+  "id": "raise-my-hand",
+  "relationships": {
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
+        "compatibility": {}
+      }
+    ]
+  },
+  "compatibility": {
+    "minimum": "9",
+    "verified": "10"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "title": "Torch",
+  "description": "Torch HUD Controls",
+  "version": "2.1.2",
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "cn",
+      "name": "中文",
+      "path": "lang/cn.json",
+      "flags": {}
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-br",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json",
+      "flags": {}
+    },
+    {
+      "lang": "zh-tw",
+      "name": "正體中文",
+      "path": "lang/zh-TW.json",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "torch.js"
+  ],
+  "socket": true,
+  "styles": [
+    "torch.css"
+  ],
+  "manifest": "https://raw.githubusercontent.com/League-of-Foundry-Developers/torch/v10/module.json",
+  "download": "https://raw.githubusercontent.com/League-of-Foundry-Developers/torch/v10/torch.zip",
+  "url": "https://github.com/League-of-Foundry-Developers/torch",
+  "id": "torch",
+  "authors": [
+    {
+      "name": "Deuce",
+      "flags": {}
+    },
+    {
+      "name": "Lupestro",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10.285",
+    "maximum": "10"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "title": "Alien RPG",
+  "description": "The Alien RPG system for Foundry VTT!",
+  "url": "https://github.com/pwatson100/alienrpg",
+  "version": "2.1.3",
+  "esmodules": [
+    "module/alienrpg.js"
+  ],
+  "styles": [
+    "css/alienrpg.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "cn",
+      "name": "中文",
+      "path": "lang/cn.json",
+      "flags": {}
+    },
+    {
+      "lang": "zh-tw",
+      "name": "正體中文",
+      "path": "lang/zh-tw.json",
+      "flags": {}
+    },
+    {
+      "lang": "de",
+      "name": "Deutsche",
+      "path": "lang/de.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-br.json",
+      "flags": {}
+    },
+    {
+      "lang": "it",
+      "name": "italiano",
+      "path": "lang/it.json",
+      "flags": {}
+    }
+  ],
+  "packs": [
+    {
+      "name": "tables_gm",
+      "label": "Tables (GM)",
+      "path": "packs/AlienRPG-tables_gm.db",
+      "type": "RollTable",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "name": "mother_instructions",
+      "label": "Mother Instructions",
+      "path": "packs/AlienRPG-mother-instructions.db",
+      "type": "JournalEntry",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "name": "alien",
+      "label": "Alien",
+      "path": "packs/AlienRPG-alien.db",
+      "type": "Macro",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "name": "skill-stunts",
+      "label": "Skill-Stunts",
+      "path": "packs/AlienRPG-skill-stunts.db",
+      "type": "Item",
+      "private": false,
+      "system": "alienrpg",
+      "flags": {}
+    }
+  ],
+  "socket": true,
+  "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
+  "download": "https://github.com/pwatson100/alienrpg/releases/download/2.1.3/master.zip",
+  "initiative": "1d10",
+  "gridDistance": 5,
+  "gridUnits": "m",
+  "primaryTokenAttribute": "health",
+  "secondaryTokenAttribute": "stress",
+  "id": "alienrpg",
+  "authors": [
+    {
+      "name": "Paul Watson",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "0.8.5",
+    "verified": "9"
+  }
+}

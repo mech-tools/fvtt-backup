@@ -1,0 +1,57 @@
+{
+  "title": "Shadowrun 6",
+  "description": "RPGFramework Eden implementation for Shadowrun 6",
+  "authors": [
+    {
+      "name": "Stefan Prelle",
+      "email": "stefan@rpgframework.de",
+      "discord": "taranion#5388",
+      "flags": {}
+    },
+    {
+      "name": "Anja Prelle",
+      "email": "anja@rpgframework.de",
+      "flags": {}
+    }
+  ],
+  "url": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/",
+  "version": "0.7.1",
+  "esmodules": [
+    "module/Shadowrun6.js"
+  ],
+  "styles": [
+    "styles/shadowrun6.css"
+  ],
+  "languages": [
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json",
+      "flags": {}
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    }
+  ],
+  "manifest": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/system-staging.json",
+  "download": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/shadowrun6-eden-staging.zip",
+  "initiative": "1d6",
+  "gridDistance": 1.5,
+  "gridUnits": "m",
+  "primaryTokenAttribute": "physical",
+  "secondaryTokenAttribute": "stun",
+  "id": "shadowrun6-eden",
+  "compatibility": {
+    "minimum": "0.8.0",
+    "verified": "0.8.9"
+  }
+}

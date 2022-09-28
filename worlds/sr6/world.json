@@ -1,0 +1,106 @@
+{
+  "title": "Shadowrun 6",
+  "version": "1.0.0",
+  "packs": [
+    {
+      "label": "Armes à dist",
+      "type": "Item",
+      "name": "armes-a-dist",
+      "path": "packs/armes-a-dist.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Équipements",
+      "type": "Item",
+      "name": "equipements",
+      "path": "packs/equipements.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Véhicules/Drones",
+      "type": "Item",
+      "name": "vehiculesdrones",
+      "path": "packs/vehiculesdrones.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Armes de Cac",
+      "type": "Item",
+      "name": "armes-de-cac",
+      "path": "packs/armes-de-cac.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Sorts",
+      "type": "Item",
+      "name": "sorts",
+      "path": "packs/sorts.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Traits",
+      "type": "Item",
+      "name": "traits",
+      "path": "packs/traits.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Vêtements",
+      "type": "Item",
+      "name": "vetements",
+      "path": "packs/vetements.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Augmentations",
+      "type": "Item",
+      "name": "augmentations",
+      "path": "packs/augmentations.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Pouvoirs d'adepte",
+      "type": "Item",
+      "name": "pouvoirs-dadepte",
+      "path": "packs/pouvoirs-dadepte.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    },
+    {
+      "label": "Formes complexes",
+      "type": "Item",
+      "name": "formes-complexes",
+      "path": "packs/formes-complexes.db",
+      "system": "shadowrun6-eden",
+      "private": false,
+      "flags": {}
+    }
+  ],
+  "system": "shadowrun6-eden",
+  "coreVersion": "10.286",
+  "resetKeys": false,
+  "safeMode": false,
+  "systemVersion": "0.7.1",
+  "id": "sr6",
+  "compatibility": {
+    "verified": "10.286",
+    "minimum": "10"
+  }
+}

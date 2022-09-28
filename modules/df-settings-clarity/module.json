@@ -1,0 +1,63 @@
+{
+  "title": "DF Settings Clarity",
+  "description": "Displays a tag next to each module setting, indicating if it is a World setting (GM Only) or a client setting (Per User).",
+  "authors": [
+    {
+      "name": "flamewave000",
+      "discord": "flamewave000#6766",
+      "url": "https://github.com/flamewave000",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity",
+  "license": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/df-settings-clarity/LICENSE",
+  "readme": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity/README.md",
+  "bugs": "https://github.com/flamewave000/dragonflagon-fvtt/issues/new/choose",
+  "changelog": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity/CHANGELOG.md",
+  "version": "3.2.1",
+  "scripts": [
+    "src/lib/fuzzysort.js"
+  ],
+  "esmodules": [
+    "src/df-settings-clarity.js"
+  ],
+  "styles": [
+    "css/df-settings-clarity.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "French",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json",
+      "flags": {}
+    }
+  ],
+  "manifest": "https://dragonflagon.cafe/mods/man/df-settings-clarity",
+  "download": "https://dragonflagon.cafe/mods/pak/df-settings-clarity",
+  "id": "df-settings-clarity",
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
+  "compatibility": {
+    "minimum": "0.7.9",
+    "verified": "0.8.7"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "title": "Library: DF Module Buttons",
+  "description": "Library that provides a way for modules to register controls outside of the scene layer controls",
+  "authors": [
+    {
+      "name": "flamewave000",
+      "discord": "flamewave000#0001",
+      "url": "https://github.com/flamewave000",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/lib-df-buttons",
+  "license": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/LICENSE",
+  "readme": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/lib-df-buttons/README.md",
+  "bugs": "https://github.com/flamewave000/dragonflagon-fvtt/issues/new/choose",
+  "changelog": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/lib-df-buttons/CHANGELOG.md",
+  "version": "1.3.2",
+  "esmodules": [
+    "src/main.js"
+  ],
+  "styles": [
+    "css/lib-df-buttons.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    }
+  ],
+  "manifest": "https://dragonflagon.cafe/mods/man/lib-df-buttons",
+  "download": "https://dragonflagon.cafe/mods/pak/lib-df-buttons",
+  "id": "lib-df-buttons",
+  "compatibility": {
+    "minimum": "9.255",
+    "verified": "9"
+  }
+}

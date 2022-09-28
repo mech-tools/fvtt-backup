@@ -1,0 +1,33 @@
+{
+  "title": "Token Animation Tools",
+  "description": "Provides macros and configuration options to control Token animations.",
+  "version": "1.3.1.0",
+  "esmodules": [
+    "token-animation-tools.js"
+  ],
+  "url": "https://github.com/ruipin/fvtt-token-animation-tools",
+  "manifest": "https://github.com/ruipin/fvtt-token-animation-tools/releases/latest/download/module.json",
+  "download": "https://github.com/ruipin/fvtt-token-animation-tools/releases/download/v1.3.1.0/token-animation-tools-v1.3.1.0.zip",
+  "packs": [
+    {
+      "name": "token-animation-macros",
+      "label": "Token Animation Macros",
+      "path": "token-animation-macros.db",
+      "private": false,
+      "type": "Macro",
+      "flags": {}
+    }
+  ],
+  "id": "token-animation-tools",
+  "authors": [
+    {
+      "name": "Rui Pinheiro",
+      "url": "https://github.com/ruipin",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10"
+  }
+}
