@@ -195,16 +195,18 @@ class ForceClientSettings {
         let mode = ForceClientSettings.forced.get(key)?.mode ?? "open";
         if (mode === "soft" && !isGM && ForceClientSettings.unlocked.has(key)) mode = "unlocked";
         mode += isGM ? "-gm" : "-client";
-        label.prepend(
-          $("<span>")
-            .html("&nbsp;")
-            .prop("title", game.i18n.localize(`FORCECLIENTSETTINGS.ui.${mode}-hint`))
-            .data("settings-key", key)
-            .addClass(`fas ${fa[mode]}`)
-            .click(async function (event) {
-              await ForceClientSettings.clickToggleForceSettings(event, key, app);
-            })
-        );
+        if (mode !== "open-client") {
+          label.prepend(
+            $("<span>")
+              .html("&nbsp;")
+              .prop("title", game.i18n.localize(`FORCECLIENTSETTINGS.ui.${mode}-hint`))
+              .data("settings-key", key)
+              .addClass(`fas ${fa[mode]}`)
+              .click(async function (event) {
+                await ForceClientSettings.clickToggleForceSettings(event, key, app);
+              })
+          );
+        }
         if (["hard-client", "soft-client"].includes(mode)) {
           $(this).find("input,select").prop("disabled", "true");
         }

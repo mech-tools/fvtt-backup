@@ -1,5 +1,9 @@
 # Force Client Settings
 
+## Release 2.3.2
+
+- Fix minor UI garbage
+
 ## Release 2.3.1
 
 - Update for v10 compatibility
