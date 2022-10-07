@@ -58,6 +58,6 @@
   },
   "compatibility": {
     "minimum": "0.7.9",
-    "verified": "0.8.7"
+    "verified": "9"
   }
 }

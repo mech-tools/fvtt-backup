@@ -1,69 +1,81 @@
 {
-  "id": "fr-core",
   "title": "FR - Traduction du core",
+  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href=\"https://discord.gg/pPSDNJk\"> https://discord.gg/pPSDNJk </a></p>",
   "version": "10.286.0",
-  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
-  "compatibility": {
-    "minimum": "10",
-    "verified": "10",
-    "maximum": "10"
-  },
   "coreTranslation": true,
-  "authors": [
-    {
-      "name": "baktov"
-    },
-    {
-      "name": "DrEygon"
-    },
-    {
-      "name": "Rwanoux"
-    },
-    {
-      "name": "DamonReborn(Naoki)"
-    },
-    {
-      "name": "Galead"
-    },
-    {
-      "name": "U~man"
-    },
-    {
-      "name": "Thorni"
-    },
-    {
-      "name": "deurk"
-    },
-    {
-      "name": "Sasmira"
-    },
-    {
-      "name": "Kristov"
-    },
-    {
-      "name": "Mandar"
-    },
-    {
-      "name": "VincentVk"
-    },
-    {
-      "name": "admiralnlson"
-    },
-    {
-      "name": "Shyning"
-    }
-  ],
-  "scripts": [],
-  "styles": [],
-  "packs": [],
   "languages": [
     {
       "lang": "fr",
       "name": "Français",
-      "path": "fr.json"
+      "path": "fr.json",
+      "flags": {}
     }
   ],
   "url": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr",
   "manifest": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/raw/V10/module.json",
-  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.286.0/raw/fr-core.zip?job=build"
+  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.286.0/raw/fr-core.zip?job=build",
+  "id": "fr-core",
+  "authors": [
+    {
+      "name": "baktov",
+      "flags": {}
+    },
+    {
+      "name": "DrEygon",
+      "flags": {}
+    },
+    {
+      "name": "Rwanoux",
+      "flags": {}
+    },
+    {
+      "name": "DamonReborn(Naoki)",
+      "flags": {}
+    },
+    {
+      "name": "Galead",
+      "flags": {}
+    },
+    {
+      "name": "U~man",
+      "flags": {}
+    },
+    {
+      "name": "Thorni",
+      "flags": {}
+    },
+    {
+      "name": "deurk",
+      "flags": {}
+    },
+    {
+      "name": "Sasmira",
+      "flags": {}
+    },
+    {
+      "name": "Kristov",
+      "flags": {}
+    },
+    {
+      "name": "Mandar",
+      "flags": {}
+    },
+    {
+      "name": "VincentVk",
+      "flags": {}
+    },
+    {
+      "name": "admiralnlson",
+      "flags": {}
+    },
+    {
+      "name": "Shyning",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10",
+    "maximum": "10"
+  }
 }
