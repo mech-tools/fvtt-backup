@@ -1,8 +1,8 @@
 {
   "id": "fr-core",
   "title": "FR - Traduction du core",
-  "version": "10.286.0",
-  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href=\"https://discord.gg/pPSDNJk\"> https://discord.gg/pPSDNJk </a></p>",
+  "version": "10.287.1",
+  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
   "compatibility": {
     "minimum": "10",
     "verified": "10",
@@ -11,71 +11,59 @@
   "coreTranslation": true,
   "authors": [
     {
-      "name": "baktov",
-      "flags": {}
+      "name": "baktov"
     },
     {
-      "name": "DrEygon",
-      "flags": {}
+      "name": "DrEygon"
     },
     {
-      "name": "Rwanoux",
-      "flags": {}
+      "name": "Rwanoux"
     },
     {
-      "name": "DamonReborn(Naoki)",
-      "flags": {}
+      "name": "DamonReborn(Naoki)"
     },
     {
-      "name": "Galead",
-      "flags": {}
+      "name": "Galead"
     },
     {
-      "name": "U~man",
-      "flags": {}
+      "name": "U~man"
     },
     {
-      "name": "Thorni",
-      "flags": {}
+      "name": "Thorni"
     },
     {
-      "name": "deurk",
-      "flags": {}
+      "name": "deurk"
     },
     {
-      "name": "Sasmira",
-      "flags": {}
+      "name": "Sasmira"
     },
     {
-      "name": "Kristov",
-      "flags": {}
+      "name": "Kristov"
     },
     {
-      "name": "Mandar",
-      "flags": {}
+      "name": "Mandar"
     },
     {
-      "name": "VincentVk",
-      "flags": {}
+      "name": "VincentVk"
     },
     {
-      "name": "admiralnlson",
-      "flags": {}
+      "name": "admiralnlson"
     },
     {
-      "name": "Shyning",
-      "flags": {}
+      "name": "Shyning"
     }
   ],
+  "scripts": [],
+  "styles": [],
+  "packs": [],
   "languages": [
     {
       "lang": "fr",
       "name": "Français",
-      "path": "fr.json",
-      "flags": {}
+      "path": "fr.json"
     }
   ],
   "url": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr",
   "manifest": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/raw/V10/module.json",
-  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.286.0/raw/fr-core.zip?job=build"
+  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.287.1/raw/fr-core.zip?job=build"
 }
