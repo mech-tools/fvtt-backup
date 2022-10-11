@@ -526,6 +526,12 @@ Hooks.on('renderSceneConfig', async (obj) => {
   const controlHint = game.i18n.localize('SMLTME.Darkness_Control_Hint');
   const moonlightLabel = game.i18n.localize('SMLTME.Moonlight_Adjust');
   const moonlightHint = game.i18n.localize('SMLTME.Moonlight_Adjust_Hint');
+  let moonlightDisabledPF2e;
+  if (game.system.id === 'pf2e') {
+    moonlightDisabledPF2e = game.settings.get('pf2e', 'automation.rulesBasedVision')
+      ? 'disabled'
+      : '';
+  }
   const injection = `
     <fieldset class="st-scene-config">
       <legend>
@@ -551,7 +557,7 @@ Hooks.on('renderSceneConfig', async (obj) => {
       </div>
       <div class="form-group">
         <label>${moonlightLabel}</label>
-        <input
+        <input ${moonlightDisabledPF2e}
           type="checkbox"
           name="flags.smalltime.moonlight"
           ${moonlightCheckStatus}>
@@ -565,7 +571,7 @@ Hooks.on('renderSceneConfig', async (obj) => {
   let sceneConfigID = '#scene-config-' + obj.object.data._id;
   if (game.release.generation === 10) {
     sceneConfigID = '#SceneConfig-Scene-' + obj.object.data._id;
-    if (game.system.id == 'pf2e') {
+    if (game.system.id === 'pf2e') {
       sceneConfigID = '#SceneConfigPF2e-Scene-' + obj.object.data._id;
     }
   }
@@ -788,18 +794,28 @@ Hooks.on('renderPlayerList', () => {
   // Players list and the top of SmallTime. The +21 accounts
   // for the date dropdown if enabled; the -23 accounts for the clock row
   // being disabled in some cases.
-  let myOffset = playerAppPos.height + SmallTime_PinOffset;
+  let bottomOffset = playerAppPos.height + SmallTime_PinOffset;
 
   if (game.settings.get('smalltime', 'date-showing')) {
-    myOffset += 21;
+    bottomOffset += 21;
   }
   if (!game.modules.get('smalltime').clockAuth) {
-    myOffset -= 23;
+    bottomOffset -= 23;
   }
 
   // Custom offset for Item Piles, which adds a button into the Players app.
   if (game.modules.get('item-piles')?.active) {
-    myOffset += 30;
+    bottomOffset += 30;
+  }
+
+  // Custom offset for Item Piles, which adds a button into the Players app.
+  if (game.modules.get('breaktime')?.active) {
+    bottomOffset += 34;
+  }
+
+  let leftOffset = 15;
+  if (game.release.generation === 10) {
+    leftOffset += $('#interface').offset().left;
   }
 
   // This would be better done with a class add, but injecting
@@ -807,8 +823,8 @@ Hooks.on('renderPlayerList', () => {
   // absolute positioning.
   $('#pin-lock').text(`
       #smalltime-app {
-        top: calc(100vh - ${myOffset}px) !important;
-        left: 15px !important;
+        top: calc(100vh - ${bottomOffset}px) !important;
+        left: ${leftOffset}px !important;
       }
   `);
 });
@@ -828,12 +844,12 @@ Hooks.on('simple-calendar-clock-start-stop', () => {
   SmallTimeApp.emitSocket('handleRealtime');
 });
 
-Hooks.on('simple-calendar-date-time-change', () => {
-  updateSunriseSunsetTimes();
+Hooks.on('simple-calendar-date-time-change', (data) => {
+  updateSunriseSunsetTimes(data);
   updateGradientStops();
 });
 
-function updateSunriseSunsetTimes() {
+function updateSunriseSunsetTimes(data) {
   if (
     game.settings.get('smalltime', 'sun-sync') &&
     game.modules.get('foundryvtt-simple-calendar')?.active
@@ -845,15 +861,20 @@ function updateSunriseSunsetTimes() {
       game.settings.set('smalltime', 'sunset-start', SmallTime_SunsetStartDefault);
       game.settings.set('smalltime', 'sunset-end', SmallTime_SunsetEndDefault);
     } else {
-      const riseEnd = SimpleCalendar.api.getCurrentSeason().sunriseTime / 60;
-      const riseStart = riseEnd - SmallTime_DawnDuskSpread;
-      const setStart = SimpleCalendar.api.getCurrentSeason().sunsetTime / 60;
-      const setEnd = setStart + SmallTime_DawnDuskSpread;
-
-      game.settings.set('smalltime', 'sunrise-start', riseStart);
-      game.settings.set('smalltime', 'sunrise-end', riseEnd);
-      game.settings.set('smalltime', 'sunset-start', setStart);
-      game.settings.set('smalltime', 'sunset-end', setEnd);
+      if (typeof data !== 'undefined') {
+        const riseEnd =
+          SimpleCalendar.api.timestampToDate(data.date.sunrise).hour * 60 +
+          SimpleCalendar.api.timestampToDate(data.date.sunrise).minute;
+        const riseStart = riseEnd - SmallTime_DawnDuskSpread;
+        const setStart =
+          SimpleCalendar.api.timestampToDate(data.date.sunset).hour * 60 +
+          SimpleCalendar.api.timestampToDate(data.date.sunset).minute;
+        const setEnd = setStart + SmallTime_DawnDuskSpread;
+        game.settings.set('smalltime', 'sunrise-start', riseStart);
+        game.settings.set('smalltime', 'sunrise-end', riseEnd);
+        game.settings.set('smalltime', 'sunset-start', setStart);
+        game.settings.set('smalltime', 'sunset-end', setEnd);
+      }
     }
   }
 }
@@ -1766,43 +1787,52 @@ class SmallTimeApp extends FormApplication {
     });
 
     // Handle the increment/decrement buttons.
-    let smallStep;
-    let largeStep;
+    let smallStep = game.settings.get('smalltime', 'small-step');
+    let largeStep = game.settings.get('smalltime', 'large-step');
+    let stepAmount;
 
     html.find('#decrease-small').on('click', () => {
-      smallStep = game.settings.get('smalltime', 'small-step');
       if (event.shiftKey) {
-        this.timeRatchet(-Math.abs(smallStep * 2));
+        stepAmount = -Math.abs(smallStep * 2);
+      } else if (event.altKey) {
+        stepAmount = Math.floor(-Math.abs(smallStep / 2));
       } else {
-        this.timeRatchet(-Math.abs(smallStep));
+        stepAmount = -Math.abs(smallStep);
       }
+      this.timeRatchet(stepAmount);
     });
 
     html.find('#decrease-large').on('click', () => {
-      largeStep = game.settings.get('smalltime', 'large-step');
       if (event.shiftKey) {
-        this.timeRatchet(-Math.abs(largeStep * 2));
+        stepAmount = -Math.abs(largeStep * 2);
+      } else if (event.altKey) {
+        stepAmount = Math.floor(-Math.abs(largeStep / 2));
       } else {
-        this.timeRatchet(-Math.abs(largeStep));
+        stepAmount = -Math.abs(largeStep);
       }
+      this.timeRatchet(stepAmount);
     });
 
     html.find('#increase-small').on('click', () => {
-      smallStep = game.settings.get('smalltime', 'small-step');
       if (event.shiftKey) {
-        this.timeRatchet(smallStep * 2);
+        stepAmount = smallStep * 2;
+      } else if (event.altKey) {
+        stepAmount = Math.floor(smallStep / 2);
       } else {
-        this.timeRatchet(smallStep);
+        stepAmount = smallStep;
       }
+      this.timeRatchet(stepAmount);
     });
 
     html.find('#increase-large').on('click', () => {
-      largeStep = game.settings.get('smalltime', 'large-step');
       if (event.shiftKey) {
-        this.timeRatchet(largeStep * 2);
+        stepAmount = largeStep * 2;
+      } else if (event.altKey) {
+        stepAmount = Math.floor(largeStep / 2);
       } else {
-        this.timeRatchet(largeStep);
+        stepAmount = largeStep;
       }
+      this.timeRatchet(stepAmount);
     });
 
     // Listen for moon phase changes from Simple Calendar.
@@ -1948,7 +1978,7 @@ class SmallTimeApp extends FormApplication {
   // Convert the integer time value to hours and minutes.
   static convertTimeIntegerToDisplay(timeInteger) {
     let theHours = Math.floor(timeInteger / 60);
-    let theMinutes = timeInteger - theHours * 60;
+    let theMinutes = Math.trunc(timeInteger - theHours * 60);
 
     if (theMinutes < 10) theMinutes = `0${theMinutes}`;
     if (theMinutes === 0) theMinutes = '00';
@@ -1978,16 +2008,21 @@ class SmallTimeApp extends FormApplication {
   // Pin the app above the Players list.
   static async pinApp(expanded) {
     // Only do this if a pin lock isn't already in place.
-    if (!$('#pin-lock').length) {
-      const playerApp = document.getElementById('players');
-      const playerAppPos = playerApp.getBoundingClientRect();
-      let myOffset = playerAppPos.height + SmallTime_PinOffset;
 
+    const playerApp = document.getElementById('players');
+    const playerAppPos = playerApp.getBoundingClientRect();
+    let interfaceOffset = 0;
+    if (game.release.generation === 10) {
+      interfaceOffset += $('#interface').offset().left;
+    }
+    const leftOffset = interfaceOffset + 15;
+    let bottomOffset = playerAppPos.height + SmallTime_PinOffset;
+    if (!$('#pin-lock').length) {
       if (expanded) {
-        myOffset += 21;
+        bottomOffset += 21;
       }
       if (!game.modules.get('smalltime').clockAuth) {
-        myOffset -= 23;
+        bottomOffset -= 23;
       }
 
       // Dropping this into the DOM with an !important was the only way
@@ -1995,12 +2030,19 @@ class SmallTimeApp extends FormApplication {
       $('body').append(`
         <style id="pin-lock">
           #smalltime-app {
-            top: calc(100vh - ${myOffset}px) !important;
-            left: 15px !important;
+            top: calc(100vh - ${bottomOffset}px) !important;
+            left: ${leftOffset}px !important;
           }
         </style>
       `);
       await game.settings.set('smalltime', 'pinned', true);
+    } else {
+      $('#pin-lock').text(`
+          #smalltime-app {
+            top: calc(100vh - ${bottomOffset}px) !important;
+            left: ${leftOffset}px !important;
+          }
+      `);
     }
   }
 

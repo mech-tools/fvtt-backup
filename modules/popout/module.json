@@ -69,7 +69,7 @@
     ]
   },
   "compatibility": {
-    "minimum": "0.9.0",
+    "minimum": "9",
     "verified": "10.285",
     "maximum": "10"
   }

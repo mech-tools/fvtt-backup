@@ -31,6 +31,7 @@ class Torch {
       Settings.lightRadii.dim, 
       Settings.inventoryItemName, 
       Settings.gameLightSources, 
+      hud.object.actor.prototypeToken.light,
     );
     let token = new TorchToken(hud.object.document, library);
     let lightSources = token.ownedLightSources;
@@ -101,7 +102,7 @@ Hooks.on("ready", () => {
 
 Hooks.once("init", () => {
   // Only load and initialize test suite if we're in a test environment
-  if (game.world.data.name.startsWith("torch-test-")) {
+  if (game.world.id.startsWith("torch-test-")) {
     Torch.setupQuenchTesting();
   }
   Settings.register();

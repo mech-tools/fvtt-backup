@@ -38,6 +38,6 @@
   "id": "_chatcommands",
   "compatibility": {
     "minimum": "0.6.2",
-    "verified": "9"
+    "verified": "10"
   }
 }
