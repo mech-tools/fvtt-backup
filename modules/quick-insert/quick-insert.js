@@ -100,6 +100,9 @@ function customKeybindHandler(evt, context) {
     if (!context && !game.keyboard?.hasFocus)
         return;
     const ctx = KeyboardManager.getKeyboardEventContext(evt, false);
+    if (ctx.event.target?.dataset?.engine === "prosemirror") {
+        return;
+    }
     if (context) {
         ctx._quick_insert_extra = { context };
     }
@@ -669,6 +672,36 @@ class TinyMCEContext extends SearchContext {
     }
     onClose() {
         this.editor.focus();
+    }
+}
+class ProseMirrorContext extends SearchContext {
+    constructor(state, dispatch, view) {
+        super();
+        this.state = state;
+        this.dispatch = dispatch;
+        this.view = view;
+        this.startText = document.getSelection()?.toString();
+        const start = view.coordsAtPos(state.selection.from);
+        const end = view.coordsAtPos(state.selection.to);
+        const bodyRect = document.body.getBoundingClientRect();
+        const bottom = bodyRect.height - start.top - 22;
+        this.spawnCSS = {
+            left: start.left,
+            bottom,
+            width: end.left - start.left,
+            maxHeight: bodyRect.height - bottom,
+        };
+    }
+    onSubmit(item) {
+        const tr = this.state.tr;
+        const text = typeof item == "string" ? item : item.journalLink;
+        const textNode = this.state.schema.text(text);
+        tr.replaceSelectionWith(textNode);
+        this.dispatch(tr);
+        this.view.focus();
+    }
+    onClose() {
+        this.view.focus();
     }
 }
 class CharacterSheetContext extends SearchContext {
@@ -1546,24 +1579,24 @@ const DOCUMENTACTIONS = {
     insert: (item) => item,
     rollInsert: (item) => item.get().then(async (d) => {
         const roll = await d.roll();
-        for (const { data } of roll.results) {
-            if (data.resultId == "") {
+        for (const data of roll.results) {
+            if (!data.documentId) {
                 return data.text;
             }
-            if (data.collection.includes(".")) {
-                if (!game.packs)
-                    return;
-                const pack = game.packs.get(data.collection);
+            if (data.documentCollection.includes(".")) {
+                const pack = game.packs.get(data.documentCollection);
                 if (!pack)
-                    return;
+                    return data.text;
                 const indexItem = game.packs
-                    .get(data.collection)
-                    ?.index.find((i) => i._id === data.resultId);
-                return indexItem && new CompendiumSearchItem(pack, indexItem);
+                    .get(data.documentCollection)
+                    ?.index.find((i) => i._id === data.documentId);
+                return indexItem
+                    ? new CompendiumSearchItem(pack, indexItem)
+                    : data.text;
             }
             else {
-                const entity = getCollectionFromType(data.collection).get(data.resultId);
-                return entity ? new EntitySearchItem(entity) : null;
+                const entity = getCollectionFromType(data.documentCollection).get(data.documentId);
+                return entity ? new EntitySearchItem(entity) : data.text;
             }
         }
     }),
@@ -2725,7 +2758,12 @@ class SearchApp extends Application {
             this.showHint(`<i class="fas fa-spinner"></i> Loading index...`);
             loadSearchIndex()
                 .then(() => {
-                this.showHint(`Index loaded successfully`);
+                if (this.input?.text().trim().length) {
+                    this.searchInput();
+                }
+                else {
+                    this.showHint(`Index loaded successfully`);
+                }
             })
                 .catch((reason) => {
                 this.showHint(`Failed to load index ${reason}`);
@@ -2740,8 +2778,6 @@ class SearchApp extends Application {
         if (!this.input)
             return;
         const text = this.input.text();
-        if (this.text === text)
-            return;
         this.text = text;
         const breaker = $(this.input).find(".breaker");
         this.showHint("");
@@ -3049,6 +3085,34 @@ function registerSettings(callbacks = {}) {
     });
 }
 
+function mapKey(key) {
+    if (key.startsWith("Key")) {
+        return key[key.length - 1].toLowerCase();
+    }
+    return key;
+}
+function registerProseMirrorKeys() {
+    const binds = game?.keybindings?.bindings?.get("quick-insert." + ModuleSetting.KEY_BIND);
+    if (!binds?.length) {
+        console.info("Quick Insert | ProseMirror extension found no key binding");
+        return;
+    }
+    function keyCallback(state, dispatch, view) {
+        if (QuickInsert.app?.embeddedMode)
+            return false;
+        // Open window
+        QuickInsert.open(new ProseMirrorContext(state, dispatch, view));
+        return true;
+    }
+    const keyMap = Object.fromEntries(binds.map((bind) => {
+        return [
+            `${bind.modifiers?.map((m) => m + "-").join("")}${mapKey(bind.key)}`,
+            keyCallback,
+        ];
+    }));
+    ProseMirror.defaultPlugins.QuickInsert = ProseMirror.keymap(keyMap);
+}
+
 function quickInsertDisabled() {
     return !game.user?.isGM && getSetting(ModuleSetting.GM_ONLY);
 }
@@ -3121,6 +3185,7 @@ Hooks.once("ready", function () {
     QuickInsert.filters = new SearchFilterCollection();
     QuickInsert.app = new SearchApp();
     registerTinyMCEPlugin();
+    registerProseMirrorKeys();
     importSystemIntegration().then((systemIntegration) => {
         if (systemIntegration) {
             QuickInsert.systemIntegration = systemIntegration;

@@ -1,8 +1,8 @@
 {
   "id": "fr-core",
   "title": "FR - Traduction du core",
-  "version": "10.287.1",
-  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href=\"https://discord.gg/pPSDNJk\"> https://discord.gg/pPSDNJk </a></p>",
+  "version": "10.288.0",
+  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href=\"https://discord.gg/pPSDNJk\"> https://discord.gg/pPSDNJk </a></p><p> *** Participez à la traduction sur le <a>weblate fr-core</a></p>",
   "compatibility": {
     "minimum": "10",
     "verified": "10",
@@ -77,5 +77,5 @@
   ],
   "url": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr",
   "manifest": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/raw/V10/module.json",
-  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.287.1/raw/fr-core.zip?job=build"
+  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-10.288.0/raw/fr-core.zip?job=build"
 }
