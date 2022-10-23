@@ -22,6 +22,7 @@ class shareFullscreenLayer {
                 <div class="background"></div>
                 <img src="${constants.modulePath}/images/transparent.png" alt="">
                 <video playsinline src="" class="disabled"></video>
+		<div class="darkness"></div>
                 <div class="buttons">
                     ${dismissButton}
                     <button class="minimize" title="${game.i18n.localize(`${constants.moduleName}.share.fullscreen-minimize-button`)}">
@@ -53,6 +54,7 @@ class shareFullscreenLayer {
         const videoContainer = video.get(0)
         const minimizeButton = this.container.find('.minimize')
         const maximizeButton = this.container.find('.maximize')
+	const darknessContainer = this.container.find('.darkness')
 
         if (type === 'image') {
             if(url.endsWith('.jpg')) {
@@ -87,6 +89,12 @@ class shareFullscreenLayer {
             })
         }
 
+	if(game.scenes.current) {
+            const currentScene = game.scenes.current
+            darknessContainer.css('opacity', currentScene.data.darkness)
+            darknessContainer.css('background-color', `#${CONFIG.Canvas.darknessColor.toString(16)}`)
+        }
+
         this.container.removeClass('hidden')
         this.container.removeClass('minimized')
         minimizeButton.removeClass('hidden')
@@ -98,11 +106,15 @@ class shareFullscreenLayer {
         const img = this.container.find('img')
         const video = this.container.find('video')
         const videoContainer = video.get(0)
+	const darknessContainer = this.container.find('.darkness')
 
         background.css('background-image', `url("${constants.modulePath}/images/transparent.png")`)
         img.attr('src', `${constants.modulePath}/images/transparent.png`)
         videoContainer.pause()
         video.attr('src', '')
+
+	darknessContainer.css('opacity', 0)
+        darknessContainer.css('background-color', 'transparent')
 
         this.container.addClass('hidden')
     }
@@ -110,10 +122,20 @@ class shareFullscreenLayer {
     toggleMinimize(evt) {
         const minimizeButton = this.container.find('.minimize')
         const maximizeButton = this.container.find('.maximize')
+	const darknessContainer = this.container.find('.darkness')
         minimizeButton.toggleClass('hidden')
         maximizeButton.toggleClass('hidden')
+	darknessContainer.toggleClass('hidden')
 
         this.container.toggleClass('minimized')
+    }
+    
+    updateDarkness(darkness) {
+        if(!this.container.hasClass('hidden')) {
+            const darknessContainer = this.container.find('.darkness')
+            darknessContainer.css('opacity', darkness)
+            darknessContainer.css('background-color', `#${CONFIG.Canvas.darknessColor.toString(16)}`)
+        }
     }
 }
 

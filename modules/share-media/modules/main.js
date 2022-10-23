@@ -85,6 +85,10 @@ Hooks.on('updateScene', (scene, data) => {
             }
         }
     }
+
+    if(data.hasOwnProperty('darkness') && scene.id === game.scenes.active?.id) {
+        fullscreenLayer.updateDarkness(data.darkness)
+    }
 })
 
 Hooks.on('updateTile', tile => {

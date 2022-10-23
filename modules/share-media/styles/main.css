@@ -160,7 +160,7 @@
 }
 
 #fullscreen-layer .buttons {
-  z-index: 3;
+  z-index: 4;
   position: absolute;
   top: 50px;
   left: 50%;
@@ -318,4 +318,20 @@
 #share-media-clear-bounding-tile-selection-dialog .bounding-tile-buttons label,
 #share-media-clear-bounding-tile-selection-dialog .bounding-tile-buttons input {
   cursor: pointer;
+}
+
+#fullscreen-layer .darkness {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  z-index: 3;
+}
+
+#fullscreen-layer .darkness.hidden {
+    display: none;
 }
