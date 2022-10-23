@@ -1008,7 +1008,7 @@
 	"PLAYLIST.SoundPlay": "Jouer la piste",
 	"PLAYLIST.SoundPause": "Pause",
 	"PLAYLIST.SoundPreload": "Précharger la piste",
-	"PLAYLIST.SoundResume": "Resume Sound",
+	"PLAYLIST.SoundResume": "Reprendre la lecture",
 	"PLAYLIST.SoundVolume": "Volume de la piste",
 	"PLAYLIST.SoundStop": "Couper le son de la piste",
 	"PLAYLIST.BulkImport": "Importation en masse",
