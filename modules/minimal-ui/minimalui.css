@@ -1,50 +1,4 @@
 :root {
-    --controlsvis: hidden;
-    --fpsvis: hidden;
-}
-
-#sidebar {
-    visibility: var(--controlsvis);
-}
-
-#sidebar.collapsed {
-    transition: 0.5s;
-    opacity: var(--opacity);
-}
-
-#sidebar.collapsed:hover {
-    transition: 0.5s;
-    opacity: 100%;
-}
-
-#sidebar-tabs {
-    border-bottom: 1px solid var(--bordercolor);
-    box-shadow: 0 0 var(--shadowstrength) var(--shadowcolor);
-}
-
-#sidebar-tabs > .item.active {
-    box-shadow: 0 0 var(--shadowstrength) inset var(--shadowcolor);
-    border: 1px solid var(--bordercolor);
-}
-
-#sidebar.collapsed #sidebar-tabs > .item.active {
-    border-bottom: 1px solid var(--bordercolor);
-}
-
-.tabs .item.active {
-    text-shadow: 0 0 var(--shadowstrength) var(--shadowcolor);
-}
-
-#sidebar-tabs > a:nth-child(n):hover {
-    text-shadow: 0 0 var(--shadowstrength) var(--bordercolor);
-}
-
-#fps {
-    position: absolute;
-    right: var(--fpsposx);
-    visibility: var(--fpsvis);
-}
-:root {
     --controlsw: 36px;
     --controlsh: 30px;
     --controlslh: 30px;
@@ -105,46 +59,6 @@
     opacity: 100%;
 }
 :root {
-    --logovis: hidden;
-    --logoh: 50px;
-    --logow: 100px;
-}
-
-#logo {
-    visibility: var(--logovis);
-    height: var(--logoh);
-    width: var(--logow);
-}
-:root {
-    --novid: inherit;
-    --noviddis: block;
-    --novidleftflex: unset;
-    --novidlefttop: 0;
-    --novidleftleft: 0;
-}
-
-:not(.camera-view-popout) > .no-video {
-    display: var(--novid);
-}
-
-:not(.camera-view-popout) > .no-video > .video-container {
-    display: var(--noviddis);
-}
-
-:not(.camera-view-popout) > .no-video > .notification-bar {
-    display: var(--noviddis);
-}
-
-:not(.camera-view-popout) > .no-video > .control-bar.left {
-    flex-direction: var(--novidleftflex);
-    top: var(--novidlefttop);
-    left: var(--novidleftleft);
-}
-
-#camera-views {
-    margin: 0 0 65px 110px;
-}
-:root {
     --playervis: hidden;
     --playerfsize: 0px;
     --playerfsizehv: 12px;
@@ -152,7 +66,7 @@
     --playerslh: 20px;
     --playerbennies: none;
     --playerh3w: unset;
-    --playerbot: 0;
+    --playerbot: -8px;
     --playerleft: 0;
     --playerpingdisplay: initial;
 }
@@ -204,6 +118,17 @@
 
 #destiny-tracker:hover {
     opacity: 100%;
+}
+:root {
+    --logovis: hidden;
+    --logoh: 50px;
+    --logow: 100px;
+}
+
+#logo {
+    visibility: var(--logovis);
+    height: var(--logoh);
+    width: var(--logow);
 }
 :root {
     --hotbarvis: visible;
@@ -277,13 +202,6 @@
     box-shadow: 0 var(--hotbarshp) var(--shadowstrength) 2px var(--shadowcolor);
     border: 1px solid var(--bordercolor);
     border-radius: 5px;
-}
-:root {
-    --bordercolor: #00000080;
-    --shadowcolor: #7c7c7c40;
-    --shadowstrength: 10px;
-    --opacity: 75%;
-    --fpsposx: 300px;
 }
 :root {
     --navivis: hidden;
@@ -376,3 +294,61 @@
 }
 
 /** --------------- */
+:root {
+    --bordercolor: #00000080;
+    --shadowcolor: #7c7c7c40;
+    --shadowstrength: 10px;
+    --opacity: 75%;
+    --fpsposx: 300px;
+}
+
+div#camera-views.camera-position-left, div#camera-views.camera-position-right {
+    min-width: 130px;
+    --av-width: auto;
+}
+:root {
+    --controlsvis: hidden;
+    --fpsvis: hidden;
+}
+
+#sidebar {
+    visibility: var(--controlsvis);
+}
+
+#sidebar.collapsed {
+    transition: 0.5s;
+    opacity: var(--opacity);
+}
+
+#sidebar.collapsed:hover {
+    transition: 0.5s;
+    opacity: 100%;
+}
+
+#sidebar-tabs {
+    border-bottom: 1px solid var(--bordercolor);
+    box-shadow: 0 0 var(--shadowstrength) var(--shadowcolor);
+}
+
+#sidebar-tabs > .item.active {
+    box-shadow: 0 0 var(--shadowstrength) inset var(--shadowcolor);
+    border: 1px solid var(--bordercolor);
+}
+
+#sidebar.collapsed #sidebar-tabs > .item.active {
+    border-bottom: 1px solid var(--bordercolor);
+}
+
+.tabs .item.active {
+    text-shadow: 0 0 var(--shadowstrength) var(--shadowcolor);
+}
+
+#sidebar-tabs > a:nth-child(n):hover {
+    text-shadow: 0 0 var(--shadowstrength) var(--bordercolor);
+}
+
+#fps {
+    position: absolute;
+    right: var(--fpsposx);
+    visibility: var(--fpsvis);
+}

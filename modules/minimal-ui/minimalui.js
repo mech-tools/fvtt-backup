@@ -172,11 +172,19 @@ class MinimalUIHotbar {
     }
 
     static positionHotbar() {
-        let availableWidth = canvas.app.screen.width;
+        let availableWidth = canvas.app?.screen.width;
+        if (!availableWidth)
+            return;
+        let webtrcAdjust = 0;
+        if (game.webrtc.mode > 0)
+            webtrcAdjust = (ui.webrtc.hidden ? 0 : ui.webrtc.position.width);
         switch (game.settings.get('minimal-ui', 'hotbarPosition')) {
             case 'default': {
-                rootStyle.setProperty('--hotbarxpos', '220px');
-                rootStyle.setProperty('--playerbot', '-8px');
+                rootStyle.setProperty('--hotbarxpos', (220 - webtrcAdjust)+'px');
+                if (game.webrtc?.mode === 0 || ui.webrtc?.hidden)
+                    rootStyle.setProperty('--playerbot', '-8px');
+                else
+                    rootStyle.setProperty('--playerbot', '55px');
                 break;
             }
             case 'extremeLeft': {
@@ -191,26 +199,39 @@ class MinimalUIHotbar {
                 break;
             }
             case 'left': {
-                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5) - (availableWidth / 9) - (availableWidth / 9)) + 'px');
-                rootStyle.setProperty('--playerbot', '-8px');
+                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5) - (availableWidth / 9) - (availableWidth / 9) - webtrcAdjust) + 'px');
+                if (game.webrtc?.mode === 0 || ui.webrtc?.hidden)
+                    rootStyle.setProperty('--playerbot', '-8px');
+                else
+                    rootStyle.setProperty('--playerbot', '55px');
                 break;
             }
             case 'center': {
-                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5) - (availableWidth / 9)) + 'px');
-                rootStyle.setProperty('--playerbot', '-8px');
+                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5) - (availableWidth / 9) - webtrcAdjust) + 'px');
+                if (game.webrtc?.mode === 0 || ui.webrtc?.hidden)
+                    rootStyle.setProperty('--playerbot', '-8px');
+                else
+                    rootStyle.setProperty('--playerbot', '55px');
                 break;
             }
             case 'right': {
-                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5)) + 'px');
-                rootStyle.setProperty('--playerbot', '-8px');
+                rootStyle.setProperty('--hotbarxpos', ((availableWidth / 2.5) - webtrcAdjust) + 'px');
+                if (game.webrtc?.mode === 0 || ui.webrtc?.hidden)
+                    rootStyle.setProperty('--playerbot', '-8px');
+                else
+                    rootStyle.setProperty('--playerbot', '55px');
                 break;
             }
             case 'manual': {
-                rootStyle.setProperty('--hotbarxpos', game.settings.get('minimal-ui', 'hotbarPixelPosition') + 'px');
-                rootStyle.setProperty('--playerbot', '-8px');
+                rootStyle.setProperty('--hotbarxpos', (game.settings.get('minimal-ui', 'hotbarPixelPosition') - webtrcAdjust) + 'px');
+                if (game.webrtc?.mode === 0 || ui.webrtc?.hidden)
+                    rootStyle.setProperty('--playerbot', '-8px');
+                else
+                    rootStyle.setProperty('--playerbot', '55px');
                 break;
             }
         }
+
     }
 
     static configureHotbar() {
@@ -459,6 +480,7 @@ class MinimalUILogo {
 class MinimalUINavigation {
 
     static cssSceneNavNoLogoStart = '-6px';
+    static cssSceneNavNoLogoStartRtc = '-112px';
 
     static async collapseNavigation() {
         await ui.nav.collapse();
@@ -548,7 +570,10 @@ class MinimalUINavigation {
 
             switch (game.settings.get('minimal-ui', 'foundryLogoSize')) {
                 case 'hidden': {
-                    rootStyle.setProperty('--navixpos', MinimalUINavigation.cssSceneNavNoLogoStart);
+                    if (ui.webrtc?.rendered && game.webrtc.settings.client.dockPosition === 'left')
+                        rootStyle.setProperty('--navixpos', MinimalUINavigation.cssSceneNavNoLogoStartRtc);
+                    else
+                        rootStyle.setProperty('--navixpos', MinimalUINavigation.cssSceneNavNoLogoStart);
                     break;
                 }
             }
@@ -622,8 +647,15 @@ class MinimalUIPlayers {
             const players = $("#players");
 
             players[0].val = "";
-            const plSize = game.settings.get('minimal-ui', 'playerListSize');
-            const plSetting = game.settings.get('minimal-ui', 'playerList');
+            let plSize = game.settings.get('minimal-ui', 'playerListSize');
+            let plSetting = game.settings.get('minimal-ui', 'playerList');
+            if (game.webrtc?.mode > 0) {
+                if (plSetting !== 'hidden' && !ui.webrtc?.hidden) {
+                    plSize = 'standard';
+                    plSetting = 'default';
+                }
+                MinimalUIHotbar.positionHotbar();
+            }
 
             switch (plSetting) {
                 case 'default': {
@@ -639,6 +671,7 @@ class MinimalUIPlayers {
                         rootStyle.setProperty('--playerwidthhv', MinimalUIPlayers.cssPlayersStandardWidth);
                     }
                     rootStyle.setProperty('--playervis', 'visible');
+                    rootStyle.setProperty('--playerslh', '20px');
                     // DnD UI Special Compatibility
                     if (game.modules.get('dnd-ui') && game.modules.get('dnd-ui').active) {
                         rootStyle.setProperty('--players-width', '200px');
@@ -656,6 +689,7 @@ class MinimalUIPlayers {
                         rootStyle.setProperty('--playerfsizehv', MinimalUIPlayers.cssPlayersStandardFontSize);
                         rootStyle.setProperty('--playerwidthhv', MinimalUIPlayers.cssPlayersStandardWidth);
                     }
+                    rootStyle.setProperty('--playerfsize', '0');
                     rootStyle.setProperty('--playervis', 'visible');
                     rootStyle.setProperty('--playerslh', '2px');
                     rootStyle.setProperty('--playerh3w', '0%');
@@ -700,7 +734,7 @@ class MinimalUIPlayers {
                     rootStyle.setProperty('--players-width', `${playerWidthPixel}px`);
                     // SWADE Special Compatibility
                     rootStyle.setProperty('--playerbennies', 'none');
-                    if (game.system.data.name === 'swade') {
+                    if (game.system.id === 'swade') {
                         players.hover(
                             function () {
                                 $(".bennies-count").show();
@@ -959,66 +993,6 @@ class MinimalUIPatch {
 
 }
 
-class MinimalUICamera {
-
-  static updateCameraSettings() {
-    switch (game.settings.get('minimal-ui', 'cameraBehavior')) {
-      case 'default': {
-        rootStyle.setProperty('--novid', 'inherit');
-        rootStyle.setProperty('--noviddis', 'block');
-        rootStyle.setProperty('--novidleftflex', 'unset');
-        rootStyle.setProperty('--novidlefttop', '0');
-        rootStyle.setProperty('--novidleftleft', '0');
-        break;
-      }
-      case 'reduced': {
-        rootStyle.setProperty('--novid', 'inherit');
-        rootStyle.setProperty('--noviddis', 'none');
-        rootStyle.setProperty('--novidleftflex', 'row');
-        rootStyle.setProperty('--novidlefttop', '-50px');
-        rootStyle.setProperty('--novidleftleft', '5px');
-        break;
-      }
-      case 'hidden': {
-        rootStyle.setProperty('--novid', 'none');
-        rootStyle.setProperty('--noviddis', 'inherit');
-        rootStyle.setProperty('--novidleftflex', 'inherit');
-        rootStyle.setProperty('--novidlefttop', 'inherit');
-        rootStyle.setProperty('--novidleftleft', 'inherit');
-        break;
-      }
-    }
-  }
-
-  static initSettings() {
-    game.settings.register('minimal-ui', 'cameraBehavior', {
-      name: game.i18n.localize("MinimalUI.NoCameraBehaviorName"),
-      hint: game.i18n.localize("MinimalUI.NoCameraBehaviorHint"),
-      scope: 'world',
-      config: true,
-      type: String,
-      choices: {
-        "default": game.i18n.localize("MinimalUI.SettingsDefault"),
-        "reduced": game.i18n.localize("MinimalUI.NoCameraBehaviorReduced"),
-        "hidden": game.i18n.localize("MinimalUI.NoCameraBehaviorHidden")
-      },
-      default: "default",
-      onChange: MinimalUICamera.updateCameraSettings
-    });
-  }
-
-  static initHooks() {
-    Hooks.on('ready', function() {
-      MinimalUICamera.updateCameraSettings();
-    });
-    Hooks.on('rtcSettingsChanged', function(act, cl) {
-      if (cl.client?.users[game.user.id]?.hidden !== undefined)
-        game.webrtc.render();
-    });
-  }
-
-}
-
 class MinimalUI {
     static noColorSettings = false;
 }
@@ -1041,7 +1015,6 @@ Hooks.once('init', () => {
     MinimalUIHotbar.initSettings();
     MinimalUISidebar.initSettings();
     MinimalUIPlayers.initSettings();
-    MinimalUICamera.initSettings();
     /** ------------------------- */
 
     /** Initialize hooks for Core Component Functionality */
@@ -1051,7 +1024,6 @@ Hooks.once('init', () => {
     MinimalUIHotbar.initHooks();
     MinimalUISidebar.initHooks();
     MinimalUIPlayers.initHooks();
-    MinimalUICamera.initHooks();
     /** ------------------------- */
 
     /** Initialize Foundry UI Patches */
