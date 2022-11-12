@@ -2,10 +2,10 @@
   "title": "Maudit",
   "id": "maudit",
   "system": "coc",
-  "coreVersion": "10.288",
+  "coreVersion": "10.290",
   "compatibility": {
     "minimum": "10",
-    "verified": "10.288"
+    "verified": "10.290"
   },
   "systemVersion": "10.274.1",
   "packs": [
