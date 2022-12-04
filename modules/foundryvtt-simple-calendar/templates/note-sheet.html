@@ -146,14 +146,14 @@
                 {{/if}}
             </div>
         </div>
-        <div class="fsc-mg">
+        <div class="fsc-lg">
             <button class="fsc-yb fsc-lc" name="submit" data-tooltip="{{localize 'FSC.Notes.Save'}}">
                 <i class="far fa-save"></i> {{localize 'FSC.Notes.Save'}}
             </button>
             <button class="fsc-yb fsc-zb fsc-sg"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
         </div>
     {{else}}
-        <div class="fsc-kg">
+        <div class="fsc-jg">
             <h1>
                 <span class="fsc-wj">{{name}}</span>
                 <span class="fsc-qg fsc-oj {{#if display.reminder}} fsc-x{{/if}}"><label><input class="fsc-kh" type="checkbox" /><span class="fa {{#if display.reminder}}fa-bell{{else}}fa-bell-slash{{/if}}"></span></label></span>
@@ -182,11 +182,11 @@
                 {{/each}}
             </div>
         </div>
-        <div class="fsc-lg">
+        <div class="fsc-kg">
             {{{enrichedContent}}}
         </div>
         {{#if editable}}
-            <div class="fsc-mg">
+            <div class="fsc-lg">
                 <button class="fsc-yb fsc-ac fsc-rg"><i class="fa fa-edit"></i> {{localize 'FSC.Edit'}}</button>
                 <button class="fsc-yb fsc-zb fsc-sg"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
             </div>
@@ -194,9 +194,9 @@
     {{/if}}
 </form>
 {{#if (or editMode (gt pages.length 1))}}
-<div class="fsc-ag fsc-jg {{#unless editMode}} fsc-xj{{/unless}} {{#if uiElementStates.fsc-jg}} fsc-b{{else}} fsc-c{{/if}}">
+<div class="fsc-ag fsc-mg {{#unless editMode}} fsc-xj{{/unless}} {{#if uiElementStates.fsc-mg}} fsc-b{{else}} fsc-c{{/if}}">
     <div class="fsc-_g">
-        <a class="fsc-tg" data-tooltip="{{#if uiElementStates.fsc-jg}}{{localize 'JOURNAL.ViewCollapse'}}{{else}}{{localize 'JOURNAL.ViewExpand'}}{{/if}}"><i class="fa-solid {{#if uiElementStates.fsc-jg}} fa-caret-right{{else}} fa-caret-left{{/if}}"></i></a>
+        <a class="fsc-tg" data-tooltip="{{#if uiElementStates.fsc-mg}}{{localize 'JOURNAL.ViewCollapse'}}{{else}}{{localize 'JOURNAL.ViewExpand'}}{{/if}}"><i class="fa-solid {{#if uiElementStates.fsc-mg}} fa-caret-right{{else}} fa-caret-left{{/if}}"></i></a>
         <div class="fsc-uf">
             <input placeholder="{{localize 'FSC.Notes.SearchPages'}}" type="text" value="{{uiElementStates.search.term}}" data-tooltip="{{localize 'FSC.Notes.SearchPages'}}" />
             <button class="fsc-yb fsc-ha" data-tooltip="{{localize 'FSC.Clear'}}" ><span class="fa fa-times"></span></button>
