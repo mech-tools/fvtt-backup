@@ -1,43 +1,4 @@
-const SmallTime_MoonPhases = [
-  'new',
-  'waxing-crescent',
-  'first-quarter',
-  'waxing-gibbous',
-  'full',
-  'waning-gibbous',
-  'last-quarter',
-  'waning-crescent',
-];
-
-const SmallTime_PhaseValues = {
-  0: 0,
-  1: 0.25,
-  2: 0.5,
-  3: 0.75,
-  4: 1,
-  5: 0.75,
-  6: 0.5,
-  7: 0.25,
-};
-
-// Default offset from the Player List window when pinned,
-// an Epoch offset for game systems that don't start at midnight,
-// plus custom offsets for game systems that draw extra borders
-// around their windows. Also default values for sunrise/set.
-let SmallTime_PinOffset = 83;
-let SmallTime_EpochOffset = 0;
-const SmallTime_WFRP4eOffset = 30;
-const SmallTime_DasSchwarzeAugeOffset = 16;
-const SmallTime_TaskbarOffset = 50;
-
-const SmallTime_SunriseStartDefault = 180;
-const SmallTime_SunriseEndDefault = 420;
-const SmallTime_SunsetStartDefault = 1050;
-const SmallTime_SunsetEndDefault = 1320;
-const SmallTime_DawnDuskSpread = 120;
-
-const SmallTime_MaxDarknessDefault = 1;
-const SmallTime_MinDarknessDefault = 0;
+import { Helpers, ST_Config } from './helpers.mjs';
 
 Hooks.on('init', () => {
   // Exclude module from deprecation warnings, as we're relying on shims for now.
@@ -122,7 +83,7 @@ Hooks.on('init', () => {
 
   // If there is one or more available source of calendar information,
   // add them to the list of providers to choose from in Settings.
-  const calendarProviders = getCalendarProviders();
+  const calendarProviders = Helpers.getCalendarProviders();
   const calendarAvailable = Object.keys(calendarProviders).length > 0 ? true : false;
 
   game.settings.register('smalltime', 'date-format', {
@@ -212,35 +173,35 @@ Hooks.on('init', () => {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_MaxDarknessDefault,
+    default: ST_Config.MaxDarknessDefault,
   });
 
   game.settings.register('smalltime', 'min-darkness', {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_MinDarknessDefault,
+    default: ST_Config.MinDarknessDefault,
   });
 
   game.settings.register('smalltime', 'sunrise-start', {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_SunriseStartDefault,
+    default: ST_Config.SunriseStartDefault,
   });
 
   game.settings.register('smalltime', 'sunrise-end', {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_SunriseEndDefault,
+    default: ST_Config.SunriseEndDefault,
   });
 
   game.settings.register('smalltime', 'sunset-start', {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_SunsetStartDefault,
+    default: ST_Config.SunsetStartDefault,
   });
 
   game.settings.register('smalltime', 'sunset-end', {
@@ -249,7 +210,7 @@ Hooks.on('init', () => {
     scope: 'world',
     config: true,
     type: Number,
-    default: SmallTime_SunsetEndDefault,
+    default: ST_Config.SunsetEndDefault,
   });
 
   game.settings.register('smalltime', 'sun-sync', {
@@ -302,16 +263,16 @@ Hooks.on('init', () => {
 Hooks.on('canvasReady', () => {
   // Account for the extra border art in certain game systems.
   if (game.system.id === 'wfrp4e') {
-    SmallTime_PinOffset += SmallTime_WFRP4eOffset;
+    ST_Config.PinOffset += ST_Config.WFRP4eOffset;
   }
   if (game.system.id === 'dsa5') {
-    SmallTime_PinOffset += SmallTime_DasSchwarzeAugeOffset;
+    ST_Config.PinOffset += ST_Config.DasSchwarzeAugeOffset;
   }
   if (
     game.modules.get('foundry-taskbar')?.active &&
     game.settings.get('foundry-taskbar', 'moveplayersmacro')
   ) {
-    SmallTime_PinOffset += SmallTime_TaskbarOffset;
+    ST_Config.PinOffset += ST_Config.TaskbarOffset;
   }
 
   // Only allow the date display to show if there's a calendar provider available.
@@ -364,16 +325,7 @@ Hooks.on('canvasReady', () => {
   if (game.modules.get('smalltime').viewAuth) {
     SmallTimeApp.toggleAppVis('initial');
     if (game.settings.get('smalltime', 'pinned')) {
-      if (
-        game.settings.get('smalltime', 'date-showing') &&
-        game.modules.get('smalltime').dateAvailable
-      ) {
-        // Sending true here tells the pin to offset to
-        // accommodate the date display.
-        SmallTimeApp.pinApp(true);
-      } else {
-        SmallTimeApp.pinApp();
-      }
+      SmallTimeApp.pinApp();
     }
   } else if (SmallTimeApp._isOpen && !game.modules.get('smalltime').controlAuth) {
     // If the SmallTime app was visible, but we're now in a scene where
@@ -405,10 +357,10 @@ Hooks.on('canvasReady', () => {
     }
     // Refresh the current scene's Darkness level if it should be linked.
     if (thisScene.getFlag('smalltime', 'darkness-link')) {
-      SmallTimeApp.timeTransition(getWorldTimeAsDayTime());
+      SmallTimeApp.timeTransition(Helpers.getWorldTimeAsDayTime());
     }
     // Refresh the current scene BG for the settings dialog.
-    grabSceneSlice();
+    Helpers.grabSceneSlice();
   }
 });
 
@@ -421,9 +373,9 @@ Hooks.on('ready', () => {
   async function doSocket(data) {
     if (data.type === 'changeTime') {
       if (game.user.isGM) {
-        await setWorldTime(data.payload);
+        await Helpers.setWorldTime(data.payload);
       }
-      handleTimeChange(data.payload);
+      Helpers.handleTimeChange(data.payload);
     }
     if (data.type === 'changeSetting') {
       if (game.user.isGM)
@@ -436,15 +388,15 @@ Hooks.on('ready', () => {
       }
     }
     if (data.type === 'handleRealtime') {
-      if (!game.user.isGM) handleRealtimeState();
+      if (!game.user.isGM) Helpers.handleRealtimeState();
     }
   }
   // Update the stops on the sunrise/sunset gradient, in case
   // there's been changes to the positions.
-  updateSunriseSunsetTimes();
-  updateGradientStops();
+  Helpers.updateSunriseSunsetTimes();
+  Helpers.updateGradientStops();
 
-  setCalendarFallback();
+  Helpers.setCalendarFallback();
 
   // Obtain the custom worldTime epoch offset for the current PF2E world.
   if (game.system.id === 'pf2e') {
@@ -454,7 +406,7 @@ Hooks.on('ready', () => {
       localEpoch.minute * 60 +
       localEpoch.second +
       localEpoch.millisecond * 0.001;
-    SmallTime_EpochOffset = deltaInSeconds;
+    ST_Config.EpochOffset = deltaInSeconds;
   }
 });
 
@@ -484,7 +436,7 @@ Hooks.on('renderSmallTimeApp', () => {
     $('#smalltime-app').addClass('show-date');
     $('#smalltime-app').css({ height: '79px' });
   }
-  handleTimeChange(getWorldTimeAsDayTime());
+  Helpers.handleTimeChange(Helpers.getWorldTimeAsDayTime());
 });
 
 // Handle our changes to the Scene Config screen.
@@ -581,6 +533,8 @@ Hooks.on('renderSceneConfig', async (obj) => {
       .parent()
       .after(injection);
   }
+  // Re-auto-size the app window.
+  obj.setPosition();
 
   if (obj.object.getFlag('smalltime', 'moonlight')) {
     const currentThreshold = obj.object.data.globalLightThreshold;
@@ -601,7 +555,7 @@ Hooks.on('renderSceneConfig', async (obj) => {
   }
 });
 
-Hooks.on('renderSettingsConfig', () => {
+Hooks.on('renderSettingsConfig', (obj) => {
   // Everything here is GM-only.
   if (!game.user.isGM) return;
 
@@ -641,7 +595,7 @@ Hooks.on('renderSettingsConfig', () => {
   $('select[name="smalltime.date-format"]')
     .children('option')
     .each(function () {
-      this.text = getDate(game.settings.get('smalltime', 'calendar-provider'), this.value);
+      this.text = Helpers.getDate(game.settings.get('smalltime', 'calendar-provider'), this.value);
     });
 
   // Hide the elements for the threshold settings; we'll be changing
@@ -685,12 +639,12 @@ Hooks.on('renderSettingsConfig', () => {
   // Reset to defaults on Shift-click, and close the window.
   $(darknessTitleElement).on('click', function () {
     if (event.shiftKey) {
-      game.settings.set('smalltime', 'sunrise-start', SmallTime_SunriseStartDefault);
-      game.settings.set('smalltime', 'sunrise-end', SmallTime_SunriseEndDefault);
-      game.settings.set('smalltime', 'sunset-start', SmallTime_SunsetStartDefault);
-      game.settings.set('smalltime', 'sunset-end', SmallTime_SunsetEndDefault);
-      game.settings.set('smalltime', 'max-darkness', SmallTime_MaxDarknessDefault);
-      game.settings.set('smalltime', 'min-darkness', SmallTime_MinDarknessDefault);
+      game.settings.set('smalltime', 'sunrise-start', ST_Config.SunriseStartDefault);
+      game.settings.set('smalltime', 'sunrise-end', ST_Config.SunriseEndDefault);
+      game.settings.set('smalltime', 'sunset-start', ST_Config.SunsetStartDefault);
+      game.settings.set('smalltime', 'sunset-end', ST_Config.SunsetEndDefault);
+      game.settings.set('smalltime', 'max-darkness', ST_Config.MaxDarknessDefault);
+      game.settings.set('smalltime', 'min-darkness', ST_Config.MinDarknessDefault);
 
       Object.values(ui.windows).forEach((app) => {
         if (app.options.id === 'client-settings') app.close();
@@ -727,22 +681,25 @@ Hooks.on('renderSettingsConfig', () => {
     notesElement.after(injection);
   }
 
+  // Re-auto-size the app window.
+  obj.setPosition();
+
   // Tweak to accommodate TidyUI's smaller available space.
   if (game.modules.get('tidy-ui_game-settings')?.active && game.release.generation === 9) {
     $('#smalltime-darkness-config').css('transform', 'scale(0.9, 0.9) translate(-30px, 0px)');
   }
 
   // Get the current Darkness overlay color.
-  const coreDarknessColor = convertHexToRGB(CONFIG.Canvas.darknessColor.toString(16));
+  const coreDarknessColor = Helpers.convertHexToRGB(CONFIG.Canvas.darknessColor.toString(16));
   document.documentElement.style.setProperty('--SMLTME-darkness-r', coreDarknessColor.r);
   document.documentElement.style.setProperty('--SMLTME-darkness-g', coreDarknessColor.g);
   document.documentElement.style.setProperty('--SMLTME-darkness-b', coreDarknessColor.b);
 
   // Refresh the current scene BG for the settings dialog.
-  grabSceneSlice();
+  Helpers.grabSceneSlice();
 
   // Build the Darkness Config interface.
-  setupDragHandles();
+  Helpers.setupDragHandles();
 
   // Live render the opacity changes as a preview.
   $('input[name="smalltime.opacity"]').on('input', () => {
@@ -765,7 +722,7 @@ Hooks.on('closeSettingsConfig', () => {
   // Update the stops on the sunrise/sunset gradient, in case
   // there's been changes to the positions. Also update the
   // rise/set times in case of a change to sync toggle.
-  updateSunriseSunsetTimes();
+  Helpers.updateSunriseSunsetTimes();
 });
 
 // Add a toggle button inside the Jounral Notes tool layer.
@@ -790,11 +747,11 @@ Hooks.on('renderPlayerList', () => {
   const element = document.getElementById('players');
   const playerAppPos = element.getBoundingClientRect();
 
-  // The SmallTime_PinOffset here is the ideal distance between the top of the
+  // The ST_Config.PinOffset here is the ideal distance between the top of the
   // Players list and the top of SmallTime. The +21 accounts
   // for the date dropdown if enabled; the -23 accounts for the clock row
   // being disabled in some cases.
-  let bottomOffset = playerAppPos.height + SmallTime_PinOffset;
+  let bottomOffset = playerAppPos.height + ST_Config.PinOffset;
 
   if (game.settings.get('smalltime', 'date-showing')) {
     bottomOffset += 21;
@@ -817,26 +774,16 @@ Hooks.on('renderPlayerList', () => {
   if (game.release.generation === 10) {
     leftOffset += $('#interface').offset().left;
   }
-
-  // This would be better done with a class add, but injecting
-  // it here was the only way I could get it to enforce the
-  // absolute positioning.
-  $('#pin-lock').text(`
-      #smalltime-app {
-        top: calc(100vh - ${bottomOffset}px) !important;
-        left: ${leftOffset}px !important;
-      }
-  `);
 });
 
 // Listen for changes to the worldTime from elsewhere.
 Hooks.on('updateWorldTime', () => {
-  handleTimeChange(getWorldTimeAsDayTime());
+  Helpers.handleTimeChange(Helpers.getWorldTimeAsDayTime());
 });
 
 // Handle toggling of time separator flash when game is paused/unpaused.
 Hooks.on('pauseGame', () => {
-  handleRealtimeState();
+  Helpers.handleRealtimeState();
 });
 
 // Listen for changes to the realtime clock state.
@@ -845,680 +792,18 @@ Hooks.on('simple-calendar-clock-start-stop', () => {
 });
 
 Hooks.on('simple-calendar-date-time-change', (data) => {
-  updateSunriseSunsetTimes(data);
-  updateGradientStops();
+  Helpers.updateSunriseSunsetTimes(data);
+  Helpers.updateGradientStops();
 });
-
-function updateSunriseSunsetTimes(data) {
-  if (
-    game.settings.get('smalltime', 'sun-sync') &&
-    game.modules.get('foundryvtt-simple-calendar')?.active
-  ) {
-    // Use defaults if no seasons have been set up.
-    if (SimpleCalendar.api.getAllSeasons().length == 0) {
-      game.settings.set('smalltime', 'sunrise-start', SmallTime_SunriseStartDefault);
-      game.settings.set('smalltime', 'sunrise-end', SmallTime_SunriseEndDefault);
-      game.settings.set('smalltime', 'sunset-start', SmallTime_SunsetStartDefault);
-      game.settings.set('smalltime', 'sunset-end', SmallTime_SunsetEndDefault);
-    } else {
-      if (typeof data !== 'undefined') {
-        const riseEnd =
-          SimpleCalendar.api.timestampToDate(data.date.sunrise).hour * 60 +
-          SimpleCalendar.api.timestampToDate(data.date.sunrise).minute;
-        const riseStart = riseEnd - SmallTime_DawnDuskSpread;
-        const setStart =
-          SimpleCalendar.api.timestampToDate(data.date.sunset).hour * 60 +
-          SimpleCalendar.api.timestampToDate(data.date.sunset).minute;
-        const setEnd = setStart + SmallTime_DawnDuskSpread;
-        game.settings.set('smalltime', 'sunrise-start', riseStart);
-        game.settings.set('smalltime', 'sunrise-end', riseEnd);
-        game.settings.set('smalltime', 'sunset-start', setStart);
-        game.settings.set('smalltime', 'sunset-end', setEnd);
-      }
-    }
-  }
-}
-
-function handleRealtimeState() {
-  if (game.modules.get('foundryvtt-simple-calendar')?.active) {
-    // Need to insert a small delay here, to wait for Simple Calendar to finish
-    // setting its clockStatus.
-    setTimeout(function () {
-      if (game.paused || !SimpleCalendar.api.clockStatus().started) {
-        $('.timeSeparator').removeClass('blink');
-      } else if (!game.paused && SimpleCalendar.api.clockStatus().started) {
-        $('.timeSeparator').addClass('blink');
-      }
-    }, 500);
-  }
-}
-
-function updateGradientStops() {
-  // Make the CSS linear gradient stops proportionally match the custom sunrise/sunset times.
-  // Also used to build the gradient stops in the Settings screen.
-  const initialPositions = {
-    sunriseStart: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunrise-start')),
-    sunriseEnd: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunrise-end')),
-    sunsetStart: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunset-start')),
-    sunsetEnd: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunset-end')),
-  };
-
-  const sunriseMiddle1 = Math.round(
-    (initialPositions.sunriseStart * 2) / 3 + (initialPositions.sunriseEnd * 1) / 3
-  );
-  const sunriseMiddle2 = Math.round(
-    (initialPositions.sunriseStart * 1) / 3 + (initialPositions.sunriseEnd * 2) / 3
-  );
-  const sunsetMiddle1 = Math.round(
-    (initialPositions.sunsetStart * 2) / 3 + (initialPositions.sunsetEnd * 1) / 3
-  );
-  const sunsetMiddle2 = Math.round(
-    (initialPositions.sunsetStart * 1) / 3 + (initialPositions.sunsetEnd * 2) / 3
-  );
-
-  // Set the initial gradient transition points.
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunrise-start',
-    convertTimeIntegerToPercentage(game.settings.get('smalltime', 'sunrise-start'))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunrise-middle-1',
-    convertTimeIntegerToPercentage(convertPositionToTimeInteger(sunriseMiddle1))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunrise-middle-2',
-    convertTimeIntegerToPercentage(convertPositionToTimeInteger(sunriseMiddle2))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunrise-end',
-    convertTimeIntegerToPercentage(game.settings.get('smalltime', 'sunrise-end'))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunset-start',
-    convertTimeIntegerToPercentage(game.settings.get('smalltime', 'sunset-start'))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunset-middle-1',
-    convertTimeIntegerToPercentage(convertPositionToTimeInteger(sunsetMiddle1))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunset-middle-2',
-    convertTimeIntegerToPercentage(convertPositionToTimeInteger(sunsetMiddle2))
-  );
-  document.documentElement.style.setProperty(
-    '--SMLTME-sunset-end',
-    convertTimeIntegerToPercentage(game.settings.get('smalltime', 'sunset-end'))
-  );
-}
-
-async function saveNewDarknessConfig(positions, max, min) {
-  // Set the hidden inputs for these settings to the new values,
-  // so that the form-saving workflow takes care of saving them.
-  $('input[name="smalltime.sunrise-start"]').val(
-    convertPositionToTimeInteger(positions.sunriseStart)
-  );
-  $('input[name="smalltime.sunrise-end"]').val(convertPositionToTimeInteger(positions.sunriseEnd));
-  $('input[name="smalltime.sunset-start"]').val(
-    convertPositionToTimeInteger(positions.sunsetStart)
-  );
-  $('input[name="smalltime.sunset-end"]').val(convertPositionToTimeInteger(positions.sunsetEnd));
-
-  // Set the max or min Darkness, depending on which was passed.
-  if (min === false) $('input[name="smalltime.max-darkness"]').val(max);
-  if (max === false) $('input[name="smalltime.min-darkness"]').val(min);
-}
-
-function setupDragHandles() {
-  // If sunrise/sunset are being synced from Simple Calendar, we'll lock
-  // the drag handles on the X axis.
-  const sunSync =
-    game.settings.get('smalltime', 'sun-sync') &&
-    game.modules.get('foundryvtt-simple-calendar')?.active;
-
-  // Build the sun/moon drag handles for the darkness config UI.
-  const maxDarkness = game.settings.get('smalltime', 'max-darkness');
-  const minDarkness = game.settings.get('smalltime', 'min-darkness');
-
-  document.documentElement.style.setProperty('--SMLTME-darkness-max', maxDarkness);
-  document.documentElement.style.setProperty('--SMLTME-darkness-min', minDarkness);
-
-  const initialPositions = {
-    sunriseStart: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunrise-start')),
-    sunriseEnd: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunrise-end')),
-    sunsetStart: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunset-start')),
-    sunsetEnd: convertTimeIntegerToPosition(game.settings.get('smalltime', 'sunset-end')),
-  };
-
-  const initialTimes = {
-    sunriseStart: convertPositionToDisplayTime(initialPositions.sunriseStart),
-    sunriseEnd: convertPositionToDisplayTime(initialPositions.sunriseEnd),
-    sunsetStart: convertPositionToDisplayTime(initialPositions.sunsetStart),
-    sunsetEnd: convertPositionToDisplayTime(initialPositions.sunsetEnd),
-  };
-
-  // If syncing, append a note to the tooltips.
-  const syncString = ' (Simple Calendar)';
-  if (sunSync) {
-    Object.keys(initialTimes).forEach((key) => (initialTimes[key] += syncString));
-  }
-
-  const snapX = 10;
-  const snapY = 4;
-
-  const offsetBetween = 20;
-
-  $('.sunrise-start').css('top', convertDarknessToPostion(maxDarkness));
-  $('.sunrise-start').css('left', initialPositions.sunriseStart);
-  $('.sunrise-start').attr('aria-label', initialTimes.sunriseStart);
-
-  $('.sunrise-end').css('top', convertDarknessToPostion(minDarkness));
-  $('.sunrise-end').css('left', initialPositions.sunriseEnd);
-  $('.sunrise-end').attr('aria-label', initialTimes.sunriseEnd);
-
-  $('.sunset-start').css('top', convertDarknessToPostion(minDarkness));
-  $('.sunset-start').css('left', initialPositions.sunsetStart);
-  $('.sunset-start').attr('aria-label', initialTimes.sunsetStart);
-
-  $('.sunset-end').css('top', convertDarknessToPostion(maxDarkness));
-  $('.sunset-end').css('left', initialPositions.sunsetEnd);
-  $('.sunset-end').attr('aria-label', initialTimes.sunsetEnd);
-
-  updateGradientStops();
-
-  // Create the drag handles.
-  const sunriseStartDrag = new Draggabilly('.sunrise-start', {
-    containment: '.sunrise-start-bounds',
-    grid: [snapX, snapY],
-    // Lock off the X axis if we're syncing the sunrise/sunset times.
-    axis: sunSync ? 'y' : null,
-  });
-  const sunriseEndDrag = new Draggabilly('.sunrise-end', {
-    containment: '.sunrise-end-bounds',
-    grid: [snapX, snapY],
-    axis: sunSync ? 'y' : null,
-  });
-  const sunsetStartDrag = new Draggabilly('.sunset-start', {
-    containment: '.sunset-start-bounds',
-    grid: [snapX, snapY],
-    axis: sunSync ? 'y' : null,
-  });
-  const sunsetEndDrag = new Draggabilly('.sunset-end', {
-    containment: '.sunset-end-bounds',
-    grid: [snapX, snapY],
-    axis: sunSync ? 'y' : null,
-  });
-
-  let shovedPos = '';
-  let newTransition = '';
-
-  sunriseStartDrag.on('dragMove', function () {
-    // Match the paired handle.
-    $('.sunset-end').css('top', this.position.y + 'px');
-    // Update the tooltip. Append sync note if syncing.
-    let displayTime = convertPositionToDisplayTime(this.position.x);
-    sunSync ? (displayTime += syncString) : null;
-    $('.sunrise-start').attr('aria-label', displayTime);
-
-    // Live update the darkness maximum.
-    document.documentElement.style.setProperty(
-      '--SMLTME-darkness-max',
-      convertPositionToDarkness(this.position.y)
-    );
-
-    // Live update the gradient transition point.
-    newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(this.position.x));
-    document.documentElement.style.setProperty('--SMLTME-sunrise-start', newTransition);
-
-    // Shove other handle on collisions.
-    if (this.position.x >= sunriseEndDrag.position.x - offsetBetween) {
-      shovedPos = this.position.x + offsetBetween;
-      $('.sunrise-end').css('left', shovedPos);
-      $('.sunrise-end').attr('aria-label', convertPositionToDisplayTime(shovedPos));
-      sunriseEndDrag.setPosition(shovedPos);
-      newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(shovedPos));
-      document.documentElement.style.setProperty('--SMLTME-sunrise-end', newTransition);
-    }
-  });
-
-  sunriseEndDrag.on('dragMove', function () {
-    // Match the paired handle.
-    $('.sunset-start').css('top', this.position.y + 'px');
-    // Update the tooltip. Append sync note if syncing.
-    let displayTime = convertPositionToDisplayTime(this.position.x);
-    sunSync ? (displayTime += syncString) : null;
-    $('.sunrise-end').attr('aria-label', displayTime);
-
-    // Live update the darkness minimum.
-    document.documentElement.style.setProperty(
-      '--SMLTME-darkness-min',
-      convertPositionToDarkness(this.position.y)
-    );
-
-    // Live update the gradient transition point.
-    newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(this.position.x));
-    document.documentElement.style.setProperty('--SMLTME-sunrise-end', newTransition);
-
-    // Shove other handle on collisions.
-    if (this.position.x <= sunriseStartDrag.position.x + offsetBetween) {
-      shovedPos = this.position.x - offsetBetween;
-      $('.sunrise-start').css('left', shovedPos);
-      $('.sunrise-start').attr('aria-label', convertPositionToDisplayTime(shovedPos));
-      sunriseStartDrag.setPosition(shovedPos);
-      newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(shovedPos));
-      document.documentElement.style.setProperty('--SMLTME-sunrise-start', newTransition);
-    }
-  });
-
-  sunsetStartDrag.on('dragMove', function () {
-    // Match the paired handle.
-    $('.sunrise-end').css('top', this.position.y + 'px');
-    // Update the tooltip. Append sync note if syncing.
-    let displayTime = convertPositionToDisplayTime(this.position.x);
-    sunSync ? (displayTime += syncString) : null;
-    $('.sunset-start').attr('aria-label', displayTime);
-
-    // Live update the darkness minimum.
-    document.documentElement.style.setProperty(
-      '--SMLTME-darkness-min',
-      convertPositionToDarkness(this.position.y)
-    );
-
-    // Live update the gradient transition point.
-    newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(this.position.x));
-    document.documentElement.style.setProperty('--SMLTME-sunset-start', newTransition);
-
-    // Shove other handle on collisions.
-    if (this.position.x >= sunsetEndDrag.position.x - offsetBetween) {
-      shovedPos = this.position.x + offsetBetween;
-      $('.sunset-end').css('left', shovedPos);
-      $('.sunset-end').attr('aria-label', convertPositionToDisplayTime(shovedPos));
-      sunsetEndDrag.setPosition(shovedPos);
-      newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(shovedPos));
-      document.documentElement.style.setProperty('--SMLTME-sunset-end', newTransition);
-    }
-  });
-
-  sunsetEndDrag.on('dragMove', function () {
-    // Match the paired handle.
-    $('.sunrise-start').css('top', this.position.y + 'px');
-    // Update the tooltip. Append sync note if syncing.
-    let displayTime = convertPositionToDisplayTime(this.position.x);
-    sunSync ? (displayTime += syncString) : null;
-    $('.sunset-end').attr('aria-label', displayTime);
-
-    // Live update the darkness maximum.
-    document.documentElement.style.setProperty(
-      '--SMLTME-darkness-max',
-      convertPositionToDarkness(this.position.y)
-    );
-
-    // Live update the gradient transition point.
-    newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(this.position.x));
-    document.documentElement.style.setProperty('--SMLTME-sunset-end', newTransition);
-
-    // Shove other handle on collisions.
-    if (this.position.x <= sunsetStartDrag.position.x + offsetBetween) {
-      shovedPos = this.position.x - offsetBetween;
-      $('.sunset-start').css('left', shovedPos);
-      $('.sunset-start').attr('aria-label', convertPositionToDisplayTime(shovedPos));
-      sunsetStartDrag.setPosition(shovedPos);
-      newTransition = convertTimeIntegerToPercentage(convertPositionToTimeInteger(shovedPos));
-      document.documentElement.style.setProperty('--SMLTME-sunset-start', newTransition);
-    }
-  });
-
-  sunriseStartDrag.on('dragEnd', async function () {
-    const newPositions = {
-      sunriseStart: sunriseStartDrag.position.x,
-      sunriseEnd: sunriseEndDrag.position.x,
-      sunsetStart: sunsetStartDrag.position.x,
-      sunsetEnd: sunsetEndDrag.position.x,
-    };
-    let newMaxDarkness = convertPositionToDarkness(this.position.y);
-    if (newMaxDarkness > 1) newMaxDarkness = 1;
-    saveNewDarknessConfig(newPositions, newMaxDarkness, false);
-  });
-
-  sunriseEndDrag.on('dragEnd', async function () {
-    const newPositions = {
-      sunriseStart: sunriseStartDrag.position.x,
-      sunriseEnd: sunriseEndDrag.position.x,
-      sunsetStart: sunsetStartDrag.position.x,
-      sunsetEnd: sunsetEndDrag.position.x,
-    };
-    let newMinDarkness = convertPositionToDarkness(this.position.y);
-    if (newMinDarkness < 0) newMinDarkness = 0;
-    saveNewDarknessConfig(newPositions, false, newMinDarkness);
-  });
-
-  sunsetStartDrag.on('dragEnd', async function () {
-    const newPositions = {
-      sunriseStart: sunriseStartDrag.position.x,
-      sunriseEnd: sunriseEndDrag.position.x,
-      sunsetStart: sunsetStartDrag.position.x,
-      sunsetEnd: sunsetEndDrag.position.x,
-    };
-    let newMinDarkness = convertPositionToDarkness(this.position.y);
-    if (newMinDarkness < 0) newMinDarkness = 0;
-    saveNewDarknessConfig(newPositions, false, newMinDarkness);
-  });
-
-  sunsetEndDrag.on('dragEnd', async function () {
-    const newPositions = {
-      sunriseStart: sunriseStartDrag.position.x,
-      sunriseEnd: sunriseEndDrag.position.x,
-      sunsetStart: sunsetStartDrag.position.x,
-      sunsetEnd: sunsetEndDrag.position.x,
-    };
-    let newMaxDarkness = convertPositionToDarkness(this.position.y);
-    if (newMaxDarkness > 1) newMaxDarkness = 1;
-    saveNewDarknessConfig(newPositions, newMaxDarkness, false);
-  });
-}
-
-function convertTimeIntegerToPercentage(time) {
-  // Percentage is a proportion of the current time out of the 1440-minute day.
-  return Math.round((time / 1440) * 100) + '%';
-}
-
-function convertPositionToTimeInteger(position) {
-  return (position - 30) * 3;
-}
-
-function convertTimeIntegerToPosition(timeInteger) {
-  return timeInteger / 3 + 30;
-}
-
-function convertDarknessToPostion(darkness) {
-  return darkness * 45 + 2;
-}
-
-function convertPositionToDarkness(position) {
-  let darkCalc = Math.round((1 - (position - 45) / -40) * 10) / 10;
-  return Math.min(Math.max(darkCalc, 0), 1);
-}
-
-function convertPositionToDisplayTime(position) {
-  const displayTimeObj = SmallTimeApp.convertTimeIntegerToDisplay(
-    convertPositionToTimeInteger(position)
-  );
-  return displayTimeObj.hours + ':' + displayTimeObj.minutes;
-}
-
-function convertDisplayObjToString(displayObj) {
-  return displayObj.hours + ':' + displayObj.minutes;
-}
-
-// Convert worldTime (seconds elapsed) into an integer time of day.
-function getWorldTimeAsDayTime() {
-  const currentWorldTime = game.time.worldTime + SmallTime_EpochOffset;
-  const dayTime = Math.abs(Math.trunc((currentWorldTime % 86400) / 60));
-  if (currentWorldTime < 0) {
-    return 1440 - dayTime;
-  } else return dayTime;
-}
-
-// Advance/retreat the elapsed worldTime based on changes made.
-async function setWorldTime(newTime) {
-  const currentWorldTime = game.time.worldTime + SmallTime_EpochOffset;
-  const dayTime = getWorldTimeAsDayTime(currentWorldTime);
-  const delta = newTime - dayTime;
-  game.time.advance(delta * 60);
-}
-
-function getCalendarProviders() {
-  let calendarProviders = new Object();
-
-  if (game.modules.get('foundryvtt-simple-calendar')?.active) {
-    Object.assign(calendarProviders, { sc: 'Simple Calendar' });
-  }
-  if (game.modules.get('calendar-weather')?.active) {
-    Object.assign(calendarProviders, { cw: 'Calendar/Weather' });
-  }
-  if (game.system.id === 'pf2e') {
-    Object.assign(calendarProviders, { pf2e: 'PF2E ' });
-  }
-
-  return calendarProviders;
-}
-
-// If the calendar provider is set to a module that isn't currently enabled,
-// fall back to using PF2E's calendar, if in PF2E.
-function setCalendarFallback() {
-  const providerSetting = game.settings.get('smalltime', 'calendar-provider');
-
-  if (!game.user.isGM) return;
-
-  // If the provider is set to a module or system that isn't available, use the
-  // first available provider by default.
-  if (
-    (providerSetting === 'sc' && !game.modules.get('foundryvtt-simple-calendar')?.active) ||
-    (providerSetting === 'cw' && !game.modules.get('calendar-weather')?.active) ||
-    (providerSetting === 'pf2e' && !(game.system.id === 'pf2e'))
-  ) {
-    game.settings.set('smalltime', 'calendar-provider', getCalendarProviders()[0]);
-  }
-}
-
-// Helper function for time-changing socket updates.
-function handleTimeChange(timeInteger) {
-  SmallTimeApp.timeTransition(timeInteger);
-  $('#hourString').html(SmallTimeApp.convertTimeIntegerToDisplay(timeInteger).hours);
-  $('#minuteString').html(SmallTimeApp.convertTimeIntegerToDisplay(timeInteger).minutes);
-
-  // Calculate and show the current seconds if required.
-  if (
-    game.settings.get('smalltime', 'time-format') == 24 &&
-    game.settings.get('smalltime', 'show-seconds') == true
-  ) {
-    const currentWorldTime = game.time.worldTime + SmallTime_EpochOffset;
-    let seconds;
-    if (currentWorldTime < 0) {
-      seconds = 60 - Math.abs(Math.trunc(((currentWorldTime % 86400) % 3600) % 60));
-    } else {
-      seconds = Math.abs(Math.trunc(((currentWorldTime % 86400) % 3600) % 60));
-    }
-    if (seconds < 10) seconds = '0' + seconds;
-    if (seconds == 60) seconds = '00';
-    $('#secondString').html(seconds);
-    $('#secondsSpan').css('display', 'inline');
-  } else {
-    $('#secondsSpan').css('display', 'none');
-  }
-
-  $('#timeSlider').val(timeInteger);
-  handleRealtimeState();
-  SmallTimeApp.updateDate();
-}
-
-function getDate(provider, variant) {
-  let day;
-  let monthName;
-  let month;
-  let date;
-  let year;
-  let yearPostfix;
-  let yearPrefix;
-  let ordinalSuffix;
-  let displayDate = [];
-
-  if (game.modules.get('foundryvtt-simple-calendar')?.active && provider === 'sc') {
-    let SCobject = SimpleCalendar.api.timestampToDate(game.time.worldTime).display;
-    day = SimpleCalendar.api.timestampToDate(game.time.worldTime).showWeekdayHeadings
-      ? SCobject.weekday
-      : undefined;
-    monthName = SCobject.monthName;
-    month = SCobject.month;
-    date = SCobject.day;
-    ordinalSuffix = SCobject.daySuffix;
-    year = SCobject.year;
-    yearPrefix = SCobject.yearPrefix || undefined;
-    yearPostfix = SCobject.yearPostfix || undefined;
-  }
-
-  if (game.system.id === 'pf2e' && provider === 'pf2e') {
-    let PFobject = game.pf2e.worldClock;
-    day = PFobject.weekday;
-    monthName = PFobject.month;
-    month = PFobject.worldTime.c.month;
-    date = PFobject.worldTime.c.day;
-    year = PFobject.year;
-    ordinalSuffix = PFobject.ordinalSuffix || undefined;
-    yearPostfix = PFobject.era;
-  }
-
-  // Support for C/W and AT calendars will be dropped soon, but
-  // leaving these in for now.
-
-  if (game.modules.get('calendar-weather')?.active && provider === 'cw') {
-    let CWobject = game.settings.get('calendar-weather', 'dateTime');
-    day = CWobject.daysOfTheWeek[CWobject.numDayOfTheWeek];
-    monthName = CWobject.months[CWobject.currentMonth].name;
-    // CW .currentMonth and .day are zero-indexed, so add one to get the display date.
-    month = CWobject.currentMonth + 1;
-    date = CWobject.day + 1;
-    year = CWobject.year;
-  }
-
-  // Thursday, August 12th, 2021 C.E.
-  displayDate.push(
-    stringAfter(day, ', ') +
-      stringAfter(monthName) +
-      stringAfter(date + (ordinalSuffix ? ordinalSuffix : ''), ', ') +
-      stringAfter(yearPrefix) +
-      year +
-      stringBefore(yearPostfix)
-  );
-
-  // Thursday, August 12th
-  displayDate.push(
-    stringAfter(day, ', ') +
-      stringAfter(monthName) +
-      stringAfter(date + (ordinalSuffix ? ordinalSuffix : ''))
-  );
-
-  // Thursday August, 2021
-  displayDate.push(stringAfter(day, ' ') + stringAfter(monthName, ', ') + year);
-
-  // August 12th, 2021
-  displayDate.push(
-    stringAfter(monthName) +
-      stringAfter(date + (ordinalSuffix ? ordinalSuffix : ''), ', ') +
-      stringAfter(yearPrefix) +
-      year
-  );
-
-  // August 12th
-  displayDate.push(
-    stringAfter(monthName) + stringAfter(date + (ordinalSuffix ? ordinalSuffix : ''))
-  );
-
-  // Thursday, 12 August, 2021 C.E.
-  displayDate.push(
-    stringAfter(day, ', ') +
-      stringAfter(date) +
-      stringAfter(monthName, ', ') +
-      stringAfter(yearPrefix) +
-      year +
-      stringBefore(yearPostfix)
-  );
-
-  // Thursday, 12 August
-  displayDate.push(stringAfter(day, ', ') + stringAfter(date) + stringAfter(monthName));
-
-  // 12 August, 2021
-  displayDate.push(stringAfter(date) + stringAfter(monthName, ', ') + year);
-
-  // 12 August
-  displayDate.push(stringAfter(date) + stringAfter(monthName));
-
-  // 12 / 8 / 2021
-  displayDate.push(stringAfter(date, ' / ') + stringAfter(month, ' / ') + year);
-
-  // 8 / 12 / 2021
-  displayDate.push(stringAfter(month, ' / ') + stringAfter(date, ' / ') + year);
-
-  // 2021 / 8 / 12
-  displayDate.push(stringAfter(year, ' / ') + stringAfter(month, ' / ') + date);
-
-  return displayDate[variant];
-}
-
-function stringAfter(stringText, afterString = ' ') {
-  return stringText ? stringText + afterString : '';
-}
-
-function stringBefore(stringText, beforeString = ' ') {
-  return stringText ? beforeString + stringText : '';
-}
-
-function grabSceneSlice() {
-  // Prefer the full image, but fall back to the thumbnail in the case
-  // of tile BGs or animations. Use a generic image for empty scenes.
-  let sceneBG = canvas.scene.data.img;
-  if (!sceneBG || sceneBG.endsWith('.m4v') || sceneBG.endsWith('.webp')) {
-    sceneBG = canvas.scene.data.thumb;
-  }
-  if (!sceneBG || sceneBG.startsWith('data')) {
-    // Generic scene slice provided by MADCartographer -- thanks! :)
-    sceneBG = 'modules/smalltime/images/generic-bg.webp';
-  }
-  // Check for absolute path here, to account for assets on Forge or other buckets.
-  if (sceneBG.startsWith('http')) {
-    document.documentElement.style.setProperty('--SMLTME-scene-bg', 'url(' + sceneBG + ')');
-  } else {
-    document.documentElement.style.setProperty('--SMLTME-scene-bg', 'url(/' + sceneBG + ')');
-  }
-}
-
-function convertHexToRGB(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
-// Overriding the Vision Limitation Threshold value for the scene if requested.
-// Values span from 0.0 to 1.0 to mimic brightness levels of the various phases.
-async function adjustMoonlight(phase) {
-  // Only perform this adjustment if the setting is enabled.
-  if (!game.scenes.viewed.getFlag('smalltime', 'moonlight')) return;
-  let newThreshold;
-  switch (phase) {
-    case 0: // new
-      newThreshold = 0;
-      break;
-    case 1: // waxing crescent
-    case 7: // waning crescent
-      newThreshold = 0.25;
-      break;
-    case 2: // first quarter
-    case 6: // last quarter
-      newThreshold = 0.5;
-      break;
-    case 3: // waxing gibbous
-    case 5: // waning gibbous
-      newThreshold = 0.75;
-      break;
-    case 4: // full
-      newThreshold = 1;
-      break;
-  }
-  if (newThreshold === game.scenes.viewed.data.globalLightThreshold) {
-    return true;
-  }
-  await canvas.scene.update({ globalLightThreshold: newThreshold });
-}
 
 class SmallTimeApp extends FormApplication {
   static _isOpen = false;
 
   async _render(force = false, options = {}) {
     await super._render(force, options);
+    if (game.settings.get('smalltime', 'pinned')) {
+      SmallTimeApp.pinApp();
+    }
     SmallTimeApp._isOpen = true;
     // Remove the window from candidates for closing via Escape.
     delete ui.windows[this.appId];
@@ -1536,23 +821,14 @@ class SmallTimeApp extends FormApplication {
 
   constructor() {
     super();
-    this.currentTime = getWorldTimeAsDayTime();
+    this.currentTime = Helpers.getWorldTimeAsDayTime();
   }
 
   static get defaultOptions() {
-    const pinned = game.settings.get('smalltime', 'pinned');
-
     const playerApp = document.getElementById('players');
     const playerAppPos = playerApp.getBoundingClientRect();
 
     this.initialPosition = game.settings.get('smalltime', 'position');
-
-    // The actual pin location is set elsewhere, but we need to insert something
-    // manually here to feed it values for the initial render.
-    if (pinned) {
-      this.initialPosition.top = playerAppPos.top - 70;
-      this.initialPosition.left = playerAppPos.left;
-    }
 
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
@@ -1573,7 +849,7 @@ class SmallTimeApp extends FormApplication {
     const newTime = formData.timeSlider;
     // Save the new time.
     if (game.user.isGM) {
-      await setWorldTime(newTime);
+      await Helpers.setWorldTime(newTime);
     } else {
       SmallTimeApp.emitSocket('changeTime', newTime);
     }
@@ -1613,26 +889,16 @@ class SmallTimeApp extends FormApplication {
       if (now - this._moveTime < 1000 / 60) return;
       this._moveTime = now;
 
-      SmallTimeApp.unPinApp();
+      // When unpinning, make the drag track from the existing location in screen space
+      const { left, top } = this.element.getBoundingClientRect();
+      if (SmallTimeApp.unPinApp()) {
+        Object.assign(this.position, { left, top });
+      }
 
       // Follow the mouse.
-      // TODO: Figure out how to account for changes to the viewport size
-      // between drags.
-      let conditionalOffset = 0;
-      if (
-        game.settings.get('smalltime', 'date-showing') &&
-        game.settings.get('smalltime', 'pinned') &&
-        game.modules.get('smalltime').dateAvailable
-      ) {
-        conditionalOffset = 20;
-      }
-      if (!game.modules.get('smalltime').clockAuth && game.settings.get('smalltime', 'pinned')) {
-        conditionalOffset = -23;
-      }
-
       this.app.setPosition({
         left: this.position.left + (event.clientX - this._initial.x),
-        top: this.position.top + (event.clientY - this._initial.y - conditionalOffset),
+        top: this.position.top + (event.clientY - this._initial.y),
       });
 
       // Defining a region above the PlayerList that will trigger the jiggle.
@@ -1640,7 +906,8 @@ class SmallTimeApp extends FormApplication {
       let playerAppLowerBound = playerAppPos.top + 50;
 
       if (
-        event.clientX < 215 &&
+        event.clientX > playerAppPos.left &&
+        event.clientX < playerAppPos.left + playerAppPos.width &&
         event.clientY > playerAppUpperBound &&
         event.clientY < playerAppLowerBound
       ) {
@@ -1660,14 +927,11 @@ class SmallTimeApp extends FormApplication {
 
       const playerApp = document.getElementById('players');
       const playerAppPos = playerApp.getBoundingClientRect();
-      let myOffset = playerAppPos.height + SmallTime_PinOffset;
+      let myOffset = playerAppPos.height + ST_Config.PinOffset;
 
       // If the mouseup happens inside the Pin zone, pin the app.
       if (pinZone) {
-        SmallTimeApp.pinApp(
-          game.settings.get('smalltime', 'date-showing') &&
-            game.modules.get('smalltime').dateAvailable
-        );
+        SmallTimeApp.pinApp();
         await game.settings.set('smalltime', 'pinned', true);
         this.app.setPosition({
           left: 15,
@@ -1693,17 +957,17 @@ class SmallTimeApp extends FormApplication {
     $('#timeSlider').on('click', async function () {
       if (event.shiftKey && game.modules.get('smalltime').controlAuth) {
         const startingPhase = game.settings.get('smalltime', 'moon-phase');
-        const newPhase = (startingPhase + 1) % SmallTime_MoonPhases.length;
+        const newPhase = (startingPhase + 1) % ST_Config.MoonPhases.length;
 
         document.documentElement.style.setProperty(
           '--SMLTME-phaseURL',
-          `url('../images/moon-phases/${SmallTime_MoonPhases[newPhase]}.webp')`
+          `url('../images/moon-phases/${ST_Config.MoonPhases[newPhase]}.webp')`
         );
 
         // Set and broadcast the change.
         if (game.user.isGM) {
           await game.settings.set('smalltime', 'moon-phase', newPhase);
-          adjustMoonlight(newPhase);
+          Helpers.adjustMoonlight(newPhase);
         } else {
           SmallTimeApp.emitSocket('changeSetting', {
             scope: 'smalltime',
@@ -1712,7 +976,7 @@ class SmallTimeApp extends FormApplication {
           });
         }
         if (game.user.isGM) {
-          await setWorldTime($(this).val());
+          await Helpers.setWorldTime($(this).val());
         }
         SmallTimeApp.emitSocket('changeTime', $(this).val());
       }
@@ -1735,7 +999,7 @@ class SmallTimeApp extends FormApplication {
     // Wait for the actual change event to do the time set.
     $(document).on('change', '#timeSlider', async function () {
       if (game.user.isGM) {
-        setWorldTime($(this).val());
+        Helpers.setWorldTime($(this).val());
       } else {
         SmallTimeApp.emitSocket('changeTime', $(this).val());
       }
@@ -1757,7 +1021,7 @@ class SmallTimeApp extends FormApplication {
           SimpleCalendar.api.startClock();
         }
         if (game.user.isGM) {
-          handleRealtimeState();
+          Helpers.handleRealtimeState();
         }
         SmallTimeApp.emitSocket('handleRealtime');
       } else {
@@ -1769,7 +1033,7 @@ class SmallTimeApp extends FormApplication {
           $('#smalltime-app').animate({ height: '79px' }, 80);
           if (game.settings.get('smalltime', 'pinned')) {
             SmallTimeApp.unPinApp();
-            SmallTimeApp.pinApp(true);
+            SmallTimeApp.pinApp();
           }
           await game.settings.set('smalltime', 'date-showing', true);
         } else {
@@ -1777,7 +1041,7 @@ class SmallTimeApp extends FormApplication {
           $('#smalltime-app').animate({ height: '59px' }, 80);
           if (game.settings.get('smalltime', 'pinned')) {
             SmallTimeApp.unPinApp();
-            SmallTimeApp.pinApp(false);
+            SmallTimeApp.pinApp();
           }
           await game.settings.set('smalltime', 'date-showing', false);
         }
@@ -1848,12 +1112,12 @@ class SmallTimeApp extends FormApplication {
         if (typeof data.moons[0] === 'undefined') {
           return;
         }
-        const newPhase = SmallTime_MoonPhases.findIndex(function (phase) {
+        const newPhase = ST_Config.MoonPhases.findIndex(function (phase) {
           return phase === data.moons[0].currentPhase.icon;
         });
         await game.settings.set('smalltime', 'moon-phase', newPhase);
-        SmallTimeApp.timeTransition(getWorldTimeAsDayTime());
-        adjustMoonlight(newPhase);
+        SmallTimeApp.timeTransition(Helpers.getWorldTimeAsDayTime());
+        Helpers.adjustMoonlight(newPhase);
       });
     }
   }
@@ -1868,7 +1132,7 @@ class SmallTimeApp extends FormApplication {
 
   // Functionality for increment/decrement buttons.
   async timeRatchet(delta) {
-    let currentTime = getWorldTimeAsDayTime();
+    let currentTime = Helpers.getWorldTimeAsDayTime();
     let newTime = currentTime + delta;
 
     if (newTime < 0) {
@@ -1915,7 +1179,7 @@ class SmallTimeApp extends FormApplication {
       $('#timeSlider').addClass('moon');
       document.documentElement.style.setProperty(
         '--SMLTME-phaseURL',
-        `url('../images/moon-phases/${SmallTime_MoonPhases[currentPhase]}.webp')`
+        `url('../images/moon-phases/${ST_Config.MoonPhases[currentPhase]}.webp')`
       );
     }
 
@@ -1936,7 +1200,7 @@ class SmallTimeApp extends FormApplication {
       // If requested, adjust max Darkness based on moon phase.
       if (game.settings.get('smalltime', 'moon-darkness')) {
         const moonlightFactor = 0.4; // Percentage by which available moonlight reduces max Darkness.
-        const moonlightMultiplier = moonlightFactor * SmallTime_PhaseValues[currentPhase];
+        const moonlightMultiplier = moonlightFactor * ST_Config.PhaseValues[currentPhase];
         maxDarkness = Math.round((1 - maxDarkness * moonlightMultiplier) * 100) / 100;
       }
 
@@ -2013,51 +1277,26 @@ class SmallTimeApp extends FormApplication {
     return timeObj;
   }
 
-  // Pin the app above the Players list.
-  static async pinApp(expanded) {
-    // Only do this if a pin lock isn't already in place.
-
-    const playerApp = document.getElementById('players');
-    const playerAppPos = playerApp.getBoundingClientRect();
-    let interfaceOffset = 0;
-    if (game.release.generation === 10) {
-      interfaceOffset += $('#interface').offset().left;
-    }
-    const leftOffset = interfaceOffset + 15;
-    let bottomOffset = playerAppPos.height + SmallTime_PinOffset;
-    if (!$('#pin-lock').length) {
-      if (expanded) {
-        bottomOffset += 21;
-      }
-      if (!game.modules.get('smalltime').clockAuth) {
-        bottomOffset -= 23;
-      }
-
-      // Dropping this into the DOM with an !important was the only way
-      // I could get it to enable the locking behaviour.
-      $('body').append(`
-        <style id="pin-lock">
-          #smalltime-app {
-            top: calc(100vh - ${bottomOffset}px) !important;
-            left: ${leftOffset}px !important;
-          }
-        </style>
-      `);
-      await game.settings.set('smalltime', 'pinned', true);
-    } else {
-      $('#pin-lock').text(`
-          #smalltime-app {
-            top: calc(100vh - ${bottomOffset}px) !important;
-            left: ${leftOffset}px !important;
-          }
-      `);
+  // Pin the app above the Players list inside the ui-left container.
+  static async pinApp() {
+    const app = game.modules.get('smalltime').myApp;
+    if (app && !app.element.hasClass('pinned')) {
+      $('#players').before(app.element);
+      app.element.addClass('pinned');
     }
   }
 
   // Un-pin the app.
   static unPinApp() {
-    // Remove the style tag that's pinning the window.
-    $('#pin-lock').remove();
+    const app = game.modules.get('smalltime').myApp;
+    if (app && app.element.hasClass('pinned')) {
+      const element = app.element;
+  
+      $('body').append(element);
+      element.removeClass('pinned');
+
+      return true;
+    }
   }
 
   // Toggle visibility of the main window.
@@ -2090,7 +1329,7 @@ class SmallTimeApp extends FormApplication {
 
   // Get the date from various calendar providers.
   static async updateDate() {
-    let displayDate = getDate(
+    let displayDate = Helpers.getDate(
       game.settings.get('smalltime', 'calendar-provider'),
       game.settings.get('smalltime', 'date-format')
     );
@@ -2103,4 +1342,4 @@ class SmallTimeApp extends FormApplication {
   }
 }
 
-// Sun & moon icons by Freepik on flaticon.com
+globalThis.SmallTimeApp = SmallTimeApp;

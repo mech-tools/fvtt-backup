@@ -1,4 +1,4 @@
-import { Fuse, SvelteComponent, init, safe_not_equal, empty, insert, noop, detach, createEventDispatcher, afterUpdate, element, attr, update_keyed_each, space, text, toggle_class, append, listen, set_data, destroy_each, run_all, binding_callbacks, destroy_block, stop_propagation, src_url_equal, HtmlTag } from './vendor.js';
+import { __classPrivateFieldSet, __classPrivateFieldGet, Fuse, SvelteComponent, init, safe_not_equal, empty, insert, noop, detach, createEventDispatcher, afterUpdate, element, attr, update_keyed_each, space, text, toggle_class, append, listen, set_data, destroy_each, run_all, binding_callbacks, destroy_block, stop_propagation, src_url_equal, HtmlTag } from './vendor.js';
 
 const MODULE_NAME = "quick-insert";
 function registerSetting(setting, callback, { ...options }) {
@@ -37,6 +37,8 @@ var ModuleSetting;
     ModuleSetting["DEFAULT_ACTION_SCENE"] = "defaultSceneAction";
     ModuleSetting["DEFAULT_ACTION_ROLL_TABLE"] = "defaultActionRollTable";
     ModuleSetting["DEFAULT_ACTION_MACRO"] = "defaultActionMacro";
+    ModuleSetting["SEARCH_TOOLTIPS"] = "searchTooltips";
+    ModuleSetting["EMBEDDED_INDEXING"] = "embeddedIndexing";
 })(ModuleSetting || (ModuleSetting = {}));
 
 const i18n = (name, replacements) => {
@@ -125,6 +127,7 @@ function customKeybindHandler(evt, context) {
     }
 }
 
+var _EmbeddedEntitySearchItem_tagline, _EmbeddedCompendiumSearchItem_tagline;
 var DocumentType;
 (function (DocumentType) {
     DocumentType["ACTOR"] = "Actor";
@@ -142,6 +145,12 @@ const IndexedDocumentTypes = [
     DocumentType.ROLLTABLE,
     DocumentType.SCENE,
 ];
+const EmbeddedDocumentTypes = {
+    [DocumentType.JOURNALENTRY]: "JournalEntryPage",
+};
+const EmbeddedDocumentCollections = {
+    [DocumentType.JOURNALENTRY]: "pages",
+};
 const DocumentMeta = {
     [DocumentType.ACTOR]: CONFIG.Actor.documentClass.metadata,
     [DocumentType.ITEM]: CONFIG.Item.documentClass.metadata,
@@ -158,6 +167,21 @@ const documentIcons = {
     [DocumentType.ROLLTABLE]: "fa-th-list",
     [DocumentType.SCENE]: "fa-map",
 };
+function extractEmbeddedIndex(item, pack) {
+    if (!("pages" in item))
+        return;
+    if (pack) {
+        return item.pages.name.map((name, i) => new EmbeddedCompendiumSearchItem(pack, {
+            _id: item.pages._id[i],
+            parentName: item.name,
+            embeddedName: name,
+            parentId: item._id,
+            type: "JournalEntryPage",
+            tagline: `Pg. ${i} - ${pack?.metadata?.label || pack.title}`,
+        }));
+    }
+    // TODO: Index directory
+}
 function getCollectionFromType(type) {
     //@ts-expect-error not documented
     return CONFIG[type].collection.instance;
@@ -166,6 +190,13 @@ const ignoredFolderNames = { _fql_quests: true };
 function enabledDocumentTypes() {
     const disabled = getSetting(ModuleSetting.INDEXING_DISABLED);
     return IndexedDocumentTypes.filter((t) => !disabled?.entities?.[t]?.includes(game.user?.role));
+}
+function enabledEmbeddedDocumentTypes() {
+    if (enabledDocumentTypes().includes(DocumentType.JOURNALENTRY) &&
+        getSetting(ModuleSetting.EMBEDDED_INDEXING)) {
+        return [EmbeddedDocumentTypes[DocumentType.JOURNALENTRY]];
+    }
+    return [];
 }
 function packEnabled(pack) {
     const disabled = getSetting(ModuleSetting.INDEXING_DISABLED);
@@ -183,6 +214,12 @@ function packEnabled(pack) {
     }
     // Not hidden?
     return !(pack.private && !game.user?.isGM);
+}
+function getDirectoryName(type) {
+    const documentLabel = DocumentMeta[type].labelPlural;
+    return i18n("SIDEBAR.DirectoryTitle", {
+        type: documentLabel ? i18n(documentLabel) : type,
+    });
 }
 class SearchItem {
     constructor(data) {
@@ -212,6 +249,11 @@ class SearchItem {
     get tagline() {
         return "";
     }
+    // Additional details for result tooltips
+    get tooltip() {
+        const type = i18n(DocumentMeta[this.documentType]?.label);
+        return `${type}, ${this.tagline}`;
+    }
     // Show the sheet or equivalent of this search result
     async show() {
         return;
@@ -240,7 +282,20 @@ class EntitySearchItem extends SearchItem {
             .filter((e) => {
             return (e.visible && !(e.folder?.name && ignoredFolderNames[e.folder.name]));
         })
-            .map(this.fromDocument);
+            .map((doc) => {
+            let embedded;
+            if (EmbeddedDocumentTypes[doc.documentName] &&
+                enabledEmbeddedDocumentTypes().includes(EmbeddedDocumentTypes[doc.documentName])) {
+                const collection = 
+                //@ts-expect-error can't type this right now
+                doc[EmbeddedDocumentCollections[doc.documentName]];
+                embedded = collection.map(EmbeddedEntitySearchItem.fromDocument);
+            }
+            return embedded
+                ? [...embedded, this.fromDocument(doc)]
+                : [this.fromDocument(doc)];
+        })
+            .flat();
     }
     static fromDocument(doc) {
         if ("PDFoundry" in ui && "pdfoundry" in doc.data.flags) {
@@ -251,6 +306,7 @@ class EntitySearchItem extends SearchItem {
                 documentType: doc.documentName,
                 //@ts-expect-error data is merged wih doc
                 img: doc.img,
+                folder: doc.folder || undefined,
             });
         }
         return new EntitySearchItem({
@@ -260,6 +316,7 @@ class EntitySearchItem extends SearchItem {
             documentType: doc.documentName,
             //@ts-expect-error data is merged wih doc
             img: doc.img,
+            folder: doc.folder || undefined,
         });
     }
     // Get the drag data for drag operations
@@ -283,9 +340,9 @@ class EntitySearchItem extends SearchItem {
     // Short tagline that explains where/what this is
     get tagline() {
         if (this.folder) {
-            return `${this.folder.name} - ${this.documentType}`;
+            return `${this.folder.name}`;
         }
-        return `${this.documentType}`;
+        return `${getDirectoryName(this.documentType)}`;
     }
     async show() {
         (await this.get())?.sheet?.render(true);
@@ -321,9 +378,15 @@ class CompendiumSearchItem extends SearchItem {
         this.documentType = pack.metadata.type;
         this.uuid = `Compendium.${this.package}.${this.id}`;
     }
-    static fromCompendium(compendium) {
-        const cIndex = compendium.index;
-        return cIndex.map((item) => new CompendiumSearchItem(compendium, item));
+    static fromCompendium(pack) {
+        const cIndex = pack.index;
+        return cIndex
+            .map((item) => {
+            const embedded = extractEmbeddedIndex(item, pack);
+            const searchItem = new CompendiumSearchItem(pack, item);
+            return embedded ? [searchItem, embedded] : searchItem;
+        })
+            .flat(2);
     }
     // Get the drag data for drag operations
     get dragData() {
@@ -354,7 +417,164 @@ class CompendiumSearchItem extends SearchItem {
         return (await fromUuid(this.uuid));
     }
 }
+class EmbeddedEntitySearchItem extends SearchItem {
+    constructor(item) {
+        super({
+            id: item.id,
+            uuid: item.uuid,
+            name: `${item.embeddedName} | ${item.parentName}`,
+            documentType: item.type,
+            img: item.img,
+        });
+        _EmbeddedEntitySearchItem_tagline.set(this, void 0);
+        __classPrivateFieldSet(this, _EmbeddedEntitySearchItem_tagline, item.tagline, "f");
+    }
+    static fromDocument(document) {
+        if (!document.parent || !document.id) {
+            throw new Error("Not properly embedded");
+        }
+        //@ts-expect-error There has to be an easier way...
+        const number = [...document.parent[document.collectionName].keys()].indexOf(document.id);
+        const parentType = document.parent.documentName;
+        return new EmbeddedEntitySearchItem({
+            id: document.id,
+            uuid: document.uuid,
+            parentName: document.parent.name || undefined,
+            embeddedName: document.name,
+            type: parentType,
+            tagline: `Pg. ${number} - ${document.parent.folder?.name || getDirectoryName(parentType)}`,
+        });
+    }
+    // Get the drag data for drag operations
+    get dragData() {
+        return {
+            // TODO: Use type from index
+            type: "JournalEntryPage",
+            uuid: this.uuid,
+        };
+    }
+    get icon() {
+        // TODO: Add table tor subtypes
+        return `<i class="fa-duotone fa-book-open entity-icon"></i>`;
+    }
+    // Reference the entity in a journal, chat or other places that support it
+    get journalLink() {
+        return `@UUID[${this.uuid}]{${this.name}}`;
+    }
+    // Reference the entity in a script
+    get script() {
+        return `fromUuid("${this.uuid}")`;
+    }
+    // Short tagline that explains where/what this is
+    get tagline() {
+        return __classPrivateFieldGet(this, _EmbeddedEntitySearchItem_tagline, "f") || "";
+    }
+    get tooltip() {
+        const type = i18n(DocumentMeta[this.documentType]?.label);
+        //@ts-expect-error Update types!
+        const page = i18n(CONFIG.JournalEntryPage.documentClass.metadata.label);
+        return `${type} ${page}, ${__classPrivateFieldGet(this, _EmbeddedEntitySearchItem_tagline, "f")}`;
+    }
+    async show() {
+        //@ts-expect-error This is good enough for now
+        (await this.get())?._onClickDocumentLink({
+            currentTarget: { dataset: {} },
+        });
+    }
+    async get() {
+        return (await fromUuid(this.uuid));
+    }
+}
+_EmbeddedEntitySearchItem_tagline = new WeakMap();
+class EmbeddedCompendiumSearchItem extends SearchItem {
+    constructor(pack, item) {
+        const packName = pack.collection;
+        const uuid = `Compendium.${packName}.${item.parentId}.${item.type}.${item._id}`;
+        super({
+            id: item._id,
+            uuid,
+            name: `${item.embeddedName} | ${item.parentName}`,
+            documentType: item.type,
+            img: item.img,
+        });
+        // Inject overrides??
+        _EmbeddedCompendiumSearchItem_tagline.set(this, void 0);
+        this.uuid = uuid;
+        this.package = packName;
+        this.packageName = pack?.metadata?.label || pack.title;
+        this.documentType = pack.metadata.type;
+        __classPrivateFieldSet(this, _EmbeddedCompendiumSearchItem_tagline, item.tagline, "f");
+    }
+    static fromDocument(document) {
+        if (!document.parent) {
+            throw new Error("Document is not embedded");
+        }
+        if (!document.pack) {
+            throw new Error("Document has no pack");
+        }
+        const pack = game.packs.get(document.pack);
+        if (!pack) {
+            throw new Error("Document has invalid pack");
+        }
+        //@ts-expect-error There has to be an easier way...
+        const number = [...document.parent[document.collectionName].keys()].indexOf(document.id);
+        return new EmbeddedCompendiumSearchItem(pack, {
+            _id: document.id,
+            parentName: document.parent.name || undefined,
+            embeddedName: document.name,
+            parentId: document.parent.id,
+            type: "JournalEntryPage",
+            tagline: `Pg. ${number} - ${pack?.metadata?.label || pack.title}`,
+        });
+    }
+    // Get the drag data for drag operations
+    get dragData() {
+        return {
+            // TODO: Use type from index
+            type: "JournalEntryPage",
+            uuid: this.uuid,
+        };
+    }
+    get icon() {
+        // TODO: Add table tor subtypes
+        return `<i class="fa-duotone fa-book-open entity-icon"></i>`;
+    }
+    // Reference the entity in a journal, chat or other places that support it
+    get journalLink() {
+        return `@UUID[${this.uuid}]{${this.name}}`;
+    }
+    // Reference the entity in a script
+    get script() {
+        return `fromUuid("${this.uuid}")`; // TODO: note that this is async somehow?
+    }
+    // Short tagline that explains where/what this is
+    get tagline() {
+        return __classPrivateFieldGet(this, _EmbeddedCompendiumSearchItem_tagline, "f") || `${this.packageName}`;
+    }
+    get tooltip() {
+        const type = i18n(DocumentMeta[this.documentType]?.label);
+        //@ts-expect-error Update types!
+        const page = i18n(CONFIG.JournalEntryPage.documentClass.metadata.label);
+        return `${type} ${page}, ${__classPrivateFieldGet(this, _EmbeddedCompendiumSearchItem_tagline, "f")}`;
+    }
+    async show() {
+        //@ts-expect-error This is good enough for now
+        (await this.get())?._onClickDocumentLink({
+            currentTarget: { dataset: {} },
+        });
+    }
+    async get() {
+        return (await fromUuid(this.uuid));
+    }
+}
+_EmbeddedCompendiumSearchItem_tagline = new WeakMap();
 function searchItemFromDocument(document) {
+    if (document.parent) {
+        if (document.compendium) {
+            return EmbeddedCompendiumSearchItem.fromDocument(document);
+        }
+        return EmbeddedEntitySearchItem.fromDocument(document);
+    }
     if (document.compendium) {
         return new CompendiumSearchItem(document.compendium, {
             _id: document.id,
@@ -478,7 +698,13 @@ async function* loadIndexes() {
             break;
         let promise;
         try {
-            promise = failures[pack.collection].waiting ?? pack.getIndex();
+            let options;
+            if (getSetting(ModuleSetting.EMBEDDED_INDEXING)) {
+                if (pack.documentClass.documentName === "JournalEntry") {
+                    options = { fields: ["pages.name", "pages._id"] };
+                }
+            }
+            promise = failures[pack.collection].waiting ?? pack.getIndex(options);
             await withDeadline(promise, timeout * (failures[pack.collection].errors + 1));
         }
         catch (error) {
@@ -510,6 +736,72 @@ async function* loadIndexes() {
             errorCount: failures[pack.collection].errors,
         };
     }
+}
+
+function checkIndexed(document, embedded = false) {
+    if (!document.visible)
+        return false;
+    // Check embedded state
+    if ((embedded && !document.parent) || (!embedded && document.parent)) {
+        return false;
+    }
+    // Check enabled types
+    if (document.parent) {
+        if (!enabledEmbeddedDocumentTypes().includes(document.documentName))
+            return false;
+    }
+    else {
+        if (!enabledDocumentTypes().includes(document.documentName))
+            return false;
+    }
+    // Check disabled packs
+    return !(document.pack && !packEnabled(document.compendium));
+}
+function setupDocumentHooks(quickInsert) {
+    enabledDocumentTypes().forEach((type) => {
+        Hooks.on(`create${type}`, (document) => {
+            if (document.parent || !checkIndexed(document))
+                return;
+            quickInsert.searchLib?.addItem(searchItemFromDocument(document));
+        });
+        Hooks.on(`update${type}`, (document) => {
+            if (document.parent)
+                return;
+            if (!checkIndexed(document)) {
+                quickInsert.searchLib?.removeItem(document.uuid);
+                return;
+            }
+            quickInsert.searchLib?.replaceItem(searchItemFromDocument(document));
+        });
+        Hooks.on(`delete${type}`, (document) => {
+            if (document.parent || !checkIndexed(document))
+                return;
+            quickInsert.searchLib?.removeItem(document.uuid);
+        });
+    });
+    enabledEmbeddedDocumentTypes().forEach((type) => {
+        Hooks.on(`create${type}`, (document) => {
+            if (!document.parent || !checkIndexed(document, true))
+                return;
+            const item = searchItemFromDocument(document);
+            quickInsert.searchLib?.addItem(item);
+        });
+        Hooks.on(`update${type}`, (document) => {
+            if (!document.parent)
+                return;
+            if (!checkIndexed(document, true)) {
+                quickInsert.searchLib?.removeItem(document.uuid);
+                return;
+            }
+            const item = searchItemFromDocument(document);
+            quickInsert.searchLib?.replaceItem(item);
+        });
+        Hooks.on(`delete${type}`, (document) => {
+            if (!document.parent || !checkIndexed(document, true))
+                return;
+            quickInsert.searchLib?.removeItem(document.uuid);
+        });
+    });
 }
 
 var FilterType;
@@ -967,7 +1259,8 @@ function isInFolder(parentFolder, targetFolder) {
     while (parentFolder) {
         if (parentFolder === targetFolder)
             return true;
-        parentFolder = game.folders?.get(parentFolder)?.data?.parent;
+        //@ts-expect-error "parent" migrated to "folder"
+        parentFolder = game.folders?.get(parentFolder)?.folder;
     }
     return false;
 }
@@ -1726,27 +2019,27 @@ function defaultAction(type, isInsertContext) {
 
 function get_each_context$1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[11] = list[i].item;
-	child_ctx[12] = list[i].match;
-	child_ctx[13] = list[i].actions;
-	child_ctx[14] = list[i].defaultAction;
-	child_ctx[16] = i;
+	child_ctx[13] = list[i].item;
+	child_ctx[14] = list[i].match;
+	child_ctx[15] = list[i].actions;
+	child_ctx[16] = list[i].defaultAction;
+	child_ctx[18] = i;
 	return child_ctx;
 }
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[17] = list[i];
+	child_ctx[19] = list[i];
 	return child_ctx;
 }
 
-// (17:0) {#if active}
+// (52:0) {#if active}
 function create_if_block$1(ctx) {
 	let ul;
 	let each_blocks = [];
 	let each_1_lookup = new Map();
-	let each_value = /*results*/ ctx[1];
-	const get_key = ctx => /*item*/ ctx[11].uuid;
+	let each_value = /*results*/ ctx[2];
+	const get_key = ctx => /*item*/ ctx[13].uuid;
 
 	for (let i = 0; i < each_value.length; i += 1) {
 		let child_ctx = get_each_context$1(ctx, each_value, i);
@@ -1763,6 +2056,7 @@ function create_if_block$1(ctx) {
 			}
 
 			attr(ul, "class", "quick-insert-result");
+			attr(ul, "data-tooltip-direction", /*tooltips*/ ctx[0]);
 		},
 		m(target, anchor) {
 			insert(target, ul, anchor);
@@ -1771,12 +2065,16 @@ function create_if_block$1(ctx) {
 				each_blocks[i].m(ul, null);
 			}
 
-			/*ul_binding*/ ctx[9](ul);
+			/*ul_binding*/ ctx[11](ul);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*results, selectedIndex, JSON, callAction, selectedAction, formatMatch*/ 46) {
-				each_value = /*results*/ ctx[1];
+			if (dirty & /*getTooltip, results, tooltips, selectedIndex, JSON, callAction, selectedAction, formatMatch*/ 221) {
+				each_value = /*results*/ ctx[2];
 				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, ul, destroy_block, create_each_block$1, null, get_each_context$1);
+			}
+
+			if (dirty & /*tooltips*/ 1) {
+				attr(ul, "data-tooltip-direction", /*tooltips*/ ctx[0]);
 			}
 		},
 		d(detaching) {
@@ -1786,15 +2084,15 @@ function create_if_block$1(ctx) {
 				each_blocks[i].d();
 			}
 
-			/*ul_binding*/ ctx[9](null);
+			/*ul_binding*/ ctx[11](null);
 		}
 	};
 }
 
-// (35:10) {:else}
+// (77:10) {:else}
 function create_else_block(ctx) {
 	let html_tag;
-	let raw_value = /*item*/ ctx[11].icon + "";
+	let raw_value = /*item*/ ctx[13].icon + "";
 	let html_anchor;
 
 	return {
@@ -1808,7 +2106,7 @@ function create_else_block(ctx) {
 			insert(target, html_anchor, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*results*/ 2 && raw_value !== (raw_value = /*item*/ ctx[11].icon + "")) html_tag.p(raw_value);
+			if (dirty & /*results*/ 4 && raw_value !== (raw_value = /*item*/ ctx[13].icon + "")) html_tag.p(raw_value);
 		},
 		d(detaching) {
 			if (detaching) detach(html_anchor);
@@ -1817,7 +2115,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (33:10) {#if item.img}
+// (75:10) {#if item.img}
 function create_if_block_1(ctx) {
 	let img;
 	let img_src_value;
@@ -1825,13 +2123,13 @@ function create_if_block_1(ctx) {
 	return {
 		c() {
 			img = element("img");
-			if (!src_url_equal(img.src, img_src_value = /*item*/ ctx[11].img)) attr(img, "src", img_src_value);
+			if (!src_url_equal(img.src, img_src_value = /*item*/ ctx[13].img)) attr(img, "src", img_src_value);
 		},
 		m(target, anchor) {
 			insert(target, img, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*results*/ 2 && !src_url_equal(img.src, img_src_value = /*item*/ ctx[11].img)) {
+			if (dirty & /*results*/ 4 && !src_url_equal(img.src, img_src_value = /*item*/ ctx[13].img)) {
 				attr(img, "src", img_src_value);
 			}
 		},
@@ -1841,7 +2139,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (46:12) {#each actions as action}
+// (88:12) {#each actions as action}
 function create_each_block_1(ctx) {
 	let i;
 	let i_class_value;
@@ -1851,19 +2149,19 @@ function create_each_block_1(ctx) {
 	let dispose;
 
 	function click_handler(...args) {
-		return /*click_handler*/ ctx[6](/*action*/ ctx[17], /*item*/ ctx[11], ...args);
+		return /*click_handler*/ ctx[8](/*action*/ ctx[19], /*item*/ ctx[13], ...args);
 	}
 
 	return {
 		c() {
 			i = element("i");
-			attr(i, "class", i_class_value = "" + (/*action*/ ctx[17].icon + " action-icon"));
-			attr(i, "title", i_title_value = "" + (/*action*/ ctx[17].title + " '" + /*item*/ ctx[11].name + "'"));
-			attr(i, "data-action-id", i_data_action_id_value = /*action*/ ctx[17].id);
+			attr(i, "class", i_class_value = "" + (/*action*/ ctx[19].icon + " action-icon"));
+			attr(i, "title", i_title_value = "" + (/*action*/ ctx[19].title + " '" + /*item*/ ctx[13].name + "'"));
+			attr(i, "data-action-id", i_data_action_id_value = /*action*/ ctx[19].id);
 
-			toggle_class(i, "selected", /*i*/ ctx[16] === /*selectedIndex*/ ctx[2] && (/*selectedAction*/ ctx[3]
-			? /*action*/ ctx[17].id === /*selectedAction*/ ctx[3]
-			: /*action*/ ctx[17].id == /*defaultAction*/ ctx[14]));
+			toggle_class(i, "selected", /*i*/ ctx[18] === /*selectedIndex*/ ctx[3] && (/*selectedAction*/ ctx[4]
+			? /*action*/ ctx[19].id === /*selectedAction*/ ctx[4]
+			: /*action*/ ctx[19].id == /*defaultAction*/ ctx[16]));
 		},
 		m(target, anchor) {
 			insert(target, i, anchor);
@@ -1876,22 +2174,22 @@ function create_each_block_1(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 
-			if (dirty & /*results*/ 2 && i_class_value !== (i_class_value = "" + (/*action*/ ctx[17].icon + " action-icon"))) {
+			if (dirty & /*results*/ 4 && i_class_value !== (i_class_value = "" + (/*action*/ ctx[19].icon + " action-icon"))) {
 				attr(i, "class", i_class_value);
 			}
 
-			if (dirty & /*results*/ 2 && i_title_value !== (i_title_value = "" + (/*action*/ ctx[17].title + " '" + /*item*/ ctx[11].name + "'"))) {
+			if (dirty & /*results*/ 4 && i_title_value !== (i_title_value = "" + (/*action*/ ctx[19].title + " '" + /*item*/ ctx[13].name + "'"))) {
 				attr(i, "title", i_title_value);
 			}
 
-			if (dirty & /*results*/ 2 && i_data_action_id_value !== (i_data_action_id_value = /*action*/ ctx[17].id)) {
+			if (dirty & /*results*/ 4 && i_data_action_id_value !== (i_data_action_id_value = /*action*/ ctx[19].id)) {
 				attr(i, "data-action-id", i_data_action_id_value);
 			}
 
-			if (dirty & /*results, results, selectedIndex, selectedAction*/ 14) {
-				toggle_class(i, "selected", /*i*/ ctx[16] === /*selectedIndex*/ ctx[2] && (/*selectedAction*/ ctx[3]
-				? /*action*/ ctx[17].id === /*selectedAction*/ ctx[3]
-				: /*action*/ ctx[17].id == /*defaultAction*/ ctx[14]));
+			if (dirty & /*results, results, selectedIndex, selectedAction*/ 28) {
+				toggle_class(i, "selected", /*i*/ ctx[18] === /*selectedIndex*/ ctx[3] && (/*selectedAction*/ ctx[4]
+				? /*action*/ ctx[19].id === /*selectedAction*/ ctx[4]
+				: /*action*/ ctx[19].id == /*defaultAction*/ ctx[16]));
 			}
 		},
 		d(detaching) {
@@ -1902,7 +2200,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (19:4) {#each results as { item, match, actions, defaultAction }
+// (58:4) {#each results as { item, match, actions, defaultAction }
 function create_each_block$1(key_1, ctx) {
 	let li;
 	let a;
@@ -1911,31 +2209,32 @@ function create_each_block$1(key_1, ctx) {
 
 	let raw_value = formatMatch(
 		{
-			item: /*item*/ ctx[11],
-			match: /*match*/ ctx[12]
+			item: /*item*/ ctx[13],
+			match: /*match*/ ctx[14]
 		},
 		func
 	) + "";
 
 	let t1;
 	let span1;
-	let t2_value = /*item*/ ctx[11].tagline + "";
+	let t2_value = /*item*/ ctx[13].tagline + "";
 	let t2;
 	let t3;
 	let span2;
 	let a_title_value;
 	let t4;
+	let li_data_tooltip_value;
 	let mounted;
 	let dispose;
 
 	function select_block_type(ctx, dirty) {
-		if (/*item*/ ctx[11].img) return create_if_block_1;
+		if (/*item*/ ctx[13].img) return create_if_block_1;
 		return create_else_block;
 	}
 
 	let current_block_type = select_block_type(ctx);
 	let if_block = current_block_type(ctx);
-	let each_value_1 = /*actions*/ ctx[13];
+	let each_value_1 = /*actions*/ ctx[15];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -1943,11 +2242,11 @@ function create_each_block$1(key_1, ctx) {
 	}
 
 	function dragstart_handler(...args) {
-		return /*dragstart_handler*/ ctx[7](/*item*/ ctx[11], ...args);
+		return /*dragstart_handler*/ ctx[9](/*item*/ ctx[13], ...args);
 	}
 
 	function click_handler_1(...args) {
-		return /*click_handler_1*/ ctx[8](/*defaultAction*/ ctx[14], /*item*/ ctx[11], ...args);
+		return /*click_handler_1*/ ctx[10](/*defaultAction*/ ctx[16], /*item*/ ctx[13], ...args);
 	}
 
 	return {
@@ -1974,8 +2273,9 @@ function create_each_block$1(key_1, ctx) {
 			attr(span1, "class", "sub");
 			attr(span2, "class", "action-icons");
 			attr(a, "draggable", "true");
-			attr(a, "title", a_title_value = "" + (/*item*/ ctx[11].name + ", " + /*item*/ ctx[11].tagline));
-			toggle_class(li, "search-selected", /*i*/ ctx[16] === /*selectedIndex*/ ctx[2]);
+			attr(a, "title", a_title_value = "" + (/*item*/ ctx[13].name + ", " + /*item*/ ctx[13].tagline));
+			attr(li, "data-tooltip", li_data_tooltip_value = /*getTooltip*/ ctx[7](/*item*/ ctx[13], /*tooltips*/ ctx[0]));
+			toggle_class(li, "search-selected", /*i*/ ctx[18] === /*selectedIndex*/ ctx[3]);
 			this.first = li;
 		},
 		m(target, anchor) {
@@ -2021,17 +2321,17 @@ function create_each_block$1(key_1, ctx) {
 				}
 			}
 
-			if (dirty & /*results*/ 2 && raw_value !== (raw_value = formatMatch(
+			if (dirty & /*results*/ 4 && raw_value !== (raw_value = formatMatch(
 				{
-					item: /*item*/ ctx[11],
-					match: /*match*/ ctx[12]
+					item: /*item*/ ctx[13],
+					match: /*match*/ ctx[14]
 				},
 				func
 			) + "")) span0.innerHTML = raw_value;
-			if (dirty & /*results*/ 2 && t2_value !== (t2_value = /*item*/ ctx[11].tagline + "")) set_data(t2, t2_value);
+			if (dirty & /*results*/ 4 && t2_value !== (t2_value = /*item*/ ctx[13].tagline + "")) set_data(t2, t2_value);
 
-			if (dirty & /*results, selectedIndex, selectedAction, callAction*/ 46) {
-				each_value_1 = /*actions*/ ctx[13];
+			if (dirty & /*results, selectedIndex, selectedAction, callAction*/ 92) {
+				each_value_1 = /*actions*/ ctx[15];
 				let i;
 
 				for (i = 0; i < each_value_1.length; i += 1) {
@@ -2053,12 +2353,16 @@ function create_each_block$1(key_1, ctx) {
 				each_blocks.length = each_value_1.length;
 			}
 
-			if (dirty & /*results*/ 2 && a_title_value !== (a_title_value = "" + (/*item*/ ctx[11].name + ", " + /*item*/ ctx[11].tagline))) {
+			if (dirty & /*results*/ 4 && a_title_value !== (a_title_value = "" + (/*item*/ ctx[13].name + ", " + /*item*/ ctx[13].tagline))) {
 				attr(a, "title", a_title_value);
 			}
 
-			if (dirty & /*results, selectedIndex*/ 6) {
-				toggle_class(li, "search-selected", /*i*/ ctx[16] === /*selectedIndex*/ ctx[2]);
+			if (dirty & /*results, tooltips*/ 5 && li_data_tooltip_value !== (li_data_tooltip_value = /*getTooltip*/ ctx[7](/*item*/ ctx[13], /*tooltips*/ ctx[0]))) {
+				attr(li, "data-tooltip", li_data_tooltip_value);
+			}
+
+			if (dirty & /*results, selectedIndex*/ 12) {
+				toggle_class(li, "search-selected", /*i*/ ctx[18] === /*selectedIndex*/ ctx[3]);
 			}
 		},
 		d(detaching) {
@@ -2073,7 +2377,7 @@ function create_each_block$1(key_1, ctx) {
 
 function create_fragment$1(ctx) {
 	let if_block_anchor;
-	let if_block = /*active*/ ctx[0] && create_if_block$1(ctx);
+	let if_block = /*active*/ ctx[1] && create_if_block$1(ctx);
 
 	return {
 		c() {
@@ -2085,7 +2389,7 @@ function create_fragment$1(ctx) {
 			insert(target, if_block_anchor, anchor);
 		},
 		p(ctx, [dirty]) {
-			if (/*active*/ ctx[0]) {
+			if (/*active*/ ctx[1]) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -2111,6 +2415,7 @@ const func = str => `<strong>${str}</strong>`;
 
 function instance$1($$self, $$props, $$invalidate) {
 	const dispatch = createEventDispatcher();
+	let { tooltips = "LEFT" } = $$props;
 	let { active = false } = $$props;
 	let { results = [] } = $$props;
 	let { selectedIndex = 0 } = $$props;
@@ -2118,11 +2423,46 @@ function instance$1($$self, $$props, $$invalidate) {
 	let resultList;
 
 	afterUpdate(() => {
-		resultList?.children[selectedIndex]?.scrollIntoView({ block: "nearest" });
+		const tooltipMode = getSetting(ModuleSetting.SEARCH_TOOLTIPS);
+
+		if (resultList?.children[selectedIndex]) {
+			const selected = resultList.children[selectedIndex];
+			selected.scrollIntoView({ block: "nearest" });
+
+			if (tooltipMode !== "off" && selected.dataset?.tooltip) {
+				//@ts-expect-error update types...
+				game.tooltip.activate(selected);
+			} else {
+				//@ts-expect-error update types...
+				game.tooltip.deactivate();
+			}
+		} else {
+			if (tooltipMode !== "off") {
+				//@ts-expect-error update types...
+				game.tooltip.deactivate();
+			}
+		}
 	});
 
 	function callAction(actionId, item, shiftKey) {
 		dispatch("callAction", { actionId, item, shiftKey });
+	}
+
+	function getTooltip(item, side) {
+		const tooltipMode = getSetting(ModuleSetting.SEARCH_TOOLTIPS);
+		if (tooltipMode === "off") return "";
+		const showImage = tooltipMode === "full" || tooltipMode === "image";
+
+		const img = showImage && item.img
+		? `<img src=${item.img} style="max-width: 120px; float:${side === "LEFT" ? "right" : "left"};"/>`
+		: "";
+
+		const text = tooltipMode !== "image"
+		? `<p style='margin:0;text-align:left'>${item.icon} ${item.name}</p>
+    <p style='font-size: 90%; opacity:0.8;margin:0;'>${item.tooltip}</p>`
+		: "";
+
+		return text + img;
 	}
 
 	const click_handler = (action, item, e) => callAction(action.id, item, e.shiftKey);
@@ -2132,24 +2472,27 @@ function instance$1($$self, $$props, $$invalidate) {
 	function ul_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			resultList = $$value;
-			$$invalidate(4, resultList);
+			$$invalidate(5, resultList);
 		});
 	}
 
 	$$self.$$set = $$props => {
-		if ('active' in $$props) $$invalidate(0, active = $$props.active);
-		if ('results' in $$props) $$invalidate(1, results = $$props.results);
-		if ('selectedIndex' in $$props) $$invalidate(2, selectedIndex = $$props.selectedIndex);
-		if ('selectedAction' in $$props) $$invalidate(3, selectedAction = $$props.selectedAction);
+		if ('tooltips' in $$props) $$invalidate(0, tooltips = $$props.tooltips);
+		if ('active' in $$props) $$invalidate(1, active = $$props.active);
+		if ('results' in $$props) $$invalidate(2, results = $$props.results);
+		if ('selectedIndex' in $$props) $$invalidate(3, selectedIndex = $$props.selectedIndex);
+		if ('selectedAction' in $$props) $$invalidate(4, selectedAction = $$props.selectedAction);
 	};
 
 	return [
+		tooltips,
 		active,
 		results,
 		selectedIndex,
 		selectedAction,
 		resultList,
 		callAction,
+		getTooltip,
 		click_handler,
 		dragstart_handler,
 		click_handler_1,
@@ -2162,10 +2505,11 @@ class SearchResults extends SvelteComponent {
 		super();
 
 		init(this, options, instance$1, create_fragment$1, safe_not_equal, {
-			active: 0,
-			results: 1,
-			selectedIndex: 2,
-			selectedAction: 3
+			tooltips: 0,
+			active: 1,
+			results: 2,
+			selectedIndex: 3,
+			selectedAction: 4
 		});
 	}
 }
@@ -2400,7 +2744,9 @@ class SearchController {
             this.app.attachedContext.mode == ContextMode.Insert);
     }
     activate() {
-        this.view?.$$set?.({ active: true });
+        const left = this.app.attachedContext?.spawnCSS?.left;
+        const tooltipSide = left !== undefined && left < 300 ? "RIGHT" : "LEFT";
+        this.view?.$$set?.({ active: true, tooltips: tooltipSide });
     }
     deactivate() {
         this.view?.$$set?.({ active: false });
@@ -2644,6 +2990,8 @@ class SearchApp extends Application {
             return;
         this.attachedContext?.onClose?.();
         this.selectedFilter = null;
+        //@ts-expect-error tooltip not in types yet
+        game.tooltip.deactivate();
         this.close();
     }
     render(force, options) {
@@ -3030,6 +3378,27 @@ const moduleSettings = {
         },
         default: "show",
     },
+    [ModuleSetting.SEARCH_TOOLTIPS]: {
+        setting: ModuleSetting.SEARCH_TOOLTIPS,
+        name: "QUICKINSERT.SettingsSearchTooltips",
+        hint: "QUICKINSERT.SettingsSearchTooltipsHint",
+        type: String,
+        choices: {
+            off: "QUICKINSERT.SettingsSearchTooltipsValueOff",
+            text: "QUICKINSERT.SettingsSearchTooltipsValueText",
+            image: "QUICKINSERT.SettingsSearchTooltipsValueImage",
+            full: "QUICKINSERT.SettingsSearchTooltipsValueFull",
+        },
+        default: "text",
+    },
+    [ModuleSetting.EMBEDDED_INDEXING]: {
+        setting: ModuleSetting.EMBEDDED_INDEXING,
+        name: "QUICKINSERT.SettingsEmbeddedIndexing",
+        hint: "QUICKINSERT.SettingsEmbeddedIndexingHint",
+        type: Boolean,
+        default: false,
+        scope: "world",
+    },
     [ModuleSetting.INDEXING_DISABLED]: {
         setting: ModuleSetting.INDEXING_DISABLED,
         name: "Things that have indexing disabled",
@@ -3206,27 +3575,7 @@ Hooks.once("ready", function () {
         // Allow in input fields...
         customKeybindHandler(evt);
     });
-    enabledDocumentTypes().forEach((type) => {
-        Hooks.on(`create${type}`, (document) => {
-            if (document.parent || !document.visible)
-                return;
-            QuickInsert.searchLib?.addItem(EntitySearchItem.fromDocument(document));
-        });
-        Hooks.on(`update${type}`, (document) => {
-            if (document.parent)
-                return;
-            if (!document.visible) {
-                QuickInsert.searchLib?.removeItem(document.uuid);
-                return;
-            }
-            QuickInsert.searchLib?.replaceItem(searchItemFromDocument(document));
-        });
-        Hooks.on(`delete${type}`, (document) => {
-            if (document.parent)
-                return;
-            QuickInsert.searchLib?.removeItem(document.uuid);
-        });
-    });
+    setupDocumentHooks(QuickInsert);
     console.log("Quick Insert | Search Application ready");
     const indexDelay = getSetting(ModuleSetting.AUTOMATIC_INDEXING);
     if (indexDelay != -1) {

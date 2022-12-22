@@ -42,3 +42,47 @@
 {"user":"cxXOWUkurR3MxcV5","type":5,"content":"2","sound":"sounds/dice.wav","flavor":"<h2 class=\"failure fumble\"><i class=\"fas fa-skull-crossbones\"></i> Échec critique...</h2>\n    <h3><strong>Force</strong></h3>","speaker":{"scene":"T7NQOPamuns875i7","actor":"lxLn5JmmYKXUWd3v","token":null,"alias":"Luis Ryes"},"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"1d12 + 1\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":1,\"faces\":12,\"modifiers\":[],\"results\":[{\"result\":1,\"active\":true}]},{\"class\":\"OperatorTerm\",\"options\":{},\"evaluated\":true,\"operator\":\"+\"},{\"class\":\"NumericTerm\",\"options\":{},\"evaluated\":true,\"number\":1}],\"total\":2,\"evaluated\":true}"],"timestamp":1670446903996,"whisper":[],"blind":false,"emote":false,"flags":{},"_id":"xe9HPxVcvvhNmTUd"}
 {"user":"Vp8tLYDwBNfFdmoV","speaker":{"scene":"ux3W2pp0Q4BN4whD","actor":null,"token":null,"alias":"Maître de jeu"},"type":5,"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"1d4\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":1,\"faces\":4,\"modifiers\":[],\"results\":[{\"result\":3,\"active\":true}]}],\"total\":3,\"evaluated\":true}"],"sound":"sounds/dice.wav","content":"3","timestamp":1670453472874,"flavor":"","whisper":["Vp8tLYDwBNfFdmoV"],"blind":true,"emote":false,"flags":{},"_id":"yVnu8pZovDCumy2n"}
 {"user":"Vp8tLYDwBNfFdmoV","type":5,"content":"23","sound":"sounds/dice.wav","flavor":"<h2 class=\"standard\"><i class=\"fas fa-dice-d20\"></i> Test de compétence</h2>\n    <h3><strong>Mains nues</strong></h3>","speaker":{"scene":"ux3W2pp0Q4BN4whD","actor":"xdTrGDYZGhhDyVnI","token":null,"alias":"Titus Bourne"},"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"1d20 + 4\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":1,\"faces\":20,\"modifiers\":[],\"results\":[{\"result\":19,\"active\":true}]},{\"class\":\"OperatorTerm\",\"options\":{},\"evaluated\":true,\"operator\":\"+\"},{\"class\":\"NumericTerm\",\"options\":{},\"evaluated\":true,\"number\":4}],\"total\":23,\"evaluated\":true}"],"timestamp":1670452344364,"whisper":["Vp8tLYDwBNfFdmoV"],"blind":true,"emote":false,"flags":{},"_id":"yYXm2kngWQpXnvP3"}
+{"$$deleted":true,"_id":"1RtMciNp6xTa8BdP"}
+{"$$deleted":true,"_id":"20MxuEZeQzXXrAeI"}
+{"$$deleted":true,"_id":"24nNq6Kh4cNfLUGk"}
+{"$$deleted":true,"_id":"270kneFjFZhRVljD"}
+{"$$deleted":true,"_id":"4dKSI16WxGpzSolY"}
+{"$$deleted":true,"_id":"54Uee4a8RoKK9B4N"}
+{"$$deleted":true,"_id":"5UPbkA7EjGsdVowS"}
+{"$$deleted":true,"_id":"7Mqa2KbLPm0xhySU"}
+{"$$deleted":true,"_id":"8FCLk80ff8EZMuBK"}
+{"$$deleted":true,"_id":"8g73JrhVizKKfCcE"}
+{"$$deleted":true,"_id":"9L0UjsFtI0pEKccy"}
+{"$$deleted":true,"_id":"9T6SZHvATVrLCCBG"}
+{"$$deleted":true,"_id":"AXzXd6KhwABNOEsA"}
+{"$$deleted":true,"_id":"Ha3k12n9KoRaELzf"}
+{"$$deleted":true,"_id":"Hyad1ZMYwnKAkpFM"}
+{"$$deleted":true,"_id":"IXwYElNx0gkowNQx"}
+{"$$deleted":true,"_id":"Iua6FLh7SyXXMnEk"}
+{"$$deleted":true,"_id":"LrIbS5cC7zKLLMF9"}
+{"$$deleted":true,"_id":"MfZvt7RenHEDK7L8"}
+{"$$deleted":true,"_id":"Ooxq3HehCMmHDKbZ"}
+{"$$deleted":true,"_id":"Q0zvZREe5mmoLba5"}
+{"$$deleted":true,"_id":"QK3GYc61bat4lwTS"}
+{"$$deleted":true,"_id":"TqMUkyZBiaOo2Mu0"}
+{"$$deleted":true,"_id":"UeQMATjtVD4vkjVu"}
+{"$$deleted":true,"_id":"VLAdcEvlR6isUjxG"}
+{"$$deleted":true,"_id":"XB4dTkZIKhno0cMv"}
+{"$$deleted":true,"_id":"XZ9fKmkA3KukMpdT"}
+{"$$deleted":true,"_id":"YeqOkkHSmUXi7WSJ"}
+{"$$deleted":true,"_id":"YjStmCdXFfWwbRKn"}
+{"$$deleted":true,"_id":"ZzXrnDwXC3fws3QW"}
+{"$$deleted":true,"_id":"aIACpLtvJzTcu2oN"}
+{"$$deleted":true,"_id":"bCjKVch8WT99KANM"}
+{"$$deleted":true,"_id":"bVnjfuitVBE2dYGb"}
+{"$$deleted":true,"_id":"f1wlmiVVGDd4ZZaR"}
+{"$$deleted":true,"_id":"fTvRERTsTWhXn86Z"}
+{"$$deleted":true,"_id":"h0oNIJaStU99ZFsH"}
+{"$$deleted":true,"_id":"jZ1e7W7GC49DgU4H"}
+{"$$deleted":true,"_id":"lgtKXoiXe8D8y7ix"}
+{"$$deleted":true,"_id":"ojhtxdjpO9aGjwx8"}
+{"$$deleted":true,"_id":"pjxGPMOKVsYI6nMP"}
+{"$$deleted":true,"_id":"pkcMcQ3kRIKFljts"}
+{"$$deleted":true,"_id":"xe9HPxVcvvhNmTUd"}
+{"$$deleted":true,"_id":"yVnu8pZovDCumy2n"}
+{"$$deleted":true,"_id":"yYXm2kngWQpXnvP3"}

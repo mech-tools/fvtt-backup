@@ -4,7 +4,7 @@
   width: 300px;
   min-width: 276px;
   flex-direction: column-reverse;
-  z-index: 9999;
+  z-index: calc(var(--z-index-tooltip) - 1);
   border: 1px solid #7a7971;
   bottom: calc(50vh - 30px);
   left: calc(50vw - 150px);
