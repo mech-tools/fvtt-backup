@@ -17,3 +17,5 @@
 {"_id":"ngzr6Xvko1VxgOes","name":"Créatures","type":"Actor","parent":"4YlBbuBUCuJ0vvGf","sorting":"a","sort":100000,"color":"","flags":{}}
 {"_id":"vYt6DDAH2xUpZxCA","name":"Autres","type":"Scene","parent":null,"sorting":"a","sort":-100000,"color":null,"flags":{}}
 {"_id":"wGx3BjD7f1N3B5PM","name":"Partagées","type":"Macro","parent":null,"sorting":"a","sort":750000,"color":"#000000","flags":{}}
+{"$$deleted":true,"_id":"FdTPrxjCboq6Cesz"}
+{"name":"Acte 6","type":"Actor","parent":null,"sorting":"a","sort":0,"color":null,"flags":{},"_id":"Vmq0sr63fSnmxKLL"}
