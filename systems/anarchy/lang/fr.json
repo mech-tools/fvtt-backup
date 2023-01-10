@@ -22,6 +22,10 @@
         "name": "Style des fenêtres Anarchy",
         "hint": "Sélectionne le style utilisées pour les personnages, objets, et Gestion du MJ"
       },
+      "anarchyHack": {
+        "name": "Anarchy hack",
+        "hint": "Choisir un hack de Anarchy fourni par un module"
+      },
       "skillSet": {
         "name": "Liste de compétences",
         "hint": "Sélectionne la liste de compétences à utiliser"
@@ -34,11 +38,12 @@
       },
       "damageMode": {
         "name": "Application des dommages",
-        "hint": "Détermine l'ordre dans lequel les résistances et armure s'appliquent",
+        "hint": "Détermine comment l'armure et les résistances aux dommages (RD) s'appliquent",
         "values": {
-          "resistanceArmorMonitor": "Résistance, puis armure (et sa résistance), puis moniteur",
-          "armorResistanceMonitor": "Armure (et sa résistance), puis résistance, puis moniteur",
-          "armorGivesResistance": "Résistance du tiers de l'armure restante, elle perd 1 par coup"
+          "resistanceArmorMonitor": "Shadowrun Anarchy: Résistance, Armure, Moniteur",
+          "armorResistanceMonitor": "Armure, Résistance, Moniteur",
+          "armorGivesResistance": "RD = Armure/3 + For/4, Armure -1 par coup, CA ignore",
+          "armorGiveResistanceHitsAvoid": "RD = Armure/3, armure -1 par coup, CA diminue la RD"
         }
       }
     },
@@ -100,7 +105,7 @@
         "rollTheme": {
           "dicePool": "Réserve de dés",
           "reroll": "Relance d'échecs",
-          "removed": "Succès supprimés par l'adversaire",
+          "removed": "Succès à relancer",
           "rerollRemoved": "Relance des succès supprimés",
           "glitch": "Complications",
           "drain": "Drain",
@@ -134,14 +139,15 @@
         "insufficient": "{resource} insuffisant: requis {required}, disponible {available}",
         "outOfRange": "Impossible de changer {resource} à {value}, en dehors de l'intervalle [{min} , {max}]",
         "onlyGM": "Seul un MJ est autorisé",
-        "noEdgeForActor": "{actorName} et un {actorType}, il ne peut pas utiliser la Chance",
+        "noEdgeForActor": "{actor} est un {actorType}, il ne peut pas utiliser la Chance",
         "expectedType": "Objet de type incorrect, attendu: {expectedType}, type de l'objet: {type}",
         "noTargetSelected": "Aucune cible sélectionnée. Vous devriez choisir une (des?) cible avant d'utiliser votre {weapon}",
         "maxTargetsExceedeed": "{weapon} a une zone zone d'effet {area}, avec au maximum {max} cibles, vous en avez {count}",
         "noDefenseOnWeapon": "L'arme {weapon} de {actor} n'a pas de défense configurée. Configurez la défense contre cette arme pour pouvoir attaquer avec.",
         "noTokenActor": "Le token n'est pas lié à un Personnage!",
         "cannotUseEdgeAnymore": "Trop tard pour utiliser la Chance. Un adversaire s'est déjà défendu!",
-        "actorCannotReceiveDamage": "L'acteur {actor} ne peut pas recevoir de dommages {damageType}: il n'a pas de moniteur de condition associé"
+        "actorCannotReceiveDamage": "L'acteur {actor} ne peut pas recevoir de dommages {damageType}: il n'a pas de moniteur de condition associé",
+        "actorDoesNotHaveDefense": "L'acteur {actor} n'a pas de {defense}, l'attaque ne devrait pas cibler un(e) {actorType}.<br>Ou bien c'est un bug, à signaler, et à gérer à la main."
       },
       "sourceReference": "Référence source",
       "sourceReferenceHelp": "livre, page, ...",
@@ -321,7 +327,7 @@
       "cyberware": "Cyberware",
       "drone": "Drone",
       "equipment": "Equipement",
-      "focus": "Focus (évaillés)",
+      "focus": "Focus (éveillés)",
       "program": "Programme",
       "spell": "Sort",
       "special": "Spécial"
@@ -353,10 +359,10 @@
     },
     "defense": {
       "physicalDefense": "Défense physique",
-      "mentalDefense": "Défense mentale",
+      "physicalResistance": "Résistance physique",
       "socialDefense": "Défense sociale",
       "matrixDefense": "Défense matricielle",
-      "astralDefense": "Défense astrale"
+      "mentalResistance": "Résistance mentale"
     },
     "skill": {
       "athletics": "Athlétisme",
@@ -432,6 +438,7 @@
         "effect": {
           "pool": "Bonus",
           "reroll": "Relances",
+          "successReroll": "Relance de ses succès",
           "opponentPool": "Malus adversaire",
           "opponentReroll": "Relances adversaire"
         },
@@ -458,6 +465,7 @@
       "other": {
         "effect": {
           "ignoreWounds": "Ignore des blessures",
+          "damageArmor": "Endommage l'armure",
           "sceneAnarchy": "Anarchy de scène",
           "locationAnarchy": "Anarchy de lieu",
           "essenceAdjustment": "Ajustement d'essence",

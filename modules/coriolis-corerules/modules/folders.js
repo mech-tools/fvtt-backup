@@ -81,7 +81,7 @@ function getSingleFolder(parentId, folderName, directory) {
     return (
       // >:( JS in in its infinite wisdom thought having null and undefined were
       // great ideas.
-      (f.parentFolder?.id ?? null) === parentId &&
+      (f.folder?.id ?? null) === parentId &&
       f.name === folderName &&
       f.type === directory
     );

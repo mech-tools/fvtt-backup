@@ -1,86 +1,59 @@
 {
+  "name": "coriolis-ghazali",
   "title": "Coriolis Last Voyage of the Ghazali",
   "description": "A Module containing all the data from the Coriolis Last Voyage of the Ghazali Scenario Book.",
-  "version": "2.0.1",
-  "esmodules": [
-    "modules/coriolis.js"
-  ],
-  "styles": [
-    "/css/corioliscore.css"
-  ],
-  "packs": [
-    {
-      "name": "actor",
-      "label": "Coriolis Actors",
-      "path": "packs/actor.db",
-      "private": false,
-      "type": "Actor",
-      "system": "yzecoriolis",
-      "flags": {}
-    },
-    {
-      "name": "item",
-      "label": "Coriolis Items",
-      "path": "packs/item.db",
-      "private": false,
-      "type": "Item",
-      "system": "yzecoriolis",
-      "flags": {}
-    },
-    {
-      "name": "journalentry",
-      "label": "Coriolis Journals",
-      "path": "packs/journalentry.db",
-      "private": false,
-      "type": "JournalEntry",
-      "flags": {}
-    },
-    {
-      "name": "scene",
-      "label": "Coriolis Scenes",
-      "path": "packs/scene.db",
-      "private": false,
-      "type": "Scene",
-      "flags": {}
-    },
-    {
-      "name": "table",
-      "label": "Coriolis Roll Tables",
-      "path": "packs/table.db",
-      "private": false,
-      "type": "RollTable",
-      "flags": {}
-    }
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
-    }
-  ],
+  "authors": [{
+    "name": "Alex Okafor"
+  }],
+  "version": "3.0.1",
+  "minimumCoreVersion": "10",
+  "compatibleCoreVersion": "10",
+  "scripts": [],
+  "esmodules": ["modules/coriolis.js"],
+  "systems": ["yzecoriolis"],
+  "styles": ["/css/corioliscore.css"],
+  "packs": [{
+    "name": "actor",
+    "system": "yzecoriolis",
+    "label": "Coriolis Actors",
+    "path": "packs/actor.db",
+    "type": "Actor",
+    "module": "coriolis-ghazali"
+  }, {
+    "name": "item",
+    "system": "yzecoriolis",
+    "label": "Coriolis Items",
+    "path": "packs/item.db",
+    "type": "Item",
+    "module": "coriolis-ghazali"
+  }, {
+    "name": "journalentry",
+    "system": "yzecoriolis",
+    "label": "Coriolis Journals",
+    "path": "packs/journalentry.db",
+    "type": "JournalEntry",
+    "module": "coriolis-ghazali"
+  }, {
+    "name": "scene",
+    "system": "yzecoriolis",
+    "label": "Coriolis Scenes",
+    "path": "packs/scene.db",
+    "type": "Scene",
+    "module": "coriolis-ghazali"
+  }, {
+    "name": "table",
+    "system": "yzecoriolis",
+    "label": "Coriolis Roll Tables",
+    "path": "packs/table.db",
+    "type": "RollTable",
+    "module": "coriolis-ghazali"
+  }],
+  "languages": [{
+    "lang": "en",
+    "name": "English",
+    "path": "lang/en.json"
+  }],
   "protected": true,
   "url": "https://frialigan.se/",
-  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-ghazali/module.json",
-  "id": "coriolis-ghazali",
-  "authors": [
-    {
-      "name": "Winks",
-      "flags": {}
-    }
-  ],
-  "relationships": {
-    "systems": [
-      {
-        "id": "yzecoriolis",
-        "type": "system",
-        "compatibility": {}
-      }
-    ]
-  },
-  "compatibility": {
-    "minimum": "9",
-    "verified": "9"
-  }
+  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-ghazali/coriolis-ghazali-latest.json"
 }

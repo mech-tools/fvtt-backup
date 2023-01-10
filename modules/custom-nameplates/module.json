@@ -1,22 +1,25 @@
 {
   "title": "Custom Nameplates",
   "description": "Configure the size, font, and colour of token nameplates",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "esmodules": [
     "custom-nameplates.js"
   ],
   "url": "https://github.com/earlSt1/vtt-custom-nameplates",
-  "manifest": "https://raw.githubusercontent.com/earlSt1/vtt-custom-nameplates/09x-update/module.json",
-  "download": "https://github.com/earlSt1/vtt-custom-nameplates/releases/download/2.1.0/2.1.0.zip",
+  "manifest": "https://raw.githubusercontent.com/earlSt1/vtt-custom-nameplates/10x-update/module.json",
+  "download": "https://github.com/earlSt1/vtt-custom-nameplates/releases/download/2.1.1/2.1.1.zip",
   "id": "custom-nameplates",
   "authors": [
     {
       "name": "Erceron",
+      "url": "https://github.com/earlSt1",
+      "discord": "Erceron#0370",
       "flags": {}
     }
   ],
   "compatibility": {
-    "minimum": "9",
-    "verified": "9"
+    "minimum": "10",
+    "verified": "10.288",
+    "maximum": "10"
   }
 }

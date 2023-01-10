@@ -1,7 +1,7 @@
 {
   "title": "Coriolis NPC Generator",
   "description": "A simple macro that generates NPCs names and profession.",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "esmodules": [
     "scripts/main.js"
   ],
@@ -20,6 +20,12 @@
       "name": "French",
       "path": "lang/fr.json",
       "flags": {}
+    },
+    {
+      "lang": "sv",
+      "name": "Swedish",
+      "path": "lang/sv.json",
+      "flags": {}
     }
   ],
   "packs": [
@@ -27,13 +33,13 @@
       "name": "coriolis-npc-generator-macro",
       "label": "Coriolis NPC Generator Macro",
       "path": "packs/generator.db",
-      "type": "Macro",
       "private": false,
+      "type": "Macro",
       "flags": {}
     }
   ],
   "manifest": "https://raw.githubusercontent.com/coderunner/coriolis-npc-generator/main/module.json",
-  "download": "https://github.com/coderunner/coriolis-npc-generator/archive/refs/tags/1.4.0.zip",
+  "download": "https://github.com/coderunner/coriolis-npc-generator/archive/refs/tags/2.0.0.zip",
   "id": "coriolis-npc-generator",
   "authors": [
     {
@@ -42,7 +48,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "0.8.9",
-    "verified": "9"
+    "minimum": "10",
+    "verified": "10"
   }
 }

@@ -19,7 +19,10 @@ const BAR_VISIBILITY = {
  */
 export const getBars = function (tokenDoc) {
     const resourceBars = foundry.utils.getProperty(tokenDoc, "flags.barbrawl.resourceBars") ?? {};
-    const barArray = Object.values(resourceBars);
+    const barArray = Object.entries(resourceBars).map(entry => {
+        entry[1].id ??= entry[0];
+        return entry[1];
+    });
 
     if (tokenDoc.bar1?.attribute && !resourceBars.bar1)
         barArray.push(getDefaultBar("bar1", tokenDoc.bar1.attribute, tokenDoc._source.displayBars));
@@ -41,7 +44,10 @@ export const getBar = function (tokenDoc, barId) {
         return getDefaultBar(barId, tokenDoc.bar1.attribute, tokenDoc._source.displayBars);
     if (barId === "bar2" && !resourceBars.bar2)
         return getDefaultBar(barId, tokenDoc.bar2.attribute, tokenDoc._source.displayBars);
-    return resourceBars[barId];
+
+    const bar = resourceBars[barId];
+    if (bar) bar.id ??= barId;
+    return bar;
 }
 
 /**
@@ -174,9 +180,15 @@ export const getVisibleBars = function (tokenDoc, barsOnly = true) {
  * @private
  */
 export const getNewBarId = function (existingBars) {
-    const existingIds = existingBars.map((_i, el) => el.lastElementChild.id).get();
-    if (!existingIds.includes("bar1")) return "bar1";
-    if (!existingIds.includes("bar2")) return "bar2";
+    const existingIds = new Set(existingBars.map((_i, el) => el.lastElementChild.id).get());
+
+    // Try to find an easily readable, sortable and unused number.
+    for (let i = 1; i < 10; i++) {
+        const id = "bar" + i;
+        if (!existingIds.has(id)) return id;
+    }
+
+    // Generate a random ID as fallback.
     return "bar" + randomID();
 }
 

@@ -1,5 +1,6 @@
 import { ANARCHY } from "./config.js";
 import { ANARCHY_SYSTEM, TEMPLATE } from "./constants.js";
+import { ErrorManager } from "./error-manager.js";
 import { Icons } from "./icons.js";
 
 function action(code, attr1, attr2, icon, actorTypes, condition = actor => true) {
@@ -32,9 +33,10 @@ const ATTRIBUTE_ACTIONS = [
   action(ACTION.defense, ATTR.autopilot, undefined, Icons.fontAwesome('fas fa-tachometer-alt'), [ACTOR.vehicle]),
   // TODO: add a way to pilot a vehicle to fallback defense of controled vehicle
   action(ACTION.resistTorture, ATTR.strength, ATTR.willpower, Icons.fontAwesome('fas fa-angry'), [ACTOR.character]),
+
   action(ACTION.perception, ATTR.logic, ATTR.willpower, Icons.fontAwesome('fas fa-eye'), [ACTOR.character]),
-  action(ACTION.perception, ATTR.logic, ATTR.willpower, Icons.fontAwesome('fas fa-eye'), [ACTOR.device]),
   action(ACTION.perception, ATTR.system, ATTR.system, Icons.fontAwesome('fas fa-eye'), [ACTOR.device, ACTOR.vehicle]),
+
   action(ACTION.composure, ATTR.charisma, ATTR.willpower, Icons.fontAwesome('fas fa-meh'), [ACTOR.character]),
   action(ACTION.judgeIntentions, ATTR.charisma, ATTR.charisma, Icons.fontAwesome('fas fa-theater-masks'), [ACTOR.character]),
   action(ACTION.memory, ATTR.logic, ATTR.logic, Icons.fontAwesome('fas fa-brain'), [ACTOR.character]),
@@ -53,13 +55,16 @@ const ATTRIBUTE_ACTIONS = [
 
 const DEFENSES = [
   defense(DEFENSE.physicalDefense, ACTION.defense),
-  defense(DEFENSE.mentalDefense, ACTION.resistTorture),
+  defense(DEFENSE.physicalResistance, ACTION.resistTorture),
   defense(DEFENSE.socialDefense, ACTION.composure),
   defense(DEFENSE.matrixDefense, ACTION.matrixDefense),
-  defense(DEFENSE.astralDefense, ACTION.perception),
+  defense(DEFENSE.mentalResistance, ACTION.perception),
 ]
 
 export class AttributeActions {
+  static init() {
+    Handlebars.registerHelper('fixedDefenseCode', code => AttributeActions.fixedDefenseCode(code));
+  }
 
   static all(filter = undefined) {
     return filter
@@ -71,6 +76,9 @@ export class AttributeActions {
     return ATTRIBUTE_ACTIONS.filter(it => it.actorTypes.includes(actor.type) && it.condition(actor));
   }
 
+  static fixedDefenseCode(code) {
+    return ANARCHY_SYSTEM.fixedDefenseCode[code] ?? code;
+  }
   static getActorDefenses(actor) {
     return DEFENSES
       .map(defense => {
@@ -85,8 +93,10 @@ export class AttributeActions {
   }
 
   static getActorDefense(actor, code) {
+    code = AttributeActions.fixedDefenseCode(code);
     const defense = DEFENSES.find(it => it.code == code);
     const actorAction = AttributeActions.getActorAction(actor, defense.actionCode);
+    ErrorManager.checkActorDefenseAction(actorAction, actor, defense);
     return AttributeActions._convertToDefense(actorAction, defense);
   }
 

@@ -1,12 +1,15 @@
 import * as THEME from './emu-theme.js';
 import * as FONTS from './emu-fonts.js';
 import * as SYSTEMS from './emu-systems.js';
+import * as MODULES from './emu-modules.js';
 
 const myRoot = document.querySelector(':root');
 const myHtml = document.getElementsByTagName('html');
 const myHead = document.getElementsByTagName('head')[0];
 const myBody = document.getElementsByTagName('body');
 const moduleName = 'ernies-modern-layout';
+
+let importedTheme;
 
 let __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
 	function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -27,11 +30,6 @@ function convertHexToRgb(color) {
 	return `${r}, ${g}, ${b}`;
 }
 
-// Get REM value
-function toRem(value) {
-	return value / 16;
-}
-
 function updateSettings(settings) {
 	const {
 		borderRadiusDefault,
@@ -39,6 +37,8 @@ function updateSettings(settings) {
 		borderRadiusForms,
 		borderRadiusImages,
 		colorPrimary,
+		colorPrimaryDarker,
+		colorPrimaryDarkest,
 		colorBackground,
 		colorBackgroundLightest,
 		colorBackgroundLight,
@@ -64,12 +64,25 @@ function updateSettings(settings) {
 		fontSizeSM,
 		fontSizeXS,
 		fontSizeChatRoll,
+		spacingBase,
+		spacingLG,
+		spacingMD,
+		spacingSM,
+		spacingXL,
+		spacingXS,
+		sizingButton,
+		sizingButtonLG,
+		sizingButtonSM,
+		sizingButtonXL,
+		sizingButtonXS,
+		sizingSidebar,
 		imageBackground,
 		imageBackgroundLightest,
 		imageBackgroundLight,
 		imageBackgroundDarkest,
 		imageBackgroundControls,
 		backgroundOpacityButtonPrimary,
+		backgroundOpacityFormField,
 		backgroundOpacityHotbar,
 		backgroundOpacityHud,
 		backgroundOpacityPlayers,
@@ -90,23 +103,25 @@ function updateSettings(settings) {
 	toggleSceneThumbs ? myHtml[0].classList.add('-emu-scene-thumbs') : myHtml[0].classList.remove('-emu-scene-thumbs');
 
 	// Theme
-	colorPrimary ? myRoot.style.setProperty('--color-primary', convertHexToRgb(colorPrimary)) : null;
-	colorBackground ? myRoot.style.setProperty('--color-background', convertHexToRgb(colorBackground)) : null;
-	colorBackgroundLightest ? myRoot.style.setProperty('--color-background-lightest', convertHexToRgb(colorBackgroundLightest)) : null;
-	colorBackgroundLight ? myRoot.style.setProperty('--color-background-light', convertHexToRgb(colorBackgroundLight)) : null;
-	colorBackgroundDarkest ? myRoot.style.setProperty('--color-background-darkest', convertHexToRgb(colorBackgroundDarkest)) : null;
-	colorBackgroundButton ? myRoot.style.setProperty('--color-background-button', convertHexToRgb(colorBackgroundButton)) : null;
-	colorBackgroundChatMessage ? myRoot.style.setProperty('--color-background-chat-message', convertHexToRgb(colorBackgroundChatMessage)) : null;
-	colorBackgroundChatMessageWhisper ? myRoot.style.setProperty('--color-background-chat-message-whisper', convertHexToRgb(colorBackgroundChatMessageWhisper)) : null;
-	colorBackgroundChatMessageBlind ? myRoot.style.setProperty('--color-background-chat-message-blind', convertHexToRgb(colorBackgroundChatMessageBlind)) : null;
-	colorBorder ? myRoot.style.setProperty('--color-border', convertHexToRgb(colorBorder)) : null;
-	colorBorderLighter ? myRoot.style.setProperty('--color-border-lighter', convertHexToRgb(colorBorderLighter)) : null;
-	colorFolderHeader ? myRoot.style.setProperty('--color-folder-header', convertHexToRgb(colorFolderHeader)) : null;
-	colorFolderDirectory ? myRoot.style.setProperty('--color-folder-directory', convertHexToRgb(colorFolderDirectory)) : null;
-	colorFolderSubdirectory ? myRoot.style.setProperty('--color-folder-subdirectory', convertHexToRgb(colorFolderSubdirectory)) : null;
-	colorText ? myRoot.style.setProperty('--color-text', convertHexToRgb(colorText)) : null;
-	colorTextLightest ? myRoot.style.setProperty('--color-text-lightest', convertHexToRgb(colorTextLightest)) : null;
-	colorTextDarker ? myRoot.style.setProperty('--color-text-darker', convertHexToRgb(colorTextDarker)) : null;
+	colorPrimary ? myRoot.style.setProperty('--emu-color-primary', convertHexToRgb(colorPrimary)) : null;
+	colorPrimaryDarker ? myRoot.style.setProperty('--emu-color-primary-darker', convertHexToRgb(colorPrimaryDarker)) : null;
+	colorPrimaryDarkest ? myRoot.style.setProperty('--emu-color-primary-darkest', convertHexToRgb(colorPrimaryDarkest)) : null;
+	colorBackground ? myRoot.style.setProperty('--emu-color-background', convertHexToRgb(colorBackground)) : null;
+	colorBackgroundLightest ? myRoot.style.setProperty('--emu-color-background-lightest', convertHexToRgb(colorBackgroundLightest)) : null;
+	colorBackgroundLight ? myRoot.style.setProperty('--emu-color-background-light', convertHexToRgb(colorBackgroundLight)) : null;
+	colorBackgroundDarkest ? myRoot.style.setProperty('--emu-color-background-darkest', convertHexToRgb(colorBackgroundDarkest)) : null;
+	colorBackgroundButton ? myRoot.style.setProperty('--emu-color-background-button', convertHexToRgb(colorBackgroundButton)) : null;
+	colorBackgroundChatMessage ? myRoot.style.setProperty('--emu-color-background-chat-message', convertHexToRgb(colorBackgroundChatMessage)) : null;
+	colorBackgroundChatMessageWhisper ? myRoot.style.setProperty('--emu-color-background-chat-message-whisper', convertHexToRgb(colorBackgroundChatMessageWhisper)) : null;
+	colorBackgroundChatMessageBlind ? myRoot.style.setProperty('--emu-color-background-chat-message-blind', convertHexToRgb(colorBackgroundChatMessageBlind)) : null;
+	colorBorder ? myRoot.style.setProperty('--emu-color-border', convertHexToRgb(colorBorder)) : null;
+	colorBorderLighter ? myRoot.style.setProperty('--emu-color-border-lighter', convertHexToRgb(colorBorderLighter)) : null;
+	colorFolderHeader ? myRoot.style.setProperty('--emu-color-folder-header', convertHexToRgb(colorFolderHeader)) : null;
+	colorFolderDirectory ? myRoot.style.setProperty('--emu-color-folder-directory', convertHexToRgb(colorFolderDirectory)) : null;
+	colorFolderSubdirectory ? myRoot.style.setProperty('--emu-color-folder-subdirectory', convertHexToRgb(colorFolderSubdirectory)) : null;
+	colorText ? myRoot.style.setProperty('--emu-color-text', convertHexToRgb(colorText)) : null;
+	colorTextLightest ? myRoot.style.setProperty('--emu-color-text-lightest', convertHexToRgb(colorTextLightest)) : null;
+	colorTextDarker ? myRoot.style.setProperty('--emu-color-text-darker', convertHexToRgb(colorTextDarker)) : null;
 
 	// Design
 	borderRadiusDefault ? myRoot.style.setProperty('--emu-border-radius-default', `${borderRadiusDefault}px`) : myRoot.style.setProperty('--emu-border-radius-default', `0`);
@@ -115,13 +130,29 @@ function updateSettings(settings) {
 	borderRadiusImages ? myRoot.style.setProperty('--emu-border-radius-images', `${borderRadiusImages}px`) : myRoot.style.setProperty('--emu-border-radius-images', `0`);
 
 	// Font Size
-	fontSizeMD ? myRoot.style.setProperty('--emu-font-size-md', `${toRem(fontSizeMD)}rem`) : myRoot.style.setProperty('--emu-font-size-md', `${toRem(14)}rem`);
-	fontSizeLG ? myRoot.style.setProperty('--emu-font-size-lg', `${toRem(fontSizeLG)}rem`) : myRoot.style.setProperty('--emu-font-size-lg', `${toRem(16)}rem`);
-	fontSizeXL ? myRoot.style.setProperty('--emu-font-size-xl', `${toRem(fontSizeXL)}rem`) : myRoot.style.setProperty('--emu-font-size-xl', `${toRem(20)}rem`);
-	fontSizeXXL ? myRoot.style.setProperty('--emu-font-size-xxl', `${toRem(fontSizeXXL)}rem`) : myRoot.style.setProperty('--emu-font-size-xxl', `${toRem(24)}rem`);
-	fontSizeSM ? myRoot.style.setProperty('--emu-font-size-sm', `${toRem(fontSizeSM)}rem`) : myRoot.style.setProperty('--emu-font-size-sm', `${toRem(12)}rem`);
-	fontSizeXS ? myRoot.style.setProperty('--emu-font-size-xs', `${toRem(fontSizeXS)}rem`) : myRoot.style.setProperty('--emu-font-size-xs', `${toRem(10)}rem`);
-	fontSizeChatRoll ? myRoot.style.setProperty('--emu-font-size-chat-roll', `${toRem(fontSizeChatRoll)}rem`) : myRoot.style.setProperty('--emu-font-size-chat-roll', `${toRem(18)}rem`);
+	fontSizeMD ? myRoot.style.setProperty('--emu-font-size-md', `${fontSizeMD}px`) : myRoot.style.setProperty('--emu-font-size-md', `${14}px`);
+	fontSizeLG ? myRoot.style.setProperty('--emu-font-size-lg', `${fontSizeLG}px`) : myRoot.style.setProperty('--emu-font-size-lg', `${16}px`);
+	fontSizeXL ? myRoot.style.setProperty('--emu-font-size-xl', `${fontSizeXL}px`) : myRoot.style.setProperty('--emu-font-size-xl', `${20}px`);
+	fontSizeXXL ? myRoot.style.setProperty('--emu-font-size-xxl', `${fontSizeXXL}px`) : myRoot.style.setProperty('--emu-font-size-xxl', `${24}px`);
+	fontSizeSM ? myRoot.style.setProperty('--emu-font-size-sm', `${fontSizeSM}px`) : myRoot.style.setProperty('--emu-font-size-sm', `${12}px`);
+	fontSizeXS ? myRoot.style.setProperty('--emu-font-size-xs', `${fontSizeXS}px`) : myRoot.style.setProperty('--emu-font-size-xs', `${10}px`);
+	fontSizeChatRoll ? myRoot.style.setProperty('--emu-font-size-chat-roll', `${fontSizeChatRoll}px`) : myRoot.style.setProperty('--emu-font-size-chat-roll', `${18}px`);
+
+	// Spacing
+	spacingBase ? myRoot.style.setProperty('--emu-space-base', `${spacingBase}px`) : myRoot.style.setProperty('--emu-space-base', `${4}px`);
+	spacingLG ? myRoot.style.setProperty('--emu-space-lg', `${spacingLG}px`) : myRoot.style.setProperty('--emu-space-lg', `${32}px`);
+	spacingMD ? myRoot.style.setProperty('--emu-space-md', `${spacingMD}px`) : myRoot.style.setProperty('--emu-space-md', `${16}px`);
+	spacingSM ? myRoot.style.setProperty('--emu-space-sm', `${spacingSM}px`) : myRoot.style.setProperty('--emu-space-sm', `${8}px`);
+	spacingXL ? myRoot.style.setProperty('--emu-space-xl', `${spacingXL}px`) : myRoot.style.setProperty('--emu-space-xl', `${24}px`);
+	spacingXS ? myRoot.style.setProperty('--emu-space-xs', `${spacingXS}px`) : myRoot.style.setProperty('--emu-space-xs', `${2}px`);
+
+	// Sizing
+	sizingButton ? myRoot.style.setProperty('--emu-space-button', `${sizingButton}px`) : myRoot.style.setProperty('--emu-space-button', `${32}px`);
+	sizingButtonLG ? myRoot.style.setProperty('--emu-space-button-lg', `${sizingButtonLG}px`) : myRoot.style.setProperty('--emu-space-button-lg', `${40}px`);
+	sizingButtonSM ? myRoot.style.setProperty('--emu-space-button-sm', `${sizingButtonSM}px`) : myRoot.style.setProperty('--emu-space-button-sm', `${24}px`);
+	sizingButtonXL ? myRoot.style.setProperty('--emu-space-button-xl', `${sizingButtonXL}px`) : myRoot.style.setProperty('--emu-space-button-xl', `${56}px`);
+	sizingButtonXS ? myRoot.style.setProperty('--emu-space-button-xs', `${sizingButtonXS}px`) : myRoot.style.setProperty('--emu-space-button-xs', `${20}px`);
+	sizingSidebar ? myRoot.style.setProperty('--emu-space-sidebar', `${sizingSidebar}px`) : myRoot.style.setProperty('--emu-space-sidebar', `${320}px`);
 
 	// Backgrounds
 	if(imageBackground != 'none' || imageBackground == null) {
@@ -150,6 +181,7 @@ function updateSettings(settings) {
 
 	// Background Color Opacity
 	backgroundOpacityButtonPrimary ? myRoot.style.setProperty('--emu-background-opacity-button-primary', `${backgroundOpacityButtonPrimary}`) : myRoot.style.setProperty('--emu-background-opacity-button-primary', `1`);
+	backgroundOpacityFormField ? myRoot.style.setProperty('--emu-background-opacity-form-field', `${backgroundOpacityFormField}`) : myRoot.style.setProperty('--emu-background-opacity-form-field', `1`);
 	backgroundOpacityHotbar ? myRoot.style.setProperty('--emu-background-opacity-hotbar', `${backgroundOpacityHotbar}`) : myRoot.style.setProperty('--emu-background-opacity-hotbar', `0.8`);
 	backgroundOpacityHud ? myRoot.style.setProperty('--emu-background-opacity-hud', `${backgroundOpacityHud}`) : myRoot.style.setProperty('--emu-background-opacity-hud', `0.8`);
 	backgroundOpacityPlayers ? myRoot.style.setProperty('--emu-background-opacity-players', `${backgroundOpacityPlayers}`) : myRoot.style.setProperty('--emu-background-opacity-players', `0.8`);
@@ -191,6 +223,8 @@ class emuSettings {
 			borderRadiusForms: '4',
 			borderRadiusImages: '4',
 			colorPrimary: '#e57509',
+			colorPrimaryDarker: '#a05108',
+			colorPrimaryDarkest: '#723906',
 			colorBackground: '#293e40',
 			colorBackgroundLightest: '#e6e9eb',
 			colorBackgroundLight: '#7d8a8c',
@@ -215,6 +249,18 @@ class emuSettings {
 			fontSizeXXL: 24,
 			fontSizeSM: 12,
 			fontSizeXS: 10,
+			spacingBase: 4,
+			spacingLG: 24,
+			spacingMD: 16,
+			spacingSM: 8,
+			spacingXL: 32,
+			spacingXS: 2,
+			sizingButton: 32,
+			sizingButtonLG: 40,
+			sizingButtonSM: 24,
+			sizingButtonXL: 56,
+			sizingButtonXS: 20,
+			sizingSidebar: 320,
 			fontSizeChatRoll: 18,
 			imageBackground: '',
 			imageBackgroundLightest: '',
@@ -222,6 +268,7 @@ class emuSettings {
 			imageBackgroundDarkest: '',
 			imageBackgroundControls: '',
 			backgroundOpacityButtonPrimary: 1,
+			backgroundOpacityFormField: 1,
 			backgroundOpacityHotbar: 0.8,
 			backgroundOpacityHud: 0.8,
 			backgroundOpacityPlayers: 0.8,
@@ -262,7 +309,8 @@ class emuForm extends FormApplication {
 					'foundry': 'Foundry',
 					'dark': game.i18n.localize('emu.theme-preset-dark'),
 					'western': game.i18n.localize('emu.theme-preset-western'),
-					'alien': game.i18n.localize('emu.theme-preset-alien')
+					'alien': game.i18n.localize('emu.theme-preset-alien'),
+					'cyberpunk': game.i18n.localize('emu.theme-preset-cyberpunk'),
 				},
 				fontFamilyList: FONTS.GOOGLE_FONTS
 			},
@@ -281,6 +329,8 @@ class emuForm extends FormApplication {
 		html.find('select[name="themePreset"]').change(this.getThemePreset.bind(this));
 		html.find('select[name="fontFamily"]').change(this.getFontFamily.bind(this));
 		html.find('button[name="reset"]').click(this.onReset.bind(this));
+		html.find('button[name="export-theme"]').click(this.exportTheme.bind(this));
+		html.find('button[name="import-theme"]').click(this.importTheme.bind(this, html));
 		this.reset = false;
 	}
 
@@ -300,6 +350,10 @@ class emuForm extends FormApplication {
 		if($('select[name="themePreset"]').val() === 'alien') {
 			for (const [key, value] of Object.entries(THEME.ALIEN)) { $(`input[name="${key}"]`).prop('value', value); }
 		}
+
+		if($('select[name="themePreset"]').val() === 'cyberpunk') {
+			for (const [key, value] of Object.entries(THEME.CYBERPUNK)) { $(`input[name="${key}"]`).prop('value', value); }
+		}
 	}
 
 	getFontFamily(formData) {
@@ -313,6 +367,41 @@ class emuForm extends FormApplication {
 	onReset() {
 		this.reset = true;
 		this.render();
+	}
+
+	exportTheme() {
+		const currentSettings = game.settings.get(moduleName, 'settings');
+		let theme = JSON.stringify(currentSettings);
+		saveDataToFile(theme, 'application/json', 'ernieTheme.json');
+	}
+
+	importTheme(html) {
+		const input = $('<input type="file">');
+		input.on('change', function(e) {
+			const file = this.files[0];
+			if (!file) {
+				return;
+			}
+
+			readTextFromFile(file).then(async (result) => {
+				try {
+					importedTheme = JSON.parse(result);
+
+					for (const [key, value] of Object.entries(importedTheme)) {
+						$(`input[name="${key}"]`).prop('value', value);
+					}
+
+					return __awaiter(this, void 0, void 0, function* () {
+						let settings = mergeObject(emuSettings.settings, importedTheme, { insertKeys: false, insertValues: false });
+						yield game.settings.set(moduleName, 'settings', settings);
+						updateSettings(game.settings.get(moduleName, 'settings'));
+					});
+				} catch (e) {
+					console.log(e);
+				}
+			});
+		});
+		input.trigger('click');
 	}
 
 	_updateObject(event, formData) {
@@ -341,6 +430,11 @@ Hooks.once('init', () => {
 		type: Object,
 		config: false
 	});
+
+	const overlay = document.createElement('div');
+	overlay.style.cssText += 'position: absolute;top:0;left:0;right:0;bottom:0;z-index:1000;background:black;transition: all ease-out 1s;opacity:1;';
+	overlay.setAttribute('id','emu-overlay');
+	document.body.appendChild(overlay);
 });
 
 Hooks.once('ready', () => {
@@ -356,19 +450,6 @@ Hooks.once('ready', () => {
 	const emuLayoutStatus = game.settings.get(moduleName, 'settings').emuLayout;
 
 	// Layouts
-	game.settings.register(moduleName, 'compactMode', {
-		name: game.i18n.localize('emu.layout-compact'),
-		scope: 'user',
-		config: emuLayoutStatus,
-		default: false,
-		type: Boolean,
-		onChange: data => {
-			data === true ? myHtml[0].classList.add('-emu-compact') : myHtml[0].classList.remove('-emu-compact');
-		}
-	});
-	const compactMode = game.settings.get(moduleName, 'compactMode');
-	compactMode ? myHtml[0].classList.add('-emu-compact') : myHtml[0].classList.remove('-emu-compact');
-
 	game.settings.register(moduleName, 'subtleLayout', {
 		name: game.i18n.localize('emu.layout-subtle-layout'),
 		scope: 'user',
@@ -413,33 +494,75 @@ Hooks.once('ready', () => {
 	const subtleLayoutLockSidebar = game.settings.get(moduleName, 'subtleLayoutLockSidebar');
 	subtleLayoutLockSidebar ? myHtml[0].classList.add('-emu-subtle-layout-sidebar-locked') : myHtml[0].classList.remove('-emu-subtle-layout-sidebar-locked');
 
-	// Toggle
-	game.settings.register(moduleName, 'togglePlayers', {
-		name: game.i18n.localize('emu.toggle-players'),
+	game.settings.register(moduleName, 'compactMode', {
+		name: game.i18n.localize('emu.layout-compact'),
+		hint: game.i18n.localize('emu.layout-compact-hint'),
 		scope: 'user',
 		config: emuLayoutStatus,
 		default: false,
 		type: Boolean,
 		onChange: data => {
-			data === true ? myHtml[0].classList.add('-emu-players') : myHtml[0].classList.remove('-emu-players');
+			data === true ? myHtml[0].classList.add('-emu-compact') : myHtml[0].classList.remove('-emu-compact');
 		}
 	});
-	const togglePlayers = game.settings.get(moduleName, 'togglePlayers');
-	togglePlayers ? myHtml[0].classList.add('-emu-players') : myHtml[0].classList.remove('-emu-players');
+	const compactMode = game.settings.get(moduleName, 'compactMode');
+	compactMode ? myHtml[0].classList.add('-emu-compact') : myHtml[0].classList.remove('-emu-compact');
 
-	// game.settings.register(moduleName, 'controlAlignTop', {
-	// 	name: game.i18n.localize('emu.layout-control-align'),
-	// 	hint: game.i18n.localize('emu.layout-control-align-hint'),
-	// 	scope: 'user',
-	// 	config: emuLayoutStatus,
-	// 	default: false,
-	// 	type: Boolean,
-	// 	onChange: data => {
-	// 		data === true ? myHtml[0].classList.add('-emu-control-align-top') : myHtml[0].classList.remove('-emu-control-align-top');
-	// 	}
-	// });
-	// const controlAlignTop = game.settings.get(moduleName, 'controlAlignTop');
-	// controlAlignTop ? myHtml[0].classList.add('-emu-control-align-top') : myHtml[0].classList.remove('-emu-control-align-top');
+	game.settings.register(moduleName, 'compactModeUILeft', {
+		name: game.i18n.localize('emu.layout-compact-ui-left'),
+		hint: game.i18n.localize('emu.layout-compact-ui-left-hint'),
+		scope: 'user',
+		config: emuLayoutStatus,
+		default: false,
+		type: Boolean,
+		onChange: data => {
+			data === true ? myHtml[0].classList.add('-emu-compact-ui-left') : myHtml[0].classList.remove('-emu-compact-ui-left');
+		}
+	});
+	const compactModeUILeft = game.settings.get(moduleName, 'compactModeUILeft');
+	compactModeUILeft ? myHtml[0].classList.add('-emu-compact-ui-left') : myHtml[0].classList.remove('-emu-compact-ui-left');
+
+	game.settings.register(moduleName, 'compactModeUIRight', {
+		name: game.i18n.localize('emu.layout-compact-ui-right'),
+		hint: game.i18n.localize('emu.layout-compact-ui-right-hint'),
+		scope: 'user',
+		config: emuLayoutStatus,
+		default: false,
+		type: Boolean,
+		onChange: data => {
+			data === true ? myHtml[0].classList.add('-emu-compact-ui-right') : myHtml[0].classList.remove('-emu-compact-ui-right');
+		}
+	});
+	const compactModeUIRight = game.settings.get(moduleName, 'compactModeUIRight');
+	compactModeUIRight ? myHtml[0].classList.add('-emu-compact-ui-right') : myHtml[0].classList.remove('-emu-compact-ui-right');
+
+	game.settings.register(moduleName, 'compactModeUITop', {
+		name: game.i18n.localize('emu.layout-compact-ui-top'),
+		hint: game.i18n.localize('emu.layout-compact-ui-top-hint'),
+		scope: 'user',
+		config: emuLayoutStatus,
+		default: false,
+		type: Boolean,
+		onChange: data => {
+			data === true ? myHtml[0].classList.add('-emu-compact-ui-top') : myHtml[0].classList.remove('-emu-compact-ui-top');
+		}
+	});
+	const compactModeUITop = game.settings.get(moduleName, 'compactModeUITop');
+	compactModeUITop ? myHtml[0].classList.add('-emu-compact-ui-top') : myHtml[0].classList.remove('-emu-compact-ui-top');
+
+	game.settings.register(moduleName, 'compactModeUIBottom', {
+		name: game.i18n.localize('emu.layout-compact-ui-bottom'),
+		hint: game.i18n.localize('emu.layout-compact-ui-bottom-hint'),
+		scope: 'user',
+		config: emuLayoutStatus,
+		default: false,
+		type: Boolean,
+		onChange: data => {
+			data === true ? myHtml[0].classList.add('-emu-compact-ui-bottom') : myHtml[0].classList.remove('-emu-compact-ui-bottom');
+		}
+	});
+	const compactModeUIBottom = game.settings.get(moduleName, 'compactModeUIBottom');
+	compactModeUIBottom ? myHtml[0].classList.add('-emu-compact-ui-bottom') : myHtml[0].classList.remove('-emu-compact-ui-bottom');
 
 	// Timeout because i'm bad at javascript
 	setTimeout(function() {
@@ -474,6 +597,32 @@ Hooks.once('ready', () => {
 		document.head.appendChild(systemCSS);
 	}
 
+	// Apply Module Sheets
+	const currentModules = game.modules;
+	currentModules.forEach((mod) => {
+		const moduleID = mod.id;
+		if(mod.active === true && MODULES.MODULE.includes(moduleID)) {
+			const moduleCSS = document.createElement('link');
+			moduleCSS.rel = 'stylesheet';
+			moduleCSS.type = 'text/css';
+			moduleCSS.href = `modules/${moduleName}/css/module-compatibility/${moduleID}.css`;
+			document.head.appendChild(moduleCSS);
+		}
+	});
+
 	// Say Hello
-	console.log('Ernie\'s Modern UI Active');
+	console.log('%cErnie\'s Modern UI Active', 'color: #ff0055;');
+
+	const overlay = document.getElementById('emu-overlay');
+	overlay.classList.add('-hide');
+});
+
+Hooks.on('renderActorSheet', (app, html) => {
+	const sheet = html.find('id').prevObject[0];
+	sheet.classList.add('-emu-clean-sheet');
+});
+
+Hooks.on('renderItemSheet', (app, html) => {
+	const sheet = html.find('id').prevObject[0];
+	sheet.classList.add('-emu-clean-sheet');
 });

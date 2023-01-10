@@ -4,7 +4,7 @@
 
 Library for Foundry VTT module developers to use. It allows modules to register control buttons that appear on the right side of the screen.
 
-![image-20211107113847436](../.assets/lib-df-buttons.png)
+![image-20211107113847436](../.assets/lib-df-buttons/cover.png)
 
 ##### [![become a patron](../.assets/patreon-image.png)](https://www.patreon.com/bePatron?u=46113583) If you want to support me or just help me buy doggy treats! Also, you can keep up to date on what I'm working on. I will be announcing any new modules or pre-releases there for anyone wanting to help me test things out!
 
@@ -78,6 +78,11 @@ export interface Tool {
 	 * control.
 	 */
 	class?: string | null;
+	/**
+	 * (default: false) Indicates your button or {@link ToolGroup} should be
+	 * allowed to render when there is no game board canvas.
+	 */
+	noCanvas?: boolean;
 	/**
 	 * (default: false) If {@link toggle} is true, this holds the toggle
 	 * button's state. If {@link toggle} and {@link button} are false, this
@@ -181,4 +186,6 @@ Hooks.call('activateToolByName', "my-group-name", "my-tool-name", true);
  * and `getModuleToolGroupsPost` as before. It then renders the new list of ToolGroups.
  */
 Hooks.call('reloadModuleButtons');
+/* Invoking this Hook will refresh the button UI to reflect any external changes made. */
+Hooks.call('refreshModuleButtons');
 ```

@@ -6,6 +6,7 @@ import { Checkbars } from "../common/checkbars.js";
 import { AnarchyUsers } from "../users.js";
 import { ROLL_PARAMETER_CATEGORY } from "../roll/roll-parameters.js";
 import { ANARCHY_HOOKS } from "../hooks-manager.js";
+import { AttributeActions } from "../attribute-actions.js";
 
 const AREA_TARGETS = {
   none: { targets: 1, adjust: [0] },
@@ -26,11 +27,15 @@ const WEAPON_RANGE_PARAMETER = {
     hbsTemplateRoll: `${TEMPLATES_PATH}/roll/parts/select-option.hbs`,
     hbsTemplateChat: undefined, //``
   },
+  isUsed: (p) => true,
   condition: context => context.weapon,
   factory: context => {
     const ranges = context.weapon.getRanges();
+    const rangeValues = ranges.map(it => it.value);
     return {
       value: ranges[0].value,
+      min: Math.min(rangeValues),
+      max: Math.max(rangeValues),
       choices: ranges,
       selected: game.i18n.localize(ranges[0].labelkey)
     }
@@ -39,18 +44,22 @@ const WEAPON_RANGE_PARAMETER = {
 const WEAPON_AREA_PARAMETER = {
   code: 'weapon-area',
   options: {
-    flags: { used: true, },
+    used: true,
     order: 20, category: ROLL_PARAMETER_CATEGORY.pool,
     labelkey: ANARCHY.common.roll.modifiers.weaponArea,
     hbsTemplateRoll: `${TEMPLATES_PATH}/roll/parts/input-numeric.hbs`,
     hbsTemplateChat: undefined, //``
   },
+  isUsed: (p) => p.used,
   condition: context => context.weapon && context.weapon.getArea() != TEMPLATE.area.none,
   factory: context => {
     const countTargets = context.targeting.targetedTokenIds?.length ?? 1;
+    const areaModifier = context.weapon.getAreaModifier(countTargets);
     return {
-      value: context.weapon.getAreaModifier(countTargets),
-      flags: { used: countTargets > 1 },
+      value: areaModifier,
+      min: Math.min(0, areaModifier),
+      max: Math.max(0, areaModifier),
+      used: countTargets > 1,
     }
   }
 }
@@ -73,7 +82,7 @@ export class WeaponItem extends AnarchyBaseItem {
   }
 
   getDefense() {
-    return this.system.defense;
+    return AttributeActions.fixedDefenseCode(this.system.defense);
   }
 
   getDamage() {

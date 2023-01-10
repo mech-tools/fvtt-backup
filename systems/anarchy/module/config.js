@@ -5,6 +5,10 @@ export const ANARCHY = {
             name: 'ANARCHY.settings.defaultCssClass.name',
             hint: 'ANARCHY.settings.defaultCssClass.hint'
         },
+        anarchyHack: {
+            name: 'ANARCHY.settings.anarchyHack.name',
+            hint: 'ANARCHY.settings.anarchyHack.hint'
+        },
         skillSet: {
             name: 'ANARCHY.settings.skillSet.name',
             hint: 'ANARCHY.settings.skillSet.hint'
@@ -22,6 +26,7 @@ export const ANARCHY = {
                 resistanceArmorMonitor: 'ANARCHY.settings.damageMode.values.resistanceArmorMonitor',
                 armorResistanceMonitor: 'ANARCHY.settings.damageMode.values.armorResistanceMonitor',
                 armorGivesResistance: 'ANARCHY.settings.damageMode.values.armorGivesResistance',
+                armorGiveResistanceHitsAvoid: 'ANARCHY.settings.damageMode.values.armorGiveResistanceHitsAvoid',
             },
         }
     },
@@ -125,6 +130,7 @@ export const ANARCHY = {
             noTokenActor: 'ANARCHY.common.errors.noTokenActor',
             cannotUseEdgeAnymore: 'ANARCHY.common.errors.cannotUseEdgeAnymore',
             actorCannotReceiveDamage: 'ANARCHY.common.errors.actorCannotReceiveDamage',
+            actorDoesNotHaveDefense: 'ANARCHY.common.errors.actorDoesNotHaveDefense',
         },
         sourceReference: 'ANARCHY.common.sourceReference',
         sourceReferenceHelp: 'ANARCHY.common.sourceReferenceHelp',
@@ -336,10 +342,10 @@ export const ANARCHY = {
     },
     defense: {
         physicalDefense: 'ANARCHY.defense.physicalDefense',
-        mentalDefense: 'ANARCHY.defense.mentalDefense',
+        physicalResistance: 'ANARCHY.defense.physicalResistance',
         socialDefense: 'ANARCHY.defense.socialDefense',
         matrixDefense: 'ANARCHY.defense.matrixDefense',
-        astralDefense: 'ANARCHY.defense.astralDefense',
+        mentalResistance: 'ANARCHY.defense.mentalResistance',
     },
     skill: {
         athletics: 'ANARCHY.skill.athletics',
@@ -416,6 +422,7 @@ export const ANARCHY = {
             effect: {
                 pool: 'ANARCHY.modifier.roll.effect.pool',
                 reroll: 'ANARCHY.modifier.roll.effect.reroll',
+                successReroll: 'ANARCHY.modifier.roll.effect.successReroll',
                 opponentPool: 'ANARCHY.modifier.roll.effect.opponentPool',
                 opponentReroll: 'ANARCHY.modifier.roll.effect.opponentReroll',
             },
@@ -442,6 +449,7 @@ export const ANARCHY = {
         other: {
             effect: {
                 ignoreWounds: 'ANARCHY.modifier.other.effect.ignoreWounds',
+                damageArmor: 'ANARCHY.modifier.other.effect.damageArmor',
                 sceneAnarchy: 'ANARCHY.modifier.other.effect.sceneAnarchy',
                 locationAnarchy: 'ANARCHY.modifier.other.effect.locationAnarchy',
                 essenceAdjustment: 'ANARCHY.modifier.other.effect.essenceAdjustment',

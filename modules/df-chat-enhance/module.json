@@ -1,7 +1,7 @@
 {
   "title": "DF Chat Enhancements",
   "description": "Various enhancements to the chat features.",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "scripts": [
     "libs/marked.min.js"
   ],
@@ -59,15 +59,15 @@
   "authors": [
     {
       "name": "flamewave000",
-      "discord": "flamewave000#0001",
       "url": "https://github.com/flamewave000",
+      "discord": "flamewave000#0001",
       "flags": {}
     }
   ],
   "media": [
     {
       "type": "cover",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-cover.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/cover.png",
       "loop": false,
       "flags": {}
     },
@@ -79,115 +79,115 @@
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-new.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-new.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-manage.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-manage.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-new-window.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-new-window.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-new-window-date.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-new-window-date.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-viewer.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-viewer.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-archive-edit.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/archive-edit.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-gm.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-gm.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-pc.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-pc.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-rt-public.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-rt-public.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-rt-gm.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-rt-gm.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-rt-blind.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-rt-blind.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-privacy-rt-self.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/privacy-rt-self.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-config.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-config.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-config-select.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-config-select.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-typed.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-typed.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-messages.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-messages.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-add-from-chat.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-add-from-chat.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-log-entries.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/log-entries.png",
       "loop": false,
       "flags": {}
     },
     {
       "type": "screenshot",
-      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance-edit-message.png",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-chat-enhance/edit-message.png",
       "loop": false,
       "flags": {}
     }
@@ -196,19 +196,23 @@
   "relationships": {
     "requires": [
       {
-        "id": "_chatcommands",
-        "type": "module",
-        "compatibility": {}
-      },
-      {
         "id": "lib-wrapper",
         "type": "module",
-        "compatibility": {}
+        "compatibility": {
+          "verified": "1.12.10.0"
+        }
+      },
+      {
+        "id": "_chatcommands",
+        "type": "module",
+        "compatibility": {
+          "minimum": "1.4.0"
+        }
       }
     ]
   },
   "compatibility": {
-    "minimum": "9.269",
-    "verified": "9"
+    "minimum": "10",
+    "verified": "10.288"
   }
 }

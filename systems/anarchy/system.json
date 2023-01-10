@@ -1,24 +1,38 @@
 {
+  "id": "anarchy",
+  "version": "10.2.6",
+  "manifest": "https://gitlab.com/vincent.vandeme/anarchy/raw/master/system.json",
+  "download": "https://gitlab.com/vincent.vandeme/anarchy/-/archive/10.2.6/anarchy-10.2.6.zip",
+  "url": "https://gitlab.com/vincent.vandeme/anarchy",
+  "bugs": "https://gitlab.com/vincent.vandeme/anarchy/-/issues",
   "title": "Anarchy",
   "description": "Shadowrun Anarchy RPG, and hacks, for FoundryVTT",
+  "compatibility": {
+    "minimum": 10,
+    "verified": 10
+  },
   "authors": [
     {
       "name": "Vincent VK",
       "email": "vincent.vandeme@gmail.com",
-      "discord": "VincentVk#9373",
-      "flags": {}
+      "discord": "VincentVk#9373"
+    },
+    {
+      "name": "Pretre",
+      "discord": "Pretre#9138"
+    },
+    {
+      "name": "Los Brutos",
+      "discord": "Los Brutos#1876"
     }
   ],
-  "url": "https://gitlab.com/vincent.vandeme/anarchy",
-  "bugs": "https://gitlab.com/vincent.vandeme/anarchy/-/issues",
   "flags": {
     "allowBugReporter": true
   },
   "license": "LICENSE.md",
-  "version": "10.0.1",
-  "esmodules": [
-    "module/start.js"
-  ],
+  "templateVersion": 5,
+  "scripts": [],
+  "esmodules": ["module/start.js"],
   "styles": [
     "style/anarchy.css",
     "style/anarchy-shadowrun.css",
@@ -29,46 +43,47 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json",
-      "flags": {}
+      "path": "lang/fr.json"
     }
   ],
   "packs": [
     {
       "name": "macros",
       "label": "Macros",
-      "path": "packs/macros.db",
-      "private": false,
-      "type": "Macro",
       "system": "anarchy",
-      "flags": {}
+      "module": "anarchy",
+      "path": "./packs/macros.db",
+      "type": "Macro",
+      "tags": ["macro"]
     },
     {
       "name": "gm-info",
       "label": "Gamemaster information",
-      "path": "packs/gm-info.db",
-      "private": false,
-      "type": "JournalEntry",
       "system": "anarchy",
-      "flags": {}
+      "module": "anarchy",
+      "path": "./packs/gm-info.db",
+      "type": "JournalEntry",
+      "tags": ["journal"]
+    },
+    {
+      "name": "manual-fr",
+      "label": "Manuel SR Anarchy (FR)",
+      "type": "JournalEntry",
+      "path": "./packs/manual-fr.db",
+      "tags": ["documentation"]
     }
   ],
+  "system": [],
+  "relationships": {},
   "socket": true,
-  "manifest": "https://gitlab.com/vincent.vandeme/anarchy/raw/master/system.json",
-  "download": "https://gitlab.com/vincent.vandeme/anarchy/-/archive/10.0.1/anarchy-10.0.1.zip",
+  "protected": false,
   "gridDistance": 1,
   "gridUnits": "m",
   "primaryTokenAttribute": "monitors.physical",
-  "secondaryTokenAttribute": "monitors.stun",
-  "id": "anarchy",
-  "compatibility": {
-    "minimum": "10",
-    "verified": "10"
-  }
+  "secondaryTokenAttribute": "monitors.stun"
 }

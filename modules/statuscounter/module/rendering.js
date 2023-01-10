@@ -12,8 +12,9 @@ export const extendEffectRenderer = function () {
             drawEffectCounters(this);
         }, "WRAPPER");
         libWrapper.register("statuscounter", "Token.prototype._drawEffect", async function (wrapped, src, ...args) {
-            await wrapped(src, ...args);
-            labelEffect(this, src);
+            const icon = await wrapped(src, ...args);
+            if (icon) icon.name = src;
+            return icon;
         }, "WRAPPER");
     } else {
         // Manual override
@@ -25,22 +26,11 @@ export const extendEffectRenderer = function () {
 
         const originalDrawEffect = Token.prototype._drawEffect;
         Token.prototype._drawEffect = async function (src) {
-            await originalDrawEffect.apply(this, arguments);
-            labelEffect(this, src);
+            const icon = await originalDrawEffect.apply(this, arguments);
+            if (icon) icon.name = src;
+            return icon;
         };
     }
-}
-
-/**
- * Marks the PIXI object associated with the effect with the icon path for
- *  later identification.
- * @param {Token} token The token that the effect was added to.
- * @param {string} path The icon path of the effect.
- */
-function labelEffect(token, path) {
-    // Find first unlabeled sprite.
-    const effect = token.effects.children.find(e => e.isSprite && !e.name);
-    if (effect) effect.name = path;
 }
 
 /**
@@ -100,7 +90,10 @@ function drawEffectCounters(token) {
 
     if (token.effectCounters) {
         token.effectCounters.removeChildren().forEach(c => c.destroy());
-    } else {
+    }
+
+    // The child may have been removed due to redrawing the token entirely.
+    if (!token.children.find(c => c.name === "effectCounters")) {
         const counterContainer = new PIXI.Container();
         counterContainer.name = "effectCounters";
         token.effectCounters = token.addChild(counterContainer);

@@ -12,7 +12,7 @@
   "readme": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/README.md",
   "bugs": "https://gitlab.com/woodentavern/status-icon-counters/-/issues",
   "changelog": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/CHANGELOG.md",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "esmodules": [
     "statuscounter.js"
   ],
@@ -41,10 +41,10 @@
     }
   ],
   "manifest": "https://gitlab.com/woodentavern/status-icon-counters/-/raw/master/src/module.json",
-  "download": "https://gitlab.com/woodentavern/status-icon-counters/uploads/8495236dfba53850de04dbff91dbb4f7/statuscounter-v2.0.14.zip",
+  "download": "https://gitlab.com/woodentavern/status-icon-counters/uploads/5d605b1a366cf1b3e261b7b3de960273/statuscounter-v2.0.15.zip",
   "id": "statuscounter",
   "compatibility": {
     "minimum": "10.284",
-    "verified": "10.285"
+    "verified": "10.287"
   }
 }

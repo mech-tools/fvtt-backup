@@ -4,22 +4,22 @@
   "authors": [
     {
       "name": "flamewave000",
-      "discord": "flamewave000#6766",
       "url": "https://github.com/flamewave000",
+      "discord": "flamewave000#0001",
       "flags": {}
     }
   ],
   "url": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity",
-  "license": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/df-settings-clarity/LICENSE",
+  "license": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/LICENSE",
   "readme": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity/README.md",
   "bugs": "https://github.com/flamewave000/dragonflagon-fvtt/issues/new/choose",
   "changelog": "https://github.com/flamewave000/dragonflagon-fvtt/tree/master/df-settings-clarity/CHANGELOG.md",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "scripts": [
-    "src/lib/fuzzysort.js"
+    "libs/fuzzysort.js"
   ],
   "esmodules": [
-    "src/df-settings-clarity.js"
+    "src/main.js"
   ],
   "styles": [
     "css/df-settings-clarity.css"
@@ -52,12 +52,28 @@
       {
         "id": "lib-wrapper",
         "type": "module",
-        "compatibility": {}
+        "compatibility": {
+          "verified": "1.12.10.0"
+        }
       }
     ]
   },
   "compatibility": {
-    "minimum": "0.7.9",
-    "verified": "0.8.7"
-  }
+    "minimum": "10",
+    "verified": "10.288"
+  },
+  "media": [
+    {
+      "type": "cover",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/df-settings-clarity/cover.png",
+      "loop": false,
+      "flags": {}
+    },
+    {
+      "type": "icon",
+      "url": "https://raw.githubusercontent.com/flamewave000/dragonflagon-fvtt/master/.assets/logo.png",
+      "loop": false,
+      "flags": {}
+    }
+  ]
 }

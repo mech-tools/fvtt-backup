@@ -1,5 +1,38 @@
 # Changelog
 
+### [3.0.2](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.1...v3.0.2) (2022-11-03)
+
+
+### Bug Fixes
+
+* display of armor rolls correctly ignoring attributes for each roll setting ([26c7111](https://www.github.com/winks-vtt/yze-coriolis/commit/26c7111be3aa5f9a362cb26d25c604a7a909bf39))
+
+### [3.0.1](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.0...v3.0.1) (2022-11-02)
+
+
+### Bug Fixes
+
+* listing of critical injuries now in line with how talents and gear are listed ([109fccb](https://www.github.com/winks-vtt/yze-coriolis/commit/109fccb141a0c65c8a87261e4e0a6ebb65d12bc6))
+* token IDs are sent correctly to chat options for unlinked tokens. ([b42792b](https://www.github.com/winks-vtt/yze-coriolis/commit/b42792b53b9ab0d3f4f321f3ba7ee67eca24d449))
+
+## [3.0.0](https://www.github.com/winks-vtt/yze-coriolis/compare/v2.12.0...v3.0.0) (2022-10-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* v10 compatibility
+* v10 compatiblilty
+
+### Features
+
+* v10 compatibility ([5183f07](https://www.github.com/winks-vtt/yze-coriolis/commit/5183f07bcfb45224aeaa8e7ebda565ca270b54c1))
+* v10 compatiblilty ([52c94ef](https://www.github.com/winks-vtt/yze-coriolis/commit/52c94efcde2c1185eab4556115df93140f954b2c))
+
+
+### Bug Fixes
+
+* update data paths ([57a6b1a](https://www.github.com/winks-vtt/yze-coriolis/commit/57a6b1a3885d12ea26998d3ca5dba715df76fab9))
+
 ## [2.12.0](https://www.github.com/winks-vtt/yze-coriolis/compare/v2.11.0...v2.12.0) (2022-09-01)
 
 

@@ -63,7 +63,10 @@ export const extendBarRenderer = function () {
  */
 function drawBrawlBars() {
     let visibleBars = getVisibleBars(this.document);
-    if (visibleBars.length === 0) return;
+    if (visibleBars.length === 0) {
+        this.bars.removeChildren();
+        return;
+    }
 
     const reservedSpace = {
         "top-inner": 0,
@@ -118,27 +121,6 @@ async function createResourceBar(token, data, reservedSpace) {
     if (!data.shareHeight) reservedSpace[data.position] += renderedHeight;
     bar.position.set(position[0], position[1]);
     token.bars.addChild(bar);
-}
-
-/**
- * Redraws a single resource bar without changing its position.
- * @param {Token} token The token to redraw the bar on.
- * @param {Object} barData The data of the bar to refresh.
- */
-export const redrawBar = async function (token, barData) {
-    const bar = token.bars.getChildByName(barData.id);
-    if (!bar) return;
-
-    const gfx = bar.getChildByName("gfx");
-    bar.removeChildren();
-    if (gfx) {
-        // Clear graphics object instead of removing it.
-        gfx.clear();
-        bar.addChild(gfx);
-    }
-
-    const textures = await loadBarTextures(barData);
-    drawResourceBar(token, bar, barData, textures);
 }
 
 /**

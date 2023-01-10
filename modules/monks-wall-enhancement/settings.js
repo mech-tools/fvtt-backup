@@ -33,6 +33,15 @@ export const registerSettings = function () {
 		type: Boolean,
 		onChange: debouncedReload
 	});
+
+	game.settings.register(modulename, "alter-images", {
+		name: i18n("MonksWallEnhancement.alter-images.name"),
+		hint: i18n("MonksWallEnhancement.alter-images.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
 	/*
 	game.settings.register(modulename, "default-ctrl", {
 		name: i18n("MonksWallEnhancement.default-ctrl.name"),
@@ -50,6 +59,20 @@ export const registerSettings = function () {
 		config: true,
 		default: 25,
 		type: Number
+	});
+
+	game.settings.register(modulename, "join-tollerance", {
+		name: i18n("MonksWallEnhancement.join-tollerance.name"),
+		hint: i18n("MonksWallEnhancement.join-tollerance.hint"),
+		scope: "world",
+		config: true,
+		default: 10,
+		type: Number,
+		range: {
+			min: 5,
+			max: 40,
+			step: 1
+		}
 	});
 
 	game.settings.register(modulename, "toggle-secret", {

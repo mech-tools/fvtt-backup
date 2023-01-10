@@ -1,5 +1,17 @@
 # DragonFlagon Module Buttons Library
 
+## Release 1.4.2 (2022-11-23)
+- **FIX:** Buttons were dissappearing when only one group was available.
+
+## Release 1.4.1 (2022-11-23)
+- **UPDATE #391:** You can now declare your button/group as being displayable when there is no canvas. Just add the `"noCanvas": true` to your Tool and ToolGroup declarations.
+- **FIX:** The buttons will now automatically refresh when ever the sacene layer changes. This way modules that are trying to display buttons for only certain layers will not need to manually tell the buttons to refresh.
+- **NEW:** I've added a new Hook for more easily refreshing the Module Buttons UI called `refreshModuleButtons`.
+
+## Release 1.4.0 (2022-10-15)
+- **UPDATE:** Manifest for FoundryVTT v10.
+- **FIX:** Alignment issue when buttons are on the bottom of the screen.
+
 ## Release 1.3.2 (2022-05-28)
 - **FIX #361:** Buttons container was erroneously absorbing mouse events. It will now ignore all events.
 - **UPDATE:** The Magnet button will now only appear when you mouse over its occupied region of the screen.

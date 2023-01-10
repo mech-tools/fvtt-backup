@@ -32,7 +32,7 @@ Hooks.on("init", () => {
 
 Hooks.on("ready", () => {
   const requiredMinSystemVersion = "2.1.0";
-  const current = game.system.data.version;
+  const current = game.system.version;
   if (isNewerVersion(requiredMinSystemVersion, current)) {
     throw Dialog.prompt({
       title: "System version below minimum requirement",

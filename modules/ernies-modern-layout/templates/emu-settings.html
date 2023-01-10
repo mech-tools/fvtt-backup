@@ -3,6 +3,7 @@
 		<a class="item" data-tab="colors">{{ localize "emu.modal-tab-colors" }}</a>
 		<a class="item" data-tab="design">{{ localize "emu.modal-tab-design" }}</a>
 		<a class="item" data-tab="options">{{ localize "emu.modal-tab-options" }}</a>
+		<a class="item" data-tab="reset">{{ localize "emu.modal-tab-reset" }}</a>
 	</nav>
 	<section id="config-tabs" class="content">
 		<div class="tab" data-tab="colors" data-group="sections">
@@ -25,6 +26,20 @@
 					<input type="color" name="colorPrimarySelector" value="{{ colorPrimary }}" data-edit="colorPrimary"/>
 				</div>
 				<p class="notes">{{ localize "emu.theme-primary-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.theme-primary-darker" }}</label>
+				<div class="form-fields">
+					<input type="text"  name="colorPrimaryDarker" value="{{ colorPrimaryDarker }}" data-dtype="String"/>
+					<input type="color" name="colorPrimaryDarkerSelector" value="{{ colorPrimaryDarker }}" data-edit="colorPrimaryDarker"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.theme-primary-darkest" }}</label>
+				<div class="form-fields">
+					<input type="text"  name="colorPrimaryDarkest" value="{{ colorPrimaryDarkest }}" data-dtype="String"/>
+					<input type="color" name="colorPrimaryDarkestSelector" value="{{ colorPrimaryDarkest }}" data-edit="colorPrimaryDarkest"/>
+				</div>
 			</div>
 			<div class="form-group">
 				<label>{{ localize "emu.theme-background-default" }}</label>
@@ -301,6 +316,13 @@
 				</div>
 			</div>
 			<div class="form-group">
+				<label>{{ localize "emu.design-background-opacity-form-field" }}</label>
+				<div class="form-fields">
+					<input type="range" name="backgroundOpacityFormField" value="{{ backgroundOpacityFormField }}" min="0.01" max="1.00" step="0.01" data-dtype="Number">
+					<span class="range-value">{{ backgroundOpacityFormField }}</span>
+				</div>
+			</div>
+			<div class="form-group">
 				<label>{{ localize "emu.design-background-opacity-hotbar" }}</label>
 				<div class="form-fields">
 					<input type="range" name="backgroundOpacityHotbar" value="{{ backgroundOpacityHotbar }}" min="0.01" max="1.00" step="0.01" data-dtype="Number">
@@ -366,6 +388,106 @@
 					<input id="imageLogo" name="imageLogo" type="text" value="{{imageLogo}}" />
 				</div>
 			</div>
+			<h3>{{ localize "emu.design-spacing-note" }}</h3>
+			<p class="notes">{{ localize "emu.design-spacing-warning-note" }}</p>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-base" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingBase" value="{{ spacingBase }}" min="1" max="20" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingBase }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-base-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-xs" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingXS" value="{{ spacingXS }}" min="1" max="10" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingXS }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-xs-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-sm" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingSM" value="{{ spacingSM }}" min="1" max="40" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingSM }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-sm-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-md" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingMD" value="{{ spacingMD }}" min="1" max="80" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingMD }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-md-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-lg" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingLG" value="{{ spacingLG }}" min="1" max="120" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingLG }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-lg-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-spacing-xl" }}</label>
+				<div class="form-fields">
+					<input type="range" name="spacingXL" value="{{ spacingXL }}" min="1" max="160" step="1" data-dtype="Number">
+					<span class="range-value">{{ spacingXL }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-spacing-xl-hint" }}</p>
+			</div>
+			<h3>{{ localize "emu.design-sizing-note" }}</h3>
+			<p class="notes">{{ localize "emu.design-sizing-warning-note" }}</p>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-sidebar" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingSidebar" value="{{ sizingSidebar }}" min="160" max="640" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingSidebar }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-sidebar-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-button" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingButton" value="{{ sizingButton }}" min="1" max="64" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingButton }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-button-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-button-xs" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingButtonXS" value="{{ sizingButtonXS }}" min="1" max="40" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingButtonXS }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-button-xs-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-button-sm" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingButtonSM" value="{{ sizingButtonSM }}" min="1" max="48" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingButtonSM }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-button-sm-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-button-lg" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingButtonLG" value="{{ sizingButtonLG }}" min="1" max="80" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingButtonLG }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-button-lg-hint" }}</p>
+			</div>
+			<div class="form-group">
+				<label>{{ localize "emu.design-sizing-button-xl" }}</label>
+				<div class="form-fields">
+					<input type="range" name="sizingButtonXL" value="{{ sizingButtonXL }}" min="1" max="102" step="1" data-dtype="Number">
+					<span class="range-value">{{ sizingButtonXL }}</span>
+				</div>
+				<p class="notes">{{ localize "emu.design-sizing-button-xl-hint" }}</p>
+			</div>
 		</div>
 		<div class="tab" data-tab="options" data-group="sections">
 			<div class="form-group">
@@ -394,6 +516,18 @@
 				<p class="notes">{{ localize "emu.layout-emu-layout-hint" }}</p>
 			</div>
 			<div class="form-group">
+				<button type="button" name="import-theme">
+					<i class="fas fa-file-import"></i>
+					<span>{{ localize "emu.modal-button-import" }}</span>
+				</button>
+				<button type="button" name="export-theme">
+					<i class="fas fa-file-export"></i>
+					<span>{{ localize "emu.modal-button-export" }}</span>
+				</button>
+			</div>
+		</div>
+		<div class="tab" data-tab="reset" data-group="sections">
+			<div class="form-group">
 				<button type="button" name="reset">
 					<i class="fas fa-undo"></i>
 					<span>{{ localize "emu.modal-button-reset" }}</span>
@@ -402,7 +536,7 @@
 		</div>
 	</section>
 	<footer class="sheet-footer">
-		<button type="submit" name="submit">
+		<button class="emu-submit" type="submit" name="submit">
 			<i class="fas fa-save"></i>
 			<span>{{ localize "emu.modal-button-save" }}</span>
 		</button>

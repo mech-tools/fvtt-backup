@@ -9,7 +9,7 @@ This module shows a ruler when you drag a token or measurement template to infor
 
 
 ## Supports Tokens of all sizes
-Terrain ruler has excellent support for tokens of all sizes. The Ruler will always originate from the token's center and will always highlight all the squares that tokens move over. If the [Hex Token Size Support](https://foundryvtt.com/packages/hex-size-support) is installed this is also true for large tokens on hex scenes.
+Terrain ruler has excellent support for tokens of all sizes. The Ruler will always originate from the token's center and will always highlight all the squares that tokens move over.
 
 ![Drag Ruler being used with a large token on a square grid](https://raw.githubusercontent.com/manuelVo/foundryvtt-drag-ruler/709774b25f7dd818a90591165f74b3e6dbc788cc/media/large_token_square.webp)
 ![Drag Ruler being used with a large token on a hex grid](https://raw.githubusercontent.com/manuelVo/foundryvtt-drag-ruler/709774b25f7dd818a90591165f74b3e6dbc788cc/media/large_token_hex.webp)
@@ -32,6 +32,16 @@ During combat, Drag Ruler will remember the path a token has taken during it's t
 ![Demonstration of the Movement History](https://raw.githubusercontent.com/manuelVo/foundryvtt-drag-ruler/709774b25f7dd818a90591165f74b3e6dbc788cc/media/movement_history.webp)
 
 
+## Pathfinding
+**To use pathfinding you must install the [routinglib](https://foundryvtt.com/packages/routinglib) module**
+
+When routinglib is installed, Drag Ruler can automatically place waypoints to walk around walls and terrain to reach the destination with the shortest possible movement. Pathfinding can be activated using a configurable key. Alternatively, Drag Ruler can be configured to always use pathfinding when a token is being dragged.
+
+Pathfinding is restricted to GM users by default, since the pathfinding algorithm can create ways that lead through unexplored fog of war. If you want to allow your players to use Drag Ruler's pathfinding functionality, you need to enable the associated setting in Drag Ruler's module settings.
+
+![Demonstration of pathfinding](https://raw.githubusercontent.com/manuelVo/foundryvtt-drag-ruler/a5de9bbf0a54a5bafaa53c786bed4379dc244253/media/pathfinding.webp)
+
+
 ## Game systems with Drag Ruler integration
 Drag Ruler will work with all Foundry VTT game systems. However, some game systems offer a special integration via the [Drag Ruler API](#api), that allows Drag Ruler to take the rules of the game system into account when dispaying speeds (such as weight carried or conditions that apply to the character), offering a smoother experience. While some game systems offer this integration natively, for other game systems there are modules providing the integration. If the integration is provided via a module you need to install and activate both Drag Ruler and the integration module to benefit from the integration.
 
@@ -39,6 +49,7 @@ The game systems that offer Drag Ruler integration are:
 - Cypher System (starting with version 1.13.0)
 - DnD5e (via the module [DnD5e Drag Ruler Integration](https://foundryvtt.com/packages/elevation-drag-ruler))
 - GURPS 4th Edition Game Aid (Unofficial) (starting with version 0.9.1)
+- Hackmaster (starting with version 0.2.11)
 - Ironclaw Second Edition (starting with version 0.2.2)
 - Lancer (via the module [Lancer Speed Provider](https://foundryvtt.com/packages/lancer-speed-provider))
 - Level Up: Advanced 5th Edition (Official) (via the module [A5E Drag Ruler Integration](https://foundryvtt.com/packages/a5edragruler))
@@ -52,6 +63,7 @@ The game systems that offer Drag Ruler integration are:
 - Tagmar RPG (starting with version 1.1.4)
 - TheWitcherTRPG (starting with version 0.0.62)
 - Tormenta20 (starting with version 1.1.37)
+- The Dark Eye 5 / Das Schwarze Auge 5 (via the module [TDE5/DSA5 Drag Ruler Integration](https://foundryvtt.com/packages/dsa5-drag-ruler))
 - Shadow of the Demon Lord  (starting with version 1.7.15)
 - Wasteland Ventures (starting with version 0.1.0)
 - WWII:OWB (starting with version 1.0.4)

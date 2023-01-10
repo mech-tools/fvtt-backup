@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.5.2](https://github.com/ghost-fvtt/fxmaster/compare/v3.5.1...v3.5.2) (2022-12-17)
+
+
+### Bug Fixes
+
+* address issue that that snow particle effect wasn’t configurable ([bfb05d8](https://github.com/ghost-fvtt/fxmaster/commit/bfb05d80dd8923cc1dbc77c706584214974de8b7))
+
+### [3.5.1](https://github.com/ghost-fvtt/fxmaster/compare/v3.5.0...v3.5.1) (2022-11-12)
+
+
+### Bug Fixes
+
+* fix issue with old scene mask not being cleared on scene change ([cd875dc](https://github.com/ghost-fvtt/fxmaster/commit/cd875dc008af5aa8611c9a7e0595bfd79453b293))
+* remove bottom border on special effect folders ([9f7f2e8](https://github.com/ghost-fvtt/fxmaster/commit/9f7f2e85aaa32295fe21d7c9ac8e7edadd9e528b))
+
 ## [3.5.0](https://github.com/ghost-fvtt/fxmaster/compare/v3.4.0...v3.5.0) (2022-09-01)
 
 

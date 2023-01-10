@@ -25,7 +25,7 @@ export async function updateMigrationVersionToLatest() {
   return game.settings.set(
     moduleScopeKey,
     "migrationVersion",
-    game.modules.get(moduleScopeKey).data.version,
+    game.modules.get(moduleScopeKey).version,
   );
 }
 
@@ -226,7 +226,7 @@ async function linkScenes() {
         return jRef === ref && jRef !== "";
       });
       if (link) {
-        if (!scn.data.journal) {
+        if (!scn.journal) {
           await scn.update({ journal: link.id }, { diff: false });
         }
       }
