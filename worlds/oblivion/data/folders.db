@@ -4,12 +4,12 @@
 {"name":"PNJs","type":"Actor","parent":"4YlBbuBUCuJ0vvGf","sorting":"a","sort":0,"color":null,"flags":{},"_id":"9PWuRWkCWPMSCtDj"}
 {"_id":"BldKM5fsWIkCZ7DP","name":"Christophe","type":"Macro","parent":null,"sorting":"a","sort":400000,"color":"#000000","flags":{}}
 {"name":"Notes de maîtrise","type":"JournalEntry","parent":null,"sorting":"a","sort":0,"color":null,"flags":{},"_id":"CJ1PobShnIAt1N1X"}
-{"_id":"FdTPrxjCboq6Cesz","name":"Acte V","type":"Actor","parent":null,"sorting":"m","sort":0,"color":"","flags":{}}
 {"_id":"JkwzSLLE87Lgk9ka","name":"Lieux emblématiques","type":"JournalEntry","parent":"4QDET4drutmBxFrf","sorting":"a","sort":0,"color":"","flags":{}}
 {"_id":"PqL3IHmF5NVLpIAI","name":"Archives","type":"Scene","parent":null,"sorting":"m","sort":-50000,"color":null,"flags":{}}
 {"_id":"Rz4hcLH0NKN6hAaz","name":"Vivien","type":"Macro","parent":null,"sorting":"a","sort":800000,"color":"#000000","flags":{}}
 {"_id":"Sm6tvYwA4i0hzRjT","name":"Rems","type":"Macro","parent":null,"sorting":"a","sort":700000,"color":"#000000","flags":{}}
 {"_id":"SzFmcVlzZzKlvhOa","name":"Guillaume","type":"Macro","parent":null,"sorting":"a","sort":500000,"color":"#000000","flags":{}}
+{"name":"Acte 6","type":"Actor","parent":null,"sorting":"a","sort":0,"color":null,"flags":{},"_id":"Vmq0sr63fSnmxKLL"}
 {"_id":"ZijsCmFthdbTUjd6","name":"MJ","type":"Macro","parent":null,"sorting":"a","sort":300000,"color":"#000000","flags":{}}
 {"_id":"gAPabRFTPRnDJ6PQ","name":"_Evocations","type":"Macro","parent":null,"sorting":"a","sort":900000,"color":"#000000","flags":{}}
 {"_id":"i5rW8MmBvdHPvbMt","name":"Minzhi","type":"Macro","parent":null,"sorting":"a","sort":600000,"color":"#000000","flags":{}}
@@ -17,5 +17,3 @@
 {"_id":"ngzr6Xvko1VxgOes","name":"Créatures","type":"Actor","parent":"4YlBbuBUCuJ0vvGf","sorting":"a","sort":100000,"color":"","flags":{}}
 {"_id":"vYt6DDAH2xUpZxCA","name":"Autres","type":"Scene","parent":null,"sorting":"a","sort":-100000,"color":null,"flags":{}}
 {"_id":"wGx3BjD7f1N3B5PM","name":"Partagées","type":"Macro","parent":null,"sorting":"a","sort":750000,"color":"#000000","flags":{}}
-{"$$deleted":true,"_id":"FdTPrxjCboq6Cesz"}
-{"name":"Acte 6","type":"Actor","parent":null,"sorting":"a","sort":0,"color":null,"flags":{},"_id":"Vmq0sr63fSnmxKLL"}

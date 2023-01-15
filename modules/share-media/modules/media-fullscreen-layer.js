@@ -91,7 +91,8 @@ class shareFullscreenLayer {
 
 	if(game.scenes.current) {
             const currentScene = game.scenes.current
-            darknessContainer.css('opacity', currentScene.data.darkness)
+            //darknessContainer.css('opacity', currentScene.data.darkness)
+            darknessContainer.css('opacity', 0)
             darknessContainer.css('background-color', `#${CONFIG.Canvas.darknessColor.toString(16)}`)
         }
 
@@ -133,7 +134,8 @@ class shareFullscreenLayer {
     updateDarkness(darkness) {
         if(!this.container.hasClass('hidden')) {
             const darknessContainer = this.container.find('.darkness')
-            darknessContainer.css('opacity', darkness)
+            //darknessContainer.css('opacity', darkness)   
+            darknessContainer.css('opacity', 0)   
             darknessContainer.css('background-color', `#${CONFIG.Canvas.darknessColor.toString(16)}`)
         }
     }
