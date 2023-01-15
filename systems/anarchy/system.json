@@ -8,31 +8,34 @@
   "title": "Anarchy",
   "description": "Shadowrun Anarchy RPG, and hacks, for FoundryVTT",
   "compatibility": {
-    "minimum": 10,
-    "verified": 10
+    "minimum": "10",
+    "verified": "10"
   },
   "authors": [
     {
       "name": "Vincent VK",
       "email": "vincent.vandeme@gmail.com",
-      "discord": "VincentVk#9373"
+      "discord": "VincentVk#9373",
+      "flags": {}
     },
     {
       "name": "Pretre",
-      "discord": "Pretre#9138"
+      "discord": "Pretre#9138",
+      "flags": {}
     },
     {
       "name": "Los Brutos",
-      "discord": "Los Brutos#1876"
+      "discord": "Los Brutos#1876",
+      "flags": {}
     }
   ],
   "flags": {
     "allowBugReporter": true
   },
   "license": "LICENSE.md",
-  "templateVersion": 5,
-  "scripts": [],
-  "esmodules": ["module/start.js"],
+  "esmodules": [
+    "module/start.js"
+  ],
   "styles": [
     "style/anarchy.css",
     "style/anarchy-shadowrun.css",
@@ -43,12 +46,14 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json"
+      "path": "lang/fr.json",
+      "flags": {}
     }
   ],
   "packs": [
@@ -56,32 +61,31 @@
       "name": "macros",
       "label": "Macros",
       "system": "anarchy",
-      "module": "anarchy",
-      "path": "./packs/macros.db",
+      "path": "packs/macros.db",
       "type": "Macro",
-      "tags": ["macro"]
+      "private": false,
+      "flags": {}
     },
     {
       "name": "gm-info",
       "label": "Gamemaster information",
       "system": "anarchy",
-      "module": "anarchy",
-      "path": "./packs/gm-info.db",
+      "path": "packs/gm-info.db",
       "type": "JournalEntry",
-      "tags": ["journal"]
+      "private": false,
+      "flags": {}
     },
     {
       "name": "manual-fr",
       "label": "Manuel SR Anarchy (FR)",
       "type": "JournalEntry",
-      "path": "./packs/manual-fr.db",
-      "tags": ["documentation"]
+      "path": "packs/manual-fr.db",
+      "private": false,
+      "system": "anarchy",
+      "flags": {}
     }
   ],
-  "system": [],
-  "relationships": {},
   "socket": true,
-  "protected": false,
   "gridDistance": 1,
   "gridUnits": "m",
   "primaryTokenAttribute": "monitors.physical",

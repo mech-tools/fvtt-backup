@@ -3,15 +3,11 @@
   "title": "Dark Heresy 2E",
   "description": "Innocence proves nothing",
   "version": "4.1.2",
-  "minimumCoreVersion" : 10,
-  "compatibility" : {
-    "minimum" : 10,
-    "verified" : 10,
-    "maximum" : 10
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10",
+    "maximum": "10"
   },
-  "templateVersion": 2,
-  "author": "JeansenVaars, Moo Man, fredthedeadhead, Perfectro, Vendare, Silver292, Giddy",
-  "scripts": [],
   "esmodules": [
     "script/common/hooks.js"
   ],
@@ -23,39 +19,49 @@
       "name": "character-aptitudes",
       "label": "Character Aptitudes",
       "system": "dark-heresy",
-      "path": "./packs/character/aptitudes.db",
-      "entity": "Item"
+      "path": "packs/character/aptitudes.db",
+      "type": "Item",
+      "private": false,
+      "flags": {}
     }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "es",
       "name": "Español",
-      "path": "lang/es.json"
+      "path": "lang/es.json",
+      "flags": {}
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json"
+      "path": "lang/fr.json",
+      "flags": {}
     },
-	  {
+    {
       "lang": "pl",
       "name": "Polski",
-      "path": "lang/pl.json"
+      "path": "lang/pl.json",
+      "flags": {}
     }
   ],
   "gridDistance": 1,
   "gridUnits": "m",
-  "primaryTokenAttribute": null,
-  "secondaryTokenAttribute": null,
   "url": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT",
   "socket": true,
   "manifest": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.1.2/system.json",
   "download": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.1.2/dark-heresy.zip",
-  "license": "LICENSE.txt"
+  "license": "LICENSE.txt",
+  "authors": [
+    {
+      "name": "JeansenVaars, Moo Man, fredthedeadhead, Perfectro, Vendare, Silver292, Giddy",
+      "flags": {}
+    }
+  ]
 }

@@ -2,11 +2,17 @@
     "name": "yzecoriolis",
     "title": "Coriolis",
     "description": "Coriolis System for Foundry VTT.",
-    "version": "3.0.2",
-    "minimumCoreVersion": "10",
-    "compatibleCoreVersion": "10",
+    "version": "3.0.4",
+    "compatibility": {
+        "minimum": "10",
+        "verified": "10"
+    },
     "templateVersion": 2,
-    "author": "Winks",
+    "authors": [
+        {
+            "name": "Winks"
+        }
+    ],
     "esmodules": [
         "module/yzecoriolis.js",
         "module/hooks.js"
@@ -21,7 +27,7 @@
             "name": "ship_sheet_instructions",
             "label": "Ship Sheet Instructions",
             "path": "packs/ship-sheet-instructions.db",
-            "entity": "JournalEntry",
+            "type": "JournalEntry",
             "module": "Coriolis"
         }
     ],
@@ -63,5 +69,5 @@
     "secondaryTokenAttribute": "power",
     "url": "",
     "manifest": "https://github.com/winks-vtt/yze-coriolis/releases/latest/download/system.json",
-    "download": "https://github.com/winks-vtt/yze-coriolis/releases/download/v3.0.2/coriolis.zip"
+    "download": "https://github.com/winks-vtt/yze-coriolis/releases/download/v3.0.4/coriolis.zip"
 }
