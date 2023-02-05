@@ -8,7 +8,7 @@ export default class EffectsPanelApp extends Application {
     return mergeObject(super.defaultOptions, {
       id: 'effects-panel',
       popOut: false,
-      template: 'modules/dfreds-effects-panel/templates/effects-panel.html',
+      template: 'modules/dfreds-effects-panel/templates/effects-panel.hbs',
     });
   }
 
@@ -25,13 +25,11 @@ export default class EffectsPanelApp extends Application {
      * to properly wait for promises to resolve before refreshing the UI.
      */
     this.refresh = foundry.utils.debounce(this.render.bind(this), 100);
-
-    this._initialSidebarWidth = ui.sidebar.element.outerWidth();
   }
 
   /** @override */
   getData(options) {
-    return this._controller.data;
+    return this._controller.getEffectData();
   }
 
   /** @override */
@@ -52,29 +50,14 @@ export default class EffectsPanelApp extends Application {
     );
   }
 
-  /**
-   * Handles when the sidebar expands
-   */
-  handleExpand() {
-    const right = this._initialSidebarWidth + 18 + 'px';
-    this.element.animate({ right: right }, 150);
-  }
-
-  /**
-   * Handles when the sidebar collapses
-   */
-  handleCollapse() {
-    this.element.delay(250).animate({ right: '50px' }, 150);
+  updateFromRightPx() {
+    this.element.animate({ right: this._fromRightPx });
   }
 
   /** @inheritdoc */
   async _render(force = false, options = {}) {
     await super._render(force, options);
-    if (ui.sidebar._collapsed) {
-      this.element.css('right', '50px');
-    } else {
-      this.element.css('right', this._initialSidebarWidth + 18 + 'px');
-    }
+    this.element.css('right', this._fromRightPx);
   }
 
   get _icons() {
@@ -83,5 +66,18 @@ export default class EffectsPanelApp extends Application {
 
   get _dragHandler() {
     return this._rootView.find('#effects-panel-drag-handler');
+  }
+
+  get _fromRightPx() {
+    if (ui.webrtc.element.hasClass('camera-position-right')) {
+      return (
+        ui.sidebar.element.outerWidth() +
+        ui.webrtc.element.outerWidth() +
+        18 +
+        'px'
+      );
+    } else {
+      return ui.sidebar.element.outerWidth() + 18 + 'px';
+    }
   }
 }
