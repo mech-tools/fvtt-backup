@@ -82,6 +82,6 @@
   "compatibility": {
     "minimum": "0.7.9",
     "verified": "10",
-    "maximum": "11"
+    "maximum": "10"
   }
 }
