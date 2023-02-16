@@ -36,8 +36,6 @@ Hooks.once('socketlib.ready', () => {
  * Handle initializing the status and custom effects
  */
 Hooks.once('ready', async () => {
-  new Settings().migrateOldSettings();
-
   const customEffectsHandler = new CustomEffectsHandler();
   await customEffectsHandler.deleteInvalidEffects();
   game.dfreds.statusEffects.initializeStatusEffects();
@@ -84,23 +82,6 @@ Hooks.once('setup', () => {
     },
     'WRAPPER'
   );
-
-  libWrapper.register(
-    Constants.MODULE_ID,
-    'ActorSheet.prototype._onDropActiveEffect',
-    async function (wrapper, ...args) {
-      const [, data] = args;
-      if (!data.effectName) {
-        wrapper(...args);
-      } else {
-        // NOTE: taken from _onDropActiveEffect
-        const effect = await ActiveEffect.implementation.fromDropData(data);
-        if (!this.actor.isOwner || !effect) return false;
-        if (this.actor.uuid === effect.parent?.uuid) return false; // NOTE: Modified to include optional
-        return ActiveEffect.create(effect.toObject(), { parent: this.actor });
-      }
-    }
-  );
 });
 
 Hooks.on('renderItemDirectory', (_itemDirectory, html, _data) => {
@@ -143,6 +124,12 @@ Hooks.on('preCreateActiveEffect', (activeEffect, _config, _userId) => {
  * Handle adding any actor data changes when an active effect is added to an actor
  */
 Hooks.on('createActiveEffect', (activeEffect, _config, _userId) => {
+  const settings = new Settings();
+  if (activeEffect.parent.id == settings.customEffectsItemId) {
+    const foundryHelpers = new FoundryHelpers();
+    foundryHelpers.renderConvenientEffectsAppIfOpen();
+  }
+
   if (
     !activeEffect?.flags?.isConvenient ||
     !(activeEffect?.parent instanceof Actor)
@@ -152,8 +139,20 @@ Hooks.on('createActiveEffect', (activeEffect, _config, _userId) => {
   if (activeEffect?.flags?.requiresActorUpdate) {
     game.dfreds.effectInterface.addActorDataChanges(
       activeEffect?.label,
-      activeEffect?.parent?.uuid
+      activeEffect?.parent?.uuid,
+      activeEffect?.origin
     );
+  }
+});
+
+/**
+ * Handle re-rendering the app if it is open and an update occurs
+ */
+Hooks.on('updateActiveEffect', (activeEffect, _config, _userId) => {
+  const settings = new Settings();
+  if (activeEffect.parent.id == settings.customEffectsItemId) {
+    const foundryHelpers = new FoundryHelpers();
+    foundryHelpers.renderConvenientEffectsAppIfOpen();
   }
 });
 
@@ -184,6 +183,12 @@ Hooks.on('preDeleteActiveEffect', (activeEffect, _config, _userId) => {
  * Handle removing any actor data changes when an active effect is deleted from an actor
  */
 Hooks.on('deleteActiveEffect', (activeEffect, _config, _userId) => {
+  const settings = new Settings();
+  if (activeEffect.parent.id == settings.customEffectsItemId) {
+    const foundryHelpers = new FoundryHelpers();
+    foundryHelpers.renderConvenientEffectsAppIfOpen();
+  }
+
   if (
     !activeEffect?.flags?.isConvenient ||
     !(activeEffect?.parent instanceof Actor)

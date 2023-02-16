@@ -58,13 +58,27 @@ export default class EffectHandler {
    * @param {object} params - the effect parameters
    * @param {string} params.effectName - the name of the effect to remove
    * @param {string} params.uuid - the uuid of the actor to remove the effect from
+   * @param {string | undefined} params.origin - only removes the effect if the origin
+   * matches. If undefined, removes any effect with the matching name
    */
-  async removeEffect({ effectName, uuid }) {
+  async removeEffect({ effectName, uuid, origin }) {
     const actor = this._foundryHelpers.getActorByUuid(uuid);
-    const effectToRemove = actor.effects.find(
-      (activeEffect) =>
-        activeEffect?.flags?.isConvenient && activeEffect?.label == effectName
-    );
+
+    let effectToRemove;
+
+    if (origin) {
+      effectToRemove = actor.effects.find(
+        (activeEffect) =>
+          activeEffect?.flags?.isConvenient &&
+          activeEffect?.label == effectName &&
+          activeEffect?.origin == origin
+      );
+    } else {
+      effectToRemove = actor.effects.find(
+        (activeEffect) =>
+          activeEffect?.flags?.isConvenient && activeEffect?.label == effectName
+      );
+    }
 
     if (!effectToRemove) return;
 
@@ -85,6 +99,7 @@ export default class EffectHandler {
    */
   async addEffect({ effectName, effectData, uuid, origin, overlay }) {
     let effect = game.dfreds.effectInterface.findEffectByName(effectName);
+    let activeEffectsToApply = [];
 
     if (!effect && effectData) {
       effect = new Effect(effectData);
@@ -96,19 +111,37 @@ export default class EffectHandler {
       await this._removeAllExhaustionEffects(uuid);
     }
 
+    if (effect.name == 'Unconscious') {
+      activeEffectsToApply.push(this._getProneEffect());
+    }
+
     if (effect.isDynamic) {
       await this._dynamicEffectsAdder.addDynamicEffects(effect, actor);
     }
 
-    this._handleIntegrations(effect);
-
     const activeEffectData = effect.convertToActiveEffectData({
       origin,
       overlay,
+      includeAte: this._settings.integrateWithAte,
+      includeTokenMagic: this._settings.integrateWithTokenMagic,
     });
-    await actor.createEmbeddedDocuments('ActiveEffect', [activeEffectData]);
+
+    activeEffectsToApply.push(activeEffectData);
+
+    await actor.createEmbeddedDocuments('ActiveEffect', activeEffectsToApply);
 
     log(`Added effect ${effect.name} to ${actor.name} - ${actor.id}`);
+  }
+
+  _getProneEffect() {
+    let proneActiveEffectData =
+      game.dfreds.effectInterface.findEffectByName('Prone');
+    return proneActiveEffectData.convertToActiveEffectData({
+      origin,
+      overlay: false,
+      includeAte: this._settings.integrateWithAte,
+      includeTokenMagic: this._settings.integrateWithTokenMagic,
+    });
   }
 
   async _removeAllExhaustionEffects(uuid) {
@@ -117,26 +150,5 @@ export default class EffectHandler {
     await this.removeEffect({ effectName: 'Exhaustion 3', uuid });
     await this.removeEffect({ effectName: 'Exhaustion 4', uuid });
     await this.removeEffect({ effectName: 'Exhaustion 5', uuid });
-  }
-
-  _handleIntegrations(effect) {
-    if (this._settings.integrateWithAte && effect.atlChanges.length > 0) {
-      this._addAtlChangesToEffect(effect);
-    }
-
-    if (
-      this._settings.integrateWithTokenMagic &&
-      effect.tokenMagicChanges.length > 0
-    ) {
-      this._addTokenMagicChangesToEffect(effect);
-    }
-  }
-
-  _addAtlChangesToEffect(effect) {
-    effect.changes.push(...effect.atlChanges);
-  }
-
-  _addTokenMagicChangesToEffect(effect) {
-    effect.changes.push(...effect.tokenMagicChanges);
   }
 }

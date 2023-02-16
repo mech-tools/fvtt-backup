@@ -189,6 +189,15 @@ export default class ConvenientEffectsController {
   }
 
   /**
+   * Checks if the player is allowed to change custom effects
+   *
+   * @returns true if the player is allowed to change custom effects
+   */
+  get isPlayerAllowedCustomEffects() {
+    return this._settings.allowPlayerCustomEffects;
+  }
+
+  /**
    * Handles clicks on the reset status effects button
    *
    * @param {MouseEvent} event
@@ -381,7 +390,10 @@ export default class ConvenientEffectsController {
     }
 
     // otherwise use core default format
-    const effectData = effect.convertToActiveEffectData();
+    const effectData = effect.convertToActiveEffectData({
+      includeAte: this._settings.integrateWithAte,
+      includeTokenMagic: this._settings.integrateWithTokenMagic,
+    });
 
     event.dataTransfer.setData(
       'text/plain',

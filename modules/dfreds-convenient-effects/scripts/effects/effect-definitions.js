@@ -312,6 +312,11 @@ export default class EffectDefinitions {
       icon: 'modules/dfreds-convenient-effects/images/exhaustion1.svg',
       changes: [
         {
+          key: 'system.attributes.exhaustion',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: '1',
+        },
+        {
           key: 'flags.midi-qol.disadvantage.ability.check.all',
           mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
           value: '1',
@@ -331,6 +336,11 @@ export default class EffectDefinitions {
       description: 'Disadvantage on ability checks and speed halved',
       icon: 'modules/dfreds-convenient-effects/images/exhaustion2.svg',
       changes: [
+        {
+          key: 'system.attributes.exhaustion',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: '2',
+        },
         {
           key: 'flags.midi-qol.disadvantage.ability.check.all',
           mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
@@ -358,6 +368,11 @@ export default class EffectDefinitions {
         'Disadvantage on ability checks, speed halved, and disadvantage on attacks and saving throws',
       icon: 'modules/dfreds-convenient-effects/images/exhaustion3.svg',
       changes: [
+        {
+          key: 'system.attributes.exhaustion',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: '3',
+        },
         {
           key: 'flags.midi-qol.disadvantage.ability.check.all',
           mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
@@ -395,6 +410,11 @@ export default class EffectDefinitions {
         'Disadvantage on ability checks, speed halved, disadvantage on attacks and saving throws, and hit point maximum halved',
       icon: 'modules/dfreds-convenient-effects/images/exhaustion4.svg',
       changes: [
+        {
+          key: 'system.attributes.exhaustion',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: '4',
+        },
         {
           key: 'flags.midi-qol.disadvantage.ability.check.all',
           mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
@@ -438,6 +458,11 @@ export default class EffectDefinitions {
         'Disadvantage on ability checks, speed reduced to 0, disadvantage on attacks and saving throws, and hit point maximum halved',
       icon: 'modules/dfreds-convenient-effects/images/exhaustion5.svg',
       changes: [
+        {
+          key: 'system.attributes.exhaustion',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: '5',
+        },
         {
           key: 'flags.midi-qol.disadvantage.ability.check.all',
           mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
@@ -753,7 +778,7 @@ export default class EffectDefinitions {
       description:
         "- An unconscious creature is incapacitated (See the condition) can't move or speak, and is unaware of its surroundings.<br/>- The creature drops whatever its holding and falls prone (See the condition).<br/>- The creature automatically fails Strength and Dexterity saving throws.<br/>- Attack rolls against the creature have advantage.<br/>- Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature.",
       icon: 'icons/svg/unconscious.svg',
-      changes: [...this._paralyzed.changes, ...this._prone.changes],
+      changes: [...this._paralyzed.changes],
     });
   }
 
@@ -1227,9 +1252,15 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimSight'),
+          key: 'ATL.sight.range',
           mode: CONST.ACTIVE_EFFECT_MODES.UPGRADE,
           value: '60',
+          priority: 5,
+        },
+        {
+          key: 'ATL.sight.visionMode',
+          mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+          value: 'darkvision',
           priority: 5,
         },
       ],
@@ -1485,22 +1516,22 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '10',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.WHITE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "pulse","speed": 1,"intensity": 1}',
         },
@@ -1587,27 +1618,27 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '20',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '10',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch", "speed": 3, "intensity": 1}',
         },
@@ -1638,27 +1669,27 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '20',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '10',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.COLD_FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch", "speed": 3, "intensity": 1}',
         },
@@ -1768,6 +1799,9 @@ export default class EffectDefinitions {
         'Grants advantage on attack rolls while forcing disadvantage to all who attack for 1 minute',
       icon: 'icons/magic/air/fog-gas-smoke-swirling-gray.webp',
       seconds: Constants.SECONDS.IN_ONE_MINUTE,
+      flags: {
+        requiresActorUpdate: true,
+      },
       changes: [
         {
           key: 'flags.midi-qol.advantage.attack.all',
@@ -1978,22 +2012,22 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '5',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.WHITE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "sunburst", "speed": 2,"intensity": 4}',
         },
@@ -2017,6 +2051,7 @@ export default class EffectDefinitions {
       icon: 'icons/magic/air/fog-gas-smoke-dense-gray.webp',
       seconds: Constants.SECONDS.IN_ONE_HOUR,
       flags: {
+        requiresActorUpdate: true,
         dae: {
           specialDuration: ['1Attack', '1Spell'],
         },
@@ -2086,27 +2121,27 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_ONE_HOUR,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '40',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '20',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.WHITE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "pulse", "speed": 3,"intensity": 1}',
         },
@@ -2846,27 +2881,27 @@ export default class EffectDefinitions {
       ],
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '40',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '20',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.WHITE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.25,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "sunburst", "speed": 2,"intensity": 4}',
         },
@@ -3064,7 +3099,7 @@ export default class EffectDefinitions {
         {
           key: 'system.bonuses.mwak.damage',
           mode: CONST.ACTIVE_EFFECT_MODES.ADD,
-          value: '@scale.barbarian.rage-damage',
+          value: '+ @scale.barbarian.rage-damage',
         },
         {
           key: 'macro.tokenMagic',
@@ -3107,32 +3142,32 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_SIX_HOURS,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.lightAngle'),
+          key: 'ATL.light.angle',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '60',
         },
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '120',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '60',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.4,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch","speed": 1,"intensity": 1}',
         },
@@ -3148,27 +3183,27 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_ONE_HOUR,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '10',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '5',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.2,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch","speed": 1,"intensity": 1}',
         },
@@ -3184,27 +3219,27 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_SIX_HOURS,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '5',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '0',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.4,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch","speed": 1,"intensity": 1}',
         },
@@ -3220,27 +3255,27 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_SIX_HOURS,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '60',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '30',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.4,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch","speed": 1,"intensity": 1}',
         },
@@ -3256,27 +3291,27 @@ export default class EffectDefinitions {
       seconds: Constants.SECONDS.IN_ONE_HOUR,
       atlChanges: [
         {
-          key: this._createAtlEffectKey('ATL.dimLight'),
+          key: 'ATL.light.dim',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '40',
         },
         {
-          key: this._createAtlEffectKey('ATL.brightLight'),
+          key: 'ATL.light.bright',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '20',
         },
         {
-          key: this._createAtlEffectKey('ATL.lightColor'),
+          key: 'ATL.light.color',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: Constants.COLORS.FIRE,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAlpha'),
+          key: 'ATL.light.alpha',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: 0.4,
         },
         {
-          key: this._createAtlEffectKey('ATL.lightAnimation'),
+          key: 'ATL.light.animation',
           mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
           value: '{"type": "torch","speed": 1,"intensity": 1}',
         },
@@ -3563,54 +3598,5 @@ export default class EffectDefinitions {
         },
       ],
     });
-  }
-
-  _createAtlEffectKey(key) {
-    let result = key;
-    const version = game.version.split('.')[0];
-
-    if (version == '10') {
-      switch (key) {
-        case 'ATL.preset':
-          break;
-        case 'ATL.brightSight':
-          break;
-        case 'ATL.dimSight':
-          break;
-        case 'ATL.height':
-          break;
-        case 'ATl.img':
-          break;
-        case 'ATL.mirrorX':
-          break;
-        case 'ATL.mirrorY':
-          break;
-        case 'ATL.rotation':
-          break;
-        case 'ATL.scale':
-          break;
-        case 'ATL.width':
-          break;
-        case 'ATL.dimLight':
-          result = 'ATL.light.dim';
-          break;
-        case 'ATL.brightLight':
-          result = 'ATL.light.bright';
-          break;
-        case 'ATL.lightAnimation':
-          result = 'ATL.light.animation';
-          break;
-        case 'ATL.lightColor':
-          result = 'ATL.light.color';
-          break;
-        case 'ATL.lightAlpha':
-          result = 'ATL.light.alpha';
-          break;
-        case 'ATL.lightAngle':
-          result = 'ATL.light.angle';
-          break;
-      }
-    }
-    return result;
   }
 }

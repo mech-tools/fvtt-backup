@@ -293,7 +293,7 @@ export default class CustomEffectsHandler {
     const item = await CONFIG.Item.documentClass.create({
       name: 'Custom Convenient Effects',
       img: 'modules/dfreds-convenient-effects/images/magic-palm.svg',
-      type: 'item',
+      type: 'consumable',
     });
 
     log(`Creating custom item with ${item.id}`);
