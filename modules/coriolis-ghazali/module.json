@@ -1,16 +1,28 @@
 {
-  "name": "coriolis-ghazali",
+  "id": "coriolis-ghazali",
   "title": "Coriolis Last Voyage of the Ghazali",
   "description": "A Module containing all the data from the Coriolis Last Voyage of the Ghazali Scenario Book.",
   "authors": [{
     "name": "Alex Okafor"
   }],
-  "version": "3.0.1",
-  "minimumCoreVersion": "10",
-  "compatibleCoreVersion": "10",
+  "version": "3.0.3",
+  "compatibility": {
+    "minimum": 10,
+    "verified": 10,
+    "maximum": 11
+  },
   "scripts": [],
   "esmodules": ["modules/coriolis.js"],
-  "systems": ["yzecoriolis"],
+  "relationships": {
+    "systems": [{
+      "id": "yzecoriolis",
+      "type": "system",
+      "manifest": "https://github.com/winks-vtt/yze-coriolis/releases/latest/download/system.json",
+      "compatibility": {
+        "verified": "3.0.5"
+      }
+    }]
+  },
   "styles": ["/css/corioliscore.css"],
   "packs": [{
     "name": "actor",

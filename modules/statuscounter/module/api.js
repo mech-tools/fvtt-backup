@@ -53,7 +53,7 @@ class EffectCounter {
     }
 
     /**
-     * Retreives the value of this counter using its type's getter function.
+     * Retrieves the value of this counter using its type's getter function.
      * @param {TokenDocument | ActiveEffect} [parent] The parent entity of this counter.
      * @returns {Number} The result of the counter's type's value getter.
      */
@@ -64,7 +64,7 @@ class EffectCounter {
     }
 
     /**
-     * Retreives the value that should be displayed when rendering the counter.
+     * Retrieves the value that should be displayed when rendering the counter.
      * @param {TokenDocument | ActiveEffect} [parent] The parent entity of this counter.
      * @returns {String} The counter value if it is visible, an empty string otherwise.
      */
@@ -79,19 +79,21 @@ class EffectCounter {
      *  type's setter function.
      * @param {number} value The value to set.
      * @param {TokenDocument | ActiveEffect} [parent] The parent entity of this counter.
+     * @param {boolean} forceUpdate Indicates whether an update should be performed even if the setter declined it.
+     *  Defaults to false. This is usually required for changes to counter types that do not define their own setters.
      * @returns {Promise} A promise representing the asynchronous operation.
      */
-    async setValue(value, parent) {
+    async setValue(value, parent, forceUpdate = false) {
         parent = this.findParent(parent);
         if (!parent) return Promise.resolve();
 
         const update = counterTypes[this.type]?.setter(this, value, parent);
         if (update === null || update === undefined) return this.remove(parent);
-        if (update) return this.update(parent);
+        if (update || forceUpdate) return this.update(parent);
     }
 
     /**
-     * Retreives the font associated with the type of this counter. If none is 
+     * Retrieves the font associated with the type of this counter. If none is 
      *  found, the default font is returned instead.
      * @returns {PIXI.TextStyle} The font to use for this counter.
      */
@@ -167,7 +169,7 @@ class EffectCounter {
 
         const value = this.getValue(parent);
         this.type = type;
-        if (value) return this.setValue(value, parent);
+        if (value) return this.setValue(value, parent, true);
     }
 
     /**
@@ -207,27 +209,21 @@ class EffectCounter {
     }
 
     /**
-     * Retreives the counter for the effect with the given icon path for the
+     * Retrieves the counter for the effect with the given icon path for the
      *  given token.
      * @param {TokenDocument} tokenDoc The token document to search for the path.
      * @param {string} iconPath The icon path of the effect to search the counter for.
      * @returns {EffectCounter} The counter object if it exists, undefined otherwise.
      */
     static findCounter(tokenDoc, iconPath) {
-        let counter = null;
         const actorEffect = tokenDoc.actor?.effects.find(effect => effect.icon == iconPath);
-        if (actorEffect) {
-            if (actorEffect.getFlag("core", "overlay")) return;
-            counter = actorEffect.getFlag("statuscounter", "counter");
-            if (counter) return new ActiveEffectCounter(counter);
-            return new ActiveEffectCounter(1, actorEffect.icon, actorEffect);
-        }
-
-        return EffectCounter.getCounters(tokenDoc).find(counter => counter.path === iconPath);
+        return actorEffect
+            ? ActiveEffectCounter.getCounter(actorEffect)
+            : EffectCounter.getCounters(tokenDoc).find(counter => counter.path === iconPath);
     }
 
     /**
-     * Retreives the value of the counter for the effect with the given icon
+     * Retrieves the value of the counter for the effect with the given icon
      *  path for the given token.
      * @param {TokenDocument} tokenDoc The token document to search for the path.
      * @param {string} iconPath The icon path of the effect to search the counter for.
@@ -238,7 +234,7 @@ class EffectCounter {
     }
 
     /**
-     * Retreives the array of effect counters of the given token. If the token
+     * Retrieves the array of effect counters of the given token. If the token
      *  does not have the flag, creates a single stack counter per effect.
      *  Note that the counters are created from data copies, so modifications
      *  will not be applied until the counters are updated.
@@ -253,7 +249,7 @@ class EffectCounter {
     }
 
     /**
-     * Retreives an array of all simple and active effect counters of the given
+     * Retrieves an array of all simple and active effect counters of the given
      *  token. Missing counters are added, but not updated.
      *  Note that the counters are created from data copies, so modifications
      *  will not be applied until the counters are updated.
@@ -402,6 +398,15 @@ class ActiveEffectCounter extends EffectCounter {
     }
 
     /**
+     * Retrieves the status effect ID from the flags of this parent's document.
+     * @param {TokenDocument | Actor | ActiveEffect} parent The parent document of this counter.
+     * @returns {string} The effect ID that this counter belongs to.
+     */
+    findStatusId(parent) {
+        return this.findParent(parent)?.getFlag("core", "statusId");
+    }
+
+    /**
      * Adds or updates this counter from the associated active effect stored
      *  in the token's actor.
      * @param {ActiveEffect} [parent] The parent entity of this counter.
@@ -416,7 +421,13 @@ class ActiveEffectCounter extends EffectCounter {
             delete temporaryEffects[effect.parent.uuid + '.' + this.path];
             foundry.utils.setProperty(effect._source, "flags.statuscounter.counter", this);
             const cls = getDocumentClass("ActiveEffect");
-            return cls.create(effect.toObject(), { parent: effect.parent });
+            const actorEffect = await cls.create(effect.toObject(), { parent: effect.parent });
+
+            // Provide compatibility with Starfinder.
+            if (game.system.id === "sfrpg" && actorEffect.parent instanceof game.actors.documentClass) {
+                await actorEffect.parent.setCondition(this.findStatusId(parent), true);
+            }
+            return;
         }
 
         return effect.setFlag("statuscounter", "counter", this);
@@ -432,28 +443,32 @@ class ActiveEffectCounter extends EffectCounter {
         const effect = this.findParent(parent);
         if (!effect) return Promise.resolve();
 
-        if (effect._temporary) delete temporaryEffects[effect.parent.uuid + '.' + this.path];
-        else return effect.delete();
+        if (effect._temporary) {
+            delete temporaryEffects[effect.parent.uuid + '.' + this.path];
+        } else {
+            await effect.delete();
+
+            // Provide compatibility with Starfinder.
+            if (game.system.id === "sfrpg" && effect.parent instanceof game.actors.documentClass) {
+                await effect.parent.setCondition(this.findStatusId(parent), false);
+            }
+        }
     }
 
     /**
-     * Retreives the counter for the effect with the given ID for the given actor.
+     * Retrieves the counter for the effect with the given ID for the given actor.
      * @param {Actor} actor The actor document to search for the effect.
      * @param {string} statusId The status ID of the effect to search the counter for.
-     * @returns {ActiveEffectCounter} The counter object if it exists, undefined otherwise.
+     * @returns {ActiveEffectCounter?} The counter object if it exists, null otherwise.
      */
     static findCounter(actor, statusId) {
-        let counter = null;
         const effect = actor.effects.find(effect => effect.getFlag("core", "statusId") === statusId);
-        if (!effect || effect.getFlag("core", "overlay")) return;
-
-        counter = effect.getFlag("statuscounter", "counter");
-        if (counter) return new ActiveEffectCounter(counter);
-        return new ActiveEffectCounter(1, effect.icon, effect);
+        if (!effect) return null;
+        return this.getCounter(effect);
     }
 
     /**
-     * Retreives the value of the counter for the effect with the given ID for
+     * Retrieves the value of the counter for the effect with the given ID for
      *  the given actor.
      * @param {Actor} actor The actor document to search for the effect.
      * @param {string} statusId The status ID of the effect to search the counter for.
@@ -464,7 +479,18 @@ class ActiveEffectCounter extends EffectCounter {
     }
 
     /**
-     * Retreives the array of active effect counters of the token's actor. If
+     * Retrieves the counter of the given active effect.
+     * @param {ActiveEffect} effect The active effect to retrieve the counter for.
+     * @returns {ActiveEffectCounter?} The counter of the effect or null.
+     */
+    static getCounter(effect) {
+        if (effect.getFlag("core", "overlay") || !effect.icon) return null;
+        const counter = effect.getFlag("statuscounter", "counter");
+        return counter ? new ActiveEffectCounter(counter) : new ActiveEffectCounter(1, effect.icon, effect);
+    }
+
+    /**
+     * Retrieves the array of active effect counters of the token's actor. If
      *  the token does not have an actor, an empty array is returned. For each
      *  effect that does not have a counter, a single stack counter is created.
      * @param {TokenDocument | Actor} parent The token or actor to fetch the counters for.
@@ -473,11 +499,7 @@ class ActiveEffectCounter extends EffectCounter {
     static getCounters(parent) {
         const actor = parent instanceof TokenDocument || parent instanceof Token ? parent.actor : parent;
         if (!actor) return [];
-
-        return actor.effects.filter(effect => !effect.getFlag("core", "overlay") && effect.icon).map(effect => {
-            let counter = foundry.utils.getProperty(effect, "flags.statuscounter.counter");
-            return counter ? new ActiveEffectCounter(counter) : new ActiveEffectCounter(1, effect.icon, actor);
-        });
+        return actor.effects.map(effect => this.getCounter(effect)).filter(Boolean);
     }
 }
 
@@ -498,13 +520,13 @@ const counterDefaults = {};
  */
 class CounterTypes {
     /**
-     * Retreives the map of type names and their configurations.
+     * Retrieves the map of type names and their configurations.
      * @returns {Object} The font, getter, setter and selector for each type.
      */
     static get types() { return counterTypes; }
 
     /**
-     * Retreives the map of icon paths and their default type names.
+     * Retrieves the map of icon paths and their default type names.
      * @returns {Object} The default type for each icon.
      */
     static get defaults() { return counterDefaults; }
@@ -566,7 +588,7 @@ class CounterTypes {
 }
 
 /**
- * Retreives the counter's value.
+ * Retrieves the counter's value.
  *  Default getter if the counter type doesn't specify its own.
  * @param {EffectCounter} counter The counter to get the value for.
  * @returns {number} The value of the counter.
@@ -577,7 +599,7 @@ function defaultGetValue(counter) {
 }
 
 /**
- * Retreives the value that should be displayed when rendering the counter.
+ * Retrieves the value that should be displayed when rendering the counter.
  * @param {EffectCounter} counter The counter to display the value for.
  * @param {TokenDocument | ActiveEffect} [parent] The parent entity of the counter.
  * @returns {string} The counter value if it is visible, an empty string otherwise.

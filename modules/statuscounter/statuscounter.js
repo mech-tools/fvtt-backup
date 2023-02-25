@@ -25,15 +25,28 @@ Hooks.once('init', async function() {
 	CounterTypes.addType("statuscounter.simple");
 	registerMultiplier();
     registerCountdown();
+
+    // Register custom module settings
+    registerSettings();
+    registerCountdownSettings();
+
+    if (game.system.id === "sfrpg") {
+        // Override the active effect toggle to prevent duplicates.
+        const originalToggle = CONFIG.Token.documentClass.prototype.toggleActiveEffect;
+        CONFIG.Token.documentClass.prototype.toggleActiveEffect = async function (effectData, { overlay = false, active } = {}) {
+            if (active === true && overlay === false && effectData.id) {
+                const existing = this.actor?.effects.find(e => e.getFlag("core", "statusId") === effectData.id);
+                if (existing) return true;
+            }
+
+            return originalToggle.apply(this, arguments);
+        }
+    }
 });
 
 /** Hook to extend the status effect rendering. */
 Hooks.once("setup", function() {
     extendEffectRenderer();
-
-    // Register custom module settings
-    registerSettings();
-    registerCountdownSettings();
 });
 
 /** Hook to register the global key events. */

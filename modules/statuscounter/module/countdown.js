@@ -155,7 +155,7 @@ function setCombatCountdownValue(counter, value, effect) {
     }
 
     // Always update the effect, not the counter.
-    counter.visible = true;
+    counter.visible = !!combat;
     if (effect._temporary) {
         foundry.utils.mergeObject(effect.duration, duration);
         return true;
