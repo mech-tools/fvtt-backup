@@ -18,3 +18,4 @@
 {"_id":"vYt6DDAH2xUpZxCA","name":"Autres","type":"Scene","parent":null,"sorting":"a","sort":-100000,"color":null,"flags":{}}
 {"_id":"wGx3BjD7f1N3B5PM","name":"Partagées","type":"Macro","parent":null,"sorting":"a","sort":750000,"color":"#000000","flags":{}}
 {"$$deleted":true,"_id":"Vmq0sr63fSnmxKLL"}
+{"name":"Acte VIII","type":"Actor","parent":null,"sorting":"a","sort":0,"color":null,"flags":{},"_id":"R8iKdWSLBwKRZmYu"}
