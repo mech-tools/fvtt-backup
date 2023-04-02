@@ -47,6 +47,9 @@ line {
 	padding-left: 2px;
 	padding-right: 3px;
 }
+.shadowrun6 th {
+	text-shadow: none; 
+}
 table td {
 	padding: 1px;
 }
@@ -291,6 +294,10 @@ dd::after {
 
 h3.highlight, h4.highlight {
 	color: var(--highlight-color)
+}
+
+table.spell-table td {
+	text-align: center;
 }
 
 

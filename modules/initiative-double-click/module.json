@@ -33,7 +33,7 @@
   "download": "https://github.com/League-of-Foundry-Developers/fvtt-initiative-double-click/releases/download/1.6.1/module.zip",
   "id": "initiative-double-click",
   "compatibility": {
-    "minimum": "0.8.4",
+    "minimum": "9",
     "verified": "10.277"
   }
 }

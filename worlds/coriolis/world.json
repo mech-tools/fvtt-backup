@@ -1,0 +1,11 @@
+{
+  "title": "Coriolis",
+  "id": "coriolis",
+  "system": "yzecoriolis",
+  "coreVersion": "10.291",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10"
+  },
+  "systemVersion": "3.0.12"
+}

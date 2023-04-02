@@ -1,6 +1,13 @@
 # Change Log
 
-## Middle Kingdom - v10 branch
+## Middle Kingdom - v10 -> main branch
+
+### 2.6.0 - February 26, 2022
+- [FEATURE] (amir-arad) Added support for Old School Essentials (ose) and for quantities within objects. (PR #46 Thanks!)
+- [BUGFIX] (Lupestro) GM escalation is now only invoked for the named light source on the intended game system. The only implemented example of this to date is token creation/deletion for Dancing Lights on dnd5e. (Behavior when aliasing the name of one of these _in the same game system_ to be used for something else is undefined.) (Issue #40)
+
+### 2.5.0 - February 18, 2023
+- [FEATURE] (Unomagan) Added light sources for Starfinder
 
 ### 2.4.0 - January 2, 2023
 - [FEATURE] (Aymeeric) Updated French translation (now at 100%)
@@ -76,7 +83,7 @@ I'm looking at loading localized language JSON files for the out-of-the-box sour
       * This will make planned future work much easier as well.
       * The mere thimbleful of HTML needed is fine sitting in the top of the hud.js for now.
 
-## Intermediate period - master branch
+## Intermediate period - master -> v9 branch
 
 ### 1.4.4 - March 19, 2022
   - [BUGFIX] (Lupestro) Dancing Lights now work better for players - sends entire create / remove cycle to GM when users lack permissions on tokens.

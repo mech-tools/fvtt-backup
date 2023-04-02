@@ -231,6 +231,88 @@
       }
     }
   },
+  "sfrpg": {
+    "system": "sfrpg",
+    "topology": "standard",
+    "quantity": "quantity",
+    "sources": {
+      "Portable Light, Lantern": {
+        "name": "Portable Light, Lantern",
+        "type": "equipment",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+            "bright": 10,
+            "dim": 10,
+            "angle": 360,
+            "color": "#555555",
+            "alpha": 0.5
+          }
+        ]
+      },
+      "Portable Light, Flashlight": {
+        "name": "Portable Light, Flashlight",
+        "type": "equipment",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+            "bright": 20,
+            "dim": 20,
+            "angle": 35,
+            "color": "#555555",
+            "alpha": 0.5
+          }
+        ]
+      },
+      "Portable Light, Beacon": {
+        "name": "Portable Light, Beacon",
+        "type": "equipment",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+            "bright": 20,
+            "dim": 50,
+            "angle": 360,
+            "color": "#555555",
+            "alpha": 0.5
+          }
+        ]
+      },
+      "Portable Light, Spotlight": {
+        "name": "Portable Light, Spotlight",
+        "type": "equipment",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+            "bright": 100,
+            "dim": 100,
+            "angle": 35,
+            "color": "#555555",
+            "alpha": 0.5
+          }
+        ]
+      },
+      "Comm Unit, Personal": {
+        "name": "Comm Unit, Personal",
+        "type": "equipment",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+              "bright": 15,
+              "dim": 15,
+              "angle": 35,
+              "color": "#555555",
+              "alpha": 0.5
+          }
+        ]
+      }
+    }
+  },
   "earthdawn4e": {
     "system": "earthdawn4e",
     "topology": "standard",
@@ -428,6 +510,50 @@
           { 
             "bright": 15, "dim": 30, "angle": 360, "color": "#ff9329", "alpha": 0.2,
             "animation": { "type": "torch", "speed": 5, "intensity": 5, "reverse": false } 	            
+          }
+        ]
+      }
+    }
+  },
+  "ose": {
+    "topology": "standard",
+    "quantity": "quantity.value",
+    "sources": {
+      "Torch": {
+        "type": "item",
+        "consumable": true,
+        "light": [
+          {
+            "bright": 20,
+            "dim": 30,
+            "angle": 360,
+            "color": "#ff9329",
+            "alpha": 0.5,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
+          }
+        ]
+      }, 
+      "Lantern": {
+        "type": "item",
+        "consumable": false,
+        "light": [
+          {
+            "bright": 20,
+            "dim": 30,
+            "angle": 360,
+            "color": "#ff9329",
+            "alpha": 0.5,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
           }
         ]
       }

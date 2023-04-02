@@ -12,8 +12,7 @@
   "version": "0.13.0",
   "compatibility": {
     "minimum": "0.6.5",
-    "verified": "10.285",
-    "maximum": "10"
+    "verified": "10.285"
   },
   "esmodules": [
     "modules/hide_gm_rolls.js"

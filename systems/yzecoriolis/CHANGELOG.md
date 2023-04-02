@@ -1,5 +1,55 @@
 # Changelog
 
+### [3.0.12](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.11...v3.0.12) (2023-03-31)
+
+
+### Bug Fixes
+
+* updated brazilian portugeuse localizations ([9bf3a47](https://www.github.com/winks-vtt/yze-coriolis/commit/9bf3a47657de09c1d3e5d88dfdac5ec72ea5b5ec))
+
+### [3.0.11](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.10...v3.0.11) (2023-02-24)
+
+
+### Bug Fixes
+
+* corrected typo in path ([9c5e1de](https://www.github.com/winks-vtt/yze-coriolis/commit/9c5e1ded3e7f510994a1020350423cdf7edc337d))
+
+### [3.0.10](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.9...v3.0.10) (2023-02-24)
+
+
+### Bug Fixes
+
+* updated ci ([0af9690](https://www.github.com/winks-vtt/yze-coriolis/commit/0af9690116afc17a3e8188896f519b69a44869a0))
+
+### [3.0.9](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.8...v3.0.9) (2023-02-24)
+
+
+### Bug Fixes
+
+* changing form handling ([7b45969](https://www.github.com/winks-vtt/yze-coriolis/commit/7b45969a6e29befda10f66d887ced0a4feaae614))
+
+### [3.0.8](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.7...v3.0.8) (2023-02-24)
+
+
+### Bug Fixes
+
+* updating CI messaging ([a0d6913](https://www.github.com/winks-vtt/yze-coriolis/commit/a0d6913440d34ecd0f9b5ecf01621f5d36836c92))
+
+### [3.0.7](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.6...v3.0.7) (2023-02-24)
+
+
+### Bug Fixes
+
+* updating CI messaging ([1835b04](https://www.github.com/winks-vtt/yze-coriolis/commit/1835b04c6f5638f5884573a61d9c18419e8df60d))
+
+### [3.0.6](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.5...v3.0.6) (2023-02-24)
+
+
+### Bug Fixes
+
+* added translations for item piles ([89562cc](https://www.github.com/winks-vtt/yze-coriolis/commit/89562cc4183cd500157d121c86854bf645126cea))
+* updated deps for go ([98bd9c2](https://www.github.com/winks-vtt/yze-coriolis/commit/98bd9c26fccd3144f8a29d867a1d52141b6c8c5a))
+
 ### [3.0.5](https://www.github.com/winks-vtt/yze-coriolis/compare/v3.0.4...v3.0.5) (2023-01-30)
 
 

@@ -1,0 +1,286 @@
+{{log "shadowrun6-gear-sheet-ro.html" data}}
+<form class="flexcol {{cssClass}}" autocomplete="off" style="padding-right: 100px">
+    {{!-- Sheet Body --}}
+  	{{#if data.data.genesisID}}
+	<h2>{{localize (concat (concat "item." data.data.genesisID) ".name")}}</h2>
+	<h4  style="font-style: italic">{{localize (concat (concat "item." data.data.genesisID) ".src")}}</h4>
+	{{else}}
+	<h2>{{item.name}}</h2>
+   {{/if}}
+   <h4>{{localize (concat 'shadowrun6.gear.subtype.' item.data.data.subtype)}}</h4>
+   
+   <table class="vehicle-stats-table" style="width: 25em">
+	<thead>
+	<tr style="align: center">
+     <!-- ********** WEAPONS ********** -->
+     {{#if (or
+            (eq item.data.data.type "WEAPON_FIREARMS")
+            (eq item.data.data.type "WEAPON_RANGED")
+            (eq item.data.data.type "WEAPON_CLOSE_COMBAT")
+            (eq item.data.data.type "WEAPON_SPECIAL"))}}
+		<th>{{ localize 'shadowrun6.item.damage' }}</th>
+		<th>{{ localize 'shadowrun6.item.mode' }}</th>
+		<th>{{ localize 'shadowrun6.item.attackvalues' }}</th>
+      {{/if}}
+     <!-- ********** ARMOR ********** -->
+		{{#if (eq item.data.data.type "ARMOR")}}
+      <th>{{localize 'shadowrun6.item.defencerating'}}</th>
+     	<th>{{localize 'shadowrun6.item.capacity'}}</th>
+      <th>{{localize 'shadowrun6.item.social'}}</th>
+		{{/if}}
+     <!-- ********** VEHICLE ********** -->
+     {{#if (or
+            (eq item.data.data.type "VEHICLES")
+            (eq item.data.data.type "DRONE_MICRO")
+            (eq item.data.data.type "DRONE_MINI")
+            (eq item.data.data.type "DRONE_SMALL")
+            (eq item.data.data.type "DRONE_MEDIUM")
+            (eq item.data.data.type "DRONE_LARGE"))}}
+       <th colspan="2">{{ localize 'shadowrun6.section.vehicles.column.handling' }}</th>
+       <th>{{ localize 'shadowrun6.section.vehicles.column.acc' }}</th>
+       <th>{{ localize 'shadowrun6.section.vehicles.column.spdi' }}</th>
+       <th>{{ localize 'shadowrun6.section.vehicles.column.tspd' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.bod' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.arm' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.pil' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.sen' }}</th>
+                    {{#if (eq item.data.data.type "VEHICLES")}}
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.sea' }}</th>
+                    {{/if}}
+		{{/if}}
+		<th>{{ localize 'shadowrun6.item.availability' }}</th>
+		<th>{{ localize 'shadowrun6.item.price' }} </th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr style="text-align:center">
+     {{#if (or
+            (eq item.data.data.type "WEAPON_FIREARMS")
+            (eq item.data.data.type "WEAPON_RANGED")
+            (eq item.data.data.type "WEAPON_CLOSE_COMBAT")
+            (eq item.data.data.type "WEAPON_SPECIAL"))}}
+		<td>{{item.data.data.dmgDef}}</td>
+		<td>{{firemodes item.data.data.modes}}</td>
+		<td>{{attackrating item.data.data.attackRating}}</td>
+    	{{/if}}
+		{{#if (eq item.data.data.type "ARMOR")}}
+		<td>{{item.data.data.defense}}</td>
+		<td>{{item.data.data.capacity}}</td>
+		<td>{{item.data.data.social}}</td>
+		{{/if}}
+     <!-- ********** VEHICLE ********** -->
+     {{#if (or
+            (eq item.data.data.type "VEHICLES")
+            (eq item.data.data.type "DRONE_MICRO")
+            (eq item.data.data.type "DRONE_MINI")
+            (eq item.data.data.type "DRONE_SMALL")
+            (eq item.data.data.type "DRONE_MEDIUM")
+            (eq item.data.data.type "DRONE_LARGE"))}}
+       <td>{{item.data.data.handlOn}}</td>
+       <td>{{item.data.data.handlOff}}</td>
+       <td>{{item.data.data.accOn}}</td>
+       <td>{{item.data.data.spdiOn}}</td>
+       <td>{{item.data.data.tspd}}</td>
+                    <td>{{item.data.data.bod}}</td>
+                    <td>{{item.data.data.arm}}</td>
+                    <td>{{item.data.data.pil}}</td>
+                    <td>{{item.data.data.sen}}</td>
+                    {{#if (eq item.data.data.type "VEHICLES")}}
+                    <td>{{item.data.data.sea}}></td>
+                    {{/if}}
+		{{/if}}
+	  <td>{{item.data.data.availDef}}</td>
+	  <td>{{item.data.data.price}}</td>
+	</tr>
+	</tbody>
+   </table>
+    
+	{{#if item.data.data.skill}}
+   <p>
+   	{{localize (concat "skill." item.data.data.skill)}}
+   	/
+   	{{localize (concat (concat (concat "shadowrun6.special." item.data.data.skill) ".") item.data.data.skillSpec)}} 
+   </p>
+	{{/if}}
+	   
+    <section class="sheet-body">
+        <div class="section">
+            <table>
+                <tr>
+                    <!--Typ, Subtyp, Verfügbarkeit, Preis-->
+                    <th>{{localize 'shadowrun6.item.type'}}</th>
+                    <th>{{localize 'shadowrun6.item.subtype'}}</th>
+                    <!--th>{{localize 'shadowrun6.label.column.count'}}</th-->
+                    <th>{{localize 'shadowrun6.label.column.rating'}}</th>
+                    <th>{{localize 'shadowrun6.item.availability'}}</th>
+                    <th>{{localize 'shadowrun6.item.price'}}</th>
+                </tr>
+                <tr>
+                    <td>
+                        <select name="data.type" data-field="data.type" class="typeselect">
+                            {{#select item.data.data.type}}
+                            {{#each config.GEAR_TYPES as |type id|}}
+                            <option value="{{@type}}" name=data.type>{{localize (concat "shadowrun6.itemtype." type)}}
+                            </option>
+                            {{/each}}
+                            {{/select}}
+                        </select>
+                    </td>
+                    <td><select name="data.subtype" data-field="data.subtype" class="subtypeselect">
+                            {{#select item.data.data.subtype}}
+                            <option value=""></option>
+                            {{#each (gearSubtype data.data.type) as |subtype id|}}>
+                            <option value="{{@subtype}}">{{localize (concat "shadowrun6.gear.subtype." subtype)}}
+                            </option>
+                            {{/each}}
+                            {{/select}}
+                        </select></td>
+                    <!--td><input style="vertical-align: middle;" type="checkbox" {{checked item.data.data.countable}}
+                            name="data.countable" /></td-->
+                    <td><input style="vertical-align: middle;" type="checkbox" {{checked item.data.data.needsRating}}
+                            name="data.needsRating" /></td>
+                    <td><input type="text" value="{{item.data.data.availDef}}" name="data.availDef" class="box centered"
+                            style="width: 2em" /></td>
+                    <td><input type="text" value="{{item.data.data.priceDef}}" name="data.priceDef" class="box centered"
+                            style="width: 3.4em" /></td>
+                </tr>
+            </table>
+            <!-- ********** BIOWARE / NANOWARE ********** -->
+            {{#if (or
+            (eq item.data.data.type "BIOWARE")
+            (eq item.data.data.type "NANOWARE")
+            )}}
+            <label for="ware_essence">{{localize 'shadowrun6.item.essence'}}</label>
+            <input type="number" value="{{item.data.data.essence}}" name="data.essence" id="ware_essence"
+                class="box centered" />
+            {{/if}}
+            <!-- ********** CYBERWARE ********** -->
+            {{#if (eq item.data.data.type "CYBERWARE")}}
+            <table>
+                <tr>
+                    <th>{{localize 'shadowrun6.item.essence'}}</th>
+                    <th>{{localize 'shadowrun6.item.capacity'}}</th>
+                </tr>
+                <tr>
+                    <td> <input type="number" value="{{item.data.data.essence}}" name="data.essence" id="ware_essence"
+                            class="box centered" /></td>
+                    <td> <input type="number" value="{{item.data.data.capacity}}" name="data.capacity" id="ware_cap"
+                            class="box centered" /></td>
+                </tr>
+            </table>
+            {{/if}}
+            <!-- ********** COMLINK ********** -->
+            {{#if (or
+                (eq item.data.data.subtype "COMMLINK")
+                (eq item.data.data.subtype "RIGGER_CONSOLE")
+            )}}
+            <table>
+                <tr>
+                    <th>{{localize 'shadowrun6.label.devRating'}}</th>
+                    <th>{{localize 'shadowrun6.label.progSlots'}}</th>
+                    <th>{{localize 'shadowrun6.label.dataproc.short'}}</th>
+                    <th>{{localize 'shadowrun6.label.firewall.short'}}</th>
+                </tr>
+                <tr>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.devRating}}"
+                            name="data.devRating" class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.progSlots}}"
+                            name="data.progSlots" class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.d}}" name="data.d"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.f}}" name="data.f"
+                            class="box centered" style="width:2em" /></td>
+                </tr>
+            </table>
+            {{/if}}
+            <!-- ********** CYBERDECK ********** -->
+            {{#if (eq item.data.data.subtype "CYBERDECK")}}
+            <table>
+                <tr>
+                    <th>{{localize 'shadowrun6.label.devRating'}}</th>
+                    <th>{{localize 'shadowrun6.label.progSlots'}}</th>
+                    <th>{{localize 'shadowrun6.label.attack.short'}}</th>
+                    <th>{{localize 'shadowrun6.label.sleaze.short'}}</th>
+                </tr>
+                <tr>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.devRating}}"
+                            name="data.devRating" class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.progSlots}}"
+                            name="data.progSlots" class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.a}}" name="data.a"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.s}}" name="data.s"
+                            class="box centered" style="width:2em" /></td>
+                </tr>
+            </table>
+            {{/if}}
+            <!-- ********** VEHICLES / DRONES ********** -->
+            {{#if (or
+            (eq item.data.data.type "VEHICLES")
+            (eq item.data.data.type "DRONES")
+            )}}
+            <table>
+                <tr>
+                    <th colspan="2">{{ localize 'shadowrun6.section.vehicles.column.handling' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.acc' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.spdi' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.tspd' }}</th>
+                    <th colspan="2">{{ localize 'shadowrun6.section.vehicles.column.vtype' }}</th>
+                </tr>
+                <tr>
+                    <td class="box centered" colspan="2"> <input type="number" value="{{item.data.data.handlOn}}"
+                            name="data.handlOn" class="box centered" style="width:2em" /> / <input type="number"
+                            value="{{item.data.data.handlOff}}" name="data.handlOff" class="box centered"
+                            style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.accOn}}" name="data.accOn"
+                            class="box centered" style="width:2em" /> / <input type="number" value="{{item.data.data.accOff}}" name="data.accOff"
+                            class="box centered" style="width:2em" /> </td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.spdiOn}}" name="data.spdiOn"
+                            class="box centered" style="width:2em" /> / <input type="number" value="{{item.data.data.spdiOff}}" name="data.spdiOff"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.tspd}}" name="data.tspd"
+                            class="box centered" style="width:2em" /></td>
+                    <td colspan="2"> <select name="data.vtype" data-field="data.vtype" class="typeselect">
+                            {{selectOptions config.VEHICLE_TYPE selected=item.data.data.vtype localize=true}}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.bod' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.arm' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.pil' }}</th>
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.sen' }}</th>
+                    {{#if (eq item.data.data.type "VEHICLES")}}
+                    <th>{{ localize 'shadowrun6.section.vehicles.column.sea' }}</th>
+                    {{/if}}
+                </tr>
+                <tr>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.bod}}" name="data.bod"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.arm}}" name="data.arm"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.pil}}" name="data.pil"
+                            class="box centered" style="width:2em" /></td>
+                    <td class="box centered"> <input type="number" value="{{item.data.data.sen}}" name="data.sen"
+                            class="box centered" style="width:2em" /></td>
+                    {{#if (eq item.data.data.type "VEHICLES")}}
+                    <td class="box centered"> <input type="number" value="{{item.data.data.sea}}" name="data.sea"
+                            class="box centered" style="width:2em" /></td>
+                    {{/if}}
+
+                </tr>
+            </table>
+            {{/if}}
+        </div>
+    </section>
+   <!-- Accessories -->
+	<h3>{{localize 'shadowrun6.item.accessories'}}</h3>
+   <p>{{item.data.data.accessories}}</p>
+   
+	<h3>{{localize 'shadowrun6.item.description'}}</h3>
+  	{{#if data.data.genesisID}}
+	<div class="data-desc" id="data-desc"/>
+	{{else}}
+	<div class="data-desc" id="data-desc">{{data.description}}</div>
+   {{/if}}
+</form>
