@@ -35,14 +35,20 @@ export class NpcSheet extends DarkHeresySheet {
   activateListeners(html) {
     super.activateListeners(html);
     html.find(".item-cost").focusout(async ev => { await this._onItemCostFocusOut(ev); });
+    html.find(".item-starter").click(async ev => { await this._onItemStarterClick(ev); });
   }
 
   async _onItemCostFocusOut(event) {
     event.preventDefault();
     const div = $(event.currentTarget).parents(".item");
     let item = this.actor.items.get(div.data("itemId"));
-    let data = { _id: item.id, "system.cost": $(event.currentTarget)[0].value };
-    await this.actor.updateEmbeddedDocuments("Item", data);
-    this._render(true);
+    item.update({"system.cost": $(event.currentTarget)[0].value});
+  }
+
+  async _onItemStarterClick(event) {
+    event.preventDefault();
+    const div = $(event.currentTarget).parents(".item");
+    let item = this.actor.items.get(div.data("itemId"));
+    item.update({"system.starter": $(event.currentTarget)[0].checked});
   }
 }

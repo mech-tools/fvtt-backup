@@ -1,26 +1,19 @@
 {
-  "name": "shadowrun6-eden",
   "title": "Shadowrun 6",
   "description": "RPGFramework Eden implementation for Shadowrun 6",
   "version": "1.2.0",
-  "templateVersion": 1,
-  "author": "Stefan (taranion#5388) & Anja Prelle",
   "authors": [
-	{
-    "name": "Stefan Prelle",
-    "email": "stefan@rpgframework.de",
-    "discord": "taranion#5388",
-    "patreon": "rpgframework",
-    "reddit": "u/taranion"
-   },
-	{
-    "name": "Anja Prelle",
-    "email": "anja@rpgframework.de"
-   }
-  ],
-  "minimumCoreVersion":"0.8.0",
-  "compatibleCoreVersion": "9.999",
-  "scripts": [
+    {
+      "name": "Stefan Prelle",
+      "email": "stefan@rpgframework.de",
+      "discord": "taranion#5388",
+      "flags": {}
+    },
+    {
+      "name": "Anja Prelle",
+      "email": "anja@rpgframework.de",
+      "flags": {}
+    }
   ],
   "esmodules": [
     "module/Shadowrun6.js"
@@ -28,99 +21,110 @@
   "styles": [
     "styles/shadowrun6.css"
   ],
-  "packs": [
-  ],
-  "dependencies": [
-
-  ],
   "languages": [
     {
       "lang": "de",
       "name": "Deutsch",
-      "path": "lang/de.json"
+      "path": "lang/de.json",
+      "flags": {}
     },
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json"
+      "path": "lang/fr.json",
+      "flags": {}
     },
-  {
-    "lang": "ca",
-    "name": "Català",
-    "path": "lang/ca-magicl10n.json"
-  },
-  {
-    "lang": "ko",
-    "name": "한국어 (Korean)",
-    "path": "lang/ko-magicl10n.json"
-  },
-  {
-    "lang": "cn",
-    "name": "中文 (Chinese)",
-    "path": "lang/cn-magicl10n.json"
-  },
-  {
-    "lang": "zh-tw",
-    "name": "Chinese (Traditional)",
-    "path": "lang/zh-tw-magicl10n.json"
-  },
-  {
-    "lang": "fr",
-    "name": "Français",
-    "path": "lang/fr-magicl10n.json"
-  },
-  {
-    "lang": "ja",
-    "name": "日本語 (Japanese)",
-    "path": "lang/ja-magicl10n.json"
-  },
-  {
-    "lang": "pt-BR",
-    "name": "Português (Brasil)",
-    "path": "lang/pt-BR-magicl10n.json"
-  },
-  {
-    "lang": "ru",
-    "name": "русский (Russian)",
-    "path": "lang/ru-magicl10n.json"
-  },
-  {
-    "lang": "cs",
-    "name": "Čeština",
-    "path": "lang/cs-magicl10n.json"
-  },
-  {
-    "lang": "it",
-    "name": "Italian",
-    "path": "lang/it-magicl10n.json"
-  },
-  {
-    "lang": "ar",
-    "name": "Arabic",
-    "path": "lang/ar-magicl10n.json"
-  },
-  {
-    "lang": "es",
-    "name": "Español",
-    "path": "lang/es-magicl10n.json"
-  },
-  {
-    "lang": "sv",
-    "name": "Swedish",
-    "path": "lang/sv-magicl10n.json"
-  },
-  {
-    "lang": "pl",
-    "name": "Polski",
-    "path": "lang/pl-magicl10n.json"
-  }
+    {
+      "lang": "ca",
+      "name": "Català",
+      "path": "lang/ca-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "ko",
+      "name": "한국어 (Korean)",
+      "path": "lang/ko-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "cn",
+      "name": "中文 (Chinese)",
+      "path": "lang/cn-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "zh-tw",
+      "name": "Chinese (Traditional)",
+      "path": "lang/zh-tw-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "ja",
+      "name": "日本語 (Japanese)",
+      "path": "lang/ja-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "ru",
+      "name": "русский (Russian)",
+      "path": "lang/ru-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "cs",
+      "name": "Čeština",
+      "path": "lang/cs-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "it",
+      "name": "Italian",
+      "path": "lang/it-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "ar",
+      "name": "Arabic",
+      "path": "lang/ar-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "sv",
+      "name": "Swedish",
+      "path": "lang/sv-magicl10n.json",
+      "flags": {}
+    },
+    {
+      "lang": "pl",
+      "name": "Polski",
+      "path": "lang/pl-magicl10n.json",
+      "flags": {}
+    }
   ],
-  "socket": false,
   "initiative": "1d6",
   "gridDistance": 1.5,
   "gridUnits": "m",
@@ -128,5 +132,10 @@
   "secondaryTokenAttribute": "stun",
   "url": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/",
   "manifest": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/system.json",
-  "download": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/shadowrun6-eden.zip"
+  "download": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/shadowrun6-eden.zip",
+  "id": "shadowrun6-eden",
+  "compatibility": {
+    "minimum": "0.8.0",
+    "verified": "9.999"
+  }
 }

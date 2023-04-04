@@ -7,5 +7,6 @@
     "minimum": "10",
     "verified": "10"
   },
-  "systemVersion": "3.0.12"
+  "systemVersion": "3.0.12",
+  "resetKeys": false
 }

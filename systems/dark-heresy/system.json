@@ -2,12 +2,26 @@
   "id": "dark-heresy",
   "title": "Dark Heresy 2E",
   "description": "Innocence proves nothing",
-  "version": "4.1.2",
-  "compatibility": {
-    "minimum": "10",
-    "verified": "10",
-    "maximum": "10"
+  "version": "4.2.0",
+  "minimumCoreVersion" : 10,
+  "compatibility" : {
+    "minimum" : 10,
+    "verified" : 10,
+    "maximum" : 10
   },
+  "templateVersion": 2,
+  "authors": [
+	"JeansenVaars", 
+	"Moo Man", 
+	"fredthedeadhead", 
+	"Perfectro", 
+	"Vendare", 
+	"Silver292", 
+	"Giddy",
+	"Dazzerix",
+	"FilippoPolo"
+  ],
+  "scripts": [],
   "esmodules": [
     "script/common/hooks.js"
   ],
@@ -19,49 +33,39 @@
       "name": "character-aptitudes",
       "label": "Character Aptitudes",
       "system": "dark-heresy",
-      "path": "packs/character/aptitudes.db",
-      "type": "Item",
-      "private": false,
-      "flags": {}
+      "path": "./packs/character/aptitudes.db",
+      "entity": "Item"
     }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "es",
       "name": "Español",
-      "path": "lang/es.json",
-      "flags": {}
+      "path": "lang/es.json"
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json",
-      "flags": {}
+      "path": "lang/fr.json"
     },
-    {
+	  {
       "lang": "pl",
       "name": "Polski",
-      "path": "lang/pl.json",
-      "flags": {}
+      "path": "lang/pl.json"
     }
   ],
   "gridDistance": 1,
   "gridUnits": "m",
+  "primaryTokenAttribute": null,
+  "secondaryTokenAttribute": null,
   "url": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT",
   "socket": true,
-  "manifest": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.1.2/system.json",
-  "download": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.1.2/dark-heresy.zip",
-  "license": "LICENSE.txt",
-  "authors": [
-    {
-      "name": "JeansenVaars, Moo Man, fredthedeadhead, Perfectro, Vendare, Silver292, Giddy",
-      "flags": {}
-    }
-  ]
+  "manifest": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.2.0/system.json",
+  "download": "https://github.com/moo-man/DarkHeresy2E-FoundryVTT/releases/download/4.2.0/dark-heresy.zip",
+  "license": "LICENSE.txt"
 }

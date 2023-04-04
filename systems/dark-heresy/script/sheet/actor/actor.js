@@ -18,11 +18,18 @@ export class DarkHeresySheet extends ActorSheet {
   }
 
   /** @override */
-  getData() {
+  async getData() {
     const data = super.getData();
     data.system = data.data.system;
-    data.items = this.constructItemLists(data)
+    data.items = this.constructItemLists(data);
+    data.enrichment = await this._enrichment();
     return data;
+  }
+
+  async _enrichment() {
+    let enrichment = {};
+    enrichment["system.bio.notes"] = await TextEditor.enrichHTML(this.actor.system.bio.notes, {async: true});
+    return expandObject(enrichment);
   }
 
   /** @override */
@@ -179,7 +186,7 @@ export class DarkHeresySheet extends ActorSheet {
     const div = $(event.currentTarget).parents(".item");
     const weapon = this.actor.items.get(div.data("itemId"));
     await prepareCombatRoll(
-      DarkHeresyUtil.createWeaponRollData(this.actor, weapon), 
+      DarkHeresyUtil.createWeaponRollData(this.actor, weapon),
       this.actor
     );
   }
@@ -187,53 +194,10 @@ export class DarkHeresySheet extends ActorSheet {
   async _prepareRollPsychicPower(event) {
     event.preventDefault();
     const div = $(event.currentTarget).parents(".item");
-    const psychicPower = this.actor.items.get(div.data("itemId"));    
+    const psychicPower = this.actor.items.get(div.data("itemId"));
     await preparePsychicPowerRoll(
       DarkHeresyUtil.createPsychicRollData(this.actor, psychicPower)
     );
-  }
-
-  _extractWeaponTraits(traits) {
-    // These weapon traits never go above 9 or below 2
-    return {
-      accurate: this._hasNamedTrait(/Accurate/gi, traits),
-      rfFace: this._extractNumberedTrait(/Vengeful.*\(\d\)/gi, traits), // The alternativ die face Righteous Fury is triggered on
-      proven: this._extractNumberedTrait(/Proven.*\(\d\)/gi, traits),
-      primitive: this._extractNumberedTrait(/Primitive.*\(\d\)/gi, traits),
-      razorSharp: this._hasNamedTrait(/Razor *Sharp/gi, traits),
-      skipAttackRoll: this._hasNamedTrait(/Spray/gi, traits),
-      tearing: this._hasNamedTrait(/Tearing/gi, traits)
-    };
-  }
-
-  _getMaxPsyRating() {
-    let base = this.actor.psy.rating;
-    switch (this.actor.psy.class) {
-      case "bound":
-        return base + 2;
-      case "unbound":
-        return base + 4;
-      case "daemonic":
-        return base + 3;
-    }
-  }
-
-  _extractNumberedTrait(regex, traits) {
-    let rfMatch = traits.match(regex);
-    if (rfMatch) {
-      regex = /\d+/gi;
-      return parseInt(rfMatch[0].match(regex)[0]);
-    }
-    return undefined;
-  }
-
-  _hasNamedTrait(regex, traits) {
-    let rfMatch = traits.match(regex);
-    if (rfMatch) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   _getCorruptionModifier() {
@@ -249,67 +213,46 @@ export class DarkHeresySheet extends ActorSheet {
     }
   }
 
-  _getWeaponCharacteristic(weapon) {
-    if (weapon.class === "melee") {
-      return this.actor.characteristics.weaponSkill;
-    } else {
-      return this.actor.characteristics.ballisticSkill;
-    }
-  }
-
-  _getFocusPowerTarget(psychicPower) {
-    const normalizeName = psychicPower.focusPower.test.toLowerCase();
-    if (this.actor.characteristics.hasOwnProperty(normalizeName)) {
-      return this.actor.characteristics[normalizeName];
-    } else if (this.actor.skills.hasOwnProperty(normalizeName)) {
-      return this.actor.skills[normalizeName];
-    } else {
-      return this.actor.characteristics.willpower;
-    }
-  }
-
   constructItemLists() {
-      let items = {}
-      let itemTypes = this.actor.itemTypes;
-      items.mentalDisorders = itemTypes["mentalDisorder"];
-      items.malignancies = itemTypes["malignancy"];
-      items.mutations = itemTypes["mutation"];
-      if (this.actor.type === "npc") {
-          items.abilities = itemTypes["talent"]
-          .concat(itemTypes["trait"])
-          .concat(itemTypes["specialAbility"]);
-      }
-      items.talents = itemTypes["talent"];
-      items.traits = itemTypes["trait"];
-      items.specialAbilities = itemTypes["specialAbility"];
-      items.aptitudes = itemTypes["aptitude"];
+    let items = {};
+    let itemTypes = this.actor.itemTypes;
+    items.mentalDisorders = itemTypes.mentalDisorder;
+    items.malignancies = itemTypes.malignancy;
+    items.mutations = itemTypes.mutation;
+    if (this.actor.type === "npc") {
+      items.abilities = itemTypes.talent
+        .concat(itemTypes.trait)
+        .concat(itemTypes.specialAbility);
+    }
+    items.talents = itemTypes.talent;
+    items.traits = itemTypes.trait;
+    items.specialAbilities = itemTypes.specialAbility;
+    items.aptitudes = itemTypes.aptitude;
 
-      items.psychicPowers = itemTypes["psychicPower"];
+    items.psychicPowers = itemTypes.psychicPower;
 
-      items.criticalInjuries = itemTypes["criticalInjury"];
+    items.criticalInjuries = itemTypes.criticalInjury;
 
-      items.gear = itemTypes["gear"];
-      items.drugs = itemTypes["drug"];
-      items.tools = itemTypes["tool"];
-      items.cybernetics = itemTypes["cybernetic"];
+    items.gear = itemTypes.gear;
+    items.drugs = itemTypes.drug;
+    items.tools = itemTypes.tool;
+    items.cybernetics = itemTypes.cybernetic;
 
-      items.armour = itemTypes["armour"];
-      items.forceFields = itemTypes["forceField"];
+    items.armour = itemTypes.armour;
+    items.forceFields = itemTypes.forceField;
 
-      items.weapons = itemTypes["weapon"];
-      items.weaponMods = itemTypes["weaponModification"];
-      items.ammunitions = itemTypes["ammunition"];
-      this._sortItemLists(items)
+    items.weapons = itemTypes.weapon;
+    items.weaponMods = itemTypes.weaponModification;
+    items.ammunitions = itemTypes.ammunition;
+    this._sortItemLists(items);
 
-      return items;
+    return items;
   }
 
-    _sortItemLists(items) {
-        for (let list in items) {
-            if (Array.isArray(items[list]))
-                items[list] = items[list].sort((a, b) => a.sort - b.sort)
-            else if (typeof items[list] == "object")
-                _sortItemLists(items[list])
-        }
+  _sortItemLists(items) {
+    for (let list in items) {
+      if (Array.isArray(items[list])) items[list] = items[list].sort((a, b) => a.sort - b.sort);
+      else if (typeof items[list] == "object") _sortItemLists(items[list]);
     }
+  }
 }
