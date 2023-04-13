@@ -1,0 +1,49 @@
+div.ownership-viewer {
+  max-width: max-content;
+  margin: auto 5px;
+  line-height: initial;
+  display: block ruby;
+}
+
+div.ownership-viewer > a {
+    display:inline-flex;
+}
+
+
+.ownership-viewer-user {
+    width: 10px;
+    height: 10px;
+    margin-left: 2px;
+    margin-right: 2px;
+    margin: auto 2px auto 2px;
+}
+
+.ownership-viewer-all {
+    width: 0;
+    height: 0;
+    margin: auto 2px auto 2px;
+    border-bottom: 7px solid red;
+    border-top: 7px solid green;
+    border-left: 7px solid yellow;
+    border-right: 7px solid blue;
+}
+
+
+
+.ownership-viewer-limited {
+    -webkit-transform-origin:50% 50%;
+    -ms-transform-origin:50% 50%;
+    transform-origin:50% 50%;
+    
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+.ownership-viewer-observer {
+    border-radius: 0;
+}
+
+.ownership-viewer-owner {
+    border-radius: 50%;
+}

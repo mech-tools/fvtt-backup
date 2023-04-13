@@ -1,0 +1,9 @@
+/* Couleur des highlights */
+mark {
+    background: #c2c291;
+}
+
+/* Taille de police des zones de texte */
+.sheet .editor-content {
+    font-size: 15px;
+}
