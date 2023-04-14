@@ -1,0 +1,20 @@
+#raise-my-hand-dialog {
+	box-shadow: none;
+}
+
+#raise-my-hand-dialog .window-content {
+  background: none;
+	box-shadow: none;   
+}
+
+#raise-my-hand-dialog > section img {
+  border: none;  
+}
+
+#raise-my-hand-dialog .window-title {
+  
+}
+
+#raise-my-hand-dialog .window-header {
+  border: none;
+}

@@ -7,3 +7,23 @@ mark {
 .sheet .editor-content {
     font-size: 15px;
 }
+
+/* Margin des images avec float */
+.editor-content img[style*="left"] {
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.editor-content img[style*="right"] {
+    margin-left: 8px;
+    margin-bottom: 8px;
+}
+
+/* Label IntroduceMe  */
+.introduce-me.introduction .introduction-container label#name {
+    padding-top: 45px;
+}
+
+.introduce-me.introduction .introduction-container img.clip {
+    display: none;
+}
