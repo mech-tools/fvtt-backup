@@ -1,3 +1,5 @@
+import CONSTANTS from "../constants.js";
+
 export default class Control {
   constructor(layer) {
     // , layerId) {
@@ -106,6 +108,42 @@ export default class Control {
     this.maskControl.addEventListener('click', (event) => {
       event.preventDefault();
       this.view.dispatchEvent(new CustomEvent('mask', { detail: { layerId: this.layer.id } }));
+    });
+
+    this.visibleControl = document.createElement('button');
+    this.visibleControl.classList.add('visible-layer');
+    this.visibleControl.title = "Visible layer?";
+
+    let visibleButtonText = document.createElement('i');
+    visibleButtonText.classList.add('fas', 'fa-eye');
+    this.visibleControl.appendChild(visibleButtonText);
+
+    // send a mask event when clicked
+    this.visibleControl.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.view.dispatchEvent(new CustomEvent('visible', { detail: { layerId: this.layer.id } }));
+    });
+
+    // blend mode controls
+    this.blendControl = document.createElement('select');
+    // this.blendControl.disabled = true;
+    this.blendControl.classList.add('blend-control');
+
+    for (const mode of Object.values(CONSTANTS.BLEND_MODES)) {
+      const option = document.createElement('option');
+      option.value = mode;
+      option.innerHTML = mode;
+      this.blendControl.append(option);
+    }
+
+    this.blendControl.addEventListener('change', (event) => {
+      event.preventDefault();
+      this.view.dispatchEvent(new CustomEvent('blend', {
+        detail: {
+          layerId: this.layer.id,
+          blendMode: event.target.value,
+        }
+      }));
     });
 
     let positionManagementSection = document.createElement('div');
@@ -278,6 +316,8 @@ export default class Control {
     previewSection.appendChild(this.layer.canvas);
     this.view.appendChild(maskManagementSection);
     maskManagementSection.appendChild(this.maskControl);
+    maskManagementSection.appendChild(this.visibleControl);
+    maskManagementSection.appendChild(this.blendControl);
     if (this.layer.colorLayer) {
       this.view.appendChild(colorManagementSection);
       colorManagementSection.appendChild(this.colorSelector);
@@ -305,8 +345,21 @@ export default class Control {
     // is this layer providing the mask for the view?
     if (this.layer.providesMask) {
       this.maskControl.classList.add('active');
+      // this.blendControl.disabled = false;
     } else {
       this.maskControl.classList.remove('active');
+      // this.blendControl.disabled = true;
+    }
+
+    // is this layer visible
+    if (this.layer.visible) {
+      this.visibleControl.classList.add('active');
+      this.visibleControl.firstChild.classList.remove('fa-eye-slash');
+      this.visibleControl.firstChild.classList.add('fa-eye');
+    } else {
+      this.visibleControl.classList.remove('active');
+      this.visibleControl.firstChild.classList.remove('fa-eye');
+      this.visibleControl.firstChild.classList.add('fa-eye-slash');
     }
 
     // is this layer active?

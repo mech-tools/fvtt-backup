@@ -22,8 +22,7 @@ export default class View {
     this.menu = null;
 
     // there is one mask that is active for every layer
-    this.mask = null;
-    this.maskId = null;
+    this.maskIds = new Set();
 
     // the currently selected layer for translation/scaling
     this.activeLayer = null;
@@ -59,10 +58,12 @@ export default class View {
     element.appendChild(this.controlsArea);
     element.appendChild(this.menu);
 
+    const moveFunction = Utils.throttle(this.onMouseMove.bind(this), 15);
     // add event listeners for translation/scaling of the active layer
     this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-    this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+    this.canvas.addEventListener('mousemove', moveFunction);
+    // this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
     this.canvas.addEventListener('wheel', this.onWheel.bind(this), {
       passive: false,
     });
@@ -122,12 +123,16 @@ export default class View {
    * Get this mask from the layer id or default view
    * @param {id} Number
    */
-  getMaskLayer(id = null) {
-    if (id === null) {
-      return this.layers.find((layer) => layer.id === this.maskId);
-    } else {
-      return this.layers.find((layer) => layer.id === id);
-    }
+  getMaskLayer(id) {
+    return this.layers.find((layer) => layer.id === id);
+  }
+
+    /**
+   * Get this mask from the layer id or default view
+   * @param {id} Number
+   */
+  getMaskLayers() {
+    return this.layers.find((layer) => this.maskIds.has(layer.id));
   }
 
   initializeMenu() {
@@ -156,6 +161,7 @@ export default class View {
     }
 
     if (this.activeLayer === null) return;
+    this.redraw(true);
     this.isDragging = true;
     this.lastPosition = {
       x: event.clientX,
@@ -169,6 +175,7 @@ export default class View {
    */
   // eslint-disable-next-line no-unused-vars
   onMouseUp(event) {
+    this.redraw(true);
     if (this.activeLayer === null) return;
     this.isDragging = false;
   }
@@ -212,9 +219,9 @@ export default class View {
       // this.activeLayer.translate(this.activeLayer.flipped ? -1 * delta.x : delta.x, delta.y);
       this.activeLayer.translate(delta.x, delta.y);
     }
-    if (this.activeLayer.masked) this.activeLayer.createMask();
+    // if (this.activeLayer.providesMask) this.activeLayer.createMask();
     this.activeLayer.redraw();
-    this.redraw(this.activeLayer.masked);
+    this.redraw(this.activeLayer.providesMask);
     this.lastPosition = {
       x: event.clientX,
       y: event.clientY,
@@ -259,9 +266,8 @@ export default class View {
 
         this.activeLayer.setScale(this.activeLayer.scale * factor);
         this.activeLayer.translate(dx, dy);
-        if (this.activeLayer.masked) this.activeLayer.createMask();
         this.activeLayer.redraw();
-        this.redraw(this.activeLayer.masked);
+        this.redraw(this.activeLayer.providesMask);
       }
     }
   }
@@ -284,7 +290,7 @@ export default class View {
 
     // if this layer provided the mask, remove that mask, too
     if (this.layers[index].providesMask) {
-      this.maskId = null;
+      this.maskIds.delete(index);
     }
 
     // delete this from the array
@@ -395,6 +401,13 @@ export default class View {
     control.view.addEventListener('opacity', (event) => {
       this.setOpacity(event.detail.layerId, event.detail.opacity);
     });
+    control.view.addEventListener('visible', (event) => {
+      this.setLayerVisibility(event.detail.layerId);
+      this.controls.forEach((control) => control.refresh());
+    });
+    control.view.addEventListener('blend', (event) => {
+      this.setBlendMode(event.detail.layerId, event.detail.blendMode);
+    });
   }
 
   /**
@@ -424,6 +437,7 @@ export default class View {
     if (reset) {
       // setting the color
       this.colorPickingForLayer.restoreColor();
+      this.redraw(true);
     }
 
     // refreshing the control
@@ -490,6 +504,14 @@ export default class View {
     }
   }
 
+  setBlendMode(id, blendMode) {
+    const layer = this.layers.find((layer) => layer.id === id);
+    if (layer !== null) {
+      layer.compositeOperation = blendMode;
+      this.redraw(true);
+    }
+  }
+
   mirrorLayer(id) {
     const layer = this.layers.find((layer) => layer.id === id);
     if (layer !== null) {
@@ -503,6 +525,14 @@ export default class View {
     if (layer !== null) {
       layer.alpha = parseInt(opacity) / 100;
       layer.redraw();
+      this.redraw();
+    }
+  }
+
+  setLayerVisibility(id) {
+    const layer = this.layers.find((layer) => layer.id === id);
+    if (layer !== null) {
+      layer.visible = !layer.visible;
       this.redraw();
     }
   }
@@ -544,12 +574,10 @@ export default class View {
       // check if this layer currently provides the mask
       if (layer.providesMask === true) {
         layer.providesMask = false;
-        this.maskId = null;
+        this.maskIds.delete(id);
       } else {
-        this.maskId = id;
-        this.layers.forEach((layer) => (layer.providesMask = false));
+        this.maskIds.add(id);
         layer.providesMask = true;
-        layer.applyMask();
       }
     }
     this.redraw(true);
@@ -576,7 +604,11 @@ export default class View {
     if (full) {
       logger.debug("Full redraw triggered");
       this.layers.forEach((layer) => {
-        if (layer.masked) layer.createMask();
+        logger.debug(`Recalculating mask for ${layer.id}`, layer);
+        layer.recalculateMask();
+      });
+      this.layers.forEach((layer) => {
+        logger.debug(`Recalculating visual layer for ${layer.id}`, layer);
         layer.redraw();
       });
     }
