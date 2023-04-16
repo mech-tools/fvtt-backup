@@ -3,6 +3,8 @@
   "id": "coriolis",
   "system": "yzecoriolis",
   "coreVersion": "10.291",
+  "esmodules": ["./scripts.js"],
+  "styles": ["./styles.css"],
   "compatibility": {
     "minimum": "10",
     "verified": "10"

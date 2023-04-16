@@ -1,0 +1,59 @@
+{
+  "name": "coriolis-emissarylost",
+  "title": "Coriolis Emissary Lost",
+  "description": "A Module containing all the data from the Coriolis Emissary Lost Campaign Book.",
+  "authors": [{
+    "name": "Alex Okafor"
+  }],
+  "version": "3.0.1",
+  "minimumCoreVersion": "10",
+  "compatibleCoreVersion": "10",
+  "scripts": [],
+  "esmodules": ["modules/coriolis.js"],
+  "systems": ["yzecoriolis"],
+  "styles": ["/css/corioliscore.css"],
+  "packs": [{
+    "name": "actor",
+    "system": "yzecoriolis",
+    "label": "Coriolis Actors",
+    "path": "packs/actor.db",
+    "type": "Actor",
+    "module": "coriolis-emissarylost"
+  }, {
+    "name": "item",
+    "system": "yzecoriolis",
+    "label": "Coriolis Items",
+    "path": "packs/item.db",
+    "type": "Item",
+    "module": "coriolis-emissarylost"
+  }, {
+    "name": "journalentry",
+    "system": "yzecoriolis",
+    "label": "Coriolis Journals",
+    "path": "packs/journalentry.db",
+    "type": "JournalEntry",
+    "module": "coriolis-emissarylost"
+  }, {
+    "name": "scene",
+    "system": "yzecoriolis",
+    "label": "Coriolis Scenes",
+    "path": "packs/scene.db",
+    "type": "Scene",
+    "module": "coriolis-emissarylost"
+  }, {
+    "name": "table",
+    "system": "yzecoriolis",
+    "label": "Coriolis Roll Tables",
+    "path": "packs/table.db",
+    "type": "RollTable",
+    "module": "coriolis-emissarylost"
+  }],
+  "languages": [{
+    "lang": "en",
+    "name": "English",
+    "path": "lang/en.json"
+  }],
+  "protected": false,
+  "url": "https://frialigan.se/",
+  "manifest": ""
+}
