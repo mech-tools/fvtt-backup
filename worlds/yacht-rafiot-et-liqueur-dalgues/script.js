@@ -1,3 +1,4 @@
+// Add hightlight button
 Hooks.on("getProseMirrorMenuItems", (editor, items) => {
     items.unshift({
         action: "toggleMark",

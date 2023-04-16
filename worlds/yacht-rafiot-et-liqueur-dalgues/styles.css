@@ -1,13 +1,12 @@
 /* Couleur des highlights */
 mark.important {
-    background: #222c18;
-    color: #a9c291;
+    background: #433057;
+    color: #d4d4b2;
 }
 
 mark.important .content-link {
-    background: #556e3c;
+    background: #694b88;
     border-color: black;
-    color: #c3d4b2;
 }
 
 mark {
@@ -18,28 +17,11 @@ mark .content-link {
     background: #ddddc2;
 }
 
-/* Blocs mis en avant */
-section.emphasize {
-    background: rgba(0, 53, 0, 0.05);
-    padding: 10px;
-    border-top: 1px solid var(--color-border-dark-5);
-    border-bottom: 1px solid var(--color-border-dark-5);
-}
-
-/* Taille de police des zones de texte */
-.sheet .editor-content {
-    font-size: 15px;
-}
-
-/* Margin des images avec float */
-.editor-content img[style*="left"] {
-    margin-right: 8px;
-    margin-bottom: 8px;
-}
-
-.editor-content img[style*="right"] {
-    margin-left: 8px;
-    margin-bottom: 8px;
+/* Ajustement des entités autres que les journaux  */
+.sheet.actor .editor-content {
+    font-family: "Caslon";
+    font-size: 14px;
+    line-height: 18px;
 }
 
 /* Label IntroduceMe  */
@@ -49,4 +31,162 @@ section.emphasize {
 
 .introduce-me.introduction .introduction-container img.clip {
     display: none;
+}
+
+
+/* Cthulhu mod */
+@font-face {
+	font-family: "Cthulhumbus";
+	src: url("./fonts/cthulhumbus.ttf");
+}
+@font-face {
+	font-family: "Voltaire";
+	src: url("./fonts/voltaire-regular.otf");
+}
+@font-face {
+	font-family: "Caslon";
+	src: url("./fonts/caslon-regular.ttf");
+}
+
+@font-face {
+	font-family: "Caslon Italic";
+	src: url("./fonts/caslon-italic.ttf");
+}
+
+@font-face {
+	font-family: "Caslon Bold";
+	src: url("./fonts/caslon-bold.ttf");
+}
+
+.journal-entry-page h1 {
+	font-family: "Cthulhumbus";
+	font-size: 38px;
+	border: none;
+	margin-left: 5px;
+}
+
+.journal-entry-page h2 {
+	font-family: "Voltaire";
+	text-transform: uppercase;
+	font-size: 26px;
+	border: none;
+	margin-left: 5px;
+	color: #890E10;
+	letter-spacing: -0.5px;
+}
+
+.journal-entry-page h3 {
+	font-family: "Voltaire";
+	font-size: 22px;
+	border: none;
+	margin-left: 5px;
+	color: #890E10;
+	text-transform: uppercase;
+}
+
+.journal-entry-page h4 {
+	font-family: "Caslon Bold";
+	font-size: 18px;
+	border: none;
+	margin-left: 5px;
+	color: #890E10;
+	text-transform: uppercase;
+}
+
+.journal-entry-page p {
+	font-family: "Caslon";
+	font-size: 14px;
+	line-height: 18px;
+}
+
+.journal-entry-page li {
+	font-family: "Caslon";
+	font-size: 14px;
+}
+
+.journal-entry-page  .journal-entry-page table td {
+	padding: 5px;
+}
+
+.journal-entry-page blockquote {
+	color: #890E10;
+}
+
+.journal-entry-page .note {
+	border-style: solid;
+	border-color: black;
+	background-color: #f4dfc3;
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	padding: 20px;
+}
+
+.journal-entry-page .notemj {
+	border-style: solid;
+	border-color: black;
+	background-color: #d7f5c1;
+	background-size: 100% 100%;
+	padding: 20px;
+}
+
+.journal-entry-page .exemple {
+	background-color: #d2ccc8;
+	text-indent:0cm;
+	border-style: solid;
+	border: 2px solid black;
+	border-radius: 8px 8px 8px 8px;
+	box-shadow: 0 8px 8px -7px var(--color-shadow-dark);
+	padding : 10px 14px 16px 18px;
+}
+
+
+.journal-entry-page img[style*="left"] {
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+
+.journal-entry-page img[style*="right"] {
+    margin-left: 6px;
+    margin-bottom: 6px;
+}
+
+.journal-entry-page table {
+	width: 95%;
+	border-collapse: collapse;
+	border: solid 2px;
+	margin-left: 0.5em;
+	margin-right: 0.5em;
+	text-align: center;
+}
+
+.journal-entry-page table th {
+	font-family: "Headline HPLHS";
+	color: white;
+	background-color: #5a4c43;
+	font-weight: bold;
+	text-align: center;
+	font-size: 22px;
+}
+
+.journal-entry-page table th {
+	letter-spacing: 2px;
+
+}
+
+.journal-entry-page table tbody {
+	font-family: "EB Garamond Regular";
+	font-size: 18px;
+	height: 17px;
+}
+
+.journal-entry-page table td {
+	border: 1px solid;
+}
+
+.journal-entry-page hr {
+	border: 1px solid;
+}
+
+.journal-entry-page img {
+	border: 0px;
 }
