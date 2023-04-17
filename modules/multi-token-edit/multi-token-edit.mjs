@@ -8,24 +8,25 @@ import {
   showGenericForm,
 } from './applications/multiConfig.js';
 import CSSEdit, { STYLES } from './applications/cssEdit.js';
-import { applyRandomization, IS_PRIVATE } from './scripts/private.js';
 import MassEditPresets from './applications/presets.js';
 import {
   checkApplySpecialFields,
   getObjFormData,
   pasteDataUpdate,
+  performMassSearch,
   performMassUpdate,
 } from './applications/forms.js';
 import { MassEditGenericForm } from './applications/genericForm.js';
 import {
   applyAddSubtract,
-  emptyObject,
   flagCompare,
   hashCode,
   SUPPORTED_COLLECTIONS,
   SUPPORTED_HISTORY_DOCS,
 } from './scripts/utils.js';
 import { GeneralDataAdapter } from './applications/dataAdapters.js';
+import { applyRandomization } from './scripts/randomizer/randomizerUtils.js';
+import { IS_PRIVATE } from './scripts/randomizer/randomizerForm.js';
 
 export const HISTORY = {};
 
@@ -133,7 +134,7 @@ Hooks.once('init', () => {
     default: true,
   });
 
-  if (game.modules.get('tokenmagic')?.active && !isNewerVersion('10', game.version)) {
+  if (game.modules.get('tokenmagic')?.active) {
     game.settings.register('multi-token-edit', 'tmfxFieldsEnable', {
       name: game.i18n.localize('multi-token-edit.settings.tmfxFieldsEnable.name'),
       hint: game.i18n.localize('multi-token-edit.settings.tmfxFieldsEnable.hint'),
@@ -291,13 +292,9 @@ Hooks.once('init', () => {
           onDown: () => {
             const [target, selected] = getSelected();
             if (!target) return;
-            const documentName = target.document
-              ? target.document.documentName
-              : target.documentName;
+            const documentName = target.document ? target.document.documentName : target.documentName;
             if (documentName === docName) {
-              const preset = game.settings.get('multi-token-edit', 'presets')?.[docName]?.[
-                presetName
-              ];
+              const preset = game.settings.get('multi-token-edit', 'presets')?.[docName]?.[presetName];
               if (preset) pasteDataUpdate(target ? [target] : selected, preset, true);
             }
           },
@@ -316,6 +313,7 @@ Hooks.once('init', () => {
     showGenericForm,
     checkApplySpecialFields, // Deprecated
     performMassUpdate,
+    performMassSearch,
     showMassEdit,
   };
 });
@@ -424,7 +422,7 @@ function updateHistory(obj, update, options, userId) {
 }
 
 function saveHistory(obj, update, historyItem, _id, docName) {
-  if (!obj || emptyObject(update)) return;
+  if (!obj || isEmpty(update)) return;
 
   historyItem.update = flattenObject(update);
   historyItem.diff = getDiffData(obj, docName, update);

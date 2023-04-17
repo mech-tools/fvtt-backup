@@ -3,12 +3,17 @@
   "id": "coriolis",
   "system": "yzecoriolis",
   "coreVersion": "10.291",
-  "esmodules": ["./scripts.js"],
-  "styles": ["./styles.css"],
+  "esmodules": [
+    "scripts.js"
+  ],
+  "styles": [
+    "styles.css"
+  ],
   "compatibility": {
     "minimum": "10",
     "verified": "10"
   },
   "systemVersion": "3.0.12",
-  "resetKeys": false
+  "resetKeys": false,
+  "background": "modules/coriolis-corerules/images/ch1/Coriolis_4.webp"
 }
