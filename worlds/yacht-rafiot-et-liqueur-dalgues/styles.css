@@ -33,6 +33,10 @@ mark .content-link {
     display: none;
 }
 
+.introduce-me.introduction .introduction-container .text-container {
+    margin-right: 10px;
+}
+
 
 /* Cthulhu mod */
 @font-face {
