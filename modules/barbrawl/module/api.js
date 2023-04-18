@@ -231,8 +231,7 @@ export const getDefaultBar = function (id, attribute, defaultVisibility = CONST.
 }
 
 /**
- * Resolves the actual visibility of the given bar, depending on whether the
- *  current player owns the given token.
+ * Resolves the actual visibility of the given bar, depending on whether the current player owns the given token.
  * @param {Token | TokenDocument} token The token (or its document) of the bar.
  * @param {Object} bar The data of the bar.
  * @returns {BAR_VISIBILITY} The visibility of the bar.
@@ -240,8 +239,14 @@ export const getDefaultBar = function (id, attribute, defaultVisibility = CONST.
  */
 function getBarVisibility(token, bar) {
     if (!bar.hasOwnProperty("otherVisibility")) convertBarVisibility(bar);
+    if (token instanceof Token) token = token.document;
+
     if (game.user.isGM && (bar.gmVisibility ?? -1) !== BAR_VISIBILITY.INHERIT) return bar.gmVisibility;
-    if (token.isOwner && (bar.ownerVisibility ?? -1) !== BAR_VISIBILITY.INHERIT) return bar.ownerVisibility;
+    if (token.isOwner) {
+        if ((bar.ownerVisibility ?? -1) !== BAR_VISIBILITY.INHERIT) return bar.ownerVisibility;
+    } else if (token.disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE && game.settings.get("barbrawl", "hideHostile")) {
+        return BAR_VISIBILITY.NONE;
+    }
     return bar.otherVisibility;
 }
 
@@ -256,9 +261,9 @@ export const isBarVisible = function (token, bar, ignoreTransient = false) {
     if (!bar || !token) return false;
 
     let visibility = getBarVisibility(token, bar);
-    if (ignoreTransient) {
-        if ([BAR_VISIBILITY.CONTROL, BAR_VISIBILITY.HOVER, BAR_VISIBILITY.HOVER_CONTROL].includes(visibility))
-            return true;
+    if (ignoreTransient
+        && [BAR_VISIBILITY.CONTROL, BAR_VISIBILITY.HOVER, BAR_VISIBILITY.HOVER_CONTROL].includes(visibility)) {
+        return true;
     } else {
         if (bar.hideFull && bar.value === bar.max) return false;
         if (bar.hideEmpty && bar.value === 0) return false;
@@ -268,7 +273,7 @@ export const isBarVisible = function (token, bar, ignoreTransient = false) {
     if (bar.hideCombat && inCombat) return false;
     if (bar.hideNoCombat && !inCombat) return false;
 
-    if (visibility === BAR_VISIBILITY.HOVER_CONTROL) return token._controlled || token._hover;
+    if (visibility === BAR_VISIBILITY.HOVER_CONTROL) return token.controlled || token.hover;
     return token._canViewMode(visibility);
 }
 
