@@ -4,17 +4,29 @@ mark.important {
     color: #d4d4b2;
 }
 
-mark.important .content-link {
+mark.important .content-link,
+mark.important .coc7-link {
     background: #694b88;
     border-color: black;
+}
+
+mark.important .content-link i,
+mark.important .coc7-link i {
+    color: #d4d4b2;
 }
 
 mark {
     background: #c2c291;
 }
 
-mark .content-link {
+mark .content-link,
+mark .coc7-link {
     background: #ddddc2;
+}
+
+/* Coc link fix icon */
+.coc7-link i {
+    margin-right: 0.25em;
 }
 
 /* Ajustement des entités autres que les journaux  */
