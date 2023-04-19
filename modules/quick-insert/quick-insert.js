@@ -986,7 +986,8 @@ class ProseMirrorContext extends SearchContext {
     }
     onSubmit(item) {
         const tr = this.state.tr;
-        const text = typeof item == "string" ? item : item.journalLink;
+        let text = typeof item == "string" ? item : item.journalLink;
+	text = this.startText ? text.replace(/\{([^}]*)\}[^{]*$/, `{${this.startText}}`) : text;
         const textNode = this.state.schema.text(text);
         tr.replaceSelectionWith(textNode);
         this.dispatch(tr);
