@@ -1,18 +1,11 @@
 /* Couleur des highlights */
 mark.important {
-    background: #433057;
-    color: #d4d4b2;
+    background: #989855;
 }
 
 mark.important .content-link,
 mark.important .coc7-link {
-    background: #694b88;
-    border-color: black;
-}
-
-mark.important .content-link i,
-mark.important .coc7-link i {
-    color: #d4d4b2;
+    background: #b0b070;
 }
 
 mark {
