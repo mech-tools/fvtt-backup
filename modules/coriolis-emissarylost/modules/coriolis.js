@@ -24,7 +24,7 @@ Hooks.on("init", () => {
   game.settings.registerMenu(moduleScopeKey, "import", {
     name: "Import Compendiums",
     label: "Import",
-    hint: "Welcome to the Coriolis - The Third Horizon RPG Core Rules!  Click above to import the content to your world.",
+    hint: "Welcome to Coriolis - Emissary Lost!  Click above to import the content to your world.",
     type: ImportFormWrapper, // TODO
     restricted: true,
   });

@@ -1,16 +1,28 @@
 {
-  "name": "coriolis-emissarylost",
+  "id": "coriolis-emissarylost",
   "title": "Coriolis Emissary Lost",
   "description": "A Module containing all the data from the Coriolis Emissary Lost Campaign Book.",
   "authors": [{
     "name": "Alex Okafor"
   }],
-  "version": "3.0.1",
-  "minimumCoreVersion": "10",
-  "compatibleCoreVersion": "10",
+  "version": "3.0.2",
+  "compatibility": {
+    "minimum": 10,
+    "verified": 10,
+    "maximum": 11
+  },
   "scripts": [],
   "esmodules": ["modules/coriolis.js"],
-  "systems": ["yzecoriolis"],
+  "relationships": {
+    "systems": [{
+      "id": "yzecoriolis",
+      "type": "system",
+      "manifest": "https://github.com/winks-vtt/yze-coriolis/releases/latest/download/system.json",
+      "compatibility": {
+        "verified": "3.0.5"
+      }
+    }]
+  },
   "styles": ["/css/corioliscore.css"],
   "packs": [{
     "name": "actor",
@@ -53,7 +65,7 @@
     "name": "English",
     "path": "lang/en.json"
   }],
-  "protected": false,
+  "protected": true,
   "url": "https://frialigan.se/",
-  "manifest": ""
+  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-emissarylost/coriolis-emissarylost-latest.json"
 }

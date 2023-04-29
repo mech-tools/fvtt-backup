@@ -1,6 +1,8 @@
 {
+  "id": "popout",
   "title": "PopOut!",
   "description": "<p>This module adds a PopOut! button to most actor sheets, journal entries, and applications.</p><p>The PopOut! button allows you to open a sheet/application/document into its own window, for easier viewing or for use with multiple monitors.</p>",
+  "version": "2.12",
   "authors": [
     {
       "name": "KaKaRoTo",
@@ -11,13 +13,18 @@
       "flags": {}
     }
   ],
-  "url": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout",
-  "readme": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout#readme",
-  "bugs": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout/issues",
-  "version": "2.10",
   "scripts": [
     "popout.js"
   ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
   "languages": [
     {
       "lang": "en",
@@ -56,21 +63,14 @@
       "flags": {}
     }
   ],
+  "readme": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout#readme",
+  "url": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout",
   "manifest": "https://raw.githubusercontent.com/League-of-Foundry-Developers/fvtt-module-popout/master/module.json",
-  "download": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout/archive/v2.10.zip",
-  "id": "popout",
-  "relationships": {
-    "requires": [
-      {
-        "id": "lib-wrapper",
-        "type": "module",
-        "compatibility": {}
-      }
-    ]
-  },
+  "download": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout/archive/v2.12.zip",
+  "bugs": "https://github.com/League-of-Foundry-Developers/fvtt-module-popout/issues",
   "compatibility": {
     "minimum": "0.9.0",
-    "verified": "10.290",
+    "verified": "10.291",
     "maximum": "10"
   }
 }
