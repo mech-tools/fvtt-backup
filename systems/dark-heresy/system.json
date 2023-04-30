@@ -3,25 +3,49 @@
   "title": "Dark Heresy 2E",
   "description": "Innocence proves nothing",
   "version": "4.2.3",
-  "minimumCoreVersion" : 10,
-  "compatibility" : {
-    "minimum" : 10,
-    "verified" : 10,
-    "maximum" : 10
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10",
+    "maximum": "10"
   },
-  "templateVersion": 2,
   "authors": [
-	"JeansenVaars",
-	"Moo Man", 
-	"fredthedeadhead", 
-	"Perfectro", 
-	"Vendare", 
-	"Silver292", 
-	"Giddy",
-	"Dazzerix",
-	"FilippoPolo"
+    {
+      "name": "JeansenVaars",
+      "flags": {}
+    },
+    {
+      "name": "Moo Man",
+      "flags": {}
+    },
+    {
+      "name": "fredthedeadhead",
+      "flags": {}
+    },
+    {
+      "name": "Perfectro",
+      "flags": {}
+    },
+    {
+      "name": "Vendare",
+      "flags": {}
+    },
+    {
+      "name": "Silver292",
+      "flags": {}
+    },
+    {
+      "name": "Giddy",
+      "flags": {}
+    },
+    {
+      "name": "Dazzerix",
+      "flags": {}
+    },
+    {
+      "name": "FilippoPolo",
+      "flags": {}
+    }
   ],
-  "scripts": [],
   "esmodules": [
     "script/common/hooks.js"
   ],
@@ -33,36 +57,40 @@
       "name": "character-aptitudes",
       "label": "Character Aptitudes",
       "system": "dark-heresy",
-      "path": "./packs/character/aptitudes.db",
-      "entity": "Item"
+      "path": "packs/character/aptitudes.db",
+      "type": "Item",
+      "private": false,
+      "flags": {}
     }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "es",
       "name": "Español",
-      "path": "lang/es.json"
+      "path": "lang/es.json",
+      "flags": {}
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json"
+      "path": "lang/fr.json",
+      "flags": {}
     },
-	  {
+    {
       "lang": "pl",
       "name": "Polski",
-      "path": "lang/pl.json"
+      "path": "lang/pl.json",
+      "flags": {}
     }
   ],
   "gridDistance": 1,
   "gridUnits": "m",
-  "primaryTokenAttribute": null,
-  "secondaryTokenAttribute": null,
   "url": "https://github.com/Vendare/DarkHeresy2E-FoundryVTT",
   "socket": true,
   "manifest": "https://github.com/Vendare/DarkHeresy2E-FoundryVTT/releases/download/4.2.3/system.json",
