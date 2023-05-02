@@ -20,3 +20,23 @@
 {"whisper":["S1eV1ZRPv1Ov8leK"],"speaker":{"alias":"Dice So Nice!","scene":null,"actor":null,"token":null},"flags":{"core":{"canPopout":true}},"content":"<div class=\"dice-so-nice\">\n                    <h3 class=\"nue\">Dice So Nice - Vos dés 3D</h3>\n                    <p class=\"nue\">Il semble que vous utilisez les dés 3D pour la première fois dans ce Monde.</p>\n                    <p class=\"nue\">Vous pouvez modifier (ou désactiver) vos dés 3D en cliquant sur ce bouton :</p>\n                    <p>\n                        <button type=\"button\" class=\"dice-so-nice-btn-settings\" data-key=\"dice-so-nice.dice-so-nice\">\n                            <i class=\"fas fa-dice-d20\"></i> Modifier mes dés\n                        </button>\n                    </p>\n                    <p class=\"nue\">Vous pourrez par la suite le retrouver dans le menu 'Configurer les options &gt; Modules &gt; Dice So Nice!'</p>\n                    <p class=\"nue\">Pour découvrir les fonctionnalités de Dice So Nice dans une rapide présentation, utilisez le bouton suivant.</p>\n                    <p>\n                        <button type=\"button\" class=\"dice-so-nice-btn-tour\" data-tour=\"dice-so-nice-tour\">\n                            <i class=\"fas fa-hiking\"></i> Présentation (45s)\n                        </button>\n                    </p>\n                    <p class=\"nue\">Vous ne recevrez pas ce message à nouveau. Bon jeu !</p>\n                    <footer class=\"nue\"><i class=\"fas fa-info-circle\"></i> Ce message peut être extrait en cliquant dessus avec le bouton droit de la souris, vous pouvez également extraire tout l'onglet de chat en cliquant avec le bouton droit de la souris sur l'icône de la bulle de dialogue (menu du haut). Cette dernière méthode (clic droit sur les icones du menu) permet de la même manière de faire apparaître n'importe quel autre onglet de la barre latérale dans une fenêtre indépendante.</footer>\n                </div>","type":0,"user":"S1eV1ZRPv1Ov8leK","timestamp":1682796169049,"flavor":"","blind":false,"rolls":[],"sound":null,"emote":false,"_id":"fvTcUtD8tZ0cQlR7"}
 {"user":"GyrqPCYtbXkNshoX","speaker":{"scene":"SLw8tdtlX4XtrSpk","actor":null,"token":null,"alias":"Gamemaster"},"type":5,"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"5d6\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":5,\"faces\":6,\"modifiers\":[],\"results\":[{\"result\":3,\"active\":true},{\"result\":3,\"active\":true},{\"result\":5,\"active\":true},{\"result\":2,\"active\":true},{\"result\":2,\"active\":true}]}],\"total\":15,\"evaluated\":true}"],"sound":"sounds/dice.wav","content":"15","flags":{"df-chat-enhance":{"ChatTime":{"WorldTime":1712937600}}},"timestamp":1682796230551,"flavor":"","whisper":[],"blind":false,"emote":false,"_id":"MzC8s1kkCgIszy1u"}
 {"user":"fuzzHojJrfguk9dA","speaker":{"scene":"coGssB7RT9Vi23WU","actor":null,"token":null,"alias":"Max"},"type":5,"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"1d3\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":1,\"faces\":3,\"modifiers\":[],\"results\":[{\"result\":1,\"active\":true}]}],\"total\":1,\"evaluated\":true}"],"sound":"sounds/dice.wav","content":"1","flags":{"df-chat-enhance":{"ChatTime":{"WorldTime":1712937600}}},"timestamp":1682809058898,"flavor":"","whisper":[],"blind":false,"emote":false,"_id":"KQVRuGqZmh7wcdqp"}
+{"$$deleted":true,"_id":"KQVRuGqZmh7wcdqp"}
+{"$$deleted":true,"_id":"5eoiXKIPLD9Pt8eF"}
+{"$$deleted":true,"_id":"7FK4PRAAjDGKiugp"}
+{"$$deleted":true,"_id":"BAH8HkkANQB66IPa"}
+{"$$deleted":true,"_id":"C9N2HrUW8UpnHumI"}
+{"$$deleted":true,"_id":"EFbfarCyZ6E4RZNS"}
+{"$$deleted":true,"_id":"EnBbYzLNLuImQveM"}
+{"$$deleted":true,"_id":"MzC8s1kkCgIszy1u"}
+{"$$deleted":true,"_id":"Npm0XRqi5TqfiP9b"}
+{"$$deleted":true,"_id":"QRDsdotciMFUmdO3"}
+{"$$deleted":true,"_id":"SEQLls3q0Ca3JO5Q"}
+{"$$deleted":true,"_id":"SeRQp74irGDU5MZb"}
+{"$$deleted":true,"_id":"eyva74wKZwWJxGnv"}
+{"$$deleted":true,"_id":"fvTcUtD8tZ0cQlR7"}
+{"$$deleted":true,"_id":"hiMKm3q8AccajZW6"}
+{"$$deleted":true,"_id":"i5GY7atwwLpbwBgk"}
+{"$$deleted":true,"_id":"ioeIlLPFScLXWC61"}
+{"$$deleted":true,"_id":"j9jUL4eEP4ReeS8J"}
+{"$$deleted":true,"_id":"nXvTDEAqVFXiq06t"}
+{"$$deleted":true,"_id":"u6PIsmhMJmCE2MlF"}
