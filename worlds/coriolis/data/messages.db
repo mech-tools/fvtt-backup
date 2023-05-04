@@ -40,3 +40,4 @@
 {"$$deleted":true,"_id":"j9jUL4eEP4ReeS8J"}
 {"$$deleted":true,"_id":"nXvTDEAqVFXiq06t"}
 {"$$deleted":true,"_id":"u6PIsmhMJmCE2MlF"}
+{"user":"S1eV1ZRPv1Ov8leK","speaker":{"scene":"kykQc3wx6zEuBvng","token":"nKSCucTPkxiHGph1","actor":"Dwd7RCLBPYVmhdt2","alias":"Oryx - Express Freighter"},"type":5,"rolls":["{\"class\":\"Roll\",\"options\":{},\"dice\":[],\"formula\":\"d66\",\"terms\":[{\"class\":\"Die\",\"options\":{},\"evaluated\":true,\"number\":1,\"faces\":66,\"modifiers\":[],\"results\":[{\"result\":18,\"active\":true}]}],\"total\":18,\"evaluated\":true}"],"sound":"sounds/dice.wav","content":"18","flags":{"df-chat-enhance":{"ChatTime":{"WorldTime":1712937600}}},"timestamp":1683115691016,"flavor":"","whisper":["S1eV1ZRPv1Ov8leK"],"blind":false,"emote":false,"_id":"RwxhSV09zSLbqAn1"}
