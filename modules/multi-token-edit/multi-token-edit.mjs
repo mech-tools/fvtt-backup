@@ -3,7 +3,6 @@ import {
   pasteData,
   showMassActorForm,
   showMassEdit,
-  showMassCopy,
   showMassSelect,
   showGenericForm,
 } from './applications/multiConfig.js';
@@ -11,6 +10,7 @@ import CSSEdit, { STYLES } from './applications/cssEdit.js';
 import MassEditPresets from './applications/presets.js';
 import {
   checkApplySpecialFields,
+  deleteFromClipboard,
   getObjFormData,
   pasteDataUpdate,
   performMassSearch,
@@ -18,15 +18,18 @@ import {
 } from './applications/forms.js';
 import { MassEditGenericForm } from './applications/genericForm.js';
 import {
+  activeEffectPresetSelect,
   applyAddSubtract,
   flagCompare,
   hashCode,
   SUPPORTED_COLLECTIONS,
   SUPPORTED_HISTORY_DOCS,
+  SUPPORTED_PLACEABLES,
 } from './scripts/utils.js';
 import { GeneralDataAdapter } from './applications/dataAdapters.js';
 import { applyRandomization } from './scripts/randomizer/randomizerUtils.js';
 import { IS_PRIVATE } from './scripts/randomizer/randomizerForm.js';
+import { libWrapper } from './scripts/shim/shim.js';
 
 export const HISTORY = {};
 
@@ -185,47 +188,6 @@ Hooks.once('init', () => {
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
   });
 
-  game.keybindings.register('multi-token-edit', 'copyKey', {
-    name: game.i18n.localize('multi-token-edit.keybindings.copyKey.name'),
-    hint: game.i18n.localize('multi-token-edit.keybindings.copyKey.hint'),
-    editable: [
-      {
-        key: 'KeyC',
-        modifiers: ['Shift'],
-      },
-    ],
-    onDown: () => {
-      // Check if a Mass Config form is already open and if so copy data from there
-      for (const app of Object.values(ui.windows)) {
-        if (app.meObjects != null) {
-          app.massUpdateObject({ submitter: { value: 'Placeholder' } }, null, { copyForm: true });
-          return;
-        }
-      }
-
-      // Otherwise open a copy form
-      showMassCopy();
-    },
-    restricted: true,
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
-  });
-
-  game.keybindings.register('multi-token-edit', 'pasteKey', {
-    name: game.i18n.localize('multi-token-edit.keybindings.pasteKey.name'),
-    hint: game.i18n.localize('multi-token-edit.keybindings.pasteKey.hint'),
-    editable: [
-      {
-        key: 'KeyV',
-        modifiers: ['Shift'],
-      },
-    ],
-    onDown: () => {
-      pasteData();
-    },
-    restricted: true,
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
-  });
-
   game.keybindings.register('multi-token-edit', 'presetApply', {
     name: game.i18n.localize('multi-token-edit.keybindings.presetApply.name'),
     hint: game.i18n.localize('multi-token-edit.keybindings.presetApply.hint'),
@@ -236,17 +198,21 @@ Hooks.once('init', () => {
       },
     ],
     onDown: () => {
-      const [target, selected] = getSelected();
-      const p = target ?? canvas.activeLayer.placeables[0];
-      if (!p) return;
-      const docName = p.document ? p.document.documentName : p.documentName;
+      // Special logic for populating Active Effect
+      const aeConfig = Object.values(ui.windows).find((x) => x instanceof ActiveEffectConfig);
+      if (aeConfig) {
+        activeEffectPresetSelect(aeConfig);
+        return;
+      }
+
+      const docName = canvas.activeLayer.constructor.documentName;
+      if (!SUPPORTED_PLACEABLES.includes(docName)) return;
 
       new MassEditPresets(
         null,
         (preset) => {
-          const [target2, selected2] = getSelected();
-          if (!(target2 || target)) return;
-          pasteDataUpdate(target2 ? selected2 : selected, preset);
+          const [target, selected] = getSelected();
+          if (target) pasteDataUpdate(selected, preset);
         },
         docName
       ).render(true);
@@ -304,6 +270,34 @@ Hooks.once('init', () => {
       }
     }
   }
+
+  // Register copy-paste wrappers
+  libWrapper.register(
+    'multi-token-edit',
+    'ClientKeybindings._onCopy',
+    function (wrapped, ...args) {
+      if (window.getSelection().toString() === '') {
+        // Check if a Mass Config form is open and if so copy data from there
+        const meForm = Object.values(ui.windows).find((app) => app.meObjects != null);
+        if (meForm?.performMassCopy()) return true;
+      }
+
+      const result = wrapped(...args);
+      // Clear Mass Edit clipboard to allows core pasting again
+      if (result) deleteFromClipboard(canvas.activeLayer.constructor.documentName);
+      return result;
+    },
+    'MIXED'
+  );
+  libWrapper.register(
+    'multi-token-edit',
+    'ClientKeybindings._onPaste',
+    function (wrapped, ...args) {
+      if (pasteData()) return true;
+      return wrapped(...args);
+    },
+    'MIXED'
+  );
 
   game.modules.get('multi-token-edit').api = {
     applyRandomization, // Deprecated
@@ -438,3 +432,12 @@ function saveHistory(obj, update, historyItem, _id, docName) {
 
   HISTORY[docName] = docHistory;
 }
+
+Hooks.on('renderActiveEffectConfig', (app) => {
+  const el = $(app.form).find('.effects-header .key');
+  if (el.length) {
+    const me = $('<i title="Apply \'Mass Edit\' preset" style="font-size:smaller;color:brown;"> <a>[ME]</a></i>');
+    me.on('click', () => activeEffectPresetSelect(app));
+    el.append(me);
+  }
+});

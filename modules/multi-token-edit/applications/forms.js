@@ -35,7 +35,7 @@ export const WithMassEditForm = (cls) => {
       this.meObjects = docs;
       this.documentName = options.documentName ?? doc.document?.documentName ?? doc.documentName ?? 'NONE';
       this.commonData = options.commonData || {};
-      this.randomizerEnabled = IS_PRIVATE && (options.massCopy || options.massEdit);
+      this.randomizerEnabled = IS_PRIVATE && options.massEdit;
       this.massFormButtons = [{ title: 'Apply', value: 'permissions', icon: 'far fa-save' }];
     }
 
@@ -579,12 +579,6 @@ export const WithMassConfig = (docName = 'NONE') => {
           { title: 'Search', value: 'search', icon: 'fas fa-search' },
           { title: 'Search and Edit', value: 'searchAndEdit', icon: 'fas fa-search' },
         ];
-      } else if (this.options.massCopy) {
-        buttons = [{ title: 'Copy', value: 'copy', icon: 'fas fa-copy' }];
-        // Extra control for Tokens to update their Actors' Token prototype
-        if (this.documentName === 'Token') {
-          buttons.push({ title: 'Copy as Prototype', value: 'copyProto', icon: 'fas fa-copy' });
-        }
       } else if (this.documentName === 'Note') {
         // If we're editing notes and there are some on a different scene
         if (this.meObjects.filter((n) => (n.scene ?? n.parent).id === canvas.scene.id).length) {
@@ -620,7 +614,7 @@ export const WithMassConfig = (docName = 'NONE') => {
       return this.massUpdateObject(event, formData);
     }
 
-    async massUpdateObject(event, formData, { copyForm = false } = {}) {
+    async massUpdateObject(event, formData) {
       if (!event.submitter?.value) return;
 
       // Gather up all named fields that have mass-edit-checkbox checked
@@ -635,12 +629,8 @@ export const WithMassConfig = (docName = 'NONE') => {
         TokenDataAdapter.correctDetectionModeOrder(selectedFields, this.randomizeFields);
       }
 
-      // Copy mode
-      if (this.options.massCopy || copyForm) {
-        this.performMassCopy(event.submitter.value, selectedFields, docName);
-      }
       // Search and Select mode
-      else if (this.options.massSelect) {
+      if (this.options.massSelect) {
         performMassSearch(event.submitter.value, docName, selectedFields, {
           scope: this.modUpdate ? this.modUpdateType : null,
         });
@@ -659,8 +649,18 @@ export const WithMassConfig = (docName = 'NONE') => {
       performMassUpdate.call(this, selectedFields, this.meObjects, docName, this.modUpdateType);
     }
 
-    performMassCopy(command, selectedFields, docName) {
-      if (isEmpty(selectedFields)) return;
+    /**
+     * Copy currently selected field to the clipboard
+     */
+    performMassCopy({ command = '', selectedFields = null } = {}) {
+      if (!selectedFields) {
+        selectedFields = this.getSelectedFields();
+        if (this.documentName === 'Token') {
+          TokenDataAdapter.correctDetectionModeOrder(selectedFields, this.randomizeFields);
+        }
+      }
+
+      if (isEmpty(selectedFields)) return false;
       if (!isEmpty(this.randomizeFields)) {
         selectedFields['mass-edit-randomize'] = deepClone(this.randomizeFields);
       }
@@ -668,13 +668,15 @@ export const WithMassConfig = (docName = 'NONE') => {
         selectedFields['mass-edit-addSubtract'] = deepClone(this.addSubtractFields);
       }
 
-      copyToClipboard(docName, selectedFields, command, this.isPrototype);
+      copyToClipboard(this.documentName, selectedFields, command, this.isPrototype);
+      return true;
     }
 
     _getHeaderButtons() {
       const buttons = super._getHeaderButtons();
       const docName = this.documentName;
 
+      // Macro Generator
       if (SUPPORTED_PLACEABLES.includes(docName) || SUPPORTED_COLLECTIONS.includes(docName)) {
         buttons.unshift({
           label: '',
@@ -694,6 +696,7 @@ export const WithMassConfig = (docName = 'NONE') => {
         });
       }
 
+      // Brush Tool
       if (SUPPORTED_PLACEABLES.includes(docName)) {
         buttons.unshift({
           label: '',
@@ -705,24 +708,7 @@ export const WithMassConfig = (docName = 'NONE') => {
         });
       }
 
-      buttons.unshift({
-        label: ' ',
-        class: 'mass-edit-json',
-        icon: 'fas fa-code',
-        onclick: () => {
-          let content = `<textarea style="width:100%; height: 300px;">${JSON.stringify(
-            this.getSelectedFields(),
-            null,
-            2
-          )}</textarea>`;
-          new Dialog({
-            title: `Selected Fields`,
-            content: content,
-            buttons: {},
-          }).render(true);
-        },
-      });
-
+      // Edit Permissions
       if (['Token', 'Note', 'Actor'].includes(docName)) {
         let docs = [];
         const ids = new Set();
@@ -751,6 +737,7 @@ export const WithMassConfig = (docName = 'NONE') => {
           });
       }
 
+      // Open Preset form
       buttons.unshift({
         label: '',
         class: 'mass-edit-presets',
@@ -758,6 +745,36 @@ export const WithMassConfig = (docName = 'NONE') => {
         onclick: (ev) => new MassEditPresets(this, async (preset) => this._processPreset(preset), docName).render(true),
       });
 
+      // Apply JSON data onto the form
+      buttons.unshift({
+        label: '',
+        class: 'mass-edit-apply',
+        icon: 'far fa-money-check-edit',
+        onclick: (ev) => {
+          let content = `<textarea class="json" style="width:100%; height: 300px;"></textarea>`;
+          new Dialog({
+            title: `Apply JSON Data`,
+            content: content,
+            buttons: {
+              apply: {
+                label: 'Apply',
+                callback: (html) => {
+                  let json = {};
+                  try {
+                    json = JSON.parse(html.find('.json').val());
+                  } catch (e) {}
+
+                  if (!isEmpty(json)) {
+                    this._processPreset(json);
+                  }
+                },
+              },
+            },
+          }).render(true);
+        },
+      });
+
+      // History
       if (game.settings.get('multi-token-edit', 'enableHistory') && SUPPORTED_HISTORY_DOCS.includes(docName)) {
         buttons.unshift({
           label: '',
@@ -769,6 +786,7 @@ export const WithMassConfig = (docName = 'NONE') => {
         });
       }
 
+      // Toggle between Token and Actor forms
       if (this.documentName === 'Token' && this.meObjects.filter((t) => t.actor).length) {
         buttons.unshift({
           label: '',
@@ -778,7 +796,6 @@ export const WithMassConfig = (docName = 'NONE') => {
             if (
               showMassActorForm(this.meObjects, {
                 massEdit: this.options.massEdit,
-                massCopy: this.options.massCopy,
               })
             ) {
               this.close();
@@ -833,8 +850,8 @@ export const WithMassConfig = (docName = 'NONE') => {
     }
 
     async _processPreset(preset) {
-      // This will be called when a preset or history item is selected
-      // The code bellow handled it being applied to the current form
+      // This will be called when a preset or history item is selected or JSON data is being directly applied
+      // The code bellow handles it being applied to the current form
 
       // =====================
       // Module specific logic
@@ -904,7 +921,6 @@ export const WithMassConfig = (docName = 'NONE') => {
 
     get title() {
       if (this.options.massSelect) return `Mass-${this.documentName} SEARCH`;
-      if (this.options.massCopy) return `Mass-${this.documentName} COPY`;
       return `Mass-${this.documentName} EDIT [ ${this.meObjects.length} ]`;
     }
   }
@@ -919,22 +935,22 @@ export const WithMassConfig = (docName = 'NONE') => {
 // ====================
 
 export function pasteDataUpdate(docs, preset, suppressNotif = false) {
-  if (!docs || !docs.length) return;
+  if (!docs || !docs.length) return false;
 
   let docName = docs[0].document ? docs[0].document.documentName : docs[0].documentName;
-  let data = preset ? deepClone(preset) : deepClone(CLIPBOARD[docName]);
+  let data = preset ? deepClone(preset) : deepClone(getClipboardData(docName));
   let applyType;
 
   // Special handling for Tokens/Actors
   if (!preset) {
     if (docName === 'Token') {
       if (!data) {
-        data = CLIPBOARD['TokenProto'];
+        data = getClipboardData('TokenProto');
         applyType = 'applyToPrototype';
       }
 
       if (!data) {
-        data = CLIPBOARD['Actor'];
+        data = getClipboardData('Actor');
         docName = 'Actor';
         docs = docs.filter((d) => d.actor).map((d) => d.actor);
       }
@@ -952,8 +968,17 @@ export function pasteDataUpdate(docs, preset, suppressNotif = false) {
       delete data['mass-edit-addSubtract'];
     }
     performMassUpdate.call(context, data, docs, docName, applyType);
-    if (!suppressNotif) ui.notifications.info(`Pasted data onto ${docs.length} ${docName}s`);
+    if (!suppressNotif)
+      ui.notifications.info(
+        game.i18n.format('multi-token-edit.clipboard.paste', {
+          documentName: docName,
+          number: docs.length,
+        })
+      );
+
+    return true;
   }
+  return false;
 }
 
 export function performMassSearch(
@@ -994,7 +1019,9 @@ export function performMassSearch(
   }
   if (command === 'searchAndEdit') {
     setTimeout(() => {
-      showMassEdit(found, docName, { globalDelete: scope === 'world' || SUPPORTED_COLLECTIONS.includes(docName) });
+      showMassEdit(found, docName, {
+        globalDelete: scope === 'world' || SUPPORTED_COLLECTIONS.includes(docName),
+      });
     }, 500);
   }
   return found;
@@ -1346,5 +1373,22 @@ export function copyToClipboard(docName, data, command, isPrototype) {
       CLIPBOARD['TokenProto'] = data;
     }
   }
-  ui.notifications.info(`Copied ${docName} data to clipboard`);
+
+  // Also copy the fields to the game clipboard as plain text
+  game.clipboard.copyPlainText(JSON.stringify(deepClone(data), null, 2));
+
+  ui.notifications.info(
+    game.i18n.format('multi-token-edit.clipboard.copy', {
+      documentName: docName,
+    })
+  );
+}
+
+export function deleteFromClipboard(docName) {
+  delete CLIPBOARD[docName];
+  if (docName === 'Token') delete CLIPBOARD['TokenProto'];
+}
+
+export function getClipboardData(docName) {
+  return CLIPBOARD[docName];
 }

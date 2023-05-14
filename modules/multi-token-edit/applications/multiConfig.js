@@ -1,6 +1,7 @@
 import { showPlaceableTypeSelectDialog } from '../scripts/dialogs.js';
-import { getData, SUPPORTED_PLACEABLES, SUPPORT_SHEET_CONFIGS, SUPPORTED_COLLECTIONS } from '../scripts/utils.js';
-import { pasteDataUpdate, WithMassConfig } from './forms.js';
+import { IS_PRIVATE } from '../scripts/randomizer/randomizerForm.js';
+import { getData, spawnPlaceable, SUPPORT_SHEET_CONFIGS, SUPPORTED_COLLECTIONS } from '../scripts/utils.js';
+import { getClipboardData, pasteDataUpdate, WithMassConfig } from './forms.js';
 import { MassEditGenericForm } from './genericForm.js';
 
 export const LAYER_MAPPINGS = {
@@ -27,19 +28,19 @@ export const SCENE_DOC_MAPPINGS = {
 
 // Retrieve currently controlled placeables
 export function getControlled() {
-  for (const layer of Object.values(LAYER_MAPPINGS)) {
-    if (canvas[layer].controlled.length) {
-      return canvas[layer].controlled;
-    }
+  if (canvas.activeLayer.controlled.length) {
+    return canvas.activeLayer.controlled;
   }
   return null;
 }
 
 // Retrieve hovered over placeable
 function getHover() {
-  for (const layer of Object.values(LAYER_MAPPINGS)) {
-    if (canvas[layer].hover) {
-      return [canvas[layer].hover];
+  let docName = canvas.activeLayer.constructor.documentName;
+  // Walls do not properly cleanup hover state
+  if (!['Wall'].includes(docName)) {
+    if (canvas.activeLayer.hover) {
+      return [canvas.activeLayer.hover];
     }
   }
   return null;
@@ -188,29 +189,6 @@ export async function showMassEdit(found = null, documentName, options = {}) {
   }
 }
 
-// show placeable data copy
-export function showMassCopy() {
-  let [target, selected] = getSelected();
-
-  if (!selected || !selected.length) return;
-
-  // Display modified config window
-  const documentName = target.document ? target.document.documentName : target.documentName;
-  const options = { massCopy: true, documentName };
-  if (SUPPORT_SHEET_CONFIGS.includes(documentName)) {
-    if (documentName === 'Actor') {
-      target = target.prototypeToken ?? target.token;
-      selected = selected.map((s) => s.prototypeToken ?? s.token);
-      options.documentName = 'Token';
-    }
-
-    const MassConfig = WithMassConfig(options.documentName);
-    new MassConfig(target, selected, options).render(true, {});
-  } else {
-    new MassEditGenericForm(selected, options).render(true);
-  }
-}
-
 export function showMassActorForm(selectedTokens, options) {
   const tokens = [];
   const actors = [];
@@ -237,7 +215,18 @@ export function pasteData() {
   if (!selected) selected = getSelectedDocuments();
   if (!selected) selected = getControlled();
   if (!selected) selected = getHover();
-  pasteDataUpdate(selected);
+
+  if (selected) return pasteDataUpdate(selected);
+  else if (IS_PRIVATE) {
+    let docName = canvas.activeLayer.constructor.documentName;
+    let data = getClipboardData(docName);
+    if (data) {
+      spawnPlaceable(docName, data);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

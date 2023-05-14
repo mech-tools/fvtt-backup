@@ -1,4 +1,6 @@
 import { GeneralDataAdapter } from '../applications/dataAdapters.js';
+import MassEditPresets from '../applications/presets.js';
+import { applyRandomization } from './randomizer/randomizerUtils.js';
 
 export const SUPPORTED_PLACEABLES = [
   'Token',
@@ -293,4 +295,130 @@ export function regexStringReplace(sw, replaceWith, s2) {
     return s2.replaceAll(re, replaceWith);
   } catch (e) {}
   return s2;
+}
+
+export function flattenToDepth(obj, d = 0) {
+  if (d === 0) return obj;
+
+  const flat = {};
+  for (let [k, v] of Object.entries(obj)) {
+    let t = getType(v);
+    if (t === 'Object') {
+      if (isEmpty(v)) flat[k] = v;
+      let inner = flattenToDepth(v, d - 1);
+      for (let [ik, iv] of Object.entries(inner)) {
+        flat[`${k}.${ik}`] = iv;
+      }
+    } else flat[k] = v;
+  }
+  return flat;
+}
+
+export function activeEffectPresetSelect(aeConfig) {
+  const showPreset = function (docName) {
+    new MassEditPresets(
+      null,
+      (preset) => {
+        delete preset['mass-edit-addSubtract'];
+
+        if ('mass-edit-randomize' in preset) {
+          applyRandomization([preset], null, preset['mass-edit-randomize']);
+          delete preset['mass-edit-randomize'];
+        }
+
+        const changes = aeConfig.object.changes ?? [];
+        let nChanges = [];
+
+        Object.keys(preset).forEach((k) => {
+          let value;
+          if (getType(preset[k]) === 'string') value = preset[k];
+          else value = JSON.stringify(preset[k]);
+
+          nChanges.push({
+            key: docName === 'Token' ? 'ATL.' + k : k,
+            mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+            priority: 20,
+            value,
+          });
+        });
+
+        for (let i = changes.length - 1; i >= 0; i--) {
+          if (!nChanges.find((nc) => nc.key === changes[i].key)) nChanges.unshift(changes[i]);
+        }
+
+        aeConfig.object.update({ changes: nChanges });
+      },
+      docName
+    ).render(true);
+  };
+
+  new Dialog({
+    title: 'Open Presets',
+    content: ``,
+    buttons: {
+      token: {
+        label: 'Token',
+        callback: () => showPreset('Token'),
+      },
+      actor: {
+        label: 'Actor',
+        callback: () => showPreset('Actor'),
+      },
+    },
+  }).render(true);
+}
+
+export function spawnPlaceable(docName, preset, { tokenName = 'Token' } = {}) {
+  // Determine spawn position for the new placeable
+  let pos = canvas.app.renderer.plugins.interaction.mouse.getLocalPosition(canvas.stage);
+  if (docName === 'Token' || docName === 'Tile') {
+    pos.x -= canvas.dimensions.size / 2;
+    pos.y -= canvas.dimensions.size / 2;
+  }
+  pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(docName).gridPrecision);
+
+  const randomizer = preset['mass-edit-randomize'];
+  if (randomizer) {
+    applyRandomization([preset], null, randomizer);
+  }
+
+  let data;
+
+  // Set default values if needed
+  switch (docName) {
+    case 'Token':
+      data = { name: tokenName };
+      break;
+    case 'Tile':
+      data = { width: canvas.grid.w, height: canvas.grid.h };
+      break;
+    case 'AmbientSound':
+      data = { radius: 20 };
+      break;
+    case 'Wall':
+      data = { c: [pos.x, pos.y, pos.x + canvas.grid.w, pos.y] };
+      break;
+    case 'Drawing':
+      data = { 'shape.width': canvas.grid.w * 2, 'shape.height': canvas.grid.h * 2 };
+      break;
+    case 'MeasuredTemplate':
+      data = { distance: 10 };
+      break;
+    case 'AmbientLight':
+      if (!('config.dim' in preset) && !('config.bright' in preset)) {
+        data = { 'config.dim': 20, 'config.bright': 10 };
+        break;
+      }
+    default:
+      data = {};
+  }
+
+  mergeObject(data, preset);
+  mergeObject(data, pos);
+
+  if (game.keyboard.downKeys.has('AltLeft')) {
+    data.hidden = true;
+  }
+
+  canvas.scene.createEmbeddedDocuments(docName, [data]);
 }

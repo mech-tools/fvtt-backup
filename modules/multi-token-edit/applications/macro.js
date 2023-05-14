@@ -24,7 +24,7 @@ export default class MacroForm extends FormApplication {
       id: 'mass-edit-macro',
       classes: ['sheet'],
       template: 'modules/multi-token-edit/templates/macro.html',
-      resizable: false,
+      resizable: true,
       minimizable: false,
       title: `Generate Macro`,
       width: 400,
@@ -128,7 +128,6 @@ export default class MacroForm extends FormApplication {
 
   _onRemoveJson(control, name) {
     const store = control.siblings(`[name="${name}"]`);
-    console.log(store);
     control.hide();
     store.prop('disabled', true);
     this.setPosition({ height: 'auto' });
