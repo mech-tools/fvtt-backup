@@ -94,13 +94,13 @@
     }
   ],
   "system": "shadowrun6-eden",
-  "coreVersion": "10.286",
+  "coreVersion": "10.291",
   "resetKeys": false,
   "safeMode": false,
-  "systemVersion": "0.7.1",
+  "systemVersion": "1.2.0",
   "id": "sr6",
   "compatibility": {
-    "verified": "10.286",
+    "verified": "10.291",
     "minimum": "10"
   }
 }
