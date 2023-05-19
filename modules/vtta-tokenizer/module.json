@@ -7,8 +7,8 @@
   "manifest": "https://github.com/mrprimate/tokenizer/releases/download/latest/module.json",
   "changelog": "https://github.com/MrPrimate/tokenizer/blob/master/CHANGELOG.md",
   "compatibility": {
-    "minimum": "10.282",
-    "verified": "10"
+    "minimum": "10",
+    "verified": "11"
   },
   "authors": [
     {
