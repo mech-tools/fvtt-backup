@@ -1228,7 +1228,7 @@ class Masker {
       // rescale the mask back up for the appropriate layer canvas size
       const context = mask.getContext("2d");
       context.resetTransform();
-      context.clearRect(0, 0, mask.width, mask.height);
+      context.clearRect(0, 0, this.layer.preview.width, this.layer.preview.height);
       mask.getContext("2d").drawImage(
         this.mask,
         this.yOffset,
@@ -3130,9 +3130,10 @@ class Layer {
   applyCustomMask(mask, callback) {
     this.customMask = true;
     this.mask = mask;
-    this.renderedMask
-      .getContext('2d')
-      .drawImage(this.mask, 0, 0, this.canvas.width, this.canvas.height);
+    const maskContext = this.renderedMask.getContext('2d');
+    maskContext.resetTransform();
+    maskContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    maskContext.drawImage(this.mask, 0, 0, this.canvas.width, this.canvas.height);
     callback(true);
   }
 
