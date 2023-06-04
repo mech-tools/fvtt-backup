@@ -42,6 +42,16 @@ mark .coc7-link {
     margin-right: 10px;
 }
 
+/* GM Screen */
+.gm-screen-grid-cell-content header {
+    display : none;
+}
+
+.gm-screen-grid-cell-content section div:first-child {
+    margin-top: 0 !important;
+    height: 100% !important;
+}
+
 
 /* Cthulhu mod */
 @font-face {
