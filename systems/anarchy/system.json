@@ -1,41 +1,38 @@
 {
   "id": "anarchy",
-  "version": "10.2.8",
+  "version": "11.0.0",
   "manifest": "https://gitlab.com/vincent.vandeme/anarchy/raw/master/system.json",
-  "download": "https://gitlab.com/vincent.vandeme/anarchy/-/archive/10.2.8/anarchy-10.2.8.zip",
+  "download": "https://gitlab.com/vincent.vandeme/anarchy/-/archive/11.0.0/anarchy-11.0.0.zip",
   "url": "https://gitlab.com/vincent.vandeme/anarchy",
   "bugs": "https://gitlab.com/vincent.vandeme/anarchy/-/issues",
   "title": "Anarchy",
   "description": "Shadowrun Anarchy RPG, and hacks, for FoundryVTT",
   "compatibility": {
-    "minimum": "10",
-    "verified": "10"
+    "minimum": 10,
+    "verified": 11
   },
   "authors": [
     {
       "name": "Vincent VK",
       "email": "vincent.vandeme@gmail.com",
-      "discord": "VincentVk#9373",
-      "flags": {}
+      "discord": "VincentVk#9373"
     },
     {
       "name": "Pretre",
-      "discord": "Pretre#9138",
-      "flags": {}
+      "discord": "Pretre#9138"
     },
     {
       "name": "Los Brutos",
-      "discord": "Los Brutos#1876",
-      "flags": {}
+      "discord": "Los Brutos#1876"
     }
   ],
   "flags": {
     "allowBugReporter": true
   },
   "license": "LICENSE.md",
-  "esmodules": [
-    "module/start.js"
-  ],
+  "templateVersion": 5,
+  "scripts": [],
+  "esmodules": ["module/start.js"],
   "styles": [
     "style/anarchy.css",
     "style/anarchy-shadowrun.css",
@@ -46,46 +43,45 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "fr",
       "name": "Français",
-      "path": "lang/fr.json",
-      "flags": {}
+      "path": "lang/fr.json"
     }
   ],
   "packs": [
     {
       "name": "macros",
       "label": "Macros",
-      "path": "packs/macros.db",
-      "private": false,
-      "type": "Macro",
       "system": "anarchy",
-      "flags": {}
+      "module": "anarchy",
+      "path": "./packs/macros.db",
+      "type": "Macro",
+      "tags": ["macro"]
     },
     {
       "name": "gm-info",
       "label": "Gamemaster information",
-      "path": "packs/gm-info.db",
-      "private": false,
-      "type": "JournalEntry",
       "system": "anarchy",
-      "flags": {}
+      "module": "anarchy",
+      "path": "./packs/gm-info.db",
+      "type": "JournalEntry",
+      "tags": ["journal"]
     },
     {
       "name": "manual-fr",
       "label": "Manuel SR Anarchy (FR)",
-      "path": "packs/manual-fr.db",
-      "private": false,
       "type": "JournalEntry",
-      "system": "anarchy",
-      "flags": {}
+      "path": "./packs/manual-fr.db",
+      "tags": ["documentation"]
     }
   ],
+  "system": [],
+  "relationships": {},
   "socket": true,
+  "protected": false,
   "gridDistance": 1,
   "gridUnits": "m",
   "primaryTokenAttribute": "monitors.physical",
