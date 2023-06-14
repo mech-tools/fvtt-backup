@@ -5,7 +5,7 @@ import {
   getFolderAtEndOfPath,
 } from "./folders.js";
 
-const ROOT_DIR_FOLDER_NAME = "Coriolis Core Rules"; // name of folder in each directory that coriolis content is stored.
+const ROOT_DIR_FOLDER_NAME = "Coriolis - Core Rules"; // name of folder in each directory that coriolis content is stored.
 const JOURNALS_PACK = `${moduleScopeKey}.journalentry`;
 const ITEMS_PACK = `${moduleScopeKey}.item`;
 const ACTORS_PACK = `${moduleScopeKey}.actor`;
@@ -38,7 +38,7 @@ export async function importContent() {
   await importPlaylists();
   await importTables();
   await importScenes();
-  await linkScenes();
+  // await linkScenes();
 }
 
 async function importFolders() {
@@ -87,16 +87,15 @@ function getImportPath(entity) {
     return null;
   }
   const pathElements = importPath.split("/");
+  // this lops off the 'JournalEntry' root part of the dirPath for normal
+  // entries that reside in folders.
   pathElements.shift();
-  return `${ROOT_DIR_FOLDER_NAME}/${pathElements.join("/")}`;
-}
-
-function getNoteRefKey(entity) {
-  const noteRef = entity.getFlag(moduleScopeKey, "noteRef");
-  if (!noteRef) {
-    return null;
+  // if we actually are supposed to be right under the root dir, just return the
+  // root dir
+  if (pathElements.length === 0) {
+    return ROOT_DIR_FOLDER_NAME;
   }
-  return noteRef;
+  return `${ROOT_DIR_FOLDER_NAME}/${pathElements.join("/")}`;
 }
 
 export function hasImportPath(entity) {
@@ -116,9 +115,16 @@ async function importJournals() {
     if (entityExists(targetFolder.id, entity)) {
       continue;
     }
-    game.journal.importFromCompendium(pack, entity.id, {
-      folder: targetFolder.id,
-    });
+    game.journal.importFromCompendium(
+      pack,
+      entity.id,
+      {
+        folder: targetFolder.id,
+      },
+      {
+        keepId: true,
+      },
+    );
   }
 }
 
@@ -182,7 +188,6 @@ async function importTables() {
       {
         folder: targetFolder.id,
       },
-      { keepId: true },
     );
   }
 }
@@ -207,31 +212,6 @@ async function importScenes() {
       importedScene.update({ thumb: data.thumb }, { diff: false });
     });
   }
-}
-
-async function linkScenes() {
-  let journals = [];
-  game.journal.contents.forEach((j) => {
-    const ref = getNoteRefKey(j);
-    if (ref) {
-      journals.push(j);
-    }
-  });
-
-  game.scenes.contents.forEach(async (scn) => {
-    const ref = getNoteRefKey(scn);
-    if (ref) {
-      const link = journals.find((f) => {
-        const jRef = getNoteRefKey(f);
-        return jRef === ref && jRef !== "";
-      });
-      if (link) {
-        if (!scn.journal) {
-          await scn.update({ journal: link.id }, { diff: false });
-        }
-      }
-    }
-  });
 }
 
 function entityExists(targetFolderId, compendiumEntity) {

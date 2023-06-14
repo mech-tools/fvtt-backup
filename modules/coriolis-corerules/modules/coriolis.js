@@ -125,7 +125,7 @@ async function showIntro() {
   setTimeout(() => {
     try {
       game.scenes.getName("Coriolis - The Third Horizon").activate();
-      game.journal.getName("How To Use This Module").show();
+      game.journal.getName("00 - Index - Core Rules").show();
       game.playlists.getName("Coriolis Soundtrack").playAll();
     } catch (e) {
       console.error("failed to load intro", e);

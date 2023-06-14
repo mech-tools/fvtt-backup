@@ -5,11 +5,10 @@ import {
   getFolderAtEndOfPath,
 } from "./folders.js";
 
-const ROOT_DIR_FOLDER_NAME = "Coriolis Last Voyage of the Ghazali"; // name of folder in each directory that coriolis content is stored.
+const ROOT_DIR_FOLDER_NAME = "Coriolis - Last Voyage of the Ghazali"; // name of folder in each directory that coriolis content is stored.
 const JOURNALS_PACK = `${moduleScopeKey}.journalentry`;
 const ITEMS_PACK = `${moduleScopeKey}.item`;
 const ACTORS_PACK = `${moduleScopeKey}.actor`;
-const PLAYLIST_PACK = `${moduleScopeKey}.playlist`;
 const TABLES_PACK = `${moduleScopeKey}.table`;
 const SCENE_PACK = `${moduleScopeKey}.scene`;
 
@@ -35,10 +34,10 @@ export async function importContent() {
   await importJournals();
   await importItems();
   await importActors();
-  await importPlaylists();
+  // await importPlaylists();
   await importTables();
   await importScenes();
-  await linkScenes();
+  // await linkScenes();
 }
 
 async function importFolders() {
@@ -50,7 +49,7 @@ async function importFolders() {
   await importFoldersForDirectory(JOURNALS_PACK, DIRECTORIES.journal);
   await importFoldersForDirectory(ITEMS_PACK, DIRECTORIES.item);
   await importFoldersForDirectory(ACTORS_PACK, DIRECTORIES.actor);
-  await importFoldersForDirectory(PLAYLIST_PACK, DIRECTORIES.playlist);
+  // await importFoldersForDirectory(PLAYLIST_PACK, DIRECTORIES.playlist);
   await importFoldersForDirectory(TABLES_PACK, DIRECTORIES.table);
   await importFoldersForDirectory(SCENE_PACK, DIRECTORIES.scene);
 }
@@ -65,10 +64,6 @@ async function importFoldersForDirectory(packName, directory) {
 // loadFolderPaths loads the path into the folder map.
 async function loadFolderPaths(packName, folderMap) {
   const pack = game.packs.get(packName);
-  if (!pack) {
-    console.warn("pack not found", packName);
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -91,16 +86,15 @@ function getImportPath(entity) {
     return null;
   }
   const pathElements = importPath.split("/");
+  // this lops off the 'JournalEntry' root part of the dirPath for normal
+  // entries that reside in folders.
   pathElements.shift();
-  return `${ROOT_DIR_FOLDER_NAME}/${pathElements.join("/")}`;
-}
-
-function getNoteRefKey(entity) {
-  const noteRef = entity.getFlag(moduleScopeKey, "noteRef");
-  if (!noteRef) {
-    return null;
+  // if we actually are supposed to be right under the root dir, just return the
+  // root dir
+  if (pathElements.length === 0) {
+    return ROOT_DIR_FOLDER_NAME;
   }
-  return noteRef;
+  return `${ROOT_DIR_FOLDER_NAME}/${pathElements.join("/")}`;
 }
 
 export function hasImportPath(entity) {
@@ -113,10 +107,6 @@ export function hasImportPath(entity) {
 
 async function importJournals() {
   const pack = game.packs.get(JOURNALS_PACK);
-  if (!pack) {
-    console.warn("journals pack not found");
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -124,18 +114,21 @@ async function importJournals() {
     if (entityExists(targetFolder.id, entity)) {
       continue;
     }
-    game.journal.importFromCompendium(pack, entity.id, {
-      folder: targetFolder.id,
-    });
+    game.journal.importFromCompendium(
+      pack,
+      entity.id,
+      {
+        folder: targetFolder.id,
+      },
+      {
+        keepId: true,
+      },
+    );
   }
 }
 
 async function importItems() {
   const pack = game.packs.get(ITEMS_PACK);
-  if (!pack) {
-    console.warn("items pack not found");
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -151,10 +144,6 @@ async function importItems() {
 
 async function importActors() {
   const pack = game.packs.get(ACTORS_PACK);
-  if (!pack) {
-    console.warn("actors pack not found");
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -168,31 +157,8 @@ async function importActors() {
   }
 }
 
-async function importPlaylists() {
-  const pack = game.packs.get(PLAYLIST_PACK);
-  if (!pack) {
-    console.warn("music packs not found, skipping");
-    return;
-  }
-  const pIndex = await pack.getIndex();
-  for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
-    const importPath = getImportPath(entity);
-    const targetFolder = getFolderAtEndOfPath(importPath, DIRECTORIES.playlist);
-    if (entityExists(targetFolder.id, entity)) {
-      continue;
-    }
-    game.playlists.importFromCompendium(pack, entity.id, {
-      folder: targetFolder.id,
-    });
-  }
-}
-
 async function importTables() {
   const pack = game.packs.get(TABLES_PACK);
-  if (!pack) {
-    console.warn("tables pack not found");
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -206,17 +172,12 @@ async function importTables() {
       {
         folder: targetFolder.id,
       },
-      { keepId: true },
     );
   }
 }
 
 async function importScenes() {
   const pack = game.packs.get(SCENE_PACK);
-  if (!pack) {
-    console.warn("scenes pack not found");
-    return;
-  }
   const pIndex = await pack.getIndex();
   for await (const entity of pIndex.map((e) => pack.getDocument(e._id))) {
     const importPath = getImportPath(entity);
@@ -235,31 +196,6 @@ async function importScenes() {
       importedScene.update({ thumb: data.thumb }, { diff: false });
     });
   }
-}
-
-async function linkScenes() {
-  let journals = [];
-  game.journal.contents.forEach((j) => {
-    const ref = getNoteRefKey(j);
-    if (ref) {
-      journals.push(j);
-    }
-  });
-
-  game.scenes.contents.forEach(async (scn) => {
-    const ref = getNoteRefKey(scn);
-    if (ref) {
-      const link = journals.find((f) => {
-        const jRef = getNoteRefKey(f);
-        return jRef === ref && jRef !== "";
-      });
-      if (link) {
-        if (!scn.journal) {
-          await scn.update({ journal: link.id }, { diff: false });
-        }
-      }
-    }
-  });
 }
 
 function entityExists(targetFolderId, compendiumEntity) {
