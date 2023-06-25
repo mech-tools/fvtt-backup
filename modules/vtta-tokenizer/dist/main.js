@@ -102,6 +102,7 @@ const logger = {
 
 
 
+
 class DirectoryPicker extends FilePicker {
   constructor(options = {}) {
     super(options);
@@ -133,8 +134,8 @@ class DirectoryPicker extends FilePicker {
   // formats the data into a string for saving it as a GameSetting
   static format(value) {
     return value.bucket !== null
-      ? `[${value.activeSource}:${value.bucket}] ${value.path}`
-      : `[${value.activeSource}] ${value.path}`;
+      ? `[${value.activeSource}:${value.bucket}] ${value.path ?? value.current ?? ""}`
+      : `[${value.activeSource}] ${value.path ?? value.current ?? ""}`;
   }
 
   // parses the string back to something the FilePicker can understand as an option
@@ -151,12 +152,14 @@ class DirectoryPicker extends FilePicker {
           activeSource: s3,
           bucket: bucket,
           current: current,
+          fullPath: inStr,
         };
       } else {
         return {
           activeSource: s3,
           bucket: null,
           current: current,
+          fullPath: inStr,
         };
       }
     }
@@ -255,10 +258,14 @@ class DirectoryPicker extends FilePicker {
           await DirectoryPicker.createDirectory(parsedPath.activeSource, `${currentSource}`, { bucket: parsedPath.bucket });
 
         } catch (err) {
-          if (!err.startsWith("EEXIST") && !err.startsWith("The S3 key")) libs_logger.error(`Error trying to verify path [${parsedPath.activeSource}], ${parsedPath.current}`, err);
+          const errMessage = `${(err?.message ?? Utils.isString(err) ? err : err)}`.replace(/^Error: /, "").trim();
+          if (!errMessage.startsWith("EEXIST") && !errMessage.startsWith("The S3 key")) {
+            libs_logger.error(`Error trying to verify path [${parsedPath.activeSource}], ${parsedPath.current}`, err);
+          }
         }
       }
     } catch (err) {
+      console.warn(err);
       return false;
     }
 
@@ -282,6 +289,14 @@ const SKIPPING_WORDS = [
 ];
 
 class Utils {
+
+  static isObject(obj) {
+    return typeof obj === 'object' && !Array.isArray(obj) && obj !== null;
+  }
+
+  static isString(str) {
+    return typeof str === 'string' || str instanceof String;
+  }
 
   static htmlToDoc (text) {
     const parser = new DOMParser();
@@ -4803,7 +4818,7 @@ class View {
   addImageLayer(img, { masked = false, activate = false, tintColor = null, tintLayer = false,
     position = { x: null, y: null }, scale = null } = {}
   ) {
-    const imgSrc = (typeof img.src === 'string' || img.src instanceof String) && !img.src.startsWith("data:image/png;base64")
+    const imgSrc = Utils.isString(img.src) && !img.src.startsWith("data:image/png;base64")
       ? img.src
       : "blob-data";
 
@@ -5195,7 +5210,7 @@ class View {
     for (let index = this.layers.length - 1; index >= 0; index--) {
       const layer = this.layers[index];
       if (layer.visible) {
-        const imgSrc = (typeof layer.sourceImg === 'string' || layer.sourceImg instanceof String) && !layer.sourceImg.startsWith("data:image/png;base64")
+        const imgSrc = Utils.isString(layer.sourceImg) && !layer.sourceImg.startsWith("data:image/png;base64")
           ? layer.sourceImg
           : "blob-data";
         libs_logger.debug(`Drawing layer ${layer.id} for ${imgSrc}`);

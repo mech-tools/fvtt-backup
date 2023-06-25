@@ -13,9 +13,11 @@ export default async function setupSettings(foundryGame) {
 	registerCursorHiderSettings(foundryGame, settings);
 	const migrationResult = await migrate(foundryGame);
 	if (migrationResult === MigrationResult.FAILED) {
-		alert('The settings of the "Cursor Hider" module could not be updated after you installed a new version.' +
-			' If you encounter any issues or this message keeps showing up, please disable the module and contact ' +
-			'me on Discord (Azzurite#2004) or file an issue at https://gitlab.com/foundry-azzurite/cursor-hider/issues');
+		alert('The settings of the "Cursor Hider" module could not be updated after you or your GM installed a new ' +
+			'version. If you encounter any issues or this message keeps showing up, please disable the module ' +
+			'and contact me on Discord (AzzuriteTV) or file an issue at ' +
+			'https://gitlab.com/foundry-azzurite/cursor-hider/issues. An error description should be in your browser ' +
+			'console, please include it when filing the issue.');
 	} else if (typeof migrationResult === 'string' && migrationResult !== 'firstRun') {
 		ChatMessage.create({
 			speaker: {alias: 'Cursor Hider Module Notification'},

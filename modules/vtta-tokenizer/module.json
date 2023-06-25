@@ -1,61 +1,61 @@
 {
   "id": "vtta-tokenizer",
+  "name": "vtta-tokenizer",
   "title": "Tokenizer",
   "description": "Tiny yet capable in-game token editor",
-  "version": "4.1.4",
-  "download": "https://github.com/mrprimate/tokenizer/releases/download/4.1.4/vtta-tokenizer.zip",
-  "manifest": "https://github.com/mrprimate/tokenizer/releases/download/latest/module.json",
+  "version": "4.2.1",
+  "download": "https://github.com/mrprimate/tokenizer/releases/download/4.2.1/vtta-tokenizer.zip",
+  "manifest": "https://github.com/MrPrimate/tokenizer/releases/download/latest/module.json",
   "changelog": "https://github.com/MrPrimate/tokenizer/blob/master/CHANGELOG.md",
+  "minimumCoreVersion": "10.282",
+  "compatibleCoreVersion": "10",
   "compatibility": {
     "minimum": "10.282",
-    "verified": "11"
+    "verified": 11
   },
+  "author": "MrPrimate (jack@mrprimate.co.uk), Sebastian Will (vttassets@gmail.com)",
   "authors": [
     {
       "name": "MrPrimate",
       "email": "jack@mrprimate.co.uk",
       "url": "https://mrprimate.co.uk",
-      "discord": "https://discord.gg/WzPuRuDJVP",
-      "flags": {}
+      "patreon": "https://www.patreon.com/MrPrimate",
+      "discord": "https://discord.gg/WzPuRuDJVP"
     },
     {
       "name": "Sebastian Will",
-      "email": "vttassets@gmail.com",
-      "flags": {}
+      "email": "vttassets@gmail.com"
     }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "de",
       "name": "Deutsch",
-      "path": "lang/de.json",
-      "flags": {}
+      "path": "lang/de.json"
     },
     {
       "lang": "es",
       "name": "Spanish",
-      "path": "lang/es.json",
-      "flags": {}
+      "path": "lang/es.json"
     },
     {
       "lang": "ja",
       "name": "日本語",
-      "path": "lang/ja.json",
-      "flags": {}
+      "path": "lang/ja.json"
     }
   ],
   "esmodules": [
-    "dist/main.js"
+    "./dist/main.js"
   ],
   "styles": [
-    "css/default.css",
-    "css/tokenizer.css"
+    "./css/default.css",
+    "./css/tokenizer.css"
   ],
+  "packs": [],
   "url": "https://github.com/mrprimate/tokenizer/"
 }

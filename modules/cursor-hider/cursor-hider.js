@@ -100,7 +100,7 @@ function deleteHiddenUser(hiddenUsers, userId) {
 }
 
 function getMousePos(){
-	const mouse = canvas.app.renderer.plugins.interaction.mouse.global;
+	const mouse = canvas.app.renderer.events.pointer.global;
 	const t = canvas.controls.worldTransform;
 	function calcCoord(axis) {
 		return (mouse[axis] - t['t' + axis]) / canvas.stage.scale[axis];
@@ -169,9 +169,9 @@ class Net {
 	}
 
 	static broadcastCursorPos() {
-		canvas.controls._onMouseMove({data: {
+		canvas.controls._onMouseMove({
 			getLocalPosition() { return getMousePos(); }
-		}});
+		});
 	}
 }
 
