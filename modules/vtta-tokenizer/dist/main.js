@@ -265,7 +265,6 @@ class DirectoryPicker extends FilePicker {
         }
       }
     } catch (err) {
-      console.warn(err);
       return false;
     }
 
@@ -3387,6 +3386,12 @@ class Layer {
     // this.redraw();
   }
 
+  centre() {
+    this.position.x = Math.floor((this.width / 2) - ((this.source.width * this.scale) / 2));
+    this.position.y = Math.floor((this.height / 2) - ((this.source.height * this.scale) / 2));
+    // this.redraw();
+  }
+
   /**
    * Scales the source on the view canvas according to a given factor
    * @param {Number} factor
@@ -3611,10 +3616,13 @@ class Control {
       this.view.appendChild(this.positionManagementSection);
       this.positionManagementSection.appendChild(this.visibleControl);
       this.positionManagementSection.appendChild(this.activeControl);
-      this.positionManagementSection.appendChild(this.flipControl);
+      // this.positionManagementSection.appendChild(this.flipControl);
+      // this.positionManagementSection.appendChild(this.centreLayerControl);
       this.positionManagementSection.appendChild(this.colorSelectionManagementSection);
       this.positionManagementSection.appendChild(this.opacityManagementSection);
-      this.positionManagementSection.appendChild(this.resetControl);
+      // this.positionManagementSection.appendChild(this.resetControl);
+      this.positionManagementSection.appendChild(this.layerMovementControl);
+      // this.positionManagementSection.appendChild(this.layerMovementSelectorSpan);
     }
     this.view.appendChild(this.moveManagementSection);
     this.view.appendChild(this.deleteSection);
@@ -3682,7 +3690,7 @@ class Control {
     this.maskSelectorSpan.classList.add('popup');
 
     this.maskLayerSelector = document.createElement("div");
-    this.maskLayerSelector.classList.add("mask-selector");
+    this.maskLayerSelector.classList.add("popup-selector");
 
     this.addSelectLayerMasks();
     let basicMaskControls = document.createElement('div');
@@ -3800,7 +3808,7 @@ class Control {
     // Makes flips the layer
     this.flipControl = document.createElement('button');
     this.flipControl.title = game.i18n.localize("vtta-tokenizer.label.FlipLayer");
-    this.flipControl.classList.add('flip-control');
+    this.flipControl.classList.add('flip-control', 'popup-button');
     let flipButtonText = document.createElement('i');
     flipButtonText.classList.add('fas', 'fa-people-arrows');
     this.flipControl.appendChild(flipButtonText);
@@ -3813,7 +3821,7 @@ class Control {
 
     // resets the layer on the view
     this.resetControl = document.createElement('button');
-    this.resetControl.classList.add('reset-control');
+    this.resetControl.classList.add('reset-control', 'popup-button');
     this.resetControl.title = game.i18n.localize("vtta-tokenizer.label.ResetLayer");
     let resetButtonText = document.createElement('i');
     resetButtonText.classList.add('fas', 'fa-compress-arrows-alt');
@@ -3824,6 +3832,52 @@ class Control {
       event.preventDefault();
       this.view.dispatchEvent(new CustomEvent('reset', { detail: { layerId: this.layer.id } }));
     });
+
+    // Centres the layer
+    this.centreLayerControl = document.createElement('button');
+    this.centreLayerControl.title = game.i18n.localize("vtta-tokenizer.label.CentreLayer");
+    this.centreLayerControl.classList.add('centre-control', 'popup-button');
+    let centreLayerText = document.createElement('i');
+    centreLayerText.classList.add('fas', 'fa-crosshairs');
+    this.centreLayerControl.appendChild(centreLayerText);
+
+    // send an activate event when clicked
+    this.centreLayerControl.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.view.dispatchEvent(new CustomEvent('centre-layer', { detail: { layerId: this.layer.id } }));
+    });
+
+    // Layer movement selector
+    let layerMovementSelectorSpan = document.createElement('div');
+    layerMovementSelectorSpan.classList.add('popup');
+
+    // Layer movement controls
+    let layerMovementControl = document.createElement('button');
+    layerMovementControl.title = game.i18n.localize("vtta-tokenizer.label.LayerMovementControls");
+    layerMovementControl.classList.add('layer-movement-control');
+    let layerMovementText = document.createElement('i');
+    layerMovementText.classList.add('fas', 'fa-toolbox');
+    layerMovementControl.appendChild(layerMovementText);
+
+    layerMovementControl.addEventListener('click', (event) => {
+      event.preventDefault();
+      layerMovementSelectorSpan.classList.toggle("show");
+    });
+
+    let buttonDiv = document.createElement("div");
+    buttonDiv.classList.add("popup-selector");
+
+    buttonDiv.appendChild(this.flipControl);
+    buttonDiv.appendChild(this.centreLayerControl);
+    buttonDiv.appendChild(this.resetControl);
+
+    layerMovementSelectorSpan.appendChild(buttonDiv);
+
+    let wrapperDiv = document.createElement("div");
+    wrapperDiv.appendChild(layerMovementControl);
+    wrapperDiv.appendChild(layerMovementSelectorSpan);
+    
+    this.layerMovementControl = wrapperDiv;
   }
 
   configureDeletionSection() {
@@ -4215,7 +4269,7 @@ class Control {
       const layerNum = this.layer.view.layers.findIndex((l) => l.id === layer.id);
 
       const button = document.createElement('button');
-      button.classList.add('mask-layer-choice');
+      button.classList.add('popup-choice');
       if (active) button.classList.add('active');
       button.title = game.i18n.format("vtta-tokenizer.label.ToggleLayer", { layerNum });
       button.innerHTML = layer.getLayerLabel(active);
@@ -4784,6 +4838,10 @@ class View {
     control.view.addEventListener('magic-lasso', async (event) => {
       this.magicLasso(event.detail.layerId);
     });
+    control.view.addEventListener('centre-layer', (event) => {
+      this.centreLayer(event.detail.layerId);
+      this.controls.forEach((control) => control.refresh());
+    });
   }
 
   addLayer(layer, { masked = false, activate = false }) {
@@ -4923,6 +4981,14 @@ class View {
     if (layer) {
       const newLayer = layer.clone();
       this.addLayer(newLayer, { masked: newLayer.providesMask, activate: false });
+      this.redraw(true);
+    }
+  }
+
+  centreLayer(id) {
+    const layer = this.layers.find((layer) => layer.id === id);
+    if (layer) {
+      layer.centre();
       this.redraw(true);
     }
   }
@@ -5768,8 +5834,8 @@ class Tokenizer extends FormApplication {
     const options = super.defaultOptions;
     options.template = "modules/vtta-tokenizer/templates/tokenizer.hbs";
     options.id = "tokenizer-control";
-    options.width = "auto";
-    options.height = "auto";
+    options.width = "auto"; // "1019";
+    options.height = "auto"; // "813";
     options.classes = ["tokenizer"];
     return options;
   }
@@ -6082,6 +6148,9 @@ class Tokenizer extends FormApplication {
       if (game.settings.get(constants.MODULE_ID, "default-color-layer")) {
         this.Token.addColorLayer({ color: this.defaultColor });
       }
+      if (game.settings.get(constants.MODULE_ID, "enable-default-texture-layer")) {
+        await this._addTokenTexture();
+      }
       // if we add a frame by default offset the token image
       const options = this.addFrame
         ? this.tokenOffset
@@ -6171,6 +6240,24 @@ class Tokenizer extends FormApplication {
         this.Token.addImageLayer(img, { masked: true, onTop: true, tintColor, tintLayer: tintFrame && !fileName });
       } catch (error) {
         const errorMessage = game.i18n.format("vtta-tokenizer.notification.failedLoadFrame", { frame: options.current });
+        ui.notifications.error(errorMessage);
+      }
+    }
+  }
+
+  async _addTokenTexture(fileName, fullPath = false) {
+    // load the default frame, if there is one set
+    const tintLayerColour = game.settings.get(constants.MODULE_ID, "default-texture-layer-tint");
+    const tintLayerPath = game.settings.get(constants.MODULE_ID, "default-texture-layer");
+    const tintColor = tintLayerColour.trim() !== "" ? tintLayerColour : undefined;
+
+    if (tintLayerPath && tintLayerPath.trim() !== "") {
+      const options = libs_DirectoryPicker.parse(fullPath ? fileName : tintLayerPath.replace(/^\/|\/$/g, ""));
+      try {
+        const img = await Utils.download(options.current);
+        this.Token.addImageLayer(img, { masked: true, onTop: true, tintColor, tintLayer: tintLayerPath && !fileName });
+      } catch (error) {
+        const errorMessage = game.i18n.format("vtta-tokenizer.notification.failedLoadTexture", { texture: options.current });
         ui.notifications.error(errorMessage);
       }
     }
@@ -6763,6 +6850,32 @@ function registerSettings() {
     config: true,
     type: Boolean,
     default: true,
+  });
+
+  game.settings.register(constants.MODULE_ID, "enable-default-texture-layer", {
+    name: `${constants.MODULE_ID}.enable-default-texture-layer.name`,
+    hint: `${constants.MODULE_ID}.enable-default-texture-layer.hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(constants.MODULE_ID, "default-texture-layer", {
+    name: `${constants.MODULE_ID}.default-texture-layer.name`,
+    scope: "world",
+    config: true,
+    type: libs_ImagePicker.Img,
+    default: `[data] ${constants.PATH}img/grey-texture.webp`,
+  });
+
+  game.settings.register(constants.MODULE_ID, "default-texture-layer-tint", {
+    name: `${constants.MODULE_ID}.default-texture-layer-tint.name`,
+    hint: `${constants.MODULE_ID}.default-texture-layer-tint.hint`,
+    scope: "player",
+    config: true,
+    type: String,
+    default: "",
   });
 
   game.settings.register(constants.MODULE_ID, "default-token-offset", {

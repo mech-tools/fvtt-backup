@@ -4,7 +4,8 @@
   "id": "settings-extender",
   "authors": [
     {
-      "name": "azzuritetv on Discord"
+      "name": "azzuritetv on Discord",
+      "flags": {}
     }
   ],
   "title": "Settings Extender",

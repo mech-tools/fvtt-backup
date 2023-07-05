@@ -4,7 +4,8 @@
   "id": "cursor-hider",
   "authors": [
     {
-      "name": "AzzuriteTV on Discord"
+      "name": "AzzuriteTV on Discord",
+      "flags": {}
     }
   ],
   "title": "Cursor Hider",
@@ -19,26 +20,33 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "languages/en.json"
+      "path": "languages/en.json",
+      "flags": {}
     },
     {
       "lang": "es",
       "name": "Spanish",
-      "path": "languages/es.json"
+      "path": "languages/es.json",
+      "flags": {}
     },
     {
       "lang": "pt-BR",
       "name": "Português (Brasil)",
-      "path": "languages/pt-BR.json"
+      "path": "languages/pt-BR.json",
+      "flags": {}
     }
   ],
   "relationships": {
     "requires": [
       {
-        "id": "settings-extender"
+        "id": "settings-extender",
+        "type": "module",
+        "compatibility": {}
       },
       {
-        "id": "lib-wrapper"
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
       }
     ]
   },

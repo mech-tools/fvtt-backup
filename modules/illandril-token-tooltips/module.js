@@ -1,4 +1,4 @@
-const moduleMetadata = {"id":"illandril-token-tooltips","version":"3.2.2","title":"Illandril's Token Tooltips","bugs":"https://github.com/illandril/FoundryVTT-token-tooltips/issues"};
+const moduleMetadata = {"id":"illandril-token-tooltips","version":"3.2.3","title":"Illandril's Token Tooltips","bugs":"https://github.com/illandril/FoundryVTT-token-tooltips/issues"};
 
 const optionalIcon=(a,b)=>a?icon(a,b):null;const icon=(a,b)=>{if(!a)throw new Error("icon was not provided an iconName");const c=document.createElement("i");return c.classList.add(b?"fat":"fas"),c.classList.add("fa-"+a),c};
 
@@ -90,7 +90,7 @@ const isLiteNPC=a=>isLiteNPC$1(a)||isLiteNPC$2(a);
 
 const attribute$2=a=>new AttributeLookup(()=>null,()=>{switch(game.system.id){case systemID$1:return game.i18n.localize(`D35E.AbilityShort${capitalize(a)}`);case systemID:return game.i18n.localize(`PF1.AbilityShort${capitalize(a)}`);default:return a;}},b=>{if(isLiteNPC(b))return null;const c=foundry.utils.getProperty(b.system,`abilities.${a}`);if(c){const a=nanToZero(c.total),b=nanToZero(c.mod);return {value:`${a} (${0<=b?"+":""}${b})`}}return null});var getD35eAndPF1Attributes = (()=>["str","dex","con","int","wis","cha"].map(a=>attribute$2(a)));
 
-const attribute$1=(a,b)=>new AttributeLookup(()=>null,()=>b.toUpperCase(),b=>{const c=foundry.utils.getProperty(b.system,`abilities.${a}`);if(c){const a=nanToZero(c.value),b=nanToZero(c.mod),d=nanToZero(c.save);return {value:`${a} (${0<=b?"+":""}${b}, ${0<=d?"+":""}${d})`}}return null});var getDND5eAttributes = (()=>Object.entries(dnd5e.config.abilityAbbreviations).map(a=>{let[b,c]=a;return attribute$1(b,c)}));
+const attribute$1=(a,b)=>new AttributeLookup(()=>null,()=>b.toUpperCase(),b=>{const c=foundry.utils.getProperty(b.system,`abilities.${a}`);if(c){const a=nanToZero(c.value),b=nanToZero(c.mod),d=nanToZero(c.save);return {value:`${a} (${0<=b?"+":""}${b}, ${0<=d?"+":""}${d})`}}return null});var getDND5eAttributes = (()=>Object.entries(dnd5e.config.abilities).map(a=>{let[b,c]=a;return attribute$1(b,c.abbreviation)}));
 
 var dnd5eSystemID = "dnd5e";
 
