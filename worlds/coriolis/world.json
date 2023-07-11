@@ -2,7 +2,7 @@
   "title": "Coriolis",
   "id": "coriolis",
   "system": "yzecoriolis",
-  "coreVersion": "10.291",
+  "coreVersion": "10.303",
   "esmodules": [
     "scripts.js"
   ],
@@ -11,7 +11,7 @@
   ],
   "compatibility": {
     "minimum": "10",
-    "verified": "10"
+    "verified": "10.303"
   },
   "systemVersion": "3.4.0",
   "resetKeys": false,

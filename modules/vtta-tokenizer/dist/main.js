@@ -3392,14 +3392,6 @@ class Layer {
     // this.redraw();
   }
 
-  /**
-   * Scales the source on the view canvas according to a given factor
-   * @param {Number} factor
-   */
-  setScale(factor) {
-    this.scale = factor;
-  }
-
   rotate(degree) {
     this.rotation += degree * 2;
   }
@@ -3408,6 +3400,18 @@ class Layer {
     this.mirror *= -1;
     this.flipped = !this.flipped;
     this.redraw();
+  }
+
+  scaleByPercent(percentage) {
+    const newWidth = this.original.width * (percentage / 100);
+    const newHeight = this.original.width * (percentage / 100);
+
+    const xOffset = (this.original.width - newWidth) / 2;
+    const yOffset = (this.original.width - newHeight) / 2;
+
+    this.scale = (percentage / 100);
+    this.position.x = xOffset;
+    this.position.y = yOffset;
   }
 
   applyTransparentPixels(context) {
@@ -3848,8 +3852,8 @@ class Control {
     });
 
     // Layer movement selector
-    let layerMovementSelectorSpan = document.createElement('div');
-    layerMovementSelectorSpan.classList.add('popup');
+    let layerMovementSelectorDiv = document.createElement('div');
+    layerMovementSelectorDiv.classList.add('popup');
 
     // Layer movement controls
     let layerMovementControl = document.createElement('button');
@@ -3861,7 +3865,7 @@ class Control {
 
     layerMovementControl.addEventListener('click', (event) => {
       event.preventDefault();
-      layerMovementSelectorSpan.classList.toggle("show");
+      layerMovementSelectorDiv.classList.toggle("show");
     });
 
     let buttonDiv = document.createElement("div");
@@ -3871,11 +3875,42 @@ class Control {
     buttonDiv.appendChild(this.centreLayerControl);
     buttonDiv.appendChild(this.resetControl);
 
-    layerMovementSelectorSpan.appendChild(buttonDiv);
+    layerMovementSelectorDiv.appendChild(buttonDiv);
+    layerMovementSelectorDiv.appendChild(document.createElement('hr'));
+
+    let scaleDiv = document.createElement('div');
+    scaleDiv.classList.add("popup-selector");
+
+    this.scaleInput = document.createElement('input');
+    this.scaleInput.type = "text";
+    this.scaleInput.value = `${this.layer.scale * 100}`;
+    this.scaleInput.classList.add('scale-input', 'popup-input');
+
+    this.scaleControl = document.createElement('button');
+    this.scaleControl.title = game.i18n.localize("vtta-tokenizer.label.ScaleButton");
+    this.scaleControl.classList.add('scale-control', 'popup-button');
+    let scaleText = document.createElement('i');
+    scaleText.classList.add('fas', 'fa-compress');
+    this.scaleControl.appendChild(scaleText);
+
+    this.scaleControl.addEventListener('click', (event) => {
+      event.preventDefault();
+      const percentage = parseFloat(this.scaleInput.value);
+      if (isNaN(percentage)) {
+        this.scaleInput.value = `${this.layer.scale * 100}`;
+      } else {
+        this.view.dispatchEvent(new CustomEvent('scale-layer', { detail: { layerId: this.layer.id, percent: percentage } }));
+      }
+    });
+
+    scaleDiv.appendChild(this.scaleInput);
+    scaleDiv.appendChild(this.scaleControl);
+
+    layerMovementSelectorDiv.appendChild(scaleDiv);
 
     let wrapperDiv = document.createElement("div");
     wrapperDiv.appendChild(layerMovementControl);
-    wrapperDiv.appendChild(layerMovementSelectorSpan);
+    wrapperDiv.appendChild(layerMovementSelectorDiv);
     
     this.layerMovementControl = wrapperDiv;
   }
@@ -4684,7 +4719,7 @@ class View {
         const dx = (eventLocation.x - this.activeLayer.position.x) * (factor - 1),
           dy = (eventLocation.y - this.activeLayer.position.y) * (factor - 1);
 
-        this.activeLayer.setScale(this.activeLayer.scale * factor);
+        this.activeLayer.scale *= factor;
         this.activeLayer.translate(dx, dy);
         this.activeLayer.redraw();
         this.redraw(true);
@@ -4842,6 +4877,10 @@ class View {
       this.centreLayer(event.detail.layerId);
       this.controls.forEach((control) => control.refresh());
     });
+    control.view.addEventListener('scale-layer', (event) => {
+      this.scaleLayer(event.detail.layerId, event.detail.percent);
+      this.controls.forEach((control) => control.refresh());
+    });
   }
 
   addLayer(layer, { masked = false, activate = false }) {
@@ -4906,14 +4945,14 @@ class View {
       layer.redraw();
     }
 
-    if (scale) layer.setScale(scale);
+    if (scale) layer.scale = scale;
     if (position.x && position.y) {
-      const upScaledX = layer.canvas.width * (position.x / 400);
-      const upScaledY = layer.canvas.height * (position.y / 400);
+      const upScaledX = layer.canvas.width * (position.x / this.width);
+      const upScaledY = layer.canvas.height * (position.y / this.height);
       layer.translate(upScaledX, upScaledY);
       if (!scale) {
         const newScaleFactor = (layer.canvas.width - (Math.abs(upScaledX) * 2)) / layer.canvas.width;
-        layer.setScale(layer.scale * newScaleFactor);
+        layer.scale *= newScaleFactor;
       }
     }
 
@@ -4992,6 +5031,15 @@ class View {
       this.redraw(true);
     }
   }
+
+  scaleLayer(id, percent) {
+    const layer = this.layers.find((layer) => layer.id === id);
+    if (layer) {
+      layer.scaleByPercent(percent);
+      this.redraw(true);
+    }
+  }
+
 
   /**
    * Ends a color picking state

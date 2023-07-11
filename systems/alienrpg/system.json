@@ -18,10 +18,10 @@
       }
     ]
   },
-  "version": "3.0.5",
+  "version": "3.1.0",
   "compatibility": {
     "minimum": "10",
-    "verified": "10",
+    "verified": "11",
     "maximum": "11"
   },
   "esmodules": [
@@ -93,7 +93,7 @@
   ],
   "socket": true,
   "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
-  "download": "https://github.com/pwatson100/alienrpg/releases/download/3.0.5/master.zip",
+  "download": "https://github.com/pwatson100/alienrpg/releases/download/3.1.0/master.zip",
   "initiative": "1d10",
   "gridDistance": 5,
   "gridUnits": "m",
