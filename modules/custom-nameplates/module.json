@@ -12,9 +12,8 @@
   ],
   "version": "2.1.2",
   "compatibility": {
-    "minimum": "10",
-    "verified": "10.291",
-    "maximum": "10"
+    "minimum": "9",
+    "verified": "10.291"
   },
   "esmodules": [
     "custom-nameplates.js"

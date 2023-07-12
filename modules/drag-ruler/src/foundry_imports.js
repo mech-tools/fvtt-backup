@@ -133,8 +133,8 @@ export function onMouseMove(event) {
 
 	// Extract event data
 	const destination = {
-		x: event.data.destination.x + this.rulerOffset.x,
-		y: event.data.destination.y + this.rulerOffset.y,
+		x: event.interactionData.destination.x + this.rulerOffset.x,
+		y: event.interactionData.destination.y + this.rulerOffset.y,
 	};
 
 	// Hide any existing Token HUD
@@ -148,7 +148,7 @@ export function onMouseMove(event) {
 function scheduleMeasurement(destination, event) {
 	const measurementInterval = 50;
 	const mt = event._measureTime || 0;
-	const originalEvent = event.data.originalEvent;
+	const originalEvent = event.interactionData.originalEvent;
 	if (Date.now() - mt > measurementInterval) {
 		this.measure(destination, {snap: !disableSnap});
 		event._measureTime = Date.now();
@@ -185,7 +185,7 @@ export function highlightMeasurementNative(
 	tokenShape = [{x: 0, y: 0}],
 	alpha = 1,
 ) {
-	const spacer = canvas.scene.gridType === CONST.GRID_TYPES.SQUARE ? 1.41 : 1;
+	const spacer = canvas.scene.grid.type === CONST.GRID_TYPES.SQUARE ? 1.41 : 1;
 	const nMax = Math.max(
 		Math.floor(ray.distance / (spacer * Math.min(canvas.grid.w, canvas.grid.h))),
 		1,

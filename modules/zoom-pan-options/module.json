@@ -1,64 +1,62 @@
 {
-  "id": "zoom-pan-options",
-  "title": "Zoom/Pan Options",
-  "description": "Adds cursor-based zoom, touchpad/scrollwheel zoom/pan support, and other options.",
-  "version": "1.9.0",
-  "compatibility": {
-    "minimum": "0.6",
-    "verified": "10.291"
-  },
-  "esmodules": [
-    "scripts/zoom-pan-options.js"
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
-    }
-  ],
-  "url": "https://github.com/shemetz/ZoomPanOptions",
-  "manifest": "https://github.com/shemetz/ZoomPanOptions/releases/latest/download/module.json",
-  "download": "https://github.com/shemetz/ZoomPanOptions/releases/download/1.9.0/module.zip",
-  "readme": "https://github.com/shemetz/ZoomPanOptions/blob/master/Readme.md",
-  "changelog": "https://github.com/shemetz/ZoomPanOptions/blob/master/Changelog.md",
-  "license": "https://github.com/shemetz/ZoomPanOptions/blob/master/License.txt",
-  "bugs": "https://github.com/shemetz/ZoomPanOptions/issues",
-  "relationships": {
-    "requires": [
-      {
-        "id": "lib-wrapper",
-        "type": "module",
-        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json",
-        "compatibility": {
-          "minimum": "1.12.7.0"
-        }
-      }
-    ]
-  },
-  "authors": [
-    {
-      "name": "shemetz",
-      "discord": "shemetz#0226",
-      "email": "itamarcu+foundry@gmail.com",
-      "flags": {}
-    }
-  ],
-  "media": [
-    {
-      "type": "icon",
-      "url": "https://raw.githubusercontent.com/shemetz/ZoomPanOptions/master/metadata/icon.png",
-      "caption": "Zoom/Pan Options",
-      "loop": false,
-      "flags": {}
+    "id": "zoom-pan-options",
+    "title": "Zoom/Pan Options",
+    "description": "Adds cursor-based zoom, touchpad/scrollwheel zoom/pan support, and other options.",
+    "version": "1.10.0",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "11"
     },
-    {
-      "type": "cover",
-      "url": "https://raw.githubusercontent.com/shemetz/ZoomPanOptions/master/metadata/cover.png",
-      "caption": "Zoom/Pan Options",
-      "loop": false,
-      "flags": {}
-    }
-  ]
+    "esmodules": [
+        "scripts/zoom-pan-options.js"
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json",
+            "flags": {}
+        }
+    ],
+    "url": "https://github.com/shemetz/ZoomPanOptions",
+    "manifest": "https://github.com/shemetz/ZoomPanOptions/releases/latest/download/module.json",
+    "download": "https://github.com/shemetz/ZoomPanOptions/releases/download/1.10.0/module.zip",
+    "readme": "https://github.com/shemetz/ZoomPanOptions/blob/master/Readme.md",
+    "changelog": "https://github.com/shemetz/ZoomPanOptions/blob/master/Changelog.md",
+    "license": "https://github.com/shemetz/ZoomPanOptions/blob/master/License.txt",
+    "bugs": "https://github.com/shemetz/ZoomPanOptions/issues",
+    "relationships": {
+        "requires": [
+            {
+                "id": "lib-wrapper",
+                "type": "module",
+                "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json",
+                "compatibility": {
+                    "minimum": "1.12.7.0",
+                    "verified": "1.12.12.1"
+                }
+            }
+        ]
+    },
+    "authors": [
+        {
+            "name": "shemetz",
+            "discord": "shemetz",
+            "email": "itamarcu+foundry@gmail.com",
+            "reddit": "u/Shemetz"
+        }
+    ],
+    "manifestPlusVersion": "1.2.0",
+    "media": [
+        {
+            "type": "icon",
+            "url": "https://raw.githubusercontent.com/shemetz/ZoomPanOptions/master/metadata/icon.png",
+            "caption": "Zoom/Pan Options"
+        },
+        {
+            "type": "cover",
+            "url": "https://raw.githubusercontent.com/shemetz/ZoomPanOptions/master/metadata/cover.png",
+            "caption": "Zoom/Pan Options"
+        }
+    ]
 }

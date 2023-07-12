@@ -344,13 +344,16 @@ class ActiveEffectCounter extends EffectCounter {
             if (!effect) {
                 let effectData = CONFIG.statusEffects.find(effect => effect.icon === this.path);
 
-                const createData = duplicate(effectData);
-                createData.label = game.i18n.localize(effectData.label);
-                foundry.utils.setProperty(createData, "flags.core.statusId", effectData.id);
+                const createData = foundry.utils.deepClone(effectData);
+                createData.statuses = [effectData.id];
                 delete createData.id;
-                createData._id = foundry.utils.randomID();
 
                 const cls = getDocumentClass("ActiveEffect");
+                cls.migrateDataSafe(createData);
+                cls.cleanData(createData);
+                createData.name = game.i18n.localize(effectData.label);
+                createData._id = foundry.utils.randomID();
+
                 effect = new cls(createData, { parent: actor });
                 effect._temporary = true;
                 temporaryEffects[actor.uuid + '.' + path] = effect;

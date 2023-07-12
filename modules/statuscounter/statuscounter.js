@@ -71,18 +71,14 @@ Hooks.on("preUpdateToken", function(token, changes) {
 
 /** Hook to update status counters without redrawing all effects. */
 Hooks.on("updateToken", function(token, changes) {
-	if ("effects" in changes || hasProperty(changes, "actorData.effects")) {
+    if ("effects" in changes || hasProperty(changes, "delta.effects")) {
         let tokenId = foundry.utils.getProperty(canvas, "tokens.hud.object._id");
-		if (tokenId === token.id) {
-			canvas.tokens.hud.refreshStatusIcons();
-		}
+        if (tokenId === token.id) canvas.tokens.hud.refreshStatusIcons();
 		return;
 	}
 
 	if (hasProperty(changes, "flags.statuscounter.effectCounters")) {
 		redrawEffectCounters(token.object, EffectCounter.getCounters(token));
-		if (token.inCombat) {
-			canvas.addPendingOperation("CombatTracker.render", ui.combat.render, ui.combat);
-		}
+        if (token.inCombat) ui.combat.render();
 	}
 });

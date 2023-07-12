@@ -1,12 +1,16 @@
 {
   "title": "Monk's Wall Enhancement",
   "description": "Enhancements to the Wall Tool.  Drag points together, freehand draw a wall, plus more.",
-  "version": "10.3",
+  "version": "11.01",
   "authors": [
     {
       "name": "IronMonk",
       "discord": "ironmonk88#4075",
-      "flags": {}
+	  "flags": {
+		  "github": "ironmonk88",
+		  "patreon": "ironmonk",
+		  "ko-fi": "ironmonk88"
+	  }
     }
   ],
   "socket": true,
@@ -14,20 +18,17 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "ja",
       "name": "日本語",
-      "path": "lang/ja.json",
-      "flags": {}
+      "path": "lang/ja.json"
     },
     {
       "lang": "es",
       "name": "Español",
-      "path": "lang/es.json",
-      "flags": {}
+      "path": "lang/es.json"
     }
   ],
   "esmodules": [
@@ -38,12 +39,16 @@
     "css/monks-wall-enhancement.css"
   ],
   "url": "https://github.com/ironmonk88/monks-wall-enhancement",
-  "download": "https://github.com/ironmonk88/monks-wall-enhancement/archive/10.3.zip",
+  "download": "https://github.com/ironmonk88/monks-wall-enhancement/archive/11.01.zip",
   "manifest": "https://github.com/ironmonk88/monks-wall-enhancement/releases/latest/download/module.json",
   "bugs": "https://github.com/ironmonk88/monks-wall-enhancement/issues",
+  "allowBugReporter": true,
   "id": "monks-wall-enhancement",
   "compatibility": {
-    "minimum": "10",
-    "verified": "10"
-  }
+    "minimum": "11",
+    "verified": "11"
+  },
+  "name": "monks-wall-enhancement",
+  "minimumCoreVersion": "11",
+  "compatibleCoreVersion": "11"
 }

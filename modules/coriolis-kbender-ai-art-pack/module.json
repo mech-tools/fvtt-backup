@@ -14,7 +14,7 @@
     "scripts/main.js"
   ],
   "compatibility": {
-    "minimum": "10",
+    "minimum": "6",
     "verified": "10"
   },
   "url": "https://github.com/kbender84/coriolis-kbender-ai-art-pack",

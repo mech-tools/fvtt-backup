@@ -45,7 +45,7 @@
   "changelog": "https://github.com/ernieayala/ernies-modern-layout/releases",
   "id": "ernies-modern-layout",
   "compatibility": {
-    "minimum": "10.286",
+    "minimum": "9",
     "verified": "10.291"
   }
 }

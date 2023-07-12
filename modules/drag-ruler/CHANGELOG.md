@@ -1,3 +1,28 @@
+## 1.13.8
+### Bugfixes
+- `getMovedDistanceFromToken` no longer returns incorrect values on gridless maps
+
+
+## 1.13.7
+### Compatibility
+- Drag Ruler's generic speed provider is now aware of good defaults for the Crucible game system
+
+
+## 1.13.6
+### Bugfixes
+- Fixed a bug that caused no measurements to be shown next to the ruler
+- Fixed a bug where diagonal paths would sometimes highlight squares that don't blong to the path on square maps
+
+
+## 1.13.5
+### Compatibility
+- Drag Ruler is now compatible with Foundry VTT v11 (thanks to pkonshik for doing much of the porting work!)
+- Drag Ruler's generic speed provider is now aware of good defaults for Warhammer Fantasy Roleplay 4th Edition
+
+### Translations
+- Updated Portugese (Brazil) translation (thanks eunaumtenhoid!)
+
+
 ## 1.13.4
 ### Translations
 - New translation: Portuguese (Brazil) (thanks eunaumtenhoid!)

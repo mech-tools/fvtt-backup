@@ -1,47 +1,43 @@
 {
-  "name": "alien",
   "title": "Alien",
-  "description": "",
-  "authors": [],
-  "flags": {},
   "version": "1.0.0",
-  "minimumCoreVersion": "0.0.0",
-  "compatibleCoreVersion": "1.0.0",
-  "scripts": [],
-  "esmodules": [],
-  "styles": [],
-  "languages": [],
   "packs": [
     {
       "label": "Personalisés",
-      "entity": "Macro",
       "name": "personalises",
-      "path": "packs/personalises.db",
+      "path": "packs/personalises",
       "system": "alienrpg",
-      "package": "world",
-      "absPath": "/home/ubuntu/foundry/sr6/foundrydata/Data/worlds/alien/packs/personalises.db",
       "type": "Macro",
-      "private": false
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
     },
     {
       "label": "Stunts-saved",
-      "entity": "Item",
       "name": "stunts-saved",
-      "path": "packs/stunts-saved.db",
+      "path": "packs/stunts-saved",
       "system": "alienrpg",
-      "package": "world",
-      "absPath": "/home/ubuntu/foundry/sr6/foundrydata/Data/worlds/alien/packs/stunts-saved.db",
       "type": "Item",
-      "private": false
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
     }
   ],
   "system": "alienrpg",
-  "dependencies": [],
-  "socket": false,
-  "protected": false,
-  "coreVersion": "9.249",
+  "coreVersion": "11.305",
   "nextSession": "2021-01-16T20:00:00.000Z",
   "resetKeys": false,
   "safeMode": false,
-  "systemVersion": "2.0.9"
+  "systemVersion": "3.1.0",
+  "id": "alien",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11.305"
+  },
+  "lastPlayed": "Tue Jul 11 2023 17:44:36 GMT+0200 (Central European Summer Time)",
+  "playtime": 23
 }
