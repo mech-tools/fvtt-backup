@@ -19,9 +19,6 @@ Hooks.once("ready", () => {
     if (game.users.current.isGM) {
         if (game.paused) game.togglePause(false, true);
     }
-        
-    // Always show map notes
-    game.settings.set("core", NotesLayer.TOGGLE_SETTING, true);
 });
 
 // Share actor button

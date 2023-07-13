@@ -94,7 +94,7 @@
 	"FSC.DateFormat.Second.NumberPaddedExample": "00 01 ... 58 59",
 	"FSC.DateFormat.TextDescription": "对于采用格式但无需处理的任何文本，使用方括号框起。",
 	"FSC.DateFormat.TextExample": "[不处理此处文本]",
-	"FSC.DateFormat.Documentation": "有关配置日期格式的详细信息，请查看<a target='_blank' href='https://github.com/vigoren/foundryvtt-simple-calendar/blob/main/docs/Configuration.md#datetime-formats'>文档（英文）</a>或展开上方表单。",
+	"FSC.DateFormat.Documentation": "有关配置日期格式的详细信息，请查看<a target='_blank' href='https://simplecalendar.info/docs/calendar-configuration/display-options#datetime-formatting'>文档（英文）</a>或展开上方表单。",
 	"FSC.Description": "描述",
 	"FSC.ExampleResult": "结果样例",
 	"FSC.Token": "文本",
@@ -415,5 +415,8 @@
 	"FSC.Configuration.Client.Description": "这些设定仅影响该浏览器的Simple Calendar，不会影响到其他玩家。这些设定也能在模组设置中找到。",
 	"FSC.Configuration.Client.OpenOnLoad.Title": "载入时打开",
 	"FSC.Configuration.Client.OpenOnLoad.Description": "Foundry VTT载入时会打开Simple Calendar。",
-	"FSC.Configuration.Client.OpenCompact.Title": "以紧凑模式打开"
+	"FSC.Configuration.Client.OpenCompact.Title": "以紧凑模式打开",
+	"FSC.Configuration.Client.RememberPosition.Description": "Simple Calendar 将记忆上次关闭时所处的位置，并在该位置打开。",
+	"FSC.Configuration.Client.RememberPosition.Title": "记忆位置",
+	"FSC.Configuration.Client.RememberCompactPosition.Description": "Simple Calendar 将会记忆上次在紧凑模式下关闭的位置。再次以紧凑模式打开时，Simple Calendar 会在该位置打开。该选项与完整模式的位置互相独立。"
 }

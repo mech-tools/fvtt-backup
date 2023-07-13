@@ -170,7 +170,7 @@ const documentIcons = {
 function extractEmbeddedIndex(item, pack) {
     if (!("pages" in item))
         return;
-    if (pack) {
+    if (pack && item.pages.name) {
         return item.pages.name.map((name, i) => new EmbeddedCompendiumSearchItem(pack, {
             _id: item.pages._id[i],
             parentName: item.name,
@@ -213,7 +213,8 @@ function packEnabled(pack) {
         return false;
     }
     // Not hidden?
-    return !(pack.private && !game.user?.isGM);
+    //@ts-expect-error league types haven't caught up, I know
+    return pack.visible || game.user?.isGM;
 }
 function getDirectoryName(type) {
     const documentLabel = DocumentMeta[type].labelPlural;
@@ -986,8 +987,7 @@ class ProseMirrorContext extends SearchContext {
     }
     onSubmit(item) {
         const tr = this.state.tr;
-        let text = typeof item == "string" ? item : item.journalLink;
-	text = this.startText ? text.replace(/\{([^}]*)\}[^{]*$/, `{${this.startText}}`) : text;
+        const text = typeof item == "string" ? item : item.journalLink;
         const textNode = this.state.schema.text(text);
         tr.replaceSelectionWith(textNode);
         this.dispatch(tr);
@@ -3008,8 +3008,6 @@ class SearchApp extends Application {
         if (!this.attachedContext) {
             return null;
         }
-        //@ts-expect-error keyboard is never null really
-        game.keyboard.downKeys = new Set();
         return super.render(force, options);
     }
     showHint(notice) {

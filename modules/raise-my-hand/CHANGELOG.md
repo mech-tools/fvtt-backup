@@ -1,3 +1,12 @@
+1.4.5
+- v11 only
+
+1.4.4
+- small fix
+
+1.4.3
+- v11
+
 1.4.2
 - dialog is easier to close
 

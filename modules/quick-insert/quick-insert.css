@@ -699,6 +699,10 @@
   flex-shrink: 1;
 }
 
+.sfrpg.sheet.actor.character .spellbook .item-controls {
+    flex-basis: 66px;
+}
+
 .demonlord .features .header .edit {
   width: 36px;
 }
