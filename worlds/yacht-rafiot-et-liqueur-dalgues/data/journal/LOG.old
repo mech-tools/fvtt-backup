@@ -1,8 +1,15 @@
-2023/07/14-12:48:16.564740 7f4a6bfff700 Recovering log #31
-2023/07/14-12:48:16.567527 7f4a6bfff700 Delete type=0 #31
-2023/07/14-12:48:16.567556 7f4a6bfff700 Delete type=3 #29
-2023/07/14-12:48:24.056021 7f4a6b7fe700 Level-0 table #37: started
-2023/07/14-12:48:24.056034 7f4a6b7fe700 Level-0 table #37: 0 bytes OK
-2023/07/14-12:48:24.056924 7f4a6b7fe700 Delete type=0 #35
-2023/07/14-12:48:24.058025 7f4a6b7fe700 Manual compaction at level-0 from '!journal!KByFjaSRcTjFKXMR' @ 72057594037927935 : 1 .. '!journal.pages!sexUaJ0YCyYR6YXE.yFnQYsTEcbDskf6L' @ 0 : 0; will stop at (end)
-2023/07/14-12:48:24.059191 7f4a6b7fe700 Manual compaction at level-1 from '!journal!KByFjaSRcTjFKXMR' @ 72057594037927935 : 1 .. '!journal.pages!sexUaJ0YCyYR6YXE.yFnQYsTEcbDskf6L' @ 0 : 0; will stop at (end)
+2023/07/15-12:50:36.898365 7f4a79ffb700 Recovering log #44
+2023/07/15-12:50:36.900972 7f4a79ffb700 Delete type=0 #44
+2023/07/15-12:50:36.901002 7f4a79ffb700 Delete type=3 #42
+2023/07/15-20:22:02.719793 7f4a6b7fe700 Level-0 table #49: started
+2023/07/15-20:22:02.721661 7f4a6b7fe700 Level-0 table #49: 4442 bytes OK
+2023/07/15-20:22:02.722548 7f4a6b7fe700 Delete type=0 #47
+2023/07/15-20:22:02.723764 7f4a6b7fe700 Manual compaction at level-0 from '!journal!KByFjaSRcTjFKXMR' @ 72057594037927935 : 1 .. '!journal.pages!sexUaJ0YCyYR6YXE.yFnQYsTEcbDskf6L' @ 0 : 0; will stop at (end)
+2023/07/15-20:22:02.724982 7f4a6b7fe700 Manual compaction at level-1 from '!journal!KByFjaSRcTjFKXMR' @ 72057594037927935 : 1 .. '!journal.pages!sexUaJ0YCyYR6YXE.yFnQYsTEcbDskf6L' @ 0 : 0; will stop at '!journal.pages!bz1YB8UwXkjy8UQe.kY8ieP1zkEfIoYHC' @ 112 : 1
+2023/07/15-20:22:02.724990 7f4a6b7fe700 Compacting 1@1 + 1@2 files
+2023/07/15-20:22:02.727389 7f4a6b7fe700 Generated table #50@1: 19 keys, 88370 bytes
+2023/07/15-20:22:02.727409 7f4a6b7fe700 Compacted 1@1 + 1@2 files => 88370 bytes
+2023/07/15-20:22:02.728053 7f4a6b7fe700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/07/15-20:22:02.728130 7f4a6b7fe700 Delete type=2 #33
+2023/07/15-20:22:02.728241 7f4a6b7fe700 Delete type=2 #49
+2023/07/15-20:22:02.730497 7f4a6b7fe700 Manual compaction at level-1 from '!journal.pages!bz1YB8UwXkjy8UQe.kY8ieP1zkEfIoYHC' @ 112 : 1 .. '!journal.pages!sexUaJ0YCyYR6YXE.yFnQYsTEcbDskf6L' @ 0 : 0; will stop at (end)
