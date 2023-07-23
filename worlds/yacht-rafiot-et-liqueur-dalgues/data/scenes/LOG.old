@@ -1,15 +1,8 @@
-2023/07/20-23:43:09.846390 7efd208e0700 Recovering log #71
-2023/07/20-23:43:09.850053 7efd208e0700 Delete type=0 #71
-2023/07/20-23:43:09.850101 7efd208e0700 Delete type=3 #69
-2023/07/21-17:46:09.392066 7efa82cce700 Level-0 table #76: started
-2023/07/21-17:46:09.394428 7efa82cce700 Level-0 table #76: 35150 bytes OK
-2023/07/21-17:46:09.395648 7efa82cce700 Delete type=0 #74
-2023/07/21-17:46:09.403766 7efa82cce700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
-2023/07/21-17:46:09.404921 7efa82cce700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.zFkuPR2AVg2pUgmv.1S5YkYedUIfvphqS' @ 143 : 1
-2023/07/21-17:46:09.404927 7efa82cce700 Compacting 1@1 + 1@2 files
-2023/07/21-17:46:09.406121 7efa82cce700 Generated table #77@1: 1 keys, 1341 bytes
-2023/07/21-17:46:09.406133 7efa82cce700 Compacted 1@1 + 1@2 files => 1341 bytes
-2023/07/21-17:46:09.409128 7efa82cce700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/07/21-17:46:09.409187 7efa82cce700 Delete type=2 #32
-2023/07/21-17:46:09.409483 7efa82cce700 Delete type=2 #76
-2023/07/21-17:46:09.412306 7efa82cce700 Manual compaction at level-1 from '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.zFkuPR2AVg2pUgmv.1S5YkYedUIfvphqS' @ 143 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
+2023/07/21-17:46:54.020314 7efd037fe700 Recovering log #75
+2023/07/21-17:46:54.023548 7efd037fe700 Delete type=3 #73
+2023/07/21-17:46:54.023579 7efd037fe700 Delete type=0 #75
+2023/07/22-14:26:18.525750 7efa82cce700 Level-0 table #81: started
+2023/07/22-14:26:18.525767 7efa82cce700 Level-0 table #81: 0 bytes OK
+2023/07/22-14:26:18.526695 7efa82cce700 Delete type=0 #79
+2023/07/22-14:26:18.530169 7efa82cce700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
+2023/07/22-14:26:18.531252 7efa82cce700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
