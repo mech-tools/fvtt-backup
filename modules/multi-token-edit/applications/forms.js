@@ -1,5 +1,5 @@
 import { Brush } from '../scripts/brush.js';
-import { injectVisibility } from '../scripts/fieldInjector.js';
+import { injectFlagTab, injectVisibility } from '../scripts/fieldInjector.js';
 import { IS_PRIVATE, showRandomizeDialog } from '../scripts/randomizer/randomizerForm.js';
 import { applyRandomization, selectRandomizerFields } from '../scripts/randomizer/randomizerUtils.js';
 import { applyDDTint, applyTMFXPreset, getDDTint } from '../scripts/tmfx.js';
@@ -45,9 +45,8 @@ export const WithMassEditForm = (cls) => {
       await super.activateListeners(html);
       injectVisibility(this);
 
-      if (this.options.globalDelete) {
+      if (SUPPORTED_PLACEABLES.includes(this.documentName) || SUPPORTED_COLLECTIONS.includes(this.documentName))
         this._injectGlobalDeleteButton(html);
-      }
 
       this.randomizeFields = {};
       this.addSubtractFields = {};
@@ -417,6 +416,9 @@ export const WithMassEditForm = (cls) => {
             $(this).wrap('<div class="form-group"></div>');
           });
       }
+
+      // Inject Flags tab
+      injectFlagTab(this);
     }
 
     getSelectedFields(formData) {
@@ -514,7 +516,7 @@ export const WithMassEditForm = (cls) => {
       const control = $(
         `<div class="me-global-delete"><a title="${game.i18n.localize(
           'multi-token-edit.form.global-delete-title'
-        )}"><i class="fas fa-trash-alt fa-2x"></i></a></div>`
+        )}"><i class="far fa-times-octagon fa-2x"></i></a></div>`
       );
       control.click((event) => {
         new Dialog({
@@ -760,7 +762,10 @@ export const WithMassConfig = (docName = 'NONE') => {
         class: 'mass-edit-apply',
         icon: 'far fa-money-check-edit',
         onclick: (ev) => {
-          let content = `<textarea class="json" style="width:100%; height: 300px;"></textarea>`;
+          let selFields = expandObject(this.getSelectedFields());
+          if (isEmpty(selFields)) selFields = '';
+          else selFields = JSON.stringify(selFields, null, 2);
+          let content = `<textarea class="json" style="width:100%; height: 300px;">${selFields}</textarea>`;
           new Dialog({
             title: `Apply JSON Data`,
             content: content,
@@ -774,7 +779,7 @@ export const WithMassConfig = (docName = 'NONE') => {
                   } catch (e) {}
 
                   if (!isEmpty(json)) {
-                    this._processPreset(json);
+                    this._processPreset(flattenObject(json));
                   }
                 },
               },
@@ -1036,9 +1041,7 @@ export function performMassSearch(
   }
   if (command === 'searchAndEdit') {
     setTimeout(() => {
-      showMassEdit(found, docName, {
-        globalDelete: scope === 'world' || SUPPORTED_COLLECTIONS.includes(docName),
-      });
+      showMassEdit(found, docName);
     }, 500);
   }
   return found;

@@ -16,7 +16,7 @@ import {
   performMassSearch,
   performMassUpdate,
 } from './applications/forms.js';
-import { MassEditGenericForm } from './applications/genericForm.js';
+import { MassEditGenericForm } from './applications/generic/genericForm.js';
 import {
   activeEffectPresetSelect,
   applyAddSubtract,
@@ -98,6 +98,15 @@ Hooks.once('init', () => {
     config: false,
     type: Object,
     default: {},
+  });
+
+  game.settings.register('multi-token-edit', 'enableFlagsTab', {
+    name: game.i18n.localize('multi-token-edit.settings.enableFlagsTab.name'),
+    hint: game.i18n.localize('multi-token-edit.settings.enableFlagsTab.hint'),
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
   });
 
   game.settings.register('multi-token-edit', 'enableHistory', {

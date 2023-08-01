@@ -23,7 +23,7 @@
   color: rgba(0, 0, 100, 0.8);
 }
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--data {
-  max-height: calc(var(--illandril-token-tooltips--tooltip-rows) * 1.75em);
+  max-height: calc(var(--illandril-token-tooltips--tooltip-rows) * 2.75em);
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
@@ -109,6 +109,15 @@
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--spellslot-level {
   font-size: 0.7em;
   color: white;
+}
+.illandril-token-tooltips--tooltip .illandril-token-tooltips--damage-type--icon-and-text > i {
+  display: inline;
+}
+.illandril-token-tooltips--tooltip .illandril-token-tooltips--damage-types--rotate-left::before {
+  transform: rotate(-90deg);
+  display: inline-block;
+  width: 1em;
+  text-align: center;
 }
 
 #illandril-token-tooltips--menu--customOptions #illandril-token-tooltips--menu--customOptions--helpToggle {

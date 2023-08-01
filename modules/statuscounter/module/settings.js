@@ -28,6 +28,15 @@ export const registerSettings = function() {
 		onChange: updateTokenHud
 	});
 
+    game.settings.register("statuscounter", "multiSelect", {
+        name: game.i18n.localize("statuscounter.multiSelect.name"),
+        hint: game.i18n.localize("statuscounter.multiSelect.hint"),
+        scope: "user",
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
 	game.settings.register("statuscounter", "displayOne", {
 		name: game.i18n.localize("statuscounter.displayOne.name"),
 		hint: game.i18n.localize("statuscounter.displayOne.hint"),

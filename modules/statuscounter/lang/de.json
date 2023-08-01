@@ -6,7 +6,16 @@
         },
         "rebindMouseButtons": {
             "name": "Maustasten neu zuweisen",
-            "hint": "Überschreibt die Standardzuweisungen der Maustasten, um mit Linksklick die Anzahl eines Status zu erhöhen und mit Rechtsklick zu reduzieren. Das Status-Overlay kann mit Umschalt + Linksklick gesetzt werden."
+            "hint": "Überschreibt die Standardzuweisungen der Maustasten, um mit Linksklick die Anzahl eines Status zu erhöhen und mit Rechtsklick zu reduzieren. Das Status-Overlay kann mit Umschalt + Linksklick gesetzt werden. Eine spezifische Anzahl kann mit Alt + Linksklick gesetzt werden."
+        },
+        "multiSelect": {
+            "name": "Alle ausgewählten Figuren bearbeiten",
+            "hint": "Ändert Effekte und Zähler für alle ausgewählten Figuren."
+        },
+        "stackInput": {
+            "title": "Neuen Wert eingeben",
+            "content": "Gib eine neue Anzahl für den Status <strong>{status}</strong> ein:",
+            "button": "Anzahl anwenden"
         },
         "displayOne": {
             "name": "'1' anzeigen",

@@ -13,11 +13,12 @@ import * as api from "./module/api.js";
 /** Hook to register settings. */
 Hooks.once('init', async function () {
     console.log('Bar Brawl | Initializing barbrawl');
-    window.BarBrawlApi = {
+    game.modules.get("barbrawl").api = window.BarBrawlApi = {
         getBars: api.getBars,
         getBar: api.getBar,
         isBarVisible: api.isBarVisible,
-        getActualBarValue: api.getActualBarValue
+        getActualBarValue: api.getActualBarValue,
+        getDefaultBars: getDefaultResources
     }
 
     registerSettings();
@@ -43,6 +44,13 @@ Hooks.on("preUpdateToken", function (doc, changes) {
     prepareUpdate(doc, changes);
 });
 
+/** Hook to make sure that bars are rendered when any changes are made. */
+Hooks.on("updateToken", function (doc, changes) {
+    if (foundry.utils.hasProperty(changes, "flags.barbrawl.resourceBars")) {
+        doc.object.renderFlags.set({ refreshBars: true });
+    }
+});
+
 /** Hook to apply changes to the prototype token. */
 Hooks.on("preUpdateActor", function (actor, newData) {
     if (!hasProperty(newData, "prototypeToken.flags.barbrawl.resourceBars")) return;
@@ -55,7 +63,10 @@ Hooks.on("preCreateToken", function (doc, data) {
     doc.updateSource({ displayBars: CONST.TOKEN_DISPLAY_MODES.ALWAYS });
 
     const actor = game.actors.get(data.actorId);
-    if (!actor || hasProperty(actor, "prototypeToken.flags.barbrawl.resourceBars")) return; // Don't override prototype.
+    if (!actor) return;
+
+    const prototypeData = foundry.utils.getProperty(actor, "prototypeToken.flags.barbrawl.resourceBars");
+    if (prototypeData && Object.keys(prototypeData).length) return; // Don't override prototype.
 
     const barConfig = getDefaultResources(actor.type);
     if (!barConfig) return;
@@ -63,7 +74,10 @@ Hooks.on("preCreateToken", function (doc, data) {
 });
 
 Hooks.on("preCreateActor", function (doc) {
-    if (!doc.prototypeToken || foundry.utils.hasProperty(doc.prototypeToken, "flags.barbrawl.resourceBars")) return;
+    if (!doc.prototypeToken) return;
+
+    const prototypeData = foundry.utils.getProperty(doc.prototypeToken, "flags.barbrawl.resourceBars");
+    if (prototypeData && Object.keys(prototypeData).length) return;
 
     const barConfig = getDefaultResources(doc.type);
     if (!barConfig) return;

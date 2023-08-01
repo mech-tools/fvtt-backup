@@ -6,7 +6,16 @@
         },
         "rebindMouseButtons": {
             "name": "マウスボタン設定",
-            "hint": "左クリックで状態異常カウンターを増やす、右クリックでカウンターを減らすマウスの挙動を上書きできます。状態異常のコマ全体表示はShift+クリックで設定できます。"
+            "hint": "左クリックで状態異常カウンターを増やす、右クリックでカウンターを減らすマウスの挙動を上書きできます。状態異常のコマ全体表示はShift+クリックで設定できます。A specific stack amount can be set with Alt + Left click。"
+        },
+        "multiSelect": {
+            "name": "Modify all selected tokens",
+            "hint": "Adjusts effects and counters for all selected tokens."
+        },
+        "stackInput": {
+            "title": "Enter new value",
+            "content": "Enter the new amount of stacks for status <strong>{status}</strong>:",
+            "button": "Apply counter"
         },
         "displayOne": {
             "name": "「1」表示",

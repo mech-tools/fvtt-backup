@@ -6,7 +6,16 @@
         },
         "rebindMouseButtons": {
             "name": "Rebind mouse buttons",
-            "hint": "Overrides the default mouse button behavior to increase the stack count with left click and decrease it with right click. The status overlay can be set with Shift + Left click."
+            "hint": "Overrides the default mouse button behavior to increase the stack count with left click and decrease it with right click. The status overlay can be set with Shift + Left click. A specific stack amount can be set with Alt + Left click."
+        },
+        "multiSelect": {
+            "name": "Modify all selected tokens",
+            "hint": "Adjusts effects and counters for all selected tokens."
+        },
+        "stackInput": {
+            "title": "Enter new value",
+            "content": "Enter the new amount of stacks for status <strong>{status}</strong>:",
+            "button": "Apply counter"
         },
         "displayOne": {
             "name": "Display '1'",

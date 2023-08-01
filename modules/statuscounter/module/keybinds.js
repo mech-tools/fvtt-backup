@@ -9,7 +9,7 @@ var activeEffectHud, activeEffectHudIcon;
 /**
  * Flag used to block multiple asynchronous create operations.
  */
-var creationState = false;
+var creationState = new Set();
 
 /**
  * Applies keybinds to the given entity to change status counters. Which 
@@ -108,13 +108,40 @@ function onEffectCtrlClick(event) {
  */
 function onEffectClick(event) {
     if (event.shiftKey) {
-        const icon = event.currentTarget.getAttribute("src");
-        this.object.toggleEffect(icon, { overlay: true });
-        //this._onToggleEffect(event, { overlay: true });
+        const iconPath = findIconPath(event);
+        const isActive = hasOverlay(this.object.document, iconPath);
+        const tokens = getUniqueSelectedTokens(this.object);
+        for (const token of tokens) {
+            if (token === this.object || isActive === hasOverlay(token.document, iconPath)) {
+                toggleEffect(token, event, true);
+            }
+        }
+    } else if (event.altKey) {
+        const iconPath = findIconPath(event);
+        const effect = CONFIG.statusEffects.find(e => e.icon === iconPath);
+        const statusName = effect
+            ? game.i18n.localize(effect.name ?? effect.label)
+            : iconPath.split("\\").pop().split("/").pop().split(".").shift();
+        const valuePrompt = new Dialog({
+            title: game.i18n.localize("statuscounter.stackInput.title"),
+            content: `<p>${game.i18n.format("statuscounter.stackInput.content", { status: statusName })}</p>
+                <p><input type="number" name="statusCount" value="1"/></p>`,
+            buttons: {
+                ok: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: game.i18n.localize("statuscounter.stackInput.button"),
+                    callback: html => {
+                        const input = html[0].querySelector("input[name='statusCount']");
+                        changeIconCounter(event, this, input.valueAsNumber, false);
+                    }
+                }
+            },
+            default: "ok"
+        });
+        valuePrompt.render(true);
     } else {
-        return changeIconCounter(event, this, 1, true);
+        changeIconCounter(event, this, 1, true);
     }
-
 }
 
 /**
@@ -190,31 +217,73 @@ function changeIconCounter(event, tokenHud, value, incremental) {
     if (incremental && value == 0) return;
 
     const iconPath = findIconPath(event);
-    const token = tokenHud.object.document;
-    const effectIsActive = token.effects.includes(iconPath);
-    let effectCounter = EffectCounter.findCounter(token, iconPath);
+    const tokenDocs = getUniqueSelectedTokens(tokenHud.object).map(t => t.document);
+    let baseHasOverlay;
+    for (const tokenDoc of tokenDocs) {
+        const effectIsActive = tokenDoc.effects.includes(iconPath);
+        let effectCounter = EffectCounter.findCounter(tokenDoc, iconPath);
 
-    // Don't initialize with negative or 0 values
-    if (value <= 0 && !effectCounter) {
-        if (effectIsActive) {
-            tokenHud._onToggleEffect(event);
-        } else if (incremental) {
-            tokenHud._onToggleEffect(event, { overlay: true });
+        // Don't initialize with negative or 0 values
+        if (value <= 0 && !effectCounter) {
+            if (effectIsActive) toggleEffect(tokenDoc.object, event, false);
+            else if (incremental && (tokenDoc === tokenHud.object.document
+                || (baseHasOverlay ??= hasOverlay(tokenHud.object.document, iconPath)) === hasOverlay(tokenDoc, iconPath))) {
+                toggleEffect(tokenDoc.object, event, true);
+            }
+            continue;
         }
-        return;
+
+        if (!effectCounter) {
+            // Do not allow parallel execution of effect creation to prevent inconsistent data.
+            if (creationState.has(tokenDoc.id)) {
+                console.warn("statuscounter | Prevented parallel effect creation.");
+                continue;
+            }
+
+            effectCounter = event.currentTarget.dataset.statusId
+                ? new ActiveEffectCounter(value, iconPath, tokenDoc)
+                : new EffectCounter(value, iconPath, tokenDoc);
+            creationState.add(tokenDoc.id);
+            effectCounter.update(tokenDoc).finally(() => creationState.delete(tokenDoc.id));
+        } else {
+            const newValue = incremental ? (value + effectCounter.getValue(tokenDoc) ?? 0) : value;
+            effectCounter.setValue(newValue, tokenDoc);
+        }
     }
 
-    if (!effectCounter) {
-        // Do not allow parallel execution of effect creation to prevent inconsistent data.
-        if (creationState) return console.warn("statuscounter | Prevented parallel effect creation.");
-        effectCounter = event.currentTarget.dataset.statusId
-            ? new ActiveEffectCounter(value, iconPath, token)
-            : new EffectCounter(value, iconPath, token);
-        creationState = true;
-        effectCounter.update(token).finally(() => creationState = false);
-    } else {
-        if (incremental) value += effectCounter.getValue(token) ?? 0;
-        effectCounter.setValue(value, token);
-    }
     return false;
+}
+
+/**
+ * Toggles an effect using FoundryVTT workflows regardless of whether a HUD is currently active.
+ * @param {Token} token The token to toggle the effect on.
+ * @param {jQuery.Event} event The event that triggered the toggle.
+ * @param {boolean} overlay Indicates whether the effect should be an overlay.
+ * @returns {Promise} A promise representing the operation.
+ */
+function toggleEffect(token, event, overlay) {
+    return TokenHUD.prototype._onToggleEffect.apply({ object: token }, [event, { overlay }]);
+}
+
+/**
+ * Returns tokens to consider for input operations. If the multi select setting is enabled, this returns all selected
+ * tokens that have a unique actor. Otherwise, it returns the reference token.
+ * @param {Token} token The reference token.
+ * @returns {Token[]} Associated tokens that have a unique actor.
+ */
+function getUniqueSelectedTokens(token) {
+    return game.settings.get("statuscounter", "multiSelect")
+        ? [...new Map(canvas.tokens.controlled.map(t => [t.actor?.id, t])).values()]
+        : [token];
+}
+
+/**
+ * Checks if the given token document has an overlay effect matching the given icon path.
+ * @param {TokenDocument} tokenDoc The token document to check.
+ * @param {string} icon The icon path of the effect.
+ * @returns {boolean} True if the effect exists as an overlay, false otherwise.
+ */
+function hasOverlay(tokenDoc, icon) {
+    return tokenDoc.overlayEffect === icon
+        || tokenDoc.actor.effects.some(e => e.flags.core?.overlay && e.icon === icon);
 }

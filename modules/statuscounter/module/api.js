@@ -344,14 +344,26 @@ class ActiveEffectCounter extends EffectCounter {
             if (!effect) {
                 let effectData = CONFIG.statusEffects.find(effect => effect.icon === this.path);
 
-                const createData = foundry.utils.deepClone(effectData);
-                createData.statuses = [effectData.id];
-                delete createData.id;
+                let createData;
+                if (effectData) {
+                    // Transform effect data.
+                    createData = foundry.utils.deepClone(effectData);
+                    createData.statuses = [effectData.id];
+                    delete createData.id;
+                    createData.name = game.i18n.localize(effectData.name ?? effectData.label);
+                } else {
+                    // There is no predefined effect, make a guess.
+                    const fileName = this.path.split("\\").pop().split("/").pop().split(".").shift() ?? "unknown";
+                    createData = {
+                        name: fileName.charAt(0).toUpperCase() + fileName.substring(1).toLowerCase(),
+                        icon: this.path,
+                        statuses: [fileName]
+                    }
+                }
 
                 const cls = getDocumentClass("ActiveEffect");
                 cls.migrateDataSafe(createData);
                 cls.cleanData(createData);
-                createData.name = game.i18n.localize(effectData.label);
                 createData._id = foundry.utils.randomID();
 
                 effect = new cls(createData, { parent: actor });

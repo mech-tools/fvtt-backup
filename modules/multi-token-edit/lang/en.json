@@ -3,7 +3,7 @@
     "form": {
       "immediate-update-title": "Automatically apply updates on field changes.",
       "global-search-title": "Enable world search.",
-      "global-delete-title": "Delete ALL documents."
+      "global-delete-title": "Delete."
     },
     "clipboard": {
       "copy": "Mass Edit: Copied {documentName} data to clipboard",
@@ -50,6 +50,10 @@
       "enableHistory": {
         "name": "Update History",
         "hint": "(REQUIRES GAME RELOAD) When enabled updates made to placeables will be stored and accessible via Mass Edit forms."
+      },
+      "enableFlagsTab": {
+        "name": "Flags Tab",
+        "hint": " When enabled 'Flags' tab will be added to Mass Edit forms to allow updating and removing of document flags."
       },
       "rangeToTextbox": {
         "name": "Allow manual input for range sliders",

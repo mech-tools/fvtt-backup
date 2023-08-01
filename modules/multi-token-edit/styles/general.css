@@ -74,9 +74,10 @@
 
 .me-global-delete {
   position: absolute;
-  left: -26px;
-  top: 50%;
+  left: 50%;
+  top: 100%;
   color: red;
+  padding-top: 10px;
 }
 
 /* .me-global-delete > a > i {
@@ -242,6 +243,15 @@ nav > a[data-tab='me-pinned'] {
 
 .me-pinned.active {
   color: gold;
+}
+
+.me-delete-flag {
+  flex: 0.1 !important;
+  color: gray;
+}
+
+.me-delete-flag.active {
+  color: rgb(255, 0, 0);
 }
 
 .me-editable-label {

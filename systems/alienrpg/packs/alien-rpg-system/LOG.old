@@ -1,5 +1,0 @@
-2023/07/11-17:43:49.864085 7fb187fff700 Delete type=3 #1
-2023/07/11-17:43:55.941934 7faf05fef700 Level-0 table #5: started
-2023/07/11-17:43:55.943244 7faf05fef700 Level-0 table #5: 30776 bytes OK
-2023/07/11-17:43:55.944056 7faf05fef700 Delete type=0 #3
-2023/07/11-17:43:55.944378 7faf05fef700 Manual compaction at level-0 from '!adventures!R8mjiz4iJkZGZMIw' @ 72057594037927935 : 1 .. '!adventures!R8mjiz4iJkZGZMIw' @ 0 : 0; will stop at (end)
