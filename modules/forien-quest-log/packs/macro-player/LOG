@@ -1,1 +1,5 @@
-2023/06/06-15:17:46.982 4bf4 Delete type=3 #1
+2023/08/01-10:11:28.905600 7fd58affd700 Recovering log #3
+2023/08/01-10:11:28.905815 7fd58affd700 Level-0 table #5: started
+2023/08/01-10:11:28.906925 7fd58affd700 Level-0 table #5: 724 bytes OK
+2023/08/01-10:11:28.909458 7fd58affd700 Delete type=0 #3
+2023/08/01-10:11:28.909490 7fd58affd700 Delete type=3 #2
