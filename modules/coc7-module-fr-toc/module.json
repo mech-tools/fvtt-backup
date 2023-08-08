@@ -108,7 +108,7 @@
     ]
   },
   "compatibility": {
-    "minimum": "0.8.9",
-    "verified": "10.303"
+    "minimum": "9",
+    "verified": "11"
   }
 }

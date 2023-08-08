@@ -1,8 +1,0 @@
-2023/08/04-11:29:39.383790 7f95127fc700 Recovering log #118
-2023/08/04-11:29:39.386724 7f95127fc700 Delete type=0 #118
-2023/08/04-11:29:39.386779 7f95127fc700 Delete type=3 #116
-2023/08/05-00:30:04.996383 7f95113ec700 Level-0 table #123: started
-2023/08/05-00:30:04.996397 7f95113ec700 Level-0 table #123: 0 bytes OK
-2023/08/05-00:30:04.997208 7f95113ec700 Delete type=0 #121
-2023/08/05-00:30:04.997367 7f95113ec700 Manual compaction at level-0 from '!journal!0F0qktyipLgm7sgR' @ 72057594037927935 : 1 .. '!journal!xKVELxlR8g4PndGk' @ 0 : 0; will stop at (end)
-2023/08/05-00:30:04.999116 7f95113ec700 Manual compaction at level-1 from '!journal!0F0qktyipLgm7sgR' @ 72057594037927935 : 1 .. '!journal!xKVELxlR8g4PndGk' @ 0 : 0; will stop at (end)
