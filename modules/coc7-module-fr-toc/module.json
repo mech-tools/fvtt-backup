@@ -1,114 +1,120 @@
 {
   "title": "Compendiums pour CoC7 en français Toc",
   "description": "<p>Une collection de compendiums pour l'Appel de Cthulhu en français.</p>",
+  "authors": [
+    {
+      "name": "Toc",
+      "email": "vonv@tentacules.net",
+      "url": "https://tentacules.net",
+      "discord": "@vonv"
+    }
+  ],
   "url": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "scripts": [
     "coc7-module-fr-toc.js"
   ],
   "styles": [
     "coc7-module-fr-toc.css"
   ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "CoC7",
+        "manifest": "https://github.com/Miskatonic-Investigative-Society/CoC7-FoundryVTT/releases/latest/download/system.json",
+        "compatibility": {
+          "minimum": "0.10",
+          "verified": "0.10"
+        },
+        "type": "system"
+      }
+    ]
+  },
   "packs": [
     {
-      "label": "FR-compendiums-actors",
       "name": "fr-compendiums-actor",
+      "label": "FR-acteurs",
       "path": "packs/fr-compendiums-actor",
-      "system": "CoC7",
       "type": "Actor",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-items",
       "name": "fr-compendiums-item",
+      "label": "FR-objets",
       "path": "packs/fr-compendiums-item",
-      "system": "CoC7",
       "type": "Item",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-items-crea",
       "name": "fr-compendiums-item-crea",
+      "label": "FR-création",
       "path": "packs/fr-compendiums-item-crea",
-      "system": "CoC7",
       "type": "Item",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-journalentries",
       "name": "fr-compendiums-journalentry",
+      "label": "FR-journaux",
       "path": "packs/fr-compendiums-journalentry",
-      "system": "CoC7",
       "type": "JournalEntry",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-rolltables",
       "name": "fr-compendiums-rolltable",
+      "label": "FR-tables",
       "path": "packs/fr-compendiums-rolltable",
-      "system": "CoC7",
       "type": "RollTable",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-scenes",
       "name": "fr-compendiums-scene",
+      "label": "FR-scènes",
       "path": "packs/fr-compendiums-scene",
-      "system": "CoC7",
       "type": "Scene",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     },
     {
-      "label": "FR-compendiums-sono",
       "name": "fr-compendiums-sono",
+      "label": "FR-sono",
       "path": "packs/fr-compendiums-sono",
-      "system": "CoC7",
       "type": "Playlist",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      }
     }
   ],
   "manifest": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/-/raw/main/module.json",
   "download": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/-/archive/main/coc7-module-fr-toc-main.zip",
   "id": "coc7-module-fr-toc",
-  "relationships": {
-    "requires": [
-      {
-        "id": "compendium-folders",
-        "type": "module",
-        "compatibility": {}
-      }
-    ]
-  },
   "compatibility": {
-    "minimum": "9",
-    "verified": "11"
+    "minimum": "11",
+    "verified": "11",
+    "maximum": "11"
   }
 }
