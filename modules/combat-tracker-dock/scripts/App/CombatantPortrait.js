@@ -189,15 +189,18 @@ export class CombatantPortrait {
         return value;
     }
 
-    getBarsOrder() {
+    getBarsOrder(hasEffects, r1, r2) {
         const sett = game.settings.get(MODULE_ID, "barsPlacement");
+        r1 = !isNaN(r1?.percentage) ? 0 : 1;
+        r2 = !isNaN(r2?.percentage) ? 0 : 1;
+
         switch (sett) {
             case "left":
-                return {bar1: 0, bar2: 1, init: 2, effects: 3, bar1ML: 0, bar2ML: 0};
+                return {bar1: 0, bar2: 1, init: 2, effects: 3, bar1ML: 0, bar2ML: 0, initBars: 2.5 - r1 - r2};
             case "right": 
-                return {bar1: 2, bar2: 3, init: 0, effects: 1, bar1ML: "auto", bar2ML: 0};
+                return {bar1: 2, bar2: 3, init: 0, effects: 1, bar1ML: hasEffects ? 0 : "auto", bar2ML: 0, initBars: 0.5};
             case "twinned":
-                return {bar1: 0, bar2: 3, init: 1, effects: 2, bar1ML: 0, bar2ML: "auto"};
+                return {bar1: 0, bar2: 3, init: 1, effects: 2, bar1ML: 0, bar2ML: hasEffects ? 0 : "auto", initBars: 1.5 - r1};
         }
     }
 
@@ -235,9 +238,18 @@ export class CombatantPortrait {
 
         const attributesVisibility = game.settings.get(MODULE_ID, "attributeVisibility");
 
+        const displayDescriptionsSetting = game.settings.get(MODULE_ID, "displayDescriptions");
+
+        let displayDescriptions = false;
+
+        if (displayDescriptionsSetting === "all") displayDescriptions = true;
+        else if (displayDescriptionsSetting === "owner") displayDescriptions = hasPermission;
+
         // Prepare turn data
         const resource = hasPermission ? this.getResource() : null;
         const resource2 = hasPermission ? this.getResource(game.settings.get(MODULE_ID, "resource")) : null;
+        const portraitResourceSetting = game.settings.get(MODULE_ID, "portraitResource");
+        const portraitResource = hasPermission && portraitResourceSetting ? this.getResource(portraitResourceSetting) : null;
         const initiativeData = this.getInitiativeDisplay();
         initiativeData.isIconImg = initiativeData.icon.includes(".");
         initiativeData.isRollIconImg = initiativeData.rollIcon.includes(".");
@@ -255,6 +267,7 @@ export class CombatantPortrait {
             hasRolled: combatant.initiative !== null && combatant.initiative !== undefined,
             hasResource: resource !== null,
             hasResource2: resource2 !== null,
+            hasPortraitResource: portraitResource !== null,
             hasPlayerOwner: combatant.actor?.hasPlayerOwner,
             hasPermission: hasPermission,
             showInitiative: game.settings.get(MODULE_ID, "showInitiativeOnPortrait"),
@@ -262,6 +275,7 @@ export class CombatantPortrait {
             initiativeData: initiativeData,
             resource: resource,
             resource2: resource2,
+            portraitResource: portraitResource,
             showBars: attributesVisibility == "bars" || attributesVisibility == "both",
             showText: attributesVisibility == "text" || attributesVisibility == "both",
             canPing: combatant.sceneId === canvas.scene?.id && game.user.hasPermission("PING_CANVAS"),
@@ -270,8 +284,8 @@ export class CombatantPortrait {
             resSystemIcons: systemIcons.resource,
             tooltipSystemIcons: systemIcons.tooltip,
             systemIconsSizeMulti: clamp(0.03, 1/(systemIconCount * 2) ,0.1),
-            barsOrder: this.getBarsOrder(),
-            displayDescriptions: game.settings.get(MODULE_ID, "displayDescriptions"),
+            barsOrder: null,
+            displayDescriptions: displayDescriptions,
         };
         if (turn.initiative !== null && !Number.isInteger(turn.initiative)) hasDecimals = true;
         if (turn.initiativeData.value !== null && !Number.isInteger(turn.initiativeData.value)) hasDecimals = true;
@@ -301,6 +315,7 @@ export class CombatantPortrait {
         }
 
         turn.hasEffects = turn.effects.size > 0;
+        turn.barsOrder = this.getBarsOrder(turn.hasEffects, resource, resource2);
         // Format initiative numeric precision
         const precision = CONFIG.Combat.initiative.decimals;
         if (turn.hasRolled && typeof turn.initiative == "number") turn.initiative = turn.initiative.toFixed(hasDecimals ? precision : 0);

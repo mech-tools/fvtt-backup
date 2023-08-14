@@ -1,0 +1,28 @@
+2023/08/13-11:03:35.378549 7f95127fc700 Recovering log #23
+2023/08/13-11:03:35.380214 7f95127fc700 Level-0 table #25: started
+2023/08/13-11:03:35.381976 7f95127fc700 Level-0 table #25: 47575 bytes OK
+2023/08/13-11:03:35.384620 7f95127fc700 Delete type=0 #8
+2023/08/13-11:03:35.384643 7f95127fc700 Delete type=0 #19
+2023/08/13-11:03:35.384672 7f95127fc700 Delete type=3 #6
+2023/08/13-11:03:35.384688 7f95127fc700 Delete type=3 #22
+2023/08/13-11:03:35.384702 7f95127fc700 Delete type=0 #23
+2023/08/13-11:03:35.384728 7f95127fc700 Delete type=3 #18
+2023/08/14-00:17:03.799555 7f95113ec700 Level-0 table #28: started
+2023/08/14-00:17:03.799801 7f95113ec700 Level-0 table #28: 0 bytes OK
+2023/08/14-00:17:03.800800 7f95113ec700 Delete type=0 #26
+2023/08/14-00:17:03.806802 7f95113ec700 Manual compaction at level-0 from '!adventures!XHCQIHKxp1ciaqOQ' @ 72057594037927935 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at '!adventures!zV0gqBQbpbAHpK3G' @ 21 : 1
+2023/08/14-00:17:03.806814 7f95113ec700 Compacting 1@0 + 1@1 files
+2023/08/14-00:17:03.808470 7f95113ec700 Generated table #29@0: 8 keys, 44187 bytes
+2023/08/14-00:17:03.808482 7f95113ec700 Compacted 1@0 + 1@1 files => 44187 bytes
+2023/08/14-00:17:03.809126 7f95113ec700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/08/14-00:17:03.809179 7f95113ec700 Delete type=2 #25
+2023/08/14-00:17:03.809231 7f95113ec700 Delete type=2 #21
+2023/08/14-00:17:03.812376 7f95113ec700 Manual compaction at level-0 from '!adventures!zV0gqBQbpbAHpK3G' @ 21 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at (end)
+2023/08/14-00:17:03.816247 7f95113ec700 Manual compaction at level-1 from '!adventures!XHCQIHKxp1ciaqOQ' @ 72057594037927935 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at '!adventures!zV0gqBQbpbAHpK3G' @ 22 : 1
+2023/08/14-00:17:03.816255 7f95113ec700 Compacting 1@1 + 1@2 files
+2023/08/14-00:17:03.818088 7f95113ec700 Generated table #30@1: 5 keys, 44108 bytes
+2023/08/14-00:17:03.818101 7f95113ec700 Compacted 1@1 + 1@2 files => 44108 bytes
+2023/08/14-00:17:03.819036 7f95113ec700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/08/14-00:17:03.819097 7f95113ec700 Delete type=2 #29
+2023/08/14-00:17:03.819157 7f95113ec700 Delete type=2 #9
+2023/08/14-00:17:03.819379 7f95113ec700 Manual compaction at level-1 from '!adventures!zV0gqBQbpbAHpK3G' @ 22 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at (end)

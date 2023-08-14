@@ -10,7 +10,7 @@
     }
   ],
   "url": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "scripts": [
     "coc7-module-fr-toc.js"
   ],
@@ -107,6 +107,28 @@
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
       }
+    },
+    {
+      "name": "fr-aventures",
+      "label": "FR-aventures",
+      "path": "packs/fr-aventures",
+      "type": "Adventure",
+      "system": "CoC7",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "fr-macros",
+      "label": "FR-macros",
+      "path": "packs/fr-macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "CoC7"
     }
   ],
   "manifest": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/-/raw/main/module.json",
