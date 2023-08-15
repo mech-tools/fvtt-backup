@@ -1,0 +1,56 @@
+{
+  "illandril-turn-marker": {
+    "notification": {
+      "offTurnMovementBlocked": {
+        "GM": "{token} cannot move - it is not their turn. Press \"{hotkey}\" while moving to move anyway.",
+        "player": "{token} cannot move - it is not their turn."
+      }
+    },
+    "setting": {
+      "debug": {
+        "label": "Debug Mode",
+        "hint": "Leave this disabled unless specifically asked to enable it by Illandril (otherwise, it will slow things down)."
+      },
+      "blockGMOffTurnMovement": {
+        "label": "Block GM Off-Turn Movement",
+        "hint": "Prevent GMs from moving tokens while a combat encounter is active unless it is the token's turn. GMs can temporarily override this setting by pressing the Allow Off-Turn Movement key (defaults to M, configurable in Controls)."
+      },
+      "blockPlayerOffTurnMovement": {
+        "label": "Block Player Off-Turn Movement",
+        "hint": "Prevent Players from moving tokens while a combat encounter is active unless it is the token's turn."
+      },
+      "enableTurnAnnouncer": {
+        "label": "Enable Turn Announcer",
+        "hint": "Announces the start of a token's turn during combat. Note: Turns of characters hidden from combat (visibility is toggled in the Combat Encounter) are still announced, but their name is hidden."
+      },
+      "visibility": {
+        "choice": {
+          "ALL": "Show to Everyone",
+          "GMS": "Show to GMs Only",
+          "PLAYERS": "Show to Players Only",
+          "NONE": "Hide from Everyone"
+        }
+      },
+      "enableCurrentTurnMarker": {
+        "label": "Current Turn Marker",
+        "hint": "Show a Bright Green Circle Places image over tokens during their turn (follows the token as they move)."
+      },
+      "enableTurnStartMarker": {
+        "label": "Turn Start Marker",
+        "hint": "Show a Dark Red Circle image over the location the current combatant token started their turn."
+      },
+      "enableMovementMarkers": {
+        "label": "Movement Markers",
+        "hint": "Show a Footstep image and move counter over every square a token lands on during their turn. Note: These markers do not persist through refreshes."
+      }
+    },
+    "hotkey": {
+      "allowMovement": {
+        "label": "Allow Off-Turn Movement",
+        "hint": "When pressed, a GM will be allowed to move a token when it is not that token's turn even if Block GM Off-Turn Movement is enabled."
+      }
+    },
+    "turnStartedMessage": "-= {name}'s Turn =-",
+    "unknownTurnAlias": "???"
+  }
+}

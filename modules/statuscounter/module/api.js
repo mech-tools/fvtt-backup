@@ -349,6 +349,9 @@ class ActiveEffectCounter extends EffectCounter {
                     // Transform effect data.
                     createData = foundry.utils.deepClone(effectData);
                     createData.statuses = [effectData.id];
+                    if (["pf1", "D35E"].includes(game.system.id)) {
+                        foundry.utils.setProperty(createData, "flags.core.statusId", effectData.id);
+                    }
                     delete createData.id;
                     createData.name = game.i18n.localize(effectData.name ?? effectData.label);
                 } else {
@@ -418,7 +421,10 @@ class ActiveEffectCounter extends EffectCounter {
      * @returns {string} The effect ID that this counter belongs to.
      */
     findStatusId(parent) {
-        return this.findParent(parent)?.getFlag("core", "statusId");
+        const effect = this.findParent(parent);
+        if (!effect) return null;
+
+        return effect.statuses.first() ?? effect.getFlag("core", "statusId");
     }
 
     /**
@@ -433,15 +439,28 @@ class ActiveEffectCounter extends EffectCounter {
         if (!effect) return Promise.resolve();
 
         if (effect._temporary) {
+            const statusId = this.findStatusId(parent);
             delete temporaryEffects[effect.parent.uuid + '.' + this.path];
-            foundry.utils.setProperty(effect._source, "flags.statuscounter.counter", this);
-            const cls = getDocumentClass("ActiveEffect");
-            const actorEffect = await cls.create(effect.toObject(), { parent: effect.parent });
 
-            // Provide compatibility with Starfinder.
-            if (game.system.id === "sfrpg" && actorEffect.parent instanceof game.actors.documentClass) {
-                await actorEffect.parent.setCondition(this.findStatusId(parent), true);
+            foundry.utils.setProperty(effect._source, "flags.statuscounter.counter", this);
+            const effectData = effect.toObject();
+
+            if (statusId && ["pf1", "D35E"].includes(game.system.id)) {
+                // Handle Pathfinder 1 and DnD 3.5e reversed update flow.
+                await effect.parent.update({ ["system.attributes.conditions." + statusId]: true });
+                const actorEffect = effect.parent.effects
+                    .find(e => (e.statuses.first() ?? e.getFlag("core", "statusId")) === statusId);
+                await actorEffect?.update({ "flags.statuscounter": effect.flags.statuscounter, duration: effect.duration });
+            } else {
+                const createdEffects = await effect.parent.createEmbeddedDocuments("ActiveEffect", [effectData]);
+                const actorEffect = createdEffects[0];
+
+                // Provide compatibility with Starfinder.
+                if (game.system.id === "sfrpg" && actorEffect && actorEffect.parent instanceof game.actors.documentClass) {
+                    await actorEffect.parent.setCondition(statusId, true);
+                }
             }
+
             return;
         }
 

@@ -2,6 +2,17 @@
 
 ## Middle Kingdom - v10 -> main branch
 
+### 2.8.0 - August 12, 2022
+- [FEATURE] (Daverd-GM) Provided light sources for "Reclaiming the Wild".
+- [FEATURE] (Lupestro) When user has no light sources, a question mark icon comes up instead of the flame icon, opening a dialog explaining what to do.
+- [FEATURE] (Lupestro) When a light source is exhausted, clicking the slashed out flame opens a dialog that describes what to do.
+- [FEATURE] (Lupestro) Supplied an API of async functions that can be used by macros. Many thanks to Tarubain for the suggestion.
+- [BUGFIX] (Lupestro) Fixed problem with unlinked tokens, which no longer have an actor property at all.
+- [BUGFIX] (Feldherren) Corrected light source name for "Torches" for OSE.
+
+### 2.7.0 - June 2, 2022
+- [FEATURE] (Lupestro) Bumped to install on FoundryVTT 11
+
 ### 2.6.0 - February 26, 2022
 - [FEATURE] (amir-arad) Added support for Old School Essentials (ose) and for quantities within objects. (PR #46 Thanks!)
 - [BUGFIX] (Lupestro) GM escalation is now only invoked for the named light source on the intended game system. The only implemented example of this to date is token creation/deletion for Dancing Lights on dnd5e. (Behavior when aliasing the name of one of these _in the same game system_ to be used for something else is undefined.) (Issue #40)
@@ -16,7 +27,8 @@
 - [FEATURE] (Lupestro) Now supporting Dungeon Crawl Classics. Many thanks to marcusadmortati for supplying the data and testing. 
 
 ### 2.2.2 - December 9, 2022
-- [BUGFIX] (MrPrimate) Didn't load light sources properly if Foundry was not at root of site. (Thanks MrPrimate for the PR!)
+- [BUGFIX] (MrPrimate) Didn't load light sources properly if 
+Foundry was not at root of site. (Thanks MrPrimate for the PR!)
 
 ### 2.2.1 - December 8, 2022
 - [BUGFIX] (Lupestro) Fixed URLs in manifest to point to /main/ not /v10/. (Thanks ckdragons for heads-up.)

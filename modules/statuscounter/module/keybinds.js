@@ -54,6 +54,16 @@ function onFirst(element, eventName, selector, eventHandler) {
 }
 
 /**
+ * Stops all further processing for the given event.
+ * @param {jQuery.Event} event The event to stop.
+ */
+function stopEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+}
+
+/**
  * Add a custom context menu to the effect HUD. The menu contains an entry for
  *  each known counter type, allowing the user to change it.
  * @param {TokenDocument} token The token document associated with the HUD.
@@ -94,9 +104,9 @@ function createContextMenu(token, effectHud) {
  */
 function onEffectCtrlClick(event) {
     if (event.ctrlKey || event.metaKey) {
-        $(event.currentTarget).trigger("ctrl-click");
-        event.stopImmediatePropagation();
-        event.preventDefault();
+        const modifiedEvent = new CustomEvent("ctrl-click", { bubbles: true });
+        event.currentTarget.dispatchEvent(modifiedEvent);
+        stopEvent(event);
     }
 }
 
@@ -142,6 +152,8 @@ function onEffectClick(event) {
     } else {
         changeIconCounter(event, this, 1, true);
     }
+
+    stopEvent(event);
 }
 
 /**
@@ -152,6 +164,7 @@ function onEffectClick(event) {
 function onEffectRightClick(event) {
     if (ui.context) ui.context.close();
     changeIconCounter(event, this, -1, true);
+    stopEvent(event);
 }
 
 /**
@@ -190,8 +203,8 @@ export const onEffectKeyDown = function (event) {
     if (Number.isNaN(keyValue)) return;
 
     event.currentTarget = activeEffectHudIcon;
-    event.stopPropagation();
     changeIconCounter(event, activeEffectHud, keyValue, false);
+    stopEvent(event);
 }
 
 /**
@@ -273,7 +286,7 @@ function toggleEffect(token, event, overlay) {
  */
 function getUniqueSelectedTokens(token) {
     return game.settings.get("statuscounter", "multiSelect")
-        ? [...new Map(canvas.tokens.controlled.map(t => [t.actor?.id, t])).values()]
+        ? [...new Map(canvas.tokens.controlled.map(t => [t.actor?.uuid, t])).values()]
         : [token];
 }
 

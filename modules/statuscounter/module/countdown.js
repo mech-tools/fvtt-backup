@@ -110,7 +110,7 @@ function canSelectCountdown(counter) {
  * @returns {number} The remaining rounds or turns of the active effect.
  */
 function getCombatCountdownValue(counter, effect) {
-    const remaining = effect.duration.remaining;
+    const remaining = effect.duration.remaining ?? 0;
     if (counter.type.endsWith("_round")) {
         return Math.ceil(remaining);
     } else {
