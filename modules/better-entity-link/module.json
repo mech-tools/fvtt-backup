@@ -1,0 +1,25 @@
+{
+    "id": "better-entity-link",
+    "title": "Better Entity Link",
+    "description": "Improve your productivity with contextmenus on entity links!",
+    "version": "1.2.3.1",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "11.295"
+    },
+    "authors": [
+        {
+            "name": "Miah Nelah",
+            "discord": "Miah Nelah#5991"
+        }
+    ],
+    "esmodules": [
+        "module/src/better-entity-link.js"
+    ],
+    "styles": [
+        "module/styles/better-entity-link.css"
+    ],
+    "url": "https://github.com/MiahNelah/better-entity-link",
+    "manifest": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.2.3.1/module.json",
+    "download": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.2.3.1/module.zip"
+}

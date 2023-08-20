@@ -1,0 +1,20 @@
+{
+  "title": "Phare défaillant",
+  "id": "phare-defaillant",
+  "system": "CoC7",
+  "joinTheme": "default",
+  "coreVersion": "11.307",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11"
+  },
+  "esmodules": [
+    "script.js"
+  ],
+  "styles": [
+    "styles.css"
+  ],
+  "systemVersion": "0.10.5",
+  "lastPlayed": "Mon Aug 21 2023 00:27:38 GMT+0200 (Central European Summer Time)",
+  "playtime": 2053
+}
