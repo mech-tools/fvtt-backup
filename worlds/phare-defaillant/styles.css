@@ -1,7 +1,4 @@
 /* Coc link fix icon */
-.coc7-link i {
-    margin-right: 0.25em;
-}
 
 /* Ajustement des entités autres que les journaux  */
 .sheet.actor .editor-content {
@@ -167,15 +164,15 @@
 	border: 0px;
 }
 
-.journal-entry-page a.content-link,
-.journal-entry-page a.inline-roll,
-.journal-entry-page a.coc7-link {
-	background: transparent;
-	border: 0px;
-	font-weight: bold;
-	font-style: italic;
+.coc7-link i {
+    margin-right: 0.25em;
 }
 
 mark {
-    background: #c2c291; !important;
+    background: #c2c291;
+}
+
+mark .content-link,
+mark .coc7-link {
+    background: #ddddc2;
 }
