@@ -1,4 +1,24 @@
-/* Coc link fix icon */
+/* Fix de la section bio des PJ */
+
+.coc7.actor.character .tab.character-background > div {
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 480px
+}
+
+.coc7.actor.character .tab.character-background > div .bio-section {
+    flex: auto !important;
+    width: 50%;
+    height: 120px;
+}
+
+.coc7.actor.character .tab.character-background > div .bio-section textarea {
+    font-size: 0.9rem !important;
+}
+
+.coc7.actor.character .tab.character-background > div .bio-section:first-child {
+    order: 4;
+}
 
 /* Ajustement des entités autres que les journaux  */
 .sheet.actor .editor-content {
