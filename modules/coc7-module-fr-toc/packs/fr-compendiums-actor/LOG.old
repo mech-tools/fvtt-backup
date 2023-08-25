@@ -1,8 +1,18 @@
-2023/08/23-20:45:07.202501 7f0497fff700 Recovering log #160
-2023/08/23-20:45:07.205801 7f0497fff700 Delete type=0 #160
-2023/08/23-20:45:07.205828 7f0497fff700 Delete type=3 #158
-2023/08/24-00:32:34.695648 7f04977fe700 Level-0 table #165: started
-2023/08/24-00:32:34.695942 7f04977fe700 Level-0 table #165: 0 bytes OK
-2023/08/24-00:32:34.697229 7f04977fe700 Delete type=0 #163
-2023/08/24-00:32:34.698773 7f04977fe700 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
-2023/08/24-00:32:34.699076 7f04977fe700 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/08/23-13:31:59.072579 b2dfd400 Recovering log #142
+2023/08/23-13:31:59.112717 b2dfd400 Delete type=2 #102
+2023/08/23-13:31:59.116387 b2dfd400 Delete type=0 #121
+2023/08/23-13:31:59.122253 b2dfd400 Delete type=0 #142
+2023/08/23-13:31:59.128739 b2dfd400 Delete type=3 #119
+2023/08/23-13:31:59.135792 b2dfd400 Delete type=3 #141
+2023/08/23-14:02:51.961450 b037a400 Level-0 table #146: started
+2023/08/23-14:02:52.020432 b037a400 Level-0 table #146: 1149174 bytes OK
+2023/08/23-14:02:52.024322 b037a400 Delete type=0 #144
+2023/08/23-14:02:52.028103 b037a400 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/08/23-14:02:52.028830 b037a400 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at '!actors.items!zLMOpuXkzwrdMoMS.baEDQsI6TLvcuTBh' @ 8208 : 1
+2023/08/23-14:02:52.028858 b037a400 Compacting 1@1 + 1@2 files
+2023/08/23-14:02:52.132278 b037a400 Generated table #147@1: 726 keys, 1150456 bytes
+2023/08/23-14:02:52.132315 b037a400 Compacted 1@1 + 1@2 files => 1150456 bytes
+2023/08/23-14:02:52.133430 b037a400 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/08/23-14:02:52.136908 b037a400 Delete type=2 #146
+2023/08/23-14:02:52.140465 b037a400 Delete type=2 #140
+2023/08/23-14:02:52.231653 b037a400 Manual compaction at level-1 from '!actors.items!zLMOpuXkzwrdMoMS.baEDQsI6TLvcuTBh' @ 8208 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)

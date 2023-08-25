@@ -3,10 +3,10 @@
   "id": "phare-defaillant",
   "system": "CoC7",
   "joinTheme": "default",
-  "coreVersion": "11.307",
+  "coreVersion": "11.308",
   "compatibility": {
     "minimum": "11",
-    "verified": "11"
+    "verified": "11.308"
   },
   "esmodules": [
     "script.js"
@@ -15,6 +15,6 @@
     "styles.css"
   ],
   "systemVersion": "0.10.5",
-  "lastPlayed": "Thu Aug 24 2023 00:32:51 GMT+0200 (Central European Summer Time)",
+  "lastPlayed": "Fri Aug 25 2023 02:16:11 GMT+0200 (Central European Summer Time)",
   "playtime": 261483
 }
