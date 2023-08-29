@@ -4,7 +4,7 @@
 		  <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="120" width="120" />
 		</div>
 		<div class="header-fields" style="flex:3">
-			<h1><input name="name" type="text" value="{{actor.name}}" placeholder="{{localize 'shadowrun6.name' }}" /></h1>
+			<h1><input data-field="name" type="text" value="{{actor.name}}" placeholder="{{localize 'shadowrun6.name' }}" /></h1>
 			<div class="npc-settings" style="display:flex">
    {{#switch data.type}}
 		{{#case 'Critter'}} {{> "systems/shadowrun6-eden/templates/parts/npc_edit_critter.html"}} {{/case}}
@@ -20,7 +20,7 @@
 		<a class="item" data-tab="basics">{{ localize 'shadowrun6.actor.nav.basics' }}</a>
 		<a class="item" data-tab="skills">{{ localize 'shadowrun6.actor.nav.skills' }}</a>
 		<a class="item" data-tab="combat">{{ localize 'shadowrun6.actor.nav.combat' }}</a>
-		{{#with (lookup config.MOR_DEFINITIONS data.data.mortype)}}
+		{{#with (lookup config.MOR_DEFINITIONS system.mortype)}}
 		{{#if magic}}
 		<a class="item" data-tab="magic" >{{ localize 'shadowrun6.actor.nav.magic'  }}</a>
 		{{/if}}
@@ -39,19 +39,19 @@
 		{{!-- Basics Tab --}}
 		<div class="tab basics" data-group="primary" data-tab="basics">
 			<div class="attributes" style="margin-bottom: 10px">
-				{{> "systems/shadowrun6-eden/templates/parts/attributes-augmented.html" attributes=data.data.attributes}}
+				{{> "systems/shadowrun6-eden/templates/parts/attributes-augmented.html" attributes=system.attributes}}
 			</div>
 		  <div style="column-count: 2; margin-right: 5px;">
-			{{> "systems/shadowrun6-eden/templates/parts/pc-derived.html" attributes=data.data.attributes}}
+			{{> "systems/shadowrun6-eden/templates/parts/pc-derived.html" attributes=system.attributes}}
 		   {{> "systems/shadowrun6-eden/templates/parts/section-qualities.html"}}
-			{{> "systems/shadowrun6-eden/templates/parts/initiatives.html" initiative=data.data.initiative}}
+			{{> "systems/shadowrun6-eden/templates/parts/initiatives.html" initiative=system.initiative}}
 		   {{> "systems/shadowrun6-eden/templates/parts/section-bodyware.html"}}
 			</div>
 		</div>
 
 		{{!-- Skills Tab --}}
 		<div class="tab skills" data-group="primary" data-tab="skills">
-			{{> "systems/shadowrun6-eden/templates/parts/pc-skillvalues.html" skills=data.data.skills}}
+			{{> "systems/shadowrun6-eden/templates/parts/pc-skillvalues.html" skills=system.skills}}
 		</div>
 
 		{{!-- Gear Tab --}}
@@ -98,7 +98,7 @@
 						<h4 class="item-name">{{item.name}}</h4>
 						{{!-- Iterate through all attributes on the item and output buttons for any that are formula. --}}
 						<div class="item-buttons">
-							{{#each item.data.attributes as |itemAttr key|}}
+							{{#each item.system.attributes as |itemAttr key|}}
 							{{#if itemAttr.dtype}}
 							{{#if itemAttr.isFormula}}
 							{{!-- Use the items.name.key format for shorthand. --}}
@@ -134,10 +134,10 @@
 							{{/each}}
 						</div>
 						<div class="skill-points">
-							<span>{{localize (concat3 "attrib." (skillAttr item.data.id) "_short")}}</span>
+							<span>{{localize (concat3 "attrib." (skillAttr item.id) "_short")}}</span>
 						</div>
 						<div class="skill-points">
-							<input class="skill-value" type="number" name="item.data.points" value="{{item.data.points}}" />
+							<input class="skill-value" type="number" data-field="item.system.points" value="{{item.system.points}}" />
 						</div>
 						<div class="item-controls">
 							<a class="item-control item-edit" title="Edit Item"><i class="fas fa-edit"></i></a>

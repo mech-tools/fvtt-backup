@@ -2,7 +2,7 @@
   "title": "Coriolis",
   "id": "coriolis",
   "system": "yzecoriolis",
-  "coreVersion": "11.307",
+  "coreVersion": "11.308",
   "esmodules": [
     "scripts.js"
   ],
@@ -11,12 +11,12 @@
   ],
   "compatibility": {
     "minimum": "11",
-    "verified": "11.307"
+    "verified": "11.308"
   },
   "systemVersion": "3.4.0",
   "resetKeys": false,
   "background": "modules/coriolis-corerules/images/ch11/Kap4_coriolis_start.webp",
-  "lastPlayed": "Wed Aug 16 2023 17:48:01 GMT+0200 (Central European Summer Time)",
+  "lastPlayed": "Mon Aug 28 2023 10:57:47 GMT+0200 (Central European Summer Time)",
   "playtime": 3028282,
   "safeMode": false
 }

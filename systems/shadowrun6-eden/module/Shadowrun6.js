@@ -20,6 +20,26 @@ import Shadowrun6Combatant from "./Shadowrun6Combatant.js";
 import Shadowrun6CombatTracker from "./Shadowrun6CombatTracker.js";
 import Importer from "./util/Importer.js";
 const diceIconSelector = "#chat-controls .chat-control-icon .fa-dice-d20";
+function getData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
+function getRoll(obj) {
+    if (game.release.generation >= 10)
+        return obj.rolls[0];
+    return obj.roll;
+}
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 /**
  * Init hook. Called from Foundry when initializing the world
  */
@@ -27,8 +47,6 @@ Hooks.once("init", async function () {
     console.log(`Initializing Shadowrun 6 System`);
     CONFIG.debug.hooks = false;
     CONFIG.debug.dice = true;
-    // Record Configuration Values
-    // Record Configuration Values
     CONFIG.SR6 = new SR6Config();
     CONFIG.ChatMessage.documentClass = SR6RollChatMessage;
     CONFIG.Combat.documentClass = Shadowrun6Combat;
@@ -37,7 +55,7 @@ Hooks.once("init", async function () {
     CONFIG.Actor.documentClass = Shadowrun6Actor;
     CONFIG.Dice.rolls = [SR6Roll];
     //	(CONFIG as any).compatibility.mode = 0;
-    game.system.data.initiative = "@initiative.physical.pool + (@initiative.physical.dicePool)d6";
+    getData(game).initiative = "@initiative.physical.pool + (@initiative.physical.dicePool)d6";
     registerSystemSettings();
     // Register sheet application classes
     Actors.unregisterSheet("core", ActorSheet);
@@ -67,34 +85,29 @@ Hooks.once("init", async function () {
     preloadHandlebarsTemplates();
     defineHandlebarHelper();
     document.addEventListener('paste', (e) => Importer.pasteEventhandler(e), false);
-    /* https://discord.com/channels/732325252788387980/915388333125955645/1001455991151394836
-    Hooks.once('init', () => {
-        if ( (game as any).release.generation >= 10) return;
-    
-        Object.defineProperties((game as Game).system, {
+    // https://discord.com/channels/732325252788387980/915388333125955645/1001455991151394836
+    Hooks.once('initREMOVEME', () => {
+        if (game.release.generation >= 10)
+            return;
+        Object.defineProperties(game.system, {
             version: { get: function () { return this.data.version; } },
             initiative: { get: function () { return this.data.initiative; } }
         });
-    
         Object.defineProperties(TokenDocument.prototype, {
             hidden: { get: function () { return this.data.hidden; } },
             actorData: { get: function () { return this.data.actorData; } },
             actorLink: { get: function () { return this.data.actorLink; } }
         });
-    
         Object.defineProperties(Actor.prototype, {
             system: { get: function () { return this.data.data; } },
             prototypeToken: { get: function () { return this.data.token; } },
             ownership: { get: function () { return this.data.permission; } },
         });
-    
         Object.defineProperties(Item.prototype, {
             system: { get: function () { return this.data.data; } },
         });
-    
         globalThis.isEmpty = isObjectEmpty;
     });
-        */
     Hooks.once("diceSoNiceReady", (dice3d) => {
         dice3d.addSystem({ id: "SR6", name: "Shadowrun 6 - Eden" }, "default");
         dice3d.addDicePreset({
@@ -167,22 +180,21 @@ Hooks.once("init", async function () {
      */
     function onCreateItem(item, options, userId) {
         console.log("onCreateItem  " + item.data.type);
-        let createData = item.data;
-        if (createData.img == "icons/svg/item-bag.svg" && CONFIG.SR6.icons[createData.type]) {
-            createData.img = CONFIG.SR6.icons[createData.type].default;
-            item.update({ ["img"]: createData.img });
+        let actor = getActorData(item);
+        if (actor.img == "icons/svg/item-bag.svg" && CONFIG.SR6.icons[actor.type]) {
+            actor.img = CONFIG.SR6.icons[actor.type].default;
+            item.updateSource({ ["img"]: actor.img });
         }
         // If it is a compendium item, copy over text description
-        if (createData.data.genesisID) {
-            let key = item.data.type + "." + item.data.data.genesisID;
-            console.log("Item with genesisID - check for " + key);
-            if (!game.i18n.localize(key + "name").startsWith(key)) {
-                createData.data.description = game.i18n.localize(key + ".desc");
-                createData.name = game.i18n.localize(key + ".name");
-                item.update({ ["data.description"]: createData.data.description });
-            }
+        let system = getSystemData(item);
+        let key = actor.type + "." + system.genesisID;
+        console.log("Item with genesisID - check for " + key);
+        if (!game.i18n.localize(key + "name").startsWith(key)) {
+            system.description = game.i18n.localize(key + ".desc");
+            actor.name = game.i18n.localize(key + ".name");
+            item.updateSource({ ["description"]: system.description });
         }
-        console.log("onCreateItem: " + createData.img);
+        console.log("onCreateItem: " + actor.img);
     }
     Hooks.on("createItem", (doc, options, userId) => onCreateItem(doc, options, userId));
     Hooks.on("ready", () => {
@@ -314,7 +326,7 @@ Hooks.once("init", async function () {
             const damage = dataset.damage ? parseInt(dataset.damage) : 0;
             const monitor = parseInt(dataset.monitor);
             console.log("Target actor ", actor);
-            console.log("Target actor ", actor.data.name);
+            console.log("Target actor ", actor.name);
             switch (rollType) {
                 case RollType.Defense:
                     /* Avoid being hit/influenced */
@@ -393,15 +405,16 @@ Hooks.once("init", async function () {
      */
     Hooks.on("preCreateActor", (actor, createData, options, userId) => {
         if (actor.type === "Player") {
-            actor.data.token.update({ actorLink: "true" });
-            actor.data.token.update({ vision: "true" });
+            actor.prototypeToken.updateSource({ actorLink: "true" });
+            actor.prototypeToken.updateSource({ vision: "true" });
         }
     });
     Hooks.on("preUpdateCombatant", (combatant, createData, options, userId) => {
         console.log("Combatant with initiative " + createData.initiative);
     });
     Hooks.on("preUpdateCombat", (combat, createData, options, userId) => {
-        console.log("Combat with turn " + createData.turn + " in round " + combat.data.round);
+        let realCombat = getData(combat);
+        console.log("Combat with turn " + createData.turn + " in round " + realCombat.round);
     });
     Hooks.on("deleteCombat", (combat, createData, userId) => {
         console.log("End Combat");
@@ -452,14 +465,13 @@ function registerChatMessageEdgeListener(event, chatMsg, html, data) {
     }
     // chatMsg.roll is a SR6Roll
     let btnPerform = html.find(".edgePerform");
-    let roll = chatMsg.roll;
+    let roll = getRoll(chatMsg);
     if (btnPerform && roll) {
         btnPerform.click((event) => EdgeUtil.peformPostEdgeBoost(chatMsg, html, data, btnPerform, boostSelect, edgeActions));
     }
 }
 function _onRenderVehicleSheet(application, html, data) {
-    let actorData = data.actor.data.data;
-    console.log("_onRenderVehicleSheet for " + actorData);
+    console.log("_onRenderVehicleSheet for " + data.actor);
 }
 function _onRenderItemSheet(sheet, html, item) {
     console.log("_onRenderItemSheet for ", item);

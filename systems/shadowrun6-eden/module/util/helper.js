@@ -154,11 +154,21 @@ export const defineHandlebarHelper = async function () {
         }
     });
 };
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 function itemsOfType(items, type) {
-    return items.filter((elem) => elem.data.type == type);
+    return items.filter((elem) => getActorData(elem).type == type);
 }
 function itemsOfGeartype(items, geartype) {
-    return items.filter((elem) => elem.data.data.type == geartype);
+    return items.filter((elem) => getSystemData(elem).type == geartype);
 }
 function skillPointsNotZero(skills) {
     return Object.keys(skills)
@@ -168,7 +178,7 @@ function skillPointsNotZero(skills) {
 function itemNotInList(items, item) {
     var bool = true;
     items.forEach((elem) => {
-        if (elem.data.data.subtype == item) {
+        if (getSystemData(elem).subtype == item) {
             bool = false;
         }
     });
@@ -177,7 +187,7 @@ function itemNotInList(items, item) {
 function itemTypeInList(items, type) {
     var bool = false;
     items.forEach((elem) => {
-        if (elem.data.type == type) {
+        if (getActorData(elem).type == type) {
             bool = true;
         }
     });
@@ -239,7 +249,7 @@ function getSpellFeatures(spell) {
 }
 function getMatrixActionPool(key, actor) {
     const action = CONFIG.SR6.MATRIX_ACTIONS[key];
-    const skill = actor.data.data.skills[action.skill];
+    const skill = getSystemData(actor).skills[action.skill];
     let pool = 0;
     if (skill) {
         pool = skill.points + skill.modifier;
@@ -251,7 +261,7 @@ function getMatrixActionPool(key, actor) {
         }
     }
     if (action.attrib) {
-        const attrib = actor.data.data.attributes[action.attrib];
+        const attrib = getSystemData(actor).attributes[action.attrib];
         pool += attrib.pool;
     }
     return pool;

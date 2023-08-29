@@ -1,5 +1,15 @@
 import { VehicleRoll } from "../dice/RollTypes.js";
 import { Shadowrun6ActorSheet } from "./SR6ActorSheet.js";
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 /**
  * Sheet for Vehicle actors
  * @extends {ActorSheet}
@@ -30,23 +40,23 @@ export class Shadowrun6ActorSheetVehicle extends Shadowrun6ActorSheet {
     }
     _onDecelerate(event, html) {
         console.log("_onDecelerate");
-        let actorData = this.actor.data.data;
-        let currentSpeed = actorData.vehicle.speed;
-        let newSpeed = currentSpeed - (actorData.vehicle.offRoad ? actorData.accOff : actorData.accOn);
+        let system = getSystemData(this.actor);
+        let currentSpeed = system.vehicle.speed;
+        let newSpeed = currentSpeed - (system.vehicle.offRoad ? system.accOff : system.accOn);
         if (newSpeed < 0)
             newSpeed = 0;
         const field = "data.vehicle.speed";
-        this.actor.update({ [field]: newSpeed });
+        this.actor.updateSource({ [field]: newSpeed });
     }
     _onAccelerate(event, html) {
         console.log("_onAccelerate");
-        let actorData = this.actor.data.data;
-        let currentSpeed = actorData.vehicle.speed;
-        let newSpeed = currentSpeed + (actorData.vehicle.offRoad ? actorData.accOff : actorData.accOn);
-        if (newSpeed > actorData.tspd)
-            newSpeed = actorData.tspd;
-        const field = "data.vehicle.speed";
-        this.actor.update({ [field]: newSpeed });
+        let system = getSystemData(this.actor);
+        let currentSpeed = system.vehicle.speed;
+        let newSpeed = currentSpeed + (system.vehicle.offRoad ? system.accOff : system.accOn);
+        if (newSpeed > system.tspd)
+            newSpeed = system.tspd;
+        const field = "vehicle.speed";
+        this.actor.updateSource({ [field]: newSpeed });
     }
     //-----------------------------------------------------
     /**
@@ -62,10 +72,8 @@ export class Shadowrun6ActorSheetVehicle extends Shadowrun6ActorSheet {
         if (!event.currentTarget.dataset)
             return;
         let dataset = event.currentTarget.dataset;
-        console.log("dataset", dataset);
-        console.log("actorData", this.actor.data.data);
         const skillId = dataset.skill;
-        let actorData = this.actor.data.data;
+        let actorData = getSystemData(this.actor);
         let vSkill = actorData.skills[skillId];
         console.log("Roll skill " + skillId + " with pool " + vSkill.pool + " and a threshold " + actorData.vehicle.modifier);
         let roll = new VehicleRoll(actorData, skillId);

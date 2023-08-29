@@ -1,3 +1,13 @@
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 export class SR6ItemSheet extends ItemSheet {
     /** @override */
     static get defaultOptions() {
@@ -7,19 +17,19 @@ export class SR6ItemSheet extends ItemSheet {
         });
     }
     get template() {
-        console.log("in template()", this.item.data.data);
+        console.log("in template()", getSystemData(this.item));
         const path = "systems/shadowrun6-eden/templates/item/";
-        console.log(`${path}shadowrun6-${this.item.data.type}-sheet.html`);
+        console.log(`${path}shadowrun6-${getActorData(this.item).type}-sheet.html`);
         if (this.isEditable) {
             console.log("ReadWrite sheet ");
-            return `${path}shadowrun6-${this.item.data.type}-sheet.html`;
+            return `${path}shadowrun6-${getActorData(this.item).type}-sheet.html`;
         }
         else {
             console.log("ReadOnly sheet", this);
-            let genItem = this.item.data.data;
-            this.item.descHtml = game.i18n.localize(this.item.data.type + "." + genItem.genesisID + ".desc");
-            this.item.data.descHtml2 = game.i18n.localize(this.item.data.type + "." + genItem.genesisID + ".desc");
-            return `${path}shadowrun6-${this.item.data.type}-sheet-ro.html`;
+            let genItem = getSystemData(this.item);
+            this.item.descHtml = game.i18n.localize(getActorData(this.item).type + "." + genItem.genesisID + ".desc");
+            getActorData(this.item).descHtml2 = game.i18n.localize(getActorData(this.item).type + "." + genItem.genesisID + ".desc");
+            return `${path}shadowrun6-${getActorData(this.item).type}-sheet-ro.html`;
         }
     }
     /** @overrride */
@@ -42,16 +52,16 @@ export class SR6ItemSheet extends ItemSheet {
         }
         if (!this.isEditable) {
             let x = html.find(".data-desc");
-            console.log("Replace descriptions for " + this.object.type + " and ", this.object.data.data);
+            console.log("Replace descriptions for " + this.object.type + " and ", getSystemData(this.object));
             switch (this.object.type) {
                 case "quality":
-                    x[0].innerHTML = game.i18n.localize("quality." + this.object.data.data.genesisID + ".desc");
+                    x[0].innerHTML = game.i18n.localize("quality." + getSystemData(this.object).genesisID + ".desc");
                     break;
                 case "gear":
-                    x[0].innerHTML = game.i18n.localize("item." + this.object.data.data.genesisID + ".desc");
+                    x[0].innerHTML = game.i18n.localize("item." + getSystemData(this.object).genesisID + ".desc");
                     break;
                 default:
-                    x[0].innerHTML = game.i18n.localize(this.object.type + "." + this.object.data.data.genesisID + ".desc");
+                    x[0].innerHTML = game.i18n.localize(this.object.type + "." + getSystemData(this.object).genesisID + ".desc");
             }
         }
         // Owner Only Listeners
@@ -65,7 +75,7 @@ export class SR6ItemSheet extends ItemSheet {
                 else {
                     value = element.value;
                 }
-                const itemId = this.object.data._id;
+                const itemId = getActorData(this.object)._id;
                 const field = element.dataset.field;
                 console.log("Try to update field '" + field + "' of item " + itemId + " with value " + value, this.item);
                 if (this.item) {
@@ -107,13 +117,13 @@ export class SR6ItemSheet extends ItemSheet {
             if (field) {
                 newValue = duplicate(array.split(".").reduce(function (prev, curr) {
                     return prev ? prev[curr] : null;
-                }, this.object.data));
+                }, getActorData(this.object)));
                 newValue[idx][field] = element.value;
             }
             else {
                 newValue = duplicate(array.split(".").reduce(function (prev, curr) {
                     return prev ? prev[curr] : null;
-                }, this.object.data));
+                }, getActorData(this.object)));
                 newValue[idx] = element.value;
             }
             this.object.update({ [array]: newValue });

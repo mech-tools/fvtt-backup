@@ -10,6 +10,13 @@ function isWeapon(obj) {
 function isSpell(obj) {
     return obj.drain != undefined;
 }
+function getSystemData(obj) {
+    if (!obj)
+        return null;
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
 export async function doRoll(data) {
     console.log("ENTER doRoll ", data);
     try {
@@ -38,10 +45,10 @@ async function _showRollDialog(data) {
         let lifeform;
         let dia2;
         if (data.actor) {
-            if (!isLifeform(data.actor.data.data)) {
+            if (!isLifeform(getSystemData(data.actor))) {
                 console.log("Actor is not a lifeform");
             }
-            lifeform = data.actor.data.data;
+            lifeform = getSystemData(data.actor);
             data.edge = data.actor ? lifeform.edge.value : 0;
         }
         if (!data.calcPool || data.calcPool == 0) {
@@ -144,7 +151,7 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
     /* Check if attacker gets edge */
     if (configured.actor && configured.edgePlayer > 0) {
         console.log("Actor " + configured.actor.data._id + " gets " + configured.edgePlayer + " Edge");
-        let newEdge = configured.actor.data.data.edge.value + configured.edgePlayer;
+        let newEdge = getSystemData(configured.actor).edge.value + configured.edgePlayer;
         configured.actor.update({ ["data.edge.value"]: newEdge });
         let combat = game.combat;
         if (combat) {
@@ -158,7 +165,8 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
     try {
         if (!dialog.modifier)
             dialog.modifier = 0;
-        if (prepared.actor && isLifeform(prepared.actor.data.data)) {
+        let system = getSystemData(prepared.actor);
+        if (prepared.actor && isLifeform(system)) {
             // Pay eventuallly selected edge boost
             if (configured.edgeBoost && configured.edgeBoost != "none") {
                 console.log("Edge Boost selected: " + configured.edgeBoost);
@@ -168,10 +176,10 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
                 else {
                     let boost = CONFIG.SR6.EDGE_BOOSTS.find((boost) => boost.id == configured.edgeBoost);
                     console.log("Pay " + boost.cost + " egde for Edge Boost: " + game.i18n.localize("shadowrun6.edge_boost." + configured.edgeBoost));
-                    prepared.actor.data.data.edge.value = prepared.edge - boost.cost;
+                    system.edge.value = prepared.edge - boost.cost;
                     // Pay Edge cost
                     console.log("Update Edge to " + (prepared.edge - boost.cost));
-                    prepared.actor.update({ ["data.edge.value"]: prepared.actor.data.data.edge.value });
+                    prepared.actor.update({ ["data.edge.value"]: system.edge.value });
                 }
             }
             else {

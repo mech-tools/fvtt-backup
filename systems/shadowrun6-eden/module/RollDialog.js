@@ -29,6 +29,16 @@ function isItemRoll(obj) {
 function isSkillRoll(obj) {
     return obj.skillId != undefined;
 }
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 /**
  * Special Shadowrun 6 instance of the RollDialog
  */
@@ -49,7 +59,7 @@ export class RollDialog extends Dialog {
         this.actor = rOptions.actor;
         this.prepared = rOptions.prepared;
         this.dialogResult = rOptions.dialogResult;
-        this.edge = this.actor ? this.actor.data.data.edge.value : 0;
+        this.edge = this.actor ? getSystemData(this.actor).edge.value : 0;
     }
     /********************************************
      * React to changes on the dialog
@@ -132,7 +142,6 @@ export class RollDialog extends Dialog {
                         ar += parseInt(arModElem.value);
                     }
                     let finalAR = ar;
-                    //this.data.data.attackRating = ar;
                     let result = ar - dr;
                     if (result >= 4) {
                         configured.edgePlayer++;
@@ -156,7 +165,7 @@ export class RollDialog extends Dialog {
                 }
             }
             // Set new edge value
-            let actor = configured.actor.data.data;
+            let actor = getSystemData(configured.actor);
             let capped = false;
             // Limit the maximum edge
             let max = game.settings.get(SYSTEM_NAME, "maxEdgePerRound");
@@ -326,7 +335,7 @@ export class RollDialog extends Dialog {
         switch (boostOrActionId) {
             case "add_edge_pool":
                 data.explode = true;
-                this.modifier = data.actor.data.data.edge.max;
+                this.modifier = getSystemData(data.actor).edge.max;
                 break;
         }
         // Update content on dialog
@@ -340,9 +349,10 @@ export class RollDialog extends Dialog {
         let ampUpElement = document.getElementById("ampUp");
         let incElement = document.getElementById("incArea");
         let prepared = this.options.prepared;
-        if (!isLifeform(prepared.actor.data.data))
+        if (!isLifeform(getSystemData(prepared.actor)))
             return;
-        const baseMagic = prepared.actor.data.data.attributes.mag.pool;
+        let lifeform = getSystemData(prepared.actor);
+        const baseMagic = lifeform.attributes.mag.pool;
         let ampUpSelect = ampUpElement ? parseInt(ampUpElement.value) : 0;
         let incSelect = incElement ? parseInt(incElement.value) : 0;
         prepared.calcDamage = (prepared.spell.damage === "physical" || prepared.spell.damage === "physical_special" ? baseMagic / 2 : 0) + ampUpSelect;

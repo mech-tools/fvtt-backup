@@ -1,4 +1,9 @@
 import { SYSTEM_NAME } from "./constants.js";
+function getActorData(obj) {
+    if (game.release.generation >= 10)
+        return obj;
+    return obj.data;
+}
 export default class Shadowrun6Combat extends Combat {
     /**
      * Define how the array of Combatants is sorted in the displayed list of the tracker.
@@ -29,7 +34,8 @@ export default class Shadowrun6Combat extends Combat {
             console.log("getMaxEdgeGain: Combat not yet started - allow max");
             return max;
         }
-        let comb = this.getCombatantByActor(actor.data._id);
+        let actorData = getActorData(actor);
+        let comb = this.getCombatantByActor(actorData._id);
         if (comb) {
             max -= Math.max(0, comb.edgeGained);
         }

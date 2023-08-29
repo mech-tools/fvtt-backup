@@ -237,6 +237,11 @@ export class ComplexFormRoll extends SkillRoll {
 function isWeapon(obj) {
     return obj.attackRating != undefined;
 }
+function getSystemData(obj) {
+    if (game.release.generation >= 10)
+        return obj.system;
+    return obj.data.data;
+}
 export class WeaponRoll extends SkillRoll {
     rollType = RollType.Weapon;
     item;
@@ -259,7 +264,7 @@ export class WeaponRoll extends SkillRoll {
     burstMode;
     faArea;
     constructor(actor, item, itemId, gear) {
-        super(actor, item.data.data.skill);
+        super(actor, getSystemData(item).skill);
         this.item = item;
         this.itemId = itemId;
         this.gear = gear;
