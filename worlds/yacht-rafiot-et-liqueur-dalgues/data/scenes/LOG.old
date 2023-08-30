@@ -1,8 +1,15 @@
-2023/08/30-21:09:52.848125 7f02e77fe700 Recovering log #235
-2023/08/30-21:09:52.851073 7f02e77fe700 Delete type=0 #235
-2023/08/30-21:09:52.851098 7f02e77fe700 Delete type=3 #233
-2023/08/30-21:15:23.942666 7f02e5357700 Level-0 table #240: started
-2023/08/30-21:15:23.942694 7f02e5357700 Level-0 table #240: 0 bytes OK
-2023/08/30-21:15:23.943931 7f02e5357700 Delete type=0 #238
-2023/08/30-21:15:23.944531 7f02e5357700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
-2023/08/30-21:15:23.949580 7f02e5357700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
+2023/08/30-21:15:41.652058 7f02e6ffd700 Recovering log #239
+2023/08/30-21:15:41.654956 7f02e6ffd700 Delete type=3 #237
+2023/08/30-21:15:41.655006 7f02e6ffd700 Delete type=0 #239
+2023/08/30-21:59:30.907323 7f02e5357700 Level-0 table #244: started
+2023/08/30-21:59:30.909175 7f02e5357700 Level-0 table #244: 25901 bytes OK
+2023/08/30-21:59:30.910271 7f02e5357700 Delete type=0 #242
+2023/08/30-21:59:30.913106 7f02e5357700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.Qeh70PPh1irdUVQN.bTtDStRCkgYYWWT2' @ 0 : 0; will stop at (end)
+2023/08/30-21:59:30.914618 7f02e5357700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.Qeh70PPh1irdUVQN.bTtDStRCkgYYWWT2' @ 0 : 0; will stop at '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.Qeh70PPh1irdUVQN.bTtDStRCkgYYWWT2' @ 287 : 1
+2023/08/30-21:59:30.914626 7f02e5357700 Compacting 1@1 + 1@2 files
+2023/08/30-21:59:30.915959 7f02e5357700 Generated table #245@1: 4 keys, 2237 bytes
+2023/08/30-21:59:30.915972 7f02e5357700 Compacted 1@1 + 1@2 files => 2237 bytes
+2023/08/30-21:59:30.916621 7f02e5357700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/08/30-21:59:30.916669 7f02e5357700 Delete type=2 #208
+2023/08/30-21:59:30.916711 7f02e5357700 Delete type=2 #244
+2023/08/30-21:59:30.920447 7f02e5357700 Manual compaction at level-1 from '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.Qeh70PPh1irdUVQN.bTtDStRCkgYYWWT2' @ 287 : 1 .. '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.Qeh70PPh1irdUVQN.bTtDStRCkgYYWWT2' @ 0 : 0; will stop at (end)
