@@ -8,10 +8,3 @@ Hooks.on("getProseMirrorMenuItems", (editor, items) => {
         cmd: ProseMirror.commands.toggleMark(ProseMirror.defaultSchema.marks.mark)
     });
 });
-
-Hooks.once("ready", () => { 
-    // No pause
-    if (game.users.current.isGM) {
-        if (game.paused) game.togglePause(false, true);
-    }
-});

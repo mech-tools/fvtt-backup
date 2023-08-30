@@ -1,5 +1,4 @@
 /* Fix de la section bio des PJ */
-
 .coc7.actor.character .tab.character-background > div {
     flex-direction: column;
     flex-wrap: wrap;
