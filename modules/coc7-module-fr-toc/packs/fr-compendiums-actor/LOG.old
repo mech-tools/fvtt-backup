@@ -1,21 +1,8 @@
-2023/08/25-02:16:12.046850 7f90817fa700 Recovering log #145
-2023/08/25-02:16:12.051023 7f90817fa700 Delete type=3 #143
-2023/08/25-02:16:12.051050 7f90817fa700 Delete type=0 #145
-2023/08/25-02:16:12.051066 7f90817fa700 Delete type=3 #119
-2023/08/25-02:16:12.051085 7f90817fa700 Delete type=2 #140
-2023/08/25-02:16:12.051325 7f90817fa700 Delete type=0 #121
-2023/08/25-02:16:12.051347 7f90817fa700 Delete type=3 #141
-2023/08/25-02:16:12.051362 7f90817fa700 Delete type=0 #142
-2023/08/25-02:16:12.051376 7f90817fa700 Delete type=2 #102
-2023/08/28-00:43:01.801603 7f8de3fff700 Level-0 table #151: started
-2023/08/28-00:43:01.817455 7f8de3fff700 Level-0 table #151: 1149350 bytes OK
-2023/08/28-00:43:01.819450 7f8de3fff700 Delete type=0 #149
-2023/08/28-00:43:01.819893 7f8de3fff700 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
-2023/08/28-00:43:01.836008 7f8de3fff700 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at '!actors.items!zLMOpuXkzwrdMoMS.baEDQsI6TLvcuTBh' @ 8921 : 1
-2023/08/28-00:43:01.836019 7f8de3fff700 Compacting 1@1 + 1@2 files
-2023/08/28-00:43:01.856748 7f8de3fff700 Generated table #152@1: 726 keys, 1150632 bytes
-2023/08/28-00:43:01.856766 7f8de3fff700 Compacted 1@1 + 1@2 files => 1150632 bytes
-2023/08/28-00:43:01.857574 7f8de3fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/08/28-00:43:01.857655 7f8de3fff700 Delete type=2 #147
-2023/08/28-00:43:01.857845 7f8de3fff700 Delete type=2 #151
-2023/08/28-00:43:01.911079 7f8de3fff700 Manual compaction at level-1 from '!actors.items!zLMOpuXkzwrdMoMS.baEDQsI6TLvcuTBh' @ 8921 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/08/29-22:55:00.474759 7f9082ffd700 Recovering log #155
+2023/08/29-22:55:00.478663 7f9082ffd700 Delete type=3 #153
+2023/08/29-22:55:00.478708 7f9082ffd700 Delete type=0 #155
+2023/08/29-22:57:10.205758 7f8de3fff700 Level-0 table #160: started
+2023/08/29-22:57:10.205774 7f8de3fff700 Level-0 table #160: 0 bytes OK
+2023/08/29-22:57:10.206608 7f8de3fff700 Delete type=0 #158
+2023/08/29-22:57:10.207604 7f8de3fff700 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/08/29-22:57:10.207895 7f8de3fff700 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)

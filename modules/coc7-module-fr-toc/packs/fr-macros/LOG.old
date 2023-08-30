@@ -1,20 +1,7 @@
-2023/08/25-02:16:12.152818 7f9082ffd700 Recovering log #93
-2023/08/25-02:16:12.160436 7f9082ffd700 Delete type=0 #93
-2023/08/25-02:16:12.160461 7f9082ffd700 Delete type=0 #69
-2023/08/25-02:16:12.160475 7f9082ffd700 Delete type=2 #88
-2023/08/25-02:16:12.160490 7f9082ffd700 Delete type=3 #89
-2023/08/25-02:16:12.160506 7f9082ffd700 Delete type=3 #91
-2023/08/25-02:16:12.160521 7f9082ffd700 Delete type=0 #90
-2023/08/25-02:16:12.160533 7f9082ffd700 Delete type=2 #34
-2023/08/25-02:16:12.160547 7f9082ffd700 Delete type=3 #67
-2023/08/28-00:43:02.042503 7f8de3fff700 Level-0 table #99: started
-2023/08/28-00:43:02.043750 7f8de3fff700 Level-0 table #99: 1076 bytes OK
-2023/08/28-00:43:02.044598 7f8de3fff700 Delete type=0 #97
-2023/08/28-00:43:02.045015 7f8de3fff700 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at '!macros!IeRnp7Tqb8MxNtxT' @ 13 : 1
-2023/08/28-00:43:02.045025 7f8de3fff700 Compacting 1@0 + 1@1 files
-2023/08/28-00:43:02.046960 7f8de3fff700 Generated table #100@0: 1 keys, 1076 bytes
-2023/08/28-00:43:02.046974 7f8de3fff700 Compacted 1@0 + 1@1 files => 1076 bytes
-2023/08/28-00:43:02.047813 7f8de3fff700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2023/08/28-00:43:02.047863 7f8de3fff700 Delete type=2 #95
-2023/08/28-00:43:02.047903 7f8de3fff700 Delete type=2 #99
-2023/08/28-00:43:02.047957 7f8de3fff700 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 13 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
+2023/08/29-22:55:00.623235 7f90817fa700 Recovering log #103
+2023/08/29-22:55:00.625569 7f90817fa700 Delete type=3 #101
+2023/08/29-22:55:00.625599 7f90817fa700 Delete type=0 #103
+2023/08/29-22:57:10.215320 7f8de3fff700 Level-0 table #108: started
+2023/08/29-22:57:10.215336 7f8de3fff700 Level-0 table #108: 0 bytes OK
+2023/08/29-22:57:10.216060 7f8de3fff700 Delete type=0 #106
+2023/08/29-22:57:10.216140 7f8de3fff700 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
