@@ -14,11 +14,6 @@ Hooks.once("ready", () => {
     if (!game.settings.get('smalltime', 'date-showing')) {
         game.settings.set('smalltime', 'date-showing', true);
     }
-
-    // No pause
-    if (game.users.current.isGM) {
-        if (game.paused) game.togglePause(false, true);
-    }
 });
 
 // Share actor button
