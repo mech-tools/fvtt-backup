@@ -1,15 +1,15 @@
-2023/08/29-22:55:00.372896 7f90827fc700 Recovering log #62
-2023/08/29-22:55:00.375871 7f90827fc700 Delete type=0 #62
-2023/08/29-22:55:00.375907 7f90827fc700 Delete type=3 #60
-2023/08/29-22:57:10.186192 7f8de3fff700 Level-0 table #67: started
-2023/08/29-22:57:10.187995 7f8de3fff700 Level-0 table #67: 2593 bytes OK
-2023/08/29-22:57:10.189060 7f8de3fff700 Delete type=0 #65
-2023/08/29-22:57:10.196307 7f8de3fff700 Manual compaction at level-0 from '!scenes!4DxmNWzyQgjwI1h3' @ 72057594037927935 : 1 .. '!scenes.walls!w04WsvnZOMAGJDsW.z9PSwBRMQxCBLkw2' @ 0 : 0; will stop at (end)
-2023/08/29-22:57:10.196374 7f8de3fff700 Manual compaction at level-1 from '!scenes!4DxmNWzyQgjwI1h3' @ 72057594037927935 : 1 .. '!scenes.walls!w04WsvnZOMAGJDsW.z9PSwBRMQxCBLkw2' @ 0 : 0; will stop at '!scenes.tokens.delta!BMVApahsKCZyPZvN.fAXYgsE2xLq3jJFN.yWLLmmvDEfrlM3Zp' @ 802 : 1
-2023/08/29-22:57:10.196379 7f8de3fff700 Compacting 1@1 + 1@2 files
-2023/08/29-22:57:10.198123 7f8de3fff700 Generated table #68@1: 364 keys, 37551 bytes
-2023/08/29-22:57:10.198136 7f8de3fff700 Compacted 1@1 + 1@2 files => 37551 bytes
-2023/08/29-22:57:10.198959 7f8de3fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/08/29-22:57:10.199013 7f8de3fff700 Delete type=2 #59
-2023/08/29-22:57:10.199055 7f8de3fff700 Delete type=2 #67
-2023/08/29-22:57:10.200883 7f8de3fff700 Manual compaction at level-1 from '!scenes.tokens.delta!BMVApahsKCZyPZvN.fAXYgsE2xLq3jJFN.yWLLmmvDEfrlM3Zp' @ 802 : 1 .. '!scenes.walls!w04WsvnZOMAGJDsW.z9PSwBRMQxCBLkw2' @ 0 : 0; will stop at (end)
+2023/08/31-17:04:07.949038 7f90817fa700 Recovering log #95
+2023/08/31-17:04:07.951627 7f90817fa700 Delete type=3 #93
+2023/08/31-17:04:07.951657 7f90817fa700 Delete type=0 #95
+2023/09/01-00:10:18.796193 7f8de3fff700 Level-0 table #101: started
+2023/09/01-00:10:18.797612 7f8de3fff700 Level-0 table #101: 16831 bytes OK
+2023/09/01-00:10:18.798699 7f8de3fff700 Delete type=0 #99
+2023/09/01-00:10:18.804087 7f8de3fff700 Manual compaction at level-0 from '!scenes!BMVApahsKCZyPZvN' @ 72057594037927935 : 1 .. '!scenes.tiles!PTmNsgU8Ne4O50Ho.khtjYCCPujtCW1uG' @ 0 : 0; will stop at (end)
+2023/09/01-00:10:18.804165 7f8de3fff700 Manual compaction at level-1 from '!scenes!BMVApahsKCZyPZvN' @ 72057594037927935 : 1 .. '!scenes.tiles!PTmNsgU8Ne4O50Ho.khtjYCCPujtCW1uG' @ 0 : 0; will stop at '!scenes.tokens.delta!PTmNsgU8Ne4O50Ho.RoBmkIhuCcom8Zd4.Fz0diLmTAqYWUoYV' @ 2524 : 1
+2023/09/01-00:10:18.804170 7f8de3fff700 Compacting 1@1 + 1@2 files
+2023/09/01-00:10:18.805160 7f8de3fff700 Generated table #102@1: 8 keys, 4991 bytes
+2023/09/01-00:10:18.805174 7f8de3fff700 Compacted 1@1 + 1@2 files => 4991 bytes
+2023/09/01-00:10:18.805863 7f8de3fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/01-00:10:18.805915 7f8de3fff700 Delete type=2 #101
+2023/09/01-00:10:18.805959 7f8de3fff700 Delete type=2 #97
+2023/09/01-00:10:18.809896 7f8de3fff700 Manual compaction at level-1 from '!scenes.tokens.delta!PTmNsgU8Ne4O50Ho.RoBmkIhuCcom8Zd4.Fz0diLmTAqYWUoYV' @ 2524 : 1 .. '!scenes.tiles!PTmNsgU8Ne4O50Ho.khtjYCCPujtCW1uG' @ 0 : 0; will stop at (end)
