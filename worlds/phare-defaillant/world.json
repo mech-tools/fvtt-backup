@@ -9,12 +9,13 @@
     "verified": "11.308"
   },
   "esmodules": [
-    "script.js"
+    "highlight.js",
+    "autoscale.js"
   ],
   "styles": [
     "styles.css"
   ],
   "systemVersion": "0.10.5",
-  "lastPlayed": "Fri Sep 01 2023 18:08:14 GMT+0200 (Central European Summer Time)",
-  "playtime": 759065
+  "lastPlayed": "Sat Sep 02 2023 19:38:19 GMT+0200 (Central European Summer Time)",
+  "playtime": 784840
 }
