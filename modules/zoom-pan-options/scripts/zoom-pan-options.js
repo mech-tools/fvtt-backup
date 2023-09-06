@@ -15,6 +15,10 @@ function localizeSetting (scope, str) {
   return game.i18n.localize(MODULE_ID + '.settings.' + scope + '.' + str)
 }
 
+function localizeKeybinding (scope, str) {
+  return game.i18n.localize(MODULE_ID + '.keybindings.' + scope + '.' + str)
+}
+
 function checkRotationRateLimit (layer) {
   const hoveredLayerThing = isNewerVersion(game.version, '10') ? layer.hover : layer._hover
   const hasTarget = layer.options?.controllableObjects ? layer.controlled.length : !!hoveredLayerThing
@@ -209,9 +213,8 @@ const handleMouseDown_forMiddleClickDrag = (mouseDownEvent) => {
     //if ( event.button !== 2 ) return; // Only support standard left-click
 
     // Determine double vs single click
-    const now = Date.now()
     //const isDouble = (now - mim.rcTime) <= 250;
-    mim.rcTime = now
+    mim.rcTime = Date.now()
 
     // Update event data
     mim.interactionData.origin = event.getLocalPosition(mim.layer)
@@ -580,6 +583,37 @@ Hooks.on('init', function () {
     default: 3,
     type: Number,
   })
+
+  // Register Keybindings
+
+  game.keybindings.register(MODULE_ID, 'toggleTouchpadMode', {
+    name: localizeKeybinding('toggle-touchpad-mode', 'name'),
+    editable: [],
+    onDown: () => {
+      // will toggle between Mouse and Touchpad
+      const mode = ['Mouse', 'Alternative'].includes(game.settings.get(MODULE_ID, 'pan-zoom-mode'))
+        ? 'Touchpad'
+        : 'Mouse'
+      game.settings.set(MODULE_ID, 'pan-zoom-mode', mode)
+      ui.notifications.info(localizeKeybinding('notifications', mode))
+    },
+    repeat: false,
+  })
+
+  game.keybindings.register(MODULE_ID, 'toggleAlternativeMode', {
+    name: localizeKeybinding('toggle-alternative-mode', 'name'),
+    editable: [],
+    onDown: () => {
+      // will toggle between Mouse and Alternative
+      const mode = ['Mouse', 'Touchpad'].includes(game.settings.get(MODULE_ID, 'pan-zoom-mode'))
+        ? 'Alternative'
+        : 'Mouse'
+      game.settings.set(MODULE_ID, 'pan-zoom-mode', mode)
+      ui.notifications.info(localizeKeybinding('notifications', mode))
+    },
+    repeat: false,
+  })
+
   migrateOldSettings()
   avoidLockViewIncompatibility()
 })

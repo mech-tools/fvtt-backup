@@ -82,22 +82,22 @@ font-size: 30px;
 /* ----------------------------------------- */
 /*  Sheet V2 Styles                          */
 /* ----------------------------------------- */
-@font-face {
-  font-family: "Cairo";
-  src: url("fonts/cairo/Cairo-Regular.ttf");
-}
-@font-face {
-  font-family: "Cairo-Bold";
-  src: url("fonts/cairo/Cairo-Bold.ttf");
-}
-@font-face {
-  font-family: "Cairo-SemiBold";
-  src: url("fonts/cairo/Cairo-SemiBold.ttf");
-}
-@font-face {
-  font-family: "Play";
-  src: url("fonts/play/Play-Regular.ttf");
-}
+//@font-face {
+//  font-family: "Cairo";
+//  src: url("/Data/systems/yzecoriolis/css/fonts/cairo/Cairo-Regular.ttf");
+//}
+//@font-face {
+//  font-family: "Cairo-Bold";
+//  src: url("fonts/cairo/Cairo-Bold.ttf");
+//}
+//@font-face {
+//  font-family: "Cairo-SemiBold";
+//  src: url("fonts/cairo/Cairo-SemiBold.ttf");
+//}
+//@font-face {
+//  font-family: "Play";
+//  src: url("fonts/play/Play-Regular.ttf");
+//}
 .animated-hover {
   transition: 275ms filter ease;
 }
@@ -3072,6 +3072,7 @@ a.content-link, a.inline-roll{
   line-height: 50px;
   border-radius: 4px;
   color: #ffffff;
+  font-family: Play;
 }
 
 
@@ -3091,10 +3092,11 @@ a.content-link, a.inline-roll{
 
 .window-app .window-content {
   background: rgba(255, 169, 3, 0.6);
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
+//  flex is causing problems with GM screen module, commenting out next 4 lines 1.4
+//  display: flex;
+//  flex-direction: column;
+//  flex-wrap: nowrap;
+//  justify-content: flex-start;
 //  background-image: url("/modules/coriolis-kbender-ui/data/images/item_back1.png");
   background: url("/modules/coriolis-kbender-ui/data/images/item_back1.png");
   padding: 8 px;
@@ -3179,6 +3181,7 @@ form button {
   opacity: 0.8;
   border-bottom: 1px solid var(--color-border-highlight);
   box-shadow: 0 0 10px var(--color-shadow-highlight);
+
 }
 
 #navigation #scene-list .scene.gm {
@@ -3191,6 +3194,7 @@ form button {
   background: var(--color-coriolis-dark);
   opacity: 0.8;
   color: var(--color-text-dark-primary);
+  font-family: Play;
 }
 
 /* end of top bar menu*/
@@ -3294,3 +3298,23 @@ background: var(--color-coriolis-dark);
   text-align: center;
 }
 
+//GM SCREEN integration
+.gm-screen-app .gm-screen-actions .meta-actions button {
+  background: rgba(30, 30, 30,  0.35);
+  color: var(--color-coriolis-light-gold);
+}
+
+.gm-screen-app.gm-screen-drawer.expanded .gm-screen-actions button {
+  background: rgba(30, 30, 30,  0.35);
+  color: var(--color-coriolis-light-gold);
+}
+
+.gm-screen-app.gm-screen-drawer .gm-screen-actions > * {
+  background: rgba(30, 30, 30,  0.35);
+  color: var(--color-coriolis-light-gold);
+}
+
+.gm-screen-app .gm-screen-actions button {
+  background: rgba(30, 30, 30,  0.35) !important;
+  color: var(--color-coriolis-light-gold);
+}

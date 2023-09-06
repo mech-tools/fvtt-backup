@@ -1,8 +1,15 @@
-2023/08/16-17:48:01.814987 7f2845ffb700 Recovering log #21
-2023/08/16-17:48:01.817707 7f2845ffb700 Delete type=0 #21
-2023/08/16-17:48:01.817746 7f2845ffb700 Delete type=3 #19
-2023/08/28-10:53:30.414424 7f2844ba1700 Level-0 table #26: started
-2023/08/28-10:53:30.414712 7f2844ba1700 Level-0 table #26: 0 bytes OK
-2023/08/28-10:53:30.415733 7f2844ba1700 Delete type=0 #24
-2023/08/28-10:53:30.417520 7f2844ba1700 Manual compaction at level-0 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zZPV8XlXcydbFPiO' @ 0 : 0; will stop at (end)
-2023/08/28-10:53:30.420487 7f2844ba1700 Manual compaction at level-1 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zZPV8XlXcydbFPiO' @ 0 : 0; will stop at (end)
+2023/08/28-10:57:47.677287 7f692bfff700 Recovering log #25
+2023/08/28-10:57:47.680652 7f692bfff700 Delete type=0 #25
+2023/08/28-10:57:47.680703 7f692bfff700 Delete type=3 #23
+2023/09/05-10:25:35.330173 7f66ab3b6700 Level-0 table #30: started
+2023/09/05-10:25:35.331551 7f66ab3b6700 Level-0 table #30: 693 bytes OK
+2023/09/05-10:25:35.332566 7f66ab3b6700 Delete type=0 #28
+2023/09/05-10:25:35.333000 7f66ab3b6700 Manual compaction at level-0 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zZPV8XlXcydbFPiO' @ 0 : 0; will stop at (end)
+2023/09/05-10:25:35.333309 7f66ab3b6700 Manual compaction at level-1 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zZPV8XlXcydbFPiO' @ 0 : 0; will stop at '!folders!wX2JNW1iN1HWpgmD' @ 203 : 1
+2023/09/05-10:25:35.333318 7f66ab3b6700 Compacting 1@1 + 1@2 files
+2023/09/05-10:25:35.335039 7f66ab3b6700 Generated table #31@1: 199 keys, 20013 bytes
+2023/09/05-10:25:35.335052 7f66ab3b6700 Compacted 1@1 + 1@2 files => 20013 bytes
+2023/09/05-10:25:35.335630 7f66ab3b6700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/05-10:25:35.335695 7f66ab3b6700 Delete type=2 #10
+2023/09/05-10:25:35.336636 7f66ab3b6700 Delete type=2 #30
+2023/09/05-10:25:35.342974 7f66ab3b6700 Manual compaction at level-1 from '!folders!wX2JNW1iN1HWpgmD' @ 203 : 1 .. '!folders!zZPV8XlXcydbFPiO' @ 0 : 0; will stop at (end)
