@@ -2,7 +2,7 @@
     "id": "share-media",
     "title": "Share Media",
     "description": "A module to easily share media to players",
-    "version": "0.0.42",
+    "version": "0.0.44",
     "library": "false",
     "compatibility": {
         "minimum": 11,
@@ -30,12 +30,12 @@
     "conflicts": [],
     "socket": true,
     "esmodules": [
-        "/modules/main.js",
-        "/modules/socket.js"
+        "/build/main.js",
+        "/build/socket.js"
     ],
     "scripts": [],
     "styles": [
-        "/styles/main.css"
+        "/build/main.css"
     ],
     "languages": [
         {
@@ -61,6 +61,6 @@
     ],
     "url": "https://github.com/DarKDinDoN/share-media",
     "manifest": "https://github.com/DarKDinDoN/share-media/releases/latest/download/module.json",
-    "download": "https://github.com/DarKDinDoN/share-media/releases/download/0.0.42/module.zip",
+    "download": "https://github.com/DarKDinDoN/share-media/releases/download/0.0.44/module.zip",
     "media": []
 }
