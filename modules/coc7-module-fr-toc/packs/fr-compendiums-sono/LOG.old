@@ -1,8 +1,3 @@
-2023/09/02-17:19:34.168747 7f02e77fe700 Recovering log #191
-2023/09/02-17:19:34.173574 7f02e77fe700 Delete type=3 #189
-2023/09/02-17:19:34.173607 7f02e77fe700 Delete type=0 #191
-2023/09/06-01:31:02.460437 7f02e5357700 Level-0 table #196: started
-2023/09/06-01:31:02.460619 7f02e5357700 Level-0 table #196: 0 bytes OK
-2023/09/06-01:31:02.461487 7f02e5357700 Delete type=0 #194
-2023/09/06-01:31:02.461581 7f02e5357700 Manual compaction at level-0 from '!folders!4dJZSPAlvsWxe0Y8' @ 72057594037927935 : 1 .. '!playlists.sounds!zDDVmS50AvFNTggf.sXP2MA2TNsMBpXtY' @ 0 : 0; will stop at (end)
-2023/09/06-01:31:02.461962 7f02e5357700 Manual compaction at level-1 from '!folders!4dJZSPAlvsWxe0Y8' @ 72057594037927935 : 1 .. '!playlists.sounds!zDDVmS50AvFNTggf.sXP2MA2TNsMBpXtY' @ 0 : 0; will stop at (end)
+2023/09/06-01:31:18.274386 7f02e67fc700 Recovering log #195
+2023/09/06-01:31:18.277257 7f02e67fc700 Delete type=0 #195
+2023/09/06-01:31:18.277289 7f02e67fc700 Delete type=3 #193
