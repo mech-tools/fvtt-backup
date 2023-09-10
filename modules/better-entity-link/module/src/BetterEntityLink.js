@@ -97,10 +97,12 @@ export class BetterEntityLink {
         const actionMenu = {
             name: options.name,
             icon: `<i class="fas ${options.icon}"></i>`,
-            condition: async li => {
-                const entity = await this._resolveEntity(entityType, li.data("id"), li.data("pack"));
-                return entityType.localeCompare(entity.documentName, undefined, {sensitivity: "base"}) === 0
-                        && (options.condition instanceof Function && options.condition(entity));
+            condition: li => {
+                const documentId = li.data("id");
+                const packId = li.data("pack");
+                const data = packId ? game.packs.get(packId)?.index.get(documentId) : game.collections.get(entityType)?.get(documentId);
+                
+                return options.condition instanceof Function && options.condition(documentId, packId, data);
             },
             callback: async li => {
                 const entity = await this._resolveEntity(entityType, li.data("id"), li.data("pack"));
