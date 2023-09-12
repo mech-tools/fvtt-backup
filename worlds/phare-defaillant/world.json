@@ -11,12 +11,13 @@
   "esmodules": [
     "highlight.js",
     "autoscale.js",
+    "share-handout.js",
     "better-entity-link.js"
   ],
   "styles": [
     "styles.css"
   ],
   "systemVersion": "0.10.5",
-  "lastPlayed": "Sun Sep 10 2023 16:17:56 GMT+0200 (Central European Summer Time)",
-  "playtime": 1353099
+  "lastPlayed": "Tue Sep 12 2023 01:00:49 GMT+0200 (Central European Summer Time)",
+  "playtime": 1438808
 }
