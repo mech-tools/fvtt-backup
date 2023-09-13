@@ -1,3 +1,24 @@
-2023/09/05-10:54:45.287166 7f69499d2700 Recovering log #28
-2023/09/05-10:54:45.289975 7f69499d2700 Delete type=0 #28
-2023/09/05-10:54:45.290010 7f69499d2700 Delete type=3 #26
+2023/09/08-11:17:33.392292 7f0076fdc700 Recovering log #33
+2023/09/08-11:17:33.392649 7f0076fdc700 Level-0 table #35: started
+2023/09/08-11:17:33.394651 7f0076fdc700 Level-0 table #35: 2596 bytes OK
+2023/09/08-11:17:33.397092 7f0076fdc700 Delete type=0 #33
+2023/09/08-11:17:33.397164 7f0076fdc700 Delete type=3 #32
+2023/09/12-16:16:02.703324 7f00759d1700 Level-0 table #38: started
+2023/09/12-16:16:02.706338 7f00759d1700 Level-0 table #38: 84985 bytes OK
+2023/09/12-16:16:02.707211 7f00759d1700 Delete type=0 #36
+2023/09/12-16:16:02.708470 7f00759d1700 Manual compaction at level-0 from '!messages!48VTAg7D4HMna2xy' @ 72057594037927935 : 1 .. '!messages!zVgPZOnftQTet9M1' @ 0 : 0; will stop at '!messages!yPPigaFQRRVIXqgL' @ 465 : 1
+2023/09/12-16:16:02.708540 7f00759d1700 Compacting 2@0 + 0@1 files
+2023/09/12-16:16:02.711269 7f00759d1700 Generated table #39@0: 54 keys, 47114 bytes
+2023/09/12-16:16:02.711292 7f00759d1700 Compacted 2@0 + 0@1 files => 47114 bytes
+2023/09/12-16:16:02.712063 7f00759d1700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/09/12-16:16:02.712160 7f00759d1700 Delete type=2 #38
+2023/09/12-16:16:02.712249 7f00759d1700 Delete type=2 #35
+2023/09/12-16:16:02.739889 7f00759d1700 Manual compaction at level-0 from '!messages!yPPigaFQRRVIXqgL' @ 465 : 1 .. '!messages!zVgPZOnftQTet9M1' @ 0 : 0; will stop at (end)
+2023/09/12-16:16:02.742176 7f00759d1700 Manual compaction at level-1 from '!messages!48VTAg7D4HMna2xy' @ 72057594037927935 : 1 .. '!messages!zVgPZOnftQTet9M1' @ 0 : 0; will stop at '!messages!yPPigaFQRRVIXqgL' @ 466 : 1
+2023/09/12-16:16:02.742187 7f00759d1700 Compacting 1@1 + 1@2 files
+2023/09/12-16:16:02.744140 7f00759d1700 Generated table #40@1: 71 keys, 72295 bytes
+2023/09/12-16:16:02.744154 7f00759d1700 Compacted 1@1 + 1@2 files => 72295 bytes
+2023/09/12-16:16:02.745085 7f00759d1700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/12-16:16:02.745139 7f00759d1700 Delete type=2 #31
+2023/09/12-16:16:02.745434 7f00759d1700 Delete type=2 #39
+2023/09/12-16:16:02.748448 7f00759d1700 Manual compaction at level-1 from '!messages!yPPigaFQRRVIXqgL' @ 466 : 1 .. '!messages!zVgPZOnftQTet9M1' @ 0 : 0; will stop at (end)

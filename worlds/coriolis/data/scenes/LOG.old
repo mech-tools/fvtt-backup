@@ -1,3 +1,24 @@
-2023/09/05-10:54:45.409016 7f69499d2700 Recovering log #31
-2023/09/05-10:54:45.412364 7f69499d2700 Delete type=0 #31
-2023/09/05-10:54:45.412414 7f69499d2700 Delete type=3 #29
+2023/09/08-11:17:33.553106 7f0076fdc700 Recovering log #35
+2023/09/08-11:17:33.554965 7f0076fdc700 Level-0 table #37: started
+2023/09/08-11:17:33.557461 7f0076fdc700 Level-0 table #37: 46797 bytes OK
+2023/09/08-11:17:33.560235 7f0076fdc700 Delete type=0 #35
+2023/09/08-11:17:33.560323 7f0076fdc700 Delete type=3 #34
+2023/09/08-11:17:39.207467 7f00759d1700 Moved #37 to level-1 46797 bytes OK: files[ 0 1 1 0 0 0 0 ]
+2023/09/08-20:56:26.115654 7f00759d1700 Compacting 1@1 + 1@2 files
+2023/09/08-20:56:26.119206 7f00759d1700 Generated table #39@1: 231 keys, 61742 bytes
+2023/09/08-20:56:26.119219 7f00759d1700 Compacted 1@1 + 1@2 files => 61742 bytes
+2023/09/08-20:56:26.120184 7f00759d1700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/08-20:56:26.120261 7f00759d1700 Delete type=2 #33
+2023/09/08-20:56:26.120326 7f00759d1700 Delete type=2 #37
+2023/09/12-16:16:02.790594 7f00759d1700 Level-0 table #41: started
+2023/09/12-16:16:02.792856 7f00759d1700 Level-0 table #41: 64427 bytes OK
+2023/09/12-16:16:02.793807 7f00759d1700 Delete type=0 #38
+2023/09/12-16:16:02.797998 7f00759d1700 Manual compaction at level-0 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)
+2023/09/12-16:16:02.806356 7f00759d1700 Manual compaction at level-1 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 1828 : 1
+2023/09/12-16:16:02.806374 7f00759d1700 Compacting 1@1 + 1@2 files
+2023/09/12-16:16:02.809817 7f00759d1700 Generated table #42@1: 248 keys, 66359 bytes
+2023/09/12-16:16:02.809834 7f00759d1700 Compacted 1@1 + 1@2 files => 66359 bytes
+2023/09/12-16:16:02.810688 7f00759d1700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/12-16:16:02.810770 7f00759d1700 Delete type=2 #39
+2023/09/12-16:16:02.810853 7f00759d1700 Delete type=2 #41
+2023/09/12-16:16:02.816355 7f00759d1700 Manual compaction at level-1 from '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 1828 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)
