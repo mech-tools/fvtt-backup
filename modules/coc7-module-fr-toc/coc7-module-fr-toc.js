@@ -46,7 +46,7 @@ Hooks.on('ready', async function () {
     if (isDsnActive) game.settings.set('dice-so-nice', 'immediatelyDisplayChatMessages', true);
 
     // activation auto du click gauche pour relacher
-    game.settings.set('core', 'leftClickRelease', true);
+    //game.settings.set('core', 'leftClickRelease', true);
 
     // message d'accueil à l'activation du module
     if (!game.user.getFlag("coc7-module-fr-toc", "welcomeMessageShown")) {
