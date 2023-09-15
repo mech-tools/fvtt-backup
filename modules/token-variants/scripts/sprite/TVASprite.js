@@ -383,8 +383,8 @@ export class TVASprite extends TokenMesh {
     const pOffsetY = config.pOffsetY || 0;
     if (config.parentID) {
       const anchor = this.parent.anchor ?? { x: 0, y: 0 };
-      const pWidth = this.parent.width / this.parent.scale.x;
-      const pHeight = this.parent.height / this.parent.scale.y;
+      const pWidth = (this.parent.shapesWidth ?? this.parent.width) / this.parent.scale.x;
+      const pHeight = (this.parent.shapesHeight ?? this.parent.height) / this.parent.scale.y;
       this.position.set(
         pOffsetX + -config.offsetX * pWidth - anchor.x * pWidth + pWidth / 2,
         pOffsetY + -config.offsetY * pHeight - anchor.y * pHeight + pHeight / 2
@@ -434,6 +434,10 @@ export class TVASprite extends TokenMesh {
       ? this.object.document.texture.tint
       : interpolateColor(config.tint, config.interpolateColor, true);
     this.tint = tint ? Color.from(tint) : 0xffffff;
+    if (shapes) {
+      shapes.tint = this.tint;
+      shapes.alpha = this.alpha;
+    }
 
     if (fullRefresh) {
       if (config.animation.rotate) {

@@ -49,6 +49,7 @@ export const DEFAULT_OVERLAY_CONFIG = {
   },
   limitedUsers: [],
   limitedToOwner: false,
+  limitOnProperty: '',
   alwaysVisible: false,
   text: {
     text: '',
@@ -87,8 +88,8 @@ export const OVERLAY_SHAPES = {
   },
   Ellipse: {
     type: 'ellipse',
-    x: 50,
-    y: 50,
+    x: 0,
+    y: 0,
     width: 50,
     height: 50,
     repeating: false,
