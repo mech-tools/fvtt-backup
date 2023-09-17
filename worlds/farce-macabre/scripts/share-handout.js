@@ -1,4 +1,4 @@
-const handoutJournalId = "EcetRvAfnfV00YNS";
+const handoutJournalId = "S6aznYGv3dgiOkP9";
 const sharedJournalId = "eXcuHr6rkbYWuniT";
 
 Hooks.on("getJournalSheetHeaderButtons", (app, buttons) => {
