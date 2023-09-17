@@ -1,15 +1,3 @@
-2023/09/17-15:52:54.776970 7f5e31ffb700 Recovering log #10
-2023/09/17-15:52:54.779212 7f5e31ffb700 Delete type=3 #8
-2023/09/17-15:52:54.779242 7f5e31ffb700 Delete type=0 #10
-2023/09/17-16:29:02.455467 7f5b93fff700 Level-0 table #15: started
-2023/09/17-16:29:02.456975 7f5b93fff700 Level-0 table #15: 27332 bytes OK
-2023/09/17-16:29:02.457627 7f5b93fff700 Delete type=0 #13
-2023/09/17-16:29:02.462871 7f5b93fff700 Manual compaction at level-0 from '!scenes!bXD2gpTUFEHK5pqr' @ 72057594037927935 : 1 .. '!scenes.tiles!bXD2gpTUFEHK5pqr.mMxIUI1fXJmrR1zK' @ 0 : 0; will stop at (end)
-2023/09/17-16:29:02.463932 7f5b93fff700 Manual compaction at level-1 from '!scenes!bXD2gpTUFEHK5pqr' @ 72057594037927935 : 1 .. '!scenes.tiles!bXD2gpTUFEHK5pqr.mMxIUI1fXJmrR1zK' @ 0 : 0; will stop at '!scenes.tiles!bXD2gpTUFEHK5pqr.nz59SJIFwcn21E6I' @ 25 : 1
-2023/09/17-16:29:02.463939 7f5b93fff700 Compacting 1@1 + 1@2 files
-2023/09/17-16:29:02.464967 7f5b93fff700 Generated table #16@1: 7 keys, 2165 bytes
-2023/09/17-16:29:02.464978 7f5b93fff700 Compacted 1@1 + 1@2 files => 2165 bytes
-2023/09/17-16:29:02.465598 7f5b93fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/09/17-16:29:02.465648 7f5b93fff700 Delete type=2 #15
-2023/09/17-16:29:02.465701 7f5b93fff700 Delete type=2 #5
-2023/09/17-16:29:02.470389 7f5b93fff700 Manual compaction at level-1 from '!scenes.tiles!bXD2gpTUFEHK5pqr.nz59SJIFwcn21E6I' @ 25 : 1 .. '!scenes.tiles!bXD2gpTUFEHK5pqr.mMxIUI1fXJmrR1zK' @ 0 : 0; will stop at (end)
+2023/09/17-16:29:53.867328 7f5e327fc700 Recovering log #14
+2023/09/17-16:29:53.869905 7f5e327fc700 Delete type=3 #12
+2023/09/17-16:29:53.869950 7f5e327fc700 Delete type=0 #14
