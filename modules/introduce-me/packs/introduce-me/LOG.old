@@ -1,5 +1,3 @@
-2023/09/17-16:05:55.506908 7f5e30ff9700 Delete type=3 #1
-2023/09/17-16:29:02.489036 7f5b93fff700 Level-0 table #5: started
-2023/09/17-16:29:02.489816 7f5b93fff700 Level-0 table #5: 688 bytes OK
-2023/09/17-16:29:02.490421 7f5b93fff700 Delete type=0 #3
-2023/09/17-16:29:02.494035 7f5b93fff700 Manual compaction at level-0 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
+2023/09/17-16:29:54.035746 7f5e31ffb700 Recovering log #4
+2023/09/17-16:29:54.038410 7f5e31ffb700 Delete type=0 #4
+2023/09/17-16:29:54.038433 7f5e31ffb700 Delete type=3 #2

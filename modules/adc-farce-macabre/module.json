@@ -1,0 +1,35 @@
+{
+    "name": "adc-farce-macabre",
+    "title": "Aventure Farce Macabre",
+    "description": "Module contenant l'Aventure Farce Macabre pour ADC.",
+    "version": "1.0.0",
+    "library": "false",
+    "manifestPlusVersion": "1.0.0",
+    "compatibility": {
+        "minimum": 10,
+        "verified": 10,
+        "maximum": 11
+    },
+  "styles": [
+    "cthulhu.css"
+  ],
+    "authors": [
+        {
+            "name": "Gamemaster",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "packs": [
+        {
+            "type": "Adventure",
+            "label": "Farce Macabre",
+            "module": "adc-farce-macabre",
+            "path": "packs/farce-macabre.db",
+            "name": "farce-macabre",
+            "system": "CoC7"
+        }
+    ],
+    "manifest": "",
+    "download": ""
+}
