@@ -1,0 +1,25 @@
+{
+    "id": "better-entity-link",
+    "title": "Better Document Link",
+    "description": "Improve your productivity with contextmenus on document links!",
+    "version": "1.5",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "11.308"
+    },
+    "authors": [
+        {
+            "name": "Miah Nelah",
+            "discord": "Miah Nelah#5991"
+        }
+    ],
+    "esmodules": [
+        "module/src/entrypoint.js"
+    ],
+    "styles": [
+        "module/styles/better-document-link.css"
+    ],
+    "url": "https://github.com/MiahNelah/better-entity-link",
+    "manifest": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.5/module.json",
+    "download": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.5/module.zip"
+}
