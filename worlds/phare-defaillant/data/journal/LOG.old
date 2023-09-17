@@ -1,3 +1,23 @@
-2023/09/16-02:34:35.150233 7fc511ffb700 Recovering log #253
-2023/09/16-02:34:35.153242 7fc511ffb700 Delete type=0 #253
-2023/09/16-02:34:35.153271 7fc511ffb700 Delete type=3 #252
+2023/09/16-18:15:22.690405 7f8410ba5700 Recovering log #255
+2023/09/16-18:15:22.690483 7f8410ba5700 Level-0 table #257: started
+2023/09/16-18:15:22.691561 7f8410ba5700 Level-0 table #257: 6022 bytes OK
+2023/09/16-18:15:22.693552 7f8410ba5700 Delete type=3 #254
+2023/09/16-18:15:22.693582 7f8410ba5700 Delete type=0 #255
+2023/09/16-18:33:25.931731 7f81721ea700 Level-0 table #260: started
+2023/09/16-18:33:25.931755 7f81721ea700 Level-0 table #260: 0 bytes OK
+2023/09/16-18:33:25.932709 7f81721ea700 Delete type=0 #258
+2023/09/16-18:33:25.935094 7f81721ea700 Manual compaction at level-0 from '!journal!Kc952UQhXzFDycIO' @ 72057594037927935 : 1 .. '!journal.pages!waOdx5hA0EKz9MWu.sPY63r4FRZrhiTrn' @ 0 : 0; will stop at '!journal.pages!waOdx5hA0EKz9MWu.ZwJVYA47fGkJGukA' @ 1154 : 1
+2023/09/16-18:33:25.935108 7f81721ea700 Compacting 1@0 + 0@1 files
+2023/09/16-18:33:25.936060 7f81721ea700 Generated table #261@0: 2 keys, 3240 bytes
+2023/09/16-18:33:25.936076 7f81721ea700 Compacted 1@0 + 0@1 files => 3240 bytes
+2023/09/16-18:33:25.936998 7f81721ea700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/09/16-18:33:25.937084 7f81721ea700 Delete type=2 #257
+2023/09/16-18:33:25.939012 7f81721ea700 Manual compaction at level-0 from '!journal.pages!waOdx5hA0EKz9MWu.ZwJVYA47fGkJGukA' @ 1154 : 1 .. '!journal.pages!waOdx5hA0EKz9MWu.sPY63r4FRZrhiTrn' @ 0 : 0; will stop at (end)
+2023/09/16-18:33:25.941200 7f81721ea700 Manual compaction at level-1 from '!journal!Kc952UQhXzFDycIO' @ 72057594037927935 : 1 .. '!journal.pages!waOdx5hA0EKz9MWu.sPY63r4FRZrhiTrn' @ 0 : 0; will stop at '!journal.pages!waOdx5hA0EKz9MWu.ZwJVYA47fGkJGukA' @ 1156 : 1
+2023/09/16-18:33:25.941214 7f81721ea700 Compacting 1@1 + 1@2 files
+2023/09/16-18:33:25.942978 7f81721ea700 Generated table #262@1: 23 keys, 57729 bytes
+2023/09/16-18:33:25.942991 7f81721ea700 Compacted 1@1 + 1@2 files => 57729 bytes
+2023/09/16-18:33:25.943685 7f81721ea700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/16-18:33:25.943732 7f81721ea700 Delete type=2 #261
+2023/09/16-18:33:25.943791 7f81721ea700 Delete type=2 #251
+2023/09/16-18:33:25.945180 7f81721ea700 Manual compaction at level-1 from '!journal.pages!waOdx5hA0EKz9MWu.ZwJVYA47fGkJGukA' @ 1156 : 1 .. '!journal.pages!waOdx5hA0EKz9MWu.sPY63r4FRZrhiTrn' @ 0 : 0; will stop at (end)
