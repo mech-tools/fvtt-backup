@@ -9,12 +9,17 @@
   },
   "systemVersion": "0.10.5",
   "esmodules": [
-    "script.js"
+    "scripts/autoscale.js",
+    "scripts/better-entity-link.js",
+    "scripts/highlight.js",
+    "scripts/share-actor.js",
+    "scripts/share-handout.js",
+    "scripts/show-date.js"
   ],
   "styles": [
     "styles.css"
   ],
-  "lastPlayed": "Fri Sep 08 2023 01:18:10 GMT+0200 (Central European Summer Time)",
-  "playtime": 2698811,
+  "lastPlayed": "Sat Sep 16 2023 19:54:53 GMT+0200 (Central European Summer Time)",
+  "playtime": 3243550,
   "safeMode": false
 }

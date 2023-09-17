@@ -1,59 +1,4 @@
-/* Couleur des highlights */
-mark.important {
-    background: #989855;
-}
-
-mark.important .content-link,
-mark.important .coc7-link {
-    background: #b0b070;
-}
-
-mark {
-    background: #c2c291;
-}
-
-mark .content-link,
-mark .coc7-link {
-    background: #ddddc2;
-}
-
-/* Coc link fix icon */
-.coc7-link i {
-    margin-right: 0.25em;
-}
-
-/* Ajustement des entités autres que les journaux  */
-.sheet.actor .editor-content {
-    font-family: "Caslon";
-    font-size: 14px;
-    line-height: 18px;
-}
-
-/* Label IntroduceMe  */
-.introduce-me.introduction .introduction-container label#name {
-    padding-top: 45px;
-}
-
-.introduce-me.introduction .introduction-container img.clip {
-    display: none;
-}
-
-.introduce-me.introduction .introduction-container .text-container {
-    margin-right: 10px;
-}
-
-/* GM Screen */
-.gm-screen-grid-cell-content header {
-    display : none;
-}
-
-.gm-screen-grid-cell-content section div:first-child {
-    margin-top: 0 !important;
-    height: 100% !important;
-}
-
-
-/* Cthulhu mod */
+/* --- CTHULHU MOD --- */
 @font-face {
 	font-family: "Cthulhumbus";
 	src: url("./fonts/cthulhumbus.ttf");
@@ -77,6 +22,7 @@ mark .coc7-link {
 	src: url("./fonts/caslon-bold.ttf");
 }
 
+/* Journal */
 .journal-entry-page h1 {
 	font-family: "Cthulhumbus";
 	font-size: 38px;
@@ -208,4 +154,33 @@ mark .coc7-link {
 
 .journal-entry-page img {
 	border: 0px;
+}
+
+.journal-entry-page .coc7-link i {
+    margin-right: 0.25em;
+}
+
+.journal-entry-page mark {
+    background: #c2c291;
+}
+
+.journal-entry-page mark .content-link,
+.journal-entry-page mark .coc7-link {
+    background: #ddddc2;
+}
+
+.journal-entry-page mark.important {
+    background: #989855;
+}
+
+.journal-entry-page mark.important .content-link,
+.journal-entry-page mark.important .coc7-link {
+    background: #b0b070;
+}
+
+/* Actors */
+.sheet.actor .editor-content p {
+    font-family: "Caslon";
+    font-size: 14px;
+    line-height: 18px;
 }

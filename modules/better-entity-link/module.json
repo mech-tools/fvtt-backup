@@ -1,11 +1,11 @@
 {
     "id": "better-entity-link",
-    "title": "Better Entity Link",
-    "description": "Improve your productivity with contextmenus on entity links!",
-    "version": "1.2.3.1",
+    "title": "Better Document Link",
+    "description": "Improve your productivity with contextmenus on document links!",
+    "version": "1.5",
     "compatibility": {
         "minimum": "11",
-        "verified": "11.295"
+        "verified": "11.308"
     },
     "authors": [
         {
@@ -14,12 +14,12 @@
         }
     ],
     "esmodules": [
-        "module/src/better-entity-link.js"
+        "module/src/entrypoint.js"
     ],
     "styles": [
-        "module/styles/better-entity-link.css"
+        "module/styles/better-document-link.css"
     ],
     "url": "https://github.com/MiahNelah/better-entity-link",
-    "manifest": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.2.3.1/module.json",
-    "download": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.2.3.1/module.zip"
+    "manifest": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.5/module.json",
+    "download": "https://github.com/MiahNelah/better-entity-link/releases/download/v1.5/module.zip"
 }

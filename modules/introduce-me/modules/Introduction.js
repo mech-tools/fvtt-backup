@@ -15,7 +15,6 @@ export default class Introduction {
 
     introduceMe = async (token, actor) => {
         if(game.user.isGM && token) {
-	    console.error(token, actor)
             await game.socket.emit(`module.introduce-me`, { type: RequestType.introduce, data: { uuid: token.document?.uuid ?? token.uuid ?? actor.uuid } });
             await this.introductionDisplay(token, actor);
         }
