@@ -1,8 +1,15 @@
-2023/09/16-19:52:19.004006 7fba4ffff700 Recovering log #274
-2023/09/16-19:52:19.006678 7fba4ffff700 Delete type=3 #272
-2023/09/16-19:52:19.006708 7fba4ffff700 Delete type=0 #274
-2023/09/16-19:54:43.401805 7fb7cde90700 Level-0 table #279: started
-2023/09/16-19:54:43.401830 7fb7cde90700 Level-0 table #279: 0 bytes OK
-2023/09/16-19:54:43.402809 7fb7cde90700 Delete type=0 #277
-2023/09/16-19:54:43.406063 7fb7cde90700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
-2023/09/16-19:54:43.407118 7fb7cde90700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
+2023/09/17-17:07:20.679386 7fba4effd700 Recovering log #305
+2023/09/17-17:07:20.682063 7fba4effd700 Delete type=3 #303
+2023/09/17-17:07:20.682094 7fba4effd700 Delete type=0 #305
+2023/09/17-17:09:33.043411 7fb7cde90700 Level-0 table #311: started
+2023/09/17-17:09:33.044626 7fb7cde90700 Level-0 table #311: 11084 bytes OK
+2023/09/17-17:09:33.045494 7fb7cde90700 Delete type=0 #309
+2023/09/17-17:09:33.048803 7fb7cde90700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
+2023/09/17-17:09:33.049740 7fb7cde90700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at '!scenes.walls!CO1bBsO8IwAn26Wp.aeGKVDBhhk60zmmS' @ 595 : 1
+2023/09/17-17:09:33.049745 7fb7cde90700 Compacting 1@1 + 1@2 files
+2023/09/17-17:09:33.050484 7fb7cde90700 Generated table #312@1: 1 keys, 1377 bytes
+2023/09/17-17:09:33.050497 7fb7cde90700 Compacted 1@1 + 1@2 files => 1377 bytes
+2023/09/17-17:09:33.051051 7fb7cde90700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/17-17:09:33.051097 7fb7cde90700 Delete type=2 #307
+2023/09/17-17:09:33.051138 7fb7cde90700 Delete type=2 #311
+2023/09/17-17:09:33.053674 7fb7cde90700 Manual compaction at level-1 from '!scenes.walls!CO1bBsO8IwAn26Wp.aeGKVDBhhk60zmmS' @ 595 : 1 .. '!scenes!CO1bBsO8IwAn26Wp' @ 0 : 0; will stop at (end)
