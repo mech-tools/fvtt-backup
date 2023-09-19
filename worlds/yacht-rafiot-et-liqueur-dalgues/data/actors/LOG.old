@@ -1,8 +1,15 @@
-2023/09/17-17:07:20.612833 7fba4e7fc700 Recovering log #302
-2023/09/17-17:07:20.616003 7fba4e7fc700 Delete type=3 #300
-2023/09/17-17:07:20.616038 7fba4e7fc700 Delete type=0 #302
-2023/09/17-17:09:33.029016 7fb7cde90700 Level-0 table #307: started
-2023/09/17-17:09:33.029051 7fb7cde90700 Level-0 table #307: 0 bytes OK
-2023/09/17-17:09:33.030271 7fb7cde90700 Delete type=0 #305
-2023/09/17-17:09:33.033723 7fb7cde90700 Manual compaction at level-0 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)
-2023/09/17-17:09:33.033843 7fb7cde90700 Manual compaction at level-1 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)
+2023/09/17-17:11:26.512941 7fba4ffff700 Recovering log #306
+2023/09/17-17:11:26.515481 7fba4ffff700 Delete type=3 #304
+2023/09/17-17:11:26.515511 7fba4ffff700 Delete type=0 #306
+2023/09/18-14:00:45.458044 7fb7cde90700 Level-0 table #311: started
+2023/09/18-14:00:45.459893 7fb7cde90700 Level-0 table #311: 21100 bytes OK
+2023/09/18-14:00:45.460723 7fb7cde90700 Delete type=0 #309
+2023/09/18-14:00:45.463881 7fb7cde90700 Manual compaction at level-0 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)
+2023/09/18-14:00:45.464204 7fb7cde90700 Manual compaction at level-1 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at '!actors!mW10exgOHuVV3wzn' @ 2135 : 1
+2023/09/18-14:00:45.464213 7fb7cde90700 Compacting 1@1 + 1@2 files
+2023/09/18-14:00:45.474224 7fb7cde90700 Generated table #312@1: 388 keys, 348715 bytes
+2023/09/18-14:00:45.474239 7fb7cde90700 Compacted 1@1 + 1@2 files => 348715 bytes
+2023/09/18-14:00:45.475070 7fb7cde90700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/18-14:00:45.475128 7fb7cde90700 Delete type=2 #311
+2023/09/18-14:00:45.475192 7fb7cde90700 Delete type=2 #283
+2023/09/18-14:00:45.478403 7fb7cde90700 Manual compaction at level-1 from '!actors!mW10exgOHuVV3wzn' @ 2135 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)
