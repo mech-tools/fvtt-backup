@@ -3,10 +3,10 @@
   "id": "farce-macabre",
   "system": "CoC7",
   "joinTheme": "default",
-  "coreVersion": "11.308",
+  "coreVersion": "11.309",
   "compatibility": {
     "minimum": "11",
-    "verified": "11"
+    "verified": "11.309"
   },
   "esmodules": [
     "scripts/autoscale.js",
@@ -20,6 +20,6 @@
     "styles.css"
   ],
   "systemVersion": "0.10.5",
-  "lastPlayed": "Sun Sep 17 2023 20:15:38 GMT+0200 (Central European Summer Time)",
-  "playtime": 70416
+  "lastPlayed": "Tue Sep 19 2023 21:49:28 GMT+0200 (Central European Summer Time)",
+  "playtime": 146041
 }
