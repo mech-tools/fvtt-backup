@@ -1,3 +1,24 @@
-2023/09/19-11:08:01.717073 7f27ee7fc700 Recovering log #38
-2023/09/19-11:08:01.720918 7f27ee7fc700 Delete type=0 #38
-2023/09/19-11:08:01.720950 7f27ee7fc700 Delete type=3 #35
+2023/09/19-21:49:28.899846 7f6cd77fe700 Recovering log #43
+2023/09/19-21:49:28.900455 7f6cd77fe700 Level-0 table #45: started
+2023/09/19-21:49:28.901835 7f6cd77fe700 Level-0 table #45: 7714 bytes OK
+2023/09/19-21:49:28.904627 7f6cd77fe700 Delete type=0 #43
+2023/09/19-21:49:28.904657 7f6cd77fe700 Delete type=3 #42
+2023/09/20-16:43:14.748647 7f6cd5390700 Level-0 table #48: started
+2023/09/20-16:43:14.750105 7f6cd5390700 Level-0 table #48: 1291 bytes OK
+2023/09/20-16:43:14.751083 7f6cd5390700 Delete type=0 #46
+2023/09/20-16:43:14.754641 7f6cd5390700 Manual compaction at level-0 from '!settings!08TdauypYLO7nfam' @ 72057594037927935 : 1 .. '!settings!zzKRFjaVosTjh5Dh' @ 0 : 0; will stop at '!settings!goizGdrvTYw2HByW' @ 331 : 1
+2023/09/20-16:43:14.754652 7f6cd5390700 Compacting 2@0 + 0@1 files
+2023/09/20-16:43:14.755873 7f6cd5390700 Generated table #49@0: 3 keys, 1391 bytes
+2023/09/20-16:43:14.755888 7f6cd5390700 Compacted 2@0 + 0@1 files => 1391 bytes
+2023/09/20-16:43:14.756663 7f6cd5390700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/09/20-16:43:14.756726 7f6cd5390700 Delete type=2 #48
+2023/09/20-16:43:14.756823 7f6cd5390700 Delete type=2 #45
+2023/09/20-16:43:14.761140 7f6cd5390700 Manual compaction at level-0 from '!settings!goizGdrvTYw2HByW' @ 331 : 1 .. '!settings!zzKRFjaVosTjh5Dh' @ 0 : 0; will stop at (end)
+2023/09/20-16:43:14.761563 7f6cd5390700 Manual compaction at level-1 from '!settings!08TdauypYLO7nfam' @ 72057594037927935 : 1 .. '!settings!zzKRFjaVosTjh5Dh' @ 0 : 0; will stop at '!settings!goizGdrvTYw2HByW' @ 331 : 1
+2023/09/20-16:43:14.761575 7f6cd5390700 Compacting 1@1 + 1@2 files
+2023/09/20-16:43:14.763167 7f6cd5390700 Generated table #50@1: 116 keys, 17500 bytes
+2023/09/20-16:43:14.763194 7f6cd5390700 Compacted 1@1 + 1@2 files => 17500 bytes
+2023/09/20-16:43:14.763822 7f6cd5390700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/20-16:43:14.763882 7f6cd5390700 Delete type=2 #49
+2023/09/20-16:43:14.763946 7f6cd5390700 Delete type=2 #41
+2023/09/20-16:43:14.769744 7f6cd5390700 Manual compaction at level-1 from '!settings!goizGdrvTYw2HByW' @ 331 : 1 .. '!settings!zzKRFjaVosTjh5Dh' @ 0 : 0; will stop at (end)

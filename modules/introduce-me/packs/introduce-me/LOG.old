@@ -1,3 +1,23 @@
-2023/09/19-11:08:01.942173 7f27edffb700 Recovering log #18
-2023/09/19-11:08:01.945211 7f27edffb700 Delete type=0 #18
-2023/09/19-11:08:01.945240 7f27edffb700 Delete type=3 #16
+2023/09/19-21:49:29.427312 7f6cd6ffd700 Recovering log #21
+2023/09/19-21:49:29.427586 7f6cd6ffd700 Level-0 table #23: started
+2023/09/19-21:49:29.429000 7f6cd6ffd700 Level-0 table #23: 835 bytes OK
+2023/09/19-21:49:29.432112 7f6cd6ffd700 Delete type=0 #21
+2023/09/19-21:49:29.432164 7f6cd6ffd700 Delete type=3 #20
+2023/09/20-16:43:15.044777 7f6cd5390700 Level-0 table #26: started
+2023/09/20-16:43:15.045020 7f6cd5390700 Level-0 table #26: 0 bytes OK
+2023/09/20-16:43:15.046193 7f6cd5390700 Delete type=0 #24
+2023/09/20-16:43:15.053198 7f6cd5390700 Manual compaction at level-0 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at '!macros!vS85m3LHsUFiJEVJ' @ 4 : 1
+2023/09/20-16:43:15.053210 7f6cd5390700 Compacting 1@0 + 0@1 files
+2023/09/20-16:43:15.054409 7f6cd5390700 Generated table #27@0: 2 keys, 835 bytes
+2023/09/20-16:43:15.054420 7f6cd5390700 Compacted 1@0 + 0@1 files => 835 bytes
+2023/09/20-16:43:15.055190 7f6cd5390700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/09/20-16:43:15.055231 7f6cd5390700 Delete type=2 #23
+2023/09/20-16:43:15.057087 7f6cd5390700 Manual compaction at level-0 from '!macros!vS85m3LHsUFiJEVJ' @ 4 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
+2023/09/20-16:43:15.057143 7f6cd5390700 Manual compaction at level-1 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at '!macros!vS85m3LHsUFiJEVJ' @ 4 : 1
+2023/09/20-16:43:15.057155 7f6cd5390700 Compacting 1@1 + 1@2 files
+2023/09/20-16:43:15.058005 7f6cd5390700 Generated table #28@1: 2 keys, 835 bytes
+2023/09/20-16:43:15.058016 7f6cd5390700 Compacted 1@1 + 1@2 files => 835 bytes
+2023/09/20-16:43:15.058601 7f6cd5390700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/09/20-16:43:15.058641 7f6cd5390700 Delete type=2 #5
+2023/09/20-16:43:15.058916 7f6cd5390700 Delete type=2 #27
+2023/09/20-16:43:15.060948 7f6cd5390700 Manual compaction at level-1 from '!macros!vS85m3LHsUFiJEVJ' @ 4 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
