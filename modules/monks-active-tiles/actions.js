@@ -6,6 +6,18 @@ export class ActionManager {
         if (typeof val == "string" && val.startsWith('"') && val.endsWith('"')) return val;
         return `"${val}"`;
     }
+
+    static pickRandom = (arr, id) => {
+        if (arr.length == 0)
+            return null;
+        else if (arr.length == 1)
+            return arr[0];
+        else {
+            let results = arr.filter(d => d.dest == undefined || d.dest.id != id);
+            let idx = Math.clamped(parseInt(Math.random() * results.length), 0, results.length - 1);
+            return results[idx];
+        }
+    }
     static get actions() {
         return {
             'pause': {
@@ -307,7 +319,7 @@ export class ActionManager {
                             y: tokendoc.y + midY
                         }
 
-                        let dest = dests.pickRandom(tile.id);
+                        let dest = ActionManager.pickRandom(dests, tile.id);
                         let entDest = duplicate(dest);
                         if (!entDest) {
                             console.warn("monks-active-tiles | Could not find a teleport destination", action.data.location);
@@ -665,7 +677,7 @@ export class ActionManager {
 
                             let location = duplicate(action.data.location);
                             let dests = await MonksActiveTiles.getLocation.call(tile, location, Object.assign({}, args, { pt: { x: pt?.x - midX, y: pt?.y - midY } }));
-                            let dest = dests.pickRandom(); //[Math.floor(Math.random() * dests.length)];
+                            let dest = ActionManager.pickRandom(dests); //[Math.floor(Math.random() * dests.length)];
 
                             let entDest = duplicate(dest);
                             if (!entDest)
@@ -1106,7 +1118,7 @@ export class ActionManager {
 
                                             for (let i = 0; i < (quantity || 1); i++) {
                                                 let tdests = (ea.location ? dests.filter(d => d.dest ? Tagger.hasTags(d.dest, ea.location) : d) : dests);
-                                                let dest = tdests.pickRandom(tile.id);
+                                                let dest = ActionManager.pickRandom(tdests, tile.id);
 
                                                 let entDest = duplicate(dest);
                                                 if (!entDest)
@@ -1365,7 +1377,7 @@ export class ActionManager {
                                     entity = await JournalEntry.implementation.create(journalData);
                                 }
 
-                                let dest = dests.pickRandom(tile.id);
+                                let dest = ActionManager.pickRandom(dests, tile.id);
 
                                 if (dest.dest instanceof TileDocument) {
                                     // Find a random location within this Tile
@@ -4324,8 +4336,9 @@ export class ActionManager {
                         scene = game.scenes.find(s => (action.data.sceneid == "_active" ? s.active : s.id == action.data.sceneid));
 
                     if (scene) {
+                        let oldPing;
                         if (game.user.id == userid) {
-                            let oldPing = game.user.permissions["PING_CANVAS"];
+                            oldPing = game.user.permissions["PING_CANVAS"];
                             game.user.permissions["PING_CANVAS"] = false;
                         }
                         if (action.data.for == "everyone" || (action.data.for == "trigger" && game.user.id == userid)) {
@@ -6952,28 +6965,31 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action, value, tokens, tile } = args;
 
-                    //let count = action.data?.count ?? "= 1";
-                    //if (count.startsWith("="))
-                    //    count = "=" + count;
-
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
                     let result = await asyncFilter(entities, async (entity) => {
                         if (!entity.actor)
                             return false;
-                        let items = entity.actor.items.filter(i => (i.name || "").trim().toLowerCase() == (action.data.item || "").trim().toLowerCase());
 
-                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: items.length, operation: 'compare' });
+                        let name = await getValue(action.data.item, args, entity);
+                        name = (name || "").trim().toLowerCase();
+                        let items = entity.actor.items || [];
 
-                        /*
-                        let cando = false;
-                        try {
-                            cando = !!eval(items.length + " " + count);
-                        } catch {
-                        }*/
+                        let w = name.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+                        const re = new RegExp(`^${w.replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i');
+                        let filteredItems = items.filter(i => {
+                            let itemName = (i.name || "").trim().toLowerCase();
+                            if (name.includes("*") || name.includes("?"))
+                                return re.test(itemName);
+                            else
+                                return itemName.localeCompare(name);
 
-                        if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && items.length) {
-                            items = await asyncFilter(items, async (item) => {
+                        });
+
+                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: filteredItems.length, operation: 'compare' });
+
+                        if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && filteredItems.length) {
+                            filteredItems = await asyncFilter(filteredItems, async (item) => {
                                 try {
                                     switch (game.system.id) {
                                         case "dnd5e": let result = await getValue(action.data?.quantity, args, item, { prop: item.system.quantity, operation: 'compare' }); return result;
@@ -6981,7 +6997,7 @@ export class ActionManager {
                                 } catch { }
                                 return false;
                             });
-                            cando = (items.length > 0);
+                            cando = (filteredItems.length > 0);
                         }
 
                         return !!cando;

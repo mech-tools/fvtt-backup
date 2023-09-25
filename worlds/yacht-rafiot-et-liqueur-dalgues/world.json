@@ -13,13 +13,12 @@
     "scripts/better-entity-link.js",
     "scripts/highlight.js",
     "scripts/share-actor.js",
-    "scripts/share-handout.js",
     "scripts/show-date.js"
   ],
   "styles": [
     "styles.css"
   ],
-  "lastPlayed": "Sat Sep 23 2023 16:16:50 GMT+0200 (Central European Summer Time)",
-  "playtime": 3794518,
+  "lastPlayed": "Mon Sep 25 2023 03:13:06 GMT+0200 (Central European Summer Time)",
+  "playtime": 3868211,
   "safeMode": false
 }
