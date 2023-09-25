@@ -1,7 +1,7 @@
 {
   "title": "Monk's Combat Marker",
   "description": "Display an animated disc behind the token to indicate the current combatant's turn. You can customise the animation, image that is display, size of the graphic, and speed of the animation.",
-  "version": "11.01",
+  "version": "11.02",
   "authors": [
     {
       "name": "IronMonk",
@@ -48,6 +48,11 @@
       "lang": "pt-BR",
       "name": "Português (Brasil)",
       "path": "lang/pt-BR.json"
+    },
+    {
+      "lang": "cn",
+      "name": "简体中文",
+      "path": "lang/cn.json"
     }
   ],
   "esmodules": [
@@ -55,7 +60,7 @@
     "settings.js"
   ],
   "url": "https://github.com/ironmonk88/monks-combat-marker",
-  "download": "https://github.com/ironmonk88/monks-combat-marker/archive/11.01.zip",
+  "download": "https://github.com/ironmonk88/monks-combat-marker/archive/11.02.zip",
   "manifest": "https://github.com/ironmonk88/monks-combat-marker/releases/latest/download/module.json",
   "bugs": "https://github.com/ironmonk88/monks-combat-marker/issues",
   "id": "monks-combat-marker",
