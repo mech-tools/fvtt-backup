@@ -2,7 +2,7 @@
     "id": "one-journal-handouts",
     "title": "One Journal Handouts",
     "description": "One Journal Handouts: an easy way to manage and share handouts.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "library": "false",
     "compatibility": {
         "minimum": 11,
@@ -55,7 +55,7 @@
     "bugs": "https://github.com/DarKDinDoN/one-journal-handouts/issues",
     "changelog": "https://github.com/DarKDinDoN/one-journal-handouts/releases",
     "manifest": "https://github.com/DarKDinDoN/one-journal-handouts/releases/latest/download/module.json",
-    "download": "https://github.com/DarKDinDoN/one-journal-handouts/releases/download/1.0.0/module.zip",
+    "download": "https://github.com/DarKDinDoN/one-journal-handouts/releases/download/1.1.0/module.zip",
     "license": "https://github.com/DarKDinDoN/one-journal-handouts/raw/main/LICENSE",
     "readme": "https://github.com/DarKDinDoN/one-journal-handouts/raw/main/README.md",
     "media": []
