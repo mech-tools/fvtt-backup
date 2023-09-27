@@ -2,7 +2,7 @@
     {{#if editMode}}
         <h1>
             <div class="fsc-qi">
-                <input value="{{name}}" placeholder="{{localize 'FSC.Notes.New'}}" type="text" class="fsc-jh" />
+                <input value="{{name}}" placeholder="{{localize 'FSC.Notes.New'}}" type="text" class="fsc-ih" />
                 <label for="scNoteTitle">{{localize 'FSC.Search.Options.Fields.Title'}}</label>
             </div>
         </h1>
@@ -42,13 +42,13 @@
                     <div class="fsc-si" data-tooltip="{{localize 'FSC.Notes.MacroHelp'}}"><span class="fa-solid fa-circle-question"></span></div>
                 </div>
                 <div class="fsc-qi fsc-ri fsc-_i">
-                    <input type="checkbox" class="fsc-vh" id="scRemindMe_{{data._id}}" {{checked edit.reminder}}>
+                    <input type="checkbox" class="fsc-uh" id="scRemindMe_{{data._id}}" {{checked edit.reminder}}>
                     <label for="scRemindMe_{{data._id}}"><span class="fa fa-bell"></span> {{localize 'FSC.Notes.Reminder'}}</label>
                     <div class="fsc-si" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}"><span class="fa-solid fa-circle-question"></span></div>
                 </div>
             </div>
         </div>
-        <div class="fsc-zg">
+        <div class="fsc-yg">
             <h2>{{localize 'DOCUMENT.JournalEntryPages'}}</h2>
             <div class="fsc-ui">
                 <div class="fsc-qi">
@@ -62,7 +62,7 @@
                     <label for="scPageType_{{data._id}}">{{localize 'JOURNALENTRYPAGE.Type'}}</label>
                 </div>
             </div>
-            <div class="fsc-fh">
+            <div class="fsc-eh">
                 {{#if (eq edit.page.type 'text')}}
                     {{editor enrichedContent target="content" editable=true button=false owner=owner engine="prosemirror"}}
                 {{else if (eq edit.page.type 'image')}}
@@ -107,15 +107,15 @@
                     </div>
                     <div class="fsc-ui">
                         <div class="fsc-qi fsc-ri fsc-zi">
-                            <input type="checkbox" class="fsc-vh" id="scPageVideoControls_{{data._id}}" {{checked edit.page.video.controls}}>
+                            <input type="checkbox" class="fsc-uh" id="scPageVideoControls_{{data._id}}" {{checked edit.page.video.controls}}>
                             <label for="scPageVideoControls_{{data._id}}">{{localize 'JOURNALENTRYPAGE.VideoControls'}}</label>
                         </div>
                         <div class="fsc-qi fsc-ri fsc-zi">
-                            <input type="checkbox" class="fsc-vh" id="scPageVideoAutoplay_{{data._id}}" {{checked edit.page.video.autoplay}}>
+                            <input type="checkbox" class="fsc-uh" id="scPageVideoAutoplay_{{data._id}}" {{checked edit.page.video.autoplay}}>
                             <label for="scPageVideoAutoplay_{{data._id}}">{{localize 'TILE.VideoAutoplay'}}</label>
                         </div>
                         <div class="fsc-qi fsc-ri">
-                            <input type="checkbox" class="fsc-vh" id="scPageVideoLoop_{{data._id}}" {{checked edit.page.video.loop}}>
+                            <input type="checkbox" class="fsc-uh" id="scPageVideoLoop_{{data._id}}" {{checked edit.page.video.loop}}>
                             <label for="scPageVideoLoop_{{data._id}}">{{localize 'TILE.VideoLoop'}}</label>
                         </div>
                     </div>
@@ -151,19 +151,19 @@
                 {{/if}}
             </div>
         </div>
-        <div class="fsc-xg">
-            <button class="fsc-xb fsc-tc" name="submit" data-tooltip="{{localize 'FSC.Notes.Save'}}">
+        <div class="fsc-wg">
+            <button class="fsc-xb fsc-sc" name="submit" data-tooltip="{{localize 'FSC.Notes.Save'}}">
                 <i class="far fa-save"></i> {{localize 'FSC.Notes.Save'}}
             </button>
-            <button class="fsc-xb fsc-hc fsc-dh"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
+            <button class="fsc-xb fsc-ic fsc-ch"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
         </div>
     {{else}}
-        <div class="fsc-vg">
+        <div class="fsc-ug">
             <h1>
                 <span class="fsc-jk">{{name}}</span>
-                <span class="fsc-bh fsc-bk {{#if display.reminder}} fsc-x{{/if}}"><label><input class="fsc-vh" type="checkbox" /><span class="fa {{#if display.reminder}}fa-bell{{else}}fa-bell-slash{{/if}}"></span></label></span>
+                <span class="fsc-ah fsc-bk {{#if display.reminder}} fsc-x{{/if}}"><label><input class="fsc-uh" type="checkbox" /><span class="fa {{#if display.reminder}}fa-bell{{else}}fa-bell-slash{{/if}}"></span></label></span>
             </h1>
-            <div class="fsc-sf">
+            <div class="fsc-rf">
                 <div class="fsc-bk" data-tooltip="{{localize 'FSC.Notes.DateTime.Title'}}">
                     <span class="fa fa-calendar"></span>  {{display.date}}
                 </div>
@@ -187,37 +187,37 @@
                 {{/each}}
             </div>
         </div>
-        <div class="fsc-wg">
+        <div class="fsc-vg">
             {{{enrichedContent}}}
         </div>
         {{#if editable}}
-            <div class="fsc-xg">
-                <button class="fsc-xb fsc-yb fsc-ch"><i class="fa fa-edit"></i> {{localize 'FSC.Edit'}}</button>
-                <button class="fsc-xb fsc-hc fsc-dh"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
+            <div class="fsc-wg">
+                <button class="fsc-xb fsc-yb fsc-bh"><i class="fa fa-edit"></i> {{localize 'FSC.Edit'}}</button>
+                <button class="fsc-xb fsc-ic fsc-ch"><i class="fa fa-trash"></i> {{localize 'FSC.Delete'}}</button>
             </div>
         {{/if}}
     {{/if}}
 </form>
 {{#if (or editMode (gt pages.length 1))}}
-<div class="fsc-nf fsc-yg {{#unless editMode}} fsc-kk{{/unless}} {{#if uiElementStates.fsc-yg}} fsc-b{{else}} fsc-c{{/if}}">
-    <div class="fsc-kh">
-        <a class="fsc-eh" data-tooltip="{{#if uiElementStates.fsc-yg}}{{localize 'JOURNAL.ViewCollapse'}}{{else}}{{localize 'JOURNAL.ViewExpand'}}{{/if}}"><i class="fa-solid {{#if uiElementStates.fsc-yg}} fa-caret-right{{else}} fa-caret-left{{/if}}"></i></a>
-        <div class="fsc-jg">
+<div class="fsc-mf fsc-xg {{#unless editMode}} fsc-kk{{/unless}} {{#if uiElementStates.fsc-xg}} fsc-b{{else}} fsc-c{{/if}}">
+    <div class="fsc-jh">
+        <a class="fsc-dh" data-tooltip="{{#if uiElementStates.fsc-xg}}{{localize 'JOURNAL.ViewCollapse'}}{{else}}{{localize 'JOURNAL.ViewExpand'}}{{/if}}"><i class="fa-solid {{#if uiElementStates.fsc-xg}} fa-caret-right{{else}} fa-caret-left{{/if}}"></i></a>
+        <div class="fsc-ig">
             <input placeholder="{{localize 'FSC.Notes.SearchPages'}}" type="text" value="{{uiElementStates.search.term}}" data-tooltip="{{localize 'FSC.Notes.SearchPages'}}" />
             <button class="fsc-xb fsc-ha" data-tooltip="{{localize 'FSC.Clear'}}" ><span class="fa fa-times"></span></button>
         </div>
         {{#if editMode}}
-            <button class="fsc-_g fsc-xb fsc-tc" data-tooltip="{{localize 'JOURNAL.AddPage'}}"><span class="fa fa-file-circle-plus"></span></button>
+            <button class="fsc-zg fsc-xb fsc-sc" data-tooltip="{{localize 'JOURNAL.AddPage'}}"><span class="fa fa-file-circle-plus"></span></button>
         {{/if}}
     </div>
-    <ul class="fsc-ah">
+    <ul class="fsc-_g">
         {{#each pages}}
             <li data-index="{{_id}}" class="{{#if (eq @index ../uiElementStates.selectedPageIndex)}} fsc-aa{{/if}}{{#unless show}} fsc-ha{{/unless}}">
                 <span>{{name}}</span>
             {{#if ../editMode}}
                 <div class="fsc-dl">
                     {{#unless (eq ../pages.length 1)}}
-                    <button class="fsc-xb fsc-hc" data-tooltip="{{localize 'FSC.Delete'}}"><span class="fa fa-trash"></span></button>
+                    <button class="fsc-xb fsc-ic" data-tooltip="{{localize 'FSC.Delete'}}"><span class="fa fa-trash"></span></button>
                     {{/unless}}
                 </div>
             {{/if}}
