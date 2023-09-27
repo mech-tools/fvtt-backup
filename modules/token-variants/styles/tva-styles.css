@@ -925,3 +925,95 @@ input.tvaValid {
 input.tvaInvalid {
   border: 2px solid #ff0000;
 }
+
+/* ---------------------------------------- */
+/* Templates                                */
+/* ---------------------------------------- */
+
+#token-variants-templates .template-list {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 0;
+  overflow: auto;
+  height: 350px;
+}
+
+#token-variants-templates .template-list li {
+  border: 1px solid #ddd;
+  margin-top: -1px;
+  background-color: gray;
+  padding: 5px;
+  text-decoration: none;
+  font-size: 18px;
+  color: white;
+  display: block;
+}
+
+#token-variants-templates .template-list li a {
+  display: inline-block;
+  max-width: 430px;
+}
+
+#token-variants-templates .template-list li .system {
+  color: gold;
+  font-size: small;
+}
+
+#token-variants-templates .template-list li:hover:not(.header) {
+  background-color: brown;
+}
+
+#token-variants-templates .template-list .createdBy {
+  color: gold;
+  font-size: 0.9em;
+}
+
+#token-variants-templates .delete,
+#token-variants-templates .copy {
+  position: absolute;
+  right: 20px;
+}
+
+#token-variants-templates .delete:hover,
+#token-variants-templates .copy:hover {
+  color: gold;
+}
+
+#token-variants-templates .tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+#token-variants-templates .tooltip .tooltiptext {
+  visibility: hidden;
+  width: 500px;
+  background-color: rgba(38, 38, 38, 0.85);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+
+  /* Position the tooltip */
+  position: fixed;
+  margin-left: 500px;
+  z-index: 1;
+}
+
+#token-variants-templates .tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+#token-variants-templates .tooltip .tooltiptext img {
+  width: 90%;
+  max-height: 500px;
+  margin-bottom: 5px;
+}
+
+#token-variants-templates .tooltip .tooltiptext .description {
+  margin-left: 5%;
+  margin-right: 5%;
+  margin-bottom: 10px;
+  margin-top: 5px;
+  text-align: left;
+}
