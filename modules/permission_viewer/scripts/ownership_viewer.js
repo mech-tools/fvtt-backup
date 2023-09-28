@@ -30,39 +30,34 @@ class OwnershipViewer {
 
 				// If the ownership definition isn't 'None'...
 				if (ownership != CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE) {
-					let bg_color = "transparent";
-
-					// And if the ownership definition isn't 'All Players' (default) or a GM, set 'bg_color' to the user's color
-					if (id != "default") {
-						const user = game.users.get(id);
-						if (user) {
-							if (user.isGM) continue;
-							bg_color = user.color;
-						} else {
-							continue;
-						}
-					}
 					// Create the div for this ownership definition, with the appropriate class based on the ownership level
 					let user_div = $("<div></div>");
 					user_div.attr("data-user-id", id);
 
-					if (ownership === CONST.DOCUMENT_OWNERSHIP_LEVELS.INHERIT) {
-						user_div.addClass("ownership-viewer-inherit");
-					} else if (ownership === CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED) {
-						user_div.addClass("ownership-viewer-limited");
-					} else if (ownership === CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) {
-						user_div.addClass("ownership-viewer-observer");
-					} else if (ownership === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
-						user_div.addClass("ownership-viewer-owner");
+					// And if the ownership definition isn't 'All Players' (default) or a GM, set 'bg_color' to the user's color
+					const user = game.users.get(id);
+					if (id != "default") {
+						if (user && !user.isGM) {
+							user_div.css({ "background-color": user.color });
+							user_div.attr("data-tooltip", user.name);
+						} else {
+							continue;
+						}
 					}
+
+					const ownerships = invertObject(CONST.DOCUMENT_OWNERSHIP_LEVELS);
+					user_div.addClass(`ownership-viewer-${ownerships[ownership].toLowerCase()}`);
+					user_div.attr(
+						"data-tooltip",
+						`${user ? user.name + ": " : ""} ${game.i18n.localize("OWNERSHIP." + ownerships[ownership])}`
+					);
+					user_div.attr("data-tooltip-direction", "UP");
 
 					if (id == "default") {
 						user_div.addClass("ownership-viewer-all");
 					} else {
 						user_div.addClass("ownership-viewer-user");
 					}
-
-					user_div.css({ "background-color": bg_color });
 
 					// Store the resulting div and keep iterating through the other ownership definitions on the document
 					users.push(user_div);
