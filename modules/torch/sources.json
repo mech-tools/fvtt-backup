@@ -155,7 +155,7 @@
         "consumable": false,
         "states": 2,
         "light": [
-          {"bright": 60, "dim": 120, "angle": 57}
+          {"bright": 60, "dim": 120, "angle": 90}
         ]
       },
       "Hooded Lantern": {
@@ -173,7 +173,7 @@
         "consumable": false,
         "states": 2,
         "light": [
-          {"bright": 30, "dim": 60, "angle": 57}
+          {"bright": 30, "dim": 60, "angle": 90}
         ]
       },
       "Torch": {
@@ -217,7 +217,7 @@
         "consumable": false,
         "states": 2,
         "light": [
-          {"bright": 60, "dim": 120, "angle": 57}
+          {"bright": 60, "dim": 120, "angle": 90}
         ]
       },
       "Torch": {
@@ -270,7 +270,7 @@
           {
             "bright": 20,
             "dim": 20,
-            "angle": 35,
+            "angle": 90,
             "color": "#555555",
             "alpha": 0.5
           }
@@ -300,7 +300,7 @@
           {
             "bright": 100,
             "dim": 100,
-            "angle": 35,
+            "angle": 90,
             "color": "#555555",
             "alpha": 0.5
           }
@@ -315,7 +315,22 @@
           {
               "bright": 15,
               "dim": 15,
-              "angle": 35,
+              "angle": 90,
+              "color": "#555555",
+              "alpha": 0.5
+          }
+        ]
+      },
+      "Dancing Lights": {
+        "name": "Dancing Lights",
+        "type": "cantrip",
+        "consumable": false,
+        "states": 2,
+        "light": [
+          {
+              "bright": 0,
+              "dim": 10,
+              "angle": 360,
               "color": "#555555",
               "alpha": 0.5
           }
@@ -770,6 +785,89 @@
 			}
 		}
 	},
+  "dragonbane": {
+    "system": "dragonbane",
+    "topology": "standard",
+    "quantity": "quantity",
+    "sources": {
+      "Lantern": {
+        "name": "Lantern",
+        "type": "equipment",
+        "consumable": false,
+        "light": [
+          {
+            "bright": 10,
+            "dim": 10,
+            "angle": 360,
+            "alpha": 0.05,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
+          }
+        ]
+      },
+      "Oil Lamp": {
+        "name": "Oil Lamp",
+        "type": "equipment",
+        "consumable": false,
+        "light": [
+          {
+            "bright": 10,
+            "dim": 10,
+            "angle": 360,
+            "alpha": 0.05,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
+          }
+        ]
+      },
+      "Torch": {
+        "name": "Torch",
+        "type": "equipment",
+        "consumable": false,
+        "light": [
+          {
+            "bright": 10,
+            "dim": 10,
+            "angle": 360,
+            "alpha": 0.05,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
+          }
+        ]
+      },
+      "Tallow Candle": {
+        "name": "Tallow Candle",
+        "type": "equipment",
+        "consumable": false,
+        "light": [
+          {
+            "bright": 4,
+            "dim": 4,
+            "angle": 360,
+            "alpha": 0.05,
+            "animation": {
+              "type": "torch",
+              "speed": 5,
+              "intensity": 5,
+              "reverse": false
+            }
+          }
+        ]
+      }
+    }
+  },
   "default": {
     "system": "default",
     "topology": "none",

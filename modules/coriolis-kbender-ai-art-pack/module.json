@@ -1,7 +1,7 @@
 {
   "title": "Coriolis AI art pack by kbender",
   "description": "Alternative character tokens and portraits created for Coriolis RPG (but not system dependant)",
-  "version": "2.0",
+  "version": "2.0.1",
   "authors": [
     {
       "name": "benderworks",
@@ -18,8 +18,8 @@
     "verified": "11"
   },
   "url": "https://github.com/kbender84/coriolis-kbender-ai-art-pack",
-  "manifest": "https://github.com/kbender84/coriolis-kbender-ai-art-pack/releases/download/2.0/module.json",
-  "download": "https://github.com/kbender84/coriolis-kbender-ai-art-pack/releases/download/2.0/coriolis-kbender-ai-art-pack.zip",
+  "manifest": "https://github.com/kbender84/coriolis-kbender-ai-art-pack/releases/download/2.0.1/module.json",
+  "download": "https://github.com/kbender84/coriolis-kbender-ai-art-pack/releases/download/2.0.1/coriolis-kbender-ai-art-pack.zip",
   "id": "coriolis-kbender-ai-art-pack",
   "packs": [
     {
