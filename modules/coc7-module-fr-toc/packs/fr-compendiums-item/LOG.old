@@ -1,8 +1,15 @@
-2023/10/06-11:43:05.473203 7f174bfff700 Recovering log #303
-2023/10/06-11:43:05.476543 7f174bfff700 Delete type=3 #301
-2023/10/06-11:43:05.476575 7f174bfff700 Delete type=0 #303
-2023/10/06-20:52:56.725951 7f14c9d54700 Level-0 table #308: started
-2023/10/06-20:52:56.725967 7f14c9d54700 Level-0 table #308: 0 bytes OK
-2023/10/06-20:52:56.726761 7f14c9d54700 Delete type=0 #306
-2023/10/06-20:52:56.727637 7f14c9d54700 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
-2023/10/06-20:52:56.727864 7f14c9d54700 Manual compaction at level-1 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
+2023/10/09-00:29:38.842873 7f174bfff700 Recovering log #311
+2023/10/09-00:29:38.845958 7f174bfff700 Delete type=0 #311
+2023/10/09-00:29:38.845981 7f174bfff700 Delete type=3 #309
+2023/10/09-00:31:29.602717 7f14c9d54700 Level-0 table #316: started
+2023/10/09-00:31:29.625561 7f14c9d54700 Level-0 table #316: 888131 bytes OK
+2023/10/09-00:31:29.627312 7f14c9d54700 Delete type=0 #314
+2023/10/09-00:31:29.677881 7f14c9d54700 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
+2023/10/09-00:31:29.702159 7f14c9d54700 Manual compaction at level-1 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at '!items!zuesiHrVyGX2GDA7' @ 10503 : 1
+2023/10/09-00:31:29.702172 7f14c9d54700 Compacting 1@1 + 1@2 files
+2023/10/09-00:31:29.720234 7f14c9d54700 Generated table #317@1: 731 keys, 892003 bytes
+2023/10/09-00:31:29.720255 7f14c9d54700 Compacted 1@1 + 1@2 files => 892003 bytes
+2023/10/09-00:31:29.721183 7f14c9d54700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/10/09-00:31:29.721274 7f14c9d54700 Delete type=2 #158
+2023/10/09-00:31:29.721435 7f14c9d54700 Delete type=2 #316
+2023/10/09-00:31:29.790721 7f14c9d54700 Manual compaction at level-1 from '!items!zuesiHrVyGX2GDA7' @ 10503 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)

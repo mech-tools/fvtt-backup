@@ -1,8 +1,15 @@
-2023/10/06-11:43:05.563736 7f174a7fc700 Recovering log #299
-2023/10/06-11:43:05.566771 7f174a7fc700 Delete type=0 #299
-2023/10/06-11:43:05.566799 7f174a7fc700 Delete type=3 #297
-2023/10/06-20:52:56.730397 7f14c9d54700 Level-0 table #304: started
-2023/10/06-20:52:56.730419 7f14c9d54700 Level-0 table #304: 0 bytes OK
-2023/10/06-20:52:56.731181 7f14c9d54700 Delete type=0 #302
-2023/10/06-20:52:56.732231 7f14c9d54700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
-2023/10/06-20:52:56.732531 7f14c9d54700 Manual compaction at level-1 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2023/10/09-00:29:39.042404 7f174a7fc700 Recovering log #307
+2023/10/09-00:29:39.045327 7f174a7fc700 Delete type=0 #307
+2023/10/09-00:29:39.045350 7f174a7fc700 Delete type=3 #305
+2023/10/09-00:31:29.794828 7f14c9d54700 Level-0 table #312: started
+2023/10/09-00:31:29.796515 7f14c9d54700 Level-0 table #312: 141068 bytes OK
+2023/10/09-00:31:29.797146 7f14c9d54700 Delete type=0 #310
+2023/10/09-00:31:29.799425 7f14c9d54700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2023/10/09-00:31:29.803789 7f14c9d54700 Manual compaction at level-1 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 176 : 1
+2023/10/09-00:31:29.803801 7f14c9d54700 Compacting 1@1 + 1@2 files
+2023/10/09-00:31:29.805673 7f14c9d54700 Generated table #313@1: 13 keys, 141410 bytes
+2023/10/09-00:31:29.805694 7f14c9d54700 Compacted 1@1 + 1@2 files => 141410 bytes
+2023/10/09-00:31:29.806623 7f14c9d54700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/10/09-00:31:29.806685 7f14c9d54700 Delete type=2 #312
+2023/10/09-00:31:29.806762 7f14c9d54700 Delete type=2 #154
+2023/10/09-00:31:29.807267 7f14c9d54700 Manual compaction at level-1 from '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 176 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)

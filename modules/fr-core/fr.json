@@ -1304,7 +1304,7 @@
     "SETUP.PackageDependenciesCouldInstallPlural": "{number} dépendances peuvent être installées automatiquement.",
     "SETUP.PackageDependenciesDecline": "Vous avez choisi de ne pas installer les dépendances requises par {title}, vous devrez les installer manuellement pour pouvoir l'utiliser.",
     "SETUP.PackageDependenciesSuccess": "Installation de {title} et de {number} dépendances réussie.",
-    "SETUP.PackageUpdateCoreUpdateNeeded": "Une mise à jour est disponible pour {id} mais ne peut être installée car elle nécessite la version de base du logiciel {vreq} et vous utilisez actuellement la version {vcur}.",
+    "SETUP.PackageUpdateCoreUpdateNeeded": "Une mise à jour est disponible pour {id} mais ne peut être installée car elle nécessite la version de base du logiciel {vmin} et vous utilisez actuellement la version {version}.",
     "SETUP.PackageUpdateCoreUnstable": "Une mise à jour est disponible pour {id} mais elle ne peut être installée car elle nécessite une version du logiciel de base {vmin} qui n'est pas encore stable.",
     "SETUP.PackageDeleteTitle": "Suppression du {type} : {title}",
     "SETUP.PackageDeleteConfirm": "Êtes-vous sûr de vouloir supprimer le {type} : <strong>{title}</strong> ?",
