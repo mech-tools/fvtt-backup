@@ -27,7 +27,12 @@ export class OverlayConfig extends FormApplication {
       title: 'Overlay Settings',
       width: 500,
       height: 'auto',
-      tabs: [{ navSelector: '.sheet-tabs', contentSelector: '.content', initial: 'misc' }],
+      //tabs: [{ navSelector: '.sheet-tabs', contentSelector: '.content', initial: 'misc' }, ],
+
+      tabs: [
+        { navSelector: '.tabs[data-group="main"]', contentSelector: 'form', initial: 'misc' },
+        { navSelector: '.tabs[data-group="html"]', contentSelector: '.tab[data-tab="html"]', initial: 'template' },
+      ],
     });
   }
 
@@ -40,7 +45,7 @@ export class OverlayConfig extends FormApplication {
     html.find('.reticle').on('click', (event) => {
       const icons = this.getPreviewIcons();
       if (icons.length) {
-        Reticle.activate({ tvaSprite: icons[0].icon, app: this, config: this.previewConfig });
+        Reticle.activate({ tvaOverlay: icons[0].icon, app: this, config: this.previewConfig });
       }
     });
 
@@ -112,7 +117,7 @@ export class OverlayConfig extends FormApplication {
     html.find('.cloneShape').on('click', this._onCloneShape.bind(this));
 
     html.find('input,select').on('change', this._onInputChange.bind(this));
-    html.find('textarea').on('input', this._onInputChange.bind(this));
+    html.find('textarea').on('change', this._onInputChange.bind(this));
     const parentId = html.find('[name="parentID"]');
     parentId.on('change', (event) => {
       if (event.target.value === 'TOKEN') {
@@ -431,8 +436,8 @@ export class OverlayConfig extends FormApplication {
     const tokens = this.token ? [this.token] : canvas.tokens.placeables;
     const previewIcons = [];
     for (const tkn of tokens) {
-      if (tkn.tva_sprites) {
-        for (const c of tkn.tva_sprites) {
+      if (tkn.tvaOverlays) {
+        for (const c of tkn.tvaOverlays) {
           if (c.overlayConfig && c.overlayConfig.id === this.config.id) {
             // Effect icon found, however if we're in global preview then we need to take into account
             // a token/actor specific mapping which may override the global one

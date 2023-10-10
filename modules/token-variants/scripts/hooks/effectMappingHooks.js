@@ -165,6 +165,9 @@ function _preUpdateToken(token, change, options, userId) {
 async function _updateToken(token, change, options, userId) {
   if (game.user.id !== userId || change.actorId) return;
 
+  // TODO
+  token.object?.tvaOverlays?.forEach((ov) => ov.htmlOverlay?.render());
+
   const addedEffects = [];
   const removedEffects = [];
   const preUpdateEffects = getProperty(options, 'token-variants.preUpdateEffects') || [];
@@ -534,6 +537,11 @@ async function _updateWithEffectMapping(token, added, removed) {
       }
     } else {
       updateCall();
+    }
+  } else {
+    if (executeOnCallback.length || deferredUpdateScripts.length) {
+      _postTokenUpdateProcessing(token, hadActiveHUD, toggleStatus, executeOnCallback);
+      _postTokenUpdateProcessing(token, hadActiveHUD, toggleStatus, deferredUpdateScripts);
     }
   }
   broadcastOverlayRedraw(placeable);
