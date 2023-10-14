@@ -1,8 +1,15 @@
-2023/10/06-11:42:34.671507 7fc0477fe700 Recovering log #211
-2023/10/06-11:42:34.674046 7fc0477fe700 Delete type=3 #209
-2023/10/06-11:42:34.674080 7fc0477fe700 Delete type=0 #211
-2023/10/10-00:59:05.791151 7fc044e1d700 Level-0 table #216: started
-2023/10/10-00:59:05.791361 7fc044e1d700 Level-0 table #216: 0 bytes OK
-2023/10/10-00:59:05.792597 7fc044e1d700 Delete type=0 #214
-2023/10/10-00:59:05.795828 7fc044e1d700 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
-2023/10/10-00:59:05.796015 7fc044e1d700 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/10/10-00:59:29.663726 7fc045ffb700 Recovering log #215
+2023/10/10-00:59:29.666259 7fc045ffb700 Delete type=0 #215
+2023/10/10-00:59:29.666293 7fc045ffb700 Delete type=3 #213
+2023/10/13-14:26:29.879186 7fc044e1d700 Level-0 table #220: started
+2023/10/13-14:26:29.901107 7fc044e1d700 Level-0 table #220: 1159869 bytes OK
+2023/10/13-14:26:29.902498 7fc044e1d700 Delete type=0 #218
+2023/10/13-14:26:29.904497 7fc044e1d700 Manual compaction at level-0 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2023/10/13-14:26:29.909550 7fc044e1d700 Manual compaction at level-1 from '!actors!0jCHVo4JKAn1F3k9' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at '!actors.items!zLMOpuXkzwrdMoMS.cdTHX1HQrFuzQkuZ' @ 13184 : 1
+2023/10/13-14:26:29.909561 7fc044e1d700 Compacting 1@1 + 1@2 files
+2023/10/13-14:26:29.939803 7fc044e1d700 Generated table #221@1: 730 keys, 1161075 bytes
+2023/10/13-14:26:29.939825 7fc044e1d700 Compacted 1@1 + 1@2 files => 1161075 bytes
+2023/10/13-14:26:29.940517 7fc044e1d700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/10/13-14:26:29.940644 7fc044e1d700 Delete type=2 #220
+2023/10/13-14:26:29.940994 7fc044e1d700 Delete type=2 #166
+2023/10/13-14:26:30.009424 7fc044e1d700 Manual compaction at level-1 from '!actors.items!zLMOpuXkzwrdMoMS.cdTHX1HQrFuzQkuZ' @ 13184 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)

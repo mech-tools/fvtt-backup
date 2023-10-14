@@ -1,8 +1,15 @@
-2023/10/06-11:42:34.567676 7fc045ffb700 Recovering log #93
-2023/10/06-11:42:34.570620 7fc045ffb700 Delete type=0 #93
-2023/10/06-11:42:34.570667 7fc045ffb700 Delete type=3 #91
-2023/10/10-00:59:05.767423 7fc044e1d700 Level-0 table #98: started
-2023/10/10-00:59:05.767619 7fc044e1d700 Level-0 table #98: 0 bytes OK
-2023/10/10-00:59:05.768624 7fc044e1d700 Delete type=0 #96
-2023/10/10-00:59:05.770274 7fc044e1d700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
-2023/10/10-00:59:05.771826 7fc044e1d700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/10/10-00:59:29.337826 7fc046ffd700 Recovering log #97
+2023/10/10-00:59:29.341339 7fc046ffd700 Delete type=3 #95
+2023/10/10-00:59:29.341386 7fc046ffd700 Delete type=0 #97
+2023/10/13-14:26:29.841679 7fc044e1d700 Level-0 table #102: started
+2023/10/13-14:26:29.843219 7fc044e1d700 Level-0 table #102: 12586 bytes OK
+2023/10/13-14:26:29.844265 7fc044e1d700 Delete type=0 #100
+2023/10/13-14:26:29.846790 7fc044e1d700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/10/13-14:26:29.851493 7fc044e1d700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at '!scenes!soG1TO5k9AWAaMj3' @ 784 : 1
+2023/10/13-14:26:29.851506 7fc044e1d700 Compacting 1@1 + 1@2 files
+2023/10/13-14:26:29.852862 7fc044e1d700 Generated table #103@1: 66 keys, 17623 bytes
+2023/10/13-14:26:29.852876 7fc044e1d700 Compacted 1@1 + 1@2 files => 17623 bytes
+2023/10/13-14:26:29.853520 7fc044e1d700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/10/13-14:26:29.853574 7fc044e1d700 Delete type=2 #62
+2023/10/13-14:26:29.853843 7fc044e1d700 Delete type=2 #102
+2023/10/13-14:26:29.856922 7fc044e1d700 Manual compaction at level-1 from '!scenes!soG1TO5k9AWAaMj3' @ 784 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
