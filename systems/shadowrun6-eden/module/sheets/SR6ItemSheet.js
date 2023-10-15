@@ -114,18 +114,24 @@ export class SR6ItemSheet extends ItemSheet {
             let newValue = [];
             if (!(idx >= 0 && array !== ""))
                 return;
+            /* Duplicate the data from the object. Sets null & NaN to 0 */
             if (field) {
-                newValue = duplicate(array.split(".").reduce(function (prev, curr) {
-                    return prev ? prev[curr] : null;
-                }, getActorData(this.object)));
+                newValue = duplicate(
+                //array.split(".").reduce(function (prev, curr) {
+                //	return prev ? prev[curr] : null;
+                //}, (this.object as any).system) //getActorData(this.object))
+                this.object.system[array.split(".")[1]]);
                 newValue[idx][field] = element.value;
             }
             else {
-                newValue = duplicate(array.split(".").reduce(function (prev, curr) {
-                    return prev ? prev[curr] : null;
-                }, getActorData(this.object)));
+                newValue = duplicate(
+                //array.split(".").reduce(function (prev, curr) {
+                //	return prev ? prev[curr] : null;
+                //}, (this.object as any).system)
+                this.object.system[array.split(".")[1]]);
                 newValue[idx] = element.value;
             }
+            /* Update the value of 'array' with newValue */
             this.object.update({ [array]: newValue });
         });
     }

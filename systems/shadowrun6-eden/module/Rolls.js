@@ -52,7 +52,7 @@ async function _showRollDialog(data) {
             data.edge = data.actor ? lifeform.edge.value : 0;
         }
         if (!data.calcPool || data.calcPool == 0) {
-            data.calcPool = data.pool;
+            data.calcPool = data.pool - data.actor.getWoundModifier();
         }
         /*
          * Edge, Edge Boosts and Edge Actions
@@ -205,10 +205,16 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
             configured.defRating = form.defRating ? parseInt(form.defRating.value) : 0;
             console.log("rollMode = ", form.rollMode.value);
             configured.rollMode = form.rollMode.value;
-            formula = createFormula(configured, dialog);
             let base = configured.pool ? configured.pool : 0;
             let mod = dialog.modifier ? dialog.modifier : 0;
-            configured.pool = +base + +mod;
+            let woundMod = form.useWoundModifier.checked ? prepared.actor.getWoundModifier() : 0;
+            configured.pool = +base + +mod + -woundMod;
+            prepared.calcPool = configured.pool;
+            /* Check for a negative pool! Set to 0 if negative so the universe doesn't explode */
+            if (configured.pool < 0)
+                configured.pool = 0;
+            /* Build the roll formula */
+            formula = createFormula(configured, dialog);
         }
         console.log("_dialogClosed: ", formula);
         // Execute the roll

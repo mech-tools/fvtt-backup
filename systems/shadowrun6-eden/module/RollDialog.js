@@ -94,6 +94,10 @@ export class RollDialog extends Dialog {
         this._recalculateBaseAR();
         // React to attribute change
         html.find(".rollAttributeSelector").change(this._onAttribChange.bind(this));
+        // React to Wound Modifier checkbox
+        html.find("#useWoundModifier").change(this._updateDicePool.bind(this));
+        // React to change in modifier
+        html.find("#modifier").change(this._updateDicePool.bind(this));
     }
     //-------------------------------------------------------------
     _recalculateBaseAR() {
@@ -322,7 +326,17 @@ export class RollDialog extends Dialog {
     }
     //-------------------------------------------------------------
     _updateDicePool(data) {
-        $("label[name='dicePool']")[0].innerText = (parseInt(data.pool) + parseInt(this.modifier)).toString();
+        // Get the value of the user entered modifier ..
+        let userModifier = parseInt(document.getElementById("modifier").value);
+        // .. and update the roll
+        this.modifier = userModifier ? userModifier : 0;
+        // Get the value of the checkbox if the calculated wound penality should be used
+        let useWoundModifier = document.getElementById("useWoundModifier").checked;
+        // Calculate new sum
+        console.log("updateDicePool: ", this);
+        console.log("updateDicePool2: ", this.prepared.pool, this.modifier, this.actor.getWoundModifier());
+        let sum = this.prepared.pool + parseInt(this.modifier) - (useWoundModifier ? this.actor.getWoundModifier() : 0);
+        $("label[name='dicePool']")[0].innerText = sum.toString();
     }
     //-------------------------------------------------------------
     _performEdgeBoostOrAction(data, boostOrActionId) {

@@ -1,10 +1,10 @@
 import { Persona } from "./ItemTypes.js";
 export class Attribute {
-    base;
-    mod;
+    base = 0;
+    mod = 0;
     modString = "";
-    augment;
-    pool;
+    augment = 0;
+    pool = 0;
 }
 export class Attributes {
     bod = new Attribute();

@@ -796,10 +796,11 @@
         "consumable": false,
         "light": [
           {
-            "bright": 10,
-            "dim": 10,
+            "bright": 5,
+            "dim": 5,
             "angle": 360,
-            "alpha": 0.05,
+            "alpha": 0.1,
+            "color":"#f9f06b",
             "animation": {
               "type": "torch",
               "speed": 5,
@@ -815,10 +816,11 @@
         "consumable": false,
         "light": [
           {
-            "bright": 10,
-            "dim": 10,
+            "bright": 5,
+            "dim": 5,
             "angle": 360,
-            "alpha": 0.05,
+            "alpha": 0.1,
+            "color":"#f9f06b",
             "animation": {
               "type": "torch",
               "speed": 5,
@@ -834,10 +836,11 @@
         "consumable": false,
         "light": [
           {
-            "bright": 10,
-            "dim": 10,
+            "bright": 5,
+            "dim": 5,
             "angle": 360,
-            "alpha": 0.05,
+            "alpha": 0.1,
+            "color":"#f9f06b",
             "animation": {
               "type": "torch",
               "speed": 5,
@@ -853,18 +856,70 @@
         "consumable": false,
         "light": [
           {
-            "bright": 4,
-            "dim": 4,
+            "bright": 2,
+            "dim": 2,
             "angle": 360,
-            "alpha": 0.05,
+            "alpha": 0.1,
+            "color":"#f9f06b",
             "animation": {
               "type": "torch",
               "speed": 5,
-              "intensity": 5,
+              "intensity": 3,
               "reverse": false
             }
           }
         ]
+      }
+    }
+  },
+  "demonlord": {
+    "system": "demonlord",
+    "topology": "standard",
+    "quantity": "quantity",
+    "aliases": {
+      "Lantern, Spotlight": "Spotlight Lantern"
+    },
+    "sources": {
+        "Candle": {
+          "name": "Candle",
+          "type": "item",
+          "consumable": true,
+          "states": 2,
+          "light": [
+            { "bright": 1, "dim": 2, "angle": 360, "color": "#ff9329", "alpha": 0.1,
+              "animation": {"type": "torch", "speed": "3", "intensity": "1", "reverse": false}
+            }
+          ]
+        },
+        "Torch": {
+          "name": "Torch",
+          "type": "item",
+          "consumable": true,
+          "states": 2,
+          "light": [
+            { "bright": 5, "dim": 10, "angle": 360, "color": "#ff9329", "alpha": 0.1,
+            "animation": {"type": "torch", "speed": "1", "intensity": "5", "reverse": false}}
+          ]
+        },
+        "Spotlight Lantern": {
+          "name": "Spotlight Lantern",
+          "type": "item",
+          "consumable": false,
+          "states": 2,
+          "light": [
+            { "bright": 20, "dim": 40, "angle": 53,
+            "animation": {"type": "torch", "speed": "1", "intensity": "10", "reverse": false} }
+          ]
+        },
+        "Lantern": {
+          "name": "Lantern",
+          "type": "item",
+          "consumable": false,
+          "states": 3,
+          "light": [
+            { "bright": 10, "dim": 20, "angle": 360,
+            "animation": {"type": "torch", "speed": "1", "intensity": "10", "reverse": false} }
+          ]
       }
     }
   },

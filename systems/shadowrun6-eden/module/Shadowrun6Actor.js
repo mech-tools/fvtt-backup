@@ -223,7 +223,7 @@ export class Shadowrun6Actor extends Actor {
         // Only run on lifeforms
         if (isLifeform(data)) {
             SR6.ATTRIBUTES.forEach((attr) => {
-                data.attributes[attr].pool = data.attributes[attr].base + data.attributes[attr].mod;
+                data.attributes[attr].pool = data.attributes[attr].base + parseInt(data.attributes[attr].mod);
                 if (data.attributes[attr].pool < 1)
                     data.attributes[attr].pool = 1;
             });
@@ -1028,6 +1028,23 @@ export class Shadowrun6Actor extends Actor {
             }
         });
         system.essence = Number(essence.toFixed(2));
+    }
+    //---------------------------------------------------------
+    _getWoundModifierPerMonitor(monitor) {
+        /* Get the penalties for physical and stun damage. Every 3 boxes = -1 penalty */
+        let remain = monitor.max - monitor.dmg;
+        let modifier = Math.floor(monitor.dmg / 3);
+        // In the last row, if the last box is full the modifier is increased by one
+        if (remain > 0 && monitor.max % 3 == remain)
+            modifier++;
+        return modifier;
+    }
+    //---------------------------------------------------------
+    getWoundModifier() {
+        console.log("Current Wound Penalties");
+        const data = getSystemData(this);
+        /* Return the combined penalties from physical and stun damage */
+        return (this._getWoundModifierPerMonitor(data.physical) + this._getWoundModifierPerMonitor(data.stun));
     }
     //---------------------------------------------------------
     /**
