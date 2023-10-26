@@ -1,7 +1,7 @@
 {
   "title": "Shadowrun 6",
   "description": "RPGFramework Eden implementation for Shadowrun 6",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "authors": [
     {
       "name": "Stefan Prelle",
@@ -131,8 +131,8 @@
   "primaryTokenAttribute": "physical",
   "secondaryTokenAttribute": "stun",
   "url": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/",
-  "manifest": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/system-2.1.0.json",
-  "download": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/shadowrun6-eden-2.1.0.zip",
+  "manifest": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/system-2.1.1.json",
+  "download": "https://bitbucket.org/rpgframework-cloud/shadowrun6-eden/downloads/shadowrun6-eden-2.1.1.zip",
   "id": "shadowrun6-eden",
   "compatibility": {
     "minimum": "10",

@@ -334,9 +334,12 @@ export class RollDialog extends Dialog {
         let useWoundModifier = document.getElementById("useWoundModifier").checked;
         // Calculate new sum
         console.log("updateDicePool: ", this);
-        console.log("updateDicePool2: ", this.prepared.pool, this.modifier, this.actor.getWoundModifier());
-        let sum = this.prepared.pool + parseInt(this.modifier) - (useWoundModifier ? this.actor.getWoundModifier() : 0);
-        $("label[name='dicePool']")[0].innerText = sum.toString();
+        let woundMod = (this.actor) ? this.actor.getWoundModifier() : 0;
+        if (this.actor) {
+            console.log("updateDicePool2: ", this.prepared.pool, this.modifier, woundMod);
+        }
+        //this.prepared.calcPool = this.prepared.pool + this.modifier - (useWoundModifier?woundMod:0);
+        $("label[name='dicePool']")[0].innerText = this.prepared.calcPool.toString();
     }
     //-------------------------------------------------------------
     _performEdgeBoostOrAction(data, boostOrActionId) {
@@ -465,7 +468,7 @@ export class RollDialog extends Dialog {
         console.log("_onAttribChange ", this.options);
         let actor = this.options.actor;
         let prepared = this.options.prepared;
-        let configured = this.options.configured;
+        let configured = this.options.dialogResult;
         // Ignore this, if there is no actor
         if (!actor) {
             return;

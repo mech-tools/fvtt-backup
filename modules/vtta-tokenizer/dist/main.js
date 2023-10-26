@@ -3251,14 +3251,7 @@ class Layer {
       context.fill();
     }
 
-
-    // clip the canvas
-    this.renderedMask = document.createElement('canvas');
-    this.renderedMask.width = this.source.width;
-    this.renderedMask.height = this.source.height;
-    this.renderedMask
-      .getContext('2d')
-      .drawImage(temp, 1, 1, constants.MASK_DENSITY, constants.MASK_DENSITY, 0, 0, this.source.width, this.source.height);
+    return temp;
   }
 
   createMask() {
@@ -3268,14 +3261,13 @@ class Layer {
       this.renderedMask.height = this.source.height;
     }
     const rayMask = game.settings.get(constants.MODULE_ID, "default-algorithm");
-    if (rayMask) {
-      this.mask = generateRayMask(this.canvas);
-      const maskContext = this.renderedMask.getContext('2d');
-      maskContext.resetTransform();
-      maskContext.drawImage(this.mask, 0, 0, this.canvas.width, this.canvas.height);
-    } else {
-      this.createOriginalMask();
-    }
+    this.mask = rayMask
+      ? generateRayMask(this.canvas)
+      : this.createOriginalMask();
+    const maskContext = this.renderedMask.getContext('2d');
+    maskContext.resetTransform();
+    maskContext.drawImage(this.mask, 0, 0, this.canvas.width, this.canvas.height);
+
     this.sourceMask = Utils.cloneCanvas(this.mask);
   }
 
@@ -5810,7 +5802,7 @@ class Tokenizer extends FormApplication {
     this.getTheGreatNachoFrames();
     await this.getJColsonFrames();
 
-    const frames = this.defaultFrames.concat(folderFrames, this.omfgFrames, this.theGreatNachoFrames, this.jColsonFrames, this.customFrames);
+    const frames = this.defaultFrames.concat(folderFrames, this.customFrames, this.omfgFrames, this.theGreatNachoFrames, this.jColsonFrames);
 
     this.frames = frames;
     return this.frames;
@@ -7067,11 +7059,25 @@ async function updateActor(tokenizerResponse) {
   }
 }
 
+function getActorType(actor) {
+  if (["character", "pc"].includes(actor.type)) {
+    // forbidden lands support
+    if (getProperty(actor, "system.subtype.type") === "npc") {
+      return "npc";
+    } else {
+      return "pc";
+    }
+  } else {
+    return "npc";
+  }
+  
+}
+
 function tokenizeActor(actor) {
   const options = {
     actor: actor,
     name: actor.name,
-    type: ["character", "pc"].includes(actor.type) ? "pc" : "npc",
+    type: getActorType(actor),
     disposition: actor.prototypeToken.disposition,
     avatarFilename: getAvatarPath(actor),
     tokenFilename: actor.prototypeToken.texture.src,
@@ -7087,7 +7093,7 @@ function tokenizeSceneToken(doc) {
     actor: doc.actor,
     token: doc.token,
     name: doc.token.name,
-    type: ["character", "pc"].includes(doc.actor.type) ? "pc" : "npc",
+    type: getActorType(doc.actor),
     disposition: doc.token.disposition,
     avatarFilename: getAvatarPath(doc.actor),
     tokenFilename: doc.token.texture.src,
@@ -7122,7 +7128,7 @@ async function autoToken(actor, options) {
   const defaultOptions = {
     actor: actor,
     name: actor.name,
-    type: ["character", "pc"].includes(actor.type) ? "pc" : "npc",
+    type: getActorType(actor),
     disposition: actor.prototypeToken.disposition,
     avatarFilename: getAvatarPath(actor),
     tokenFilename: actor.prototypeToken.texture.src,

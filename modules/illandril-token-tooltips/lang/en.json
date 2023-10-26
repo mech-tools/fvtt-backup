@@ -18,7 +18,7 @@
             "name": "A name for the data shown. If no icon is specified, the name will be displayed instead of an icon in the tooltip.",
             "icon": "The name of the Font Awesome icon to show in the tooltip. A preview of the icon is shown to the right of the input to help ensure you select the right icon. If left blank, the name will be shown instead of an icon. Note that not all Font Awesome icons are available (FoundryVTT itself is in control over which icons are available, not this module - this module is just using the icons that are shipped with FoundryVTT).",
             "iconLink": "Search for icons on the Font Awesome Website",
-            "attributeKey": "The property key used to lookup the value you want to show in the tooltip. For example, to show the CR of a creature using the DnD5e system, specify \"data.details.cr\". The Data Key Debugger can be enabled to assist in finding the correct Data Key for the information you want to display.\nYou can use +, -, * (multiply), / (divide), and % (modulo) to perform basic math (operations are applied left-to-right, NOT PEMDAS). You can also use <, >, <=, >=, != (not equal), or == (equal) to suppress a line if the specified condition is not met (ex. \"data.skills.perception.value != 0 + 10\" will show a value 10 greater than the token's perception skill, but only if the token's perception skill is not zero).",
+            "attributeKey": "The property key used to lookup the value you want to show in the tooltip. For example, to show the CR of a creature using the DnD5e system, specify `system.details.cr`. The Data Key Debugger can be enabled to assist in finding the correct Data Key for the information you want to display.\nYou can use +, -, * (multiply), / (divide), and % (modulo) to perform basic math (operations are applied left-to-right, NOT PEMDAS; e.g. `5+5*2` would be 20, not 15). You can also use <, >, <=, >=, != (not equal), or == (equal) to suppress a line if the specified condition is not met (e.g. `system.skills.perception.value != 0 + 10` will show a value 10 greater than the token's perception skill, but only if the token's perception skill is not zero). You can also use & to concatenate multiple values together, and \"quotes\" to specify fixed strings (e.g. `system.carryWeight.value & \" lbs\"` would show as `72 lbs`)",
             "permission": "The minimum permission a player must have to see this value in an actor's tooltip (assuming they can see the tooltip at all - see the Tooltip Visibility setting on the main settings page). Note: GMs are considered Owners for all actors.",
             "gmPermission": "This setting allows players to see their own details in the tooltip while hiding that information from GMs. Note: This checks if the token has a Player Owner, and not the character type, so an NPC character with a player owner counts as player info, and a PC character without a player owner counts as NPC info.",
             "bugs": "Click here to report bugs or request features"
@@ -37,13 +37,13 @@
 
           "standard": {
             "hp.name": "Health",
-            "hp.key": "Varies (ex. data.attributes.hp)",
+            "hp.key": "Varies (ex. system.attributes.hp)",
 
             "ac.name": "Armor Class",
-            "ac.key": "Varies (ex. data.attributes.ac)",
+            "ac.key": "Varies (e.g. `system.attributes.ac`)",
 
             "movement.name": "Movement",
-            "movement.key": "Varies (ex. data.stats.speed)",
+            "movement.key": "Varies (e.g. `system.stats.speed`)",
 
             "ruler.name": "Distance Ruler",
             "ruler.key": "Calculated distance from the selected token",
@@ -51,35 +51,35 @@
             "attributesPlus.name": "Attribs (+Mod)",
             "attributesPlus.help": "Attributes and associated Modifiers (including Attribute-based Saves for appropriate systems).",
             "attributesPlus.icon": "label",
-            "attributesPlus.key": "Varies (ex. data.abilities.str)",
+            "attributesPlus.key": "Varies (e.g. `system.abilities.str`)",
 
             "passives.name": "Passive Skills",
-            "passives.key": "Varies (ex. data.skills.prc.passive)",
+            "passives.key": "Varies (e.g. `system.skills.prc.passive`)",
 
             "resources.name": "Resources",
-            "resources.key": "data.resources.#",
+            "resources.key": "system.resources.#",
 
             "savingThrows.name": "Saving Throws",
             "savingThrows.help": "Fortitude, Reflex, and Will Saving Throws (Pathfinder and D&D 3.5). Does not include Attribute-based saving throws (D&D 5).",
             "savingThrows.icon": "label",
-            "savingThrows.key": "Varies (ex. data.saves.will)",
+            "savingThrows.key": "Varies (e.g. `system.saves.will`)",
 
             "dmgResVuln.name": "Dmg Res./Vuln.",
             "dmgResVuln.help": "Damage Resistances, Immunities, and Vulnerabilities/Weaknesses. Note: for systems that mix Damage and Condition Immunities (ex. PF2e), Condition Immunities are included with Damage Immunities.",
             "dmgResVuln.icon": "label",
-            "dmgResVuln.key": "Varies (ex. data.traits.di/dr/dv)",
+            "dmgResVuln.key": "Varies (e.g. `system.traits.di/dr/dv`)",
 
             "condImm.name": "Cond. Imm.",
             "condImm.help": "Condition Immunities. Note: for systems that mix Damage and Condition Immunities (ex. PF2e), Condition Immunities are included with Damage Immunities.",
             "condImm.icon": "label",
-            "condImm.key": "Varies (ex. data.traits.ci)",
+            "condImm.key": "Varies (e.g. `system.traits.ci`)",
 
             "spells.name": "Spell Slots",
-            "spells.key": "Varies (ex. data.spells.spell#)",
+            "spells.key": "Varies (ex. `system.spells.spell#`)",
 
             "talents.name": "Talents",
             "talents.icon": "the Talent's image",
-            "talents.key": "data.talentList.#.name",
+            "talents.key": "system.talentList.#.name",
 
             "items.name": "Item Uses",
             "items.icon": "the Item's image",
@@ -151,6 +151,45 @@
         "ALL": "GM sees Player info",
         "NPC_ONLY": "NPC only for GMs"
       },
+      "squareDistanceChoice": {
+        "label": "Diagonal Rule (Square)",
+        "hint": "Specify how the Distance Ruler calculates diagonal distances from for scenes using Square grids. 'Use Grid Measurements' will measure the same way as the Measure Distance tool (ignores elevation). 'Euclidian': The absolute distance (e.g. 5ft square -> 1 diagonal = 7.07ft, 2 diagonals = 14.14ft, etc). 'Equidistant': Diagonals are treated as straights (5ft square -> one diagonal = 5ft, two diagonals = 10ft, etc). 'Alternating': Diagonals are treated as one or two straights alternating (5ft square -> one diagonal = 5ft, two diagonals = 15ft, three diagonals = 20ft, etc)",
+        "choice": {
+          "GRID": "Use Grid Measurements",
+          "EUCLIDIAN": "Euclidian",
+          "EQUIDISTANT": "Equidistant",
+          "ALTERNATING": "Alternating"
+        }
+      },
+      "squareMeasureFrom": {
+        "label": "Measure From (Square)",
+        "hint": "Specify where the Distance Ruler calculates distances from for scenes using Square grids. 'Nearest Grid Spaces' will measure from the center of the closest grid spaces of each token. For 'Euclidian' measurements, the two 'Center' options will measure from the center of each token, ignoring grid spaces. For non-euclidian measurements, the two 'Center' options will measure from the center of the grid space that includes the center of each token. If the center of the token is in between two (or more) grid spaces, `Round Up` will select the grid space touching the center that is farthest from the other token, and 'Round Down' will select the grid space touchign the center that is nearest the other token.",
+        "choice": {
+          "NEAREST": "Nearest Grid Spaces",
+          "CENTER_FAR": "Center (Round Up)",
+          "CENTER_NEAR": "Center (Round Down)"
+        }
+      },
+      "squareIncludeElevation": {
+        "label": "Include Elevation (Square)",
+        "hint": "If checked, distances shown by the distance ruler will also factor in elevation differences between the two tokens for scenes using Square grids. Note: This setting is ignored for the 'Use Grid Measurements' mode."
+      },
+      "hexDistanceChoice": {
+        "label": "Diagonal Rule (Hex)",
+        "hint": "Specify how the Distance Ruler calculates diagonal distances from for scenes using Hex grids. 'Use Grid Measurements' will measure the same way as the Measure Distance tool (ignores elevation). 'Euclidian': The absolute distance between the center of each token.",
+        "choice": {
+          "GRID": "Use Grid Measurements",
+          "EUCLIDIAN": "Euclidian"
+        }
+      },
+      "hexIncludeElevation": {
+        "label": "Include Elevation (Hex)",
+        "hint": "If checked, distances shown by the distance ruler will also factor in elevation differences between the two tokens for scenes using Hex grids. Note: This setting is ignored for the 'Use Grid Measurements' mode."
+      },
+      "gridlessIncludeElevation": {
+        "label": "Include Elevation (Gridless)",
+        "hint": "If checked, distances shown by the distance ruler will also factor in elevation differences between the two tokens for Gridless scenes."
+      },
 
       "rowsPerTooltip.label": "Tooltip Rows",
       "rowsPerTooltip.hint": "The maximum number of rows shown in each column in the Tooltip.",
@@ -181,6 +220,7 @@
     },
 
     "pactAbbreviation": "P",
+    "spellPointsAbbreviation": "P",
     "powerAbbreviation": "P",
     "cantripAbbreviation": "C",
     "focusAbbreviation": "F",

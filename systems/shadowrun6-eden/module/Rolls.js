@@ -52,7 +52,10 @@ async function _showRollDialog(data) {
             data.edge = data.actor ? lifeform.edge.value : 0;
         }
         if (!data.calcPool || data.calcPool == 0) {
-            data.calcPool = data.pool - data.actor.getWoundModifier();
+            data.calcPool = data.pool;
+            if (data.actor) {
+                data.calcPool -= data.actor.getWoundModifier();
+            }
         }
         /*
          * Edge, Edge Boosts and Edge Actions
@@ -207,7 +210,7 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
             configured.rollMode = form.rollMode.value;
             let base = configured.pool ? configured.pool : 0;
             let mod = dialog.modifier ? dialog.modifier : 0;
-            let woundMod = form.useWoundModifier.checked ? prepared.actor.getWoundModifier() : 0;
+            let woundMod = (form.useWoundModifier.checked && prepared.actor) ? prepared.actor.getWoundModifier() : 0;
             configured.pool = +base + +mod + -woundMod;
             prepared.calcPool = configured.pool;
             /* Check for a negative pool! Set to 0 if negative so the universe doesn't explode */
@@ -235,6 +238,7 @@ function createFormula(roll, dialog) {
     console.log("createFormula-------------------------------");
     console.log("--pool = " + roll.pool);
     console.log("--modifier = " + dialog.modifier);
+    dialog.modifier = 0;
     let regular = +(roll.pool ? roll.pool : 0) + (dialog.modifier ? dialog.modifier : 0);
     let wild = 0;
     if (roll.useWildDie > 0) {

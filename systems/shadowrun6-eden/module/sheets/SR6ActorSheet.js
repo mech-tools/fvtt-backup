@@ -520,7 +520,7 @@ export class Shadowrun6ActorSheet extends ActorSheet {
         console.log("onCommonCheck");
         event.preventDefault();
         let roll = new PreparedRoll();
-        roll.pool = event.currentTarget.dataset.pool;
+        roll.pool = parseInt(event.currentTarget.dataset.pool);
         roll.rollType = RollType.Common;
         let classList = event.currentTarget.classList;
         if (classList.contains("defense-roll")) {
