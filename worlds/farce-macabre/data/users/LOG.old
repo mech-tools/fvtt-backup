@@ -1,15 +1,8 @@
-2023/10/10-00:59:29.429694 7fc0477fe700 Recovering log #98
-2023/10/10-00:59:29.433941 7fc0477fe700 Delete type=0 #98
-2023/10/10-00:59:29.433965 7fc0477fe700 Delete type=3 #96
-2023/10/13-14:26:29.835584 7fc044e1d700 Level-0 table #103: started
-2023/10/13-14:26:29.836721 7fc044e1d700 Level-0 table #103: 1123 bytes OK
-2023/10/13-14:26:29.837923 7fc044e1d700 Delete type=0 #101
-2023/10/13-14:26:29.838650 7fc044e1d700 Manual compaction at level-0 from '!users!EDV8u9J02rdmMpef' @ 72057594037927935 : 1 .. '!users!yftFCneKfLIoRMCj' @ 0 : 0; will stop at (end)
-2023/10/13-14:26:29.844633 7fc044e1d700 Manual compaction at level-1 from '!users!EDV8u9J02rdmMpef' @ 72057594037927935 : 1 .. '!users!yftFCneKfLIoRMCj' @ 0 : 0; will stop at '!users!yftFCneKfLIoRMCj' @ 107 : 1
-2023/10/13-14:26:29.844650 7fc044e1d700 Compacting 1@1 + 1@2 files
-2023/10/13-14:26:29.845617 7fc044e1d700 Generated table #104@1: 5 keys, 2277 bytes
-2023/10/13-14:26:29.845631 7fc044e1d700 Compacted 1@1 + 1@2 files => 2277 bytes
-2023/10/13-14:26:29.846243 7fc044e1d700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/10/13-14:26:29.846305 7fc044e1d700 Delete type=2 #49
-2023/10/13-14:26:29.846551 7fc044e1d700 Delete type=2 #103
-2023/10/13-14:26:29.849141 7fc044e1d700 Manual compaction at level-1 from '!users!yftFCneKfLIoRMCj' @ 107 : 1 .. '!users!yftFCneKfLIoRMCj' @ 0 : 0; will stop at (end)
+2023/10/13-14:26:56.509489 7fc045ffb700 Recovering log #102
+2023/10/13-14:26:56.515279 7fc045ffb700 Delete type=3 #100
+2023/10/13-14:26:56.515326 7fc045ffb700 Delete type=0 #102
+2023/10/26-09:52:22.978282 7fc044e1d700 Level-0 table #108: started
+2023/10/26-09:52:22.978520 7fc044e1d700 Level-0 table #108: 0 bytes OK
+2023/10/26-09:52:22.980103 7fc044e1d700 Delete type=0 #106
+2023/10/26-09:52:22.985136 7fc044e1d700 Manual compaction at level-0 from '!users!EDV8u9J02rdmMpef' @ 72057594037927935 : 1 .. '!users!yftFCneKfLIoRMCj' @ 0 : 0; will stop at (end)
+2023/10/26-09:52:22.985351 7fc044e1d700 Manual compaction at level-1 from '!users!EDV8u9J02rdmMpef' @ 72057594037927935 : 1 .. '!users!yftFCneKfLIoRMCj' @ 0 : 0; will stop at (end)
