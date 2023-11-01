@@ -1,7 +1,7 @@
-2023/10/27-10:32:11.103874 7f174a7fc700 Recovering log #81
-2023/10/27-10:32:11.106282 7f174a7fc700 Delete type=3 #79
-2023/10/27-10:32:11.106322 7f174a7fc700 Delete type=0 #81
-2023/10/27-10:36:43.953292 7f14c9d54700 Level-0 table #86: started
-2023/10/27-10:36:43.953320 7f14c9d54700 Level-0 table #86: 0 bytes OK
-2023/10/27-10:36:43.954118 7f14c9d54700 Delete type=0 #84
-2023/10/27-10:36:43.956518 7f14c9d54700 Manual compaction at level-0 from '!macros!0zAQ2jjR58HIam9C' @ 72057594037927935 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at (end)
+2023/10/31-09:51:07.758675 7f174a7fc700 Recovering log #89
+2023/10/31-09:51:07.761858 7f174a7fc700 Delete type=3 #87
+2023/10/31-09:51:07.761966 7f174a7fc700 Delete type=0 #89
+2023/10/31-09:51:09.304229 7f14c9d54700 Level-0 table #94: started
+2023/10/31-09:51:09.304244 7f14c9d54700 Level-0 table #94: 0 bytes OK
+2023/10/31-09:51:09.305462 7f14c9d54700 Delete type=0 #92
+2023/10/31-09:51:09.307066 7f14c9d54700 Manual compaction at level-0 from '!macros!0zAQ2jjR58HIam9C' @ 72057594037927935 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at (end)
