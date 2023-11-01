@@ -12,7 +12,7 @@ Hooks.on('init', () => {
       return true;
     },
   });
-  
+
   game.settings.register('smalltime', 'current-date', {
     name: 'Current Date',
     scope: 'world',
@@ -246,6 +246,20 @@ Hooks.on('init', () => {
     default: false,
   });
 
+  game.settings.register('smalltime', 'phase-impact', {
+    name: game.i18n.localize('SMLTME.Phase_Impact'),
+    hint: game.i18n.localize('SMLTME.Phase_Impact_Hint'),
+    scope: 'world',
+    config: true,
+    type: Number,
+    range: {
+      min: 0,
+      max: 1,
+      step: 0.1,
+    },
+    default: 0.4,
+  });
+
   game.settings.register('smalltime', 'allow-trusted', {
     name: game.i18n.localize('SMLTME.Allow_Trusted'),
     hint: game.i18n.localize('SMLTME.Allow_Trusted_Hint'),
@@ -263,6 +277,16 @@ Hooks.on('init', () => {
     // Default is full moon.
     default: 4,
   });
+
+  if (game.modules.get('foundryvtt-simple-calendar')?.active) {
+    // Set the global Darkness color to the color of the first moon in Simple Calendar, if configured.
+    // The pSBC function drops the brightness to an appropriate level.
+    // Ignore if the moon is set to its default color of white.
+    if (SimpleCalendar.api.getAllMoons()[0].color != '#ffffff') {
+      const darknessColorFromMoon = Helpers.pSBC(-0.9, SimpleCalendar.api.getAllMoons()[0].color);
+      CONFIG.Canvas.darknessColor = darknessColorFromMoon;
+    }
+  }
 });
 
 // Set the initial state for newly rendered scenes.
@@ -680,6 +704,7 @@ Hooks.on('renderSettingsConfig', (obj) => {
 
   // Get the current Darkness overlay color.
   const coreDarknessColor = Helpers.convertHexToRGB(CONFIG.Canvas.darknessColor.toString(16));
+  console.log(coreDarknessColor);
   document.documentElement.style.setProperty('--SMLTME-darkness-r', coreDarknessColor.r);
   document.documentElement.style.setProperty('--SMLTME-darkness-g', coreDarknessColor.g);
   document.documentElement.style.setProperty('--SMLTME-darkness-b', coreDarknessColor.b);
@@ -1102,13 +1127,13 @@ class SmallTimeApp extends FormApplication {
           return;
         }
         const newPhases = [];
-        data.moons.forEach(m => {
+        data.moons.forEach((m) => {
           const newPhase = ST_Config.MoonPhases.findIndex(function (phase) {
             return phase === m.currentPhase.icon;
           });
           newPhases.push(newPhase);
-        })
-        
+        });
+
         await game.settings.set('smalltime', 'moon-phase', newPhases[0]);
         SmallTimeApp.timeTransition(Helpers.getWorldTimeAsDayTime());
         Helpers.adjustMoonlight(newPhases);
@@ -1193,7 +1218,7 @@ class SmallTimeApp extends FormApplication {
 
       // If requested, adjust max Darkness based on moon phase.
       if (game.settings.get('smalltime', 'moon-darkness')) {
-        const moonlightFactor = 0.4; // Percentage by which available moonlight reduces max Darkness.
+        const moonlightFactor = game.settings.get('smalltime', 'phase-impact'); // Percentage by which available moonlight reduces max Darkness.
         const moonlightMultiplier = moonlightFactor * ST_Config.PhaseValues[currentPhase];
         maxDarkness = Math.round((1 - maxDarkness * moonlightMultiplier) * 100) / 100;
       }

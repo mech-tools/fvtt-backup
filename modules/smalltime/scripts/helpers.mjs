@@ -447,7 +447,7 @@ export class Helpers {
   }
 
   static convertPositionToTimeInteger(position) {
-    return (position) * 3;
+    return position * 3;
   }
 
   static convertTimeIntegerToPosition(timeInteger) {
@@ -710,13 +710,163 @@ export class Helpers {
       : null;
   }
 
+  static pSBC(p, c0, c1, l) {
+    let r,
+      g,
+      b,
+      P,
+      f,
+      t,
+      h,
+      i = parseInt,
+      m = Math.round,
+      a = typeof c1 == 'string';
+    if (
+      typeof p != 'number' ||
+      p < -1 ||
+      p > 1 ||
+      typeof c0 != 'string' ||
+      (c0[0] != 'r' && c0[0] != '#') ||
+      (c1 && !a)
+    )
+      return null;
+    if (!this.pSBCr)
+      this.pSBCr = (d) => {
+        let n = d.length,
+          x = {};
+        if (n > 9) {
+          ([r, g, b, a] = d = d.split(',')), (n = d.length);
+          if (n < 3 || n > 4) return null;
+          (x.r = i(r[3] == 'a' ? r.slice(5) : r.slice(4))),
+            (x.g = i(g)),
+            (x.b = i(b)),
+            (x.a = a ? parseFloat(a) : -1);
+        } else {
+          if (n == 8 || n == 6 || n < 4) return null;
+          if (n < 6) d = '#' + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : '');
+          d = i(d.slice(1), 16);
+          if (n == 9 || n == 5)
+            (x.r = (d >> 24) & 255),
+              (x.g = (d >> 16) & 255),
+              (x.b = (d >> 8) & 255),
+              (x.a = m((d & 255) / 0.255) / 1000);
+          else (x.r = d >> 16), (x.g = (d >> 8) & 255), (x.b = d & 255), (x.a = -1);
+        }
+        return x;
+      };
+    (h = c0.length > 9),
+      (h = a ? (c1.length > 9 ? true : c1 == 'c' ? !h : false) : h),
+      (f = this.pSBCr(c0)),
+      (P = p < 0),
+      (t =
+        c1 && c1 != 'c'
+          ? this.pSBCr(c1)
+          : P
+          ? { r: 0, g: 0, b: 0, a: -1 }
+          : { r: 255, g: 255, b: 255, a: -1 }),
+      (p = P ? p * -1 : p),
+      (P = 1 - p);
+    if (!f || !t) return null;
+    if (l) (r = m(P * f.r + p * t.r)), (g = m(P * f.g + p * t.g)), (b = m(P * f.b + p * t.b));
+    else
+      (r = m((P * f.r ** 2 + p * t.r ** 2) ** 0.5)),
+        (g = m((P * f.g ** 2 + p * t.g ** 2) ** 0.5)),
+        (b = m((P * f.b ** 2 + p * t.b ** 2) ** 0.5));
+    (a = f.a),
+      (t = t.a),
+      (f = a >= 0 || t >= 0),
+      (a = f ? (a < 0 ? t : t < 0 ? a : a * P + t * p) : 0);
+    if (h)
+      return (
+        'rgb' + (f ? 'a(' : '(') + r + ',' + g + ',' + b + (f ? ',' + m(a * 1000) / 1000 : '') + ')'
+      );
+    else
+      return (
+        '#' +
+        (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0))
+          .toString(16)
+          .slice(1, f ? undefined : -2)
+      );
+  }
+
+  static applySaturationToHexColor(hex, saturationPercent) {
+    if (!/^#([0-9a-f]{6})$/i.test(hex)) {
+      throw 'Unexpected color format';
+    }
+
+    if (saturationPercent < 0 || saturationPercent > 100) {
+      throw 'Unexpected color format';
+    }
+
+    let saturationFloat = saturationPercent / 100,
+      rgbIntensityFloat = [
+        parseInt(hex.substr(1, 2), 16) / 255,
+        parseInt(hex.substr(3, 2), 16) / 255,
+        parseInt(hex.substr(5, 2), 16) / 255,
+      ];
+
+    let rgbIntensityFloatSorted = rgbIntensityFloat.slice(0).sort(function (a, b) {
+        return a - b;
+      }),
+      maxIntensityFloat = rgbIntensityFloatSorted[2],
+      mediumIntensityFloat = rgbIntensityFloatSorted[1],
+      minIntensityFloat = rgbIntensityFloatSorted[0];
+
+    if (maxIntensityFloat == minIntensityFloat) {
+      // All colors have same intensity, which means
+      // the original color is gray, so we can't change saturation.
+      return hex;
+    }
+
+    // New color max intensity wont change. Lets find medium and weak intensities.
+    let newMediumIntensityFloat,
+      newMinIntensityFloat = maxIntensityFloat * (1 - saturationFloat);
+
+    if (mediumIntensityFloat == minIntensityFloat) {
+      // Weak colors have equal intensity.
+      newMediumIntensityFloat = newMinIntensityFloat;
+    } else {
+      // Calculate medium intensity with respect to original intensity proportion.
+      let intensityProportion =
+        (maxIntensityFloat - mediumIntensityFloat) / (mediumIntensityFloat - minIntensityFloat);
+      newMediumIntensityFloat =
+        (intensityProportion * newMinIntensityFloat + maxIntensityFloat) /
+        (intensityProportion + 1);
+    }
+
+    let newRgbIntensityFloat = [],
+      newRgbIntensityFloatSorted = [
+        newMinIntensityFloat,
+        newMediumIntensityFloat,
+        maxIntensityFloat,
+      ];
+
+    // We've found new intensities, but we have then sorted from min to max.
+    // Now we have to restore original order.
+    rgbIntensityFloat.forEach(function (originalRgb) {
+      let rgbSortedIndex = rgbIntensityFloatSorted.indexOf(originalRgb);
+      newRgbIntensityFloat.push(newRgbIntensityFloatSorted[rgbSortedIndex]);
+    });
+
+    let floatToHex = function (val) {
+        return ('0' + Math.round(val * 255).toString(16)).substr(-2);
+      },
+      rgb2hex = function (rgb) {
+        return '#' + floatToHex(rgb[0]) + floatToHex(rgb[1]) + floatToHex(rgb[2]);
+      };
+
+    let newHex = rgb2hex(newRgbIntensityFloat);
+
+    return newHex;
+  }
+
   // Overriding the Vision Limitation Threshold value for the scene if requested.
   // Values span from 0.0 to 1.0 to mimic brightness levels of the various phases.
   static async adjustMoonlight(phases) {
     // Only perform this adjustment if the setting is enabled.
     if (!game.scenes.viewed.getFlag('smalltime', 'moonlight') || !phases.length) return;
     let newThreshold = 0;
-    phases.forEach(phase => {
+    phases.forEach((phase) => {
       switch (phase) {
         case 0: // new
           newThreshold += 0;
@@ -739,8 +889,8 @@ export class Helpers {
       }
     });
 
-    newThreshold = Math.round(newThreshold / phases.length * 100) / 100;
-    
+    newThreshold = Math.round((newThreshold / phases.length) * 100) / 100;
+
     if (newThreshold === game.scenes.viewed.globalLightThreshold) {
       return true;
     }
