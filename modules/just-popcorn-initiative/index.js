@@ -9,8 +9,8 @@ function assign(tar, src) {
     tar
   );
 }
-function run(fn2) {
-  return fn2();
+function run(fn) {
+  return fn();
 }
 function blank_object() {
   return /* @__PURE__ */ Object.create(null);
@@ -55,18 +55,18 @@ function get_store_value(store) {
 function component_subscribe(component, store, callback) {
   component.$$.on_destroy.push(subscribe(store, callback));
 }
-function create_slot(definition, ctx, $$scope, fn2) {
+function create_slot(definition, ctx, $$scope, fn) {
   if (definition) {
-    const slot_ctx = get_slot_context(definition, ctx, $$scope, fn2);
+    const slot_ctx = get_slot_context(definition, ctx, $$scope, fn);
     return definition[0](slot_ctx);
   }
 }
-function get_slot_context(definition, ctx, $$scope, fn2) {
-  return definition[1] && fn2 ? assign($$scope.ctx.slice(), definition[1](fn2(ctx))) : $$scope.ctx;
+function get_slot_context(definition, ctx, $$scope, fn) {
+  return definition[1] && fn ? assign($$scope.ctx.slice(), definition[1](fn(ctx))) : $$scope.ctx;
 }
-function get_slot_changes(definition, $$scope, dirty, fn2) {
-  if (definition[2] && fn2) {
-    const lets = definition[2](fn2(dirty));
+function get_slot_changes(definition, $$scope, dirty, fn) {
+  if (definition[2] && fn) {
+    const lets = definition[2](fn(dirty));
     if ($$scope.dirty === void 0) {
       return lets;
     }
@@ -99,6 +99,21 @@ function get_all_dirty_from_scope($$scope) {
   }
   return -1;
 }
+function exclude_internal_props(props) {
+  const result = {};
+  for (const k in props)
+    if (k[0] !== "$")
+      result[k] = props[k];
+  return result;
+}
+function compute_rest_props(props, keys) {
+  const rest = {};
+  keys = new Set(keys);
+  for (const k in props)
+    if (!keys.has(k) && k[0] !== "$")
+      rest[k] = props[k];
+  return rest;
+}
 function null_to_empty(value) {
   return value == null ? "" : value;
 }
@@ -108,6 +123,14 @@ function set_store_value(store, ret, value) {
 }
 function action_destroyer(action_result) {
   return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
+}
+function split_css_unit(value) {
+  const split = typeof value === "string" && value.match(/^\s*(-?[\d.]+)([^\s]*)\s*$/);
+  return split ? [parseFloat(split[1]), split[2] || "px"] : [
+    /** @type {number} */
+    value,
+    "px"
+  ];
 }
 const is_client = typeof window !== "undefined";
 let now = is_client ? () => window.performance.now() : () => Date.now();
@@ -123,7 +146,7 @@ function run_tasks(now2) {
   if (tasks.size !== 0)
     raf(run_tasks);
 }
-function loop(callback) {
+function loop$1(callback) {
   let task;
   if (tasks.size === 0)
     raf(run_tasks);
@@ -183,6 +206,9 @@ function destroy_each(iterations, detaching) {
 function element(name) {
   return document.createElement(name);
 }
+function svg_element(name) {
+  return document.createElementNS("http://www.w3.org/2000/svg", name);
+}
 function text(data) {
   return document.createTextNode(data);
 }
@@ -196,16 +222,16 @@ function listen(node, event, handler, options) {
   node.addEventListener(event, handler, options);
   return () => node.removeEventListener(event, handler, options);
 }
-function prevent_default(fn2) {
+function prevent_default(fn) {
   return function(event) {
     event.preventDefault();
-    return fn2.call(this, event);
+    return fn.call(this, event);
   };
 }
-function stop_propagation(fn2) {
+function stop_propagation(fn) {
   return function(event) {
     event.stopPropagation();
-    return fn2.call(this, event);
+    return fn.call(this, event);
   };
 }
 function attr(node, attribute, value) {
@@ -213,6 +239,26 @@ function attr(node, attribute, value) {
     node.removeAttribute(attribute);
   else if (node.getAttribute(attribute) !== value)
     node.setAttribute(attribute, value);
+}
+const always_set_through_set_attribute = ["width", "height"];
+function set_attributes(node, attributes) {
+  const descriptors = Object.getOwnPropertyDescriptors(node.__proto__);
+  for (const key in attributes) {
+    if (attributes[key] == null) {
+      node.removeAttribute(key);
+    } else if (key === "style") {
+      node.style.cssText = attributes[key];
+    } else if (key === "__value") {
+      node.value = node[key] = attributes[key];
+    } else if (descriptors[key] && descriptors[key].set && always_set_through_set_attribute.indexOf(key) === -1) {
+      node[key] = attributes[key];
+    } else {
+      attr(node, key, attributes[key]);
+    }
+  }
+}
+function to_number(value) {
+  return value === "" ? null : +value;
 }
 function children(element2) {
   return Array.from(element2.childNodes);
@@ -234,31 +280,101 @@ function set_style(node, key, value, important) {
     node.style.setProperty(key, value, important ? "important" : "");
   }
 }
-function select_option(select, value, mounting) {
-  for (let i = 0; i < select.options.length; i += 1) {
-    const option = select.options[i];
-    if (option.__value === value) {
-      option.selected = true;
-      return;
-    }
-  }
-  if (!mounting || value !== void 0) {
-    select.selectedIndex = -1;
-  }
-}
-function select_value(select) {
-  const selected_option = select.querySelector(":checked");
-  return selected_option && selected_option.__value;
-}
 function toggle_class(element2, name, toggle) {
   element2.classList.toggle(name, !!toggle);
 }
 function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
   return new CustomEvent(type, { detail, bubbles, cancelable });
 }
+class HtmlTag {
+  /**
+   * @private
+   * @default false
+   */
+  is_svg = false;
+  /** parent for creating node */
+  e = void 0;
+  /** html tag nodes */
+  n = void 0;
+  /** target */
+  t = void 0;
+  /** anchor */
+  a = void 0;
+  constructor(is_svg = false) {
+    this.is_svg = is_svg;
+    this.e = this.n = null;
+  }
+  /**
+   * @param {string} html
+   * @returns {void}
+   */
+  c(html) {
+    this.h(html);
+  }
+  /**
+   * @param {string} html
+   * @param {HTMLElement | SVGElement} target
+   * @param {HTMLElement | SVGElement} anchor
+   * @returns {void}
+   */
+  m(html, target, anchor = null) {
+    if (!this.e) {
+      if (this.is_svg)
+        this.e = svg_element(
+          /** @type {keyof SVGElementTagNameMap} */
+          target.nodeName
+        );
+      else
+        this.e = element(
+          /** @type {keyof HTMLElementTagNameMap} */
+          target.nodeType === 11 ? "TEMPLATE" : target.nodeName
+        );
+      this.t = target.tagName !== "TEMPLATE" ? target : (
+        /** @type {HTMLTemplateElement} */
+        target.content
+      );
+      this.c(html);
+    }
+    this.i(anchor);
+  }
+  /**
+   * @param {string} html
+   * @returns {void}
+   */
+  h(html) {
+    this.e.innerHTML = html;
+    this.n = Array.from(
+      this.e.nodeName === "TEMPLATE" ? this.e.content.childNodes : this.e.childNodes
+    );
+  }
+  /**
+   * @returns {void} */
+  i(anchor) {
+    for (let i = 0; i < this.n.length; i += 1) {
+      insert(this.t, this.n[i], anchor);
+    }
+  }
+  /**
+   * @param {string} html
+   * @returns {void}
+   */
+  p(html) {
+    this.d();
+    this.h(html);
+    this.i(this.a);
+  }
+  /**
+   * @returns {void} */
+  d() {
+    this.n.forEach(detach);
+  }
+}
+function construct_svelte_component(component, props) {
+  return new component(props);
+}
 const managed_styles = /* @__PURE__ */ new Map();
 let active = 0;
-function hash$2(str) {
+function hash(str) {
   let hash2 = 5381;
   let i = str.length;
   while (i--)
@@ -270,17 +386,17 @@ function create_style_information(doc, node) {
   managed_styles.set(doc, info);
   return info;
 }
-function create_rule(node, a, b, duration, delay, ease, fn2, uid = 0) {
+function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
   const step = 16.666 / duration;
   let keyframes = "{\n";
   for (let p = 0; p <= 1; p += step) {
     const t = a + (b - a) * ease(p);
-    keyframes += p * 100 + `%{${fn2(t, 1 - t)}}
+    keyframes += p * 100 + `%{${fn(t, 1 - t)}}
 `;
   }
-  const rule = keyframes + `100% {${fn2(b, 1 - b)}}
+  const rule = keyframes + `100% {${fn(b, 1 - b)}}
 }`;
-  const name = `__svelte_${hash$2(rule)}_${uid}`;
+  const name = `__svelte_${hash(rule)}_${uid}`;
   const doc = get_root_for_style(node);
   const { stylesheet, rules } = managed_styles.get(doc) || create_style_information(doc, node);
   if (!rules[name]) {
@@ -294,13 +410,13 @@ function create_rule(node, a, b, duration, delay, ease, fn2, uid = 0) {
 }
 function delete_rule(node, name) {
   const previous = (node.style.animation || "").split(", ");
-  const next = previous.filter(
+  const next2 = previous.filter(
     name ? (anim) => anim.indexOf(name) < 0 : (anim) => anim.indexOf("__svelte") === -1
     // remove all Svelte animations
   );
-  const deleted = previous.length - next.length;
+  const deleted = previous.length - next2.length;
   if (deleted) {
-    node.style.animation = next.join(", ");
+    node.style.animation = next2.join(", ");
     active -= deleted;
     if (!active)
       clear_rules();
@@ -318,6 +434,80 @@ function clear_rules() {
     managed_styles.clear();
   });
 }
+function create_animation(node, from, fn, params) {
+  if (!from)
+    return noop;
+  const to = node.getBoundingClientRect();
+  if (from.left === to.left && from.right === to.right && from.top === to.top && from.bottom === to.bottom)
+    return noop;
+  const {
+    delay = 0,
+    duration = 300,
+    easing = identity,
+    // @ts-ignore todo: should this be separated from destructuring? Or start/end added to public api and documentation?
+    start: start_time = now() + delay,
+    // @ts-ignore todo:
+    end = start_time + duration,
+    tick: tick2 = noop,
+    css
+  } = fn(node, { from, to }, params);
+  let running = true;
+  let started = false;
+  let name;
+  function start() {
+    if (css) {
+      name = create_rule(node, 0, 1, duration, delay, easing, css);
+    }
+    if (!delay) {
+      started = true;
+    }
+  }
+  function stop() {
+    if (css)
+      delete_rule(node, name);
+    running = false;
+  }
+  loop$1((now2) => {
+    if (!started && now2 >= start_time) {
+      started = true;
+    }
+    if (started && now2 >= end) {
+      tick2(1, 0);
+      stop();
+    }
+    if (!running) {
+      return false;
+    }
+    if (started) {
+      const p = now2 - start_time;
+      const t = 0 + 1 * easing(p / duration);
+      tick2(t, 1 - t);
+    }
+    return true;
+  });
+  start();
+  tick2(0, 1);
+  return stop;
+}
+function fix_position(node) {
+  const style = getComputedStyle(node);
+  if (style.position !== "absolute" && style.position !== "fixed") {
+    const { width, height } = style;
+    const a = node.getBoundingClientRect();
+    node.style.position = "absolute";
+    node.style.width = width;
+    node.style.height = height;
+    add_transform(node, a);
+  }
+}
+function add_transform(node, a) {
+  const b = node.getBoundingClientRect();
+  if (a.left !== b.left || a.top !== b.top) {
+    const style = getComputedStyle(node);
+    const transform = style.transform === "none" ? "" : style.transform;
+    node.style.transform = `${transform} translate(${a.left - b.left}px, ${a.top - b.top}px)`;
+  }
+}
 let current_component;
 function set_current_component(component) {
   current_component = component;
@@ -327,8 +517,11 @@ function get_current_component() {
     throw new Error("Function called outside component initialization");
   return current_component;
 }
-function onMount(fn2) {
-  get_current_component().$$.on_mount.push(fn2);
+function onMount(fn) {
+  get_current_component().$$.on_mount.push(fn);
+}
+function onDestroy(fn) {
+  get_current_component().$$.on_destroy.push(fn);
 }
 function createEventDispatcher() {
   const component = get_current_component();
@@ -341,8 +534,8 @@ function createEventDispatcher() {
         detail,
         { cancelable }
       );
-      callbacks.slice().forEach((fn2) => {
-        fn2.call(component, event);
+      callbacks.slice().forEach((fn) => {
+        fn.call(component, event);
       });
       return !event.defaultPrevented;
     }
@@ -359,7 +552,7 @@ function getContext(key) {
 function bubble(component, event) {
   const callbacks = component.$$.callbacks[event.type];
   if (callbacks) {
-    callbacks.slice().forEach((fn2) => fn2.call(this, event));
+    callbacks.slice().forEach((fn) => fn.call(this, event));
   }
 }
 const dirty_components = [];
@@ -374,11 +567,15 @@ function schedule_update() {
     resolved_promise.then(flush);
   }
 }
-function add_render_callback(fn2) {
-  render_callbacks.push(fn2);
+function tick() {
+  schedule_update();
+  return resolved_promise;
 }
-function add_flush_callback(fn2) {
-  flush_callbacks.push(fn2);
+function add_render_callback(fn) {
+  render_callbacks.push(fn);
+}
+function add_flush_callback(fn) {
+  flush_callbacks.push(fn);
 }
 const seen_callbacks = /* @__PURE__ */ new Set();
 let flushidx = 0;
@@ -492,9 +689,9 @@ function transition_out(block, local, detach2, callback) {
   }
 }
 const null_transition = { duration: 0 };
-function create_in_transition(node, fn2, params) {
+function create_in_transition(node, fn, params) {
   const options = { direction: "in" };
-  let config = fn2(node, params, options);
+  let config = fn(node, params, options);
   let running = false;
   let animation_name;
   let task;
@@ -508,29 +705,29 @@ function create_in_transition(node, fn2, params) {
       delay = 0,
       duration = 300,
       easing = identity,
-      tick = noop,
+      tick: tick2 = noop,
       css
     } = config || null_transition;
     if (css)
       animation_name = create_rule(node, 0, 1, duration, delay, easing, css, uid++);
-    tick(0, 1);
+    tick2(0, 1);
     const start_time = now() + delay;
     const end_time = start_time + duration;
     if (task)
       task.abort();
     running = true;
     add_render_callback(() => dispatch(node, true, "start"));
-    task = loop((now2) => {
+    task = loop$1((now2) => {
       if (running) {
         if (now2 >= end_time) {
-          tick(1, 0);
+          tick2(1, 0);
           dispatch(node, true, "end");
           cleanup();
           return running = false;
         }
         if (now2 >= start_time) {
           const t = easing((now2 - start_time) / duration);
-          tick(t, 1 - t);
+          tick2(t, 1 - t);
         }
       }
       return running;
@@ -561,9 +758,9 @@ function create_in_transition(node, fn2, params) {
     }
   };
 }
-function create_out_transition(node, fn2, params) {
+function create_out_transition(node, fn, params) {
   const options = { direction: "out" };
-  let config = fn2(node, params, options);
+  let config = fn(node, params, options);
   let running = true;
   let animation_name;
   const group = outros;
@@ -574,7 +771,7 @@ function create_out_transition(node, fn2, params) {
       delay = 0,
       duration = 300,
       easing = identity,
-      tick = noop,
+      tick: tick2 = noop,
       css
     } = config || null_transition;
     if (css)
@@ -587,10 +784,10 @@ function create_out_transition(node, fn2, params) {
       node.inert;
       node.inert = true;
     }
-    loop((now2) => {
+    loop$1((now2) => {
       if (running) {
         if (now2 >= end_time) {
-          tick(0, 1);
+          tick2(0, 1);
           dispatch(node, false, "end");
           if (!--group.r) {
             run_all(group.c);
@@ -599,7 +796,7 @@ function create_out_transition(node, fn2, params) {
         }
         if (now2 >= start_time) {
           const t = easing((now2 - start_time) / duration);
-          tick(1 - t, t);
+          tick2(1 - t, t);
         }
       }
       return running;
@@ -629,19 +826,144 @@ function create_out_transition(node, fn2, params) {
     }
   };
 }
+function create_bidirectional_transition(node, fn, params, intro) {
+  const options = { direction: "both" };
+  let config = fn(node, params, options);
+  let t = intro ? 0 : 1;
+  let running_program = null;
+  let pending_program = null;
+  let animation_name = null;
+  let original_inert_value;
+  function clear_animation() {
+    if (animation_name)
+      delete_rule(node, animation_name);
+  }
+  function init2(program, duration) {
+    const d = (
+      /** @type {Program['d']} */
+      program.b - t
+    );
+    duration *= Math.abs(d);
+    return {
+      a: t,
+      b: program.b,
+      d,
+      duration,
+      start: program.start,
+      end: program.start + duration,
+      group: program.group
+    };
+  }
+  function go(b) {
+    const {
+      delay = 0,
+      duration = 300,
+      easing = identity,
+      tick: tick2 = noop,
+      css
+    } = config || null_transition;
+    const program = {
+      start: now() + delay,
+      b
+    };
+    if (!b) {
+      program.group = outros;
+      outros.r += 1;
+    }
+    if ("inert" in node) {
+      if (b) {
+        if (original_inert_value !== void 0) {
+          node.inert = original_inert_value;
+        }
+      } else {
+        original_inert_value = /** @type {HTMLElement} */
+        node.inert;
+        node.inert = true;
+      }
+    }
+    if (running_program || pending_program) {
+      pending_program = program;
+    } else {
+      if (css) {
+        clear_animation();
+        animation_name = create_rule(node, t, b, duration, delay, easing, css);
+      }
+      if (b)
+        tick2(0, 1);
+      running_program = init2(program, duration);
+      add_render_callback(() => dispatch(node, b, "start"));
+      loop$1((now2) => {
+        if (pending_program && now2 > pending_program.start) {
+          running_program = init2(pending_program, duration);
+          pending_program = null;
+          dispatch(node, running_program.b, "start");
+          if (css) {
+            clear_animation();
+            animation_name = create_rule(
+              node,
+              t,
+              running_program.b,
+              running_program.duration,
+              0,
+              easing,
+              config.css
+            );
+          }
+        }
+        if (running_program) {
+          if (now2 >= running_program.end) {
+            tick2(t = running_program.b, 1 - t);
+            dispatch(node, running_program.b, "end");
+            if (!pending_program) {
+              if (running_program.b) {
+                clear_animation();
+              } else {
+                if (!--running_program.group.r)
+                  run_all(running_program.group.c);
+              }
+            }
+            running_program = null;
+          } else if (now2 >= running_program.start) {
+            const p = now2 - running_program.start;
+            t = running_program.a + running_program.d * easing(p / running_program.duration);
+            tick2(t, 1 - t);
+          }
+        }
+        return !!(running_program || pending_program);
+      });
+    }
+  }
+  return {
+    run(b) {
+      if (is_function(config)) {
+        wait().then(() => {
+          const opts = { direction: b ? "in" : "out" };
+          config = config(opts);
+          go(b);
+        });
+      } else {
+        go(b);
+      }
+    },
+    end() {
+      clear_animation();
+      running_program = pending_program = null;
+    }
+  };
+}
 function ensure_array_like(array_like_or_iterator) {
   return array_like_or_iterator?.length !== void 0 ? array_like_or_iterator : Array.from(array_like_or_iterator);
-}
-function destroy_block(block, lookup) {
-  block.d(1);
-  lookup.delete(block.key);
 }
 function outro_and_destroy_block(block, lookup) {
   transition_out(block, 1, 1, () => {
     lookup.delete(block.key);
   });
 }
-function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block2, next, get_context) {
+function fix_and_outro_and_destroy_block(block, lookup) {
+  block.f();
+  outro_and_destroy_block(block, lookup);
+}
+function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, lookup, node, destroy, create_each_block2, next2, get_context) {
   let o = old_blocks.length;
   let n = list.length;
   let i = o;
@@ -671,9 +993,9 @@ function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, looku
   const did_move = /* @__PURE__ */ new Set();
   function insert2(block) {
     transition_in(block, 1);
-    block.m(node, next);
+    block.m(node, next2);
     lookup.set(block.key, block);
-    next = block.first;
+    next2 = block.first;
     n--;
   }
   while (o && n) {
@@ -682,7 +1004,7 @@ function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, looku
     const new_key = new_block.key;
     const old_key = old_block.key;
     if (new_block === old_block) {
-      next = new_block.first;
+      next2 = new_block.first;
       o--;
       n--;
     } else if (!new_lookup.has(old_key)) {
@@ -709,6 +1031,41 @@ function update_keyed_each(old_blocks, dirty, get_key, dynamic, ctx, list, looku
     insert2(new_blocks[n - 1]);
   run_all(updates);
   return new_blocks;
+}
+function get_spread_update(levels, updates) {
+  const update2 = {};
+  const to_null_out = {};
+  const accounted_for = { $$scope: 1 };
+  let i = levels.length;
+  while (i--) {
+    const o = levels[i];
+    const n = updates[i];
+    if (n) {
+      for (const key in o) {
+        if (!(key in n))
+          to_null_out[key] = 1;
+      }
+      for (const key in n) {
+        if (!accounted_for[key]) {
+          update2[key] = n[key];
+          accounted_for[key] = 1;
+        }
+      }
+      levels[i] = n;
+    } else {
+      for (const key in o) {
+        accounted_for[key] = 1;
+      }
+    }
+  }
+  for (const key in to_null_out) {
+    if (!(key in update2))
+      update2[key] = void 0;
+  }
+  return update2;
+}
+function get_spread_object(spread_props) {
+  return typeof spread_props === "object" && spread_props !== null ? spread_props : {};
 }
 function bind(component, name, callback) {
   const index = component.$$.props[name];
@@ -752,7 +1109,7 @@ function make_dirty(component, i) {
   }
   component.$$.dirty[i / 31 | 0] |= 1 << i % 31;
 }
-function init(component, options, instance2, create_fragment2, not_equal, props, append_styles, dirty = [-1]) {
+function init(component, options, instance2, create_fragment2, not_equal, props, append_styles = null, dirty = [-1]) {
   const parent_component = current_component;
   set_current_component(component);
   const $$ = component.$$ = {
@@ -861,12 +1218,12 @@ class SvelteComponent {
 }
 const PUBLIC_VERSION = "4";
 const subscriber_queue = [];
-function readable(value, start2) {
+function readable(value, start) {
   return {
-    subscribe: writable(value, start2).subscribe
+    subscribe: writable(value, start).subscribe
   };
 }
-function writable(value, start2 = noop) {
+function writable(value, start = noop) {
   let stop;
   const subscribers = /* @__PURE__ */ new Set();
   function set(new_value) {
@@ -887,14 +1244,14 @@ function writable(value, start2 = noop) {
       }
     }
   }
-  function update2(fn2) {
-    set(fn2(value));
+  function update2(fn) {
+    set(fn(value));
   }
   function subscribe2(run2, invalidate = noop) {
     const subscriber = [run2, invalidate];
     subscribers.add(subscriber);
     if (subscribers.size === 1) {
-      stop = start2(set, update2) || noop;
+      stop = start(set, update2) || noop;
     }
     run2(value);
     return () => {
@@ -907,13 +1264,13 @@ function writable(value, start2 = noop) {
   }
   return { set, update: update2, subscribe: subscribe2 };
 }
-function derived(stores, fn2, initial_value) {
+function derived(stores, fn, initial_value) {
   const single = !Array.isArray(stores);
   const stores_array = single ? [stores] : stores;
   if (!stores_array.every(Boolean)) {
     throw new Error("derived() expects stores as input, got a falsy value");
   }
-  const auto2 = fn2.length < 2;
+  const auto = fn.length < 2;
   return readable(initial_value, (set, update2) => {
     let started = false;
     const values = [];
@@ -924,8 +1281,8 @@ function derived(stores, fn2, initial_value) {
         return;
       }
       cleanup();
-      const result = fn2(single ? values[0] : values, set, update2);
-      if (auto2) {
+      const result = fn(single ? values[0] : values, set, update2);
+      if (auto) {
         set(result);
       } else {
         cleanup = is_function(result) ? result : noop;
@@ -989,10 +1346,10 @@ function writableDerived(origins, derive, reflect, initial) {
     blockNextDerive = false;
   }
   var tryingSet = false;
-  function update2(fn2) {
+  function update2(fn) {
     var isUpdated, mutatedBySubscriptions, oldValue, newValue;
     if (tryingSet) {
-      newValue = fn2(get_store_value(childDerived));
+      newValue = fn(get_store_value(childDerived));
       childDerivedSetter(newValue);
       return;
     }
@@ -1005,7 +1362,7 @@ function writableDerived(origins, derive, reflect, initial) {
         mutatedBySubscriptions = true;
       }
     });
-    newValue = fn2(oldValue);
+    newValue = fn(oldValue);
     tryingSet = true;
     childDerivedSetter(newValue);
     unsubscribe();
@@ -1206,8 +1563,14 @@ function cubicOut(t) {
   const f = t - 1;
   return f * f * f + 1;
 }
-function lerp(start2, end2, amount) {
-  return (1 - amount) * start2 + amount * end2;
+function quadOut(t) {
+  return -t * (t - 2);
+}
+function quintOut(t) {
+  return --t * t * t * t * t + 1;
+}
+function lerp(start, end, amount) {
+  return (1 - amount) * start + amount * end;
 }
 class A11yHelper {
   /**
@@ -1956,8 +2319,8 @@ class Mat4 extends Float32Array {
    * @param far - Far bound of the frustum
    * @returns `this`
    */
-  orthoNO(left2, right2, bottom2, top2, near, far) {
-    return Mat4.orthoNO(this, left2, right2, bottom2, top2, near, far);
+  orthoNO(left, right, bottom, top, near, far) {
+    return Mat4.orthoNO(this, left, right, bottom, top, near, far);
   }
   /**
    * Generates a orthogonal projection matrix with the given bounds.
@@ -1973,8 +2336,8 @@ class Mat4 extends Float32Array {
    * @param far - Far bound of the frustum
    * @returns `this`
    */
-  orthoZO(left2, right2, bottom2, top2, near, far) {
-    return Mat4.orthoZO(this, left2, right2, bottom2, top2, near, far);
+  orthoZO(left, right, bottom, top, near, far) {
+    return Mat4.orthoZO(this, left, right, bottom, top, near, far);
   }
   //================
   // Static methods
@@ -3220,9 +3583,9 @@ class Mat4 extends Float32Array {
    * @param far - Far bound of the frustum
    * @returns `out`
    */
-  static frustum(out, left2, right2, bottom2, top2, near, far) {
-    const rl = 1 / (right2 - left2);
-    const tb = 1 / (top2 - bottom2);
+  static frustum(out, left, right, bottom, top, near, far) {
+    const rl = 1 / (right - left);
+    const tb = 1 / (top - bottom);
     const nf = 1 / (near - far);
     out[0] = near * 2 * rl;
     out[1] = 0;
@@ -3232,8 +3595,8 @@ class Mat4 extends Float32Array {
     out[5] = near * 2 * tb;
     out[6] = 0;
     out[7] = 0;
-    out[8] = (right2 + left2) * rl;
-    out[9] = (top2 + bottom2) * tb;
+    out[8] = (right + left) * rl;
+    out[9] = (top + bottom) * tb;
     out[10] = (far + near) * nf;
     out[11] = -1;
     out[12] = 0;
@@ -3383,9 +3746,9 @@ class Mat4 extends Float32Array {
    * @param far - Far bound of the frustum
    * @returns `out`
    */
-  static orthoNO(out, left2, right2, bottom2, top2, near, far) {
-    const lr = 1 / (left2 - right2);
-    const bt = 1 / (bottom2 - top2);
+  static orthoNO(out, left, right, bottom, top, near, far) {
+    const lr = 1 / (left - right);
+    const bt = 1 / (bottom - top);
     const nf = 1 / (near - far);
     out[0] = -2 * lr;
     out[1] = 0;
@@ -3399,8 +3762,8 @@ class Mat4 extends Float32Array {
     out[9] = 0;
     out[10] = 2 * nf;
     out[11] = 0;
-    out[12] = (left2 + right2) * lr;
-    out[13] = (top2 + bottom2) * bt;
+    out[12] = (left + right) * lr;
+    out[13] = (top + bottom) * bt;
     out[14] = (far + near) * nf;
     out[15] = 1;
     return out;
@@ -3410,7 +3773,7 @@ class Mat4 extends Float32Array {
    * @category Static
    * @deprecated Use {@link Mat4.orthoNO} or {@link Mat4.orthoZO} explicitly
    */
-  static ortho(out, left2, right2, bottom2, top2, near, far) {
+  static ortho(out, left, right, bottom, top, near, far) {
     return out;
   }
   /**
@@ -3428,9 +3791,9 @@ class Mat4 extends Float32Array {
    * @param far - Far bound of the frustum
    * @returns `out`
    */
-  static orthoZO(out, left2, right2, bottom2, top2, near, far) {
-    const lr = 1 / (left2 - right2);
-    const bt = 1 / (bottom2 - top2);
+  static orthoZO(out, left, right, bottom, top, near, far) {
+    const lr = 1 / (left - right);
+    const bt = 1 / (bottom - top);
     const nf = 1 / (near - far);
     out[0] = -2 * lr;
     out[1] = 0;
@@ -3444,8 +3807,8 @@ class Mat4 extends Float32Array {
     out[9] = 0;
     out[10] = nf;
     out[11] = 0;
-    out[12] = (left2 + right2) * lr;
-    out[13] = (top2 + bottom2) * bt;
+    out[12] = (left + right) * lr;
+    out[13] = (top + bottom) * bt;
     out[14] = near * nf;
     out[15] = 1;
     return out;
@@ -4848,7 +5211,7 @@ async function nextAnimationFrame(cntr = 1) {
   }
   return currentTime;
 }
-function clamp(value = 0, min2 = 0, max2 = 0) {
+function clamp$1(value = 0, min2 = 0, max2 = 0) {
   return Math.min(Math.max(value, min2), max2);
 }
 function degToRad(deg) {
@@ -6477,7 +6840,7 @@ class PositionChangeSet {
 class TJSPositionData {
   constructor({
     height = null,
-    left: left2 = null,
+    left = null,
     maxHeight = null,
     maxWidth = null,
     minHeight = null,
@@ -6489,13 +6852,13 @@ class TJSPositionData {
     translateX = null,
     translateY = null,
     translateZ = null,
-    top: top2 = null,
+    top = null,
     transformOrigin = null,
     width = null,
     zIndex = null
   } = {}) {
     this.height = height;
-    this.left = left2;
+    this.left = left;
     this.maxHeight = maxHeight;
     this.maxWidth = maxWidth;
     this.minHeight = minHeight;
@@ -6504,7 +6867,7 @@ class TJSPositionData {
     this.rotateY = rotateY;
     this.rotateZ = rotateZ;
     this.scale = scale;
-    this.top = top2;
+    this.top = top;
     this.transformOrigin = transformOrigin;
     this.translateX = translateX;
     this.translateY = translateY;
@@ -7846,22 +8209,22 @@ class BasicBounds {
     const boundsHeight = this.#height ?? this.#element?.offsetHeight ?? globalThis.innerHeight;
     if (typeof valData.position.width === "number") {
       const maxW = valData.maxWidth ?? (this.#constrain ? boundsWidth : Number.MAX_SAFE_INTEGER);
-      valData.position.width = valData.width = clamp(valData.position.width, valData.minWidth, maxW);
+      valData.position.width = valData.width = clamp$1(valData.position.width, valData.minWidth, maxW);
       if (valData.width + valData.position.left + valData.marginLeft > boundsWidth) {
         valData.position.left = boundsWidth - valData.width - valData.marginLeft;
       }
     }
     if (typeof valData.position.height === "number") {
       const maxH = valData.maxHeight ?? (this.#constrain ? boundsHeight : Number.MAX_SAFE_INTEGER);
-      valData.position.height = valData.height = clamp(valData.position.height, valData.minHeight, maxH);
+      valData.position.height = valData.height = clamp$1(valData.position.height, valData.minHeight, maxH);
       if (valData.height + valData.position.top + valData.marginTop > boundsHeight) {
         valData.position.top = boundsHeight - valData.height - valData.marginTop;
       }
     }
     const maxL = Math.max(boundsWidth - valData.width - valData.marginLeft, 0);
-    valData.position.left = Math.round(clamp(valData.position.left, 0, maxL));
+    valData.position.left = Math.round(clamp$1(valData.position.left, 0, maxL));
     const maxT = Math.max(boundsHeight - valData.height - valData.marginTop, 0);
-    valData.position.top = Math.round(clamp(valData.position.top, 0, maxT));
+    valData.position.top = Math.round(clamp$1(valData.position.top, 0, maxT));
     return valData.position;
   }
 }
@@ -8003,11 +8366,11 @@ class TransformBounds {
     const boundsHeight = this.#height ?? this.#element?.offsetHeight ?? globalThis.innerHeight;
     if (typeof valData.position.width === "number") {
       const maxW = valData.maxWidth ?? (this.#constrain ? boundsWidth : Number.MAX_SAFE_INTEGER);
-      valData.position.width = clamp(valData.width, valData.minWidth, maxW);
+      valData.position.width = clamp$1(valData.width, valData.minWidth, maxW);
     }
     if (typeof valData.position.height === "number") {
       const maxH = valData.maxHeight ?? (this.#constrain ? boundsHeight : Number.MAX_SAFE_INTEGER);
-      valData.position.height = clamp(valData.height, valData.minHeight, maxH);
+      valData.position.height = clamp$1(valData.height, valData.minHeight, maxH);
     }
     const data = valData.transforms.getData(valData.position, s_TRANSFORM_DATA, valData);
     const initialX = data.boundingRect.x;
@@ -8730,8 +9093,8 @@ class TJSPosition {
   /**
    * @param {number|string|null} left -
    */
-  set left(left2) {
-    this.#stores.left.set(left2);
+  set left(left) {
+    this.#stores.left.set(left);
   }
   /**
    * @param {number|string|null} maxHeight -
@@ -8790,8 +9153,8 @@ class TJSPosition {
   /**
    * @param {number|string|null} top -
    */
-  set top(top2) {
-    this.#stores.top.set(top2);
+  set top(top) {
+    this.#stores.top.set(top);
   }
   /**
    * @param {import('./').TJSTransformOrigin} transformOrigin -
@@ -9132,8 +9495,8 @@ class TJSPosition {
    */
   #updatePosition({
     // Directly supported parameters
-    left: left2,
-    top: top2,
+    left,
+    top,
     maxWidth,
     maxHeight,
     minWidth,
@@ -9182,13 +9545,13 @@ class TJSPosition {
     } else {
       height = Number.isFinite(currentPosition.height) ? currentPosition.height : styleCache.offsetHeight;
     }
-    if (Number.isFinite(left2)) {
-      currentPosition.left = left2;
+    if (Number.isFinite(left)) {
+      currentPosition.left = left;
     } else if (!Number.isFinite(currentPosition.left)) {
       currentPosition.left = typeof this.#options.initialHelper?.getLeft === "function" ? this.#options.initialHelper.getLeft(width) : 0;
     }
-    if (Number.isFinite(top2)) {
-      currentPosition.top = top2;
+    if (Number.isFinite(top)) {
+      currentPosition.top = top;
     } else if (!Number.isFinite(currentPosition.top)) {
       currentPosition.top = typeof this.#options.initialHelper?.getTop === "function" ? this.#options.initialHelper.getTop(height) : 0;
     }
@@ -10099,20 +10462,20 @@ function storeGenerator({ storage, serialize = JSON.stringify, deserialize = JSO
   function isSimpleDeriver(deriver) {
     return deriver.length < 2;
   }
-  function storageReadable(key, value, start2) {
+  function storageReadable(key, value, start) {
     return {
-      subscribe: storageWritable(key, value, start2).subscribe
+      subscribe: storageWritable(key, value, start).subscribe
     };
   }
-  function storageWritable(key, value, start2) {
+  function storageWritable(key, value, start) {
     function wrap_start(ogSet) {
-      return start2(function wrap_set(new_value) {
+      return start(function wrap_set(new_value) {
         if (storage) {
           storage.setItem(key, serialize(new_value));
         }
         return ogSet(new_value);
-      }, function wrap_update(fn2) {
-        set(fn2(get_store_value(ogStore)));
+      }, function wrap_update(fn) {
+        set(fn(get_store_value(ogStore)));
       });
     }
     if (storage) {
@@ -10125,22 +10488,22 @@ function storeGenerator({ storage, serialize = JSON.stringify, deserialize = JSO
       }
       storage.setItem(key, serialize(value));
     }
-    const ogStore = writable(value, start2 ? wrap_start : void 0);
+    const ogStore = writable(value, start ? wrap_start : void 0);
     function set(new_value) {
       if (storage) {
         storage.setItem(key, serialize(new_value));
       }
       ogStore.set(new_value);
     }
-    function update2(fn2) {
-      set(fn2(get_store_value(ogStore)));
+    function update2(fn) {
+      set(fn(get_store_value(ogStore)));
     }
     function subscribe2(run2, invalidate) {
       return ogStore.subscribe(run2, invalidate);
     }
     return { set, update: update2, subscribe: subscribe2 };
   }
-  function storageDerived(key, stores, fn2, initial_value) {
+  function storageDerived(key, stores, fn, initial_value) {
     const single = !Array.isArray(stores);
     const stores_array = single ? [stores] : stores;
     if (storage && storage.getItem(key)) {
@@ -10160,10 +10523,10 @@ function storeGenerator({ storage, serialize = JSON.stringify, deserialize = JSO
         }
         cleanup?.();
         const input = single ? values[0] : values;
-        if (isSimpleDeriver(fn2)) {
-          set(fn2(input));
+        if (isSimpleDeriver(fn)) {
+          set(fn(input));
         } else {
-          const result = fn2(input, set, update2);
+          const result = fn(input, set, update2);
           if (typeof result === "function") {
             cleanup = result;
           }
@@ -11170,9 +11533,9 @@ class SvelteApplication extends Application {
       // Sets a header icon given an image URL.
       headerNoTitleMinimized: false,
       // If true then header title is hidden when application is minimized.
-      minHeight: globalThis.MIN_WINDOW_HEIGHT,
+      minHeight: MIN_WINDOW_HEIGHT,
       // Assigned to position. Number specifying minimum window height.
-      minWidth: globalThis.MIN_WINDOW_WIDTH,
+      minWidth: MIN_WINDOW_WIDTH,
       // Assigned to position. Number specifying minimum window width.
       positionable: true,
       // If false then `position.set` does not take effect.
@@ -11305,7 +11668,7 @@ class SvelteApplication extends Application {
       }
     }
     for (const cls of this.constructor._getInheritanceChain()) {
-      Hooks.call(`close${cls.name}`, this, el);
+      Hooks.call(`close${cls.name}`, this, $(el));
     }
     const animate = typeof this.options.defaultCloseAnimation === "boolean" ? this.options.defaultCloseAnimation : true;
     if (animate) {
@@ -11652,6 +12015,12 @@ class SvelteApplication extends Application {
       return;
     }
     await super._render(force, options);
+    if ([Application.RENDER_STATES.CLOSING, Application.RENDER_STATES.RENDERING].includes(this._state)) {
+      return;
+    }
+    if (!force && this._state <= Application.RENDER_STATES.NONE) {
+      return;
+    }
     if (!this._minimized) {
       this.#position.set(options);
     }
@@ -11729,6 +12098,60 @@ class SvelteApplication extends Application {
 const cssVariables = new TJSStyleManager({ docKey: "#__trl-root-styles", version: 1 });
 if (typeof window !== "undefined")
   (window.__svelte || (window.__svelte = { v: /* @__PURE__ */ new Set() })).v.add(PUBLIC_VERSION);
+class Timing {
+  /**
+   * Wraps a callback in a debounced timeout.
+   *
+   * Delay execution of the callback function until the function has not been called for the given delay in milliseconds.
+   *
+   * @param {Function} callback - A function to execute once the debounced threshold has been passed.
+   *
+   * @param {number}   delay - An amount of time in milliseconds to delay.
+   *
+   * @returns {Function} A wrapped function that can be called to debounce execution.
+   */
+  static debounce(callback, delay) {
+    let timeoutId;
+    return function(...args) {
+      globalThis.clearTimeout(timeoutId);
+      timeoutId = globalThis.setTimeout(() => {
+        callback.apply(this, args);
+      }, delay);
+    };
+  }
+  /**
+   * @param {object}   opts - Optional parameters.
+   *
+   * @param {Function} opts.single - Single click callback.
+   *
+   * @param {Function} opts.double - Double click callback.
+   *
+   * @param {number}   [opts.delay=400] - Double click delay.
+   *
+   * @returns {(event: Event) => void} The gated double-click handler.
+   */
+  static doubleClick({ single, double, delay = 400 }) {
+    let clicks = 0;
+    let timeoutId;
+    return (event) => {
+      clicks++;
+      if (clicks === 1) {
+        timeoutId = globalThis.setTimeout(() => {
+          if (typeof single === "function") {
+            single(event);
+          }
+          clicks = 0;
+        }, delay);
+      } else {
+        globalThis.clearTimeout(timeoutId);
+        if (typeof double === "function") {
+          double(event);
+        }
+        clicks = 0;
+      }
+    };
+  }
+}
 function resizeObserver(node, target) {
   ResizeObserverManager.add(node, target);
   return {
@@ -11934,7 +12357,7 @@ function s_UPDATE_SUBSCRIBER(subscriber, contentWidth, contentHeight) {
       break;
   }
 }
-function applyStyles$2(node, properties) {
+function applyStyles(node, properties) {
   function setProperties() {
     if (!isObject(properties)) {
       return;
@@ -11954,10 +12377,59 @@ function applyStyles$2(node, properties) {
     }
   };
 }
+function fly(node, { delay = 0, duration = 400, easing = cubicOut, x = 0, y = 0, opacity = 0 } = {}) {
+  const style = getComputedStyle(node);
+  const target_opacity = +style.opacity;
+  const transform = style.transform === "none" ? "" : style.transform;
+  const od = target_opacity * (1 - opacity);
+  const [xValue, xUnit] = split_css_unit(x);
+  const [yValue, yUnit] = split_css_unit(y);
+  return {
+    delay,
+    duration,
+    easing,
+    css: (t, u) => `
+			transform: ${transform} translate(${(1 - t) * xValue}${xUnit}, ${(1 - t) * yValue}${yUnit});
+			opacity: ${target_opacity - od * u}`
+  };
+}
+function slide(node, { delay = 0, duration = 400, easing = cubicOut, axis = "y" } = {}) {
+  const style = getComputedStyle(node);
+  const opacity = +style.opacity;
+  const primary_property = axis === "y" ? "height" : "width";
+  const primary_property_value = parseFloat(style[primary_property]);
+  const secondary_properties = axis === "y" ? ["top", "bottom"] : ["left", "right"];
+  const capitalized_secondary_properties = secondary_properties.map(
+    (e) => `${e[0].toUpperCase()}${e.slice(1)}`
+  );
+  const padding_start_value = parseFloat(style[`padding${capitalized_secondary_properties[0]}`]);
+  const padding_end_value = parseFloat(style[`padding${capitalized_secondary_properties[1]}`]);
+  const margin_start_value = parseFloat(style[`margin${capitalized_secondary_properties[0]}`]);
+  const margin_end_value = parseFloat(style[`margin${capitalized_secondary_properties[1]}`]);
+  const border_width_start_value = parseFloat(
+    style[`border${capitalized_secondary_properties[0]}Width`]
+  );
+  const border_width_end_value = parseFloat(
+    style[`border${capitalized_secondary_properties[1]}Width`]
+  );
+  return {
+    delay,
+    duration,
+    easing,
+    css: (t) => `overflow: hidden;opacity: ${Math.min(t * 20, 1) * opacity};${primary_property}: ${t * primary_property_value}px;padding-${secondary_properties[0]}: ${t * padding_start_value}px;padding-${secondary_properties[1]}: ${t * padding_end_value}px;margin-${secondary_properties[0]}: ${t * margin_start_value}px;margin-${secondary_properties[1]}: ${t * margin_end_value}px;border-${secondary_properties[0]}-width: ${t * border_width_start_value}px;border-${secondary_properties[1]}-width: ${t * border_width_end_value}px;`
+  };
+}
 class TJSDefaultTransition {
   static #options = {};
+  static #default = () => void 0;
   /**
-   * @returns {{}}
+   * @returns {() => undefined} Default empty transition.
+   */
+  static get default() {
+    return this.#default;
+  }
+  /**
+   * @returns {{}} Default empty options.
    */
   static get options() {
     return this.#options;
@@ -11981,23 +12453,1001 @@ class AppShellContextInternal {
     return this.#stores;
   }
 }
+function localize$1(stringId, data) {
+  const result = !isObject(data) ? globalThis.game.i18n.localize(stringId) : globalThis.game.i18n.format(stringId, data);
+  return result !== void 0 ? result : "";
+}
+const TJSHeaderButton_svelte_svelte_type_style_lang = "";
+function create_if_block$h(ctx) {
+  let span;
+  let t;
+  return {
+    c() {
+      span = element("span");
+      t = text(
+        /*label*/
+        ctx[3]
+      );
+      attr(span, "class", "svelte-jpi-166l8wd");
+      toggle_class(
+        span,
+        "has-icon",
+        /*icon*/
+        ctx[4] !== void 0
+      );
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      append(span, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*label*/
+      8)
+        set_data(
+          t,
+          /*label*/
+          ctx2[3]
+        );
+      if (dirty & /*icon*/
+      16) {
+        toggle_class(
+          span,
+          "has-icon",
+          /*icon*/
+          ctx2[4] !== void 0
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function create_fragment$I(ctx) {
+  let a;
+  let html_tag;
+  let html_anchor;
+  let a_class_value;
+  let applyStyles_action;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*label*/
+    ctx[3] && create_if_block$h(ctx)
+  );
+  return {
+    c() {
+      a = element("a");
+      html_tag = new HtmlTag(false);
+      html_anchor = empty();
+      if (if_block)
+        if_block.c();
+      html_tag.a = html_anchor;
+      attr(a, "class", a_class_value = "header-button " + /*button*/
+      ctx[0].class + " svelte-jpi-166l8wd");
+      attr(
+        a,
+        "aria-label",
+        /*label*/
+        ctx[3]
+      );
+      attr(a, "tabindex", "0");
+      attr(a, "role", "button");
+      toggle_class(
+        a,
+        "keep-minimized",
+        /*keepMinimized*/
+        ctx[2]
+      );
+    },
+    m(target, anchor) {
+      insert(target, a, anchor);
+      html_tag.m(
+        /*icon*/
+        ctx[4],
+        a
+      );
+      append(a, html_anchor);
+      if (if_block)
+        if_block.m(a, null);
+      if (!mounted) {
+        dispose = [
+          listen(a, "click", stop_propagation(prevent_default(
+            /*onClick*/
+            ctx[5]
+          ))),
+          listen(a, "contextmenu", stop_propagation(prevent_default(
+            /*onContextMenu*/
+            ctx[6]
+          ))),
+          listen(
+            a,
+            "keydown",
+            /*onKeydown*/
+            ctx[7]
+          ),
+          listen(
+            a,
+            "keyup",
+            /*onKeyup*/
+            ctx[8]
+          ),
+          action_destroyer(applyStyles_action = applyStyles.call(
+            null,
+            a,
+            /*styles*/
+            ctx[1]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*icon*/
+      16)
+        html_tag.p(
+          /*icon*/
+          ctx2[4]
+        );
+      if (
+        /*label*/
+        ctx2[3]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$h(ctx2);
+          if_block.c();
+          if_block.m(a, null);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+      if (dirty & /*button*/
+      1 && a_class_value !== (a_class_value = "header-button " + /*button*/
+      ctx2[0].class + " svelte-jpi-166l8wd")) {
+        attr(a, "class", a_class_value);
+      }
+      if (dirty & /*label*/
+      8) {
+        attr(
+          a,
+          "aria-label",
+          /*label*/
+          ctx2[3]
+        );
+      }
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
+      2)
+        applyStyles_action.update.call(
+          null,
+          /*styles*/
+          ctx2[1]
+        );
+      if (dirty & /*button, keepMinimized*/
+      5) {
+        toggle_class(
+          a,
+          "keep-minimized",
+          /*keepMinimized*/
+          ctx2[2]
+        );
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(a);
+      }
+      if (if_block)
+        if_block.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+const s_REGEX_HTML = /^\s*<.*>$/;
+function instance$I($$self, $$props, $$invalidate) {
+  let title;
+  let icon;
+  let label;
+  let keepMinimized;
+  let keyCode;
+  let styles;
+  let { button = void 0 } = $$props;
+  function onClick(event) {
+    const invoke = button?.onPress ?? button?.onclick;
+    if (typeof invoke === "function") {
+      invoke.call(button, event);
+      $$invalidate(0, button);
+    }
+  }
+  function onContextMenu(event) {
+    const invoke = button?.onContextMenu;
+    if (typeof invoke === "function") {
+      invoke.call(button, event);
+      $$invalidate(0, button);
+    }
+  }
+  function onKeydown(event) {
+    if (event.code === keyCode) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  function onKeyup(event) {
+    if (event.code === keyCode) {
+      const invoke = button.onPress ?? button.onclick;
+      if (typeof invoke === "function") {
+        invoke.call(button, event);
+        $$invalidate(0, button);
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  $$self.$$set = ($$props2) => {
+    if ("button" in $$props2)
+      $$invalidate(0, button = $$props2.button);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      $$invalidate(9, title = isObject(button) && typeof button.title === "string" ? localize$1(button.title) : "");
+    }
+    if ($$self.$$.dirty & /*button, title*/
+    513) {
+      $$invalidate(4, icon = isObject(button) && typeof button.icon !== "string" ? void 0 : s_REGEX_HTML.test(button.icon) ? button.icon : `<i class="${button.icon}" title="${title}"></i>`);
+    }
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      $$invalidate(3, label = isObject(button) && typeof button.label === "string" ? localize$1(button.label) : void 0);
+    }
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      $$invalidate(2, keepMinimized = isObject(button) && typeof button.keepMinimized === "boolean" ? button.keepMinimized : false);
+    }
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : "Enter";
+    }
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      $$invalidate(1, styles = isObject(button) && isObject(button.styles) ? button.styles : void 0);
+    }
+  };
+  return [
+    button,
+    styles,
+    keepMinimized,
+    label,
+    icon,
+    onClick,
+    onContextMenu,
+    onKeydown,
+    onKeyup,
+    title
+  ];
+}
+class TJSHeaderButton extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$I, create_fragment$I, safe_not_equal, { button: 0 });
+  }
+  get button() {
+    return this.$$.ctx[0];
+  }
+  set button(button) {
+    this.$$set({ button });
+    flush();
+  }
+}
+const TJSHeaderButton$1 = TJSHeaderButton;
+const TJSApplicationHeader_svelte_svelte_type_style_lang = "";
+function get_each_context$9(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[31] = list[i];
+  return child_ctx;
+}
+function get_each_context_1$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[31] = list[i];
+  return child_ctx;
+}
+function create_if_block$g(ctx) {
+  let img;
+  let img_src_value;
+  return {
+    c() {
+      img = element("img");
+      attr(img, "class", "tjs-app-icon keep-minimized svelte-jpi-1wviwl9");
+      if (!src_url_equal(img.src, img_src_value = /*$storeHeaderIcon*/
+      ctx[6]))
+        attr(img, "src", img_src_value);
+      attr(img, "alt", "icon");
+    },
+    m(target, anchor) {
+      insert(target, img, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*$storeHeaderIcon*/
+      64 && !src_url_equal(img.src, img_src_value = /*$storeHeaderIcon*/
+      ctx2[6])) {
+        attr(img, "src", img_src_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+    }
+  };
+}
+function create_each_block_1$1(ctx) {
+  let switch_instance;
+  let switch_instance_anchor;
+  let current;
+  const switch_instance_spread_levels = [
+    /*button*/
+    ctx[31].props
+  ];
+  var switch_value = (
+    /*button*/
+    ctx[31].class
+  );
+  function switch_props(ctx2, dirty) {
+    let switch_instance_props = {};
+    if (dirty !== void 0 && dirty[0] & /*buttonsLeft*/
+    2) {
+      switch_instance_props = get_spread_update(switch_instance_spread_levels, [get_spread_object(
+        /*button*/
+        ctx2[31].props
+      )]);
+    } else {
+      for (let i = 0; i < switch_instance_spread_levels.length; i += 1) {
+        switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
+      }
+    }
+    return { props: switch_instance_props };
+  }
+  if (switch_value) {
+    switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+  }
+  return {
+    c() {
+      if (switch_instance)
+        create_component(switch_instance.$$.fragment);
+      switch_instance_anchor = empty();
+    },
+    m(target, anchor) {
+      if (switch_instance)
+        mount_component(switch_instance, target, anchor);
+      insert(target, switch_instance_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*buttonsLeft*/
+      2 && switch_value !== (switch_value = /*button*/
+      ctx2[31].class)) {
+        if (switch_instance) {
+          group_outros();
+          const old_component = switch_instance;
+          transition_out(old_component.$$.fragment, 1, 0, () => {
+            destroy_component(old_component, 1);
+          });
+          check_outros();
+        }
+        if (switch_value) {
+          switch_instance = construct_svelte_component(switch_value, switch_props(ctx2, dirty));
+          create_component(switch_instance.$$.fragment);
+          transition_in(switch_instance.$$.fragment, 1);
+          mount_component(switch_instance, switch_instance_anchor.parentNode, switch_instance_anchor);
+        } else {
+          switch_instance = null;
+        }
+      } else if (switch_value) {
+        const switch_instance_changes = dirty[0] & /*buttonsLeft*/
+        2 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
+          /*button*/
+          ctx2[31].props
+        )]) : {};
+        switch_instance.$set(switch_instance_changes);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      if (switch_instance)
+        transition_in(switch_instance.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      if (switch_instance)
+        transition_out(switch_instance.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(switch_instance_anchor);
+      }
+      if (switch_instance)
+        destroy_component(switch_instance, detaching);
+    }
+  };
+}
+function create_each_block$9(ctx) {
+  let switch_instance;
+  let switch_instance_anchor;
+  let current;
+  const switch_instance_spread_levels = [
+    /*button*/
+    ctx[31].props
+  ];
+  var switch_value = (
+    /*button*/
+    ctx[31].class
+  );
+  function switch_props(ctx2, dirty) {
+    let switch_instance_props = {};
+    if (dirty !== void 0 && dirty[0] & /*buttonsRight*/
+    4) {
+      switch_instance_props = get_spread_update(switch_instance_spread_levels, [get_spread_object(
+        /*button*/
+        ctx2[31].props
+      )]);
+    } else {
+      for (let i = 0; i < switch_instance_spread_levels.length; i += 1) {
+        switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
+      }
+    }
+    return { props: switch_instance_props };
+  }
+  if (switch_value) {
+    switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+  }
+  return {
+    c() {
+      if (switch_instance)
+        create_component(switch_instance.$$.fragment);
+      switch_instance_anchor = empty();
+    },
+    m(target, anchor) {
+      if (switch_instance)
+        mount_component(switch_instance, target, anchor);
+      insert(target, switch_instance_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*buttonsRight*/
+      4 && switch_value !== (switch_value = /*button*/
+      ctx2[31].class)) {
+        if (switch_instance) {
+          group_outros();
+          const old_component = switch_instance;
+          transition_out(old_component.$$.fragment, 1, 0, () => {
+            destroy_component(old_component, 1);
+          });
+          check_outros();
+        }
+        if (switch_value) {
+          switch_instance = construct_svelte_component(switch_value, switch_props(ctx2, dirty));
+          create_component(switch_instance.$$.fragment);
+          transition_in(switch_instance.$$.fragment, 1);
+          mount_component(switch_instance, switch_instance_anchor.parentNode, switch_instance_anchor);
+        } else {
+          switch_instance = null;
+        }
+      } else if (switch_value) {
+        const switch_instance_changes = dirty[0] & /*buttonsRight*/
+        4 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
+          /*button*/
+          ctx2[31].props
+        )]) : {};
+        switch_instance.$set(switch_instance_changes);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      if (switch_instance)
+        transition_in(switch_instance.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      if (switch_instance)
+        transition_out(switch_instance.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(switch_instance_anchor);
+      }
+      if (switch_instance)
+        destroy_component(switch_instance, detaching);
+    }
+  };
+}
+function create_key_block(ctx) {
+  let header;
+  let t0;
+  let h4;
+  let t1_value = localize$1(
+    /*$storeTitle*/
+    ctx[7]
+  ) + "";
+  let t1;
+  let t2;
+  let t3;
+  let span;
+  let t4;
+  let draggable_action;
+  let minimizable_action;
+  let current;
+  let mounted;
+  let dispose;
+  let if_block = typeof /*$storeHeaderIcon*/
+  ctx[6] === "string" && create_if_block$g(ctx);
+  let each_value_1 = ensure_array_like(
+    /*buttonsLeft*/
+    ctx[1]
+  );
+  let each_blocks_1 = [];
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    each_blocks_1[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+  }
+  const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
+    each_blocks_1[i] = null;
+  });
+  let each_value = ensure_array_like(
+    /*buttonsRight*/
+    ctx[2]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block$9(get_each_context$9(ctx, each_value, i));
+  }
+  const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
+    each_blocks[i] = null;
+  });
+  return {
+    c() {
+      header = element("header");
+      if (if_block)
+        if_block.c();
+      t0 = space();
+      h4 = element("h4");
+      t1 = text(t1_value);
+      t2 = space();
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        each_blocks_1[i].c();
+      }
+      t3 = space();
+      span = element("span");
+      t4 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(h4, "class", "window-title svelte-jpi-1wviwl9");
+      set_style(
+        h4,
+        "display",
+        /*displayHeaderTitle*/
+        ctx[4]
+      );
+      attr(span, "class", "tjs-window-header-spacer keep-minimized svelte-jpi-1wviwl9");
+      attr(header, "class", "window-header flexrow svelte-jpi-1wviwl9");
+    },
+    m(target, anchor) {
+      insert(target, header, anchor);
+      if (if_block)
+        if_block.m(header, null);
+      append(header, t0);
+      append(header, h4);
+      append(h4, t1);
+      append(header, t2);
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        if (each_blocks_1[i]) {
+          each_blocks_1[i].m(header, null);
+        }
+      }
+      append(header, t3);
+      append(header, span);
+      append(header, t4);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(header, null);
+        }
+      }
+      current = true;
+      if (!mounted) {
+        dispose = [
+          action_destroyer(draggable_action = /*draggable*/
+          ctx[0].call(
+            null,
+            header,
+            /*dragOptions*/
+            ctx[3]
+          )),
+          action_destroyer(minimizable_action = /*minimizable*/
+          ctx[18].call(
+            null,
+            header,
+            /*$storeMinimizable*/
+            ctx[5]
+          )),
+          listen(
+            header,
+            "pointerdown",
+            /*onPointerdown*/
+            ctx[19]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (typeof /*$storeHeaderIcon*/
+      ctx2[6] === "string") {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$g(ctx2);
+          if_block.c();
+          if_block.m(header, t0);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+      if ((!current || dirty[0] & /*$storeTitle*/
+      128) && t1_value !== (t1_value = localize$1(
+        /*$storeTitle*/
+        ctx2[7]
+      ) + ""))
+        set_data(t1, t1_value);
+      if (dirty[0] & /*displayHeaderTitle*/
+      16) {
+        set_style(
+          h4,
+          "display",
+          /*displayHeaderTitle*/
+          ctx2[4]
+        );
+      }
+      if (dirty[0] & /*buttonsLeft*/
+      2) {
+        each_value_1 = ensure_array_like(
+          /*buttonsLeft*/
+          ctx2[1]
+        );
+        let i;
+        for (i = 0; i < each_value_1.length; i += 1) {
+          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
+          if (each_blocks_1[i]) {
+            each_blocks_1[i].p(child_ctx, dirty);
+            transition_in(each_blocks_1[i], 1);
+          } else {
+            each_blocks_1[i] = create_each_block_1$1(child_ctx);
+            each_blocks_1[i].c();
+            transition_in(each_blocks_1[i], 1);
+            each_blocks_1[i].m(header, t3);
+          }
+        }
+        group_outros();
+        for (i = each_value_1.length; i < each_blocks_1.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+      if (dirty[0] & /*buttonsRight*/
+      4) {
+        each_value = ensure_array_like(
+          /*buttonsRight*/
+          ctx2[2]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$9(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block$9(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(header, null);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out_1(i);
+        }
+        check_outros();
+      }
+      if (draggable_action && is_function(draggable_action.update) && dirty[0] & /*dragOptions*/
+      8)
+        draggable_action.update.call(
+          null,
+          /*dragOptions*/
+          ctx2[3]
+        );
+      if (minimizable_action && is_function(minimizable_action.update) && dirty[0] & /*$storeMinimizable*/
+      32)
+        minimizable_action.update.call(
+          null,
+          /*$storeMinimizable*/
+          ctx2[5]
+        );
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value_1.length; i += 1) {
+        transition_in(each_blocks_1[i]);
+      }
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      each_blocks_1 = each_blocks_1.filter(Boolean);
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        transition_out(each_blocks_1[i]);
+      }
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(header);
+      }
+      if (if_block)
+        if_block.d();
+      destroy_each(each_blocks_1, detaching);
+      destroy_each(each_blocks, detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment$H(ctx) {
+  let previous_key = (
+    /*draggable*/
+    ctx[0]
+  );
+  let key_block_anchor;
+  let current;
+  let key_block = create_key_block(ctx);
+  return {
+    c() {
+      key_block.c();
+      key_block_anchor = empty();
+    },
+    m(target, anchor) {
+      key_block.m(target, anchor);
+      insert(target, key_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*draggable*/
+      1 && safe_not_equal(previous_key, previous_key = /*draggable*/
+      ctx2[0])) {
+        group_outros();
+        transition_out(key_block, 1, 1, noop);
+        check_outros();
+        key_block = create_key_block(ctx2);
+        key_block.c();
+        transition_in(key_block, 1);
+        key_block.m(key_block_anchor.parentNode, key_block_anchor);
+      } else {
+        key_block.p(ctx2, dirty);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(key_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(key_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(key_block_anchor);
+      }
+      key_block.d(detaching);
+    }
+  };
+}
+function instance$H($$self, $$props, $$invalidate) {
+  let $focusKeep;
+  let $focusAuto;
+  let $elementRoot;
+  let $storeHeaderButtons;
+  let $storeMinimized;
+  let $storeHeaderNoTitleMinimized;
+  let $storeDraggable;
+  let $storeMinimizable;
+  let $storeHeaderIcon;
+  let $storeTitle;
+  let { draggable: draggable$1 = void 0 } = $$props;
+  let { draggableOptions = void 0 } = $$props;
+  const { application } = getContext("#external");
+  const { focusAuto, focusKeep } = application.reactive.storeAppOptions;
+  component_subscribe($$self, focusAuto, (value) => $$invalidate(26, $focusAuto = value));
+  component_subscribe($$self, focusKeep, (value) => $$invalidate(25, $focusKeep = value));
+  const { elementRoot } = getContext("#internal").stores;
+  component_subscribe($$self, elementRoot, (value) => $$invalidate(27, $elementRoot = value));
+  const storeTitle = application.reactive.storeAppOptions.title;
+  component_subscribe($$self, storeTitle, (value) => $$invalidate(7, $storeTitle = value));
+  const storeDraggable = application.reactive.storeAppOptions.draggable;
+  component_subscribe($$self, storeDraggable, (value) => $$invalidate(24, $storeDraggable = value));
+  const storeDragging = application.reactive.storeUIState.dragging;
+  const storeHeaderButtons = application.reactive.storeUIState.headerButtons;
+  component_subscribe($$self, storeHeaderButtons, (value) => $$invalidate(21, $storeHeaderButtons = value));
+  const storeHeaderIcon = application.reactive.storeAppOptions.headerIcon;
+  component_subscribe($$self, storeHeaderIcon, (value) => $$invalidate(6, $storeHeaderIcon = value));
+  const storeHeaderNoTitleMinimized = application.reactive.storeAppOptions.headerNoTitleMinimized;
+  component_subscribe($$self, storeHeaderNoTitleMinimized, (value) => $$invalidate(23, $storeHeaderNoTitleMinimized = value));
+  const storeMinimizable = application.reactive.storeAppOptions.minimizable;
+  component_subscribe($$self, storeMinimizable, (value) => $$invalidate(5, $storeMinimizable = value));
+  const storeMinimized = application.reactive.storeUIState.minimized;
+  component_subscribe($$self, storeMinimized, (value) => $$invalidate(22, $storeMinimized = value));
+  const s_DRAG_TARGET_CLASSLIST = Object.freeze(["tjs-app-icon", "tjs-window-header-spacer", "window-header", "window-title"]);
+  let dragOptions;
+  let displayHeaderTitle;
+  let buttonsLeft;
+  let buttonsRight;
+  function minimizable(node, booleanStore) {
+    const callback = (event) => {
+      if (event.target.classList.contains("window-title") || event.target.classList.contains("window-header") || event.target.classList.contains("keep-minimized")) {
+        application._onToggleMinimize(event);
+      }
+    };
+    function activateListeners() {
+      node.addEventListener("dblclick", callback);
+    }
+    function removeListeners() {
+      node.removeEventListener("dblclick", callback);
+    }
+    if (booleanStore) {
+      activateListeners();
+    }
+    return {
+      update: (booleanStore2) => {
+        if (booleanStore2) {
+          activateListeners();
+        } else {
+          removeListeners();
+        }
+      },
+      destroy: () => removeListeners()
+    };
+  }
+  function onPointerdown(event) {
+    const rootEl = $elementRoot;
+    if ($focusAuto && rootEl instanceof HTMLElement && rootEl?.isConnected) {
+      if ($focusKeep) {
+        const focusOutside = document.activeElement instanceof HTMLElement && !rootEl.contains(document.activeElement);
+        if (focusOutside) {
+          rootEl.focus();
+        } else {
+          event.preventDefault();
+        }
+      } else {
+        rootEl.focus();
+      }
+    }
+  }
+  $$self.$$set = ($$props2) => {
+    if ("draggable" in $$props2)
+      $$invalidate(0, draggable$1 = $$props2.draggable);
+    if ("draggableOptions" in $$props2)
+      $$invalidate(20, draggableOptions = $$props2.draggableOptions);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*draggable*/
+    1) {
+      $$invalidate(0, draggable$1 = typeof draggable$1 === "function" ? draggable$1 : draggable);
+    }
+    if ($$self.$$.dirty[0] & /*draggableOptions, $storeDraggable*/
+    17825792) {
+      $$invalidate(3, dragOptions = Object.assign(
+        {},
+        {
+          ease: true,
+          easeOptions: { duration: 0.08, ease: cubicOut }
+        },
+        isObject(draggableOptions) ? draggableOptions : {},
+        {
+          position: application.position,
+          active: $storeDraggable,
+          storeDragging,
+          hasTargetClassList: s_DRAG_TARGET_CLASSLIST
+        }
+      ));
+    }
+    if ($$self.$$.dirty[0] & /*$storeHeaderNoTitleMinimized, $storeMinimized*/
+    12582912) {
+      $$invalidate(4, displayHeaderTitle = $storeHeaderNoTitleMinimized && $storeMinimized ? "none" : null);
+    }
+    if ($$self.$$.dirty[0] & /*$storeHeaderButtons, buttonsLeft, buttonsRight*/
+    2097158) {
+      {
+        $$invalidate(1, buttonsLeft = []);
+        $$invalidate(2, buttonsRight = []);
+        for (const button of $storeHeaderButtons) {
+          const buttonsList = typeof button?.alignLeft === "boolean" && button?.alignLeft ? buttonsLeft : buttonsRight;
+          buttonsList.push(isSvelteComponent(button) ? { class: button, props: {} } : {
+            class: TJSHeaderButton$1,
+            props: { button }
+          });
+        }
+      }
+    }
+  };
+  return [
+    draggable$1,
+    buttonsLeft,
+    buttonsRight,
+    dragOptions,
+    displayHeaderTitle,
+    $storeMinimizable,
+    $storeHeaderIcon,
+    $storeTitle,
+    focusAuto,
+    focusKeep,
+    elementRoot,
+    storeTitle,
+    storeDraggable,
+    storeHeaderButtons,
+    storeHeaderIcon,
+    storeHeaderNoTitleMinimized,
+    storeMinimizable,
+    storeMinimized,
+    minimizable,
+    onPointerdown,
+    draggableOptions,
+    $storeHeaderButtons,
+    $storeMinimized,
+    $storeHeaderNoTitleMinimized,
+    $storeDraggable
+  ];
+}
+class TJSApplicationHeader extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$H, create_fragment$H, safe_not_equal, { draggable: 0, draggableOptions: 20 }, null, [-1, -1]);
+  }
+}
+const TJSApplicationHeader$1 = TJSApplicationHeader;
 const TJSFocusWrap_svelte_svelte_type_style_lang = "";
-function create_fragment$d(ctx) {
-  let div2;
+function create_fragment$G(ctx) {
+  let div;
   let mounted;
   let dispose;
   return {
     c() {
-      div2 = element("div");
-      attr(div2, "class", "tjs-focus-wrap svelte-jpi-kjcljd");
-      attr(div2, "tabindex", "0");
+      div = element("div");
+      attr(div, "class", "tjs-focus-wrap svelte-jpi-kjcljd");
+      attr(div, "tabindex", "0");
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
-      ctx[4](div2);
+      insert(target, div, anchor);
+      ctx[4](div);
       if (!mounted) {
         dispose = listen(
-          div2,
+          div,
           "focus",
           /*onFocus*/
           ctx[1]
@@ -12010,7 +13460,7 @@ function create_fragment$d(ctx) {
     o: noop,
     d(detaching) {
       if (detaching) {
-        detach(div2);
+        detach(div);
       }
       ctx[4](null);
       mounted = false;
@@ -12018,7 +13468,7 @@ function create_fragment$d(ctx) {
     }
   };
 }
-function instance$d($$self, $$props, $$invalidate) {
+function instance$G($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled = true } = $$props;
   let ignoreElements, wrapEl;
@@ -12060,104 +13510,344 @@ function instance$d($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$d, create_fragment$d, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options, instance$G, create_fragment$G, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 }
 const TJSFocusWrap$1 = TJSFocusWrap;
-const EmptyApplicationShell_svelte_svelte_type_style_lang = "";
-function create_else_block$2(ctx) {
-  let div2;
-  let t;
+const ResizableHandle_svelte_svelte_type_style_lang = "";
+function create_fragment$F(ctx) {
+  let div;
+  let resizable_action;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      div.innerHTML = `<i class="fas fa-arrows-alt-h svelte-jpi-14lnpz8"></i>`;
+      attr(div, "class", "window-resizable-handle svelte-jpi-14lnpz8");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      ctx[10](div);
+      if (!mounted) {
+        dispose = action_destroyer(resizable_action = /*resizable*/
+        ctx[6].call(null, div, {
+          active: (
+            /*$storeResizable*/
+            ctx[1]
+          ),
+          storeResizing: (
+            /*storeResizing*/
+            ctx[5]
+          )
+        }));
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (resizable_action && is_function(resizable_action.update) && dirty & /*$storeResizable*/
+      2)
+        resizable_action.update.call(null, {
+          active: (
+            /*$storeResizable*/
+            ctx2[1]
+          ),
+          storeResizing: (
+            /*storeResizing*/
+            ctx2[5]
+          )
+        });
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      ctx[10](null);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$F($$self, $$props, $$invalidate) {
+  let $storeElementRoot;
+  let $storeMinimized;
+  let $storeResizable;
+  let { isResizable = false } = $$props;
+  const application = getContext("#external").application;
+  const storeElementRoot = getContext("#internal").stores.elementRoot;
+  component_subscribe($$self, storeElementRoot, (value) => $$invalidate(8, $storeElementRoot = value));
+  const storeResizable = application.reactive.storeAppOptions.resizable;
+  component_subscribe($$self, storeResizable, (value) => $$invalidate(1, $storeResizable = value));
+  const storeMinimized = application.reactive.storeUIState.minimized;
+  component_subscribe($$self, storeMinimized, (value) => $$invalidate(9, $storeMinimized = value));
+  const storeResizing = application.reactive.storeUIState.resizing;
+  let elementResize;
+  function resizable(node, { active: active2 = true, storeResizing: storeResizing2 = void 0 } = {}) {
+    let position = null;
+    let initialPosition = {};
+    let resizing = false;
+    const handlers = {
+      resizeDown: ["pointerdown", (e) => onResizePointerDown(e), false],
+      resizeMove: ["pointermove", (e) => onResizePointerMove(e), false],
+      resizeUp: ["pointerup", (e) => onResizePointerUp(e), false]
+    };
+    function activateListeners() {
+      node.addEventListener(...handlers.resizeDown);
+      $$invalidate(7, isResizable = true);
+      node.style.display = "block";
+    }
+    function removeListeners() {
+      if (typeof storeResizing2?.set === "function") {
+        storeResizing2.set(false);
+      }
+      node.removeEventListener(...handlers.resizeDown);
+      node.removeEventListener(...handlers.resizeMove);
+      node.removeEventListener(...handlers.resizeUp);
+      node.style.display = "none";
+      $$invalidate(7, isResizable = false);
+    }
+    if (active2) {
+      activateListeners();
+    } else {
+      node.style.display = "none";
+    }
+    function onResizePointerDown(event) {
+      event.preventDefault();
+      resizing = false;
+      position = application.position.get();
+      if (position.height === "auto") {
+        position.height = $storeElementRoot.clientHeight;
+      }
+      if (position.width === "auto") {
+        position.width = $storeElementRoot.clientWidth;
+      }
+      initialPosition = { x: event.clientX, y: event.clientY };
+      node.addEventListener(...handlers.resizeMove);
+      node.addEventListener(...handlers.resizeUp);
+      node.setPointerCapture(event.pointerId);
+    }
+    function onResizePointerMove(event) {
+      event.preventDefault();
+      if (!resizing && typeof storeResizing2?.set === "function") {
+        resizing = true;
+        storeResizing2.set(true);
+      }
+      application.position.set({
+        width: position.width + (event.clientX - initialPosition.x),
+        height: position.height + (event.clientY - initialPosition.y)
+      });
+    }
+    function onResizePointerUp(event) {
+      resizing = false;
+      if (typeof storeResizing2?.set === "function") {
+        storeResizing2.set(false);
+      }
+      event.preventDefault();
+      node.removeEventListener(...handlers.resizeMove);
+      node.removeEventListener(...handlers.resizeUp);
+      application?._onResize?.(event);
+    }
+    return {
+      update: ({ active: active3 }) => {
+        if (active3) {
+          activateListeners();
+        } else {
+          removeListeners();
+        }
+      },
+      destroy: () => removeListeners()
+    };
+  }
+  function div_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      elementResize = $$value;
+      $$invalidate(0, elementResize), $$invalidate(7, isResizable), $$invalidate(9, $storeMinimized), $$invalidate(8, $storeElementRoot);
+    });
+  }
+  $$self.$$set = ($$props2) => {
+    if ("isResizable" in $$props2)
+      $$invalidate(7, isResizable = $$props2.isResizable);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*elementResize, isResizable, $storeMinimized, $storeElementRoot*/
+    897) {
+      if (elementResize) {
+        $$invalidate(0, elementResize.style.display = isResizable && !$storeMinimized ? "block" : "none", elementResize);
+        const elementRoot = $storeElementRoot;
+        if (elementRoot) {
+          elementRoot.classList[isResizable ? "add" : "remove"]("resizable");
+        }
+      }
+    }
+  };
+  return [
+    elementResize,
+    $storeResizable,
+    storeElementRoot,
+    storeResizable,
+    storeMinimized,
+    storeResizing,
+    resizable,
+    isResizable,
+    $storeElementRoot,
+    $storeMinimized,
+    div_binding
+  ];
+}
+class ResizableHandle extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$F, create_fragment$F, safe_not_equal, { isResizable: 7 });
+  }
+}
+const ResizableHandle$1 = ResizableHandle;
+const ApplicationShell_svelte_svelte_type_style_lang = "";
+function create_else_block$4(ctx) {
+  let div;
+  let tjsapplicationheader;
+  let t0;
+  let section;
+  let applyStyles_action;
+  let t1;
+  let resizablehandle;
+  let t2;
   let tjsfocuswrap;
   let div_id_value;
   let div_class_value;
   let div_data_appid_value;
-  let applyStyles_action;
+  let applyStyles_action_1;
   let current;
   let mounted;
   let dispose;
+  tjsapplicationheader = new TJSApplicationHeader$1({
+    props: {
+      draggable: (
+        /*draggable*/
+        ctx[6]
+      ),
+      draggableOptions: (
+        /*draggableOptions*/
+        ctx[7]
+      )
+    }
+  });
   const default_slot_template = (
     /*#slots*/
-    ctx[28].default
+    ctx[36].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[27],
+    ctx[35],
     null
   );
+  resizablehandle = new ResizableHandle$1({});
   tjsfocuswrap = new TJSFocusWrap$1({
     props: {
       elementRoot: (
         /*elementRoot*/
-        ctx[0]
+        ctx[1]
       ),
       enabled: (
         /*focusWrapEnabled*/
-        ctx[7]
+        ctx[11]
       )
     }
   });
   return {
     c() {
-      div2 = element("div");
+      div = element("div");
+      create_component(tjsapplicationheader.$$.fragment);
+      t0 = space();
+      section = element("section");
       if (default_slot)
         default_slot.c();
-      t = space();
+      t1 = space();
+      create_component(resizablehandle.$$.fragment);
+      t2 = space();
       create_component(tjsfocuswrap.$$.fragment);
-      attr(div2, "id", div_id_value = /*application*/
-      ctx[6].id);
-      attr(div2, "class", div_class_value = null_to_empty(
-        /*application*/
-        ctx[6].options.classes.join(" ")
-      ) + " svelte-jpi-1xbm8hx");
-      attr(div2, "data-appid", div_data_appid_value = /*application*/
-      ctx[6].appId);
-      attr(div2, "role", "application");
-      attr(div2, "tabindex", "-1");
+      attr(section, "class", "window-content svelte-jpi-oz81f7");
+      attr(section, "tabindex", "-1");
+      attr(div, "id", div_id_value = /*application*/
+      ctx[10].id);
+      attr(div, "class", div_class_value = "app window-app " + /*application*/
+      ctx[10].options.classes.join(" ") + " svelte-jpi-oz81f7");
+      attr(div, "data-appid", div_data_appid_value = /*application*/
+      ctx[10].appId);
+      attr(div, "role", "application");
+      attr(div, "tabindex", "-1");
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
+      insert(target, div, anchor);
+      mount_component(tjsapplicationheader, div, null);
+      append(div, t0);
+      append(div, section);
       if (default_slot) {
-        default_slot.m(div2, null);
+        default_slot.m(section, null);
       }
-      append(div2, t);
-      mount_component(tjsfocuswrap, div2, null);
-      ctx[30](div2);
+      ctx[39](section);
+      append(div, t1);
+      mount_component(resizablehandle, div, null);
+      append(div, t2);
+      mount_component(tjsfocuswrap, div, null);
+      ctx[40](div);
       current = true;
       if (!mounted) {
         dispose = [
-          listen(div2, "close:popup", stop_propagation(prevent_default(
+          listen(
+            section,
+            "pointerdown",
+            /*onPointerdownContent*/
+            ctx[21]
+          ),
+          action_destroyer(applyStyles_action = applyStyles.call(
+            null,
+            section,
+            /*stylesContent*/
+            ctx[9]
+          )),
+          action_destroyer(
+            /*contentResizeObserver*/
+            ctx[13].call(
+              null,
+              section,
+              /*resizeObservedContent*/
+              ctx[22]
+            )
+          ),
+          listen(div, "close:popup", stop_propagation(prevent_default(
             /*onClosePopup*/
-            ctx[13]
+            ctx[18]
           ))),
           listen(
-            div2,
+            div,
             "keydown",
             /*onKeydown*/
-            ctx[14],
+            ctx[19],
             true
           ),
           listen(
-            div2,
+            div,
             "pointerdown",
             /*onPointerdownApp*/
-            ctx[15]
+            ctx[20]
           ),
-          action_destroyer(applyStyles_action = applyStyles$2.call(
+          action_destroyer(applyStyles_action_1 = applyStyles.call(
             null,
-            div2,
+            div,
             /*stylesApp*/
-            ctx[5]
+            ctx[8]
           )),
           action_destroyer(
             /*appResizeObserver*/
-            ctx[8].call(
+            ctx[12].call(
               null,
-              div2,
+              div,
               /*resizeObservedApp*/
-              ctx[16]
+              ctx[23]
             )
           )
         ];
@@ -12165,22 +13855,32 @@ function create_else_block$2(ctx) {
       }
     },
     p(ctx2, dirty) {
+      const tjsapplicationheader_changes = {};
+      if (dirty[0] & /*draggable*/
+      64)
+        tjsapplicationheader_changes.draggable = /*draggable*/
+        ctx2[6];
+      if (dirty[0] & /*draggableOptions*/
+      128)
+        tjsapplicationheader_changes.draggableOptions = /*draggableOptions*/
+        ctx2[7];
+      tjsapplicationheader.$set(tjsapplicationheader_changes);
       if (default_slot) {
-        if (default_slot.p && (!current || dirty[0] & /*$$scope*/
-        134217728)) {
+        if (default_slot.p && (!current || dirty[1] & /*$$scope*/
+        16)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[27],
+            ctx2[35],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[27]
+              ctx2[35]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[27],
+              ctx2[35],
               dirty,
               null
             ),
@@ -12188,161 +13888,218 @@ function create_else_block$2(ctx) {
           );
         }
       }
-      const tjsfocuswrap_changes = {};
-      if (dirty[0] & /*elementRoot*/
-      1)
-        tjsfocuswrap_changes.elementRoot = /*elementRoot*/
-        ctx2[0];
-      if (dirty[0] & /*focusWrapEnabled*/
-      128)
-        tjsfocuswrap_changes.enabled = /*focusWrapEnabled*/
-        ctx2[7];
-      tjsfocuswrap.$set(tjsfocuswrap_changes);
-      if (!current || dirty[0] & /*application*/
-      64 && div_id_value !== (div_id_value = /*application*/
-      ctx2[6].id)) {
-        attr(div2, "id", div_id_value);
-      }
-      if (!current || dirty[0] & /*application*/
-      64 && div_class_value !== (div_class_value = null_to_empty(
-        /*application*/
-        ctx2[6].options.classes.join(" ")
-      ) + " svelte-jpi-1xbm8hx")) {
-        attr(div2, "class", div_class_value);
-      }
-      if (!current || dirty[0] & /*application*/
-      64 && div_data_appid_value !== (div_data_appid_value = /*application*/
-      ctx2[6].appId)) {
-        attr(div2, "data-appid", div_data_appid_value);
-      }
-      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*stylesApp*/
-      32)
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*stylesContent*/
+      512)
         applyStyles_action.update.call(
           null,
+          /*stylesContent*/
+          ctx2[9]
+        );
+      const tjsfocuswrap_changes = {};
+      if (dirty[0] & /*elementRoot*/
+      2)
+        tjsfocuswrap_changes.elementRoot = /*elementRoot*/
+        ctx2[1];
+      if (dirty[0] & /*focusWrapEnabled*/
+      2048)
+        tjsfocuswrap_changes.enabled = /*focusWrapEnabled*/
+        ctx2[11];
+      tjsfocuswrap.$set(tjsfocuswrap_changes);
+      if (!current || dirty[0] & /*application*/
+      1024 && div_id_value !== (div_id_value = /*application*/
+      ctx2[10].id)) {
+        attr(div, "id", div_id_value);
+      }
+      if (!current || dirty[0] & /*application*/
+      1024 && div_class_value !== (div_class_value = "app window-app " + /*application*/
+      ctx2[10].options.classes.join(" ") + " svelte-jpi-oz81f7")) {
+        attr(div, "class", div_class_value);
+      }
+      if (!current || dirty[0] & /*application*/
+      1024 && div_data_appid_value !== (div_data_appid_value = /*application*/
+      ctx2[10].appId)) {
+        attr(div, "data-appid", div_data_appid_value);
+      }
+      if (applyStyles_action_1 && is_function(applyStyles_action_1.update) && dirty[0] & /*stylesApp*/
+      256)
+        applyStyles_action_1.update.call(
+          null,
           /*stylesApp*/
-          ctx2[5]
+          ctx2[8]
         );
     },
     i(local) {
       if (current)
         return;
+      transition_in(tjsapplicationheader.$$.fragment, local);
       transition_in(default_slot, local);
+      transition_in(resizablehandle.$$.fragment, local);
       transition_in(tjsfocuswrap.$$.fragment, local);
       current = true;
     },
     o(local) {
+      transition_out(tjsapplicationheader.$$.fragment, local);
       transition_out(default_slot, local);
+      transition_out(resizablehandle.$$.fragment, local);
       transition_out(tjsfocuswrap.$$.fragment, local);
       current = false;
     },
     d(detaching) {
       if (detaching) {
-        detach(div2);
+        detach(div);
       }
+      destroy_component(tjsapplicationheader);
       if (default_slot)
         default_slot.d(detaching);
+      ctx[39](null);
+      destroy_component(resizablehandle);
       destroy_component(tjsfocuswrap);
-      ctx[30](null);
+      ctx[40](null);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block$5(ctx) {
-  let div2;
-  let t;
+function create_if_block$f(ctx) {
+  let div;
+  let tjsapplicationheader;
+  let t0;
+  let section;
+  let applyStyles_action;
+  let t1;
+  let resizablehandle;
+  let t2;
   let tjsfocuswrap;
   let div_id_value;
   let div_class_value;
   let div_data_appid_value;
-  let applyStyles_action;
+  let applyStyles_action_1;
   let div_intro;
   let div_outro;
   let current;
   let mounted;
   let dispose;
+  tjsapplicationheader = new TJSApplicationHeader$1({
+    props: {
+      draggable: (
+        /*draggable*/
+        ctx[6]
+      ),
+      draggableOptions: (
+        /*draggableOptions*/
+        ctx[7]
+      )
+    }
+  });
   const default_slot_template = (
     /*#slots*/
-    ctx[28].default
+    ctx[36].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[27],
+    ctx[35],
     null
   );
+  resizablehandle = new ResizableHandle$1({});
   tjsfocuswrap = new TJSFocusWrap$1({
-    props: {
-      elementRoot: (
-        /*elementRoot*/
-        ctx[0]
-      ),
-      enabled: (
-        /*focusWrapEnabled*/
-        ctx[7]
-      )
-    }
+    props: { elementRoot: (
+      /*elementRoot*/
+      ctx[1]
+    ) }
   });
   return {
     c() {
-      div2 = element("div");
+      div = element("div");
+      create_component(tjsapplicationheader.$$.fragment);
+      t0 = space();
+      section = element("section");
       if (default_slot)
         default_slot.c();
-      t = space();
+      t1 = space();
+      create_component(resizablehandle.$$.fragment);
+      t2 = space();
       create_component(tjsfocuswrap.$$.fragment);
-      attr(div2, "id", div_id_value = /*application*/
-      ctx[6].id);
-      attr(div2, "class", div_class_value = null_to_empty(
-        /*application*/
-        ctx[6].options.classes.join(" ")
-      ) + " svelte-jpi-1xbm8hx");
-      attr(div2, "data-appid", div_data_appid_value = /*application*/
-      ctx[6].appId);
-      attr(div2, "role", "application");
-      attr(div2, "tabindex", "-1");
+      attr(section, "class", "window-content svelte-jpi-oz81f7");
+      attr(section, "tabindex", "-1");
+      attr(div, "id", div_id_value = /*application*/
+      ctx[10].id);
+      attr(div, "class", div_class_value = "app window-app " + /*application*/
+      ctx[10].options.classes.join(" ") + " svelte-jpi-oz81f7");
+      attr(div, "data-appid", div_data_appid_value = /*application*/
+      ctx[10].appId);
+      attr(div, "role", "application");
+      attr(div, "tabindex", "-1");
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
+      insert(target, div, anchor);
+      mount_component(tjsapplicationheader, div, null);
+      append(div, t0);
+      append(div, section);
       if (default_slot) {
-        default_slot.m(div2, null);
+        default_slot.m(section, null);
       }
-      append(div2, t);
-      mount_component(tjsfocuswrap, div2, null);
-      ctx[29](div2);
+      ctx[37](section);
+      append(div, t1);
+      mount_component(resizablehandle, div, null);
+      append(div, t2);
+      mount_component(tjsfocuswrap, div, null);
+      ctx[38](div);
       current = true;
       if (!mounted) {
         dispose = [
-          listen(div2, "close:popup", stop_propagation(prevent_default(
+          listen(
+            section,
+            "pointerdown",
+            /*onPointerdownContent*/
+            ctx[21]
+          ),
+          action_destroyer(applyStyles_action = applyStyles.call(
+            null,
+            section,
+            /*stylesContent*/
+            ctx[9]
+          )),
+          action_destroyer(
+            /*contentResizeObserver*/
+            ctx[13].call(
+              null,
+              section,
+              /*resizeObservedContent*/
+              ctx[22]
+            )
+          ),
+          listen(div, "close:popup", stop_propagation(prevent_default(
             /*onClosePopup*/
-            ctx[13]
+            ctx[18]
           ))),
           listen(
-            div2,
+            div,
             "keydown",
             /*onKeydown*/
-            ctx[14],
+            ctx[19],
             true
           ),
           listen(
-            div2,
+            div,
             "pointerdown",
             /*onPointerdownApp*/
-            ctx[15]
+            ctx[20]
           ),
-          action_destroyer(applyStyles_action = applyStyles$2.call(
+          action_destroyer(applyStyles_action_1 = applyStyles.call(
             null,
-            div2,
+            div,
             /*stylesApp*/
-            ctx[5]
+            ctx[8]
           )),
           action_destroyer(
             /*appResizeObserver*/
-            ctx[8].call(
+            ctx[12].call(
               null,
-              div2,
+              div,
               /*resizeObservedApp*/
-              ctx[16]
+              ctx[23]
             )
           )
         ];
@@ -12351,22 +14108,32 @@ function create_if_block$5(ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
+      const tjsapplicationheader_changes = {};
+      if (dirty[0] & /*draggable*/
+      64)
+        tjsapplicationheader_changes.draggable = /*draggable*/
+        ctx[6];
+      if (dirty[0] & /*draggableOptions*/
+      128)
+        tjsapplicationheader_changes.draggableOptions = /*draggableOptions*/
+        ctx[7];
+      tjsapplicationheader.$set(tjsapplicationheader_changes);
       if (default_slot) {
-        if (default_slot.p && (!current || dirty[0] & /*$$scope*/
-        134217728)) {
+        if (default_slot.p && (!current || dirty[1] & /*$$scope*/
+        16)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx,
             /*$$scope*/
-            ctx[27],
+            ctx[35],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx[27]
+              ctx[35]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx[27],
+              ctx[35],
               dirty,
               null
             ),
@@ -12374,45 +14141,48 @@ function create_if_block$5(ctx) {
           );
         }
       }
-      const tjsfocuswrap_changes = {};
-      if (dirty[0] & /*elementRoot*/
-      1)
-        tjsfocuswrap_changes.elementRoot = /*elementRoot*/
-        ctx[0];
-      if (dirty[0] & /*focusWrapEnabled*/
-      128)
-        tjsfocuswrap_changes.enabled = /*focusWrapEnabled*/
-        ctx[7];
-      tjsfocuswrap.$set(tjsfocuswrap_changes);
-      if (!current || dirty[0] & /*application*/
-      64 && div_id_value !== (div_id_value = /*application*/
-      ctx[6].id)) {
-        attr(div2, "id", div_id_value);
-      }
-      if (!current || dirty[0] & /*application*/
-      64 && div_class_value !== (div_class_value = null_to_empty(
-        /*application*/
-        ctx[6].options.classes.join(" ")
-      ) + " svelte-jpi-1xbm8hx")) {
-        attr(div2, "class", div_class_value);
-      }
-      if (!current || dirty[0] & /*application*/
-      64 && div_data_appid_value !== (div_data_appid_value = /*application*/
-      ctx[6].appId)) {
-        attr(div2, "data-appid", div_data_appid_value);
-      }
-      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*stylesApp*/
-      32)
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*stylesContent*/
+      512)
         applyStyles_action.update.call(
           null,
+          /*stylesContent*/
+          ctx[9]
+        );
+      const tjsfocuswrap_changes = {};
+      if (dirty[0] & /*elementRoot*/
+      2)
+        tjsfocuswrap_changes.elementRoot = /*elementRoot*/
+        ctx[1];
+      tjsfocuswrap.$set(tjsfocuswrap_changes);
+      if (!current || dirty[0] & /*application*/
+      1024 && div_id_value !== (div_id_value = /*application*/
+      ctx[10].id)) {
+        attr(div, "id", div_id_value);
+      }
+      if (!current || dirty[0] & /*application*/
+      1024 && div_class_value !== (div_class_value = "app window-app " + /*application*/
+      ctx[10].options.classes.join(" ") + " svelte-jpi-oz81f7")) {
+        attr(div, "class", div_class_value);
+      }
+      if (!current || dirty[0] & /*application*/
+      1024 && div_data_appid_value !== (div_data_appid_value = /*application*/
+      ctx[10].appId)) {
+        attr(div, "data-appid", div_data_appid_value);
+      }
+      if (applyStyles_action_1 && is_function(applyStyles_action_1.update) && dirty[0] & /*stylesApp*/
+      256)
+        applyStyles_action_1.update.call(
+          null,
           /*stylesApp*/
-          ctx[5]
+          ctx[8]
         );
     },
     i(local) {
       if (current)
         return;
+      transition_in(tjsapplicationheader.$$.fragment, local);
       transition_in(default_slot, local);
+      transition_in(resizablehandle.$$.fragment, local);
       transition_in(tjsfocuswrap.$$.fragment, local);
       add_render_callback(() => {
         if (!current)
@@ -12420,38 +14190,43 @@ function create_if_block$5(ctx) {
         if (div_outro)
           div_outro.end(1);
         div_intro = create_in_transition(
-          div2,
+          div,
           /*inTransition*/
-          ctx[1],
+          ctx[2],
           /*inTransitionOptions*/
-          ctx[3]
+          ctx[4]
         );
         div_intro.start();
       });
       current = true;
     },
     o(local) {
+      transition_out(tjsapplicationheader.$$.fragment, local);
       transition_out(default_slot, local);
+      transition_out(resizablehandle.$$.fragment, local);
       transition_out(tjsfocuswrap.$$.fragment, local);
       if (div_intro)
         div_intro.invalidate();
       div_outro = create_out_transition(
-        div2,
+        div,
         /*outTransition*/
-        ctx[2],
+        ctx[3],
         /*outTransitionOptions*/
-        ctx[4]
+        ctx[5]
       );
       current = false;
     },
     d(detaching) {
       if (detaching) {
-        detach(div2);
+        detach(div);
       }
+      destroy_component(tjsapplicationheader);
       if (default_slot)
         default_slot.d(detaching);
+      ctx[37](null);
+      destroy_component(resizablehandle);
       destroy_component(tjsfocuswrap);
-      ctx[29](null);
+      ctx[38](null);
       if (detaching && div_outro)
         div_outro.end();
       mounted = false;
@@ -12459,18 +14234,18 @@ function create_if_block$5(ctx) {
     }
   };
 }
-function create_fragment$c(ctx) {
+function create_fragment$E(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$5, create_else_block$2];
+  const if_block_creators = [create_if_block$f, create_else_block$4];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
       /*inTransition*/
-      ctx2[1] || /*outTransition*/
-      ctx2[2]
+      ctx2[2] !== TJSDefaultTransition.default || /*outTransition*/
+      ctx2[3] !== TJSDefaultTransition.default
     )
       return 0;
     return 1;
@@ -12527,7 +14302,7 @@ function create_fragment$c(ctx) {
     }
   };
 }
-function instance$c($$self, $$props, $$invalidate) {
+function instance$E($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $minimized;
@@ -12535,28 +14310,34 @@ function instance$c($$self, $$props, $$invalidate) {
   let { $$slots: slots = {}, $$scope } = $$props;
   let { elementContent = void 0 } = $$props;
   let { elementRoot = void 0 } = $$props;
+  let { draggable: draggable2 = void 0 } = $$props;
+  let { draggableOptions = void 0 } = $$props;
   let { stylesApp = void 0 } = $$props;
+  let { stylesContent = void 0 } = $$props;
   let { appOffsetHeight = false } = $$props;
   let { appOffsetWidth = false } = $$props;
   const appResizeObserver = !!appOffsetHeight || !!appOffsetWidth ? resizeObserver : () => null;
-  const s_IGNORE_CLASSES = { ignoreClasses: ["tjs-focus-wrap"] };
+  let { contentOffsetHeight = false } = $$props;
+  let { contentOffsetWidth = false } = $$props;
+  const contentResizeObserver = !!contentOffsetHeight || !!contentOffsetWidth ? resizeObserver : () => null;
   const internal = new AppShellContextInternal();
+  const s_IGNORE_CLASSES = { ignoreClasses: ["tjs-focus-wrap"] };
   setContext("#internal", internal);
   const { application } = getContext("#external");
   const { focusAuto, focusKeep, focusTrap } = application.reactive.storeAppOptions;
-  component_subscribe($$self, focusAuto, (value) => $$invalidate(24, $focusAuto = value));
-  component_subscribe($$self, focusKeep, (value) => $$invalidate(31, $focusKeep = value));
-  component_subscribe($$self, focusTrap, (value) => $$invalidate(26, $focusTrap = value));
+  component_subscribe($$self, focusAuto, (value) => $$invalidate(32, $focusAuto = value));
+  component_subscribe($$self, focusKeep, (value) => $$invalidate(41, $focusKeep = value));
+  component_subscribe($$self, focusTrap, (value) => $$invalidate(34, $focusTrap = value));
   const { minimized } = application.reactive.storeUIState;
-  component_subscribe($$self, minimized, (value) => $$invalidate(25, $minimized = value));
+  component_subscribe($$self, minimized, (value) => $$invalidate(33, $minimized = value));
   let focusWrapEnabled;
-  let { transition = void 0 } = $$props;
-  let { inTransition = void 0 } = $$props;
-  let { outTransition = void 0 } = $$props;
+  let { transition = TJSDefaultTransition.default } = $$props;
+  let { inTransition = TJSDefaultTransition.default } = $$props;
+  let { outTransition = TJSDefaultTransition.default } = $$props;
   let { transitionOptions = void 0 } = $$props;
   let { inTransitionOptions = TJSDefaultTransition.options } = $$props;
   let { outTransitionOptions = TJSDefaultTransition.options } = $$props;
-  let oldTransition = void 0;
+  let oldTransition = TJSDefaultTransition.default;
   let oldTransitionOptions = void 0;
   onMount(() => elementRoot.focus());
   function onClosePopup(event) {
@@ -12604,23 +14385,29 @@ function instance$c($$self, $$props, $$invalidate) {
       application.bringToTop.call(application);
     }
   }
-  function onPointerdownApp(event) {
+  function onPointerdownApp() {
+    if (typeof application?.options?.popOut === "boolean" && application.options.popOut && application !== globalThis.ui?.activeWindow) {
+      application.bringToTop.call(application);
+    }
+  }
+  function onPointerdownContent(event) {
     const focusable = A11yHelper.isFocusable(event.target);
-    if (!focusable && elementRoot instanceof HTMLElement && $focusAuto) {
+    if (!focusable && $focusAuto) {
       if ($focusKeep) {
         const focusOutside = document.activeElement instanceof HTMLElement && !elementRoot.contains(document.activeElement);
         if (focusOutside) {
-          elementRoot.focus();
+          elementContent.focus();
         } else {
           event.preventDefault();
         }
       } else {
-        elementRoot.focus();
+        elementContent.focus();
       }
     }
-    if (typeof application?.options?.popOut === "boolean" && application.options.popOut && application !== globalThis.ui?.activeWindow) {
-      application.bringToTop.call(application);
-    }
+  }
+  function resizeObservedContent(offsetWidth, offsetHeight) {
+    $$invalidate(27, contentOffsetWidth = offsetWidth);
+    $$invalidate(26, contentOffsetHeight = offsetHeight);
   }
   function resizeObservedApp(offsetWidth, offsetHeight, contentWidth, contentHeight) {
     application.position.stores.resizeObserved.update((object) => {
@@ -12630,128 +14417,151 @@ function instance$c($$self, $$props, $$invalidate) {
       object.offsetHeight = offsetHeight;
       return object;
     });
-    $$invalidate(18, appOffsetHeight = offsetHeight);
-    $$invalidate(19, appOffsetWidth = offsetWidth);
+    $$invalidate(24, appOffsetHeight = offsetHeight);
+    $$invalidate(25, appOffsetWidth = offsetWidth);
+  }
+  function section_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      elementContent = $$value;
+      $$invalidate(0, elementContent);
+    });
   }
   function div_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       elementRoot = $$value;
-      $$invalidate(0, elementRoot);
+      $$invalidate(1, elementRoot);
+    });
+  }
+  function section_binding_1($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      elementContent = $$value;
+      $$invalidate(0, elementContent);
     });
   }
   function div_binding_1($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       elementRoot = $$value;
-      $$invalidate(0, elementRoot);
+      $$invalidate(1, elementRoot);
     });
   }
   $$self.$$set = ($$props2) => {
     if ("elementContent" in $$props2)
-      $$invalidate(17, elementContent = $$props2.elementContent);
+      $$invalidate(0, elementContent = $$props2.elementContent);
     if ("elementRoot" in $$props2)
-      $$invalidate(0, elementRoot = $$props2.elementRoot);
+      $$invalidate(1, elementRoot = $$props2.elementRoot);
+    if ("draggable" in $$props2)
+      $$invalidate(6, draggable2 = $$props2.draggable);
+    if ("draggableOptions" in $$props2)
+      $$invalidate(7, draggableOptions = $$props2.draggableOptions);
     if ("stylesApp" in $$props2)
-      $$invalidate(5, stylesApp = $$props2.stylesApp);
+      $$invalidate(8, stylesApp = $$props2.stylesApp);
+    if ("stylesContent" in $$props2)
+      $$invalidate(9, stylesContent = $$props2.stylesContent);
     if ("appOffsetHeight" in $$props2)
-      $$invalidate(18, appOffsetHeight = $$props2.appOffsetHeight);
+      $$invalidate(24, appOffsetHeight = $$props2.appOffsetHeight);
     if ("appOffsetWidth" in $$props2)
-      $$invalidate(19, appOffsetWidth = $$props2.appOffsetWidth);
+      $$invalidate(25, appOffsetWidth = $$props2.appOffsetWidth);
+    if ("contentOffsetHeight" in $$props2)
+      $$invalidate(26, contentOffsetHeight = $$props2.contentOffsetHeight);
+    if ("contentOffsetWidth" in $$props2)
+      $$invalidate(27, contentOffsetWidth = $$props2.contentOffsetWidth);
     if ("transition" in $$props2)
-      $$invalidate(20, transition = $$props2.transition);
+      $$invalidate(28, transition = $$props2.transition);
     if ("inTransition" in $$props2)
-      $$invalidate(1, inTransition = $$props2.inTransition);
+      $$invalidate(2, inTransition = $$props2.inTransition);
     if ("outTransition" in $$props2)
-      $$invalidate(2, outTransition = $$props2.outTransition);
+      $$invalidate(3, outTransition = $$props2.outTransition);
     if ("transitionOptions" in $$props2)
-      $$invalidate(21, transitionOptions = $$props2.transitionOptions);
+      $$invalidate(29, transitionOptions = $$props2.transitionOptions);
     if ("inTransitionOptions" in $$props2)
-      $$invalidate(3, inTransitionOptions = $$props2.inTransitionOptions);
+      $$invalidate(4, inTransitionOptions = $$props2.inTransitionOptions);
     if ("outTransitionOptions" in $$props2)
-      $$invalidate(4, outTransitionOptions = $$props2.outTransitionOptions);
+      $$invalidate(5, outTransitionOptions = $$props2.outTransitionOptions);
     if ("$$scope" in $$props2)
-      $$invalidate(27, $$scope = $$props2.$$scope);
+      $$invalidate(35, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
-    if ($$self.$$.dirty[0] & /*elementRoot*/
-    1) {
-      if (elementRoot) {
-        $$invalidate(17, elementContent = elementRoot);
-      }
-    }
     if ($$self.$$.dirty[0] & /*elementContent*/
-    131072) {
+    1) {
       if (elementContent !== void 0 && elementContent !== null) {
         getContext("#internal").stores.elementContent.set(elementContent);
       }
     }
     if ($$self.$$.dirty[0] & /*elementRoot*/
-    1) {
+    2) {
       if (elementRoot !== void 0 && elementRoot !== null) {
         getContext("#internal").stores.elementRoot.set(elementRoot);
       }
     }
-    if ($$self.$$.dirty[0] & /*$focusAuto, $focusTrap, $minimized*/
-    117440512) {
-      $$invalidate(7, focusWrapEnabled = $focusAuto && $focusTrap && !$minimized);
+    if ($$self.$$.dirty[1] & /*$focusAuto, $focusTrap, $minimized*/
+    14) {
+      $$invalidate(11, focusWrapEnabled = $focusAuto && $focusTrap && !$minimized);
     }
     if ($$self.$$.dirty[0] & /*oldTransition, transition*/
-    5242880) {
+    1342177280) {
       if (oldTransition !== transition) {
-        const newTransition = typeof transition === "function" ? transition : void 0;
-        $$invalidate(1, inTransition = newTransition);
-        $$invalidate(2, outTransition = newTransition);
-        $$invalidate(22, oldTransition = newTransition);
+        const newTransition = typeof transition === "function" ? transition : TJSDefaultTransition.default;
+        $$invalidate(2, inTransition = newTransition);
+        $$invalidate(3, outTransition = newTransition);
+        $$invalidate(30, oldTransition = newTransition);
       }
     }
-    if ($$self.$$.dirty[0] & /*oldTransitionOptions, transitionOptions*/
-    10485760) {
+    if ($$self.$$.dirty[0] & /*transitionOptions*/
+    536870912 | $$self.$$.dirty[1] & /*oldTransitionOptions*/
+    1) {
       if (oldTransitionOptions !== transitionOptions) {
         const newOptions = transitionOptions !== TJSDefaultTransition.options && isObject(transitionOptions) ? transitionOptions : TJSDefaultTransition.options;
-        $$invalidate(3, inTransitionOptions = newOptions);
-        $$invalidate(4, outTransitionOptions = newOptions);
-        $$invalidate(23, oldTransitionOptions = newOptions);
+        $$invalidate(4, inTransitionOptions = newOptions);
+        $$invalidate(5, outTransitionOptions = newOptions);
+        $$invalidate(31, oldTransitionOptions = newOptions);
       }
     }
     if ($$self.$$.dirty[0] & /*inTransition*/
-    2) {
+    4) {
       if (typeof inTransition !== "function") {
-        $$invalidate(1, inTransition = void 0);
+        $$invalidate(2, inTransition = TJSDefaultTransition.default);
       }
     }
     if ($$self.$$.dirty[0] & /*outTransition, application*/
-    68) {
+    1032) {
       {
         if (typeof outTransition !== "function") {
-          $$invalidate(2, outTransition = void 0);
+          $$invalidate(3, outTransition = TJSDefaultTransition.default);
         }
-        if (application && typeof application?.options?.defaultCloseAnimation === "boolean") {
-          $$invalidate(6, application.options.defaultCloseAnimation = outTransition === void 0, application);
+        const defaultCloseAnimation = application?.options?.defaultCloseAnimation;
+        if (typeof defaultCloseAnimation === "boolean" && defaultCloseAnimation && outTransition !== TJSDefaultTransition.default) {
+          $$invalidate(10, application.options.defaultCloseAnimation = false, application);
         }
       }
     }
     if ($$self.$$.dirty[0] & /*inTransitionOptions*/
-    8) {
+    16) {
       if (!isObject(inTransitionOptions)) {
-        $$invalidate(3, inTransitionOptions = TJSDefaultTransition.options);
+        $$invalidate(4, inTransitionOptions = TJSDefaultTransition.options);
       }
     }
     if ($$self.$$.dirty[0] & /*outTransitionOptions*/
-    16) {
+    32) {
       if (!isObject(outTransitionOptions)) {
-        $$invalidate(4, outTransitionOptions = TJSDefaultTransition.options);
+        $$invalidate(5, outTransitionOptions = TJSDefaultTransition.options);
       }
     }
   };
   return [
+    elementContent,
     elementRoot,
     inTransition,
     outTransition,
     inTransitionOptions,
     outTransitionOptions,
+    draggable2,
+    draggableOptions,
     stylesApp,
+    stylesContent,
     application,
     focusWrapEnabled,
     appResizeObserver,
+    contentResizeObserver,
     focusAuto,
     focusKeep,
     focusTrap,
@@ -12759,10 +14569,13 @@ function instance$c($$self, $$props, $$invalidate) {
     onClosePopup,
     onKeydown,
     onPointerdownApp,
+    onPointerdownContent,
+    resizeObservedContent,
     resizeObservedApp,
-    elementContent,
     appOffsetHeight,
     appOffsetWidth,
+    contentOffsetHeight,
+    contentOffsetWidth,
     transition,
     transitionOptions,
     oldTransition,
@@ -12772,115 +14585,157 @@ function instance$c($$self, $$props, $$invalidate) {
     $focusTrap,
     $$scope,
     slots,
+    section_binding,
     div_binding,
+    section_binding_1,
     div_binding_1
   ];
 }
-class EmptyApplicationShell extends SvelteComponent {
+class ApplicationShell extends SvelteComponent {
   constructor(options) {
     super();
     init(
       this,
       options,
-      instance$c,
-      create_fragment$c,
+      instance$E,
+      create_fragment$E,
       safe_not_equal,
       {
-        elementContent: 17,
-        elementRoot: 0,
-        stylesApp: 5,
-        appOffsetHeight: 18,
-        appOffsetWidth: 19,
-        transition: 20,
-        inTransition: 1,
-        outTransition: 2,
-        transitionOptions: 21,
-        inTransitionOptions: 3,
-        outTransitionOptions: 4
+        elementContent: 0,
+        elementRoot: 1,
+        draggable: 6,
+        draggableOptions: 7,
+        stylesApp: 8,
+        stylesContent: 9,
+        appOffsetHeight: 24,
+        appOffsetWidth: 25,
+        contentOffsetHeight: 26,
+        contentOffsetWidth: 27,
+        transition: 28,
+        inTransition: 2,
+        outTransition: 3,
+        transitionOptions: 29,
+        inTransitionOptions: 4,
+        outTransitionOptions: 5
       },
       null,
       [-1, -1]
     );
   }
   get elementContent() {
-    return this.$$.ctx[17];
+    return this.$$.ctx[0];
   }
   set elementContent(elementContent) {
     this.$$set({ elementContent });
     flush();
   }
   get elementRoot() {
-    return this.$$.ctx[0];
+    return this.$$.ctx[1];
   }
   set elementRoot(elementRoot) {
     this.$$set({ elementRoot });
     flush();
   }
+  get draggable() {
+    return this.$$.ctx[6];
+  }
+  set draggable(draggable2) {
+    this.$$set({ draggable: draggable2 });
+    flush();
+  }
+  get draggableOptions() {
+    return this.$$.ctx[7];
+  }
+  set draggableOptions(draggableOptions) {
+    this.$$set({ draggableOptions });
+    flush();
+  }
   get stylesApp() {
-    return this.$$.ctx[5];
+    return this.$$.ctx[8];
   }
   set stylesApp(stylesApp) {
     this.$$set({ stylesApp });
     flush();
   }
+  get stylesContent() {
+    return this.$$.ctx[9];
+  }
+  set stylesContent(stylesContent) {
+    this.$$set({ stylesContent });
+    flush();
+  }
   get appOffsetHeight() {
-    return this.$$.ctx[18];
+    return this.$$.ctx[24];
   }
   set appOffsetHeight(appOffsetHeight) {
     this.$$set({ appOffsetHeight });
     flush();
   }
   get appOffsetWidth() {
-    return this.$$.ctx[19];
+    return this.$$.ctx[25];
   }
   set appOffsetWidth(appOffsetWidth) {
     this.$$set({ appOffsetWidth });
     flush();
   }
+  get contentOffsetHeight() {
+    return this.$$.ctx[26];
+  }
+  set contentOffsetHeight(contentOffsetHeight) {
+    this.$$set({ contentOffsetHeight });
+    flush();
+  }
+  get contentOffsetWidth() {
+    return this.$$.ctx[27];
+  }
+  set contentOffsetWidth(contentOffsetWidth) {
+    this.$$set({ contentOffsetWidth });
+    flush();
+  }
   get transition() {
-    return this.$$.ctx[20];
+    return this.$$.ctx[28];
   }
   set transition(transition) {
     this.$$set({ transition });
     flush();
   }
   get inTransition() {
-    return this.$$.ctx[1];
+    return this.$$.ctx[2];
   }
   set inTransition(inTransition) {
     this.$$set({ inTransition });
     flush();
   }
   get outTransition() {
-    return this.$$.ctx[2];
+    return this.$$.ctx[3];
   }
   set outTransition(outTransition) {
     this.$$set({ outTransition });
     flush();
   }
   get transitionOptions() {
-    return this.$$.ctx[21];
+    return this.$$.ctx[29];
   }
   set transitionOptions(transitionOptions) {
     this.$$set({ transitionOptions });
     flush();
   }
   get inTransitionOptions() {
-    return this.$$.ctx[3];
+    return this.$$.ctx[4];
   }
   set inTransitionOptions(inTransitionOptions) {
     this.$$set({ inTransitionOptions });
     flush();
   }
   get outTransitionOptions() {
-    return this.$$.ctx[4];
+    return this.$$.ctx[5];
   }
   set outTransitionOptions(outTransitionOptions) {
     this.$$set({ outTransitionOptions });
     flush();
   }
 }
-const EmptyApplicationShell$1 = EmptyApplicationShell;
+const ApplicationShell$1 = ApplicationShell;
 cssVariables.setProperties({
   // Anchor text shadow / header buttons
   "--tjs-default-text-shadow-focus-hover": "0 0 8px var(--color-shadow-primary)",
@@ -12890,7 +14745,6 @@ cssVariables.setProperties({
 class CanvasInteraction {
   static panToCombatantToken(combatantId, duration = 1e3) {
     const { result, token, reason } = ModuleUtils.tryGetToken(game.combat, combatantId);
-    console.log(reason);
     if (!result) {
       NotificationUtils.notify(reason);
       return;
@@ -12911,213 +14765,85 @@ class CanvasInteraction {
     }
   }
 }
-class StoreUpdater {
-  static async updateCombatants(combat) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this._updateSelectableCombatants(combat);
-        this._updatePreviousCombatants(combat);
-        resolve();
-      }, 100);
-    });
+function getToolboxActions(combatantId) {
+  const actions = [];
+  let id = 0;
+  id = addAction(actions, buildTokenPickingAction(), id);
+  if (combatantId !== "-1") {
+    id = addAction(actions, buildPanToCombatantAction(), id);
   }
-  static updateSettings() {
-    const newSettings = [];
-    newSettings.push({
-      name: locSettings(`${Constants.Options.OverrideNextTurnButton}-title`),
-      description: locSettings(`${Constants.Options.OverrideNextTurnButton}-description`),
-      value: overrideEndTurnButton
-    });
-    newSettings.push({
-      name: locSettings(`${Constants.Options.CanLastActorSelectThemselves}-title`),
-      description: locSettings(`${Constants.Options.CanLastActorSelectThemselves}-description`),
-      value: canLastActorSelectThemselves
-    });
-    newSettings.push({
-      name: locSettings(`${Constants.Options.CanSelectWhenRoundIsOver}-title`),
-      description: locSettings(`${Constants.Options.CanSelectWhenRoundIsOver}-description`),
-      value: canSelectWhenRoundIsOver
-    });
-    newSettings.push({
-      name: locSettings(`${Constants.Options.SelectionWindowSize}-title`),
-      description: locSettings(`${Constants.Options.SelectionWindowSize}-description`),
-      value: selectionWindowSize,
-      options: [
-        { value: Constants.WindowSize.Normal.id, label: locSettings(Constants.WindowSize.Normal.text) },
-        { value: Constants.WindowSize.Mini.id, label: locSettings(Constants.WindowSize.Mini.text) }
-      ]
-    });
-    newSettings.push({
-      name: locSettings(`${Constants.Options.SelectionWindowPosition}-title`),
-      description: locSettings(`${Constants.Options.SelectionWindowPosition}-description`),
-      value: selectionWindowPosition,
-      options: [
-        { value: "topLeft", label: locSettings(`${Constants.Options.SelectionWindowPosition}-topLeft`) },
-        { value: "topRight", label: locSettings(`${Constants.Options.SelectionWindowPosition}-topRight`) },
-        { value: "bottomLeft", label: locSettings(`${Constants.Options.SelectionWindowPosition}-bottomLeft`) },
-        {
-          value: "bottomRight",
-          label: locSettings(`${Constants.Options.SelectionWindowPosition}-bottomRight`)
-        },
-        { value: "center", label: locSettings(`${Constants.Options.SelectionWindowPosition}-center`) }
-      ]
-    });
-    newSettings.push({ separator: true });
-    if (!ModuleAPI.instance.areCommonMacrosInstalled()) {
-      newSettings.push({
-        name: locSettings(`${Constants.Options.InstallCommonMacros}-title`),
-        description: locSettings(`${Constants.Options.InstallCommonMacros}-description`),
-        command: () => {
-          ModuleAPI.instance.installCommonMacros();
-        }
-      });
-    }
-    settings.set(newSettings);
+  id = addAction(actions, toggleStatAction(), id);
+  if (game.user.isGM) {
+    addAction(actions, buildConfigAction(), id);
   }
-  static highlightCombatantItem(token, isHover) {
-    const tokenId = token.document.id;
-    selectableCombatants.update((list) => {
-      list.forEach((x) => {
-        x.isHighlighted = x.tokenId === tokenId ? isHover : false;
-      });
-      return list;
-    });
-    previousCombatants.update((list) => {
-      list.forEach((x) => {
-        x.isHighlighted = x.tokenId === tokenId ? isHover : false;
-      });
-      return list;
-    });
-  }
-  static getToolboxActions(combatantId) {
-    const actions = [];
-    actions.push({
-      id: 1,
-      icon: "fa-solid fa-eye-dropper",
-      command: () => {
-        isTokenPickerRunning.set(true);
-      },
-      tooltip: "tools.select-from-token.tooltip"
-    });
-    if (combatantId !== "-1") {
-      actions.push({
-        id: 2,
-        icon: "fa-solid fa-bullseye",
-        command: () => {
-          CanvasInteraction.panToCombatantToken(combatantId);
-        },
-        tooltip: "tools.zoom-combatant.tooltip"
-      });
-    }
-    if (game.user.isGM) {
-      actions.push({
-        id: 3,
-        icon: "fa-solid fa-gear",
-        command: () => {
-          ModuleAPI.instance.showConfig();
-        },
-        tooltip: "tools.configuration.tooltip"
-      });
-    }
-    return actions;
-  }
-  static onGlobalClick() {
-    if (get_store_value(isTokenPickerRunning)) {
-      const currentToken = get_store_value(currentTokenPickerTarget);
-      if (currentToken) {
-        const currentCombat = game.combat;
-        const tokenId = currentToken.id;
-        const turn = currentCombat.turn + 1 === currentCombat.turns.length ? 0 : currentCombat.turn;
-        for (let i = turn; i < currentCombat.turns.length; i++) {
-          const combatant = currentCombat.turns[i];
-          if (combatant.tokenId === tokenId) {
-            selectedCombatantId.set(combatant.id);
-            isTokenPickerRunning.set(false);
-            break;
-          }
-        }
-      }
-    }
-  }
-  static _updateSelectableCombatants(combat) {
-    const list = [];
-    let turn = combat.turn;
-    if (turn != null) {
-      let lastIndex = combat.turns.length;
-      if (turn + 1 === combat.turns.length) {
-        turn = -1;
-        if (!get_store_value(canLastActorSelectThemselves)) {
-          lastIndex -= 1;
-        }
-      }
-      for (let i = turn + 1; i < lastIndex; i++) {
-        const combatant = combat.turns[i];
-        const isSelected = get_store_value(selectedCombatantId) === combatant.id;
-        list.push({
-          icon: combatant.img,
-          name: combatant.name,
-          id: combatant.id,
-          isSelected,
-          tokenId: combatant.tokenId,
-          actorId: combatant.actorId,
-          isHighlighted: false,
-          owners: ModuleUtils.retrieveOwnersInfo(combatant.actorId)
-        });
-      }
-      list.sort((a, b) => {
-        const actorAIsCharacter = game.actors.get(a.actorId).type === "character" ? 0 : 1;
-        const actorBIsCharacter = game.actors.get(b.actorId).type === "character" ? 0 : 1;
-        const sortedByType = actorAIsCharacter - actorBIsCharacter;
-        return sortedByType || (a.name > b.name ? 1 : a.name < b.name ? -1 : 0);
-      });
-    }
-    selectableCombatants.set(list);
-  }
-  static _updatePreviousCombatants(combat) {
-    const list = [];
-    const turn = combat.turn;
-    if (turn != null) {
-      let startIndex = 0;
-      const endIndex = combat.turns.length;
-      if (turn + 1 === combat.turns.length) {
-        if (get_store_value(canLastActorSelectThemselves)) {
-          startIndex = endIndex;
-        } else {
-          startIndex = turn;
-        }
-      }
-      for (let i = startIndex; i <= turn && i < endIndex; i++) {
-        const combatant = combat.turns[i];
-        list.push({
-          icon: combatant.img,
-          name: combatant.name,
-          id: combatant.id,
-          tokenId: combatant.tokenId
-        });
-      }
-    }
-    previousCombatants.set(list.reverse());
-  }
+  return actions;
 }
+function addAction(actions, action, id) {
+  action.id = id;
+  actions.push(action);
+  id += 1;
+  return id;
+}
+const buildTokenPickingAction = () => {
+  return {
+    icon: "fa-solid fa-eye-dropper",
+    onClick: () => {
+      isTokenPickerRunning.set(true);
+    },
+    description: locWindow("tools.select-from-token.tooltip")
+  };
+};
+const buildPanToCombatantAction = () => {
+  return {
+    icon: "fa-solid fa-bullseye",
+    onClick: () => {
+      CanvasInteraction.panToCombatantToken(get_store_value(selectedCombatantId));
+    },
+    description: locWindow("tools.zoom-combatant.tooltip")
+  };
+};
+const toggleStatAction = () => {
+  return {
+    icon: "fa-solid fa-list-ol",
+    onClick: () => {
+      showActorStats.update((val) => {
+        return !val;
+      });
+    },
+    description: locWindow("tools.toggleStats.tooltip")
+  };
+};
+const buildConfigAction = () => {
+  return {
+    icon: "fa-solid fa-gear",
+    onClick: () => {
+      ModuleAPI.instance.showConfig();
+    },
+    description: locWindow("tools.configuration.tooltip")
+  };
+};
 const selectableCombatants = writable([]);
 const previousCombatants = writable([]);
 const isSelectionWindowHovered = writable(false);
 const isTokenPickerRunning = writable(false);
-const previousActorsDrawerOpen = writable(true);
-const selectionWindowSize = writable("mini");
-const selectionWindowPosition = writable("center");
+const showActorStats = writable(false);
+const statLabels = writable([]);
+const currentIconImageType = writable("token");
+const selectionWindowAnchor = writable("center");
+const selectionWindowState = writable({});
 const selectedCombatantId = _createSelectedCombatantId();
 const canSelectWhenRoundIsOver = writable(true);
 const canLastActorSelectThemselves = writable(false);
 const overrideEndTurnButton = writable(true);
 const settings = writable([]);
+const currentActorPreview = writable(null);
 const isAnyCombatantSelected = derived(selectableCombatants, ($selectableCombatants) => {
   return $selectableCombatants.some((x) => {
     return x.isSelected;
   });
 });
-const toolboxActions = derived(selectedCombatantId, ($selectedCombatantId) => {
-  return StoreUpdater.getToolboxActions($selectedCombatantId);
+const toolboxActions = derived([selectedCombatantId], ([$selectedCombatantId]) => {
+  return getToolboxActions($selectedCombatantId);
 });
 const currentTokenPickerTarget = derived(
   [selectableCombatants, isTokenPickerRunning],
@@ -13140,6 +14866,8 @@ const currentTokenPickerTarget = derived(
     return tokenResult;
   }
 );
+const layoutCorners = writable([]);
+const combatantImageTypes = writable([]);
 function _createSelectedCombatantId() {
   const { subscribe: subscribe2, set } = writable("-1");
   return {
@@ -13163,12 +14891,16 @@ const Constants = {
     CanLastActorSelectThemselves: "select-themselves-when-round-is-over",
     PreviousActorsDrawerOpen: "previous-actor-drawer-open",
     InstallCommonMacros: "install-common-macros",
-    SelectionWindowSize: "selection-window-size",
-    SelectionWindowPosition: "selection-window-position"
+    ResetToDefault: "reset-to-default",
+    SelectionWindowAnchor: "selection-window-anchor",
+    CombatantImageType: "selection-window-icon-type",
+    Stats: "selection-window-stats",
+    SelectionWindowState: "selection-window-state",
+    Theme: "selection-window-theme"
   },
-  WindowSize: {
-    Normal: { id: "normal", text: "selection-window-size-normal", size: { w: 615, h: 340 } },
-    Mini: { id: "mini", text: "selection-window-size-mini", size: { w: 615, h: 240 } }
+  CombatantImageType: {
+    token: { id: "token", text: "selection-window-icon-type-token" },
+    actor: { id: "actor", text: "selection-window-icon-type-actor" }
   }
 };
 const ReasonType = {
@@ -13224,6 +14956,9 @@ class NotificationUtils {
   }
   static warning(message) {
     ui.notifications.warn(this._moduleMessage(message));
+  }
+  static message(message) {
+    ui.notifications.notify(this._moduleMessage(message));
   }
   static errorPromise(message) {
     return new Promise(() => {
@@ -13283,12 +15018,12 @@ class ModuleUtils {
     let reason = ReasonType.None;
     if (!combat || !combat.current) {
       reason = ReasonType.EndTurnNoCombat;
-    } else if (combat.current.combatantId == null) {
+    } else if (combat.current.combatantId === null) {
       reason = ReasonType.EndTurnNoCombatantPlaying;
     } else {
       const actorId = combat.turns.length > combat.turn ? combat.turns[combat.turn].actorId : "0";
       const actor = game.actors.get(actorId);
-      if (actor == null) {
+      if (actor === null) {
         reason = ReasonType.EndTurnActorIsNotValid;
       } else if (!actor.isOwner) {
         reason = ReasonType.EndTurnNotYourTurn;
@@ -13325,51 +15060,73 @@ class ModuleUtils {
   static isMacroInstalled(name) {
     return game.macros.contents.find((m) => m.name === `${Constants.ModuleTextNameAcronym} - ${name}`);
   }
-  static getSizeForSelectionWindow() {
-    const windowSize = get_store_value(selectionWindowSize);
-    let windowSizeInfo = Constants.WindowSize.Normal.size;
-    switch (windowSize) {
-      case Constants.WindowSize.Mini.id:
-        windowSizeInfo = Constants.WindowSize.Mini.size;
+  static getPropertyByPath(obj, path) {
+    const segments = path.split(".");
+    for (let i = 0; i < segments.length; i++) {
+      obj = obj[segments[i]];
+      if (!obj) {
+        return;
+      }
     }
-    return {
-      w: windowSizeInfo.w - (get_store_value(previousActorsDrawerOpen) ? 0 : 100),
-      h: windowSizeInfo.h
-    };
+    return obj;
+  }
+  static resolvePropertyText(actor, inputText) {
+    const propertyPathRegex = /\{([^}]+)}/g;
+    let text2 = inputText.replace(propertyPathRegex, (match, capturedText) => {
+      return ModuleUtils.getPropertyByPath(actor, capturedText);
+    });
+    const iconPathRegex = /\[\[(.*?)]]/g;
+    text2 = text2.replace(iconPathRegex, (match, capturedText) => {
+      return `<i class="fa fa-${capturedText}"></i>`;
+    });
+    return text2;
   }
   static getPositionForSelectionWindow() {
-    const { w, h } = this.getSizeForSelectionWindow();
-    const windowSize = get_store_value(selectionWindowPosition);
-    let x = 0;
-    let y = 0;
-    switch (windowSize) {
+    const { width, height } = get_store_value(selectionWindowState);
+    const windowAnchorPosition = get_store_value(selectionWindowAnchor);
+    let x = window.innerWidth / 2 - width / 2;
+    let y = window.innerHeight / 2 - height / 2;
+    switch (windowAnchorPosition) {
       case "topLeft":
         x = 0;
         y = 0;
         break;
       case "topRight":
-        x = window.innerWidth - w;
+        x = window.innerWidth - width;
         y = 0;
         break;
       case "bottomLeft":
         x = 0;
-        y = window.innerHeight - h;
+        y = window.innerHeight - height;
         break;
       case "bottomRight":
-        x = window.innerWidth - w;
-        y = window.innerHeight - h;
-        break;
-      case "center":
-        x = window.innerWidth / 2 - w / 2;
-        y = window.innerHeight / 2 - h / 2;
+        x = window.innerWidth - width;
+        y = window.innerHeight - height;
         break;
     }
     return { x, y };
   }
-  static getSizeAndPositionForSelectionWindow() {
-    const { w, h } = this.getSizeForSelectionWindow();
-    const { x, y } = this.getPositionForSelectionWindow();
-    return { w, h, x, y };
+  static getCombatantIcon(combatant, type) {
+    const actor = game.actors.get(combatant.actorId);
+    if (actor) {
+      if (type === Constants.CombatantImageType.actor.id) {
+        return actor.img;
+      } else if (type === Constants.CombatantImageType.token.id) {
+        return combatant.img;
+      }
+    }
+    return combatant.img;
+  }
+  static getActorIcon(actorId, type) {
+    const actor = game.actors.get(actorId);
+    if (actor) {
+      if (type === Constants.CombatantImageType.actor.id) {
+        return actor.img;
+      } else if (type === Constants.CombatantImageType.token.id) {
+        return actor.prototypeToken.texture.src;
+      }
+    }
+    return "";
   }
 }
 function locWindow(localizationKey) {
@@ -13384,567 +15141,1121 @@ function locSettings(localizationKey) {
 function localize(localizationKey) {
   return game.i18n.localize(`JPI.${localizationKey}`);
 }
-var top = "top";
-var bottom = "bottom";
-var right = "right";
-var left = "left";
-var auto = "auto";
-var basePlacements = [top, bottom, right, left];
-var start = "start";
-var end = "end";
-var clippingParents = "clippingParents";
-var viewport = "viewport";
-var popper = "popper";
-var reference = "reference";
-var variationPlacements = /* @__PURE__ */ basePlacements.reduce(function(acc, placement) {
-  return acc.concat([placement + "-" + start, placement + "-" + end]);
-}, []);
-var placements = /* @__PURE__ */ [].concat(basePlacements, [auto]).reduce(function(acc, placement) {
-  return acc.concat([placement, placement + "-" + start, placement + "-" + end]);
-}, []);
-var beforeRead = "beforeRead";
-var read = "read";
-var afterRead = "afterRead";
-var beforeMain = "beforeMain";
-var main = "main";
-var afterMain = "afterMain";
-var beforeWrite = "beforeWrite";
-var write = "write";
-var afterWrite = "afterWrite";
-var modifierPhases = [beforeRead, read, afterRead, beforeMain, main, afterMain, beforeWrite, write, afterWrite];
-function getNodeName(element2) {
-  return element2 ? (element2.nodeName || "").toLowerCase() : null;
+const themes = writable([
+  { id: 0, label: "dark-juice", value: "dark-juice" },
+  { id: 1, label: "dust", value: "dust" },
+  { id: 2, label: "crimson", value: "crimson" }
+]);
+const currentTheme = writable(get_store_value(themes)[0].value);
+class StoreUpdater {
+  static async updateCombatants(combat) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this._updateSelectableCombatants(combat);
+        this._updatePreviousCombatants(combat);
+        resolve();
+      }, 100);
+    });
+  }
+  static updateSettings() {
+    const newSettings = [];
+    newSettings.push({
+      label: locSettings(`${Constants.Options.OverrideNextTurnButton}-title`),
+      description: locSettings(`${Constants.Options.OverrideNextTurnButton}-description`),
+      store: overrideEndTurnButton
+    });
+    newSettings.push({
+      label: locSettings(`${Constants.Options.CanLastActorSelectThemselves}-title`),
+      description: locSettings(`${Constants.Options.CanLastActorSelectThemselves}-description`),
+      store: canLastActorSelectThemselves
+    });
+    newSettings.push({
+      label: locSettings(`${Constants.Options.CanSelectWhenRoundIsOver}-title`),
+      description: locSettings(`${Constants.Options.CanSelectWhenRoundIsOver}-description`),
+      store: canSelectWhenRoundIsOver
+    });
+    newSettings.push({
+      label: locSettings(`${Constants.Options.CombatantImageType}-title`),
+      description: locSettings(`${Constants.Options.CombatantImageType}-description`),
+      store: currentIconImageType,
+      type: "Enum",
+      values: combatantImageTypes
+    });
+    newSettings.push({
+      label: locSettings(`${Constants.Options.SelectionWindowAnchor}-title`),
+      description: locSettings(`${Constants.Options.SelectionWindowAnchor}-description`),
+      store: selectionWindowAnchor,
+      type: "Enum",
+      values: layoutCorners
+    });
+    const allDefaultThemesValue = get_store_value(themes);
+    const newList = [...allDefaultThemesValue, {
+      id: allDefaultThemesValue.length,
+      label: "old-orange",
+      value: "old-orange"
+    }];
+    const allThemesV2 = writable(newList);
+    newSettings.push({
+      label: locSettings(`${Constants.Options.Theme}-title`),
+      description: locSettings(`${Constants.Options.Theme}-description`),
+      store: currentTheme,
+      type: "Enum",
+      values: allThemesV2
+    });
+    settings.set(newSettings);
+  }
+  static highlightCombatantItem(token, isHover) {
+    const tokenId = token.document.id;
+    selectableCombatants.update((list) => {
+      list.forEach((x) => {
+        x.isHighlighted = x.tokenId === tokenId ? isHover : false;
+      });
+      return list;
+    });
+    previousCombatants.update((list) => {
+      list.forEach((x) => {
+        x.isHighlighted = x.tokenId === tokenId ? isHover : false;
+      });
+      return list;
+    });
+  }
+  static onGlobalClick() {
+    if (get_store_value(isTokenPickerRunning)) {
+      const currentToken = get_store_value(currentTokenPickerTarget);
+      if (currentToken) {
+        const currentCombat = game.combat;
+        const tokenId = currentToken.id;
+        const turn = currentCombat.turn + 1 === currentCombat.turns.length ? 0 : currentCombat.turn;
+        for (let i = turn; i < currentCombat.turns.length; i++) {
+          const combatant = currentCombat.turns[i];
+          if (combatant.tokenId === tokenId) {
+            selectedCombatantId.set(combatant.id);
+            isTokenPickerRunning.set(false);
+            break;
+          }
+        }
+      }
+    }
+  }
+  static _updateSelectableCombatants(combat) {
+    const list = [];
+    let turn = combat.turn;
+    if (turn != null) {
+      let lastIndex = combat.turns.length;
+      if (turn + 1 === combat.turns.length) {
+        turn = -1;
+        if (!get_store_value(canLastActorSelectThemselves)) {
+          lastIndex -= 1;
+        }
+      }
+      for (let i = turn + 1; i < lastIndex; i++) {
+        const combatant = combat.turns[i];
+        const actorStats = [];
+        const actor = game.actors.get(combatant.actorId);
+        if (actor) {
+          const labels = get_store_value(statLabels);
+          labels.forEach((x) => {
+            const resolvedText = ModuleUtils.resolvePropertyText(actor, x.label);
+            actorStats.push({ label: resolvedText, id: actorStats.length, showToPlayer: x.showToPlayer });
+          });
+        }
+        const isSelected = get_store_value(selectedCombatantId) === combatant.id;
+        list.push({
+          icon: ModuleUtils.getCombatantIcon(combatant, get_store_value(currentIconImageType)),
+          name: combatant.name,
+          id: combatant.id,
+          isSelected,
+          tokenId: combatant.tokenId,
+          actorId: combatant.actorId,
+          isHighlighted: false,
+          owners: ModuleUtils.retrieveOwnersInfo(combatant.actorId),
+          stats: actorStats
+        });
+      }
+      list.sort((a, b) => {
+        const actorAIsCharacter = game.actors.get(a.actorId).type === "character" ? 0 : 1;
+        const actorBIsCharacter = game.actors.get(b.actorId).type === "character" ? 0 : 1;
+        const sortedByType = actorAIsCharacter - actorBIsCharacter;
+        return sortedByType || (a.name > b.name ? 1 : a.name < b.name ? -1 : 0);
+      });
+    }
+    selectableCombatants.set(list);
+  }
+  static _updatePreviousCombatants(combat) {
+    const list = [];
+    const turn = combat.turn;
+    if (turn != null) {
+      let startIndex = 0;
+      const endIndex = combat.turns.length;
+      if (turn + 1 === combat.turns.length) {
+        if (get_store_value(canLastActorSelectThemselves)) {
+          startIndex = endIndex;
+        } else {
+          startIndex = turn;
+        }
+      }
+      for (let i = startIndex; i <= turn && i < endIndex; i++) {
+        const combatant = combat.turns[i];
+        const actorStats = [];
+        const actor = game.actors.get(combatant.actorId);
+        if (actor) {
+          const labels = get_store_value(statLabels);
+          labels.forEach((x) => {
+            const resolvedText = ModuleUtils.resolvePropertyText(actor, x.label);
+            actorStats.push({ label: resolvedText, id: actorStats.length, showToPlayer: x.showToPlayer });
+          });
+        }
+        list.push({
+          icon: ModuleUtils.getCombatantIcon(combatant, get_store_value(currentIconImageType)),
+          name: combatant.name,
+          id: combatant.id,
+          tokenId: combatant.tokenId,
+          stats: actorStats
+        });
+      }
+    }
+    previousCombatants.set(list.reverse());
+  }
+}
+const sides = ["top", "right", "bottom", "left"];
+const alignments = ["start", "end"];
+const placements = /* @__PURE__ */ sides.reduce((acc, side) => acc.concat(side, side + "-" + alignments[0], side + "-" + alignments[1]), []);
+const min = Math.min;
+const max = Math.max;
+const round = Math.round;
+const floor = Math.floor;
+const createCoords = (v) => ({
+  x: v,
+  y: v
+});
+const oppositeSideMap = {
+  left: "right",
+  right: "left",
+  bottom: "top",
+  top: "bottom"
+};
+const oppositeAlignmentMap = {
+  start: "end",
+  end: "start"
+};
+function clamp(start, value, end) {
+  return max(start, min(value, end));
+}
+function evaluate(value, param) {
+  return typeof value === "function" ? value(param) : value;
+}
+function getSide(placement) {
+  return placement.split("-")[0];
+}
+function getAlignment(placement) {
+  return placement.split("-")[1];
+}
+function getOppositeAxis(axis) {
+  return axis === "x" ? "y" : "x";
+}
+function getAxisLength(axis) {
+  return axis === "y" ? "height" : "width";
+}
+function getSideAxis(placement) {
+  return ["top", "bottom"].includes(getSide(placement)) ? "y" : "x";
+}
+function getAlignmentAxis(placement) {
+  return getOppositeAxis(getSideAxis(placement));
+}
+function getAlignmentSides(placement, rects, rtl) {
+  if (rtl === void 0) {
+    rtl = false;
+  }
+  const alignment = getAlignment(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const length = getAxisLength(alignmentAxis);
+  let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
+  if (rects.reference[length] > rects.floating[length]) {
+    mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+  }
+  return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+}
+function getExpandedPlacements(placement) {
+  const oppositePlacement = getOppositePlacement(placement);
+  return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
+}
+function getOppositeAlignmentPlacement(placement) {
+  return placement.replace(/start|end/g, (alignment) => oppositeAlignmentMap[alignment]);
+}
+function getSideList(side, isStart, rtl) {
+  const lr = ["left", "right"];
+  const rl = ["right", "left"];
+  const tb = ["top", "bottom"];
+  const bt = ["bottom", "top"];
+  switch (side) {
+    case "top":
+    case "bottom":
+      if (rtl)
+        return isStart ? rl : lr;
+      return isStart ? lr : rl;
+    case "left":
+    case "right":
+      return isStart ? tb : bt;
+    default:
+      return [];
+  }
+}
+function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+  const alignment = getAlignment(placement);
+  let list = getSideList(getSide(placement), direction === "start", rtl);
+  if (alignment) {
+    list = list.map((side) => side + "-" + alignment);
+    if (flipAlignment) {
+      list = list.concat(list.map(getOppositeAlignmentPlacement));
+    }
+  }
+  return list;
+}
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, (side) => oppositeSideMap[side]);
+}
+function expandPaddingObject(padding) {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    ...padding
+  };
+}
+function getPaddingObject(padding) {
+  return typeof padding !== "number" ? expandPaddingObject(padding) : {
+    top: padding,
+    right: padding,
+    bottom: padding,
+    left: padding
+  };
+}
+function rectToClientRect(rect) {
+  return {
+    ...rect,
+    top: rect.y,
+    left: rect.x,
+    right: rect.x + rect.width,
+    bottom: rect.y + rect.height
+  };
+}
+function computeCoordsFromPlacement(_ref, placement, rtl) {
+  let {
+    reference,
+    floating
+  } = _ref;
+  const sideAxis = getSideAxis(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const alignLength = getAxisLength(alignmentAxis);
+  const side = getSide(placement);
+  const isVertical = sideAxis === "y";
+  const commonX = reference.x + reference.width / 2 - floating.width / 2;
+  const commonY = reference.y + reference.height / 2 - floating.height / 2;
+  const commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
+  let coords;
+  switch (side) {
+    case "top":
+      coords = {
+        x: commonX,
+        y: reference.y - floating.height
+      };
+      break;
+    case "bottom":
+      coords = {
+        x: commonX,
+        y: reference.y + reference.height
+      };
+      break;
+    case "right":
+      coords = {
+        x: reference.x + reference.width,
+        y: commonY
+      };
+      break;
+    case "left":
+      coords = {
+        x: reference.x - floating.width,
+        y: commonY
+      };
+      break;
+    default:
+      coords = {
+        x: reference.x,
+        y: reference.y
+      };
+  }
+  switch (getAlignment(placement)) {
+    case "start":
+      coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+    case "end":
+      coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+  }
+  return coords;
+}
+const computePosition$1 = async (reference, floating, config) => {
+  const {
+    placement = "bottom",
+    strategy = "absolute",
+    middleware = [],
+    platform: platform2
+  } = config;
+  const validMiddleware = middleware.filter(Boolean);
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(floating));
+  let rects = await platform2.getElementRects({
+    reference,
+    floating,
+    strategy
+  });
+  let {
+    x,
+    y
+  } = computeCoordsFromPlacement(rects, placement, rtl);
+  let statefulPlacement = placement;
+  let middlewareData = {};
+  let resetCount = 0;
+  for (let i = 0; i < validMiddleware.length; i++) {
+    const {
+      name,
+      fn
+    } = validMiddleware[i];
+    const {
+      x: nextX,
+      y: nextY,
+      data,
+      reset
+    } = await fn({
+      x,
+      y,
+      initialPlacement: placement,
+      placement: statefulPlacement,
+      strategy,
+      middlewareData,
+      rects,
+      platform: platform2,
+      elements: {
+        reference,
+        floating
+      }
+    });
+    x = nextX != null ? nextX : x;
+    y = nextY != null ? nextY : y;
+    middlewareData = {
+      ...middlewareData,
+      [name]: {
+        ...middlewareData[name],
+        ...data
+      }
+    };
+    if (reset && resetCount <= 50) {
+      resetCount++;
+      if (typeof reset === "object") {
+        if (reset.placement) {
+          statefulPlacement = reset.placement;
+        }
+        if (reset.rects) {
+          rects = reset.rects === true ? await platform2.getElementRects({
+            reference,
+            floating,
+            strategy
+          }) : reset.rects;
+        }
+        ({
+          x,
+          y
+        } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+      }
+      i = -1;
+      continue;
+    }
+  }
+  return {
+    x,
+    y,
+    placement: statefulPlacement,
+    strategy,
+    middlewareData
+  };
+};
+async function detectOverflow(state, options) {
+  var _await$platform$isEle;
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    x,
+    y,
+    platform: platform2,
+    rects,
+    elements,
+    strategy
+  } = state;
+  const {
+    boundary = "clippingAncestors",
+    rootBoundary = "viewport",
+    elementContext = "floating",
+    altBoundary = false,
+    padding = 0
+  } = evaluate(options, state);
+  const paddingObject = getPaddingObject(padding);
+  const altContext = elementContext === "floating" ? "reference" : "floating";
+  const element2 = elements[altBoundary ? altContext : elementContext];
+  const clippingClientRect = rectToClientRect(await platform2.getClippingRect({
+    element: ((_await$platform$isEle = await (platform2.isElement == null ? void 0 : platform2.isElement(element2))) != null ? _await$platform$isEle : true) ? element2 : element2.contextElement || await (platform2.getDocumentElement == null ? void 0 : platform2.getDocumentElement(elements.floating)),
+    boundary,
+    rootBoundary,
+    strategy
+  }));
+  const rect = elementContext === "floating" ? {
+    ...rects.floating,
+    x,
+    y
+  } : rects.reference;
+  const offsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(elements.floating));
+  const offsetScale = await (platform2.isElement == null ? void 0 : platform2.isElement(offsetParent)) ? await (platform2.getScale == null ? void 0 : platform2.getScale(offsetParent)) || {
+    x: 1,
+    y: 1
+  } : {
+    x: 1,
+    y: 1
+  };
+  const elementClientRect = rectToClientRect(platform2.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
+    rect,
+    offsetParent,
+    strategy
+  }) : rect);
+  return {
+    top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+    bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+    left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+    right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+  };
+}
+function getPlacementList(alignment, autoAlignment, allowedPlacements) {
+  const allowedPlacementsSortedByAlignment = alignment ? [...allowedPlacements.filter((placement) => getAlignment(placement) === alignment), ...allowedPlacements.filter((placement) => getAlignment(placement) !== alignment)] : allowedPlacements.filter((placement) => getSide(placement) === placement);
+  return allowedPlacementsSortedByAlignment.filter((placement) => {
+    if (alignment) {
+      return getAlignment(placement) === alignment || (autoAlignment ? getOppositeAlignmentPlacement(placement) !== placement : false);
+    }
+    return true;
+  });
+}
+const autoPlacement = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "autoPlacement",
+    options,
+    async fn(state) {
+      var _middlewareData$autoP, _middlewareData$autoP2, _placementsThatFitOnE;
+      const {
+        rects,
+        middlewareData,
+        placement,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        crossAxis = false,
+        alignment,
+        allowedPlacements = placements,
+        autoAlignment = true,
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const placements$1 = alignment !== void 0 || allowedPlacements === placements ? getPlacementList(alignment || null, autoAlignment, allowedPlacements) : allowedPlacements;
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const currentIndex = ((_middlewareData$autoP = middlewareData.autoPlacement) == null ? void 0 : _middlewareData$autoP.index) || 0;
+      const currentPlacement = placements$1[currentIndex];
+      if (currentPlacement == null) {
+        return {};
+      }
+      const alignmentSides = getAlignmentSides(currentPlacement, rects, await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating)));
+      if (placement !== currentPlacement) {
+        return {
+          reset: {
+            placement: placements$1[0]
+          }
+        };
+      }
+      const currentOverflows = [overflow[getSide(currentPlacement)], overflow[alignmentSides[0]], overflow[alignmentSides[1]]];
+      const allOverflows = [...((_middlewareData$autoP2 = middlewareData.autoPlacement) == null ? void 0 : _middlewareData$autoP2.overflows) || [], {
+        placement: currentPlacement,
+        overflows: currentOverflows
+      }];
+      const nextPlacement = placements$1[currentIndex + 1];
+      if (nextPlacement) {
+        return {
+          data: {
+            index: currentIndex + 1,
+            overflows: allOverflows
+          },
+          reset: {
+            placement: nextPlacement
+          }
+        };
+      }
+      const placementsSortedByMostSpace = allOverflows.map((d) => {
+        const alignment2 = getAlignment(d.placement);
+        return [d.placement, alignment2 && crossAxis ? (
+          // Check along the mainAxis and main crossAxis side.
+          d.overflows.slice(0, 2).reduce((acc, v) => acc + v, 0)
+        ) : (
+          // Check only the mainAxis.
+          d.overflows[0]
+        ), d.overflows];
+      }).sort((a, b) => a[1] - b[1]);
+      const placementsThatFitOnEachSide = placementsSortedByMostSpace.filter((d) => d[2].slice(
+        0,
+        // Aligned placements should not check their opposite crossAxis
+        // side.
+        getAlignment(d[0]) ? 2 : 3
+      ).every((v) => v <= 0));
+      const resetPlacement = ((_placementsThatFitOnE = placementsThatFitOnEachSide[0]) == null ? void 0 : _placementsThatFitOnE[0]) || placementsSortedByMostSpace[0][0];
+      if (resetPlacement !== placement) {
+        return {
+          data: {
+            index: currentIndex + 1,
+            overflows: allOverflows
+          },
+          reset: {
+            placement: resetPlacement
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+const flip$1 = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "flip",
+    options,
+    async fn(state) {
+      var _middlewareData$arrow, _middlewareData$flip;
+      const {
+        placement,
+        middlewareData,
+        rects,
+        initialPlacement,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = true,
+        fallbackPlacements: specifiedFallbackPlacements,
+        fallbackStrategy = "bestFit",
+        fallbackAxisSideDirection = "none",
+        flipAlignment = true,
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      const side = getSide(placement);
+      const isBasePlacement = getSide(initialPlacement) === initialPlacement;
+      const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+      const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
+      if (!specifiedFallbackPlacements && fallbackAxisSideDirection !== "none") {
+        fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+      }
+      const placements2 = [initialPlacement, ...fallbackPlacements];
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const overflows = [];
+      let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+      if (checkMainAxis) {
+        overflows.push(overflow[side]);
+      }
+      if (checkCrossAxis) {
+        const sides2 = getAlignmentSides(placement, rects, rtl);
+        overflows.push(overflow[sides2[0]], overflow[sides2[1]]);
+      }
+      overflowsData = [...overflowsData, {
+        placement,
+        overflows
+      }];
+      if (!overflows.every((side2) => side2 <= 0)) {
+        var _middlewareData$flip2, _overflowsData$filter;
+        const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+        const nextPlacement = placements2[nextIndex];
+        if (nextPlacement) {
+          return {
+            data: {
+              index: nextIndex,
+              overflows: overflowsData
+            },
+            reset: {
+              placement: nextPlacement
+            }
+          };
+        }
+        let resetPlacement = (_overflowsData$filter = overflowsData.filter((d) => d.overflows[0] <= 0).sort((a, b) => a.overflows[1] - b.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
+        if (!resetPlacement) {
+          switch (fallbackStrategy) {
+            case "bestFit": {
+              var _overflowsData$map$so;
+              const placement2 = (_overflowsData$map$so = overflowsData.map((d) => [d.placement, d.overflows.filter((overflow2) => overflow2 > 0).reduce((acc, overflow2) => acc + overflow2, 0)]).sort((a, b) => a[1] - b[1])[0]) == null ? void 0 : _overflowsData$map$so[0];
+              if (placement2) {
+                resetPlacement = placement2;
+              }
+              break;
+            }
+            case "initialPlacement":
+              resetPlacement = initialPlacement;
+              break;
+          }
+        }
+        if (placement !== resetPlacement) {
+          return {
+            reset: {
+              placement: resetPlacement
+            }
+          };
+        }
+      }
+      return {};
+    }
+  };
+};
+async function convertValueToCoords(state, options) {
+  const {
+    placement,
+    platform: platform2,
+    elements
+  } = state;
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+  const side = getSide(placement);
+  const alignment = getAlignment(placement);
+  const isVertical = getSideAxis(placement) === "y";
+  const mainAxisMulti = ["left", "top"].includes(side) ? -1 : 1;
+  const crossAxisMulti = rtl && isVertical ? -1 : 1;
+  const rawValue = evaluate(options, state);
+  let {
+    mainAxis,
+    crossAxis,
+    alignmentAxis
+  } = typeof rawValue === "number" ? {
+    mainAxis: rawValue,
+    crossAxis: 0,
+    alignmentAxis: null
+  } : {
+    mainAxis: 0,
+    crossAxis: 0,
+    alignmentAxis: null,
+    ...rawValue
+  };
+  if (alignment && typeof alignmentAxis === "number") {
+    crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
+  }
+  return isVertical ? {
+    x: crossAxis * crossAxisMulti,
+    y: mainAxis * mainAxisMulti
+  } : {
+    x: mainAxis * mainAxisMulti,
+    y: crossAxis * crossAxisMulti
+  };
+}
+const offset = function(options) {
+  if (options === void 0) {
+    options = 0;
+  }
+  return {
+    name: "offset",
+    options,
+    async fn(state) {
+      const {
+        x,
+        y
+      } = state;
+      const diffCoords = await convertValueToCoords(state, options);
+      return {
+        x: x + diffCoords.x,
+        y: y + diffCoords.y,
+        data: diffCoords
+      };
+    }
+  };
+};
+const shift = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "shift",
+    options,
+    async fn(state) {
+      const {
+        x,
+        y,
+        placement
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = false,
+        limiter = {
+          fn: (_ref) => {
+            let {
+              x: x2,
+              y: y2
+            } = _ref;
+            return {
+              x: x2,
+              y: y2
+            };
+          }
+        },
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const coords = {
+        x,
+        y
+      };
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const crossAxis = getSideAxis(getSide(placement));
+      const mainAxis = getOppositeAxis(crossAxis);
+      let mainAxisCoord = coords[mainAxis];
+      let crossAxisCoord = coords[crossAxis];
+      if (checkMainAxis) {
+        const minSide = mainAxis === "y" ? "top" : "left";
+        const maxSide = mainAxis === "y" ? "bottom" : "right";
+        const min2 = mainAxisCoord + overflow[minSide];
+        const max2 = mainAxisCoord - overflow[maxSide];
+        mainAxisCoord = clamp(min2, mainAxisCoord, max2);
+      }
+      if (checkCrossAxis) {
+        const minSide = crossAxis === "y" ? "top" : "left";
+        const maxSide = crossAxis === "y" ? "bottom" : "right";
+        const min2 = crossAxisCoord + overflow[minSide];
+        const max2 = crossAxisCoord - overflow[maxSide];
+        crossAxisCoord = clamp(min2, crossAxisCoord, max2);
+      }
+      const limitedCoords = limiter.fn({
+        ...state,
+        [mainAxis]: mainAxisCoord,
+        [crossAxis]: crossAxisCoord
+      });
+      return {
+        ...limitedCoords,
+        data: {
+          x: limitedCoords.x - x,
+          y: limitedCoords.y - y
+        }
+      };
+    }
+  };
+};
+function getNodeName(node) {
+  if (isNode(node)) {
+    return (node.nodeName || "").toLowerCase();
+  }
+  return "#document";
 }
 function getWindow(node) {
-  if (node == null) {
-    return window;
-  }
-  if (node.toString() !== "[object Window]") {
-    var ownerDocument = node.ownerDocument;
-    return ownerDocument ? ownerDocument.defaultView || window : window;
-  }
-  return node;
+  var _node$ownerDocument;
+  return (node == null ? void 0 : (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
 }
-function isElement$1(node) {
-  var OwnElement = getWindow(node).Element;
-  return node instanceof OwnElement || node instanceof Element;
+function getDocumentElement(node) {
+  var _ref;
+  return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
 }
-function isHTMLElement(node) {
-  var OwnElement = getWindow(node).HTMLElement;
-  return node instanceof OwnElement || node instanceof HTMLElement;
+function isNode(value) {
+  return value instanceof Node || value instanceof getWindow(value).Node;
 }
-function isShadowRoot(node) {
+function isElement(value) {
+  return value instanceof Element || value instanceof getWindow(value).Element;
+}
+function isHTMLElement(value) {
+  return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+}
+function isShadowRoot(value) {
   if (typeof ShadowRoot === "undefined") {
     return false;
   }
-  var OwnElement = getWindow(node).ShadowRoot;
-  return node instanceof OwnElement || node instanceof ShadowRoot;
+  return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
 }
-function applyStyles(_ref) {
-  var state = _ref.state;
-  Object.keys(state.elements).forEach(function(name) {
-    var style = state.styles[name] || {};
-    var attributes = state.attributes[name] || {};
-    var element2 = state.elements[name];
-    if (!isHTMLElement(element2) || !getNodeName(element2)) {
-      return;
+function isOverflowElement(element2) {
+  const {
+    overflow,
+    overflowX,
+    overflowY,
+    display
+  } = getComputedStyle$1(element2);
+  return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !["inline", "contents"].includes(display);
+}
+function isTableElement(element2) {
+  return ["table", "td", "th"].includes(getNodeName(element2));
+}
+function isContainingBlock(element2) {
+  const webkit = isWebKit();
+  const css = getComputedStyle$1(element2);
+  return css.transform !== "none" || css.perspective !== "none" || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
+}
+function getContainingBlock(element2) {
+  let currentNode = getParentNode(element2);
+  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    if (isContainingBlock(currentNode)) {
+      return currentNode;
+    } else {
+      currentNode = getParentNode(currentNode);
     }
-    Object.assign(element2.style, style);
-    Object.keys(attributes).forEach(function(name2) {
-      var value = attributes[name2];
-      if (value === false) {
-        element2.removeAttribute(name2);
-      } else {
-        element2.setAttribute(name2, value === true ? "" : value);
-      }
-    });
-  });
-}
-function effect$2(_ref2) {
-  var state = _ref2.state;
-  var initialStyles = {
-    popper: {
-      position: state.options.strategy,
-      left: "0",
-      top: "0",
-      margin: "0"
-    },
-    arrow: {
-      position: "absolute"
-    },
-    reference: {}
-  };
-  Object.assign(state.elements.popper.style, initialStyles.popper);
-  state.styles = initialStyles;
-  if (state.elements.arrow) {
-    Object.assign(state.elements.arrow.style, initialStyles.arrow);
   }
-  return function() {
-    Object.keys(state.elements).forEach(function(name) {
-      var element2 = state.elements[name];
-      var attributes = state.attributes[name] || {};
-      var styleProperties = Object.keys(state.styles.hasOwnProperty(name) ? state.styles[name] : initialStyles[name]);
-      var style = styleProperties.reduce(function(style2, property) {
-        style2[property] = "";
-        return style2;
-      }, {});
-      if (!isHTMLElement(element2) || !getNodeName(element2)) {
-        return;
-      }
-      Object.assign(element2.style, style);
-      Object.keys(attributes).forEach(function(attribute) {
-        element2.removeAttribute(attribute);
-      });
-    });
+  return null;
+}
+function isWebKit() {
+  if (typeof CSS === "undefined" || !CSS.supports)
+    return false;
+  return CSS.supports("-webkit-backdrop-filter", "none");
+}
+function isLastTraversableNode(node) {
+  return ["html", "body", "#document"].includes(getNodeName(node));
+}
+function getComputedStyle$1(element2) {
+  return getWindow(element2).getComputedStyle(element2);
+}
+function getNodeScroll(element2) {
+  if (isElement(element2)) {
+    return {
+      scrollLeft: element2.scrollLeft,
+      scrollTop: element2.scrollTop
+    };
+  }
+  return {
+    scrollLeft: element2.pageXOffset,
+    scrollTop: element2.pageYOffset
   };
 }
-const applyStyles$1 = {
-  name: "applyStyles",
-  enabled: true,
-  phase: "write",
-  fn: applyStyles,
-  effect: effect$2,
-  requires: ["computeStyles"]
-};
-function getBasePlacement$1(placement) {
-  return placement.split("-")[0];
-}
-var max = Math.max;
-var min = Math.min;
-var round = Math.round;
-function getUAString() {
-  var uaData = navigator.userAgentData;
-  if (uaData != null && uaData.brands && Array.isArray(uaData.brands)) {
-    return uaData.brands.map(function(item) {
-      return item.brand + "/" + item.version;
-    }).join(" ");
+function getParentNode(node) {
+  if (getNodeName(node) === "html") {
+    return node;
   }
-  return navigator.userAgent;
+  const result = (
+    // Step into the shadow DOM of the parent of a slotted node.
+    node.assignedSlot || // DOM Element detected.
+    node.parentNode || // ShadowRoot detected.
+    isShadowRoot(node) && node.host || // Fallback.
+    getDocumentElement(node)
+  );
+  return isShadowRoot(result) ? result.host : result;
 }
-function isLayoutViewport() {
-  return !/^((?!chrome|android).)*safari/i.test(getUAString());
+function getNearestOverflowAncestor(node) {
+  const parentNode = getParentNode(node);
+  if (isLastTraversableNode(parentNode)) {
+    return node.ownerDocument ? node.ownerDocument.body : node.body;
+  }
+  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
+    return parentNode;
+  }
+  return getNearestOverflowAncestor(parentNode);
 }
-function getBoundingClientRect(element2, includeScale, isFixedStrategy) {
+function getOverflowAncestors(node, list, traverseIframes) {
+  var _node$ownerDocument2;
+  if (list === void 0) {
+    list = [];
+  }
+  if (traverseIframes === void 0) {
+    traverseIframes = true;
+  }
+  const scrollableAncestor = getNearestOverflowAncestor(node);
+  const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+  const win = getWindow(scrollableAncestor);
+  if (isBody) {
+    return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], win.frameElement && traverseIframes ? getOverflowAncestors(win.frameElement) : []);
+  }
+  return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+}
+function getCssDimensions(element2) {
+  const css = getComputedStyle$1(element2);
+  let width = parseFloat(css.width) || 0;
+  let height = parseFloat(css.height) || 0;
+  const hasOffset = isHTMLElement(element2);
+  const offsetWidth = hasOffset ? element2.offsetWidth : width;
+  const offsetHeight = hasOffset ? element2.offsetHeight : height;
+  const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
+  if (shouldFallback) {
+    width = offsetWidth;
+    height = offsetHeight;
+  }
+  return {
+    width,
+    height,
+    $: shouldFallback
+  };
+}
+function unwrapElement(element2) {
+  return !isElement(element2) ? element2.contextElement : element2;
+}
+function getScale(element2) {
+  const domElement = unwrapElement(element2);
+  if (!isHTMLElement(domElement)) {
+    return createCoords(1);
+  }
+  const rect = domElement.getBoundingClientRect();
+  const {
+    width,
+    height,
+    $: $2
+  } = getCssDimensions(domElement);
+  let x = ($2 ? round(rect.width) : rect.width) / width;
+  let y = ($2 ? round(rect.height) : rect.height) / height;
+  if (!x || !Number.isFinite(x)) {
+    x = 1;
+  }
+  if (!y || !Number.isFinite(y)) {
+    y = 1;
+  }
+  return {
+    x,
+    y
+  };
+}
+const noOffsets = /* @__PURE__ */ createCoords(0);
+function getVisualOffsets(element2) {
+  const win = getWindow(element2);
+  if (!isWebKit() || !win.visualViewport) {
+    return noOffsets;
+  }
+  return {
+    x: win.visualViewport.offsetLeft,
+    y: win.visualViewport.offsetTop
+  };
+}
+function shouldAddVisualOffsets(element2, isFixed, floatingOffsetParent) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+  if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element2)) {
+    return false;
+  }
+  return isFixed;
+}
+function getBoundingClientRect(element2, includeScale, isFixedStrategy, offsetParent) {
   if (includeScale === void 0) {
     includeScale = false;
   }
   if (isFixedStrategy === void 0) {
     isFixedStrategy = false;
   }
-  var clientRect = element2.getBoundingClientRect();
-  var scaleX = 1;
-  var scaleY = 1;
-  if (includeScale && isHTMLElement(element2)) {
-    scaleX = element2.offsetWidth > 0 ? round(clientRect.width) / element2.offsetWidth || 1 : 1;
-    scaleY = element2.offsetHeight > 0 ? round(clientRect.height) / element2.offsetHeight || 1 : 1;
+  const clientRect = element2.getBoundingClientRect();
+  const domElement = unwrapElement(element2);
+  let scale = createCoords(1);
+  if (includeScale) {
+    if (offsetParent) {
+      if (isElement(offsetParent)) {
+        scale = getScale(offsetParent);
+      }
+    } else {
+      scale = getScale(element2);
+    }
   }
-  var _ref = isElement$1(element2) ? getWindow(element2) : window, visualViewport = _ref.visualViewport;
-  var addVisualOffsets = !isLayoutViewport() && isFixedStrategy;
-  var x = (clientRect.left + (addVisualOffsets && visualViewport ? visualViewport.offsetLeft : 0)) / scaleX;
-  var y = (clientRect.top + (addVisualOffsets && visualViewport ? visualViewport.offsetTop : 0)) / scaleY;
-  var width = clientRect.width / scaleX;
-  var height = clientRect.height / scaleY;
+  const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
+  let x = (clientRect.left + visualOffsets.x) / scale.x;
+  let y = (clientRect.top + visualOffsets.y) / scale.y;
+  let width = clientRect.width / scale.x;
+  let height = clientRect.height / scale.y;
+  if (domElement) {
+    const win = getWindow(domElement);
+    const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+    let currentIFrame = win.frameElement;
+    while (currentIFrame && offsetParent && offsetWin !== win) {
+      const iframeScale = getScale(currentIFrame);
+      const iframeRect = currentIFrame.getBoundingClientRect();
+      const css = getComputedStyle$1(currentIFrame);
+      const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+      const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+      x *= iframeScale.x;
+      y *= iframeScale.y;
+      width *= iframeScale.x;
+      height *= iframeScale.y;
+      x += left;
+      y += top;
+      currentIFrame = getWindow(currentIFrame).frameElement;
+    }
+  }
+  return rectToClientRect({
+    width,
+    height,
+    x,
+    y
+  });
+}
+function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+  let {
+    rect,
+    offsetParent,
+    strategy
+  } = _ref;
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  const documentElement = getDocumentElement(offsetParent);
+  if (offsetParent === documentElement) {
+    return rect;
+  }
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  let scale = createCoords(1);
+  const offsets = createCoords(0);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && strategy !== "fixed") {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+    if (isHTMLElement(offsetParent)) {
+      const offsetRect = getBoundingClientRect(offsetParent);
+      scale = getScale(offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    }
+  }
+  return {
+    width: rect.width * scale.x,
+    height: rect.height * scale.y,
+    x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x,
+    y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y
+  };
+}
+function getClientRects(element2) {
+  return Array.from(element2.getClientRects());
+}
+function getWindowScrollBarX(element2) {
+  return getBoundingClientRect(getDocumentElement(element2)).left + getNodeScroll(element2).scrollLeft;
+}
+function getDocumentRect(element2) {
+  const html = getDocumentElement(element2);
+  const scroll = getNodeScroll(element2);
+  const body = element2.ownerDocument.body;
+  const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+  const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+  let x = -scroll.scrollLeft + getWindowScrollBarX(element2);
+  const y = -scroll.scrollTop;
+  if (getComputedStyle$1(body).direction === "rtl") {
+    x += max(html.clientWidth, body.clientWidth) - width;
+  }
   return {
     width,
     height,
-    top: y,
-    right: x + width,
-    bottom: y + height,
-    left: x,
     x,
     y
   };
-}
-function getLayoutRect(element2) {
-  var clientRect = getBoundingClientRect(element2);
-  var width = element2.offsetWidth;
-  var height = element2.offsetHeight;
-  if (Math.abs(clientRect.width - width) <= 1) {
-    width = clientRect.width;
-  }
-  if (Math.abs(clientRect.height - height) <= 1) {
-    height = clientRect.height;
-  }
-  return {
-    x: element2.offsetLeft,
-    y: element2.offsetTop,
-    width,
-    height
-  };
-}
-function contains(parent, child) {
-  var rootNode = child.getRootNode && child.getRootNode();
-  if (parent.contains(child)) {
-    return true;
-  } else if (rootNode && isShadowRoot(rootNode)) {
-    var next = child;
-    do {
-      if (next && parent.isSameNode(next)) {
-        return true;
-      }
-      next = next.parentNode || next.host;
-    } while (next);
-  }
-  return false;
-}
-function getComputedStyle(element2) {
-  return getWindow(element2).getComputedStyle(element2);
-}
-function isTableElement(element2) {
-  return ["table", "td", "th"].indexOf(getNodeName(element2)) >= 0;
-}
-function getDocumentElement(element2) {
-  return ((isElement$1(element2) ? element2.ownerDocument : (
-    // $FlowFixMe[prop-missing]
-    element2.document
-  )) || window.document).documentElement;
-}
-function getParentNode(element2) {
-  if (getNodeName(element2) === "html") {
-    return element2;
-  }
-  return (
-    // this is a quicker (but less type safe) way to save quite some bytes from the bundle
-    // $FlowFixMe[incompatible-return]
-    // $FlowFixMe[prop-missing]
-    element2.assignedSlot || // step into the shadow DOM of the parent of a slotted node
-    element2.parentNode || // DOM Element detected
-    (isShadowRoot(element2) ? element2.host : null) || // ShadowRoot detected
-    // $FlowFixMe[incompatible-call]: HTMLElement is a Node
-    getDocumentElement(element2)
-  );
-}
-function getTrueOffsetParent(element2) {
-  if (!isHTMLElement(element2) || // https://github.com/popperjs/popper-core/issues/837
-  getComputedStyle(element2).position === "fixed") {
-    return null;
-  }
-  return element2.offsetParent;
-}
-function getContainingBlock(element2) {
-  var isFirefox = /firefox/i.test(getUAString());
-  var isIE = /Trident/i.test(getUAString());
-  if (isIE && isHTMLElement(element2)) {
-    var elementCss = getComputedStyle(element2);
-    if (elementCss.position === "fixed") {
-      return null;
-    }
-  }
-  var currentNode = getParentNode(element2);
-  if (isShadowRoot(currentNode)) {
-    currentNode = currentNode.host;
-  }
-  while (isHTMLElement(currentNode) && ["html", "body"].indexOf(getNodeName(currentNode)) < 0) {
-    var css = getComputedStyle(currentNode);
-    if (css.transform !== "none" || css.perspective !== "none" || css.contain === "paint" || ["transform", "perspective"].indexOf(css.willChange) !== -1 || isFirefox && css.willChange === "filter" || isFirefox && css.filter && css.filter !== "none") {
-      return currentNode;
-    } else {
-      currentNode = currentNode.parentNode;
-    }
-  }
-  return null;
-}
-function getOffsetParent(element2) {
-  var window2 = getWindow(element2);
-  var offsetParent = getTrueOffsetParent(element2);
-  while (offsetParent && isTableElement(offsetParent) && getComputedStyle(offsetParent).position === "static") {
-    offsetParent = getTrueOffsetParent(offsetParent);
-  }
-  if (offsetParent && (getNodeName(offsetParent) === "html" || getNodeName(offsetParent) === "body" && getComputedStyle(offsetParent).position === "static")) {
-    return window2;
-  }
-  return offsetParent || getContainingBlock(element2) || window2;
-}
-function getMainAxisFromPlacement(placement) {
-  return ["top", "bottom"].indexOf(placement) >= 0 ? "x" : "y";
-}
-function within(min$1, value, max$1) {
-  return max(min$1, min(value, max$1));
-}
-function withinMaxClamp(min2, value, max2) {
-  var v = within(min2, value, max2);
-  return v > max2 ? max2 : v;
-}
-function getFreshSideObject() {
-  return {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0
-  };
-}
-function mergePaddingObject(paddingObject) {
-  return Object.assign({}, getFreshSideObject(), paddingObject);
-}
-function expandToHashMap(value, keys) {
-  return keys.reduce(function(hashMap, key) {
-    hashMap[key] = value;
-    return hashMap;
-  }, {});
-}
-var toPaddingObject = function toPaddingObject2(padding, state) {
-  padding = typeof padding === "function" ? padding(Object.assign({}, state.rects, {
-    placement: state.placement
-  })) : padding;
-  return mergePaddingObject(typeof padding !== "number" ? padding : expandToHashMap(padding, basePlacements));
-};
-function arrow(_ref) {
-  var _state$modifiersData$;
-  var state = _ref.state, name = _ref.name, options = _ref.options;
-  var arrowElement = state.elements.arrow;
-  var popperOffsets2 = state.modifiersData.popperOffsets;
-  var basePlacement = getBasePlacement$1(state.placement);
-  var axis = getMainAxisFromPlacement(basePlacement);
-  var isVertical = [left, right].indexOf(basePlacement) >= 0;
-  var len = isVertical ? "height" : "width";
-  if (!arrowElement || !popperOffsets2) {
-    return;
-  }
-  var paddingObject = toPaddingObject(options.padding, state);
-  var arrowRect = getLayoutRect(arrowElement);
-  var minProp = axis === "y" ? top : left;
-  var maxProp = axis === "y" ? bottom : right;
-  var endDiff = state.rects.reference[len] + state.rects.reference[axis] - popperOffsets2[axis] - state.rects.popper[len];
-  var startDiff = popperOffsets2[axis] - state.rects.reference[axis];
-  var arrowOffsetParent = getOffsetParent(arrowElement);
-  var clientSize = arrowOffsetParent ? axis === "y" ? arrowOffsetParent.clientHeight || 0 : arrowOffsetParent.clientWidth || 0 : 0;
-  var centerToReference = endDiff / 2 - startDiff / 2;
-  var min2 = paddingObject[minProp];
-  var max2 = clientSize - arrowRect[len] - paddingObject[maxProp];
-  var center = clientSize / 2 - arrowRect[len] / 2 + centerToReference;
-  var offset2 = within(min2, center, max2);
-  var axisProp = axis;
-  state.modifiersData[name] = (_state$modifiersData$ = {}, _state$modifiersData$[axisProp] = offset2, _state$modifiersData$.centerOffset = offset2 - center, _state$modifiersData$);
-}
-function effect$1(_ref2) {
-  var state = _ref2.state, options = _ref2.options;
-  var _options$element = options.element, arrowElement = _options$element === void 0 ? "[data-popper-arrow]" : _options$element;
-  if (arrowElement == null) {
-    return;
-  }
-  if (typeof arrowElement === "string") {
-    arrowElement = state.elements.popper.querySelector(arrowElement);
-    if (!arrowElement) {
-      return;
-    }
-  }
-  if (!contains(state.elements.popper, arrowElement)) {
-    return;
-  }
-  state.elements.arrow = arrowElement;
-}
-const arrow$1 = {
-  name: "arrow",
-  enabled: true,
-  phase: "main",
-  fn: arrow,
-  effect: effect$1,
-  requires: ["popperOffsets"],
-  requiresIfExists: ["preventOverflow"]
-};
-function getVariation(placement) {
-  return placement.split("-")[1];
-}
-var unsetSides = {
-  top: "auto",
-  right: "auto",
-  bottom: "auto",
-  left: "auto"
-};
-function roundOffsetsByDPR(_ref, win) {
-  var x = _ref.x, y = _ref.y;
-  var dpr = win.devicePixelRatio || 1;
-  return {
-    x: round(x * dpr) / dpr || 0,
-    y: round(y * dpr) / dpr || 0
-  };
-}
-function mapToStyles(_ref2) {
-  var _Object$assign2;
-  var popper2 = _ref2.popper, popperRect = _ref2.popperRect, placement = _ref2.placement, variation = _ref2.variation, offsets = _ref2.offsets, position = _ref2.position, gpuAcceleration = _ref2.gpuAcceleration, adaptive = _ref2.adaptive, roundOffsets = _ref2.roundOffsets, isFixed = _ref2.isFixed;
-  var _offsets$x = offsets.x, x = _offsets$x === void 0 ? 0 : _offsets$x, _offsets$y = offsets.y, y = _offsets$y === void 0 ? 0 : _offsets$y;
-  var _ref3 = typeof roundOffsets === "function" ? roundOffsets({
-    x,
-    y
-  }) : {
-    x,
-    y
-  };
-  x = _ref3.x;
-  y = _ref3.y;
-  var hasX = offsets.hasOwnProperty("x");
-  var hasY = offsets.hasOwnProperty("y");
-  var sideX = left;
-  var sideY = top;
-  var win = window;
-  if (adaptive) {
-    var offsetParent = getOffsetParent(popper2);
-    var heightProp = "clientHeight";
-    var widthProp = "clientWidth";
-    if (offsetParent === getWindow(popper2)) {
-      offsetParent = getDocumentElement(popper2);
-      if (getComputedStyle(offsetParent).position !== "static" && position === "absolute") {
-        heightProp = "scrollHeight";
-        widthProp = "scrollWidth";
-      }
-    }
-    offsetParent = offsetParent;
-    if (placement === top || (placement === left || placement === right) && variation === end) {
-      sideY = bottom;
-      var offsetY = isFixed && offsetParent === win && win.visualViewport ? win.visualViewport.height : (
-        // $FlowFixMe[prop-missing]
-        offsetParent[heightProp]
-      );
-      y -= offsetY - popperRect.height;
-      y *= gpuAcceleration ? 1 : -1;
-    }
-    if (placement === left || (placement === top || placement === bottom) && variation === end) {
-      sideX = right;
-      var offsetX = isFixed && offsetParent === win && win.visualViewport ? win.visualViewport.width : (
-        // $FlowFixMe[prop-missing]
-        offsetParent[widthProp]
-      );
-      x -= offsetX - popperRect.width;
-      x *= gpuAcceleration ? 1 : -1;
-    }
-  }
-  var commonStyles = Object.assign({
-    position
-  }, adaptive && unsetSides);
-  var _ref4 = roundOffsets === true ? roundOffsetsByDPR({
-    x,
-    y
-  }, getWindow(popper2)) : {
-    x,
-    y
-  };
-  x = _ref4.x;
-  y = _ref4.y;
-  if (gpuAcceleration) {
-    var _Object$assign;
-    return Object.assign({}, commonStyles, (_Object$assign = {}, _Object$assign[sideY] = hasY ? "0" : "", _Object$assign[sideX] = hasX ? "0" : "", _Object$assign.transform = (win.devicePixelRatio || 1) <= 1 ? "translate(" + x + "px, " + y + "px)" : "translate3d(" + x + "px, " + y + "px, 0)", _Object$assign));
-  }
-  return Object.assign({}, commonStyles, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : "", _Object$assign2[sideX] = hasX ? x + "px" : "", _Object$assign2.transform = "", _Object$assign2));
-}
-function computeStyles(_ref5) {
-  var state = _ref5.state, options = _ref5.options;
-  var _options$gpuAccelerat = options.gpuAcceleration, gpuAcceleration = _options$gpuAccelerat === void 0 ? true : _options$gpuAccelerat, _options$adaptive = options.adaptive, adaptive = _options$adaptive === void 0 ? true : _options$adaptive, _options$roundOffsets = options.roundOffsets, roundOffsets = _options$roundOffsets === void 0 ? true : _options$roundOffsets;
-  var commonStyles = {
-    placement: getBasePlacement$1(state.placement),
-    variation: getVariation(state.placement),
-    popper: state.elements.popper,
-    popperRect: state.rects.popper,
-    gpuAcceleration,
-    isFixed: state.options.strategy === "fixed"
-  };
-  if (state.modifiersData.popperOffsets != null) {
-    state.styles.popper = Object.assign({}, state.styles.popper, mapToStyles(Object.assign({}, commonStyles, {
-      offsets: state.modifiersData.popperOffsets,
-      position: state.options.strategy,
-      adaptive,
-      roundOffsets
-    })));
-  }
-  if (state.modifiersData.arrow != null) {
-    state.styles.arrow = Object.assign({}, state.styles.arrow, mapToStyles(Object.assign({}, commonStyles, {
-      offsets: state.modifiersData.arrow,
-      position: "absolute",
-      adaptive: false,
-      roundOffsets
-    })));
-  }
-  state.attributes.popper = Object.assign({}, state.attributes.popper, {
-    "data-popper-placement": state.placement
-  });
-}
-const computeStyles$1 = {
-  name: "computeStyles",
-  enabled: true,
-  phase: "beforeWrite",
-  fn: computeStyles,
-  data: {}
-};
-var passive = {
-  passive: true
-};
-function effect(_ref) {
-  var state = _ref.state, instance2 = _ref.instance, options = _ref.options;
-  var _options$scroll = options.scroll, scroll = _options$scroll === void 0 ? true : _options$scroll, _options$resize = options.resize, resize = _options$resize === void 0 ? true : _options$resize;
-  var window2 = getWindow(state.elements.popper);
-  var scrollParents = [].concat(state.scrollParents.reference, state.scrollParents.popper);
-  if (scroll) {
-    scrollParents.forEach(function(scrollParent) {
-      scrollParent.addEventListener("scroll", instance2.update, passive);
-    });
-  }
-  if (resize) {
-    window2.addEventListener("resize", instance2.update, passive);
-  }
-  return function() {
-    if (scroll) {
-      scrollParents.forEach(function(scrollParent) {
-        scrollParent.removeEventListener("scroll", instance2.update, passive);
-      });
-    }
-    if (resize) {
-      window2.removeEventListener("resize", instance2.update, passive);
-    }
-  };
-}
-const eventListeners = {
-  name: "eventListeners",
-  enabled: true,
-  phase: "write",
-  fn: function fn() {
-  },
-  effect,
-  data: {}
-};
-var hash$1 = {
-  left: "right",
-  right: "left",
-  bottom: "top",
-  top: "bottom"
-};
-function getOppositePlacement(placement) {
-  return placement.replace(/left|right|bottom|top/g, function(matched) {
-    return hash$1[matched];
-  });
-}
-var hash = {
-  start: "end",
-  end: "start"
-};
-function getOppositeVariationPlacement(placement) {
-  return placement.replace(/start|end/g, function(matched) {
-    return hash[matched];
-  });
-}
-function getWindowScroll(node) {
-  var win = getWindow(node);
-  var scrollLeft = win.pageXOffset;
-  var scrollTop = win.pageYOffset;
-  return {
-    scrollLeft,
-    scrollTop
-  };
-}
-function getWindowScrollBarX(element2) {
-  return getBoundingClientRect(getDocumentElement(element2)).left + getWindowScroll(element2).scrollLeft;
 }
 function getViewportRect(element2, strategy) {
-  var win = getWindow(element2);
-  var html = getDocumentElement(element2);
-  var visualViewport = win.visualViewport;
-  var width = html.clientWidth;
-  var height = html.clientHeight;
-  var x = 0;
-  var y = 0;
+  const win = getWindow(element2);
+  const html = getDocumentElement(element2);
+  const visualViewport = win.visualViewport;
+  let width = html.clientWidth;
+  let height = html.clientHeight;
+  let x = 0;
+  let y = 0;
   if (visualViewport) {
     width = visualViewport.width;
     height = visualViewport.height;
-    var layoutViewport = isLayoutViewport();
-    if (layoutViewport || !layoutViewport && strategy === "fixed") {
+    const visualViewportBased = isWebKit();
+    if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
       x = visualViewport.offsetLeft;
       y = visualViewport.offsetTop;
     }
@@ -13952,22 +16263,19 @@ function getViewportRect(element2, strategy) {
   return {
     width,
     height,
-    x: x + getWindowScrollBarX(element2),
+    x,
     y
   };
 }
-function getDocumentRect(element2) {
-  var _element$ownerDocumen;
-  var html = getDocumentElement(element2);
-  var winScroll = getWindowScroll(element2);
-  var body = (_element$ownerDocumen = element2.ownerDocument) == null ? void 0 : _element$ownerDocumen.body;
-  var width = max(html.scrollWidth, html.clientWidth, body ? body.scrollWidth : 0, body ? body.clientWidth : 0);
-  var height = max(html.scrollHeight, html.clientHeight, body ? body.scrollHeight : 0, body ? body.clientHeight : 0);
-  var x = -winScroll.scrollLeft + getWindowScrollBarX(element2);
-  var y = -winScroll.scrollTop;
-  if (getComputedStyle(body || html).direction === "rtl") {
-    x += max(html.clientWidth, body ? body.clientWidth : 0) - width;
-  }
+function getInnerBoundingClientRect(element2, strategy) {
+  const clientRect = getBoundingClientRect(element2, true, strategy === "fixed");
+  const top = clientRect.top + element2.clientTop;
+  const left = clientRect.left + element2.clientLeft;
+  const scale = isHTMLElement(element2) ? getScale(element2) : createCoords(1);
+  const width = element2.clientWidth * scale.x;
+  const height = element2.clientHeight * scale.y;
+  const x = left * scale.x;
+  const y = top * scale.y;
   return {
     width,
     height,
@@ -13975,549 +16283,103 @@ function getDocumentRect(element2) {
     y
   };
 }
-function isScrollParent(element2) {
-  var _getComputedStyle = getComputedStyle(element2), overflow = _getComputedStyle.overflow, overflowX = _getComputedStyle.overflowX, overflowY = _getComputedStyle.overflowY;
-  return /auto|scroll|overlay|hidden/.test(overflow + overflowY + overflowX);
-}
-function getScrollParent(node) {
-  if (["html", "body", "#document"].indexOf(getNodeName(node)) >= 0) {
-    return node.ownerDocument.body;
+function getClientRectFromClippingAncestor(element2, clippingAncestor, strategy) {
+  let rect;
+  if (clippingAncestor === "viewport") {
+    rect = getViewportRect(element2, strategy);
+  } else if (clippingAncestor === "document") {
+    rect = getDocumentRect(getDocumentElement(element2));
+  } else if (isElement(clippingAncestor)) {
+    rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+  } else {
+    const visualOffsets = getVisualOffsets(element2);
+    rect = {
+      ...clippingAncestor,
+      x: clippingAncestor.x - visualOffsets.x,
+      y: clippingAncestor.y - visualOffsets.y
+    };
   }
-  if (isHTMLElement(node) && isScrollParent(node)) {
-    return node;
+  return rectToClientRect(rect);
+}
+function hasFixedPositionAncestor(element2, stopNode) {
+  const parentNode = getParentNode(element2);
+  if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
+    return false;
   }
-  return getScrollParent(getParentNode(node));
+  return getComputedStyle$1(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
 }
-function listScrollParents(element2, list) {
-  var _element$ownerDocumen;
-  if (list === void 0) {
-    list = [];
+function getClippingElementAncestors(element2, cache) {
+  const cachedResult = cache.get(element2);
+  if (cachedResult) {
+    return cachedResult;
   }
-  var scrollParent = getScrollParent(element2);
-  var isBody = scrollParent === ((_element$ownerDocumen = element2.ownerDocument) == null ? void 0 : _element$ownerDocumen.body);
-  var win = getWindow(scrollParent);
-  var target = isBody ? [win].concat(win.visualViewport || [], isScrollParent(scrollParent) ? scrollParent : []) : scrollParent;
-  var updatedList = list.concat(target);
-  return isBody ? updatedList : (
-    // $FlowFixMe[incompatible-call]: isBody tells us target will be an HTMLElement here
-    updatedList.concat(listScrollParents(getParentNode(target)))
-  );
-}
-function rectToClientRect(rect) {
-  return Object.assign({}, rect, {
-    left: rect.x,
-    top: rect.y,
-    right: rect.x + rect.width,
-    bottom: rect.y + rect.height
-  });
-}
-function getInnerBoundingClientRect(element2, strategy) {
-  var rect = getBoundingClientRect(element2, false, strategy === "fixed");
-  rect.top = rect.top + element2.clientTop;
-  rect.left = rect.left + element2.clientLeft;
-  rect.bottom = rect.top + element2.clientHeight;
-  rect.right = rect.left + element2.clientWidth;
-  rect.width = element2.clientWidth;
-  rect.height = element2.clientHeight;
-  rect.x = rect.left;
-  rect.y = rect.top;
-  return rect;
-}
-function getClientRectFromMixedType(element2, clippingParent, strategy) {
-  return clippingParent === viewport ? rectToClientRect(getViewportRect(element2, strategy)) : isElement$1(clippingParent) ? getInnerBoundingClientRect(clippingParent, strategy) : rectToClientRect(getDocumentRect(getDocumentElement(element2)));
-}
-function getClippingParents(element2) {
-  var clippingParents2 = listScrollParents(getParentNode(element2));
-  var canEscapeClipping = ["absolute", "fixed"].indexOf(getComputedStyle(element2).position) >= 0;
-  var clipperElement = canEscapeClipping && isHTMLElement(element2) ? getOffsetParent(element2) : element2;
-  if (!isElement$1(clipperElement)) {
-    return [];
+  let result = getOverflowAncestors(element2, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
+  let currentContainingBlockComputedStyle = null;
+  const elementIsFixed = getComputedStyle$1(element2).position === "fixed";
+  let currentNode = elementIsFixed ? getParentNode(element2) : element2;
+  while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    const computedStyle = getComputedStyle$1(currentNode);
+    const currentNodeIsContaining = isContainingBlock(currentNode);
+    if (!currentNodeIsContaining && computedStyle.position === "fixed") {
+      currentContainingBlockComputedStyle = null;
+    }
+    const shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && ["absolute", "fixed"].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element2, currentNode);
+    if (shouldDropCurrentNode) {
+      result = result.filter((ancestor) => ancestor !== currentNode);
+    } else {
+      currentContainingBlockComputedStyle = computedStyle;
+    }
+    currentNode = getParentNode(currentNode);
   }
-  return clippingParents2.filter(function(clippingParent) {
-    return isElement$1(clippingParent) && contains(clippingParent, clipperElement) && getNodeName(clippingParent) !== "body";
-  });
+  cache.set(element2, result);
+  return result;
 }
-function getClippingRect(element2, boundary, rootBoundary, strategy) {
-  var mainClippingParents = boundary === "clippingParents" ? getClippingParents(element2) : [].concat(boundary);
-  var clippingParents2 = [].concat(mainClippingParents, [rootBoundary]);
-  var firstClippingParent = clippingParents2[0];
-  var clippingRect = clippingParents2.reduce(function(accRect, clippingParent) {
-    var rect = getClientRectFromMixedType(element2, clippingParent, strategy);
+function getClippingRect(_ref) {
+  let {
+    element: element2,
+    boundary,
+    rootBoundary,
+    strategy
+  } = _ref;
+  const elementClippingAncestors = boundary === "clippingAncestors" ? getClippingElementAncestors(element2, this._c) : [].concat(boundary);
+  const clippingAncestors = [...elementClippingAncestors, rootBoundary];
+  const firstClippingAncestor = clippingAncestors[0];
+  const clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
+    const rect = getClientRectFromClippingAncestor(element2, clippingAncestor, strategy);
     accRect.top = max(rect.top, accRect.top);
     accRect.right = min(rect.right, accRect.right);
     accRect.bottom = min(rect.bottom, accRect.bottom);
     accRect.left = max(rect.left, accRect.left);
     return accRect;
-  }, getClientRectFromMixedType(element2, firstClippingParent, strategy));
-  clippingRect.width = clippingRect.right - clippingRect.left;
-  clippingRect.height = clippingRect.bottom - clippingRect.top;
-  clippingRect.x = clippingRect.left;
-  clippingRect.y = clippingRect.top;
-  return clippingRect;
-}
-function computeOffsets(_ref) {
-  var reference2 = _ref.reference, element2 = _ref.element, placement = _ref.placement;
-  var basePlacement = placement ? getBasePlacement$1(placement) : null;
-  var variation = placement ? getVariation(placement) : null;
-  var commonX = reference2.x + reference2.width / 2 - element2.width / 2;
-  var commonY = reference2.y + reference2.height / 2 - element2.height / 2;
-  var offsets;
-  switch (basePlacement) {
-    case top:
-      offsets = {
-        x: commonX,
-        y: reference2.y - element2.height
-      };
-      break;
-    case bottom:
-      offsets = {
-        x: commonX,
-        y: reference2.y + reference2.height
-      };
-      break;
-    case right:
-      offsets = {
-        x: reference2.x + reference2.width,
-        y: commonY
-      };
-      break;
-    case left:
-      offsets = {
-        x: reference2.x - element2.width,
-        y: commonY
-      };
-      break;
-    default:
-      offsets = {
-        x: reference2.x,
-        y: reference2.y
-      };
-  }
-  var mainAxis = basePlacement ? getMainAxisFromPlacement(basePlacement) : null;
-  if (mainAxis != null) {
-    var len = mainAxis === "y" ? "height" : "width";
-    switch (variation) {
-      case start:
-        offsets[mainAxis] = offsets[mainAxis] - (reference2[len] / 2 - element2[len] / 2);
-        break;
-      case end:
-        offsets[mainAxis] = offsets[mainAxis] + (reference2[len] / 2 - element2[len] / 2);
-        break;
-    }
-  }
-  return offsets;
-}
-function detectOverflow(state, options) {
-  if (options === void 0) {
-    options = {};
-  }
-  var _options = options, _options$placement = _options.placement, placement = _options$placement === void 0 ? state.placement : _options$placement, _options$strategy = _options.strategy, strategy = _options$strategy === void 0 ? state.strategy : _options$strategy, _options$boundary = _options.boundary, boundary = _options$boundary === void 0 ? clippingParents : _options$boundary, _options$rootBoundary = _options.rootBoundary, rootBoundary = _options$rootBoundary === void 0 ? viewport : _options$rootBoundary, _options$elementConte = _options.elementContext, elementContext = _options$elementConte === void 0 ? popper : _options$elementConte, _options$altBoundary = _options.altBoundary, altBoundary = _options$altBoundary === void 0 ? false : _options$altBoundary, _options$padding = _options.padding, padding = _options$padding === void 0 ? 0 : _options$padding;
-  var paddingObject = mergePaddingObject(typeof padding !== "number" ? padding : expandToHashMap(padding, basePlacements));
-  var altContext = elementContext === popper ? reference : popper;
-  var popperRect = state.rects.popper;
-  var element2 = state.elements[altBoundary ? altContext : elementContext];
-  var clippingClientRect = getClippingRect(isElement$1(element2) ? element2 : element2.contextElement || getDocumentElement(state.elements.popper), boundary, rootBoundary, strategy);
-  var referenceClientRect = getBoundingClientRect(state.elements.reference);
-  var popperOffsets2 = computeOffsets({
-    reference: referenceClientRect,
-    element: popperRect,
-    strategy: "absolute",
-    placement
-  });
-  var popperClientRect = rectToClientRect(Object.assign({}, popperRect, popperOffsets2));
-  var elementClientRect = elementContext === popper ? popperClientRect : referenceClientRect;
-  var overflowOffsets = {
-    top: clippingClientRect.top - elementClientRect.top + paddingObject.top,
-    bottom: elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom,
-    left: clippingClientRect.left - elementClientRect.left + paddingObject.left,
-    right: elementClientRect.right - clippingClientRect.right + paddingObject.right
-  };
-  var offsetData = state.modifiersData.offset;
-  if (elementContext === popper && offsetData) {
-    var offset2 = offsetData[placement];
-    Object.keys(overflowOffsets).forEach(function(key) {
-      var multiply = [right, bottom].indexOf(key) >= 0 ? 1 : -1;
-      var axis = [top, bottom].indexOf(key) >= 0 ? "y" : "x";
-      overflowOffsets[key] += offset2[axis] * multiply;
-    });
-  }
-  return overflowOffsets;
-}
-function computeAutoPlacement(state, options) {
-  if (options === void 0) {
-    options = {};
-  }
-  var _options = options, placement = _options.placement, boundary = _options.boundary, rootBoundary = _options.rootBoundary, padding = _options.padding, flipVariations = _options.flipVariations, _options$allowedAutoP = _options.allowedAutoPlacements, allowedAutoPlacements = _options$allowedAutoP === void 0 ? placements : _options$allowedAutoP;
-  var variation = getVariation(placement);
-  var placements$1 = variation ? flipVariations ? variationPlacements : variationPlacements.filter(function(placement2) {
-    return getVariation(placement2) === variation;
-  }) : basePlacements;
-  var allowedPlacements = placements$1.filter(function(placement2) {
-    return allowedAutoPlacements.indexOf(placement2) >= 0;
-  });
-  if (allowedPlacements.length === 0) {
-    allowedPlacements = placements$1;
-  }
-  var overflows = allowedPlacements.reduce(function(acc, placement2) {
-    acc[placement2] = detectOverflow(state, {
-      placement: placement2,
-      boundary,
-      rootBoundary,
-      padding
-    })[getBasePlacement$1(placement2)];
-    return acc;
-  }, {});
-  return Object.keys(overflows).sort(function(a, b) {
-    return overflows[a] - overflows[b];
-  });
-}
-function getExpandedFallbackPlacements(placement) {
-  if (getBasePlacement$1(placement) === auto) {
-    return [];
-  }
-  var oppositePlacement = getOppositePlacement(placement);
-  return [getOppositeVariationPlacement(placement), oppositePlacement, getOppositeVariationPlacement(oppositePlacement)];
-}
-function flip(_ref) {
-  var state = _ref.state, options = _ref.options, name = _ref.name;
-  if (state.modifiersData[name]._skip) {
-    return;
-  }
-  var _options$mainAxis = options.mainAxis, checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis, _options$altAxis = options.altAxis, checkAltAxis = _options$altAxis === void 0 ? true : _options$altAxis, specifiedFallbackPlacements = options.fallbackPlacements, padding = options.padding, boundary = options.boundary, rootBoundary = options.rootBoundary, altBoundary = options.altBoundary, _options$flipVariatio = options.flipVariations, flipVariations = _options$flipVariatio === void 0 ? true : _options$flipVariatio, allowedAutoPlacements = options.allowedAutoPlacements;
-  var preferredPlacement = state.options.placement;
-  var basePlacement = getBasePlacement$1(preferredPlacement);
-  var isBasePlacement = basePlacement === preferredPlacement;
-  var fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipVariations ? [getOppositePlacement(preferredPlacement)] : getExpandedFallbackPlacements(preferredPlacement));
-  var placements2 = [preferredPlacement].concat(fallbackPlacements).reduce(function(acc, placement2) {
-    return acc.concat(getBasePlacement$1(placement2) === auto ? computeAutoPlacement(state, {
-      placement: placement2,
-      boundary,
-      rootBoundary,
-      padding,
-      flipVariations,
-      allowedAutoPlacements
-    }) : placement2);
-  }, []);
-  var referenceRect = state.rects.reference;
-  var popperRect = state.rects.popper;
-  var checksMap = /* @__PURE__ */ new Map();
-  var makeFallbackChecks = true;
-  var firstFittingPlacement = placements2[0];
-  for (var i = 0; i < placements2.length; i++) {
-    var placement = placements2[i];
-    var _basePlacement = getBasePlacement$1(placement);
-    var isStartVariation = getVariation(placement) === start;
-    var isVertical = [top, bottom].indexOf(_basePlacement) >= 0;
-    var len = isVertical ? "width" : "height";
-    var overflow = detectOverflow(state, {
-      placement,
-      boundary,
-      rootBoundary,
-      altBoundary,
-      padding
-    });
-    var mainVariationSide = isVertical ? isStartVariation ? right : left : isStartVariation ? bottom : top;
-    if (referenceRect[len] > popperRect[len]) {
-      mainVariationSide = getOppositePlacement(mainVariationSide);
-    }
-    var altVariationSide = getOppositePlacement(mainVariationSide);
-    var checks = [];
-    if (checkMainAxis) {
-      checks.push(overflow[_basePlacement] <= 0);
-    }
-    if (checkAltAxis) {
-      checks.push(overflow[mainVariationSide] <= 0, overflow[altVariationSide] <= 0);
-    }
-    if (checks.every(function(check) {
-      return check;
-    })) {
-      firstFittingPlacement = placement;
-      makeFallbackChecks = false;
-      break;
-    }
-    checksMap.set(placement, checks);
-  }
-  if (makeFallbackChecks) {
-    var numberOfChecks = flipVariations ? 3 : 1;
-    var _loop = function _loop2(_i2) {
-      var fittingPlacement = placements2.find(function(placement2) {
-        var checks2 = checksMap.get(placement2);
-        if (checks2) {
-          return checks2.slice(0, _i2).every(function(check) {
-            return check;
-          });
-        }
-      });
-      if (fittingPlacement) {
-        firstFittingPlacement = fittingPlacement;
-        return "break";
-      }
-    };
-    for (var _i = numberOfChecks; _i > 0; _i--) {
-      var _ret = _loop(_i);
-      if (_ret === "break")
-        break;
-    }
-  }
-  if (state.placement !== firstFittingPlacement) {
-    state.modifiersData[name]._skip = true;
-    state.placement = firstFittingPlacement;
-    state.reset = true;
-  }
-}
-const flip$1 = {
-  name: "flip",
-  enabled: true,
-  phase: "main",
-  fn: flip,
-  requiresIfExists: ["offset"],
-  data: {
-    _skip: false
-  }
-};
-function getSideOffsets(overflow, rect, preventedOffsets) {
-  if (preventedOffsets === void 0) {
-    preventedOffsets = {
-      x: 0,
-      y: 0
-    };
-  }
+  }, getClientRectFromClippingAncestor(element2, firstClippingAncestor, strategy));
   return {
-    top: overflow.top - rect.height - preventedOffsets.y,
-    right: overflow.right - rect.width + preventedOffsets.x,
-    bottom: overflow.bottom - rect.height + preventedOffsets.y,
-    left: overflow.left - rect.width - preventedOffsets.x
+    width: clippingRect.right - clippingRect.left,
+    height: clippingRect.bottom - clippingRect.top,
+    x: clippingRect.left,
+    y: clippingRect.top
   };
 }
-function isAnySideFullyClipped(overflow) {
-  return [top, right, bottom, left].some(function(side) {
-    return overflow[side] >= 0;
-  });
+function getDimensions(element2) {
+  return getCssDimensions(element2);
 }
-function hide(_ref) {
-  var state = _ref.state, name = _ref.name;
-  var referenceRect = state.rects.reference;
-  var popperRect = state.rects.popper;
-  var preventedOffsets = state.modifiersData.preventOverflow;
-  var referenceOverflow = detectOverflow(state, {
-    elementContext: "reference"
-  });
-  var popperAltOverflow = detectOverflow(state, {
-    altBoundary: true
-  });
-  var referenceClippingOffsets = getSideOffsets(referenceOverflow, referenceRect);
-  var popperEscapeOffsets = getSideOffsets(popperAltOverflow, popperRect, preventedOffsets);
-  var isReferenceHidden = isAnySideFullyClipped(referenceClippingOffsets);
-  var hasPopperEscaped = isAnySideFullyClipped(popperEscapeOffsets);
-  state.modifiersData[name] = {
-    referenceClippingOffsets,
-    popperEscapeOffsets,
-    isReferenceHidden,
-    hasPopperEscaped
-  };
-  state.attributes.popper = Object.assign({}, state.attributes.popper, {
-    "data-popper-reference-hidden": isReferenceHidden,
-    "data-popper-escaped": hasPopperEscaped
-  });
-}
-const hide$1 = {
-  name: "hide",
-  enabled: true,
-  phase: "main",
-  requiresIfExists: ["preventOverflow"],
-  fn: hide
-};
-function distanceAndSkiddingToXY(placement, rects, offset2) {
-  var basePlacement = getBasePlacement$1(placement);
-  var invertDistance = [left, top].indexOf(basePlacement) >= 0 ? -1 : 1;
-  var _ref = typeof offset2 === "function" ? offset2(Object.assign({}, rects, {
-    placement
-  })) : offset2, skidding = _ref[0], distance = _ref[1];
-  skidding = skidding || 0;
-  distance = (distance || 0) * invertDistance;
-  return [left, right].indexOf(basePlacement) >= 0 ? {
-    x: distance,
-    y: skidding
-  } : {
-    x: skidding,
-    y: distance
-  };
-}
-function offset(_ref2) {
-  var state = _ref2.state, options = _ref2.options, name = _ref2.name;
-  var _options$offset = options.offset, offset2 = _options$offset === void 0 ? [0, 0] : _options$offset;
-  var data = placements.reduce(function(acc, placement) {
-    acc[placement] = distanceAndSkiddingToXY(placement, state.rects, offset2);
-    return acc;
-  }, {});
-  var _data$state$placement = data[state.placement], x = _data$state$placement.x, y = _data$state$placement.y;
-  if (state.modifiersData.popperOffsets != null) {
-    state.modifiersData.popperOffsets.x += x;
-    state.modifiersData.popperOffsets.y += y;
-  }
-  state.modifiersData[name] = data;
-}
-const offset$1 = {
-  name: "offset",
-  enabled: true,
-  phase: "main",
-  requires: ["popperOffsets"],
-  fn: offset
-};
-function popperOffsets(_ref) {
-  var state = _ref.state, name = _ref.name;
-  state.modifiersData[name] = computeOffsets({
-    reference: state.rects.reference,
-    element: state.rects.popper,
-    strategy: "absolute",
-    placement: state.placement
-  });
-}
-const popperOffsets$1 = {
-  name: "popperOffsets",
-  enabled: true,
-  phase: "read",
-  fn: popperOffsets,
-  data: {}
-};
-function getAltAxis(axis) {
-  return axis === "x" ? "y" : "x";
-}
-function preventOverflow(_ref) {
-  var state = _ref.state, options = _ref.options, name = _ref.name;
-  var _options$mainAxis = options.mainAxis, checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis, _options$altAxis = options.altAxis, checkAltAxis = _options$altAxis === void 0 ? false : _options$altAxis, boundary = options.boundary, rootBoundary = options.rootBoundary, altBoundary = options.altBoundary, padding = options.padding, _options$tether = options.tether, tether = _options$tether === void 0 ? true : _options$tether, _options$tetherOffset = options.tetherOffset, tetherOffset = _options$tetherOffset === void 0 ? 0 : _options$tetherOffset;
-  var overflow = detectOverflow(state, {
-    boundary,
-    rootBoundary,
-    padding,
-    altBoundary
-  });
-  var basePlacement = getBasePlacement$1(state.placement);
-  var variation = getVariation(state.placement);
-  var isBasePlacement = !variation;
-  var mainAxis = getMainAxisFromPlacement(basePlacement);
-  var altAxis = getAltAxis(mainAxis);
-  var popperOffsets2 = state.modifiersData.popperOffsets;
-  var referenceRect = state.rects.reference;
-  var popperRect = state.rects.popper;
-  var tetherOffsetValue = typeof tetherOffset === "function" ? tetherOffset(Object.assign({}, state.rects, {
-    placement: state.placement
-  })) : tetherOffset;
-  var normalizedTetherOffsetValue = typeof tetherOffsetValue === "number" ? {
-    mainAxis: tetherOffsetValue,
-    altAxis: tetherOffsetValue
-  } : Object.assign({
-    mainAxis: 0,
-    altAxis: 0
-  }, tetherOffsetValue);
-  var offsetModifierState = state.modifiersData.offset ? state.modifiersData.offset[state.placement] : null;
-  var data = {
-    x: 0,
-    y: 0
-  };
-  if (!popperOffsets2) {
-    return;
-  }
-  if (checkMainAxis) {
-    var _offsetModifierState$;
-    var mainSide = mainAxis === "y" ? top : left;
-    var altSide = mainAxis === "y" ? bottom : right;
-    var len = mainAxis === "y" ? "height" : "width";
-    var offset2 = popperOffsets2[mainAxis];
-    var min$1 = offset2 + overflow[mainSide];
-    var max$1 = offset2 - overflow[altSide];
-    var additive = tether ? -popperRect[len] / 2 : 0;
-    var minLen = variation === start ? referenceRect[len] : popperRect[len];
-    var maxLen = variation === start ? -popperRect[len] : -referenceRect[len];
-    var arrowElement = state.elements.arrow;
-    var arrowRect = tether && arrowElement ? getLayoutRect(arrowElement) : {
-      width: 0,
-      height: 0
-    };
-    var arrowPaddingObject = state.modifiersData["arrow#persistent"] ? state.modifiersData["arrow#persistent"].padding : getFreshSideObject();
-    var arrowPaddingMin = arrowPaddingObject[mainSide];
-    var arrowPaddingMax = arrowPaddingObject[altSide];
-    var arrowLen = within(0, referenceRect[len], arrowRect[len]);
-    var minOffset = isBasePlacement ? referenceRect[len] / 2 - additive - arrowLen - arrowPaddingMin - normalizedTetherOffsetValue.mainAxis : minLen - arrowLen - arrowPaddingMin - normalizedTetherOffsetValue.mainAxis;
-    var maxOffset = isBasePlacement ? -referenceRect[len] / 2 + additive + arrowLen + arrowPaddingMax + normalizedTetherOffsetValue.mainAxis : maxLen + arrowLen + arrowPaddingMax + normalizedTetherOffsetValue.mainAxis;
-    var arrowOffsetParent = state.elements.arrow && getOffsetParent(state.elements.arrow);
-    var clientOffset = arrowOffsetParent ? mainAxis === "y" ? arrowOffsetParent.clientTop || 0 : arrowOffsetParent.clientLeft || 0 : 0;
-    var offsetModifierValue = (_offsetModifierState$ = offsetModifierState == null ? void 0 : offsetModifierState[mainAxis]) != null ? _offsetModifierState$ : 0;
-    var tetherMin = offset2 + minOffset - offsetModifierValue - clientOffset;
-    var tetherMax = offset2 + maxOffset - offsetModifierValue;
-    var preventedOffset = within(tether ? min(min$1, tetherMin) : min$1, offset2, tether ? max(max$1, tetherMax) : max$1);
-    popperOffsets2[mainAxis] = preventedOffset;
-    data[mainAxis] = preventedOffset - offset2;
-  }
-  if (checkAltAxis) {
-    var _offsetModifierState$2;
-    var _mainSide = mainAxis === "x" ? top : left;
-    var _altSide = mainAxis === "x" ? bottom : right;
-    var _offset = popperOffsets2[altAxis];
-    var _len = altAxis === "y" ? "height" : "width";
-    var _min = _offset + overflow[_mainSide];
-    var _max = _offset - overflow[_altSide];
-    var isOriginSide = [top, left].indexOf(basePlacement) !== -1;
-    var _offsetModifierValue = (_offsetModifierState$2 = offsetModifierState == null ? void 0 : offsetModifierState[altAxis]) != null ? _offsetModifierState$2 : 0;
-    var _tetherMin = isOriginSide ? _min : _offset - referenceRect[_len] - popperRect[_len] - _offsetModifierValue + normalizedTetherOffsetValue.altAxis;
-    var _tetherMax = isOriginSide ? _offset + referenceRect[_len] + popperRect[_len] - _offsetModifierValue - normalizedTetherOffsetValue.altAxis : _max;
-    var _preventedOffset = tether && isOriginSide ? withinMaxClamp(_tetherMin, _offset, _tetherMax) : within(tether ? _tetherMin : _min, _offset, tether ? _tetherMax : _max);
-    popperOffsets2[altAxis] = _preventedOffset;
-    data[altAxis] = _preventedOffset - _offset;
-  }
-  state.modifiersData[name] = data;
-}
-const preventOverflow$1 = {
-  name: "preventOverflow",
-  enabled: true,
-  phase: "main",
-  fn: preventOverflow,
-  requiresIfExists: ["offset"]
-};
-function getHTMLElementScroll(element2) {
-  return {
-    scrollLeft: element2.scrollLeft,
-    scrollTop: element2.scrollTop
-  };
-}
-function getNodeScroll(node) {
-  if (node === getWindow(node) || !isHTMLElement(node)) {
-    return getWindowScroll(node);
-  } else {
-    return getHTMLElementScroll(node);
-  }
-}
-function isElementScaled(element2) {
-  var rect = element2.getBoundingClientRect();
-  var scaleX = round(rect.width) / element2.offsetWidth || 1;
-  var scaleY = round(rect.height) / element2.offsetHeight || 1;
-  return scaleX !== 1 || scaleY !== 1;
-}
-function getCompositeRect(elementOrVirtualElement, offsetParent, isFixed) {
-  if (isFixed === void 0) {
-    isFixed = false;
-  }
-  var isOffsetParentAnElement = isHTMLElement(offsetParent);
-  var offsetParentIsScaled = isHTMLElement(offsetParent) && isElementScaled(offsetParent);
-  var documentElement = getDocumentElement(offsetParent);
-  var rect = getBoundingClientRect(elementOrVirtualElement, offsetParentIsScaled, isFixed);
-  var scroll = {
+function getRectRelativeToOffsetParent(element2, offsetParent, strategy) {
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  const documentElement = getDocumentElement(offsetParent);
+  const isFixed = strategy === "fixed";
+  const rect = getBoundingClientRect(element2, true, isFixed, offsetParent);
+  let scroll = {
     scrollLeft: 0,
     scrollTop: 0
   };
-  var offsets = {
-    x: 0,
-    y: 0
-  };
+  const offsets = createCoords(0);
   if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
-    if (getNodeName(offsetParent) !== "body" || // https://github.com/popperjs/popper-core/issues/1078
-    isScrollParent(documentElement)) {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
       scroll = getNodeScroll(offsetParent);
     }
-    if (isHTMLElement(offsetParent)) {
-      offsets = getBoundingClientRect(offsetParent, true);
-      offsets.x += offsetParent.clientLeft;
-      offsets.y += offsetParent.clientTop;
+    if (isOffsetParentAnElement) {
+      const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
     } else if (documentElement) {
       offsets.x = getWindowScrollBarX(documentElement);
     }
@@ -14529,1825 +16391,5826 @@ function getCompositeRect(elementOrVirtualElement, offsetParent, isFixed) {
     height: rect.height
   };
 }
-function order(modifiers) {
-  var map = /* @__PURE__ */ new Map();
-  var visited = /* @__PURE__ */ new Set();
-  var result = [];
-  modifiers.forEach(function(modifier) {
-    map.set(modifier.name, modifier);
-  });
-  function sort(modifier) {
-    visited.add(modifier.name);
-    var requires = [].concat(modifier.requires || [], modifier.requiresIfExists || []);
-    requires.forEach(function(dep) {
-      if (!visited.has(dep)) {
-        var depModifier = map.get(dep);
-        if (depModifier) {
-          sort(depModifier);
-        }
-      }
-    });
-    result.push(modifier);
+function getTrueOffsetParent(element2, polyfill) {
+  if (!isHTMLElement(element2) || getComputedStyle$1(element2).position === "fixed") {
+    return null;
   }
-  modifiers.forEach(function(modifier) {
-    if (!visited.has(modifier.name)) {
-      sort(modifier);
-    }
-  });
-  return result;
-}
-function orderModifiers(modifiers) {
-  var orderedModifiers = order(modifiers);
-  return modifierPhases.reduce(function(acc, phase) {
-    return acc.concat(orderedModifiers.filter(function(modifier) {
-      return modifier.phase === phase;
-    }));
-  }, []);
-}
-function debounce$1(fn2) {
-  var pending;
-  return function() {
-    if (!pending) {
-      pending = new Promise(function(resolve) {
-        Promise.resolve().then(function() {
-          pending = void 0;
-          resolve(fn2());
-        });
-      });
-    }
-    return pending;
-  };
-}
-function mergeByName(modifiers) {
-  var merged = modifiers.reduce(function(merged2, current) {
-    var existing = merged2[current.name];
-    merged2[current.name] = existing ? Object.assign({}, existing, current, {
-      options: Object.assign({}, existing.options, current.options),
-      data: Object.assign({}, existing.data, current.data)
-    }) : current;
-    return merged2;
-  }, {});
-  return Object.keys(merged).map(function(key) {
-    return merged[key];
-  });
-}
-var DEFAULT_OPTIONS = {
-  placement: "bottom",
-  modifiers: [],
-  strategy: "absolute"
-};
-function areValidElements() {
-  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-    args[_key] = arguments[_key];
+  if (polyfill) {
+    return polyfill(element2);
   }
-  return !args.some(function(element2) {
-    return !(element2 && typeof element2.getBoundingClientRect === "function");
-  });
+  return element2.offsetParent;
 }
-function popperGenerator(generatorOptions) {
-  if (generatorOptions === void 0) {
-    generatorOptions = {};
+function getOffsetParent(element2, polyfill) {
+  const window2 = getWindow(element2);
+  if (!isHTMLElement(element2)) {
+    return window2;
   }
-  var _generatorOptions = generatorOptions, _generatorOptions$def = _generatorOptions.defaultModifiers, defaultModifiers2 = _generatorOptions$def === void 0 ? [] : _generatorOptions$def, _generatorOptions$def2 = _generatorOptions.defaultOptions, defaultOptions = _generatorOptions$def2 === void 0 ? DEFAULT_OPTIONS : _generatorOptions$def2;
-  return function createPopper2(reference2, popper2, options) {
-    if (options === void 0) {
-      options = defaultOptions;
-    }
-    var state = {
-      placement: "bottom",
-      orderedModifiers: [],
-      options: Object.assign({}, DEFAULT_OPTIONS, defaultOptions),
-      modifiersData: {},
-      elements: {
-        reference: reference2,
-        popper: popper2
-      },
-      attributes: {},
-      styles: {}
-    };
-    var effectCleanupFns = [];
-    var isDestroyed = false;
-    var instance2 = {
-      state,
-      setOptions: function setOptions(setOptionsAction) {
-        var options2 = typeof setOptionsAction === "function" ? setOptionsAction(state.options) : setOptionsAction;
-        cleanupModifierEffects();
-        state.options = Object.assign({}, defaultOptions, state.options, options2);
-        state.scrollParents = {
-          reference: isElement$1(reference2) ? listScrollParents(reference2) : reference2.contextElement ? listScrollParents(reference2.contextElement) : [],
-          popper: listScrollParents(popper2)
-        };
-        var orderedModifiers = orderModifiers(mergeByName([].concat(defaultModifiers2, state.options.modifiers)));
-        state.orderedModifiers = orderedModifiers.filter(function(m) {
-          return m.enabled;
-        });
-        runModifierEffects();
-        return instance2.update();
-      },
-      // Sync update – it will always be executed, even if not necessary. This
-      // is useful for low frequency updates where sync behavior simplifies the
-      // logic.
-      // For high frequency updates (e.g. `resize` and `scroll` events), always
-      // prefer the async Popper#update method
-      forceUpdate: function forceUpdate() {
-        if (isDestroyed) {
-          return;
-        }
-        var _state$elements = state.elements, reference3 = _state$elements.reference, popper3 = _state$elements.popper;
-        if (!areValidElements(reference3, popper3)) {
-          return;
-        }
-        state.rects = {
-          reference: getCompositeRect(reference3, getOffsetParent(popper3), state.options.strategy === "fixed"),
-          popper: getLayoutRect(popper3)
-        };
-        state.reset = false;
-        state.placement = state.options.placement;
-        state.orderedModifiers.forEach(function(modifier) {
-          return state.modifiersData[modifier.name] = Object.assign({}, modifier.data);
-        });
-        for (var index = 0; index < state.orderedModifiers.length; index++) {
-          if (state.reset === true) {
-            state.reset = false;
-            index = -1;
-            continue;
-          }
-          var _state$orderedModifie = state.orderedModifiers[index], fn2 = _state$orderedModifie.fn, _state$orderedModifie2 = _state$orderedModifie.options, _options = _state$orderedModifie2 === void 0 ? {} : _state$orderedModifie2, name = _state$orderedModifie.name;
-          if (typeof fn2 === "function") {
-            state = fn2({
-              state,
-              options: _options,
-              name,
-              instance: instance2
-            }) || state;
-          }
-        }
-      },
-      // Async and optimistically optimized update – it will not be executed if
-      // not necessary (debounced to run at most once-per-tick)
-      update: debounce$1(function() {
-        return new Promise(function(resolve) {
-          instance2.forceUpdate();
-          resolve(state);
-        });
-      }),
-      destroy: function destroy() {
-        cleanupModifierEffects();
-        isDestroyed = true;
-      }
-    };
-    if (!areValidElements(reference2, popper2)) {
-      return instance2;
-    }
-    instance2.setOptions(options).then(function(state2) {
-      if (!isDestroyed && options.onFirstUpdate) {
-        options.onFirstUpdate(state2);
-      }
-    });
-    function runModifierEffects() {
-      state.orderedModifiers.forEach(function(_ref) {
-        var name = _ref.name, _ref$options = _ref.options, options2 = _ref$options === void 0 ? {} : _ref$options, effect3 = _ref.effect;
-        if (typeof effect3 === "function") {
-          var cleanupFn = effect3({
-            state,
-            name,
-            instance: instance2,
-            options: options2
-          });
-          var noopFn = function noopFn2() {
-          };
-          effectCleanupFns.push(cleanupFn || noopFn);
-        }
-      });
-    }
-    function cleanupModifierEffects() {
-      effectCleanupFns.forEach(function(fn2) {
-        return fn2();
-      });
-      effectCleanupFns = [];
-    }
-    return instance2;
-  };
-}
-var defaultModifiers = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1, offset$1, flip$1, preventOverflow$1, arrow$1, hide$1];
-var createPopper = /* @__PURE__ */ popperGenerator({
-  defaultModifiers
-});
-var ROUND_ARROW = '<svg width="16" height="6" xmlns="http://www.w3.org/2000/svg"><path d="M0 6s1.796-.013 4.67-3.615C5.851.9 6.93.006 8 0c1.07-.006 2.148.887 3.343 2.385C14.233 6.005 16 6 16 6H0z"></svg>';
-var BOX_CLASS = "tippy-box";
-var CONTENT_CLASS = "tippy-content";
-var BACKDROP_CLASS = "tippy-backdrop";
-var ARROW_CLASS = "tippy-arrow";
-var SVG_ARROW_CLASS = "tippy-svg-arrow";
-var TOUCH_OPTIONS = {
-  passive: true,
-  capture: true
-};
-var TIPPY_DEFAULT_APPEND_TO = function TIPPY_DEFAULT_APPEND_TO2() {
-  return document.body;
-};
-function getValueAtIndexOrReturn(value, index, defaultValue) {
-  if (Array.isArray(value)) {
-    var v = value[index];
-    return v == null ? Array.isArray(defaultValue) ? defaultValue[index] : defaultValue : v;
+  let offsetParent = getTrueOffsetParent(element2, polyfill);
+  while (offsetParent && isTableElement(offsetParent) && getComputedStyle$1(offsetParent).position === "static") {
+    offsetParent = getTrueOffsetParent(offsetParent, polyfill);
   }
-  return value;
-}
-function isType(value, type) {
-  var str = {}.toString.call(value);
-  return str.indexOf("[object") === 0 && str.indexOf(type + "]") > -1;
-}
-function invokeWithArgsOrReturn(value, args) {
-  return typeof value === "function" ? value.apply(void 0, args) : value;
-}
-function debounce(fn2, ms) {
-  if (ms === 0) {
-    return fn2;
+  if (offsetParent && (getNodeName(offsetParent) === "html" || getNodeName(offsetParent) === "body" && getComputedStyle$1(offsetParent).position === "static" && !isContainingBlock(offsetParent))) {
+    return window2;
   }
-  var timeout;
-  return function(arg) {
-    clearTimeout(timeout);
-    timeout = setTimeout(function() {
-      fn2(arg);
-    }, ms);
-  };
+  return offsetParent || getContainingBlock(element2) || window2;
 }
-function splitBySpaces(value) {
-  return value.split(/\s+/).filter(Boolean);
-}
-function normalizeToArray(value) {
-  return [].concat(value);
-}
-function pushIfUnique(arr, value) {
-  if (arr.indexOf(value) === -1) {
-    arr.push(value);
-  }
-}
-function unique(arr) {
-  return arr.filter(function(item, index) {
-    return arr.indexOf(item) === index;
-  });
-}
-function getBasePlacement(placement) {
-  return placement.split("-")[0];
-}
-function arrayFrom(value) {
-  return [].slice.call(value);
-}
-function removeUndefinedProps(obj) {
-  return Object.keys(obj).reduce(function(acc, key) {
-    if (obj[key] !== void 0) {
-      acc[key] = obj[key];
-    }
-    return acc;
-  }, {});
-}
-function div() {
-  return document.createElement("div");
-}
-function isElement(value) {
-  return ["Element", "Fragment"].some(function(type) {
-    return isType(value, type);
-  });
-}
-function isNodeList(value) {
-  return isType(value, "NodeList");
-}
-function isMouseEvent(value) {
-  return isType(value, "MouseEvent");
-}
-function isReferenceElement(value) {
-  return !!(value && value._tippy && value._tippy.reference === value);
-}
-function getArrayOfElements(value) {
-  if (isElement(value)) {
-    return [value];
-  }
-  if (isNodeList(value)) {
-    return arrayFrom(value);
-  }
-  if (Array.isArray(value)) {
-    return value;
-  }
-  return arrayFrom(document.querySelectorAll(value));
-}
-function setTransitionDuration(els, value) {
-  els.forEach(function(el) {
-    if (el) {
-      el.style.transitionDuration = value + "ms";
-    }
-  });
-}
-function setVisibilityState(els, state) {
-  els.forEach(function(el) {
-    if (el) {
-      el.setAttribute("data-state", state);
-    }
-  });
-}
-function getOwnerDocument(elementOrElements) {
-  var _element$ownerDocumen;
-  var _normalizeToArray = normalizeToArray(elementOrElements), element2 = _normalizeToArray[0];
-  return element2 != null && (_element$ownerDocumen = element2.ownerDocument) != null && _element$ownerDocumen.body ? element2.ownerDocument : document;
-}
-function isCursorOutsideInteractiveBorder(popperTreeData, event) {
-  var clientX = event.clientX, clientY = event.clientY;
-  return popperTreeData.every(function(_ref) {
-    var popperRect = _ref.popperRect, popperState = _ref.popperState, props = _ref.props;
-    var interactiveBorder = props.interactiveBorder;
-    var basePlacement = getBasePlacement(popperState.placement);
-    var offsetData = popperState.modifiersData.offset;
-    if (!offsetData) {
-      return true;
-    }
-    var topDistance = basePlacement === "bottom" ? offsetData.top.y : 0;
-    var bottomDistance = basePlacement === "top" ? offsetData.bottom.y : 0;
-    var leftDistance = basePlacement === "right" ? offsetData.left.x : 0;
-    var rightDistance = basePlacement === "left" ? offsetData.right.x : 0;
-    var exceedsTop = popperRect.top - clientY + topDistance > interactiveBorder;
-    var exceedsBottom = clientY - popperRect.bottom - bottomDistance > interactiveBorder;
-    var exceedsLeft = popperRect.left - clientX + leftDistance > interactiveBorder;
-    var exceedsRight = clientX - popperRect.right - rightDistance > interactiveBorder;
-    return exceedsTop || exceedsBottom || exceedsLeft || exceedsRight;
-  });
-}
-function updateTransitionEndListener(box, action, listener) {
-  var method = action + "EventListener";
-  ["transitionend", "webkitTransitionEnd"].forEach(function(event) {
-    box[method](event, listener);
-  });
-}
-function actualContains(parent, child) {
-  var target = child;
-  while (target) {
-    var _target$getRootNode;
-    if (parent.contains(target)) {
-      return true;
-    }
-    target = target.getRootNode == null ? void 0 : (_target$getRootNode = target.getRootNode()) == null ? void 0 : _target$getRootNode.host;
-  }
-  return false;
-}
-var currentInput = {
-  isTouch: false
-};
-var lastMouseMoveTime = 0;
-function onDocumentTouchStart() {
-  if (currentInput.isTouch) {
-    return;
-  }
-  currentInput.isTouch = true;
-  if (window.performance) {
-    document.addEventListener("mousemove", onDocumentMouseMove);
-  }
-}
-function onDocumentMouseMove() {
-  var now2 = performance.now();
-  if (now2 - lastMouseMoveTime < 20) {
-    currentInput.isTouch = false;
-    document.removeEventListener("mousemove", onDocumentMouseMove);
-  }
-  lastMouseMoveTime = now2;
-}
-function onWindowBlur() {
-  var activeElement = document.activeElement;
-  if (isReferenceElement(activeElement)) {
-    var instance2 = activeElement._tippy;
-    if (activeElement.blur && !instance2.state.isVisible) {
-      activeElement.blur();
-    }
-  }
-}
-function bindGlobalEventListeners() {
-  document.addEventListener("touchstart", onDocumentTouchStart, TOUCH_OPTIONS);
-  window.addEventListener("blur", onWindowBlur);
-}
-var isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
-var isIE11 = isBrowser ? (
-  // @ts-ignore
-  !!window.msCrypto
-) : false;
-var pluginProps = {
-  animateFill: false,
-  followCursor: false,
-  inlinePositioning: false,
-  sticky: false
-};
-var renderProps = {
-  allowHTML: false,
-  animation: "fade",
-  arrow: true,
-  content: "",
-  inertia: false,
-  maxWidth: 350,
-  role: "tooltip",
-  theme: "",
-  zIndex: 9999
-};
-var defaultProps = Object.assign({
-  appendTo: TIPPY_DEFAULT_APPEND_TO,
-  aria: {
-    content: "auto",
-    expanded: "auto"
-  },
-  delay: 0,
-  duration: [300, 250],
-  getReferenceClientRect: null,
-  hideOnClick: true,
-  ignoreAttributes: false,
-  interactive: false,
-  interactiveBorder: 2,
-  interactiveDebounce: 0,
-  moveTransition: "",
-  offset: [0, 10],
-  onAfterUpdate: function onAfterUpdate() {
-  },
-  onBeforeUpdate: function onBeforeUpdate() {
-  },
-  onCreate: function onCreate() {
-  },
-  onDestroy: function onDestroy() {
-  },
-  onHidden: function onHidden() {
-  },
-  onHide: function onHide() {
-  },
-  onMount: function onMount2() {
-  },
-  onShow: function onShow() {
-  },
-  onShown: function onShown() {
-  },
-  onTrigger: function onTrigger() {
-  },
-  onUntrigger: function onUntrigger() {
-  },
-  onClickOutside: function onClickOutside() {
-  },
-  placement: "top",
-  plugins: [],
-  popperOptions: {},
-  render: null,
-  showOnCreate: false,
-  touch: true,
-  trigger: "mouseenter focus",
-  triggerTarget: null
-}, pluginProps, renderProps);
-var defaultKeys = Object.keys(defaultProps);
-var setDefaultProps = function setDefaultProps2(partialProps) {
-  var keys = Object.keys(partialProps);
-  keys.forEach(function(key) {
-    defaultProps[key] = partialProps[key];
-  });
-};
-function getExtendedPassedProps(passedProps) {
-  var plugins = passedProps.plugins || [];
-  var pluginProps2 = plugins.reduce(function(acc, plugin) {
-    var name = plugin.name, defaultValue = plugin.defaultValue;
-    if (name) {
-      var _name;
-      acc[name] = passedProps[name] !== void 0 ? passedProps[name] : (_name = defaultProps[name]) != null ? _name : defaultValue;
-    }
-    return acc;
-  }, {});
-  return Object.assign({}, passedProps, pluginProps2);
-}
-function getDataAttributeProps(reference2, plugins) {
-  var propKeys = plugins ? Object.keys(getExtendedPassedProps(Object.assign({}, defaultProps, {
-    plugins
-  }))) : defaultKeys;
-  var props = propKeys.reduce(function(acc, key) {
-    var valueAsString = (reference2.getAttribute("data-tippy-" + key) || "").trim();
-    if (!valueAsString) {
-      return acc;
-    }
-    if (key === "content") {
-      acc[key] = valueAsString;
-    } else {
-      try {
-        acc[key] = JSON.parse(valueAsString);
-      } catch (e) {
-        acc[key] = valueAsString;
-      }
-    }
-    return acc;
-  }, {});
-  return props;
-}
-function evaluateProps(reference2, props) {
-  var out = Object.assign({}, props, {
-    content: invokeWithArgsOrReturn(props.content, [reference2])
-  }, props.ignoreAttributes ? {} : getDataAttributeProps(reference2, props.plugins));
-  out.aria = Object.assign({}, defaultProps.aria, out.aria);
-  out.aria = {
-    expanded: out.aria.expanded === "auto" ? props.interactive : out.aria.expanded,
-    content: out.aria.content === "auto" ? props.interactive ? null : "describedby" : out.aria.content
-  };
-  return out;
-}
-var innerHTML = function innerHTML2() {
-  return "innerHTML";
-};
-function dangerouslySetInnerHTML(element2, html) {
-  element2[innerHTML()] = html;
-}
-function createArrowElement(value) {
-  var arrow2 = div();
-  if (value === true) {
-    arrow2.className = ARROW_CLASS;
-  } else {
-    arrow2.className = SVG_ARROW_CLASS;
-    if (isElement(value)) {
-      arrow2.appendChild(value);
-    } else {
-      dangerouslySetInnerHTML(arrow2, value);
-    }
-  }
-  return arrow2;
-}
-function setContent(content, props) {
-  if (isElement(props.content)) {
-    dangerouslySetInnerHTML(content, "");
-    content.appendChild(props.content);
-  } else if (typeof props.content !== "function") {
-    if (props.allowHTML) {
-      dangerouslySetInnerHTML(content, props.content);
-    } else {
-      content.textContent = props.content;
-    }
-  }
-}
-function getChildren(popper2) {
-  var box = popper2.firstElementChild;
-  var boxChildren = arrayFrom(box.children);
+const getElementRects = async function(_ref) {
+  let {
+    reference,
+    floating,
+    strategy
+  } = _ref;
+  const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+  const getDimensionsFn = this.getDimensions;
   return {
-    box,
-    content: boxChildren.find(function(node) {
-      return node.classList.contains(CONTENT_CLASS);
-    }),
-    arrow: boxChildren.find(function(node) {
-      return node.classList.contains(ARROW_CLASS) || node.classList.contains(SVG_ARROW_CLASS);
-    }),
-    backdrop: boxChildren.find(function(node) {
-      return node.classList.contains(BACKDROP_CLASS);
-    })
+    reference: getRectRelativeToOffsetParent(reference, await getOffsetParentFn(floating), strategy),
+    floating: {
+      x: 0,
+      y: 0,
+      ...await getDimensionsFn(floating)
+    }
   };
+};
+function isRTL(element2) {
+  return getComputedStyle$1(element2).direction === "rtl";
 }
-function render(instance2) {
-  var popper2 = div();
-  var box = div();
-  box.className = BOX_CLASS;
-  box.setAttribute("data-state", "hidden");
-  box.setAttribute("tabindex", "-1");
-  var content = div();
-  content.className = CONTENT_CLASS;
-  content.setAttribute("data-state", "hidden");
-  setContent(content, instance2.props);
-  popper2.appendChild(box);
-  box.appendChild(content);
-  onUpdate(instance2.props, instance2.props);
-  function onUpdate(prevProps, nextProps) {
-    var _getChildren = getChildren(popper2), box2 = _getChildren.box, content2 = _getChildren.content, arrow2 = _getChildren.arrow;
-    if (nextProps.theme) {
-      box2.setAttribute("data-theme", nextProps.theme);
-    } else {
-      box2.removeAttribute("data-theme");
-    }
-    if (typeof nextProps.animation === "string") {
-      box2.setAttribute("data-animation", nextProps.animation);
-    } else {
-      box2.removeAttribute("data-animation");
-    }
-    if (nextProps.inertia) {
-      box2.setAttribute("data-inertia", "");
-    } else {
-      box2.removeAttribute("data-inertia");
-    }
-    box2.style.maxWidth = typeof nextProps.maxWidth === "number" ? nextProps.maxWidth + "px" : nextProps.maxWidth;
-    if (nextProps.role) {
-      box2.setAttribute("role", nextProps.role);
-    } else {
-      box2.removeAttribute("role");
-    }
-    if (prevProps.content !== nextProps.content || prevProps.allowHTML !== nextProps.allowHTML) {
-      setContent(content2, instance2.props);
-    }
-    if (nextProps.arrow) {
-      if (!arrow2) {
-        box2.appendChild(createArrowElement(nextProps.arrow));
-      } else if (prevProps.arrow !== nextProps.arrow) {
-        box2.removeChild(arrow2);
-        box2.appendChild(createArrowElement(nextProps.arrow));
-      }
-    } else if (arrow2) {
-      box2.removeChild(arrow2);
-    }
+const platform = {
+  convertOffsetParentRelativeRectToViewportRelativeRect,
+  getDocumentElement,
+  getClippingRect,
+  getOffsetParent,
+  getElementRects,
+  getClientRects,
+  getDimensions,
+  getScale,
+  isElement,
+  isRTL
+};
+function observeMove(element2, onMove) {
+  let io = null;
+  let timeoutId;
+  const root = getDocumentElement(element2);
+  function cleanup() {
+    clearTimeout(timeoutId);
+    io && io.disconnect();
+    io = null;
   }
-  return {
-    popper: popper2,
-    onUpdate
-  };
-}
-render.$$tippy = true;
-var idCounter = 1;
-var mouseMoveListeners = [];
-var mountedInstances = [];
-function createTippy(reference2, passedProps) {
-  var props = evaluateProps(reference2, Object.assign({}, defaultProps, getExtendedPassedProps(removeUndefinedProps(passedProps))));
-  var showTimeout;
-  var hideTimeout;
-  var scheduleHideAnimationFrame;
-  var isVisibleFromClick = false;
-  var didHideDueToDocumentMouseDown = false;
-  var didTouchMove = false;
-  var ignoreOnFirstUpdate = false;
-  var lastTriggerEvent;
-  var currentTransitionEndListener;
-  var onFirstUpdate;
-  var listeners = [];
-  var debouncedOnMouseMove = debounce(onMouseMove, props.interactiveDebounce);
-  var currentTarget;
-  var id = idCounter++;
-  var popperInstance = null;
-  var plugins = unique(props.plugins);
-  var state = {
-    // Is the instance currently enabled?
-    isEnabled: true,
-    // Is the tippy currently showing and not transitioning out?
-    isVisible: false,
-    // Has the instance been destroyed?
-    isDestroyed: false,
-    // Is the tippy currently mounted to the DOM?
-    isMounted: false,
-    // Has the tippy finished transitioning in?
-    isShown: false
-  };
-  var instance2 = {
-    // properties
-    id,
-    reference: reference2,
-    popper: div(),
-    popperInstance,
-    props,
-    state,
-    plugins,
-    // methods
-    clearDelayTimeouts,
-    setProps,
-    setContent: setContent2,
-    show,
-    hide: hide2,
-    hideWithInteractivity,
-    enable,
-    disable,
-    unmount,
-    destroy
-  };
-  if (!props.render) {
-    return instance2;
-  }
-  var _props$render = props.render(instance2), popper2 = _props$render.popper, onUpdate = _props$render.onUpdate;
-  popper2.setAttribute("data-tippy-root", "");
-  popper2.id = "tippy-" + instance2.id;
-  instance2.popper = popper2;
-  reference2._tippy = instance2;
-  popper2._tippy = instance2;
-  var pluginsHooks = plugins.map(function(plugin) {
-    return plugin.fn(instance2);
-  });
-  var hasAriaExpanded = reference2.hasAttribute("aria-expanded");
-  addListeners();
-  handleAriaExpandedAttribute();
-  handleStyles();
-  invokeHook("onCreate", [instance2]);
-  if (props.showOnCreate) {
-    scheduleShow();
-  }
-  popper2.addEventListener("mouseenter", function() {
-    if (instance2.props.interactive && instance2.state.isVisible) {
-      instance2.clearDelayTimeouts();
+  function refresh(skip, threshold) {
+    if (skip === void 0) {
+      skip = false;
     }
-  });
-  popper2.addEventListener("mouseleave", function() {
-    if (instance2.props.interactive && instance2.props.trigger.indexOf("mouseenter") >= 0) {
-      getDocument().addEventListener("mousemove", debouncedOnMouseMove);
+    if (threshold === void 0) {
+      threshold = 1;
     }
-  });
-  return instance2;
-  function getNormalizedTouchSettings() {
-    var touch = instance2.props.touch;
-    return Array.isArray(touch) ? touch : [touch, 0];
-  }
-  function getIsCustomTouchBehavior() {
-    return getNormalizedTouchSettings()[0] === "hold";
-  }
-  function getIsDefaultRenderFn() {
-    var _instance$props$rende;
-    return !!((_instance$props$rende = instance2.props.render) != null && _instance$props$rende.$$tippy);
-  }
-  function getCurrentTarget() {
-    return currentTarget || reference2;
-  }
-  function getDocument() {
-    var parent = getCurrentTarget().parentNode;
-    return parent ? getOwnerDocument(parent) : document;
-  }
-  function getDefaultTemplateChildren() {
-    return getChildren(popper2);
-  }
-  function getDelay(isShow) {
-    if (instance2.state.isMounted && !instance2.state.isVisible || currentInput.isTouch || lastTriggerEvent && lastTriggerEvent.type === "focus") {
-      return 0;
+    cleanup();
+    const {
+      left,
+      top,
+      width,
+      height
+    } = element2.getBoundingClientRect();
+    if (!skip) {
+      onMove();
     }
-    return getValueAtIndexOrReturn(instance2.props.delay, isShow ? 0 : 1, defaultProps.delay);
-  }
-  function handleStyles(fromHide) {
-    if (fromHide === void 0) {
-      fromHide = false;
-    }
-    popper2.style.pointerEvents = instance2.props.interactive && !fromHide ? "" : "none";
-    popper2.style.zIndex = "" + instance2.props.zIndex;
-  }
-  function invokeHook(hook, args, shouldInvokePropsHook) {
-    if (shouldInvokePropsHook === void 0) {
-      shouldInvokePropsHook = true;
-    }
-    pluginsHooks.forEach(function(pluginHooks) {
-      if (pluginHooks[hook]) {
-        pluginHooks[hook].apply(pluginHooks, args);
-      }
-    });
-    if (shouldInvokePropsHook) {
-      var _instance$props;
-      (_instance$props = instance2.props)[hook].apply(_instance$props, args);
-    }
-  }
-  function handleAriaContentAttribute() {
-    var aria = instance2.props.aria;
-    if (!aria.content) {
+    if (!width || !height) {
       return;
     }
-    var attr2 = "aria-" + aria.content;
-    var id2 = popper2.id;
-    var nodes = normalizeToArray(instance2.props.triggerTarget || reference2);
-    nodes.forEach(function(node) {
-      var currentValue = node.getAttribute(attr2);
-      if (instance2.state.isVisible) {
-        node.setAttribute(attr2, currentValue ? currentValue + " " + id2 : id2);
-      } else {
-        var nextValue = currentValue && currentValue.replace(id2, "").trim();
-        if (nextValue) {
-          node.setAttribute(attr2, nextValue);
+    const insetTop = floor(top);
+    const insetRight = floor(root.clientWidth - (left + width));
+    const insetBottom = floor(root.clientHeight - (top + height));
+    const insetLeft = floor(left);
+    const rootMargin = -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px";
+    const options = {
+      rootMargin,
+      threshold: max(0, min(1, threshold)) || 1
+    };
+    let isFirstUpdate = true;
+    function handleObserve(entries) {
+      const ratio = entries[0].intersectionRatio;
+      if (ratio !== threshold) {
+        if (!isFirstUpdate) {
+          return refresh();
+        }
+        if (!ratio) {
+          timeoutId = setTimeout(() => {
+            refresh(false, 1e-7);
+          }, 100);
         } else {
-          node.removeAttribute(attr2);
+          refresh(false, ratio);
         }
       }
+      isFirstUpdate = false;
+    }
+    try {
+      io = new IntersectionObserver(handleObserve, {
+        ...options,
+        // Handle <iframe>s
+        root: root.ownerDocument
+      });
+    } catch (e) {
+      io = new IntersectionObserver(handleObserve, options);
+    }
+    io.observe(element2);
+  }
+  refresh(true);
+  return cleanup;
+}
+function autoUpdate(reference, floating, update2, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    ancestorScroll = true,
+    ancestorResize = true,
+    elementResize = typeof ResizeObserver === "function",
+    layoutShift = typeof IntersectionObserver === "function",
+    animationFrame = false
+  } = options;
+  const referenceEl = unwrapElement(reference);
+  const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...getOverflowAncestors(floating)] : [];
+  ancestors.forEach((ancestor) => {
+    ancestorScroll && ancestor.addEventListener("scroll", update2, {
+      passive: true
     });
-  }
-  function handleAriaExpandedAttribute() {
-    if (hasAriaExpanded || !instance2.props.aria.expanded) {
-      return;
-    }
-    var nodes = normalizeToArray(instance2.props.triggerTarget || reference2);
-    nodes.forEach(function(node) {
-      if (instance2.props.interactive) {
-        node.setAttribute("aria-expanded", instance2.state.isVisible && node === getCurrentTarget() ? "true" : "false");
-      } else {
-        node.removeAttribute("aria-expanded");
-      }
-    });
-  }
-  function cleanupInteractiveMouseListeners() {
-    getDocument().removeEventListener("mousemove", debouncedOnMouseMove);
-    mouseMoveListeners = mouseMoveListeners.filter(function(listener) {
-      return listener !== debouncedOnMouseMove;
-    });
-  }
-  function onDocumentPress(event) {
-    if (currentInput.isTouch) {
-      if (didTouchMove || event.type === "mousedown") {
-        return;
-      }
-    }
-    var actualTarget = event.composedPath && event.composedPath()[0] || event.target;
-    if (instance2.props.interactive && actualContains(popper2, actualTarget)) {
-      return;
-    }
-    if (normalizeToArray(instance2.props.triggerTarget || reference2).some(function(el) {
-      return actualContains(el, actualTarget);
-    })) {
-      if (currentInput.isTouch) {
-        return;
-      }
-      if (instance2.state.isVisible && instance2.props.trigger.indexOf("click") >= 0) {
-        return;
-      }
-    } else {
-      invokeHook("onClickOutside", [instance2, event]);
-    }
-    if (instance2.props.hideOnClick === true) {
-      instance2.clearDelayTimeouts();
-      instance2.hide();
-      didHideDueToDocumentMouseDown = true;
-      setTimeout(function() {
-        didHideDueToDocumentMouseDown = false;
-      });
-      if (!instance2.state.isMounted) {
-        removeDocumentPress();
-      }
-    }
-  }
-  function onTouchMove() {
-    didTouchMove = true;
-  }
-  function onTouchStart() {
-    didTouchMove = false;
-  }
-  function addDocumentPress() {
-    var doc = getDocument();
-    doc.addEventListener("mousedown", onDocumentPress, true);
-    doc.addEventListener("touchend", onDocumentPress, TOUCH_OPTIONS);
-    doc.addEventListener("touchstart", onTouchStart, TOUCH_OPTIONS);
-    doc.addEventListener("touchmove", onTouchMove, TOUCH_OPTIONS);
-  }
-  function removeDocumentPress() {
-    var doc = getDocument();
-    doc.removeEventListener("mousedown", onDocumentPress, true);
-    doc.removeEventListener("touchend", onDocumentPress, TOUCH_OPTIONS);
-    doc.removeEventListener("touchstart", onTouchStart, TOUCH_OPTIONS);
-    doc.removeEventListener("touchmove", onTouchMove, TOUCH_OPTIONS);
-  }
-  function onTransitionedOut(duration, callback) {
-    onTransitionEnd(duration, function() {
-      if (!instance2.state.isVisible && popper2.parentNode && popper2.parentNode.contains(popper2)) {
-        callback();
-      }
-    });
-  }
-  function onTransitionedIn(duration, callback) {
-    onTransitionEnd(duration, callback);
-  }
-  function onTransitionEnd(duration, callback) {
-    var box = getDefaultTemplateChildren().box;
-    function listener(event) {
-      if (event.target === box) {
-        updateTransitionEndListener(box, "remove", listener);
-        callback();
-      }
-    }
-    if (duration === 0) {
-      return callback();
-    }
-    updateTransitionEndListener(box, "remove", currentTransitionEndListener);
-    updateTransitionEndListener(box, "add", listener);
-    currentTransitionEndListener = listener;
-  }
-  function on(eventType, handler, options) {
-    if (options === void 0) {
-      options = false;
-    }
-    var nodes = normalizeToArray(instance2.props.triggerTarget || reference2);
-    nodes.forEach(function(node) {
-      node.addEventListener(eventType, handler, options);
-      listeners.push({
-        node,
-        eventType,
-        handler,
-        options
-      });
-    });
-  }
-  function addListeners() {
-    if (getIsCustomTouchBehavior()) {
-      on("touchstart", onTrigger2, {
-        passive: true
-      });
-      on("touchend", onMouseLeave, {
-        passive: true
-      });
-    }
-    splitBySpaces(instance2.props.trigger).forEach(function(eventType) {
-      if (eventType === "manual") {
-        return;
-      }
-      on(eventType, onTrigger2);
-      switch (eventType) {
-        case "mouseenter":
-          on("mouseleave", onMouseLeave);
-          break;
-        case "focus":
-          on(isIE11 ? "focusout" : "blur", onBlurOrFocusOut);
-          break;
-        case "focusin":
-          on("focusout", onBlurOrFocusOut);
-          break;
-      }
-    });
-  }
-  function removeListeners() {
-    listeners.forEach(function(_ref) {
-      var node = _ref.node, eventType = _ref.eventType, handler = _ref.handler, options = _ref.options;
-      node.removeEventListener(eventType, handler, options);
-    });
-    listeners = [];
-  }
-  function onTrigger2(event) {
-    var _lastTriggerEvent;
-    var shouldScheduleClickHide = false;
-    if (!instance2.state.isEnabled || isEventListenerStopped(event) || didHideDueToDocumentMouseDown) {
-      return;
-    }
-    var wasFocused = ((_lastTriggerEvent = lastTriggerEvent) == null ? void 0 : _lastTriggerEvent.type) === "focus";
-    lastTriggerEvent = event;
-    currentTarget = event.currentTarget;
-    handleAriaExpandedAttribute();
-    if (!instance2.state.isVisible && isMouseEvent(event)) {
-      mouseMoveListeners.forEach(function(listener) {
-        return listener(event);
-      });
-    }
-    if (event.type === "click" && (instance2.props.trigger.indexOf("mouseenter") < 0 || isVisibleFromClick) && instance2.props.hideOnClick !== false && instance2.state.isVisible) {
-      shouldScheduleClickHide = true;
-    } else {
-      scheduleShow(event);
-    }
-    if (event.type === "click") {
-      isVisibleFromClick = !shouldScheduleClickHide;
-    }
-    if (shouldScheduleClickHide && !wasFocused) {
-      scheduleHide(event);
-    }
-  }
-  function onMouseMove(event) {
-    var target = event.target;
-    var isCursorOverReferenceOrPopper = getCurrentTarget().contains(target) || popper2.contains(target);
-    if (event.type === "mousemove" && isCursorOverReferenceOrPopper) {
-      return;
-    }
-    var popperTreeData = getNestedPopperTree().concat(popper2).map(function(popper3) {
-      var _instance$popperInsta;
-      var instance3 = popper3._tippy;
-      var state2 = (_instance$popperInsta = instance3.popperInstance) == null ? void 0 : _instance$popperInsta.state;
-      if (state2) {
-        return {
-          popperRect: popper3.getBoundingClientRect(),
-          popperState: state2,
-          props
-        };
-      }
-      return null;
-    }).filter(Boolean);
-    if (isCursorOutsideInteractiveBorder(popperTreeData, event)) {
-      cleanupInteractiveMouseListeners();
-      scheduleHide(event);
-    }
-  }
-  function onMouseLeave(event) {
-    var shouldBail = isEventListenerStopped(event) || instance2.props.trigger.indexOf("click") >= 0 && isVisibleFromClick;
-    if (shouldBail) {
-      return;
-    }
-    if (instance2.props.interactive) {
-      instance2.hideWithInteractivity(event);
-      return;
-    }
-    scheduleHide(event);
-  }
-  function onBlurOrFocusOut(event) {
-    if (instance2.props.trigger.indexOf("focusin") < 0 && event.target !== getCurrentTarget()) {
-      return;
-    }
-    if (instance2.props.interactive && event.relatedTarget && popper2.contains(event.relatedTarget)) {
-      return;
-    }
-    scheduleHide(event);
-  }
-  function isEventListenerStopped(event) {
-    return currentInput.isTouch ? getIsCustomTouchBehavior() !== event.type.indexOf("touch") >= 0 : false;
-  }
-  function createPopperInstance() {
-    destroyPopperInstance();
-    var _instance$props2 = instance2.props, popperOptions = _instance$props2.popperOptions, placement = _instance$props2.placement, offset2 = _instance$props2.offset, getReferenceClientRect = _instance$props2.getReferenceClientRect, moveTransition = _instance$props2.moveTransition;
-    var arrow2 = getIsDefaultRenderFn() ? getChildren(popper2).arrow : null;
-    var computedReference = getReferenceClientRect ? {
-      getBoundingClientRect: getReferenceClientRect,
-      contextElement: getReferenceClientRect.contextElement || getCurrentTarget()
-    } : reference2;
-    var tippyModifier = {
-      name: "$$tippy",
-      enabled: true,
-      phase: "beforeWrite",
-      requires: ["computeStyles"],
-      fn: function fn2(_ref2) {
-        var state2 = _ref2.state;
-        if (getIsDefaultRenderFn()) {
-          var _getDefaultTemplateCh = getDefaultTemplateChildren(), box = _getDefaultTemplateCh.box;
-          ["placement", "reference-hidden", "escaped"].forEach(function(attr2) {
-            if (attr2 === "placement") {
-              box.setAttribute("data-placement", state2.placement);
-            } else {
-              if (state2.attributes.popper["data-popper-" + attr2]) {
-                box.setAttribute("data-" + attr2, "");
-              } else {
-                box.removeAttribute("data-" + attr2);
-              }
-            }
-          });
-          state2.attributes.popper = {};
-        }
-      }
-    };
-    var modifiers = [{
-      name: "offset",
-      options: {
-        offset: offset2
-      }
-    }, {
-      name: "preventOverflow",
-      options: {
-        padding: {
-          top: 2,
-          bottom: 2,
-          left: 5,
-          right: 5
-        }
-      }
-    }, {
-      name: "flip",
-      options: {
-        padding: 5
-      }
-    }, {
-      name: "computeStyles",
-      options: {
-        adaptive: !moveTransition
-      }
-    }, tippyModifier];
-    if (getIsDefaultRenderFn() && arrow2) {
-      modifiers.push({
-        name: "arrow",
-        options: {
-          element: arrow2,
-          padding: 3
-        }
-      });
-    }
-    modifiers.push.apply(modifiers, (popperOptions == null ? void 0 : popperOptions.modifiers) || []);
-    instance2.popperInstance = createPopper(computedReference, popper2, Object.assign({}, popperOptions, {
-      placement,
-      onFirstUpdate,
-      modifiers
-    }));
-  }
-  function destroyPopperInstance() {
-    if (instance2.popperInstance) {
-      instance2.popperInstance.destroy();
-      instance2.popperInstance = null;
-    }
-  }
-  function mount() {
-    var appendTo = instance2.props.appendTo;
-    var parentNode;
-    var node = getCurrentTarget();
-    if (instance2.props.interactive && appendTo === TIPPY_DEFAULT_APPEND_TO || appendTo === "parent") {
-      parentNode = node.parentNode;
-    } else {
-      parentNode = invokeWithArgsOrReturn(appendTo, [node]);
-    }
-    if (!parentNode.contains(popper2)) {
-      parentNode.appendChild(popper2);
-    }
-    instance2.state.isMounted = true;
-    createPopperInstance();
-  }
-  function getNestedPopperTree() {
-    return arrayFrom(popper2.querySelectorAll("[data-tippy-root]"));
-  }
-  function scheduleShow(event) {
-    instance2.clearDelayTimeouts();
-    if (event) {
-      invokeHook("onTrigger", [instance2, event]);
-    }
-    addDocumentPress();
-    var delay = getDelay(true);
-    var _getNormalizedTouchSe = getNormalizedTouchSettings(), touchValue = _getNormalizedTouchSe[0], touchDelay = _getNormalizedTouchSe[1];
-    if (currentInput.isTouch && touchValue === "hold" && touchDelay) {
-      delay = touchDelay;
-    }
-    if (delay) {
-      showTimeout = setTimeout(function() {
-        instance2.show();
-      }, delay);
-    } else {
-      instance2.show();
-    }
-  }
-  function scheduleHide(event) {
-    instance2.clearDelayTimeouts();
-    invokeHook("onUntrigger", [instance2, event]);
-    if (!instance2.state.isVisible) {
-      removeDocumentPress();
-      return;
-    }
-    if (instance2.props.trigger.indexOf("mouseenter") >= 0 && instance2.props.trigger.indexOf("click") >= 0 && ["mouseleave", "mousemove"].indexOf(event.type) >= 0 && isVisibleFromClick) {
-      return;
-    }
-    var delay = getDelay(false);
-    if (delay) {
-      hideTimeout = setTimeout(function() {
-        if (instance2.state.isVisible) {
-          instance2.hide();
-        }
-      }, delay);
-    } else {
-      scheduleHideAnimationFrame = requestAnimationFrame(function() {
-        instance2.hide();
-      });
-    }
-  }
-  function enable() {
-    instance2.state.isEnabled = true;
-  }
-  function disable() {
-    instance2.hide();
-    instance2.state.isEnabled = false;
-  }
-  function clearDelayTimeouts() {
-    clearTimeout(showTimeout);
-    clearTimeout(hideTimeout);
-    cancelAnimationFrame(scheduleHideAnimationFrame);
-  }
-  function setProps(partialProps) {
-    if (instance2.state.isDestroyed) {
-      return;
-    }
-    invokeHook("onBeforeUpdate", [instance2, partialProps]);
-    removeListeners();
-    var prevProps = instance2.props;
-    var nextProps = evaluateProps(reference2, Object.assign({}, prevProps, removeUndefinedProps(partialProps), {
-      ignoreAttributes: true
-    }));
-    instance2.props = nextProps;
-    addListeners();
-    if (prevProps.interactiveDebounce !== nextProps.interactiveDebounce) {
-      cleanupInteractiveMouseListeners();
-      debouncedOnMouseMove = debounce(onMouseMove, nextProps.interactiveDebounce);
-    }
-    if (prevProps.triggerTarget && !nextProps.triggerTarget) {
-      normalizeToArray(prevProps.triggerTarget).forEach(function(node) {
-        node.removeAttribute("aria-expanded");
-      });
-    } else if (nextProps.triggerTarget) {
-      reference2.removeAttribute("aria-expanded");
-    }
-    handleAriaExpandedAttribute();
-    handleStyles();
-    if (onUpdate) {
-      onUpdate(prevProps, nextProps);
-    }
-    if (instance2.popperInstance) {
-      createPopperInstance();
-      getNestedPopperTree().forEach(function(nestedPopper) {
-        requestAnimationFrame(nestedPopper._tippy.popperInstance.forceUpdate);
-      });
-    }
-    invokeHook("onAfterUpdate", [instance2, partialProps]);
-  }
-  function setContent2(content) {
-    instance2.setProps({
-      content
-    });
-  }
-  function show() {
-    var isAlreadyVisible = instance2.state.isVisible;
-    var isDestroyed = instance2.state.isDestroyed;
-    var isDisabled = !instance2.state.isEnabled;
-    var isTouchAndTouchDisabled = currentInput.isTouch && !instance2.props.touch;
-    var duration = getValueAtIndexOrReturn(instance2.props.duration, 0, defaultProps.duration);
-    if (isAlreadyVisible || isDestroyed || isDisabled || isTouchAndTouchDisabled) {
-      return;
-    }
-    if (getCurrentTarget().hasAttribute("disabled")) {
-      return;
-    }
-    invokeHook("onShow", [instance2], false);
-    if (instance2.props.onShow(instance2) === false) {
-      return;
-    }
-    instance2.state.isVisible = true;
-    if (getIsDefaultRenderFn()) {
-      popper2.style.visibility = "visible";
-    }
-    handleStyles();
-    addDocumentPress();
-    if (!instance2.state.isMounted) {
-      popper2.style.transition = "none";
-    }
-    if (getIsDefaultRenderFn()) {
-      var _getDefaultTemplateCh2 = getDefaultTemplateChildren(), box = _getDefaultTemplateCh2.box, content = _getDefaultTemplateCh2.content;
-      setTransitionDuration([box, content], 0);
-    }
-    onFirstUpdate = function onFirstUpdate2() {
-      var _instance$popperInsta2;
-      if (!instance2.state.isVisible || ignoreOnFirstUpdate) {
-        return;
-      }
-      ignoreOnFirstUpdate = true;
-      void popper2.offsetHeight;
-      popper2.style.transition = instance2.props.moveTransition;
-      if (getIsDefaultRenderFn() && instance2.props.animation) {
-        var _getDefaultTemplateCh3 = getDefaultTemplateChildren(), _box = _getDefaultTemplateCh3.box, _content = _getDefaultTemplateCh3.content;
-        setTransitionDuration([_box, _content], duration);
-        setVisibilityState([_box, _content], "visible");
-      }
-      handleAriaContentAttribute();
-      handleAriaExpandedAttribute();
-      pushIfUnique(mountedInstances, instance2);
-      (_instance$popperInsta2 = instance2.popperInstance) == null ? void 0 : _instance$popperInsta2.forceUpdate();
-      invokeHook("onMount", [instance2]);
-      if (instance2.props.animation && getIsDefaultRenderFn()) {
-        onTransitionedIn(duration, function() {
-          instance2.state.isShown = true;
-          invokeHook("onShown", [instance2]);
+    ancestorResize && ancestor.addEventListener("resize", update2);
+  });
+  const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update2) : null;
+  let reobserveFrame = -1;
+  let resizeObserver2 = null;
+  if (elementResize) {
+    resizeObserver2 = new ResizeObserver((_ref) => {
+      let [firstEntry] = _ref;
+      if (firstEntry && firstEntry.target === referenceEl && resizeObserver2) {
+        resizeObserver2.unobserve(floating);
+        cancelAnimationFrame(reobserveFrame);
+        reobserveFrame = requestAnimationFrame(() => {
+          resizeObserver2 && resizeObserver2.observe(floating);
         });
       }
-    };
-    mount();
-  }
-  function hide2() {
-    var isAlreadyHidden = !instance2.state.isVisible;
-    var isDestroyed = instance2.state.isDestroyed;
-    var isDisabled = !instance2.state.isEnabled;
-    var duration = getValueAtIndexOrReturn(instance2.props.duration, 1, defaultProps.duration);
-    if (isAlreadyHidden || isDestroyed || isDisabled) {
-      return;
-    }
-    invokeHook("onHide", [instance2], false);
-    if (instance2.props.onHide(instance2) === false) {
-      return;
-    }
-    instance2.state.isVisible = false;
-    instance2.state.isShown = false;
-    ignoreOnFirstUpdate = false;
-    isVisibleFromClick = false;
-    if (getIsDefaultRenderFn()) {
-      popper2.style.visibility = "hidden";
-    }
-    cleanupInteractiveMouseListeners();
-    removeDocumentPress();
-    handleStyles(true);
-    if (getIsDefaultRenderFn()) {
-      var _getDefaultTemplateCh4 = getDefaultTemplateChildren(), box = _getDefaultTemplateCh4.box, content = _getDefaultTemplateCh4.content;
-      if (instance2.props.animation) {
-        setTransitionDuration([box, content], duration);
-        setVisibilityState([box, content], "hidden");
-      }
-    }
-    handleAriaContentAttribute();
-    handleAriaExpandedAttribute();
-    if (instance2.props.animation) {
-      if (getIsDefaultRenderFn()) {
-        onTransitionedOut(duration, instance2.unmount);
-      }
-    } else {
-      instance2.unmount();
-    }
-  }
-  function hideWithInteractivity(event) {
-    getDocument().addEventListener("mousemove", debouncedOnMouseMove);
-    pushIfUnique(mouseMoveListeners, debouncedOnMouseMove);
-    debouncedOnMouseMove(event);
-  }
-  function unmount() {
-    if (instance2.state.isVisible) {
-      instance2.hide();
-    }
-    if (!instance2.state.isMounted) {
-      return;
-    }
-    destroyPopperInstance();
-    getNestedPopperTree().forEach(function(nestedPopper) {
-      nestedPopper._tippy.unmount();
+      update2();
     });
-    if (popper2.parentNode) {
-      popper2.parentNode.removeChild(popper2);
+    if (referenceEl && !animationFrame) {
+      resizeObserver2.observe(referenceEl);
     }
-    mountedInstances = mountedInstances.filter(function(i) {
-      return i !== instance2;
+    resizeObserver2.observe(floating);
+  }
+  let frameId;
+  let prevRefRect = animationFrame ? getBoundingClientRect(reference) : null;
+  if (animationFrame) {
+    frameLoop();
+  }
+  function frameLoop() {
+    const nextRefRect = getBoundingClientRect(reference);
+    if (prevRefRect && (nextRefRect.x !== prevRefRect.x || nextRefRect.y !== prevRefRect.y || nextRefRect.width !== prevRefRect.width || nextRefRect.height !== prevRefRect.height)) {
+      update2();
+    }
+    prevRefRect = nextRefRect;
+    frameId = requestAnimationFrame(frameLoop);
+  }
+  update2();
+  return () => {
+    ancestors.forEach((ancestor) => {
+      ancestorScroll && ancestor.removeEventListener("scroll", update2);
+      ancestorResize && ancestor.removeEventListener("resize", update2);
     });
-    instance2.state.isMounted = false;
-    invokeHook("onHidden", [instance2]);
-  }
-  function destroy() {
-    if (instance2.state.isDestroyed) {
-      return;
+    cleanupIo && cleanupIo();
+    resizeObserver2 && resizeObserver2.disconnect();
+    resizeObserver2 = null;
+    if (animationFrame) {
+      cancelAnimationFrame(frameId);
     }
-    instance2.clearDelayTimeouts();
-    instance2.unmount();
-    removeListeners();
-    delete reference2._tippy;
-    instance2.state.isDestroyed = true;
-    invokeHook("onDestroy", [instance2]);
-  }
+  };
 }
-function tippy(targets, optionalProps) {
-  if (optionalProps === void 0) {
-    optionalProps = {};
-  }
-  var plugins = defaultProps.plugins.concat(optionalProps.plugins || []);
-  bindGlobalEventListeners();
-  var passedProps = Object.assign({}, optionalProps, {
-    plugins
+const computePosition = (reference, floating, options) => {
+  const cache = /* @__PURE__ */ new Map();
+  const mergedOptions = {
+    platform,
+    ...options
+  };
+  const platformWithCache = {
+    ...mergedOptions.platform,
+    _c: cache
+  };
+  return computePosition$1(reference, floating, {
+    ...mergedOptions,
+    platform: platformWithCache
   });
-  var elements = getArrayOfElements(targets);
-  var instances = elements.reduce(function(acc, reference2) {
-    var instance2 = reference2 && createTippy(reference2, passedProps);
-    if (instance2) {
-      acc.push(instance2);
-    }
-    return acc;
-  }, []);
-  return isElement(targets) ? instances[0] : instances;
-}
-tippy.defaultProps = defaultProps;
-tippy.setDefaultProps = setDefaultProps;
-tippy.currentInput = currentInput;
-Object.assign({}, applyStyles$1, {
-  effect: function effect2(_ref) {
-    var state = _ref.state;
-    var initialStyles = {
-      popper: {
-        position: state.options.strategy,
-        left: "0",
-        top: "0",
-        margin: "0"
-      },
-      arrow: {
-        position: "absolute"
-      },
-      reference: {}
-    };
-    Object.assign(state.elements.popper.style, initialStyles.popper);
-    state.styles = initialStyles;
-    if (state.elements.arrow) {
-      Object.assign(state.elements.arrow.style, initialStyles.arrow);
-    }
+};
+let popups = [];
+function triggerPopup(popupId, element2, onTrigger) {
+  let popup = popups.find((x) => x.popupId === popupId);
+  if (popup) {
+    popup.triggerBy(element2, onTrigger);
   }
-});
-tippy.setDefaultProps({
-  render
-});
-const tippyCustom = "";
-function tooltip(node, params) {
-  if (!tippy) {
-    return;
+}
+function hidePopup(popupId, element2, onHidden) {
+  let popup = popups.find((x) => x.popupId === popupId);
+  if (popup) {
+    popup.hideBy(element2, onHidden);
   }
-  const tip = tippy(node, { ...params });
-  return {
-    update: () => tip.setProps({ ...params }),
-    destroy: () => tip.destroy()
-  };
 }
-const SettingItem_svelte_svelte_type_style_lang = "";
-function get_each_context$5(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[9] = list[i];
-  return child_ctx;
+function popupSource(node, { popupId, mode, flagStore, onTrigger, onHide }) {
+  if (mode === "hover") {
+    return popupOnMouseHover(node, popupId, onTrigger, onHide);
+  } else {
+    return popupOnFlagStore(node, popupId, flagStore, onTrigger, onHide);
+  }
 }
-function create_if_block_2(ctx) {
-  let span;
-  let t0;
-  let t1;
-  let input;
-  let mounted;
-  let dispose;
+function popupOnMouseHover(node, popupId, onTrigger, onHide) {
+  function mouseenter() {
+    triggerPopup(popupId, node, onTrigger);
+  }
+  function mouseleave() {
+    hidePopup(popupId, node, onHide);
+  }
+  node.addEventListener("mouseenter", mouseenter);
+  node.addEventListener("mouseleave", mouseleave);
   return {
-    c() {
-      span = element("span");
-      t0 = text(
-        /*name*/
-        ctx[0]
-      );
-      t1 = space();
-      input = element("input");
-      attr(span, "class", "option-label svelte-jpi-1tqy9bq");
-      attr(input, "class", "option-value svelte-jpi-1tqy9bq");
-      attr(input, "type", "checkbox");
-    },
-    m(target, anchor) {
-      insert(target, span, anchor);
-      append(span, t0);
-      insert(target, t1, anchor);
-      insert(target, input, anchor);
-      input.checked = /*$storeValue*/
-      ctx[5];
-      if (!mounted) {
-        dispose = listen(
-          input,
-          "change",
-          /*input_change_handler*/
-          ctx[8]
-        );
-        mounted = true;
-      }
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*name*/
-      1)
-        set_data(
-          t0,
-          /*name*/
-          ctx2[0]
-        );
-      if (dirty & /*$storeValue, options*/
-      48) {
-        input.checked = /*$storeValue*/
-        ctx2[5];
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(span);
-        detach(t1);
-        detach(input);
-      }
-      mounted = false;
-      dispose();
+    destroy: () => {
+      node.removeEventListener("mouseenter", mouseenter);
+      node.removeEventListener("mouseleave", mouseleave);
     }
   };
 }
-function create_if_block_1$2(ctx) {
-  let span;
-  let t;
+function popupOnFlagStore(node, popupId, flagStore, onTrigger, onHide) {
+  let unsubscribe = flagStore.subscribe((flag) => {
+    if (flag) {
+      triggerPopup(popupId, node, onTrigger);
+    } else {
+      hidePopup(popupId, node, onHide);
+    }
+  });
   return {
-    c() {
-      span = element("span");
-      t = text(
-        /*name*/
-        ctx[0]
-      );
-      attr(span, "class", "option-label svelte-jpi-1tqy9bq");
-    },
-    m(target, anchor) {
-      insert(target, span, anchor);
-      append(span, t);
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*name*/
-      1)
-        set_data(
-          t,
-          /*name*/
-          ctx2[0]
-        );
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(span);
-      }
+    destroy: () => {
+      unsubscribe();
     }
   };
 }
-function create_if_block$4(ctx) {
-  let span;
-  let t0;
-  let t1;
-  let select;
-  let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
-  let mounted;
-  let dispose;
-  let each_value = ensure_array_like(
-    /*options*/
-    ctx[4]
-  );
-  const get_key = (ctx2) => (
-    /*option*/
-    ctx2[9].value
-  );
-  for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$5(ctx, each_value, i);
-    let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$5(key, child_ctx));
+function popupTarget(node, params) {
+  node.style.position = params.strategy ?? "absolute";
+  let stopAutoCompute;
+  let showTimeout = -1;
+  let hideTimeout = -1;
+  setVisibility(false);
+  function setVisibility(visible) {
+    node.style.display = visible ? "block" : "none";
   }
-  return {
-    c() {
-      span = element("span");
-      t0 = text(
-        /*name*/
-        ctx[0]
-      );
-      t1 = space();
-      select = element("select");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      attr(span, "class", "option-label svelte-jpi-1tqy9bq");
-      attr(select, "class", "option-select svelte-jpi-1tqy9bq");
-      if (
-        /*$storeValue*/
-        ctx[5] === void 0
-      )
-        add_render_callback(() => (
-          /*select_change_handler*/
-          ctx[7].call(select)
-        ));
-    },
-    m(target, anchor) {
-      insert(target, span, anchor);
-      append(span, t0);
-      insert(target, t1, anchor);
-      insert(target, select, anchor);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(select, null);
+  function clearShowTimeout() {
+    if (showTimeout >= 0) {
+      clearTimeout(showTimeout);
+      showTimeout = -1;
+    }
+  }
+  function clearHideTimeout() {
+    if (hideTimeout >= 0) {
+      clearTimeout(hideTimeout);
+      hideTimeout = -1;
+    }
+  }
+  function show(source, onShown) {
+    if (params.delay && params.delay.show) {
+      showTimeout = setTimeout(() => {
+        clearHideTimeout();
+        setVisibility(true);
+        if (onShown)
+          onShown();
+        stopAutoCompute = startAutoCompute(source);
+      }, params.delay.show);
+    } else {
+      setVisibility(true);
+      if (onShown)
+        onShown();
+      stopAutoCompute = startAutoCompute(source);
+    }
+  }
+  function hide(onHidden) {
+    if (params.delay && params.delay.hide) {
+      clearShowTimeout();
+      hideTimeout = setTimeout(() => {
+        setVisibility(false);
+        if (onHidden)
+          onHidden();
+      }, params.delay.hide);
+    } else {
+      setVisibility(false);
+      if (onHidden)
+        onHidden();
+    }
+  }
+  function startAutoCompute(source) {
+    if (stopAutoCompute) {
+      stopAutoCompute();
+      stopAutoCompute = null;
+    }
+    let middleware = [];
+    if (typeof params.placement == "object") {
+      const customPosition = {
+        name: "customPosition",
+        fn({ x, y }) {
+          return {
+            x: params.placement.x,
+            y: params.placement.y
+          };
         }
-      }
-      select_option(
-        select,
-        /*$storeValue*/
-        ctx[5],
-        true
-      );
-      if (!mounted) {
-        dispose = listen(
-          select,
-          "change",
-          /*select_change_handler*/
-          ctx[7]
-        );
-        mounted = true;
-      }
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*name*/
-      1)
-        set_data(
-          t0,
-          /*name*/
-          ctx2[0]
-        );
-      if (dirty & /*options*/
-      16) {
-        each_value = ensure_array_like(
-          /*options*/
-          ctx2[4]
-        );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, select, destroy_block, create_each_block$5, null, get_each_context$5);
-      }
-      if (dirty & /*$storeValue, options*/
-      48) {
-        select_option(
-          select,
-          /*$storeValue*/
-          ctx2[5]
-        );
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(span);
-        detach(t1);
-        detach(select);
-      }
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].d();
-      }
-      mounted = false;
-      dispose();
+      };
+      middleware.push(customPosition);
     }
-  };
+    middleware.push(flip$1(), shift(), offset(params.offset ?? 10));
+    if (!params.placement) {
+      middleware.push(autoPlacement());
+    }
+    let compute = () => {
+      computePosition(source, node, {
+        placement: typeof params.placement === "string" ? params.placement : void 0,
+        strategy: params.strategy ?? "absolute",
+        middleware
+      }).then(({ x, y }) => {
+        Object.assign(node.style, {
+          left: `${x}px`,
+          top: `${y}px`,
+          "z-index": "999999"
+        });
+      });
+    };
+    if (params.noAutoUpdate) {
+      compute();
+      return () => {
+      };
+    } else {
+      return autoUpdate(source, node, compute);
+    }
+  }
+  popups.push({
+    popupId: params.popupId,
+    triggerBy: (element2, onShown) => {
+      show(element2, onShown);
+    },
+    hideBy: (element2, onHidden) => {
+      if (stopAutoCompute) {
+        stopAutoCompute();
+      }
+      hide(onHidden);
+    }
+  });
 }
-function create_each_block$5(key_1, ctx) {
-  let option_1;
-  let t_value = (
-    /*option*/
-    ctx[9].label + ""
-  );
-  let t;
-  let option_1_value_value;
+const genericTooltipStore = createTooltipStore();
+function createTooltipStore() {
+  const { set, update: update2, subscribe: subscribe2 } = writable({
+    delay: { start: 0, end: 2500 }
+  });
+  function setContent(content) {
+    update2((x) => {
+      x.content = content;
+      return x;
+    });
+  }
+  function setVisible(flag) {
+    update2((x) => {
+      x.visible = flag;
+      return x;
+    });
+  }
   return {
-    key: key_1,
-    first: null,
-    c() {
-      option_1 = element("option");
-      t = text(t_value);
-      option_1.__value = option_1_value_value = /*option*/
-      ctx[9].value;
-      set_input_value(option_1, option_1.__value);
-      attr(option_1, "class", "svelte-jpi-1tqy9bq");
-      this.first = option_1;
-    },
-    m(target, anchor) {
-      insert(target, option_1, anchor);
-      append(option_1, t);
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      if (dirty & /*options*/
-      16 && t_value !== (t_value = /*option*/
-      ctx[9].label + ""))
-        set_data(t, t_value);
-      if (dirty & /*options*/
-      16 && option_1_value_value !== (option_1_value_value = /*option*/
-      ctx[9].value)) {
-        option_1.__value = option_1_value_value;
-        set_input_value(option_1, option_1.__value);
+    subscribe: subscribe2,
+    setContent,
+    setVisible
+  };
+}
+function genericTooltip(node, { content, tooltipStore }) {
+  let destroy;
+  if (content && content.length > 0) {
+    const store = tooltipStore ?? genericTooltipStore;
+    destroy = popupSource(node, {
+      popupId: "global-tooltip",
+      mode: "hover",
+      onTrigger: () => {
+        store.setVisible(true);
+        store.setContent(content);
+      },
+      onHide: () => {
+        store.setVisible(false);
       }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(option_1);
+    });
+  }
+  return {
+    destroy,
+    update: ({ content: content2, tooltipStore: tooltipStore2 }) => {
+      if (content2 && content2.length > 0) {
+        const store = tooltipStore2 ?? genericTooltipStore;
+        store.setContent(content2);
       }
     }
   };
 }
-function create_fragment$b(ctx) {
-  let div2;
-  let tooltip_action;
+function useWrapper(node, actions) {
+  let callbacks = [];
+  actions.forEach((action) => {
+    callbacks.push(action.run(node, action.params));
+  });
+  return {
+    destroy() {
+      callbacks.forEach((callback) => {
+        callback.destroy();
+      });
+    }
+  };
+}
+const Button_svelte_svelte_type_style_lang = "";
+function create_fragment$D(ctx) {
+  let div;
+  let div_class_value;
+  let genericTooltip_action;
+  let useWrapper_action;
+  let current;
   let mounted;
   let dispose;
-  function select_block_type(ctx2, dirty) {
-    if (
-      /*options*/
-      ctx2[4] && /*options*/
-      ctx2[4].length > 0
-    )
-      return create_if_block$4;
-    if (
-      /*command*/
-      ctx2[3]
-    )
-      return create_if_block_1$2;
-    if (
-      /*storeValue*/
-      ctx2[2]
-    )
-      return create_if_block_2;
-  }
-  let current_block_type = select_block_type(ctx);
-  let if_block = current_block_type && current_block_type(ctx);
+  const default_slot_template = (
+    /*#slots*/
+    ctx[12].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[11],
+    null
+  );
   return {
     c() {
-      div2 = element("div");
-      if (if_block)
-        if_block.c();
-      attr(div2, "class", "option svelte-jpi-1tqy9bq");
+      div = element("div");
+      if (default_slot)
+        default_slot.c();
+      attr(div, "class", div_class_value = "common " + /*$$restProps*/
+      (ctx[10].class || "") + " svelte-jpi-1rle3tb");
+      attr(
+        div,
+        "data-highlighted",
+        /*highlighted*/
+        ctx[0]
+      );
+      attr(div, "role", "button");
+      attr(div, "tabindex", "0");
       toggle_class(
-        div2,
-        "button",
-        /*command*/
+        div,
+        "enabled",
+        /*enabled*/
+        ctx[2]
+      );
+      set_style(
+        div,
+        "height",
+        /*height*/
+        ctx[4]
+      );
+      set_style(
+        div,
+        "width",
+        /*width*/
         ctx[3]
       );
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
-      if (if_block)
-        if_block.m(div2, null);
+      insert(target, div, anchor);
+      if (default_slot) {
+        default_slot.m(div, null);
+      }
+      current = true;
       if (!mounted) {
         dispose = [
-          action_destroyer(tooltip_action = tooltip.call(null, div2, {
-            content: `${/*description*/
-            ctx[1]}`,
-            placement: "right",
-            theme: "just",
-            arrow: ROUND_ARROW
-          })),
           listen(
-            div2,
+            div,
             "click",
             /*onClick*/
             ctx[6]
+          ),
+          listen(
+            div,
+            "dblclick",
+            /*onDblClick*/
+            ctx[7]
+          ),
+          listen(
+            div,
+            "keydown",
+            /*onClick*/
+            ctx[6]
+          ),
+          listen(
+            div,
+            "mouseenter",
+            /*onMouseEnter*/
+            ctx[8]
+          ),
+          listen(
+            div,
+            "mouseleave",
+            /*onMouseExit*/
+            ctx[9]
+          ),
+          action_destroyer(genericTooltip_action = genericTooltip.call(null, div, {
+            popupId: "global-tooltip",
+            mode: "hover",
+            content: (
+              /*tooltip*/
+              ctx[1]
+            )
+          })),
+          action_destroyer(useWrapper_action = useWrapper.call(
+            null,
+            div,
+            /*actions*/
+            ctx[5]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        2048)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[11],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[11]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[11],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (!current || dirty & /*$$restProps*/
+      1024 && div_class_value !== (div_class_value = "common " + /*$$restProps*/
+      (ctx2[10].class || "") + " svelte-jpi-1rle3tb")) {
+        attr(div, "class", div_class_value);
+      }
+      if (!current || dirty & /*highlighted*/
+      1) {
+        attr(
+          div,
+          "data-highlighted",
+          /*highlighted*/
+          ctx2[0]
+        );
+      }
+      if (genericTooltip_action && is_function(genericTooltip_action.update) && dirty & /*tooltip*/
+      2)
+        genericTooltip_action.update.call(null, {
+          popupId: "global-tooltip",
+          mode: "hover",
+          content: (
+            /*tooltip*/
+            ctx2[1]
+          )
+        });
+      if (useWrapper_action && is_function(useWrapper_action.update) && dirty & /*actions*/
+      32)
+        useWrapper_action.update.call(
+          null,
+          /*actions*/
+          ctx2[5]
+        );
+      if (!current || dirty & /*$$restProps, enabled*/
+      1028) {
+        toggle_class(
+          div,
+          "enabled",
+          /*enabled*/
+          ctx2[2]
+        );
+      }
+      if (dirty & /*height*/
+      16) {
+        set_style(
+          div,
+          "height",
+          /*height*/
+          ctx2[4]
+        );
+      }
+      if (dirty & /*width*/
+      8) {
+        set_style(
+          div,
+          "width",
+          /*width*/
+          ctx2[3]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$D($$self, $$props, $$invalidate) {
+  const omit_props_names = ["tooltip", "enabled", "highlighted", "width", "height", "actions"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { tooltip = "" } = $$props;
+  let { enabled = true } = $$props;
+  let { highlighted = false } = $$props;
+  let { width = "auto" } = $$props;
+  let { height = "auto" } = $$props;
+  let { actions = [] } = $$props;
+  const dispatch2 = createEventDispatcher();
+  function onClick() {
+    if (enabled) {
+      dispatch2("click");
+    }
+  }
+  function onDblClick() {
+    if (enabled) {
+      dispatch2("dblclick");
+    }
+  }
+  function onMouseEnter() {
+    if (enabled) {
+      $$invalidate(0, highlighted = true);
+      dispatch2("mouseenter");
+    }
+  }
+  function onMouseExit() {
+    if (enabled) {
+      $$invalidate(0, highlighted = false);
+      dispatch2("mouseleave");
+    }
+  }
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(10, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("tooltip" in $$new_props)
+      $$invalidate(1, tooltip = $$new_props.tooltip);
+    if ("enabled" in $$new_props)
+      $$invalidate(2, enabled = $$new_props.enabled);
+    if ("highlighted" in $$new_props)
+      $$invalidate(0, highlighted = $$new_props.highlighted);
+    if ("width" in $$new_props)
+      $$invalidate(3, width = $$new_props.width);
+    if ("height" in $$new_props)
+      $$invalidate(4, height = $$new_props.height);
+    if ("actions" in $$new_props)
+      $$invalidate(5, actions = $$new_props.actions);
+    if ("$$scope" in $$new_props)
+      $$invalidate(11, $$scope = $$new_props.$$scope);
+  };
+  return [
+    highlighted,
+    tooltip,
+    enabled,
+    width,
+    height,
+    actions,
+    onClick,
+    onDblClick,
+    onMouseEnter,
+    onMouseExit,
+    $$restProps,
+    $$scope,
+    slots
+  ];
+}
+class Button extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$D, create_fragment$D, safe_not_equal, {
+      tooltip: 1,
+      enabled: 2,
+      highlighted: 0,
+      width: 3,
+      height: 4,
+      actions: 5
+    });
+  }
+}
+function flexItems(node, flex) {
+  setFlexItemProperties(node, flex, "flex");
+  return {
+    destroy() {
+    }
+  };
+}
+function setFlexItemProperties(node, items, property) {
+  if (items.length > 0) {
+    let index = 0;
+    node.childNodes.forEach((x) => {
+      if (x.tagName) {
+        if (index < items.length) {
+          x.style[property] = items[index];
+        }
+        ++index;
+      }
+    });
+  }
+}
+const Flex_svelte_svelte_type_style_lang = "";
+function create_fragment$C(ctx) {
+  let div;
+  let div_class_value;
+  let flexItems_action;
+  let current;
+  let mounted;
+  let dispose;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[6].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    null
+  );
+  let div_levels = [
+    /*$$restProps*/
+    ctx[4],
+    {
+      class: div_class_value = "main " + /*$$restProps*/
+      (ctx[4].class || "")
+    }
+  ];
+  let div_data = {};
+  for (let i = 0; i < div_levels.length; i += 1) {
+    div_data = assign(div_data, div_levels[i]);
+  }
+  return {
+    c() {
+      div = element("div");
+      if (default_slot)
+        default_slot.c();
+      set_attributes(div, div_data);
+      set_style(
+        div,
+        "gap",
+        /*gap*/
+        ctx[2]
+      );
+      set_style(
+        div,
+        "height",
+        /*height*/
+        ctx[1]
+      );
+      set_style(
+        div,
+        "width",
+        /*width*/
+        ctx[0]
+      );
+      toggle_class(div, "svelte-jpi-1x9z8r5", true);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (default_slot) {
+        default_slot.m(div, null);
+      }
+      current = true;
+      if (!mounted) {
+        dispose = action_destroyer(flexItems_action = flexItems.call(
+          null,
+          div,
+          /*flex*/
+          ctx[3]
+        ));
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        32)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[5]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[5],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      set_attributes(div, div_data = get_spread_update(div_levels, [
+        dirty & /*$$restProps*/
+        16 && /*$$restProps*/
+        ctx2[4],
+        (!current || dirty & /*$$restProps*/
+        16 && div_class_value !== (div_class_value = "main " + /*$$restProps*/
+        (ctx2[4].class || ""))) && { class: div_class_value }
+      ]));
+      if (flexItems_action && is_function(flexItems_action.update) && dirty & /*flex*/
+      8)
+        flexItems_action.update.call(
+          null,
+          /*flex*/
+          ctx2[3]
+        );
+      set_style(
+        div,
+        "gap",
+        /*gap*/
+        ctx2[2]
+      );
+      set_style(
+        div,
+        "height",
+        /*height*/
+        ctx2[1]
+      );
+      set_style(
+        div,
+        "width",
+        /*width*/
+        ctx2[0]
+      );
+      toggle_class(div, "svelte-jpi-1x9z8r5", true);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$C($$self, $$props, $$invalidate) {
+  const omit_props_names = ["width", "height", "gap", "flex"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { width = "100%" } = $$props;
+  let { height = "100%" } = $$props;
+  let { gap = "5px" } = $$props;
+  let { flex = [] } = $$props;
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(4, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("width" in $$new_props)
+      $$invalidate(0, width = $$new_props.width);
+    if ("height" in $$new_props)
+      $$invalidate(1, height = $$new_props.height);
+    if ("gap" in $$new_props)
+      $$invalidate(2, gap = $$new_props.gap);
+    if ("flex" in $$new_props)
+      $$invalidate(3, flex = $$new_props.flex);
+    if ("$$scope" in $$new_props)
+      $$invalidate(5, $$scope = $$new_props.$$scope);
+  };
+  return [width, height, gap, flex, $$restProps, $$scope, slots];
+}
+class Flex extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$C, create_fragment$C, safe_not_equal, { width: 0, height: 1, gap: 2, flex: 3 });
+  }
+}
+function get_each_context$8(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[4] = list[i];
+  return child_ctx;
+}
+function create_default_slot_1$g(ctx) {
+  let i;
+  let i_class_value;
+  let t;
+  return {
+    c() {
+      i = element("i");
+      t = space();
+      attr(i, "class", i_class_value = "fa fa-" + /*item*/
+      ctx[4].icon);
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*items*/
+      2 && i_class_value !== (i_class_value = "fa fa-" + /*item*/
+      ctx2[4].icon)) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+        detach(t);
+      }
+    }
+  };
+}
+function create_each_block$8(key_1, ctx) {
+  let first;
+  let button;
+  let current;
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[3](
+        /*item*/
+        ctx[4]
+      )
+    );
+  }
+  button = new Button({
+    props: {
+      class: "icon sm",
+      tooltip: (
+        /*item*/
+        ctx[4].description
+      ),
+      $$slots: { default: [create_default_slot_1$g] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on("click", click_handler);
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      first = empty();
+      create_component(button.$$.fragment);
+      this.first = first;
+    },
+    m(target, anchor) {
+      insert(target, first, anchor);
+      mount_component(button, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const button_changes = {};
+      if (dirty & /*items*/
+      2)
+        button_changes.tooltip = /*item*/
+        ctx[4].description;
+      if (dirty & /*$$scope, items*/
+      130) {
+        button_changes.$$scope = { dirty, ctx };
+      }
+      button.$set(button_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(first);
+      }
+      destroy_component(button, detaching);
+    }
+  };
+}
+function create_default_slot$n(ctx) {
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_anchor;
+  let current;
+  let each_value = ensure_array_like(
+    /*items*/
+    ctx[1]
+  );
+  const get_key = (ctx2) => (
+    /*item*/
+    ctx2[4]
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$8(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$8(key, child_ctx));
+  }
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*items, context*/
+      6) {
+        each_value = ensure_array_like(
+          /*items*/
+          ctx2[1]
+        );
+        group_outros();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$8, each_1_anchor, get_each_context$8);
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
+    }
+  };
+}
+function create_fragment$B(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "thin " + /*direction*/
+      ctx[0],
+      gap: "2px",
+      width: "auto",
+      $$slots: { default: [create_default_slot$n] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*direction*/
+      1)
+        flex_changes.class = "thin " + /*direction*/
+        ctx2[0];
+      if (dirty & /*$$scope, items, context*/
+      134) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$B($$self, $$props, $$invalidate) {
+  let { direction } = $$props;
+  let { items = [] } = $$props;
+  let { context = {} } = $$props;
+  const click_handler = (item) => {
+    item.onClick(context);
+  };
+  $$self.$$set = ($$props2) => {
+    if ("direction" in $$props2)
+      $$invalidate(0, direction = $$props2.direction);
+    if ("items" in $$props2)
+      $$invalidate(1, items = $$props2.items);
+    if ("context" in $$props2)
+      $$invalidate(2, context = $$props2.context);
+  };
+  return [direction, items, context, click_handler];
+}
+class ButtonToolbar extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$B, create_fragment$B, safe_not_equal, { direction: 0, items: 1, context: 2 });
+  }
+}
+const Card_svelte_svelte_type_style_lang = "";
+const get_content_slot_changes$1 = (dirty) => ({});
+const get_content_slot_context$1 = (ctx) => ({});
+const get_header_slot_changes$2 = (dirty) => ({});
+const get_header_slot_context$2 = (ctx) => ({});
+function create_default_slot_1$f(ctx) {
+  let div;
+  let t;
+  let current;
+  const header_slot_template = (
+    /*#slots*/
+    ctx[5].header
+  );
+  const header_slot = create_slot(
+    header_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[10],
+    get_header_slot_context$2
+  );
+  const content_slot_template = (
+    /*#slots*/
+    ctx[5].content
+  );
+  const content_slot = create_slot(
+    content_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[10],
+    get_content_slot_context$1
+  );
+  return {
+    c() {
+      div = element("div");
+      if (header_slot)
+        header_slot.c();
+      t = space();
+      if (content_slot)
+        content_slot.c();
+      attr(div, "class", "header svelte-jpi-1d6to1w");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (header_slot) {
+        header_slot.m(div, null);
+      }
+      insert(target, t, anchor);
+      if (content_slot) {
+        content_slot.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (header_slot) {
+        if (header_slot.p && (!current || dirty & /*$$scope*/
+        1024)) {
+          update_slot_base(
+            header_slot,
+            header_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[10],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[10]
+            ) : get_slot_changes(
+              header_slot_template,
+              /*$$scope*/
+              ctx2[10],
+              dirty,
+              get_header_slot_changes$2
+            ),
+            get_header_slot_context$2
+          );
+        }
+      }
+      if (content_slot) {
+        if (content_slot.p && (!current || dirty & /*$$scope*/
+        1024)) {
+          update_slot_base(
+            content_slot,
+            content_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[10],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[10]
+            ) : get_slot_changes(
+              content_slot_template,
+              /*$$scope*/
+              ctx2[10],
+              dirty,
+              get_content_slot_changes$1
+            ),
+            get_content_slot_context$1
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(header_slot, local);
+      transition_in(content_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(header_slot, local);
+      transition_out(content_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t);
+      }
+      if (header_slot)
+        header_slot.d(detaching);
+      if (content_slot)
+        content_slot.d(detaching);
+    }
+  };
+}
+function create_default_slot$m(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "vertical thick clip-overflow",
+      $$slots: { default: [create_default_slot_1$f] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope*/
+      1024) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_fragment$A(ctx) {
+  let div;
+  let button;
+  let useWrapper_action;
+  let current;
+  let mounted;
+  let dispose;
+  button = new Button({
+    props: {
+      class: "btn shadow surface no-padding sm",
+      enabled: (
+        /*isButtonEnabled*/
+        ctx[2]
+      ),
+      height: (
+        /*height*/
+        ctx[1]
+      ),
+      highlighted: (
+        /*isHighlighted*/
+        ctx[3]
+      ),
+      width: (
+        /*width*/
+        ctx[0]
+      ),
+      $$slots: { default: [create_default_slot$m] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on(
+    "click",
+    /*click_handler*/
+    ctx[6]
+  );
+  button.$on(
+    "dblclick",
+    /*dblclick_handler*/
+    ctx[7]
+  );
+  button.$on(
+    "mouseenter",
+    /*mouseenter_handler*/
+    ctx[8]
+  );
+  button.$on(
+    "mouseleave",
+    /*mouseleave_handler*/
+    ctx[9]
+  );
+  return {
+    c() {
+      div = element("div");
+      create_component(button.$$.fragment);
+      set_style(
+        div,
+        "height",
+        /*height*/
+        ctx[1]
+      );
+      set_style(
+        div,
+        "width",
+        /*width*/
+        ctx[0]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(button, div, null);
+      current = true;
+      if (!mounted) {
+        dispose = action_destroyer(useWrapper_action = useWrapper.call(
+          null,
+          div,
+          /*actions*/
+          ctx[4]
+        ));
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      const button_changes = {};
+      if (dirty & /*isButtonEnabled*/
+      4)
+        button_changes.enabled = /*isButtonEnabled*/
+        ctx2[2];
+      if (dirty & /*height*/
+      2)
+        button_changes.height = /*height*/
+        ctx2[1];
+      if (dirty & /*isHighlighted*/
+      8)
+        button_changes.highlighted = /*isHighlighted*/
+        ctx2[3];
+      if (dirty & /*width*/
+      1)
+        button_changes.width = /*width*/
+        ctx2[0];
+      if (dirty & /*$$scope*/
+      1024) {
+        button_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button.$set(button_changes);
+      if (useWrapper_action && is_function(useWrapper_action.update) && dirty & /*actions*/
+      16)
+        useWrapper_action.update.call(
+          null,
+          /*actions*/
+          ctx2[4]
+        );
+      if (dirty & /*height*/
+      2) {
+        set_style(
+          div,
+          "height",
+          /*height*/
+          ctx2[1]
+        );
+      }
+      if (dirty & /*width*/
+      1) {
+        set_style(
+          div,
+          "width",
+          /*width*/
+          ctx2[0]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(button);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$A($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { width = "auto" } = $$props;
+  let { height = "auto" } = $$props;
+  let { isButtonEnabled = false } = $$props;
+  let { isHighlighted = false } = $$props;
+  let { actions = [] } = $$props;
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function dblclick_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mouseenter_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mouseleave_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("width" in $$props2)
+      $$invalidate(0, width = $$props2.width);
+    if ("height" in $$props2)
+      $$invalidate(1, height = $$props2.height);
+    if ("isButtonEnabled" in $$props2)
+      $$invalidate(2, isButtonEnabled = $$props2.isButtonEnabled);
+    if ("isHighlighted" in $$props2)
+      $$invalidate(3, isHighlighted = $$props2.isHighlighted);
+    if ("actions" in $$props2)
+      $$invalidate(4, actions = $$props2.actions);
+    if ("$$scope" in $$props2)
+      $$invalidate(10, $$scope = $$props2.$$scope);
+  };
+  return [
+    width,
+    height,
+    isButtonEnabled,
+    isHighlighted,
+    actions,
+    slots,
+    click_handler,
+    dblclick_handler,
+    mouseenter_handler,
+    mouseleave_handler,
+    $$scope
+  ];
+}
+class Card extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$A, create_fragment$A, safe_not_equal, {
+      width: 0,
+      height: 1,
+      isButtonEnabled: 2,
+      isHighlighted: 3,
+      actions: 4
+    });
+  }
+}
+const Label_svelte_svelte_type_style_lang = "";
+function create_fragment$z(ctx) {
+  let span;
+  let span_class_value;
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[4].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[3],
+    null
+  );
+  return {
+    c() {
+      span = element("span");
+      if (default_slot)
+        default_slot.c();
+      attr(span, "class", span_class_value = "main " + /*$$restProps*/
+      (ctx[2].class || "sm") + " svelte-jpi-1mm140i");
+      set_style(span, "color", `var(--tjust-txt-default-color)`);
+      set_style(
+        span,
+        "text-align",
+        /*align*/
+        ctx[0]
+      );
+      set_style(
+        span,
+        "user-select",
+        /*selectable*/
+        ctx[1] ? "default" : "none"
+      );
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      if (default_slot) {
+        default_slot.m(span, null);
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        8)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[3],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[3]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[3],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (!current || dirty & /*$$restProps*/
+      4 && span_class_value !== (span_class_value = "main " + /*$$restProps*/
+      (ctx2[2].class || "sm") + " svelte-jpi-1mm140i")) {
+        attr(span, "class", span_class_value);
+      }
+      if (dirty & /*align*/
+      1) {
+        set_style(
+          span,
+          "text-align",
+          /*align*/
+          ctx2[0]
+        );
+      }
+      if (dirty & /*selectable*/
+      2) {
+        set_style(
+          span,
+          "user-select",
+          /*selectable*/
+          ctx2[1] ? "default" : "none"
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function instance$z($$self, $$props, $$invalidate) {
+  const omit_props_names = ["align", "selectable"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { align = "center" } = $$props;
+  let { selectable = false } = $$props;
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(2, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("align" in $$new_props)
+      $$invalidate(0, align = $$new_props.align);
+    if ("selectable" in $$new_props)
+      $$invalidate(1, selectable = $$new_props.selectable);
+    if ("$$scope" in $$new_props)
+      $$invalidate(3, $$scope = $$new_props.$$scope);
+  };
+  return [align, selectable, $$restProps, $$scope, slots];
+}
+class Label extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$z, create_fragment$z, safe_not_equal, { align: 0, selectable: 1 });
+  }
+}
+const CheckBox_svelte_svelte_type_style_lang = "";
+function create_if_block_1$9(ctx) {
+  let label_1;
+  let current;
+  label_1 = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_1$e] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(label_1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(label_1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_1_changes = {};
+      if (dirty & /*$$scope, label*/
+      10) {
+        label_1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label_1.$set(label_1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label_1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label_1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(label_1, detaching);
+    }
+  };
+}
+function create_default_slot_1$e(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*label*/
+        ctx[1]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*label*/
+      2)
+        set_data(
+          t,
+          /*label*/
+          ctx2[1]
+        );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_if_block$e(ctx) {
+  let svg;
+  let path;
+  return {
+    c() {
+      svg = svg_element("svg");
+      path = svg_element("path");
+      attr(path, "d", "M14.1 27.2 l7.1 7.2 16.7-16.8");
+      attr(path, "fill", "none");
+      attr(svg, "viewBox", "0 0 50 50");
+      attr(svg, "xmlns", "http://www.w3.org/2000/svg");
+    },
+    m(target, anchor) {
+      insert(target, svg, anchor);
+      append(svg, path);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+    }
+  };
+}
+function create_default_slot$l(ctx) {
+  let t;
+  let div;
+  let current;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*label*/
+    ctx[1] !== "" && create_if_block_1$9(ctx)
+  );
+  let if_block1 = (
+    /*value*/
+    ctx[0] && create_if_block$e()
+  );
+  return {
+    c() {
+      if (if_block0)
+        if_block0.c();
+      t = space();
+      div = element("div");
+      if (if_block1)
+        if_block1.c();
+      attr(
+        div,
+        "aria-checked",
+        /*value*/
+        ctx[0]
+      );
+      attr(div, "class", "checkbox svelte-jpi-19o8pe3");
+      attr(div, "role", "checkbox");
+      attr(div, "tabindex", "0");
+    },
+    m(target, anchor) {
+      if (if_block0)
+        if_block0.m(target, anchor);
+      insert(target, t, anchor);
+      insert(target, div, anchor);
+      if (if_block1)
+        if_block1.m(div, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div,
+            "keydown",
+            /*toggleValue*/
+            ctx[2]
+          ),
+          listen(
+            div,
+            "mousedown",
+            /*toggleValue*/
+            ctx[2]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (
+        /*label*/
+        ctx2[1] !== ""
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+          if (dirty & /*label*/
+          2) {
+            transition_in(if_block0, 1);
+          }
+        } else {
+          if_block0 = create_if_block_1$9(ctx2);
+          if_block0.c();
+          transition_in(if_block0, 1);
+          if_block0.m(t.parentNode, t);
+        }
+      } else if (if_block0) {
+        group_outros();
+        transition_out(if_block0, 1, 1, () => {
+          if_block0 = null;
+        });
+        check_outros();
+      }
+      if (
+        /*value*/
+        ctx2[0]
+      ) {
+        if (if_block1)
+          ;
+        else {
+          if_block1 = create_if_block$e();
+          if_block1.c();
+          if_block1.m(div, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (!current || dirty & /*value*/
+      1) {
+        attr(
+          div,
+          "aria-checked",
+          /*value*/
+          ctx2[0]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block0);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block0);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(div);
+      }
+      if (if_block0)
+        if_block0.d(detaching);
+      if (if_block1)
+        if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment$y(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "thick horizontal",
+      height: "auto",
+      width: "100%",
+      $$slots: { default: [create_default_slot$l] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, value, label*/
+      11) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$y($$self, $$props, $$invalidate) {
+  let { value } = $$props;
+  let { label = "" } = $$props;
+  function toggleValue() {
+    $$invalidate(0, value = !value);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("value" in $$props2)
+      $$invalidate(0, value = $$props2.value);
+    if ("label" in $$props2)
+      $$invalidate(1, label = $$props2.label);
+  };
+  return [value, label, toggleValue];
+}
+class CheckBox extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$y, create_fragment$y, safe_not_equal, { value: 0, label: 1 });
+  }
+}
+function create_default_slot_1$d(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*title*/
+        ctx[0]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*title*/
+      1)
+        set_data(
+          t,
+          /*title*/
+          ctx2[0]
+        );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot$k(ctx) {
+  let label;
+  let div;
+  let t;
+  let buttontoolbar;
+  let current;
+  label = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_1$d] },
+      $$scope: { ctx }
+    }
+  });
+  buttontoolbar = new ButtonToolbar({
+    props: {
+      direction: "horizontal",
+      items: (
+        /*actions*/
+        ctx[1]
+      )
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(label.$$.fragment);
+      t = space();
+      create_component(buttontoolbar.$$.fragment);
+      set_style(div, "display", "contents");
+      set_style(div, "--label-align", "left");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(label, div, null);
+      insert(target, t, anchor);
+      mount_component(buttontoolbar, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_changes = {};
+      if (dirty & /*$$scope, title*/
+      5) {
+        label_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label.$set(label_changes);
+      const buttontoolbar_changes = {};
+      if (dirty & /*actions*/
+      2)
+        buttontoolbar_changes.items = /*actions*/
+        ctx2[1];
+      buttontoolbar.$set(buttontoolbar_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label.$$.fragment, local);
+      transition_in(buttontoolbar.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label.$$.fragment, local);
+      transition_out(buttontoolbar.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      if (detaching && label)
+        detach(div);
+      destroy_component(label, detaching);
+      destroy_component(buttontoolbar, detaching);
+    }
+  };
+}
+function create_fragment$x(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      flex: ["3"],
+      width: "100%",
+      $$slots: { default: [create_default_slot$k] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, actions, title*/
+      7) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$x($$self, $$props, $$invalidate) {
+  let { title } = $$props;
+  let { actions } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("title" in $$props2)
+      $$invalidate(0, title = $$props2.title);
+    if ("actions" in $$props2)
+      $$invalidate(1, actions = $$props2.actions);
+  };
+  return [title, actions];
+}
+class EditableListHeader extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$x, create_fragment$x, safe_not_equal, { title: 0, actions: 1 });
+  }
+}
+const EditableListItem_svelte_svelte_type_style_lang = "";
+function create_fragment$w(ctx) {
+  let div3;
+  let div0;
+  let t0;
+  let div1;
+  let t1;
+  let div2;
+  let buttontoolbar;
+  let current;
+  let mounted;
+  let dispose;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[6].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    null
+  );
+  buttontoolbar = new ButtonToolbar({
+    props: {
+      context: (
+        /*item*/
+        ctx[0]
+      ),
+      direction: "horizontal",
+      items: (
+        /*actions*/
+        ctx[1]
+      )
+    }
+  });
+  return {
+    c() {
+      div3 = element("div");
+      div0 = element("div");
+      t0 = space();
+      div1 = element("div");
+      if (default_slot)
+        default_slot.c();
+      t1 = space();
+      div2 = element("div");
+      create_component(buttontoolbar.$$.fragment);
+      attr(div0, "class", "fa fa-grip-vertical grip svelte-jpi-9wqcnj");
+      attr(div0, "role", "button");
+      attr(div0, "tabindex", "0");
+      set_style(
+        div0,
+        "cursor",
+        /*isDragging*/
+        ctx[2] ? "grabbing" : "grab"
+      );
+      attr(div1, "class", "content svelte-jpi-9wqcnj");
+      attr(div3, "class", "list-item svelte-jpi-9wqcnj");
+    },
+    m(target, anchor) {
+      insert(target, div3, anchor);
+      append(div3, div0);
+      append(div3, t0);
+      append(div3, div1);
+      if (default_slot) {
+        default_slot.m(div1, null);
+      }
+      append(div3, t1);
+      append(div3, div2);
+      mount_component(buttontoolbar, div2, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div0,
+            "mousedown",
+            /*dispatchGripDown*/
+            ctx[3]
+          ),
+          listen(
+            div0,
+            "mouseup",
+            /*dispatchGripUp*/
+            ctx[4]
           )
         ];
         mounted = true;
       }
     },
     p(ctx2, [dirty]) {
-      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
-        if_block.p(ctx2, dirty);
-      } else {
-        if (if_block)
-          if_block.d(1);
-        if_block = current_block_type && current_block_type(ctx2);
-        if (if_block) {
-          if_block.c();
-          if_block.m(div2, null);
-        }
-      }
-      if (tooltip_action && is_function(tooltip_action.update) && dirty & /*description*/
-      2)
-        tooltip_action.update.call(null, {
-          content: `${/*description*/
-          ctx2[1]}`,
-          placement: "right",
-          theme: "just",
-          arrow: ROUND_ARROW
-        });
-      if (dirty & /*command*/
-      8) {
-        toggle_class(
-          div2,
-          "button",
-          /*command*/
-          ctx2[3]
+      if (dirty & /*isDragging*/
+      4) {
+        set_style(
+          div0,
+          "cursor",
+          /*isDragging*/
+          ctx2[2] ? "grabbing" : "grab"
         );
       }
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        32)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[5]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[5],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      const buttontoolbar_changes = {};
+      if (dirty & /*item*/
+      1)
+        buttontoolbar_changes.context = /*item*/
+        ctx2[0];
+      if (dirty & /*actions*/
+      2)
+        buttontoolbar_changes.items = /*actions*/
+        ctx2[1];
+      buttontoolbar.$set(buttontoolbar_changes);
     },
-    i: noop,
-    o: noop,
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      transition_in(buttontoolbar.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      transition_out(buttontoolbar.$$.fragment, local);
+      current = false;
+    },
     d(detaching) {
       if (detaching) {
-        detach(div2);
+        detach(div3);
       }
-      if (if_block) {
-        if_block.d();
+      if (default_slot)
+        default_slot.d(detaching);
+      destroy_component(buttontoolbar);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$w($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { item } = $$props;
+  let { actions = [] } = $$props;
+  let { isDragging: isDragging2 = false } = $$props;
+  const dispatch2 = createEventDispatcher();
+  function dispatchGripDown(event) {
+    dispatch2("gripdown");
+  }
+  function dispatchGripUp(event) {
+    dispatch2("gripup");
+  }
+  $$self.$$set = ($$props2) => {
+    if ("item" in $$props2)
+      $$invalidate(0, item = $$props2.item);
+    if ("actions" in $$props2)
+      $$invalidate(1, actions = $$props2.actions);
+    if ("isDragging" in $$props2)
+      $$invalidate(2, isDragging2 = $$props2.isDragging);
+    if ("$$scope" in $$props2)
+      $$invalidate(5, $$scope = $$props2.$$scope);
+  };
+  return [item, actions, isDragging2, dispatchGripDown, dispatchGripUp, $$scope, slots];
+}
+class EditableListItem extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$w, create_fragment$w, safe_not_equal, { item: 0, actions: 1, isDragging: 2 });
+  }
+}
+function flip(node, { from, to }, params = {}) {
+  const style = getComputedStyle(node);
+  const transform = style.transform === "none" ? "" : style.transform;
+  const [ox, oy] = style.transformOrigin.split(" ").map(parseFloat);
+  const dx = from.left + from.width * ox / to.width - (to.left + ox);
+  const dy = from.top + from.height * oy / to.height - (to.top + oy);
+  const { delay = 0, duration = (d) => Math.sqrt(d) * 120, easing = cubicOut } = params;
+  return {
+    delay,
+    duration: is_function(duration) ? duration(Math.sqrt(dx * dx + dy * dy)) : duration,
+    easing,
+    css: (t, u) => {
+      const x = u * dx;
+      const y = u * dy;
+      const sx = t + u * from.width / to.width;
+      const sy = t + u * from.height / to.height;
+      return `transform: ${transform} translate(${x}px, ${y}px) scale(${sx}, ${sy});`;
+    }
+  };
+}
+const FINALIZE_EVENT_NAME = "finalize";
+const CONSIDER_EVENT_NAME = "consider";
+function dispatchFinalizeEvent(el, items, info) {
+  el.dispatchEvent(
+    new CustomEvent(FINALIZE_EVENT_NAME, {
+      detail: { items, info }
+    })
+  );
+}
+function dispatchConsiderEvent(el, items, info) {
+  el.dispatchEvent(
+    new CustomEvent(CONSIDER_EVENT_NAME, {
+      detail: { items, info }
+    })
+  );
+}
+const DRAGGED_ENTERED_EVENT_NAME = "draggedEntered";
+const DRAGGED_LEFT_EVENT_NAME = "draggedLeft";
+const DRAGGED_OVER_INDEX_EVENT_NAME = "draggedOverIndex";
+const DRAGGED_LEFT_DOCUMENT_EVENT_NAME = "draggedLeftDocument";
+const DRAGGED_LEFT_TYPES = {
+  LEFT_FOR_ANOTHER: "leftForAnother",
+  OUTSIDE_OF_ANY: "outsideOfAny"
+};
+function dispatchDraggedElementEnteredContainer(containerEl, indexObj, draggedEl2) {
+  containerEl.dispatchEvent(
+    new CustomEvent(DRAGGED_ENTERED_EVENT_NAME, {
+      detail: { indexObj, draggedEl: draggedEl2 }
+    })
+  );
+}
+function dispatchDraggedElementLeftContainerForAnother(containerEl, draggedEl2, theOtherDz) {
+  containerEl.dispatchEvent(
+    new CustomEvent(DRAGGED_LEFT_EVENT_NAME, {
+      detail: { draggedEl: draggedEl2, type: DRAGGED_LEFT_TYPES.LEFT_FOR_ANOTHER, theOtherDz }
+    })
+  );
+}
+function dispatchDraggedElementLeftContainerForNone(containerEl, draggedEl2) {
+  containerEl.dispatchEvent(
+    new CustomEvent(DRAGGED_LEFT_EVENT_NAME, {
+      detail: { draggedEl: draggedEl2, type: DRAGGED_LEFT_TYPES.OUTSIDE_OF_ANY }
+    })
+  );
+}
+function dispatchDraggedElementIsOverIndex(containerEl, indexObj, draggedEl2) {
+  containerEl.dispatchEvent(
+    new CustomEvent(DRAGGED_OVER_INDEX_EVENT_NAME, {
+      detail: { indexObj, draggedEl: draggedEl2 }
+    })
+  );
+}
+function dispatchDraggedLeftDocument(draggedEl2) {
+  window.dispatchEvent(
+    new CustomEvent(DRAGGED_LEFT_DOCUMENT_EVENT_NAME, {
+      detail: { draggedEl: draggedEl2 }
+    })
+  );
+}
+const TRIGGERS = {
+  DRAG_STARTED: "dragStarted",
+  DRAGGED_ENTERED: DRAGGED_ENTERED_EVENT_NAME,
+  DRAGGED_ENTERED_ANOTHER: "dragEnteredAnother",
+  DRAGGED_OVER_INDEX: DRAGGED_OVER_INDEX_EVENT_NAME,
+  DRAGGED_LEFT: DRAGGED_LEFT_EVENT_NAME,
+  DRAGGED_LEFT_ALL: "draggedLeftAll",
+  DROPPED_INTO_ZONE: "droppedIntoZone",
+  DROPPED_INTO_ANOTHER: "droppedIntoAnother",
+  DROPPED_OUTSIDE_OF_ANY: "droppedOutsideOfAny",
+  DRAG_STOPPED: "dragStopped"
+};
+const SOURCES = {
+  POINTER: "pointer",
+  KEYBOARD: "keyboard"
+};
+const SHADOW_ITEM_MARKER_PROPERTY_NAME = "isDndShadowItem";
+const SHADOW_ELEMENT_ATTRIBUTE_NAME = "data-is-dnd-shadow-item-internal";
+const SHADOW_ELEMENT_HINT_ATTRIBUTE_NAME = "data-is-dnd-shadow-item-hint";
+const SHADOW_PLACEHOLDER_ITEM_ID = "id:dnd-shadow-placeholder-0000";
+const DRAGGED_ELEMENT_ID = "dnd-action-dragged-el";
+let ITEM_ID_KEY = "id";
+let activeDndZoneCount = 0;
+function incrementActiveDropZoneCount() {
+  activeDndZoneCount++;
+}
+function decrementActiveDropZoneCount() {
+  if (activeDndZoneCount === 0) {
+    throw new Error("Bug! trying to decrement when there are no dropzones");
+  }
+  activeDndZoneCount--;
+}
+const isOnServer = typeof window === "undefined";
+function getBoundingRectNoTransforms(el) {
+  let ta;
+  const rect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+  const tx = style.transform;
+  if (tx) {
+    let sx, sy, dx, dy;
+    if (tx.startsWith("matrix3d(")) {
+      ta = tx.slice(9, -1).split(/, /);
+      sx = +ta[0];
+      sy = +ta[5];
+      dx = +ta[12];
+      dy = +ta[13];
+    } else if (tx.startsWith("matrix(")) {
+      ta = tx.slice(7, -1).split(/, /);
+      sx = +ta[0];
+      sy = +ta[3];
+      dx = +ta[4];
+      dy = +ta[5];
+    } else {
+      return rect;
+    }
+    const to = style.transformOrigin;
+    const x = rect.x - dx - (1 - sx) * parseFloat(to);
+    const y = rect.y - dy - (1 - sy) * parseFloat(to.slice(to.indexOf(" ") + 1));
+    const w = sx ? rect.width / sx : el.offsetWidth;
+    const h = sy ? rect.height / sy : el.offsetHeight;
+    return {
+      x,
+      y,
+      width: w,
+      height: h,
+      top: y,
+      right: x + w,
+      bottom: y + h,
+      left: x
+    };
+  } else {
+    return rect;
+  }
+}
+function getAbsoluteRectNoTransforms(el) {
+  const rect = getBoundingRectNoTransforms(el);
+  return {
+    top: rect.top + window.scrollY,
+    bottom: rect.bottom + window.scrollY,
+    left: rect.left + window.scrollX,
+    right: rect.right + window.scrollX
+  };
+}
+function getAbsoluteRect(el) {
+  const rect = el.getBoundingClientRect();
+  return {
+    top: rect.top + window.scrollY,
+    bottom: rect.bottom + window.scrollY,
+    left: rect.left + window.scrollX,
+    right: rect.right + window.scrollX
+  };
+}
+function findCenter(rect) {
+  return {
+    x: (rect.left + rect.right) / 2,
+    y: (rect.top + rect.bottom) / 2
+  };
+}
+function calcDistance(pointA, pointB) {
+  return Math.sqrt(Math.pow(pointA.x - pointB.x, 2) + Math.pow(pointA.y - pointB.y, 2));
+}
+function isPointInsideRect(point, rect) {
+  return point.y <= rect.bottom && point.y >= rect.top && point.x >= rect.left && point.x <= rect.right;
+}
+function findCenterOfElement(el) {
+  return findCenter(getAbsoluteRect(el));
+}
+function isCenterOfAInsideB(elA, elB) {
+  const centerOfA = findCenterOfElement(elA);
+  const rectOfB = getAbsoluteRectNoTransforms(elB);
+  return isPointInsideRect(centerOfA, rectOfB);
+}
+function calcDistanceBetweenCenters(elA, elB) {
+  const centerOfA = findCenterOfElement(elA);
+  const centerOfB = findCenterOfElement(elB);
+  return calcDistance(centerOfA, centerOfB);
+}
+function isElementOffDocument(el) {
+  const rect = getAbsoluteRect(el);
+  return rect.right < 0 || rect.left > document.documentElement.scrollWidth || rect.bottom < 0 || rect.top > document.documentElement.scrollHeight;
+}
+function calcInnerDistancesBetweenPointAndSidesOfElement(point, el) {
+  const rect = getAbsoluteRect(el);
+  if (!isPointInsideRect(point, rect)) {
+    return null;
+  }
+  return {
+    top: point.y - rect.top,
+    bottom: rect.bottom - point.y,
+    left: point.x - rect.left,
+    // TODO - figure out what is so special about right (why the rect is too big)
+    right: Math.min(rect.right, document.documentElement.clientWidth) - point.x
+  };
+}
+let dzToShadowIndexToRect;
+function resetIndexesCache() {
+  dzToShadowIndexToRect = /* @__PURE__ */ new Map();
+}
+resetIndexesCache();
+function resetIndexesCacheForDz(dz) {
+  dzToShadowIndexToRect.delete(dz);
+}
+function cacheShadowRect(dz) {
+  const shadowElIndex = Array.from(dz.children).findIndex((child) => child.getAttribute(SHADOW_ELEMENT_ATTRIBUTE_NAME));
+  if (shadowElIndex >= 0) {
+    if (!dzToShadowIndexToRect.has(dz)) {
+      dzToShadowIndexToRect.set(dz, /* @__PURE__ */ new Map());
+    }
+    dzToShadowIndexToRect.get(dz).set(shadowElIndex, getAbsoluteRectNoTransforms(dz.children[shadowElIndex]));
+    return shadowElIndex;
+  }
+  return void 0;
+}
+function findWouldBeIndex(floatingAboveEl, collectionBelowEl) {
+  if (!isCenterOfAInsideB(floatingAboveEl, collectionBelowEl)) {
+    return null;
+  }
+  const children2 = collectionBelowEl.children;
+  if (children2.length === 0) {
+    return { index: 0, isProximityBased: true };
+  }
+  const shadowElIndex = cacheShadowRect(collectionBelowEl);
+  for (let i = 0; i < children2.length; i++) {
+    if (isCenterOfAInsideB(floatingAboveEl, children2[i])) {
+      const cachedShadowRect = dzToShadowIndexToRect.has(collectionBelowEl) && dzToShadowIndexToRect.get(collectionBelowEl).get(i);
+      if (cachedShadowRect) {
+        if (!isPointInsideRect(findCenterOfElement(floatingAboveEl), cachedShadowRect)) {
+          return { index: shadowElIndex, isProximityBased: false };
+        }
+      }
+      return { index: i, isProximityBased: false };
+    }
+  }
+  let minDistanceSoFar = Number.MAX_VALUE;
+  let indexOfMin = void 0;
+  for (let i = 0; i < children2.length; i++) {
+    const distance = calcDistanceBetweenCenters(floatingAboveEl, children2[i]);
+    if (distance < minDistanceSoFar) {
+      minDistanceSoFar = distance;
+      indexOfMin = i;
+    }
+  }
+  return { index: indexOfMin, isProximityBased: true };
+}
+const SCROLL_ZONE_PX = 25;
+function makeScroller() {
+  let scrollingInfo;
+  function resetScrolling2() {
+    scrollingInfo = { directionObj: void 0, stepPx: 0 };
+  }
+  resetScrolling2();
+  function scrollContainer(containerEl) {
+    const { directionObj, stepPx } = scrollingInfo;
+    if (directionObj) {
+      containerEl.scrollBy(directionObj.x * stepPx, directionObj.y * stepPx);
+      window.requestAnimationFrame(() => scrollContainer(containerEl));
+    }
+  }
+  function calcScrollStepPx(distancePx) {
+    return SCROLL_ZONE_PX - distancePx;
+  }
+  function scrollIfNeeded2(pointer, elementToScroll) {
+    if (!elementToScroll) {
+      return false;
+    }
+    const distances = calcInnerDistancesBetweenPointAndSidesOfElement(pointer, elementToScroll);
+    if (distances === null) {
+      resetScrolling2();
+      return false;
+    }
+    const isAlreadyScrolling = !!scrollingInfo.directionObj;
+    let [scrollingVertically, scrollingHorizontally] = [false, false];
+    if (elementToScroll.scrollHeight > elementToScroll.clientHeight) {
+      if (distances.bottom < SCROLL_ZONE_PX) {
+        scrollingVertically = true;
+        scrollingInfo.directionObj = { x: 0, y: 1 };
+        scrollingInfo.stepPx = calcScrollStepPx(distances.bottom);
+      } else if (distances.top < SCROLL_ZONE_PX) {
+        scrollingVertically = true;
+        scrollingInfo.directionObj = { x: 0, y: -1 };
+        scrollingInfo.stepPx = calcScrollStepPx(distances.top);
+      }
+      if (!isAlreadyScrolling && scrollingVertically) {
+        scrollContainer(elementToScroll);
+        return true;
+      }
+    }
+    if (elementToScroll.scrollWidth > elementToScroll.clientWidth) {
+      if (distances.right < SCROLL_ZONE_PX) {
+        scrollingHorizontally = true;
+        scrollingInfo.directionObj = { x: 1, y: 0 };
+        scrollingInfo.stepPx = calcScrollStepPx(distances.right);
+      } else if (distances.left < SCROLL_ZONE_PX) {
+        scrollingHorizontally = true;
+        scrollingInfo.directionObj = { x: -1, y: 0 };
+        scrollingInfo.stepPx = calcScrollStepPx(distances.left);
+      }
+      if (!isAlreadyScrolling && scrollingHorizontally) {
+        scrollContainer(elementToScroll);
+        return true;
+      }
+    }
+    resetScrolling2();
+    return false;
+  }
+  return {
+    scrollIfNeeded: scrollIfNeeded2,
+    resetScrolling: resetScrolling2
+  };
+}
+function toString(object) {
+  return JSON.stringify(object, null, 2);
+}
+function getDepth(node) {
+  if (!node) {
+    throw new Error("cannot get depth of a falsy node");
+  }
+  return _getDepth(node, 0);
+}
+function _getDepth(node, countSoFar = 0) {
+  if (!node.parentElement) {
+    return countSoFar - 1;
+  }
+  return _getDepth(node.parentElement, countSoFar + 1);
+}
+function areObjectsShallowEqual(objA, objB) {
+  if (Object.keys(objA).length !== Object.keys(objB).length) {
+    return false;
+  }
+  for (const keyA in objA) {
+    if (!{}.hasOwnProperty.call(objB, keyA) || objB[keyA] !== objA[keyA]) {
+      return false;
+    }
+  }
+  return true;
+}
+function areArraysShallowEqualSameOrder(arrA, arrB) {
+  if (arrA.length !== arrB.length) {
+    return false;
+  }
+  for (let i = 0; i < arrA.length; i++) {
+    if (arrA[i] !== arrB[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+const INTERVAL_MS$1 = 200;
+const TOLERANCE_PX = 10;
+const { scrollIfNeeded: scrollIfNeeded$1, resetScrolling: resetScrolling$1 } = makeScroller();
+let next$1;
+function observe(draggedEl2, dropZones, intervalMs = INTERVAL_MS$1) {
+  let lastDropZoneFound;
+  let lastIndexFound;
+  let lastIsDraggedInADropZone = false;
+  let lastCentrePositionOfDragged;
+  const dropZonesFromDeepToShallow = Array.from(dropZones).sort((dz1, dz2) => getDepth(dz2) - getDepth(dz1));
+  function andNow() {
+    const currentCenterOfDragged = findCenterOfElement(draggedEl2);
+    const scrolled = scrollIfNeeded$1(currentCenterOfDragged, lastDropZoneFound);
+    if (!scrolled && lastCentrePositionOfDragged && Math.abs(lastCentrePositionOfDragged.x - currentCenterOfDragged.x) < TOLERANCE_PX && Math.abs(lastCentrePositionOfDragged.y - currentCenterOfDragged.y) < TOLERANCE_PX) {
+      next$1 = window.setTimeout(andNow, intervalMs);
+      return;
+    }
+    if (isElementOffDocument(draggedEl2)) {
+      dispatchDraggedLeftDocument(draggedEl2);
+      return;
+    }
+    lastCentrePositionOfDragged = currentCenterOfDragged;
+    let isDraggedInADropZone = false;
+    for (const dz of dropZonesFromDeepToShallow) {
+      if (scrolled)
+        resetIndexesCacheForDz(lastDropZoneFound);
+      const indexObj = findWouldBeIndex(draggedEl2, dz);
+      if (indexObj === null) {
+        continue;
+      }
+      const { index } = indexObj;
+      isDraggedInADropZone = true;
+      if (dz !== lastDropZoneFound) {
+        lastDropZoneFound && dispatchDraggedElementLeftContainerForAnother(lastDropZoneFound, draggedEl2, dz);
+        dispatchDraggedElementEnteredContainer(dz, indexObj, draggedEl2);
+        lastDropZoneFound = dz;
+      } else if (index !== lastIndexFound) {
+        dispatchDraggedElementIsOverIndex(dz, indexObj, draggedEl2);
+        lastIndexFound = index;
+      }
+      break;
+    }
+    if (!isDraggedInADropZone && lastIsDraggedInADropZone && lastDropZoneFound) {
+      dispatchDraggedElementLeftContainerForNone(lastDropZoneFound, draggedEl2);
+      lastDropZoneFound = void 0;
+      lastIndexFound = void 0;
+      lastIsDraggedInADropZone = false;
+    } else {
+      lastIsDraggedInADropZone = true;
+    }
+    next$1 = window.setTimeout(andNow, intervalMs);
+  }
+  andNow();
+}
+function unobserve() {
+  clearTimeout(next$1);
+  resetScrolling$1();
+  resetIndexesCache();
+}
+const INTERVAL_MS = 300;
+let mousePosition;
+function updateMousePosition(e) {
+  const c = e.touches ? e.touches[0] : e;
+  mousePosition = { x: c.clientX, y: c.clientY };
+}
+const { scrollIfNeeded, resetScrolling } = makeScroller();
+let next;
+function loop() {
+  if (mousePosition) {
+    const scrolled = scrollIfNeeded(mousePosition, document.documentElement);
+    if (scrolled)
+      resetIndexesCache();
+  }
+  next = window.setTimeout(loop, INTERVAL_MS);
+}
+function armWindowScroller() {
+  window.addEventListener("mousemove", updateMousePosition);
+  window.addEventListener("touchmove", updateMousePosition);
+  loop();
+}
+function disarmWindowScroller() {
+  window.removeEventListener("mousemove", updateMousePosition);
+  window.removeEventListener("touchmove", updateMousePosition);
+  mousePosition = void 0;
+  window.clearTimeout(next);
+  resetScrolling();
+}
+function svelteNodeClone(el) {
+  const cloned = el.cloneNode(true);
+  const values = [];
+  const elIsSelect = el.tagName === "SELECT";
+  const selects = elIsSelect ? [el] : [...el.querySelectorAll("select")];
+  for (const select of selects) {
+    values.push(select.value);
+  }
+  if (selects.length <= 0) {
+    return cloned;
+  }
+  const clonedSelects = elIsSelect ? [cloned] : [...cloned.querySelectorAll("select")];
+  for (let i = 0; i < clonedSelects.length; i++) {
+    const select = clonedSelects[i];
+    const value = values[i];
+    const optionEl = select.querySelector(`option[value="${value}"`);
+    if (optionEl) {
+      optionEl.setAttribute("selected", true);
+    }
+  }
+  return cloned;
+}
+const FEATURE_FLAG_NAMES = Object.freeze({
+  // This flag exists as a workaround for issue 454 (basically a browser bug) - seems like these rect values take time to update when in grid layout. Setting it to true can cause strange behaviour in the REPL for non-grid zones, see issue 470
+  USE_COMPUTED_STYLE_INSTEAD_OF_BOUNDING_RECT: "USE_COMPUTED_STYLE_INSTEAD_OF_BOUNDING_RECT"
+});
+const featureFlagsMap = {
+  [FEATURE_FLAG_NAMES.USE_COMPUTED_STYLE_INSTEAD_OF_BOUNDING_RECT]: false
+};
+function getFeatureFlag(flagName) {
+  if (!FEATURE_FLAG_NAMES[flagName])
+    throw new Error(`Can't get non existing feature flag ${flagName}! Supported flags: ${Object.keys(FEATURE_FLAG_NAMES)}`);
+  return featureFlagsMap[flagName];
+}
+const TRANSITION_DURATION_SECONDS = 0.2;
+function trs(property) {
+  return `${property} ${TRANSITION_DURATION_SECONDS}s ease`;
+}
+function createDraggedElementFrom(originalElement, positionCenterOnXY) {
+  const rect = originalElement.getBoundingClientRect();
+  const draggedEl2 = svelteNodeClone(originalElement);
+  copyStylesFromTo(originalElement, draggedEl2);
+  draggedEl2.id = DRAGGED_ELEMENT_ID;
+  draggedEl2.style.position = "fixed";
+  let elTopPx = rect.top;
+  let elLeftPx = rect.left;
+  draggedEl2.style.top = `${elTopPx}px`;
+  draggedEl2.style.left = `${elLeftPx}px`;
+  if (positionCenterOnXY) {
+    const center = findCenter(rect);
+    elTopPx -= center.y - positionCenterOnXY.y;
+    elLeftPx -= center.x - positionCenterOnXY.x;
+    window.setTimeout(() => {
+      draggedEl2.style.top = `${elTopPx}px`;
+      draggedEl2.style.left = `${elLeftPx}px`;
+    }, 0);
+  }
+  draggedEl2.style.margin = "0";
+  draggedEl2.style.boxSizing = "border-box";
+  draggedEl2.style.height = `${rect.height}px`;
+  draggedEl2.style.width = `${rect.width}px`;
+  draggedEl2.style.transition = `${trs("top")}, ${trs("left")}, ${trs("background-color")}, ${trs("opacity")}, ${trs("color")} `;
+  window.setTimeout(() => draggedEl2.style.transition += `, ${trs("width")}, ${trs("height")}`, 0);
+  draggedEl2.style.zIndex = "9999";
+  draggedEl2.style.cursor = "grabbing";
+  return draggedEl2;
+}
+function moveDraggedElementToWasDroppedState(draggedEl2) {
+  draggedEl2.style.cursor = "grab";
+}
+function morphDraggedElementToBeLike(draggedEl2, copyFromEl, currentMouseX, currentMouseY) {
+  copyStylesFromTo(copyFromEl, draggedEl2);
+  const newRect = copyFromEl.getBoundingClientRect();
+  const draggedElRect = draggedEl2.getBoundingClientRect();
+  const widthChange = newRect.width - draggedElRect.width;
+  const heightChange = newRect.height - draggedElRect.height;
+  if (widthChange || heightChange) {
+    const relativeDistanceOfMousePointerFromDraggedSides = {
+      left: (currentMouseX - draggedElRect.left) / draggedElRect.width,
+      top: (currentMouseY - draggedElRect.top) / draggedElRect.height
+    };
+    if (!getFeatureFlag(FEATURE_FLAG_NAMES.USE_COMPUTED_STYLE_INSTEAD_OF_BOUNDING_RECT)) {
+      draggedEl2.style.height = `${newRect.height}px`;
+      draggedEl2.style.width = `${newRect.width}px`;
+    }
+    draggedEl2.style.left = `${parseFloat(draggedEl2.style.left) - relativeDistanceOfMousePointerFromDraggedSides.left * widthChange}px`;
+    draggedEl2.style.top = `${parseFloat(draggedEl2.style.top) - relativeDistanceOfMousePointerFromDraggedSides.top * heightChange}px`;
+  }
+}
+function copyStylesFromTo(copyFromEl, copyToEl) {
+  const computedStyle = window.getComputedStyle(copyFromEl);
+  Array.from(computedStyle).filter(
+    (s) => s.startsWith("background") || s.startsWith("padding") || s.startsWith("font") || s.startsWith("text") || s.startsWith("align") || s.startsWith("justify") || s.startsWith("display") || s.startsWith("flex") || s.startsWith("border") || s === "opacity" || s === "color" || s === "list-style-type" || // copying with and height to make up for rect update timing issues in some browsers
+    getFeatureFlag(FEATURE_FLAG_NAMES.USE_COMPUTED_STYLE_INSTEAD_OF_BOUNDING_RECT) && (s === "width" || s === "height")
+  ).forEach((s) => copyToEl.style.setProperty(s, computedStyle.getPropertyValue(s), computedStyle.getPropertyPriority(s)));
+}
+function styleDraggable(draggableEl, dragDisabled) {
+  draggableEl.draggable = false;
+  draggableEl.ondragstart = () => false;
+  if (!dragDisabled) {
+    draggableEl.style.userSelect = "none";
+    draggableEl.style.WebkitUserSelect = "none";
+    draggableEl.style.cursor = "grab";
+  } else {
+    draggableEl.style.userSelect = "";
+    draggableEl.style.WebkitUserSelect = "";
+    draggableEl.style.cursor = "";
+  }
+}
+function hideElement(dragTarget) {
+  dragTarget.style.display = "none";
+  dragTarget.style.position = "fixed";
+  dragTarget.style.zIndex = "-5";
+}
+function decorateShadowEl(shadowEl) {
+  shadowEl.style.visibility = "hidden";
+  shadowEl.setAttribute(SHADOW_ELEMENT_ATTRIBUTE_NAME, "true");
+}
+function unDecorateShadowElement(shadowEl) {
+  shadowEl.style.visibility = "";
+  shadowEl.removeAttribute(SHADOW_ELEMENT_ATTRIBUTE_NAME);
+}
+function styleActiveDropZones(dropZones, getStyles = () => {
+}, getClasses = () => []) {
+  dropZones.forEach((dz) => {
+    const styles = getStyles(dz);
+    Object.keys(styles).forEach((style) => {
+      dz.style[style] = styles[style];
+    });
+    getClasses(dz).forEach((c) => dz.classList.add(c));
+  });
+}
+function styleInactiveDropZones(dropZones, getStyles = () => {
+}, getClasses = () => []) {
+  dropZones.forEach((dz) => {
+    const styles = getStyles(dz);
+    Object.keys(styles).forEach((style) => {
+      dz.style[style] = "";
+    });
+    getClasses(dz).forEach((c) => dz.classList.contains(c) && dz.classList.remove(c));
+  });
+}
+function preventShrinking(el) {
+  const originalMinHeight = el.style.minHeight;
+  el.style.minHeight = window.getComputedStyle(el).getPropertyValue("height");
+  const originalMinWidth = el.style.minWidth;
+  el.style.minWidth = window.getComputedStyle(el).getPropertyValue("width");
+  return function undo() {
+    el.style.minHeight = originalMinHeight;
+    el.style.minWidth = originalMinWidth;
+  };
+}
+const DEFAULT_DROP_ZONE_TYPE$1 = "--any--";
+const MIN_OBSERVATION_INTERVAL_MS = 100;
+const DISABLED_OBSERVATION_INTERVAL_MS = 20;
+const MIN_MOVEMENT_BEFORE_DRAG_START_PX = 3;
+const DEFAULT_DROP_TARGET_STYLE$1 = {
+  outline: "rgba(255, 255, 102, 0.7) solid 2px"
+};
+const ORIGINAL_DRAGGED_ITEM_MARKER_ATTRIBUTE = "data-is-dnd-original-dragged-item";
+let originalDragTarget;
+let draggedEl;
+let draggedElData;
+let draggedElType;
+let originDropZone;
+let originIndex;
+let shadowElData;
+let shadowElDropZone;
+let dragStartMousePosition;
+let currentMousePosition;
+let isWorkingOnPreviousDrag = false;
+let finalizingPreviousDrag = false;
+let unlockOriginDzMinDimensions;
+let isDraggedOutsideOfAnyDz = false;
+let scheduledForRemovalAfterDrop = [];
+const typeToDropZones$1 = /* @__PURE__ */ new Map();
+const dzToConfig$1 = /* @__PURE__ */ new Map();
+const elToMouseDownListener = /* @__PURE__ */ new WeakMap();
+function registerDropZone$1(dropZoneEl, type) {
+  if (!typeToDropZones$1.has(type)) {
+    typeToDropZones$1.set(type, /* @__PURE__ */ new Set());
+  }
+  if (!typeToDropZones$1.get(type).has(dropZoneEl)) {
+    typeToDropZones$1.get(type).add(dropZoneEl);
+    incrementActiveDropZoneCount();
+  }
+}
+function unregisterDropZone$1(dropZoneEl, type) {
+  typeToDropZones$1.get(type).delete(dropZoneEl);
+  decrementActiveDropZoneCount();
+  if (typeToDropZones$1.get(type).size === 0) {
+    typeToDropZones$1.delete(type);
+  }
+}
+function watchDraggedElement() {
+  armWindowScroller();
+  const dropZones = typeToDropZones$1.get(draggedElType);
+  for (const dz of dropZones) {
+    dz.addEventListener(DRAGGED_ENTERED_EVENT_NAME, handleDraggedEntered);
+    dz.addEventListener(DRAGGED_LEFT_EVENT_NAME, handleDraggedLeft);
+    dz.addEventListener(DRAGGED_OVER_INDEX_EVENT_NAME, handleDraggedIsOverIndex);
+  }
+  window.addEventListener(DRAGGED_LEFT_DOCUMENT_EVENT_NAME, handleDrop$1);
+  const setIntervalMs = Math.max(...Array.from(dropZones.keys()).map((dz) => dzToConfig$1.get(dz).dropAnimationDurationMs));
+  const observationIntervalMs = setIntervalMs === 0 ? DISABLED_OBSERVATION_INTERVAL_MS : Math.max(setIntervalMs, MIN_OBSERVATION_INTERVAL_MS);
+  observe(draggedEl, dropZones, observationIntervalMs * 1.07);
+}
+function unWatchDraggedElement() {
+  disarmWindowScroller();
+  const dropZones = typeToDropZones$1.get(draggedElType);
+  for (const dz of dropZones) {
+    dz.removeEventListener(DRAGGED_ENTERED_EVENT_NAME, handleDraggedEntered);
+    dz.removeEventListener(DRAGGED_LEFT_EVENT_NAME, handleDraggedLeft);
+    dz.removeEventListener(DRAGGED_OVER_INDEX_EVENT_NAME, handleDraggedIsOverIndex);
+  }
+  window.removeEventListener(DRAGGED_LEFT_DOCUMENT_EVENT_NAME, handleDrop$1);
+  unobserve();
+}
+function findShadowElementIdx(items) {
+  return items.findIndex((item) => !!item[SHADOW_ITEM_MARKER_PROPERTY_NAME]);
+}
+function handleDraggedEntered(e) {
+  let { items, dropFromOthersDisabled } = dzToConfig$1.get(e.currentTarget);
+  if (dropFromOthersDisabled && e.currentTarget !== originDropZone) {
+    return;
+  }
+  isDraggedOutsideOfAnyDz = false;
+  items = items.filter((item) => item[ITEM_ID_KEY] !== shadowElData[ITEM_ID_KEY]);
+  if (originDropZone !== e.currentTarget) {
+    const originZoneItems = dzToConfig$1.get(originDropZone).items;
+    const newOriginZoneItems = originZoneItems.filter((item) => !item[SHADOW_ITEM_MARKER_PROPERTY_NAME]);
+    dispatchConsiderEvent(originDropZone, newOriginZoneItems, {
+      trigger: TRIGGERS.DRAGGED_ENTERED_ANOTHER,
+      id: draggedElData[ITEM_ID_KEY],
+      source: SOURCES.POINTER
+    });
+  }
+  const { index, isProximityBased } = e.detail.indexObj;
+  const shadowElIdx = isProximityBased && index === e.currentTarget.children.length - 1 ? index + 1 : index;
+  shadowElDropZone = e.currentTarget;
+  items.splice(shadowElIdx, 0, shadowElData);
+  dispatchConsiderEvent(e.currentTarget, items, { trigger: TRIGGERS.DRAGGED_ENTERED, id: draggedElData[ITEM_ID_KEY], source: SOURCES.POINTER });
+}
+function handleDraggedLeft(e) {
+  if (!isWorkingOnPreviousDrag)
+    return;
+  const { items, dropFromOthersDisabled } = dzToConfig$1.get(e.currentTarget);
+  if (dropFromOthersDisabled && e.currentTarget !== originDropZone && e.currentTarget !== shadowElDropZone) {
+    return;
+  }
+  const shadowElIdx = findShadowElementIdx(items);
+  const shadowItem = items.splice(shadowElIdx, 1)[0];
+  shadowElDropZone = void 0;
+  const { type, theOtherDz } = e.detail;
+  if (type === DRAGGED_LEFT_TYPES.OUTSIDE_OF_ANY || type === DRAGGED_LEFT_TYPES.LEFT_FOR_ANOTHER && theOtherDz !== originDropZone && dzToConfig$1.get(theOtherDz).dropFromOthersDisabled) {
+    isDraggedOutsideOfAnyDz = true;
+    shadowElDropZone = originDropZone;
+    const originZoneItems = dzToConfig$1.get(originDropZone).items;
+    originZoneItems.splice(originIndex, 0, shadowItem);
+    dispatchConsiderEvent(originDropZone, originZoneItems, {
+      trigger: TRIGGERS.DRAGGED_LEFT_ALL,
+      id: draggedElData[ITEM_ID_KEY],
+      source: SOURCES.POINTER
+    });
+  }
+  dispatchConsiderEvent(e.currentTarget, items, {
+    trigger: TRIGGERS.DRAGGED_LEFT,
+    id: draggedElData[ITEM_ID_KEY],
+    source: SOURCES.POINTER
+  });
+}
+function handleDraggedIsOverIndex(e) {
+  const { items, dropFromOthersDisabled } = dzToConfig$1.get(e.currentTarget);
+  if (dropFromOthersDisabled && e.currentTarget !== originDropZone) {
+    return;
+  }
+  isDraggedOutsideOfAnyDz = false;
+  const { index } = e.detail.indexObj;
+  const shadowElIdx = findShadowElementIdx(items);
+  items.splice(shadowElIdx, 1);
+  items.splice(index, 0, shadowElData);
+  dispatchConsiderEvent(e.currentTarget, items, { trigger: TRIGGERS.DRAGGED_OVER_INDEX, id: draggedElData[ITEM_ID_KEY], source: SOURCES.POINTER });
+}
+function handleMouseMove(e) {
+  e.preventDefault();
+  const c = e.touches ? e.touches[0] : e;
+  currentMousePosition = { x: c.clientX, y: c.clientY };
+  draggedEl.style.transform = `translate3d(${currentMousePosition.x - dragStartMousePosition.x}px, ${currentMousePosition.y - dragStartMousePosition.y}px, 0)`;
+}
+function handleDrop$1() {
+  finalizingPreviousDrag = true;
+  window.removeEventListener("mousemove", handleMouseMove);
+  window.removeEventListener("touchmove", handleMouseMove);
+  window.removeEventListener("mouseup", handleDrop$1);
+  window.removeEventListener("touchend", handleDrop$1);
+  unWatchDraggedElement();
+  moveDraggedElementToWasDroppedState(draggedEl);
+  if (!shadowElDropZone) {
+    shadowElDropZone = originDropZone;
+  }
+  let { items, type } = dzToConfig$1.get(shadowElDropZone);
+  styleInactiveDropZones(
+    typeToDropZones$1.get(type),
+    (dz) => dzToConfig$1.get(dz).dropTargetStyle,
+    (dz) => dzToConfig$1.get(dz).dropTargetClasses
+  );
+  let shadowElIdx = findShadowElementIdx(items);
+  if (shadowElIdx === -1)
+    shadowElIdx = originIndex;
+  items = items.map((item) => item[SHADOW_ITEM_MARKER_PROPERTY_NAME] ? draggedElData : item);
+  function finalizeWithinZone() {
+    unlockOriginDzMinDimensions();
+    dispatchFinalizeEvent(shadowElDropZone, items, {
+      trigger: isDraggedOutsideOfAnyDz ? TRIGGERS.DROPPED_OUTSIDE_OF_ANY : TRIGGERS.DROPPED_INTO_ZONE,
+      id: draggedElData[ITEM_ID_KEY],
+      source: SOURCES.POINTER
+    });
+    if (shadowElDropZone !== originDropZone) {
+      dispatchFinalizeEvent(originDropZone, dzToConfig$1.get(originDropZone).items, {
+        trigger: TRIGGERS.DROPPED_INTO_ANOTHER,
+        id: draggedElData[ITEM_ID_KEY],
+        source: SOURCES.POINTER
+      });
+    }
+    unDecorateShadowElement(shadowElDropZone.children[shadowElIdx]);
+    cleanupPostDrop();
+  }
+  animateDraggedToFinalPosition(shadowElIdx, finalizeWithinZone);
+}
+function animateDraggedToFinalPosition(shadowElIdx, callback) {
+  const shadowElRect = getBoundingRectNoTransforms(shadowElDropZone.children[shadowElIdx]);
+  const newTransform = {
+    x: shadowElRect.left - parseFloat(draggedEl.style.left),
+    y: shadowElRect.top - parseFloat(draggedEl.style.top)
+  };
+  const { dropAnimationDurationMs } = dzToConfig$1.get(shadowElDropZone);
+  const transition = `transform ${dropAnimationDurationMs}ms ease`;
+  draggedEl.style.transition = draggedEl.style.transition ? draggedEl.style.transition + "," + transition : transition;
+  draggedEl.style.transform = `translate3d(${newTransform.x}px, ${newTransform.y}px, 0)`;
+  window.setTimeout(callback, dropAnimationDurationMs);
+}
+function scheduleDZForRemovalAfterDrop(dz, destroy) {
+  scheduledForRemovalAfterDrop.push({ dz, destroy });
+  window.requestAnimationFrame(() => {
+    hideElement(dz);
+    document.body.appendChild(dz);
+  });
+}
+function cleanupPostDrop() {
+  draggedEl.remove();
+  originalDragTarget.remove();
+  if (scheduledForRemovalAfterDrop.length) {
+    scheduledForRemovalAfterDrop.forEach(({ dz, destroy }) => {
+      destroy();
+      dz.remove();
+    });
+    scheduledForRemovalAfterDrop = [];
+  }
+  draggedEl = void 0;
+  originalDragTarget = void 0;
+  draggedElData = void 0;
+  draggedElType = void 0;
+  originDropZone = void 0;
+  originIndex = void 0;
+  shadowElData = void 0;
+  shadowElDropZone = void 0;
+  dragStartMousePosition = void 0;
+  currentMousePosition = void 0;
+  isWorkingOnPreviousDrag = false;
+  finalizingPreviousDrag = false;
+  unlockOriginDzMinDimensions = void 0;
+  isDraggedOutsideOfAnyDz = false;
+}
+function dndzone$2(node, options) {
+  let initialized = false;
+  const config = {
+    items: void 0,
+    type: void 0,
+    flipDurationMs: 0,
+    dragDisabled: false,
+    morphDisabled: false,
+    dropFromOthersDisabled: false,
+    dropTargetStyle: DEFAULT_DROP_TARGET_STYLE$1,
+    dropTargetClasses: [],
+    transformDraggedElement: () => {
+    },
+    centreDraggedOnCursor: false
+  };
+  let elToIdx = /* @__PURE__ */ new Map();
+  function addMaybeListeners() {
+    window.addEventListener("mousemove", handleMouseMoveMaybeDragStart, { passive: false });
+    window.addEventListener("touchmove", handleMouseMoveMaybeDragStart, { passive: false, capture: false });
+    window.addEventListener("mouseup", handleFalseAlarm, { passive: false });
+    window.addEventListener("touchend", handleFalseAlarm, { passive: false });
+  }
+  function removeMaybeListeners() {
+    window.removeEventListener("mousemove", handleMouseMoveMaybeDragStart);
+    window.removeEventListener("touchmove", handleMouseMoveMaybeDragStart);
+    window.removeEventListener("mouseup", handleFalseAlarm);
+    window.removeEventListener("touchend", handleFalseAlarm);
+  }
+  function handleFalseAlarm() {
+    removeMaybeListeners();
+    originalDragTarget = void 0;
+    dragStartMousePosition = void 0;
+    currentMousePosition = void 0;
+  }
+  function handleMouseMoveMaybeDragStart(e) {
+    e.preventDefault();
+    const c = e.touches ? e.touches[0] : e;
+    currentMousePosition = { x: c.clientX, y: c.clientY };
+    if (Math.abs(currentMousePosition.x - dragStartMousePosition.x) >= MIN_MOVEMENT_BEFORE_DRAG_START_PX || Math.abs(currentMousePosition.y - dragStartMousePosition.y) >= MIN_MOVEMENT_BEFORE_DRAG_START_PX) {
+      removeMaybeListeners();
+      handleDragStart();
+    }
+  }
+  function handleMouseDown(e) {
+    if (e.target !== e.currentTarget && (e.target.value !== void 0 || e.target.isContentEditable)) {
+      return;
+    }
+    if (e.button) {
+      return;
+    }
+    if (isWorkingOnPreviousDrag) {
+      return;
+    }
+    e.stopPropagation();
+    const c = e.touches ? e.touches[0] : e;
+    dragStartMousePosition = { x: c.clientX, y: c.clientY };
+    currentMousePosition = { ...dragStartMousePosition };
+    originalDragTarget = e.currentTarget;
+    addMaybeListeners();
+  }
+  function handleDragStart() {
+    isWorkingOnPreviousDrag = true;
+    const currentIdx = elToIdx.get(originalDragTarget);
+    originIndex = currentIdx;
+    originDropZone = originalDragTarget.parentElement;
+    const rootNode = originDropZone.getRootNode();
+    const originDropZoneRoot = rootNode.body || rootNode;
+    const { items, type, centreDraggedOnCursor } = config;
+    draggedElData = { ...items[currentIdx] };
+    draggedElType = type;
+    shadowElData = { ...draggedElData, [SHADOW_ITEM_MARKER_PROPERTY_NAME]: true, [ITEM_ID_KEY]: SHADOW_PLACEHOLDER_ITEM_ID };
+    draggedEl = createDraggedElementFrom(originalDragTarget, centreDraggedOnCursor && currentMousePosition);
+    originalDragTarget.setAttribute(ORIGINAL_DRAGGED_ITEM_MARKER_ATTRIBUTE, true);
+    function keepOriginalElementInDom() {
+      if (!draggedEl.parentElement) {
+        originDropZoneRoot.appendChild(draggedEl);
+        draggedEl.focus();
+        watchDraggedElement();
+        hideElement(originalDragTarget);
+        originDropZoneRoot.appendChild(originalDragTarget);
+      } else {
+        window.requestAnimationFrame(keepOriginalElementInDom);
+      }
+    }
+    window.requestAnimationFrame(keepOriginalElementInDom);
+    styleActiveDropZones(
+      Array.from(typeToDropZones$1.get(config.type)).filter((dz) => dz === originDropZone || !dzToConfig$1.get(dz).dropFromOthersDisabled),
+      (dz) => dzToConfig$1.get(dz).dropTargetStyle,
+      (dz) => dzToConfig$1.get(dz).dropTargetClasses
+    );
+    items.splice(currentIdx, 1, shadowElData);
+    unlockOriginDzMinDimensions = preventShrinking(originDropZone);
+    dispatchConsiderEvent(originDropZone, items, { trigger: TRIGGERS.DRAG_STARTED, id: draggedElData[ITEM_ID_KEY], source: SOURCES.POINTER });
+    window.addEventListener("mousemove", handleMouseMove, { passive: false });
+    window.addEventListener("touchmove", handleMouseMove, { passive: false, capture: false });
+    window.addEventListener("mouseup", handleDrop$1, { passive: false });
+    window.addEventListener("touchend", handleDrop$1, { passive: false });
+  }
+  function configure({
+    items = void 0,
+    flipDurationMs: dropAnimationDurationMs = 0,
+    type: newType = DEFAULT_DROP_ZONE_TYPE$1,
+    dragDisabled = false,
+    morphDisabled = false,
+    dropFromOthersDisabled = false,
+    dropTargetStyle = DEFAULT_DROP_TARGET_STYLE$1,
+    dropTargetClasses = [],
+    transformDraggedElement = () => {
+    },
+    centreDraggedOnCursor = false
+  }) {
+    config.dropAnimationDurationMs = dropAnimationDurationMs;
+    if (config.type && newType !== config.type) {
+      unregisterDropZone$1(node, config.type);
+    }
+    config.type = newType;
+    config.items = [...items];
+    config.dragDisabled = dragDisabled;
+    config.morphDisabled = morphDisabled;
+    config.transformDraggedElement = transformDraggedElement;
+    config.centreDraggedOnCursor = centreDraggedOnCursor;
+    if (initialized && isWorkingOnPreviousDrag && !finalizingPreviousDrag && (!areObjectsShallowEqual(dropTargetStyle, config.dropTargetStyle) || !areArraysShallowEqualSameOrder(dropTargetClasses, config.dropTargetClasses))) {
+      styleInactiveDropZones(
+        [node],
+        () => config.dropTargetStyle,
+        () => dropTargetClasses
+      );
+      styleActiveDropZones(
+        [node],
+        () => dropTargetStyle,
+        () => dropTargetClasses
+      );
+    }
+    config.dropTargetStyle = dropTargetStyle;
+    config.dropTargetClasses = [...dropTargetClasses];
+    function getConfigProp(dz, propName) {
+      return dzToConfig$1.get(dz) ? dzToConfig$1.get(dz)[propName] : config[propName];
+    }
+    if (initialized && isWorkingOnPreviousDrag && config.dropFromOthersDisabled !== dropFromOthersDisabled) {
+      if (dropFromOthersDisabled) {
+        styleInactiveDropZones(
+          [node],
+          (dz) => getConfigProp(dz, "dropTargetStyle"),
+          (dz) => getConfigProp(dz, "dropTargetClasses")
+        );
+      } else {
+        styleActiveDropZones(
+          [node],
+          (dz) => getConfigProp(dz, "dropTargetStyle"),
+          (dz) => getConfigProp(dz, "dropTargetClasses")
+        );
+      }
+    }
+    config.dropFromOthersDisabled = dropFromOthersDisabled;
+    dzToConfig$1.set(node, config);
+    registerDropZone$1(node, newType);
+    const shadowElIdx = findShadowElementIdx(config.items);
+    for (let idx = 0; idx < node.children.length; idx++) {
+      const draggableEl = node.children[idx];
+      styleDraggable(draggableEl, dragDisabled);
+      if (idx === shadowElIdx) {
+        config.transformDraggedElement(draggedEl, draggedElData, idx);
+        if (!morphDisabled) {
+          morphDraggedElementToBeLike(draggedEl, draggableEl, currentMousePosition.x, currentMousePosition.y);
+        }
+        decorateShadowEl(draggableEl);
+        continue;
+      }
+      draggableEl.removeEventListener("mousedown", elToMouseDownListener.get(draggableEl));
+      draggableEl.removeEventListener("touchstart", elToMouseDownListener.get(draggableEl));
+      if (!dragDisabled) {
+        draggableEl.addEventListener("mousedown", handleMouseDown);
+        draggableEl.addEventListener("touchstart", handleMouseDown);
+        elToMouseDownListener.set(draggableEl, handleMouseDown);
+      }
+      elToIdx.set(draggableEl, idx);
+      if (!initialized) {
+        initialized = true;
+      }
+    }
+  }
+  configure(options);
+  return {
+    update: (newOptions) => {
+      configure(newOptions);
+    },
+    destroy: () => {
+      function destroyDz() {
+        unregisterDropZone$1(node, dzToConfig$1.get(node).type);
+        dzToConfig$1.delete(node);
+      }
+      if (isWorkingOnPreviousDrag && !node.closest(`[${ORIGINAL_DRAGGED_ITEM_MARKER_ATTRIBUTE}]`)) {
+        scheduleDZForRemovalAfterDrop(node, destroyDz);
+      } else {
+        destroyDz();
+      }
+    }
+  };
+}
+const INSTRUCTION_IDs$1 = {
+  DND_ZONE_ACTIVE: "dnd-zone-active",
+  DND_ZONE_DRAG_DISABLED: "dnd-zone-drag-disabled"
+};
+const ID_TO_INSTRUCTION = {
+  [INSTRUCTION_IDs$1.DND_ZONE_ACTIVE]: "Tab to one the items and press space-bar or enter to start dragging it",
+  [INSTRUCTION_IDs$1.DND_ZONE_DRAG_DISABLED]: "This is a disabled drag and drop list"
+};
+const ALERT_DIV_ID = "dnd-action-aria-alert";
+let alertsDiv;
+function initAriaOnBrowser() {
+  if (alertsDiv) {
+    return;
+  }
+  alertsDiv = document.createElement("div");
+  (function initAlertsDiv() {
+    alertsDiv.id = ALERT_DIV_ID;
+    alertsDiv.style.position = "fixed";
+    alertsDiv.style.bottom = "0";
+    alertsDiv.style.left = "0";
+    alertsDiv.style.zIndex = "-5";
+    alertsDiv.style.opacity = "0";
+    alertsDiv.style.height = "0";
+    alertsDiv.style.width = "0";
+    alertsDiv.setAttribute("role", "alert");
+  })();
+  document.body.prepend(alertsDiv);
+  Object.entries(ID_TO_INSTRUCTION).forEach(([id, txt]) => document.body.prepend(instructionToHiddenDiv(id, txt)));
+}
+function initAria() {
+  if (isOnServer)
+    return null;
+  if (document.readyState === "complete") {
+    initAriaOnBrowser();
+  } else {
+    window.addEventListener("DOMContentLoaded", initAriaOnBrowser);
+  }
+  return { ...INSTRUCTION_IDs$1 };
+}
+function destroyAria() {
+  if (isOnServer || !alertsDiv)
+    return;
+  Object.keys(ID_TO_INSTRUCTION).forEach((id) => document.getElementById(id)?.remove());
+  alertsDiv.remove();
+  alertsDiv = void 0;
+}
+function instructionToHiddenDiv(id, txt) {
+  const div = document.createElement("div");
+  div.id = id;
+  div.innerHTML = `<p>${txt}</p>`;
+  div.style.display = "none";
+  div.style.position = "fixed";
+  div.style.zIndex = "-5";
+  return div;
+}
+function alertToScreenReader(txt) {
+  if (isOnServer)
+    return;
+  if (!alertsDiv) {
+    initAriaOnBrowser();
+  }
+  alertsDiv.innerHTML = "";
+  const alertText = document.createTextNode(txt);
+  alertsDiv.appendChild(alertText);
+  alertsDiv.style.display = "none";
+  alertsDiv.style.display = "inline";
+}
+const DEFAULT_DROP_ZONE_TYPE = "--any--";
+const DEFAULT_DROP_TARGET_STYLE = {
+  outline: "rgba(255, 255, 102, 0.7) solid 2px"
+};
+let isDragging = false;
+let draggedItemType;
+let focusedDz;
+let focusedDzLabel = "";
+let focusedItem;
+let focusedItemId;
+let focusedItemLabel = "";
+const allDragTargets = /* @__PURE__ */ new WeakSet();
+const elToKeyDownListeners = /* @__PURE__ */ new WeakMap();
+const elToFocusListeners = /* @__PURE__ */ new WeakMap();
+const dzToHandles = /* @__PURE__ */ new Map();
+const dzToConfig = /* @__PURE__ */ new Map();
+const typeToDropZones = /* @__PURE__ */ new Map();
+let INSTRUCTION_IDs;
+function registerDropZone(dropZoneEl, type) {
+  if (typeToDropZones.size === 0) {
+    INSTRUCTION_IDs = initAria();
+    window.addEventListener("keydown", globalKeyDownHandler);
+    window.addEventListener("click", globalClickHandler);
+  }
+  if (!typeToDropZones.has(type)) {
+    typeToDropZones.set(type, /* @__PURE__ */ new Set());
+  }
+  if (!typeToDropZones.get(type).has(dropZoneEl)) {
+    typeToDropZones.get(type).add(dropZoneEl);
+    incrementActiveDropZoneCount();
+  }
+}
+function unregisterDropZone(dropZoneEl, type) {
+  if (focusedDz === dropZoneEl) {
+    handleDrop();
+  }
+  typeToDropZones.get(type).delete(dropZoneEl);
+  decrementActiveDropZoneCount();
+  if (typeToDropZones.get(type).size === 0) {
+    typeToDropZones.delete(type);
+  }
+  if (typeToDropZones.size === 0) {
+    window.removeEventListener("keydown", globalKeyDownHandler);
+    window.removeEventListener("click", globalClickHandler);
+    INSTRUCTION_IDs = void 0;
+    destroyAria();
+  }
+}
+function globalKeyDownHandler(e) {
+  if (!isDragging)
+    return;
+  switch (e.key) {
+    case "Escape": {
+      handleDrop();
+      break;
+    }
+  }
+}
+function globalClickHandler() {
+  if (!isDragging)
+    return;
+  if (!allDragTargets.has(document.activeElement)) {
+    handleDrop();
+  }
+}
+function handleZoneFocus(e) {
+  if (!isDragging)
+    return;
+  const newlyFocusedDz = e.currentTarget;
+  if (newlyFocusedDz === focusedDz)
+    return;
+  focusedDzLabel = newlyFocusedDz.getAttribute("aria-label") || "";
+  const { items: originItems } = dzToConfig.get(focusedDz);
+  const originItem = originItems.find((item) => item[ITEM_ID_KEY] === focusedItemId);
+  const originIdx = originItems.indexOf(originItem);
+  const itemToMove = originItems.splice(originIdx, 1)[0];
+  const { items: targetItems, autoAriaDisabled } = dzToConfig.get(newlyFocusedDz);
+  if (newlyFocusedDz.getBoundingClientRect().top < focusedDz.getBoundingClientRect().top || newlyFocusedDz.getBoundingClientRect().left < focusedDz.getBoundingClientRect().left) {
+    targetItems.push(itemToMove);
+    if (!autoAriaDisabled) {
+      alertToScreenReader(`Moved item ${focusedItemLabel} to the end of the list ${focusedDzLabel}`);
+    }
+  } else {
+    targetItems.unshift(itemToMove);
+    if (!autoAriaDisabled) {
+      alertToScreenReader(`Moved item ${focusedItemLabel} to the beginning of the list ${focusedDzLabel}`);
+    }
+  }
+  const dzFrom = focusedDz;
+  dispatchFinalizeEvent(dzFrom, originItems, { trigger: TRIGGERS.DROPPED_INTO_ANOTHER, id: focusedItemId, source: SOURCES.KEYBOARD });
+  dispatchFinalizeEvent(newlyFocusedDz, targetItems, { trigger: TRIGGERS.DROPPED_INTO_ZONE, id: focusedItemId, source: SOURCES.KEYBOARD });
+  focusedDz = newlyFocusedDz;
+}
+function triggerAllDzsUpdate() {
+  dzToHandles.forEach(({ update: update2 }, dz) => update2(dzToConfig.get(dz)));
+}
+function handleDrop(dispatchConsider = true) {
+  if (!dzToConfig.get(focusedDz).autoAriaDisabled) {
+    alertToScreenReader(`Stopped dragging item ${focusedItemLabel}`);
+  }
+  if (allDragTargets.has(document.activeElement)) {
+    document.activeElement.blur();
+  }
+  if (dispatchConsider) {
+    dispatchConsiderEvent(focusedDz, dzToConfig.get(focusedDz).items, {
+      trigger: TRIGGERS.DRAG_STOPPED,
+      id: focusedItemId,
+      source: SOURCES.KEYBOARD
+    });
+  }
+  styleInactiveDropZones(
+    typeToDropZones.get(draggedItemType),
+    (dz) => dzToConfig.get(dz).dropTargetStyle,
+    (dz) => dzToConfig.get(dz).dropTargetClasses
+  );
+  focusedItem = null;
+  focusedItemId = null;
+  focusedItemLabel = "";
+  draggedItemType = null;
+  focusedDz = null;
+  focusedDzLabel = "";
+  isDragging = false;
+  triggerAllDzsUpdate();
+}
+function dndzone$1(node, options) {
+  const config = {
+    items: void 0,
+    type: void 0,
+    dragDisabled: false,
+    zoneTabIndex: 0,
+    zoneItemTabIndex: 0,
+    dropFromOthersDisabled: false,
+    dropTargetStyle: DEFAULT_DROP_TARGET_STYLE,
+    dropTargetClasses: [],
+    autoAriaDisabled: false
+  };
+  function swap(arr, i, j) {
+    if (arr.length <= 1)
+      return;
+    arr.splice(j, 1, arr.splice(i, 1, arr[j])[0]);
+  }
+  function handleKeyDown(e) {
+    switch (e.key) {
+      case "Enter":
+      case " ": {
+        if ((e.target.disabled !== void 0 || e.target.href || e.target.isContentEditable) && !allDragTargets.has(e.target)) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        if (isDragging) {
+          handleDrop();
+        } else {
+          handleDragStart(e);
+        }
+        break;
+      }
+      case "ArrowDown":
+      case "ArrowRight": {
+        if (!isDragging)
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        const { items } = dzToConfig.get(node);
+        const children2 = Array.from(node.children);
+        const idx = children2.indexOf(e.currentTarget);
+        if (idx < children2.length - 1) {
+          if (!config.autoAriaDisabled) {
+            alertToScreenReader(`Moved item ${focusedItemLabel} to position ${idx + 2} in the list ${focusedDzLabel}`);
+          }
+          swap(items, idx, idx + 1);
+          dispatchFinalizeEvent(node, items, { trigger: TRIGGERS.DROPPED_INTO_ZONE, id: focusedItemId, source: SOURCES.KEYBOARD });
+        }
+        break;
+      }
+      case "ArrowUp":
+      case "ArrowLeft": {
+        if (!isDragging)
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        const { items } = dzToConfig.get(node);
+        const children2 = Array.from(node.children);
+        const idx = children2.indexOf(e.currentTarget);
+        if (idx > 0) {
+          if (!config.autoAriaDisabled) {
+            alertToScreenReader(`Moved item ${focusedItemLabel} to position ${idx} in the list ${focusedDzLabel}`);
+          }
+          swap(items, idx, idx - 1);
+          dispatchFinalizeEvent(node, items, { trigger: TRIGGERS.DROPPED_INTO_ZONE, id: focusedItemId, source: SOURCES.KEYBOARD });
+        }
+        break;
+      }
+    }
+  }
+  function handleDragStart(e) {
+    setCurrentFocusedItem(e.currentTarget);
+    focusedDz = node;
+    draggedItemType = config.type;
+    isDragging = true;
+    const dropTargets = Array.from(typeToDropZones.get(config.type)).filter((dz) => dz === focusedDz || !dzToConfig.get(dz).dropFromOthersDisabled);
+    styleActiveDropZones(
+      dropTargets,
+      (dz) => dzToConfig.get(dz).dropTargetStyle,
+      (dz) => dzToConfig.get(dz).dropTargetClasses
+    );
+    if (!config.autoAriaDisabled) {
+      let msg = `Started dragging item ${focusedItemLabel}. Use the arrow keys to move it within its list ${focusedDzLabel}`;
+      if (dropTargets.length > 1) {
+        msg += `, or tab to another list in order to move the item into it`;
+      }
+      alertToScreenReader(msg);
+    }
+    dispatchConsiderEvent(node, dzToConfig.get(node).items, { trigger: TRIGGERS.DRAG_STARTED, id: focusedItemId, source: SOURCES.KEYBOARD });
+    triggerAllDzsUpdate();
+  }
+  function handleClick(e) {
+    if (!isDragging)
+      return;
+    if (e.currentTarget === focusedItem)
+      return;
+    e.stopPropagation();
+    handleDrop(false);
+    handleDragStart(e);
+  }
+  function setCurrentFocusedItem(draggableEl) {
+    const { items } = dzToConfig.get(node);
+    const children2 = Array.from(node.children);
+    const focusedItemIdx = children2.indexOf(draggableEl);
+    focusedItem = draggableEl;
+    focusedItem.tabIndex = config.zoneItemTabIndex;
+    focusedItemId = items[focusedItemIdx][ITEM_ID_KEY];
+    focusedItemLabel = children2[focusedItemIdx].getAttribute("aria-label") || "";
+  }
+  function configure({
+    items = [],
+    type: newType = DEFAULT_DROP_ZONE_TYPE,
+    dragDisabled = false,
+    zoneTabIndex = 0,
+    zoneItemTabIndex = 0,
+    dropFromOthersDisabled = false,
+    dropTargetStyle = DEFAULT_DROP_TARGET_STYLE,
+    dropTargetClasses = [],
+    autoAriaDisabled = false
+  }) {
+    config.items = [...items];
+    config.dragDisabled = dragDisabled;
+    config.dropFromOthersDisabled = dropFromOthersDisabled;
+    config.zoneTabIndex = zoneTabIndex;
+    config.zoneItemTabIndex = zoneItemTabIndex;
+    config.dropTargetStyle = dropTargetStyle;
+    config.dropTargetClasses = dropTargetClasses;
+    config.autoAriaDisabled = autoAriaDisabled;
+    if (config.type && newType !== config.type) {
+      unregisterDropZone(node, config.type);
+    }
+    config.type = newType;
+    registerDropZone(node, newType);
+    if (!autoAriaDisabled) {
+      node.setAttribute("aria-disabled", dragDisabled);
+      node.setAttribute("role", "list");
+      node.setAttribute("aria-describedby", dragDisabled ? INSTRUCTION_IDs.DND_ZONE_DRAG_DISABLED : INSTRUCTION_IDs.DND_ZONE_ACTIVE);
+    }
+    dzToConfig.set(node, config);
+    if (isDragging) {
+      node.tabIndex = node === focusedDz || focusedItem.contains(node) || config.dropFromOthersDisabled || focusedDz && config.type !== dzToConfig.get(focusedDz).type ? -1 : 0;
+    } else {
+      node.tabIndex = config.zoneTabIndex;
+    }
+    node.addEventListener("focus", handleZoneFocus);
+    for (let i = 0; i < node.children.length; i++) {
+      const draggableEl = node.children[i];
+      allDragTargets.add(draggableEl);
+      draggableEl.tabIndex = isDragging ? -1 : config.zoneItemTabIndex;
+      if (!autoAriaDisabled) {
+        draggableEl.setAttribute("role", "listitem");
+      }
+      draggableEl.removeEventListener("keydown", elToKeyDownListeners.get(draggableEl));
+      draggableEl.removeEventListener("click", elToFocusListeners.get(draggableEl));
+      if (!dragDisabled) {
+        draggableEl.addEventListener("keydown", handleKeyDown);
+        elToKeyDownListeners.set(draggableEl, handleKeyDown);
+        draggableEl.addEventListener("click", handleClick);
+        elToFocusListeners.set(draggableEl, handleClick);
+      }
+      if (isDragging && config.items[i][ITEM_ID_KEY] === focusedItemId) {
+        focusedItem = draggableEl;
+        focusedItem.tabIndex = config.zoneItemTabIndex;
+        draggableEl.focus();
+      }
+    }
+  }
+  configure(options);
+  const handles = {
+    update: (newOptions) => {
+      configure(newOptions);
+    },
+    destroy: () => {
+      unregisterDropZone(node, config.type);
+      dzToConfig.delete(node);
+      dzToHandles.delete(node);
+    }
+  };
+  dzToHandles.set(node, handles);
+  return handles;
+}
+function dndzone(node, options) {
+  if (shouldIgnoreZone(node)) {
+    return {
+      update: () => {
+      },
+      destroy: () => {
+      }
+    };
+  }
+  validateOptions(options);
+  const pointerZone = dndzone$2(node, options);
+  const keyboardZone = dndzone$1(node, options);
+  return {
+    update: (newOptions) => {
+      validateOptions(newOptions);
+      pointerZone.update(newOptions);
+      keyboardZone.update(newOptions);
+    },
+    destroy: () => {
+      pointerZone.destroy();
+      keyboardZone.destroy();
+    }
+  };
+}
+function shouldIgnoreZone(node) {
+  return !!node.closest(`[${SHADOW_ELEMENT_HINT_ATTRIBUTE_NAME}="true"]`);
+}
+function validateOptions(options) {
+  const {
+    items,
+    flipDurationMs: flipDurationMs2,
+    type,
+    dragDisabled,
+    morphDisabled,
+    dropFromOthersDisabled,
+    zoneTabIndex,
+    zoneItemTabIndex,
+    dropTargetStyle,
+    dropTargetClasses,
+    transformDraggedElement,
+    autoAriaDisabled,
+    centreDraggedOnCursor,
+    ...rest
+  } = options;
+  if (Object.keys(rest).length > 0) {
+    console.warn(`dndzone will ignore unknown options`, rest);
+  }
+  if (!items) {
+    throw new Error("no 'items' key provided to dndzone");
+  }
+  const itemWithMissingId = items.find((item) => !{}.hasOwnProperty.call(item, ITEM_ID_KEY));
+  if (itemWithMissingId) {
+    throw new Error(`missing '${ITEM_ID_KEY}' property for item ${toString(itemWithMissingId)}`);
+  }
+  if (dropTargetClasses && !Array.isArray(dropTargetClasses)) {
+    throw new Error(`dropTargetClasses should be an array but instead it is a ${typeof dropTargetClasses}, ${toString(dropTargetClasses)}`);
+  }
+  if (zoneTabIndex && !isInt(zoneTabIndex)) {
+    throw new Error(`zoneTabIndex should be a number but instead it is a ${typeof zoneTabIndex}, ${toString(zoneTabIndex)}`);
+  }
+  if (zoneItemTabIndex && !isInt(zoneItemTabIndex)) {
+    throw new Error(`zoneItemTabIndex should be a number but instead it is a ${typeof zoneItemTabIndex}, ${toString(zoneItemTabIndex)}`);
+  }
+}
+function isInt(value) {
+  return !isNaN(value) && function(x) {
+    return (x | 0) === x;
+  }(parseFloat(value));
+}
+const EditableListContent_svelte_svelte_type_style_lang = "";
+function get_each_context$7(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[13] = list[i];
+  return child_ctx;
+}
+const get_default_slot_changes$6 = (dirty) => ({
+  item: dirty & /*items*/
+  1,
+  index: dirty & /*items*/
+  1
+});
+const get_default_slot_context$6 = (ctx) => ({
+  item: (
+    /*item*/
+    ctx[13]
+  ),
+  index: (
+    /*item*/
+    ctx[13].index
+  )
+});
+function create_if_block$d(ctx) {
+  let div;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let dndzone_action;
+  let current;
+  let mounted;
+  let dispose;
+  let each_value = ensure_array_like(
+    /*items*/
+    ctx[0]
+  );
+  const get_key = (ctx2) => (
+    /*item*/
+    ctx2[13].id
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$7(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$7(key, child_ctx));
+  }
+  return {
+    c() {
+      div = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(div, "class", "content svelte-jpi-okyumq");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div, null);
+        }
+      }
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div,
+            "consider",
+            /*handleDndConsider*/
+            ctx[7]
+          ),
+          listen(
+            div,
+            "finalize",
+            /*handleDndFinalize*/
+            ctx[8]
+          ),
+          action_destroyer(dndzone_action = dndzone.call(null, div, {
+            items: (
+              /*items*/
+              ctx[0]
+            ),
+            flipDurationMs,
+            dropTargetStyle: (
+              /*dropTargetStyle*/
+              ctx[9]
+            ),
+            dragDisabled: (
+              /*dragDisabled*/
+              ctx[4]
+            ),
+            type: (
+              /*dndzoneType*/
+              ctx[2]
+            )
+          }))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*isDragging, items, itemActions, onGripDown, onGripUp, $$scope*/
+      2155) {
+        each_value = ensure_array_like(
+          /*items*/
+          ctx2[0]
+        );
+        group_outros();
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].r();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div, fix_and_outro_and_destroy_block, create_each_block$7, null, get_each_context$7);
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].a();
+        check_outros();
+      }
+      if (dndzone_action && is_function(dndzone_action.update) && dirty & /*items, dragDisabled, dndzoneType*/
+      21)
+        dndzone_action.update.call(null, {
+          items: (
+            /*items*/
+            ctx2[0]
+          ),
+          flipDurationMs,
+          dropTargetStyle: (
+            /*dropTargetStyle*/
+            ctx2[9]
+          ),
+          dragDisabled: (
+            /*dragDisabled*/
+            ctx2[4]
+          ),
+          type: (
+            /*dndzoneType*/
+            ctx2[2]
+          )
+        });
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
       }
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$b($$self, $$props, $$invalidate) {
-  let $storeValue, $$unsubscribe_storeValue = noop, $$subscribe_storeValue = () => ($$unsubscribe_storeValue(), $$unsubscribe_storeValue = subscribe(storeValue, ($$value) => $$invalidate(5, $storeValue = $$value)), storeValue);
-  $$self.$$.on_destroy.push(() => $$unsubscribe_storeValue());
-  let { name } = $$props;
-  let { description } = $$props;
-  let { storeValue } = $$props;
-  $$subscribe_storeValue();
-  let { command } = $$props;
-  let { options } = $$props;
-  function onClick() {
-    if (storeValue && !options) {
-      set_store_value(storeValue, $storeValue = !$storeValue, $storeValue);
-    } else if (command) {
-      command();
+function create_else_block$3(ctx) {
+  let editablelistitem;
+  let current;
+  editablelistitem = new EditableListItem({
+    props: {
+      item: (
+        /*item*/
+        ctx[13]
+      ),
+      actions: (
+        /*itemActions*/
+        ctx[1]
+      ),
+      isDragging: (
+        /*isDragging*/
+        ctx[3]
+      ),
+      $$slots: { default: [create_default_slot$j] },
+      $$scope: { ctx }
+    }
+  });
+  editablelistitem.$on(
+    "gripdown",
+    /*onGripDown*/
+    ctx[5]
+  );
+  editablelistitem.$on(
+    "gripup",
+    /*onGripUp*/
+    ctx[6]
+  );
+  return {
+    c() {
+      create_component(editablelistitem.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(editablelistitem, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const editablelistitem_changes = {};
+      if (dirty & /*items*/
+      1)
+        editablelistitem_changes.item = /*item*/
+        ctx2[13];
+      if (dirty & /*itemActions*/
+      2)
+        editablelistitem_changes.actions = /*itemActions*/
+        ctx2[1];
+      if (dirty & /*isDragging*/
+      8)
+        editablelistitem_changes.isDragging = /*isDragging*/
+        ctx2[3];
+      if (dirty & /*$$scope, items*/
+      2049) {
+        editablelistitem_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      editablelistitem.$set(editablelistitem_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(editablelistitem.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(editablelistitem.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(editablelistitem, detaching);
+    }
+  };
+}
+function create_if_block_1$8(ctx) {
+  let div;
+  let t_value = (
+    /*item*/
+    ctx[13].label + ""
+  );
+  let t;
+  return {
+    c() {
+      div = element("div");
+      t = text(t_value);
+      attr(div, "class", "custom-shadow-item svelte-jpi-okyumq");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*items*/
+      1 && t_value !== (t_value = /*item*/
+      ctx2[13].label + ""))
+        set_data(t, t_value);
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+    }
+  };
+}
+function create_default_slot$j(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[10].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[11],
+    get_default_slot_context$6
+  );
+  return {
+    c() {
+      if (default_slot)
+        default_slot.c();
+    },
+    m(target, anchor) {
+      if (default_slot) {
+        default_slot.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, items*/
+        2049)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[11],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[11]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[11],
+              dirty,
+              get_default_slot_changes$6
+            ),
+            get_default_slot_context$6
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function create_each_block$7(key_1, ctx) {
+  let div;
+  let current_block_type_index;
+  let if_block;
+  let t;
+  let rect;
+  let stop_animation = noop;
+  let current;
+  const if_block_creators = [create_if_block_1$8, create_else_block$3];
+  const if_blocks = [];
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*item*/
+      ctx2[13][SHADOW_ITEM_MARKER_PROPERTY_NAME]
+    )
+      return 0;
+    return 1;
+  }
+  current_block_type_index = select_block_type(ctx);
+  if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      if_block.c();
+      t = space();
+      set_style(div, "width", `100%`);
+      set_style(
+        div,
+        "cursor",
+        /*isDragging*/
+        ctx[3] ? "grabbing" : "grab"
+      );
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if_blocks[current_block_type_index].m(div, null);
+      append(div, t);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      let previous_block_index = current_block_type_index;
+      current_block_type_index = select_block_type(ctx);
+      if (current_block_type_index === previous_block_index) {
+        if_blocks[current_block_type_index].p(ctx, dirty);
+      } else {
+        group_outros();
+        transition_out(if_blocks[previous_block_index], 1, 1, () => {
+          if_blocks[previous_block_index] = null;
+        });
+        check_outros();
+        if_block = if_blocks[current_block_type_index];
+        if (!if_block) {
+          if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+          if_block.c();
+        } else {
+          if_block.p(ctx, dirty);
+        }
+        transition_in(if_block, 1);
+        if_block.m(div, t);
+      }
+      if (dirty & /*isDragging*/
+      8) {
+        set_style(
+          div,
+          "cursor",
+          /*isDragging*/
+          ctx[3] ? "grabbing" : "grab"
+        );
+      }
+    },
+    r() {
+      rect = div.getBoundingClientRect();
+    },
+    f() {
+      fix_position(div);
+      stop_animation();
+    },
+    a() {
+      stop_animation();
+      stop_animation = create_animation(div, rect, flip, { duration: 125 });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if_blocks[current_block_type_index].d();
+    }
+  };
+}
+function create_fragment$v(ctx) {
+  let if_block_anchor;
+  let current;
+  let if_block = (
+    /*items*/
+    ctx[0] && create_if_block$d(ctx)
+  );
+  return {
+    c() {
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (
+        /*items*/
+        ctx2[0]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*items*/
+          1) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$d(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block)
+        if_block.d(detaching);
+    }
+  };
+}
+let flipDurationMs = 125;
+function instance$v($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { items } = $$props;
+  let { itemActions } = $$props;
+  let { dndzoneType } = $$props;
+  let isDragging2 = false;
+  let dragDisabled = true;
+  const dispatch2 = createEventDispatcher();
+  function onGripDown() {
+    $$invalidate(4, dragDisabled = false);
+    $$invalidate(3, isDragging2 = true);
+  }
+  function onGripUp() {
+    $$invalidate(4, dragDisabled = false);
+    $$invalidate(3, isDragging2 = false);
+  }
+  function handleDndConsider(event) {
+    const { items: newItems, info: { source, trigger } } = event.detail;
+    $$invalidate(0, items = newItems);
+    if (trigger === TRIGGERS.DRAG_STARTED) {
+      $$invalidate(3, isDragging2 = true);
+    }
+    if (source === SOURCES.KEYBOARD && trigger === TRIGGERS.DRAG_STOPPED) {
+      $$invalidate(4, dragDisabled = true);
+      $$invalidate(3, isDragging2 = false);
     }
   }
-  function select_change_handler() {
-    $storeValue = select_value(this);
-    storeValue.set($storeValue);
-    $$invalidate(4, options);
+  function handleDndFinalize(event) {
+    const { items: newItems, info: { source, trigger } } = event.detail;
+    $$invalidate(0, items = newItems);
+    if (source === SOURCES.POINTER) {
+      $$invalidate(4, dragDisabled = true);
+      $$invalidate(3, isDragging2 = false);
+    }
+    dispatch2("itemmoved", items);
   }
-  function input_change_handler() {
-    $storeValue = this.checked;
-    storeValue.set($storeValue);
-    $$invalidate(4, options);
-  }
+  let dropTargetStyle = { outline: "none" };
   $$self.$$set = ($$props2) => {
-    if ("name" in $$props2)
-      $$invalidate(0, name = $$props2.name);
-    if ("description" in $$props2)
-      $$invalidate(1, description = $$props2.description);
-    if ("storeValue" in $$props2)
-      $$subscribe_storeValue($$invalidate(2, storeValue = $$props2.storeValue));
-    if ("command" in $$props2)
-      $$invalidate(3, command = $$props2.command);
-    if ("options" in $$props2)
-      $$invalidate(4, options = $$props2.options);
+    if ("items" in $$props2)
+      $$invalidate(0, items = $$props2.items);
+    if ("itemActions" in $$props2)
+      $$invalidate(1, itemActions = $$props2.itemActions);
+    if ("dndzoneType" in $$props2)
+      $$invalidate(2, dndzoneType = $$props2.dndzoneType);
+    if ("$$scope" in $$props2)
+      $$invalidate(11, $$scope = $$props2.$$scope);
   };
   return [
-    name,
-    description,
-    storeValue,
-    command,
-    options,
-    $storeValue,
-    onClick,
-    select_change_handler,
-    input_change_handler
+    items,
+    itemActions,
+    dndzoneType,
+    isDragging2,
+    dragDisabled,
+    onGripDown,
+    onGripUp,
+    handleDndConsider,
+    handleDndFinalize,
+    dropTargetStyle,
+    slots,
+    $$scope
   ];
 }
-class SettingItem extends SvelteComponent {
+class EditableListContent extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$b, create_fragment$b, safe_not_equal, {
-      name: 0,
-      description: 1,
-      storeValue: 2,
-      command: 3,
-      options: 4
+    init(this, options, instance$v, create_fragment$v, safe_not_equal, { items: 0, itemActions: 1, dndzoneType: 2 });
+  }
+}
+const get_content_slot_changes = (dirty) => ({});
+const get_content_slot_context = (ctx) => ({});
+const get_header_slot_changes$1 = (dirty) => ({});
+const get_header_slot_context$1 = (ctx) => ({});
+function create_default_slot_3$6(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*title*/
+        ctx[2]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*title*/
+      4)
+        set_data(
+          t,
+          /*title*/
+          ctx2[2]
+        );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot_2$8(ctx) {
+  let label;
+  let current;
+  label = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_3$6] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(label.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(label, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_changes = {};
+      if (dirty & /*$$scope, title*/
+      36) {
+        label_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label.$set(label_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(label, detaching);
+    }
+  };
+}
+function fallback_block$6(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      $$slots: { default: [create_default_slot_2$8] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, title*/
+      36) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_default_slot_1$c(ctx) {
+  let current;
+  const content_slot_template = (
+    /*#slots*/
+    ctx[4].content
+  );
+  const content_slot = create_slot(
+    content_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    get_content_slot_context
+  );
+  return {
+    c() {
+      if (content_slot)
+        content_slot.c();
+    },
+    m(target, anchor) {
+      if (content_slot) {
+        content_slot.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (content_slot) {
+        if (content_slot.p && (!current || dirty & /*$$scope*/
+        32)) {
+          update_slot_base(
+            content_slot,
+            content_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[5]
+            ) : get_slot_changes(
+              content_slot_template,
+              /*$$scope*/
+              ctx2[5],
+              dirty,
+              get_content_slot_changes
+            ),
+            get_content_slot_context
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(content_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(content_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (content_slot)
+        content_slot.d(detaching);
+    }
+  };
+}
+function create_default_slot$i(ctx) {
+  let t;
+  let flex;
+  let current;
+  const header_slot_template = (
+    /*#slots*/
+    ctx[4].header
+  );
+  const header_slot = create_slot(
+    header_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    get_header_slot_context$1
+  );
+  const header_slot_or_fallback = header_slot || fallback_block$6(ctx);
+  flex = new Flex({
+    props: {
+      class: "content vertical thick " + /*scrollableContent*/
+      (ctx[3] ? "scrollable" : ""),
+      $$slots: { default: [create_default_slot_1$c] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      if (header_slot_or_fallback)
+        header_slot_or_fallback.c();
+      t = space();
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      if (header_slot_or_fallback) {
+        header_slot_or_fallback.m(target, anchor);
+      }
+      insert(target, t, anchor);
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (header_slot) {
+        if (header_slot.p && (!current || dirty & /*$$scope*/
+        32)) {
+          update_slot_base(
+            header_slot,
+            header_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[5]
+            ) : get_slot_changes(
+              header_slot_template,
+              /*$$scope*/
+              ctx2[5],
+              dirty,
+              get_header_slot_changes$1
+            ),
+            get_header_slot_context$1
+          );
+        }
+      } else {
+        if (header_slot_or_fallback && header_slot_or_fallback.p && (!current || dirty & /*title*/
+        4)) {
+          header_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+      const flex_changes = {};
+      if (dirty & /*scrollableContent*/
+      8)
+        flex_changes.class = "content vertical thick " + /*scrollableContent*/
+        (ctx2[3] ? "scrollable" : "");
+      if (dirty & /*$$scope*/
+      32) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(header_slot_or_fallback, local);
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(header_slot_or_fallback, local);
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      if (header_slot_or_fallback)
+        header_slot_or_fallback.d(detaching);
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_fragment$u(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "component thick vertical",
+      flex: ["0"],
+      height: (
+        /*height*/
+        ctx[0]
+      ),
+      width: (
+        /*width*/
+        ctx[1]
+      ),
+      $$slots: { default: [create_default_slot$i] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*height*/
+      1)
+        flex_changes.height = /*height*/
+        ctx2[0];
+      if (dirty & /*width*/
+      2)
+        flex_changes.width = /*width*/
+        ctx2[1];
+      if (dirty & /*$$scope, scrollableContent, title*/
+      44) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$u($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { height = "100%" } = $$props;
+  let { width = "100%" } = $$props;
+  let { title = "" } = $$props;
+  let { scrollableContent = true } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("height" in $$props2)
+      $$invalidate(0, height = $$props2.height);
+    if ("width" in $$props2)
+      $$invalidate(1, width = $$props2.width);
+    if ("title" in $$props2)
+      $$invalidate(2, title = $$props2.title);
+    if ("scrollableContent" in $$props2)
+      $$invalidate(3, scrollableContent = $$props2.scrollableContent);
+    if ("$$scope" in $$props2)
+      $$invalidate(5, $$scope = $$props2.$$scope);
+  };
+  return [height, width, title, scrollableContent, slots, $$scope];
+}
+class HeaderBox extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$u, create_fragment$u, safe_not_equal, {
+      height: 0,
+      width: 1,
+      title: 2,
+      scrollableContent: 3
     });
   }
 }
-const SimpleButton_svelte_svelte_type_style_lang = "";
-function create_if_block$3(ctx) {
+function generateQuickGUID() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+const get_default_slot_changes$5 = (dirty) => ({
+  index: dirty & /*index*/
+  131072,
+  item: dirty & /*item*/
+  262144
+});
+const get_default_slot_context$5 = (ctx) => ({
+  index: (
+    /*index*/
+    ctx[17]
+  ),
+  item: (
+    /*item*/
+    ctx[18]
+  )
+});
+function create_header_slot$6(ctx) {
+  let editablelistheader;
+  let current;
+  editablelistheader = new EditableListHeader({
+    props: {
+      actions: (
+        /*headerActions*/
+        ctx[4]
+      ),
+      slot: "header",
+      title: (
+        /*title*/
+        ctx[1]
+      )
+    }
+  });
+  return {
+    c() {
+      create_component(editablelistheader.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(editablelistheader, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const editablelistheader_changes = {};
+      if (dirty & /*title*/
+      2)
+        editablelistheader_changes.title = /*title*/
+        ctx2[1];
+      editablelistheader.$set(editablelistheader_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(editablelistheader.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(editablelistheader.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(editablelistheader, detaching);
+    }
+  };
+}
+function create_default_slot$h(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[7].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[8],
+    get_default_slot_context$5
+  );
+  return {
+    c() {
+      if (default_slot)
+        default_slot.c();
+    },
+    m(target, anchor) {
+      if (default_slot) {
+        default_slot.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, index, item*/
+        393472)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[8],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[8]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[8],
+              dirty,
+              get_default_slot_changes$5
+            ),
+            get_default_slot_context$5
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function create_content_slot$5(ctx) {
+  let editablelistcontent;
+  let current;
+  editablelistcontent = new EditableListContent({
+    props: {
+      dndzoneType: (
+        /*dndzone*/
+        ctx[3]
+      ),
+      itemActions: (
+        /*itemActions*/
+        ctx[5]
+      ),
+      items: (
+        /*items*/
+        ctx[0]
+      ),
+      $$slots: {
+        default: [
+          create_default_slot$h,
+          ({ index, item }) => ({ 17: index, 18: item }),
+          ({ index, item }) => (index ? 131072 : 0) | (item ? 262144 : 0)
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  editablelistcontent.$on(
+    "itemmoved",
+    /*onItemMoved*/
+    ctx[6]
+  );
+  return {
+    c() {
+      create_component(editablelistcontent.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(editablelistcontent, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const editablelistcontent_changes = {};
+      if (dirty & /*dndzone*/
+      8)
+        editablelistcontent_changes.dndzoneType = /*dndzone*/
+        ctx2[3];
+      if (dirty & /*items*/
+      1)
+        editablelistcontent_changes.items = /*items*/
+        ctx2[0];
+      if (dirty & /*$$scope, index, item*/
+      393472) {
+        editablelistcontent_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      editablelistcontent.$set(editablelistcontent_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(editablelistcontent.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(editablelistcontent.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(editablelistcontent, detaching);
+    }
+  };
+}
+function create_fragment$t(ctx) {
+  let headerbox;
+  let current;
+  headerbox = new HeaderBox({
+    props: {
+      height: (
+        /*height*/
+        ctx[2]
+      ),
+      title: (
+        /*title*/
+        ctx[1]
+      ),
+      $$slots: {
+        content: [create_content_slot$5],
+        header: [create_header_slot$6]
+      },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(headerbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(headerbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const headerbox_changes = {};
+      if (dirty & /*height*/
+      4)
+        headerbox_changes.height = /*height*/
+        ctx2[2];
+      if (dirty & /*title*/
+      2)
+        headerbox_changes.title = /*title*/
+        ctx2[1];
+      if (dirty & /*$$scope, dndzone, items, title*/
+      267) {
+        headerbox_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      headerbox.$set(headerbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(headerbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(headerbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(headerbox, detaching);
+    }
+  };
+}
+function instance$t($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { title = "" } = $$props;
+  let { items = [] } = $$props;
+  let { height = "100%" } = $$props;
+  let { dndzone: dndzone2 = "" } = $$props;
+  let headerActions = [
+    {
+      icon: "plus",
+      description: "Create Item",
+      onClick: () => {
+        addAtIndex(0, createItem());
+      }
+    }
+  ];
+  let itemActions = [
+    {
+      icon: "plus",
+      description: "Insert Item",
+      onClick: (item) => {
+        addAfterItem(item, createItem());
+      }
+    },
+    {
+      icon: "copy",
+      description: "Duplicate Item",
+      onClick: (item) => {
+        addAfterItem(item, copyItem(item));
+      }
+    },
+    {
+      icon: "trash",
+      description: "Remove Item",
+      onClick: (item) => {
+        removeAtIndex(items.indexOf(item));
+      }
+    }
+  ];
+  const dispatch2 = createEventDispatcher();
+  updateIndices();
+  onMount(() => {
+    updateIndices();
+  });
+  function addAfterItem(item, itemToAdd) {
+    const index = items.indexOf(item);
+    if (index > -1) {
+      addAtIndex(index + 1, itemToAdd);
+    }
+  }
+  function addAtIndex(index, item) {
+    items.splice(index, 0, item);
+    dispatchListUpdated();
+  }
+  function removeAtIndex(index) {
+    if (index > -1) {
+      items.splice(index, 1);
+      dispatchListUpdated();
+    }
+  }
+  function dispatchListUpdated() {
+    updateIndices();
+    dispatch2("listUpdated", items);
+  }
+  function onItemMoved(event) {
+    $$invalidate(0, items = event.detail);
+    dispatchListUpdated();
+  }
+  function updateIndices() {
+    if (items) {
+      let index = 0;
+      items.forEach((x) => {
+        x.index = index;
+        index++;
+      });
+    }
+  }
+  function createItem() {
+    let detail = { result: null };
+    dispatch2("create", detail);
+    detail.result.id = generateQuickGUID();
+    return detail.result;
+  }
+  function copyItem(item) {
+    let detail = { item, result: null };
+    dispatch2("copy", detail);
+    detail.result.id = generateQuickGUID();
+    return detail.result;
+  }
+  $$self.$$set = ($$props2) => {
+    if ("title" in $$props2)
+      $$invalidate(1, title = $$props2.title);
+    if ("items" in $$props2)
+      $$invalidate(0, items = $$props2.items);
+    if ("height" in $$props2)
+      $$invalidate(2, height = $$props2.height);
+    if ("dndzone" in $$props2)
+      $$invalidate(3, dndzone2 = $$props2.dndzone);
+    if ("$$scope" in $$props2)
+      $$invalidate(8, $$scope = $$props2.$$scope);
+  };
+  return [
+    items,
+    title,
+    height,
+    dndzone2,
+    headerActions,
+    itemActions,
+    onItemMoved,
+    slots,
+    $$scope
+  ];
+}
+class EditableList extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$t, create_fragment$t, safe_not_equal, {
+      title: 1,
+      items: 0,
+      height: 2,
+      dndzone: 3
+    });
+  }
+}
+const Image_svelte_svelte_type_style_lang = "";
+function create_fragment$s(ctx) {
+  let img;
+  let img_class_value;
+  let img_src_value;
+  let useWrapper_action;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      img = element("img");
+      attr(
+        img,
+        "alt",
+        /*alt*/
+        ctx[1]
+      );
+      attr(img, "class", img_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx[3].class || ""
+      ) + " svelte-jpi-ea0eq9");
+      if (!src_url_equal(img.src, img_src_value = /*source*/
+      ctx[0]))
+        attr(img, "src", img_src_value);
+    },
+    m(target, anchor) {
+      insert(target, img, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(useWrapper_action = useWrapper.call(
+          null,
+          img,
+          /*actions*/
+          ctx[2]
+        ));
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*alt*/
+      2) {
+        attr(
+          img,
+          "alt",
+          /*alt*/
+          ctx2[1]
+        );
+      }
+      if (dirty & /*$$restProps*/
+      8 && img_class_value !== (img_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx2[3].class || ""
+      ) + " svelte-jpi-ea0eq9")) {
+        attr(img, "class", img_class_value);
+      }
+      if (dirty & /*source*/
+      1 && !src_url_equal(img.src, img_src_value = /*source*/
+      ctx2[0])) {
+        attr(img, "src", img_src_value);
+      }
+      if (useWrapper_action && is_function(useWrapper_action.update) && dirty & /*actions*/
+      4)
+        useWrapper_action.update.call(
+          null,
+          /*actions*/
+          ctx2[2]
+        );
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$s($$self, $$props, $$invalidate) {
+  const omit_props_names = ["source", "alt", "actions"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { source = "" } = $$props;
+  let { alt = "" } = $$props;
+  let { actions = [] } = $$props;
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(3, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("source" in $$new_props)
+      $$invalidate(0, source = $$new_props.source);
+    if ("alt" in $$new_props)
+      $$invalidate(1, alt = $$new_props.alt);
+    if ("actions" in $$new_props)
+      $$invalidate(2, actions = $$new_props.actions);
+  };
+  return [source, alt, actions, $$restProps];
+}
+class Image extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$s, create_fragment$s, safe_not_equal, { source: 0, alt: 1, actions: 2 });
+  }
+}
+const Grid_svelte_svelte_type_style_lang = "";
+function create_fragment$r(ctx) {
+  let div;
+  let style_grid_template_columns = `repeat(auto-fill, ${/*columnSize*/
+  ctx[0]})`;
+  let style_grid_template_rows = `repeat(auto-fill, ${/*rowSize*/
+  ctx[1]})`;
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[3].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[2],
+    null
+  );
+  return {
+    c() {
+      div = element("div");
+      if (default_slot)
+        default_slot.c();
+      attr(div, "class", "grid svelte-jpi-10ft538");
+      set_style(div, "grid-template-columns", style_grid_template_columns);
+      set_style(div, "grid-template-rows", style_grid_template_rows);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (default_slot) {
+        default_slot.m(div, null);
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        4)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[2],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[2]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[2],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (dirty & /*columnSize*/
+      1 && style_grid_template_columns !== (style_grid_template_columns = `repeat(auto-fill, ${/*columnSize*/
+      ctx2[0]})`)) {
+        set_style(div, "grid-template-columns", style_grid_template_columns);
+      }
+      if (dirty & /*rowSize*/
+      2 && style_grid_template_rows !== (style_grid_template_rows = `repeat(auto-fill, ${/*rowSize*/
+      ctx2[1]})`)) {
+        set_style(div, "grid-template-rows", style_grid_template_rows);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function instance$r($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { columnSize = "auto" } = $$props;
+  let { rowSize = "auto" } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("columnSize" in $$props2)
+      $$invalidate(0, columnSize = $$props2.columnSize);
+    if ("rowSize" in $$props2)
+      $$invalidate(1, rowSize = $$props2.rowSize);
+    if ("$$scope" in $$props2)
+      $$invalidate(2, $$scope = $$props2.$$scope);
+  };
+  return [columnSize, rowSize, $$scope, slots];
+}
+class Grid extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$r, create_fragment$r, safe_not_equal, { columnSize: 0, rowSize: 1 });
+  }
+}
+const Overlay_svelte_svelte_type_style_lang = "";
+const Panel_svelte_svelte_type_style_lang = "";
+const PropertyInspector_svelte_svelte_type_style_lang = "";
+function get_each_context$6(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[3] = list[i];
+  child_ctx[7] = i;
+  return child_ctx;
+}
+const get_value_slot_changes = (dirty) => ({
+  key: dirty & /*item*/
+  8,
+  value: dirty & /*item*/
+  8
+});
+const get_value_slot_context = (ctx) => ({
+  key: (
+    /*item*/
+    ctx[3][0]
+  ),
+  index: (
+    /*index*/
+    ctx[7]
+  ),
+  value: (
+    /*item*/
+    ctx[3][1]
+  )
+});
+const get_name_slot_changes = (dirty) => ({ key: dirty & /*item*/
+8 });
+const get_name_slot_context = (ctx) => ({ key: (
+  /*item*/
+  ctx[3][0]
+) });
+function create_default_slot_1$b(ctx) {
+  let t;
+  return {
+    c() {
+      t = text("Property");
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot$g(ctx) {
+  let t;
+  return {
+    c() {
+      t = text("Value");
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_each_block$6(ctx) {
+  let div1;
+  let div0;
+  let genericTooltip_action;
+  let t0;
+  let div2;
+  let t1;
+  let current;
+  let mounted;
+  let dispose;
+  const name_slot_template = (
+    /*#slots*/
+    ctx[4].name
+  );
+  const name_slot = create_slot(
+    name_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    get_name_slot_context
+  );
+  const value_slot_template = (
+    /*#slots*/
+    ctx[4].value
+  );
+  const value_slot = create_slot(
+    value_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    get_value_slot_context
+  );
+  return {
+    c() {
+      div1 = element("div");
+      div0 = element("div");
+      if (name_slot)
+        name_slot.c();
+      t0 = space();
+      div2 = element("div");
+      if (value_slot)
+        value_slot.c();
+      t1 = space();
+      attr(div0, "class", "name svelte-jpi-1oum4bd");
+      attr(div1, "class", "element propertyName svelte-jpi-1oum4bd");
+      attr(div2, "class", "element propertyValue svelte-jpi-1oum4bd");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, div0);
+      if (name_slot) {
+        name_slot.m(div0, null);
+      }
+      insert(target, t0, anchor);
+      insert(target, div2, anchor);
+      if (value_slot) {
+        value_slot.m(div2, null);
+      }
+      append(div2, t1);
+      current = true;
+      if (!mounted) {
+        dispose = action_destroyer(genericTooltip_action = genericTooltip.call(null, div1, { content: (
+          /*item*/
+          ctx[3][1].description
+        ) }));
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (name_slot) {
+        if (name_slot.p && (!current || dirty & /*$$scope, item*/
+        40)) {
+          update_slot_base(
+            name_slot,
+            name_slot_template,
+            ctx,
+            /*$$scope*/
+            ctx[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx[5]
+            ) : get_slot_changes(
+              name_slot_template,
+              /*$$scope*/
+              ctx[5],
+              dirty,
+              get_name_slot_changes
+            ),
+            get_name_slot_context
+          );
+        }
+      }
+      if (genericTooltip_action && is_function(genericTooltip_action.update) && dirty & /*item*/
+      8)
+        genericTooltip_action.update.call(null, { content: (
+          /*item*/
+          ctx[3][1].description
+        ) });
+      if (value_slot) {
+        if (value_slot.p && (!current || dirty & /*$$scope, item*/
+        40)) {
+          update_slot_base(
+            value_slot,
+            value_slot_template,
+            ctx,
+            /*$$scope*/
+            ctx[5],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx[5]
+            ) : get_slot_changes(
+              value_slot_template,
+              /*$$scope*/
+              ctx[5],
+              dirty,
+              get_value_slot_changes
+            ),
+            get_value_slot_context
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(name_slot, local);
+      transition_in(value_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(name_slot, local);
+      transition_out(value_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+        detach(t0);
+        detach(div2);
+      }
+      if (name_slot)
+        name_slot.d(detaching);
+      if (value_slot)
+        value_slot.d(detaching);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_content_slot$4(ctx) {
+  let div2;
+  let div0;
+  let label0;
+  let t0;
+  let div1;
+  let label1;
+  let t1;
+  let current;
+  label0 = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_1$b] },
+      $$scope: { ctx }
+    }
+  });
+  label1 = new Label({
+    props: {
+      $$slots: { default: [create_default_slot$g] },
+      $$scope: { ctx }
+    }
+  });
+  let each_value = ensure_array_like(Object.entries(
+    /*item*/
+    ctx[3]
+  ));
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block$6(get_each_context$6(ctx, each_value, i));
+  }
+  const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+    each_blocks[i] = null;
+  });
+  return {
+    c() {
+      div2 = element("div");
+      div0 = element("div");
+      create_component(label0.$$.fragment);
+      t0 = space();
+      div1 = element("div");
+      create_component(label1.$$.fragment);
+      t1 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(div0, "class", "element header svelte-jpi-1oum4bd");
+      attr(div1, "class", "element header svelte-jpi-1oum4bd");
+      attr(div2, "class", "grid svelte-jpi-1oum4bd");
+      attr(div2, "slot", "content");
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+      append(div2, div0);
+      mount_component(label0, div0, null);
+      append(div2, t0);
+      append(div2, div1);
+      mount_component(label1, div1, null);
+      append(div2, t1);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div2, null);
+        }
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label0_changes = {};
+      if (dirty & /*$$scope*/
+      32) {
+        label0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label0.$set(label0_changes);
+      const label1_changes = {};
+      if (dirty & /*$$scope*/
+      32) {
+        label1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label1.$set(label1_changes);
+      if (dirty & /*$$scope, Object, item*/
+      40) {
+        each_value = ensure_array_like(Object.entries(
+          /*item*/
+          ctx2[3]
+        ));
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$6(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block$6(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(div2, null);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label0.$$.fragment, local);
+      transition_in(label1.$$.fragment, local);
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      transition_out(label0.$$.fragment, local);
+      transition_out(label1.$$.fragment, local);
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div2);
+      }
+      destroy_component(label0);
+      destroy_component(label1);
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_fragment$q(ctx) {
+  let headerbox;
+  let current;
+  headerbox = new HeaderBox({
+    props: {
+      height: (
+        /*height*/
+        ctx[1]
+      ),
+      title: (
+        /*title*/
+        ctx[0]
+      ),
+      width: (
+        /*width*/
+        ctx[2]
+      ),
+      $$slots: { content: [create_content_slot$4] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(headerbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(headerbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const headerbox_changes = {};
+      if (dirty & /*height*/
+      2)
+        headerbox_changes.height = /*height*/
+        ctx2[1];
+      if (dirty & /*title*/
+      1)
+        headerbox_changes.title = /*title*/
+        ctx2[0];
+      if (dirty & /*width*/
+      4)
+        headerbox_changes.width = /*width*/
+        ctx2[2];
+      if (dirty & /*$$scope, item*/
+      40) {
+        headerbox_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      headerbox.$set(headerbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(headerbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(headerbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(headerbox, detaching);
+    }
+  };
+}
+function instance$q($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { item = "" } = $$props;
+  let { title } = $$props;
+  let { height = "100%" } = $$props;
+  let { width = "100%" } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("item" in $$props2)
+      $$invalidate(3, item = $$props2.item);
+    if ("title" in $$props2)
+      $$invalidate(0, title = $$props2.title);
+    if ("height" in $$props2)
+      $$invalidate(1, height = $$props2.height);
+    if ("width" in $$props2)
+      $$invalidate(2, width = $$props2.width);
+    if ("$$scope" in $$props2)
+      $$invalidate(5, $$scope = $$props2.$$scope);
+  };
+  return [title, height, width, item, slots, $$scope];
+}
+class PropertyInspector extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$q, create_fragment$q, safe_not_equal, { item: 3, title: 0, height: 1, width: 2 });
+  }
+}
+const TextBox_svelte_svelte_type_style_lang = "";
+function create_if_block_1$7(ctx) {
+  let i;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", "fas fa-times clickable svelte-jpi-1wvg26s");
+      attr(i, "role", "button");
+      attr(i, "tabindex", "0");
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            i,
+            "click",
+            /*reset*/
+            ctx[7]
+          ),
+          listen(
+            i,
+            "keydown",
+            /*reset*/
+            ctx[7]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block$c(ctx) {
   let i;
   let i_class_value;
   return {
     c() {
       i = element("i");
-      attr(i, "class", i_class_value = "fa-solid fa-" + /*icon*/
-      ctx[1] + " svelte-jpi-11vqkrb");
+      attr(i, "class", i_class_value = "fas fa-" + /*defaultIcon*/
+      ctx[4] + " svelte-jpi-1wvg26s");
+      toggle_class(
+        i,
+        "clickable",
+        /*hasValue*/
+        ctx[5] && /*canReset*/
+        ctx[3]
+      );
     },
     m(target, anchor) {
       insert(target, i, anchor);
     },
     p(ctx2, dirty) {
-      if (dirty & /*icon*/
-      2 && i_class_value !== (i_class_value = "fa-solid fa-" + /*icon*/
-      ctx2[1] + " svelte-jpi-11vqkrb")) {
+      if (dirty & /*defaultIcon*/
+      16 && i_class_value !== (i_class_value = "fas fa-" + /*defaultIcon*/
+      ctx2[4] + " svelte-jpi-1wvg26s")) {
         attr(i, "class", i_class_value);
+      }
+      if (dirty & /*defaultIcon, hasValue, canReset*/
+      56) {
+        toggle_class(
+          i,
+          "clickable",
+          /*hasValue*/
+          ctx2[5] && /*canReset*/
+          ctx2[3]
+        );
       }
     },
     d(detaching) {
@@ -16357,97 +22220,1133 @@ function create_if_block$3(ctx) {
     }
   };
 }
-function create_fragment$a(ctx) {
-  let button;
-  let span;
-  let t0;
-  let t1;
+function create_fragment$p(ctx) {
+  let div;
+  let input;
+  let t;
+  let div_class_value;
   let mounted;
   let dispose;
-  let if_block = (
-    /*showIcon*/
-    ctx[0] && create_if_block$3(ctx)
-  );
+  function select_block_type(ctx2, dirty) {
+    if (!/*hasValue*/
+    ctx2[5] && /*defaultIcon*/
+    ctx2[4] !== "")
+      return create_if_block$c;
+    if (
+      /*hasValue*/
+      ctx2[5] && /*canReset*/
+      ctx2[3]
+    )
+      return create_if_block_1$7;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
   return {
     c() {
-      button = element("button");
-      span = element("span");
-      t0 = text(
-        /*text*/
-        ctx[2]
-      );
-      t1 = space();
+      div = element("div");
+      input = element("input");
+      t = space();
       if (if_block)
         if_block.c();
-      attr(button, "class", "button svelte-jpi-11vqkrb");
-      toggle_class(
-        button,
-        "cancel",
-        /*isCancelButton*/
-        ctx[3]
+      attr(input, "class", "focusable svelte-jpi-1wvg26s");
+      attr(
+        input,
+        "placeholder",
+        /*placeHolderText*/
+        ctx[2]
       );
-      toggle_class(
-        button,
-        "icon",
+      attr(input, "type", "text");
+      set_style(
+        input,
+        "padding-left",
         /*showIcon*/
-        ctx[0]
+        ctx[6] ? "30px" : "10px"
       );
+      attr(div, "class", div_class_value = "main " + /*$$restProps*/
+      ctx[9].class + " svelte-jpi-1wvg26s");
     },
     m(target, anchor) {
-      insert(target, button, anchor);
-      append(button, span);
-      append(span, t0);
-      append(button, t1);
+      insert(target, div, anchor);
+      append(div, input);
+      ctx[13](input);
+      set_input_value(
+        input,
+        /*value*/
+        ctx[0]
+      );
+      append(div, t);
       if (if_block)
-        if_block.m(button, null);
+        if_block.m(div, null);
       if (!mounted) {
-        dispose = listen(
-          button,
-          "click",
-          /*click_handler*/
-          ctx[4]
-        );
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_input_handler*/
+            ctx[14]
+          ),
+          listen(input, "click", stop_propagation(
+            /*click_handler*/
+            ctx[10]
+          )),
+          listen(
+            input,
+            "input",
+            /*onInput*/
+            ctx[8]
+          ),
+          listen(
+            input,
+            "keydown",
+            /*keydown_handler*/
+            ctx[11]
+          ),
+          listen(input, "mousedown", stop_propagation(
+            /*mousedown_handler*/
+            ctx[12]
+          ))
+        ];
         mounted = true;
       }
     },
     p(ctx2, [dirty]) {
-      if (dirty & /*text*/
-      4)
-        set_data(
-          t0,
-          /*text*/
+      if (dirty & /*placeHolderText*/
+      4) {
+        attr(
+          input,
+          "placeholder",
+          /*placeHolderText*/
           ctx2[2]
         );
-      if (
-        /*showIcon*/
-        ctx2[0]
-      ) {
-        if (if_block) {
-          if_block.p(ctx2, dirty);
-        } else {
-          if_block = create_if_block$3(ctx2);
-          if_block.c();
-          if_block.m(button, null);
-        }
-      } else if (if_block) {
-        if_block.d(1);
-        if_block = null;
       }
-      if (dirty & /*isCancelButton*/
-      8) {
-        toggle_class(
-          button,
-          "cancel",
-          /*isCancelButton*/
-          ctx2[3]
+      if (dirty & /*value*/
+      1 && input.value !== /*value*/
+      ctx2[0]) {
+        set_input_value(
+          input,
+          /*value*/
+          ctx2[0]
         );
       }
       if (dirty & /*showIcon*/
-      1) {
-        toggle_class(
-          button,
-          "icon",
+      64) {
+        set_style(
+          input,
+          "padding-left",
           /*showIcon*/
+          ctx2[6] ? "30px" : "10px"
+        );
+      }
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block)
+          if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(div, null);
+        }
+      }
+      if (dirty & /*$$restProps*/
+      512 && div_class_value !== (div_class_value = "main " + /*$$restProps*/
+      ctx2[9].class + " svelte-jpi-1wvg26s")) {
+        attr(div, "class", div_class_value);
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      ctx[13](null);
+      if (if_block) {
+        if_block.d();
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$p($$self, $$props, $$invalidate) {
+  let hasValue;
+  let showIcon;
+  const omit_props_names = ["placeHolderText", "value", "inputElement", "canReset", "defaultIcon"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { placeHolderText = "" } = $$props;
+  let { value = "" } = $$props;
+  let { inputElement = null } = $$props;
+  let { canReset = false } = $$props;
+  let { defaultIcon = "" } = $$props;
+  const dispatch2 = createEventDispatcher();
+  function reset() {
+    if (canReset) {
+      $$invalidate(0, value = "");
+    }
+  }
+  function onInput(event) {
+    dispatch2("valuechanged", event.target.value);
+  }
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function keydown_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mousedown_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function input_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      inputElement = $$value;
+      $$invalidate(1, inputElement);
+    });
+  }
+  function input_input_handler() {
+    value = this.value;
+    $$invalidate(0, value);
+  }
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(9, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("placeHolderText" in $$new_props)
+      $$invalidate(2, placeHolderText = $$new_props.placeHolderText);
+    if ("value" in $$new_props)
+      $$invalidate(0, value = $$new_props.value);
+    if ("inputElement" in $$new_props)
+      $$invalidate(1, inputElement = $$new_props.inputElement);
+    if ("canReset" in $$new_props)
+      $$invalidate(3, canReset = $$new_props.canReset);
+    if ("defaultIcon" in $$new_props)
+      $$invalidate(4, defaultIcon = $$new_props.defaultIcon);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*value*/
+    1) {
+      $$invalidate(5, hasValue = value && value !== "");
+    }
+    if ($$self.$$.dirty & /*hasValue, canReset, defaultIcon*/
+    56) {
+      $$invalidate(6, showIcon = hasValue && canReset || !hasValue && defaultIcon !== "");
+    }
+  };
+  return [
+    value,
+    inputElement,
+    placeHolderText,
+    canReset,
+    defaultIcon,
+    hasValue,
+    showIcon,
+    reset,
+    onInput,
+    $$restProps,
+    click_handler,
+    keydown_handler,
+    mousedown_handler,
+    input_binding,
+    input_input_handler
+  ];
+}
+class TextBox extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$p, create_fragment$p, safe_not_equal, {
+      placeHolderText: 2,
+      value: 0,
+      inputElement: 1,
+      canReset: 3,
+      defaultIcon: 4
+    });
+  }
+}
+const NumberBox_svelte_svelte_type_style_lang = "";
+function create_if_block_1$6(ctx) {
+  let i;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", "fas fa-times clickable svelte-jpi-1r1a9i2");
+      attr(i, "role", "button");
+      attr(i, "tabindex", "0");
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            i,
+            "click",
+            /*reset*/
+            ctx[7]
+          ),
+          listen(
+            i,
+            "keydown",
+            /*reset*/
+            ctx[7]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block$b(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = "fas fa-" + /*defaultIcon*/
+      ctx[4] + " svelte-jpi-1r1a9i2");
+      toggle_class(
+        i,
+        "clickable",
+        /*hasValue*/
+        ctx[5] && /*canReset*/
+        ctx[3]
+      );
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*defaultIcon*/
+      16 && i_class_value !== (i_class_value = "fas fa-" + /*defaultIcon*/
+      ctx2[4] + " svelte-jpi-1r1a9i2")) {
+        attr(i, "class", i_class_value);
+      }
+      if (dirty & /*defaultIcon, hasValue, canReset*/
+      56) {
+        toggle_class(
+          i,
+          "clickable",
+          /*hasValue*/
+          ctx2[5] && /*canReset*/
+          ctx2[3]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_fragment$o(ctx) {
+  let div;
+  let input;
+  let t;
+  let div_class_value;
+  let mounted;
+  let dispose;
+  function select_block_type(ctx2, dirty) {
+    if (!/*hasValue*/
+    ctx2[5] && /*defaultIcon*/
+    ctx2[4] !== "")
+      return create_if_block$b;
+    if (
+      /*hasValue*/
+      ctx2[5] && /*canReset*/
+      ctx2[3]
+    )
+      return create_if_block_1$6;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
+  return {
+    c() {
+      div = element("div");
+      input = element("input");
+      t = space();
+      if (if_block)
+        if_block.c();
+      attr(input, "class", "focusable svelte-jpi-1r1a9i2");
+      attr(
+        input,
+        "placeholder",
+        /*placeHolderText*/
+        ctx[2]
+      );
+      attr(input, "type", "number");
+      set_style(
+        input,
+        "padding-left",
+        /*showIcon*/
+        ctx[6] ? "30px" : "10px"
+      );
+      attr(div, "class", div_class_value = "main " + /*$$restProps*/
+      ctx[9].class + " svelte-jpi-1r1a9i2");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, input);
+      ctx[13](input);
+      set_input_value(
+        input,
+        /*value*/
+        ctx[0]
+      );
+      append(div, t);
+      if (if_block)
+        if_block.m(div, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_input_handler*/
+            ctx[14]
+          ),
+          listen(input, "click", stop_propagation(
+            /*click_handler*/
+            ctx[10]
+          )),
+          listen(
+            input,
+            "input",
+            /*onInput*/
+            ctx[8]
+          ),
+          listen(
+            input,
+            "keydown",
+            /*keydown_handler*/
+            ctx[11]
+          ),
+          listen(input, "mousedown", stop_propagation(
+            /*mousedown_handler*/
+            ctx[12]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*placeHolderText*/
+      4) {
+        attr(
+          input,
+          "placeholder",
+          /*placeHolderText*/
+          ctx2[2]
+        );
+      }
+      if (dirty & /*value*/
+      1 && to_number(input.value) !== /*value*/
+      ctx2[0]) {
+        set_input_value(
+          input,
+          /*value*/
+          ctx2[0]
+        );
+      }
+      if (dirty & /*showIcon*/
+      64) {
+        set_style(
+          input,
+          "padding-left",
+          /*showIcon*/
+          ctx2[6] ? "30px" : "10px"
+        );
+      }
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block)
+          if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(div, null);
+        }
+      }
+      if (dirty & /*$$restProps*/
+      512 && div_class_value !== (div_class_value = "main " + /*$$restProps*/
+      ctx2[9].class + " svelte-jpi-1r1a9i2")) {
+        attr(div, "class", div_class_value);
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      ctx[13](null);
+      if (if_block) {
+        if_block.d();
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$o($$self, $$props, $$invalidate) {
+  let hasValue;
+  let showIcon;
+  const omit_props_names = ["placeHolderText", "value", "inputElement", "canReset", "defaultIcon"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { placeHolderText = "" } = $$props;
+  let { value = 0 } = $$props;
+  let { inputElement = null } = $$props;
+  let { canReset = false } = $$props;
+  let { defaultIcon = "" } = $$props;
+  const dispatch2 = createEventDispatcher();
+  function reset() {
+    if (canReset) {
+      $$invalidate(0, value = 0);
+    }
+  }
+  function onInput(event) {
+    dispatch2("valuechanged", event.target.value);
+  }
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function keydown_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mousedown_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function input_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      inputElement = $$value;
+      $$invalidate(1, inputElement);
+    });
+  }
+  function input_input_handler() {
+    value = to_number(this.value);
+    $$invalidate(0, value);
+  }
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(9, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("placeHolderText" in $$new_props)
+      $$invalidate(2, placeHolderText = $$new_props.placeHolderText);
+    if ("value" in $$new_props)
+      $$invalidate(0, value = $$new_props.value);
+    if ("inputElement" in $$new_props)
+      $$invalidate(1, inputElement = $$new_props.inputElement);
+    if ("canReset" in $$new_props)
+      $$invalidate(3, canReset = $$new_props.canReset);
+    if ("defaultIcon" in $$new_props)
+      $$invalidate(4, defaultIcon = $$new_props.defaultIcon);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*value*/
+    1) {
+      $$invalidate(5, hasValue = value && value !== "");
+    }
+    if ($$self.$$.dirty & /*hasValue, canReset, defaultIcon*/
+    56) {
+      $$invalidate(6, showIcon = hasValue && canReset || !hasValue && defaultIcon !== "");
+    }
+  };
+  return [
+    value,
+    inputElement,
+    placeHolderText,
+    canReset,
+    defaultIcon,
+    hasValue,
+    showIcon,
+    reset,
+    onInput,
+    $$restProps,
+    click_handler,
+    keydown_handler,
+    mousedown_handler,
+    input_binding,
+    input_input_handler
+  ];
+}
+class NumberBox extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$o, create_fragment$o, safe_not_equal, {
+      placeHolderText: 2,
+      value: 0,
+      inputElement: 1,
+      canReset: 3,
+      defaultIcon: 4
+    });
+  }
+}
+function clickOutside(node, { callback, isEnabled, isOutside: isOutside2 = (node2, target) => true }) {
+  const handleClick = (event) => {
+    if (node && !node.contains(event.target) && isOutside2(node, event.target) && !event.defaultPrevented && callback && (!isEnabled || isEnabled())) {
+      callback();
+    }
+  };
+  document.addEventListener("click", handleClick, true);
+  return {
+    destroy() {
+      document.removeEventListener("click", handleClick, true);
+    }
+  };
+}
+const Typography_svelte_svelte_type_style_lang = "";
+function create_fragment$n(ctx) {
+  let p;
+  let p_class_value;
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[3].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[2],
+    null
+  );
+  return {
+    c() {
+      p = element("p");
+      if (default_slot)
+        default_slot.c();
+      attr(p, "class", p_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx[1].class || ""
+      ) + " svelte-jpi-brumf4");
+      set_style(
+        p,
+        "width",
+        /*width*/
+        ctx[0]
+      );
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      if (default_slot) {
+        default_slot.m(p, null);
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        4)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[2],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[2]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[2],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (!current || dirty & /*$$restProps*/
+      2 && p_class_value !== (p_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx2[1].class || ""
+      ) + " svelte-jpi-brumf4")) {
+        attr(p, "class", p_class_value);
+      }
+      if (dirty & /*width*/
+      1) {
+        set_style(
+          p,
+          "width",
+          /*width*/
+          ctx2[0]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function instance$n($$self, $$props, $$invalidate) {
+  const omit_props_names = ["width"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { width = "auto" } = $$props;
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(1, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("width" in $$new_props)
+      $$invalidate(0, width = $$new_props.width);
+    if ("$$scope" in $$new_props)
+      $$invalidate(2, $$scope = $$new_props.$$scope);
+  };
+  return [width, $$restProps, $$scope, slots];
+}
+class Typography extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$n, create_fragment$n, safe_not_equal, { width: 0 });
+  }
+}
+const SelectDropDown_svelte_svelte_type_style_lang = "";
+function get_each_context$5(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[8] = list[i];
+  child_ctx[10] = i;
+  return child_ctx;
+}
+const get_default_slot_changes$4 = (dirty) => ({ item: dirty & /*items*/
+1 });
+const get_default_slot_context$4 = (ctx) => ({ item: (
+  /*item*/
+  ctx[8]
+) });
+function create_default_slot$f(ctx) {
+  let t_value = (
+    /*item*/
+    ctx[8].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*items*/
+      1 && t_value !== (t_value = /*item*/
+      ctx2[8].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function fallback_block$5(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      tabindex: (
+        /*index*/
+        ctx[10]
+      ),
+      $$slots: { default: [create_default_slot$f] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, items*/
+      129) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_each_block$5(ctx) {
+  let div;
+  let t;
+  let current;
+  let mounted;
+  let dispose;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[4].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[7],
+    get_default_slot_context$4
+  );
+  const default_slot_or_fallback = default_slot || fallback_block$5(ctx);
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[5](
+        /*item*/
+        ctx[8]
+      )
+    );
+  }
+  function keydown_handler() {
+    return (
+      /*keydown_handler*/
+      ctx[6](
+        /*item*/
+        ctx[8]
+      )
+    );
+  }
+  return {
+    c() {
+      div = element("div");
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+      t = space();
+      attr(div, "class", "item svelte-jpi-5vjhkb");
+      attr(div, "role", "menuitem");
+      attr(div, "tabindex", "0");
+      toggle_class(
+        div,
+        "selected",
+        /*item*/
+        ctx[8].value === /*value*/
+        ctx[1]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(div, null);
+      }
+      append(div, t);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(div, "click", click_handler),
+          listen(div, "keydown", keydown_handler)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, items*/
+        129)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx,
+            /*$$scope*/
+            ctx[7],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx[7]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx[7],
+              dirty,
+              get_default_slot_changes$4
+            ),
+            get_default_slot_context$4
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*items*/
+        1)) {
+          default_slot_or_fallback.p(ctx, !current ? -1 : dirty);
+        }
+      }
+      if (!current || dirty & /*items, value*/
+      3) {
+        toggle_class(
+          div,
+          "selected",
+          /*item*/
+          ctx[8].value === /*value*/
+          ctx[1]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment$m(ctx) {
+  let div;
+  let div_transition;
+  let current;
+  let each_value = ensure_array_like(
+    /*items*/
+    ctx[0]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block$5(get_each_context$5(ctx, each_value, i));
+  }
+  const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+    each_blocks[i] = null;
+  });
+  return {
+    c() {
+      div = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(div, "class", "dropdown svelte-jpi-5vjhkb");
+      set_style(
+        div,
+        "max-height",
+        /*maxHeight*/
+        ctx[2]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div, null);
+        }
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*items, value, dispatch, $$scope*/
+      139) {
+        each_value = ensure_array_like(
+          /*items*/
+          ctx2[0]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$5(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block$5(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(div, null);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+      if (dirty & /*maxHeight*/
+      4) {
+        set_style(
+          div,
+          "max-height",
+          /*maxHeight*/
+          ctx2[2]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      if (local) {
+        add_render_callback(() => {
+          if (!current)
+            return;
+          if (!div_transition)
+            div_transition = create_bidirectional_transition(
+              div,
+              slide,
+              {
+                duration: 125,
+                opacity: 0,
+                axis: "y",
+                easing: quintOut
+              },
+              true
+            );
+          div_transition.run(1);
+        });
+      }
+      current = true;
+    },
+    o(local) {
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      if (local) {
+        if (!div_transition)
+          div_transition = create_bidirectional_transition(
+            div,
+            slide,
+            {
+              duration: 125,
+              opacity: 0,
+              axis: "y",
+              easing: quintOut
+            },
+            false
+          );
+        div_transition.run(0);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_each(each_blocks, detaching);
+      if (detaching && div_transition)
+        div_transition.end();
+    }
+  };
+}
+function instance$m($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { items = [] } = $$props;
+  let { value } = $$props;
+  let { maxHeight = "auto" } = $$props;
+  const dispatch2 = createEventDispatcher();
+  const click_handler = (item) => dispatch2("itemselect", item);
+  const keydown_handler = (item) => dispatch2("itemselect", item);
+  $$self.$$set = ($$props2) => {
+    if ("items" in $$props2)
+      $$invalidate(0, items = $$props2.items);
+    if ("value" in $$props2)
+      $$invalidate(1, value = $$props2.value);
+    if ("maxHeight" in $$props2)
+      $$invalidate(2, maxHeight = $$props2.maxHeight);
+    if ("$$scope" in $$props2)
+      $$invalidate(7, $$scope = $$props2.$$scope);
+  };
+  return [
+    items,
+    value,
+    maxHeight,
+    dispatch2,
+    slots,
+    click_handler,
+    keydown_handler,
+    $$scope
+  ];
+}
+class SelectDropDown extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$m, create_fragment$m, safe_not_equal, { items: 0, value: 1, maxHeight: 2 });
+  }
+  get items() {
+    return this.$$.ctx[0];
+  }
+  set items(items) {
+    this.$$set({ items });
+    flush();
+  }
+  get value() {
+    return this.$$.ctx[1];
+  }
+  set value(value) {
+    this.$$set({ value });
+    flush();
+  }
+  get maxHeight() {
+    return this.$$.ctx[2];
+  }
+  set maxHeight(maxHeight) {
+    this.$$set({ maxHeight });
+    flush();
+  }
+}
+const ArrowTip_svelte_svelte_type_style_lang = "";
+function create_fragment$l(ctx) {
+  let div;
+  return {
+    c() {
+      div = element("div");
+      div.innerHTML = ``;
+      attr(div, "class", "svelte-jpi-1d5a3g7");
+      set_style(
+        div,
+        "rotate",
+        /*rotation*/
+        ctx[0]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*rotation*/
+      1) {
+        set_style(
+          div,
+          "rotate",
+          /*rotation*/
           ctx2[0]
         );
       }
@@ -16456,177 +23355,281 @@ function create_fragment$a(ctx) {
     o: noop,
     d(detaching) {
       if (detaching) {
-        detach(button);
+        detach(div);
       }
-      if (if_block)
-        if_block.d();
-      mounted = false;
-      dispose();
     }
   };
 }
-function instance$a($$self, $$props, $$invalidate) {
-  let { showIcon = false } = $$props;
-  let { icon = "" } = $$props;
-  let { text: text2 = "" } = $$props;
-  let { isCancelButton = false } = $$props;
-  function click_handler(event) {
-    bubble.call(this, $$self, event);
-  }
+function instance$l($$self, $$props, $$invalidate) {
+  let { rotation = 0 } = $$props;
   $$self.$$set = ($$props2) => {
-    if ("showIcon" in $$props2)
-      $$invalidate(0, showIcon = $$props2.showIcon);
-    if ("icon" in $$props2)
-      $$invalidate(1, icon = $$props2.icon);
-    if ("text" in $$props2)
-      $$invalidate(2, text2 = $$props2.text);
-    if ("isCancelButton" in $$props2)
-      $$invalidate(3, isCancelButton = $$props2.isCancelButton);
+    if ("rotation" in $$props2)
+      $$invalidate(0, rotation = $$props2.rotation);
   };
-  $$self.$$.update = () => {
-    if ($$self.$$.dirty & /*icon*/
-    2) {
-      $$invalidate(0, showIcon = icon != null && icon.length > 0);
-    }
-  };
-  return [showIcon, icon, text2, isCancelButton, click_handler];
+  return [rotation];
 }
-class SimpleButton extends SvelteComponent {
+class ArrowTip extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$a, create_fragment$a, safe_not_equal, {
-      showIcon: 0,
-      icon: 1,
-      text: 2,
-      isCancelButton: 3
-    });
+    init(this, options, instance$l, create_fragment$l, safe_not_equal, { rotation: 0 });
   }
 }
-const ConfigurationWindow_svelte_svelte_type_style_lang = "";
-function get_each_context$4(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[7] = list[i];
-  return child_ctx;
-}
-function create_else_block$1(ctx) {
-  let settingitem;
+const Select_svelte_svelte_type_style_lang = "";
+const get_default_slot_changes_1$1 = (dirty) => ({ item: dirty & /*item*/
+131072 });
+const get_default_slot_context_1$1 = (ctx) => ({ item: (
+  /*item*/
+  ctx[17]
+) });
+const get_default_slot_changes$3 = (dirty) => ({ item: dirty & /*currentItem*/
+32 });
+const get_default_slot_context$3 = (ctx) => ({ item: (
+  /*currentItem*/
+  ctx[5]
+) });
+function create_else_block$2(ctx) {
+  let typography;
   let current;
-  settingitem = new SettingItem({
+  typography = new Typography({
     props: {
-      name: (
-        /*setting*/
-        ctx[7].name
-      ),
-      description: (
-        /*setting*/
-        ctx[7].description
-      ),
-      storeValue: (
-        /*setting*/
-        ctx[7].value
-      ),
-      command: (
-        /*setting*/
-        ctx[7].command
-      ),
-      options: (
-        /*setting*/
-        ctx[7].options
-      )
+      class: "size-md",
+      $$slots: { default: [create_default_slot_4$5] },
+      $$scope: { ctx }
     }
   });
   return {
     c() {
-      create_component(settingitem.$$.fragment);
+      create_component(typography.$$.fragment);
     },
     m(target, anchor) {
-      mount_component(settingitem, target, anchor);
+      mount_component(typography, target, anchor);
       current = true;
     },
     p(ctx2, dirty) {
-      const settingitem_changes = {};
-      if (dirty & /*$settings*/
-      2)
-        settingitem_changes.name = /*setting*/
-        ctx2[7].name;
-      if (dirty & /*$settings*/
-      2)
-        settingitem_changes.description = /*setting*/
-        ctx2[7].description;
-      if (dirty & /*$settings*/
-      2)
-        settingitem_changes.storeValue = /*setting*/
-        ctx2[7].value;
-      if (dirty & /*$settings*/
-      2)
-        settingitem_changes.command = /*setting*/
-        ctx2[7].command;
-      if (dirty & /*$settings*/
-      2)
-        settingitem_changes.options = /*setting*/
-        ctx2[7].options;
-      settingitem.$set(settingitem_changes);
+      const typography_changes = {};
+      if (dirty & /*$$scope, placeHolderLabel*/
+      65552) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
     },
     i(local) {
       if (current)
         return;
-      transition_in(settingitem.$$.fragment, local);
+      transition_in(typography.$$.fragment, local);
       current = true;
     },
     o(local) {
-      transition_out(settingitem.$$.fragment, local);
+      transition_out(typography.$$.fragment, local);
       current = false;
     },
     d(detaching) {
-      destroy_component(settingitem, detaching);
+      destroy_component(typography, detaching);
     }
   };
 }
-function create_if_block$2(ctx) {
-  let div2;
+function create_if_block_1$5(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[13].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[16],
+    get_default_slot_context$3
+  );
+  const default_slot_or_fallback = default_slot || fallback_block_1$1(ctx);
   return {
     c() {
-      div2 = element("div");
-      attr(div2, "class", "setting-separator svelte-jpi-5o7jc");
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(target, anchor);
+      }
+      current = true;
     },
-    p: noop,
-    i: noop,
-    o: noop,
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, currentItem*/
+        65568)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[16],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[16]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[16],
+              dirty,
+              get_default_slot_changes$3
+            ),
+            get_default_slot_context$3
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*currentItem*/
+        32)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_default_slot_4$5(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*placeHolderLabel*/
+        ctx[4]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*placeHolderLabel*/
+      16)
+        set_data(
+          t,
+          /*placeHolderLabel*/
+          ctx2[4]
+        );
+    },
     d(detaching) {
       if (detaching) {
-        detach(div2);
+        detach(t);
       }
     }
   };
 }
-function create_each_block$4(ctx) {
+function create_default_slot_3$5(ctx) {
+  let t_value = (
+    /*currentItem*/
+    ctx[5].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*currentItem*/
+      32 && t_value !== (t_value = /*currentItem*/
+      ctx2[5].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function fallback_block_1$1(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-md",
+      $$slots: { default: [create_default_slot_3$5] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, currentItem*/
+      65568) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_default_slot_2$7(ctx) {
   let current_block_type_index;
   let if_block;
-  let if_block_anchor;
+  let t;
+  let arrowtip;
   let current;
-  const if_block_creators = [create_if_block$2, create_else_block$1];
+  const if_block_creators = [create_if_block_1$5, create_else_block$2];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
-      /*setting*/
-      ctx2[7].separator
+      /*currentItem*/
+      ctx2[5]
     )
       return 0;
     return 1;
   }
   current_block_type_index = select_block_type(ctx);
   if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  arrowtip = new ArrowTip({
+    props: {
+      rotation: (
+        /*$showDropDown*/
+        ctx[6] ? "180deg" : "0deg"
+      )
+    }
+  });
   return {
     c() {
       if_block.c();
-      if_block_anchor = empty();
+      t = space();
+      create_component(arrowtip.$$.fragment);
     },
     m(target, anchor) {
       if_blocks[current_block_type_index].m(target, anchor);
-      insert(target, if_block_anchor, anchor);
+      insert(target, t, anchor);
+      mount_component(arrowtip, target, anchor);
       current = true;
     },
     p(ctx2, dirty) {
@@ -16648,7 +23651,1053 @@ function create_each_block$4(ctx) {
           if_block.p(ctx2, dirty);
         }
         transition_in(if_block, 1);
-        if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        if_block.m(t.parentNode, t);
+      }
+      const arrowtip_changes = {};
+      if (dirty & /*$showDropDown*/
+      64)
+        arrowtip_changes.rotation = /*$showDropDown*/
+        ctx2[6] ? "180deg" : "0deg";
+      arrowtip.$set(arrowtip_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      transition_in(arrowtip.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      transition_out(arrowtip.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      if_blocks[current_block_type_index].d(detaching);
+      destroy_component(arrowtip, detaching);
+    }
+  };
+}
+function create_if_block$a(ctx) {
+  let selectdropdown;
+  let updating_value;
+  let current;
+  function selectdropdown_value_binding(value) {
+    ctx[14](value);
+  }
+  let selectdropdown_props = {
+    items: (
+      /*items*/
+      ctx[1]
+    ),
+    maxHeight: (
+      /*dropdownMaxHeight*/
+      ctx[3]
+    ),
+    $$slots: {
+      default: [
+        create_default_slot$e,
+        ({ item }) => ({ 17: item }),
+        ({ item }) => item ? 131072 : 0
+      ]
+    },
+    $$scope: { ctx }
+  };
+  if (
+    /*value*/
+    ctx[0] !== void 0
+  ) {
+    selectdropdown_props.value = /*value*/
+    ctx[0];
+  }
+  selectdropdown = new SelectDropDown({ props: selectdropdown_props });
+  binding_callbacks.push(() => bind(selectdropdown, "value", selectdropdown_value_binding));
+  selectdropdown.$on(
+    "itemselect",
+    /*selectItem*/
+    ctx[12]
+  );
+  return {
+    c() {
+      create_component(selectdropdown.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(selectdropdown, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const selectdropdown_changes = {};
+      if (dirty & /*items*/
+      2)
+        selectdropdown_changes.items = /*items*/
+        ctx2[1];
+      if (dirty & /*dropdownMaxHeight*/
+      8)
+        selectdropdown_changes.maxHeight = /*dropdownMaxHeight*/
+        ctx2[3];
+      if (dirty & /*$$scope, item*/
+      196608) {
+        selectdropdown_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_value && dirty & /*value*/
+      1) {
+        updating_value = true;
+        selectdropdown_changes.value = /*value*/
+        ctx2[0];
+        add_flush_callback(() => updating_value = false);
+      }
+      selectdropdown.$set(selectdropdown_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(selectdropdown.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(selectdropdown.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(selectdropdown, detaching);
+    }
+  };
+}
+function create_default_slot_1$a(ctx) {
+  let t_value = (
+    /*item*/
+    ctx[17].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*item*/
+      131072 && t_value !== (t_value = /*item*/
+      ctx2[17].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function fallback_block$4(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-md",
+      $$slots: { default: [create_default_slot_1$a] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, item*/
+      196608) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_default_slot$e(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[13].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[16],
+    get_default_slot_context_1$1
+  );
+  const default_slot_or_fallback = default_slot || fallback_block$4(ctx);
+  return {
+    c() {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+    },
+    m(target, anchor) {
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, item*/
+        196608)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[16],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[16]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[16],
+              dirty,
+              get_default_slot_changes_1$1
+            ),
+            get_default_slot_context_1$1
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*item*/
+        131072)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_fragment$k(ctx) {
+  let div2;
+  let div0;
+  let flex;
+  let t;
+  let div1;
+  let clickOutside_action;
+  let current;
+  let mounted;
+  let dispose;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      $$slots: { default: [create_default_slot_2$7] },
+      $$scope: { ctx }
+    }
+  });
+  let if_block = (
+    /*$showDropDown*/
+    ctx[6] && create_if_block$a(ctx)
+  );
+  return {
+    c() {
+      div2 = element("div");
+      div0 = element("div");
+      create_component(flex.$$.fragment);
+      t = space();
+      div1 = element("div");
+      if (if_block)
+        if_block.c();
+      attr(div0, "class", "panel panel-hover padding svelte-jpi-1lr7ece");
+      attr(div0, "role", "button");
+      attr(div0, "tabindex", "0");
+      set_style(div0, "height", `100%`);
+      set_style(div0, "width", `100%`);
+      set_style(div1, "box-sizing", `border-box`);
+      set_style(div1, "width", `100%`);
+      set_style(div1, "z-index", `9999`);
+      set_style(div2, "position", `relative`);
+      set_style(
+        div2,
+        "width",
+        /*width*/
+        ctx[2]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+      append(div2, div0);
+      mount_component(flex, div0, null);
+      append(div2, t);
+      append(div2, div1);
+      if (if_block)
+        if_block.m(div1, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div0,
+            "click",
+            /*toggleDropDown*/
+            ctx[10]
+          ),
+          listen(
+            div0,
+            "keydown",
+            /*toggleDropDown*/
+            ctx[10]
+          ),
+          action_destroyer(popupSource.call(
+            null,
+            div0,
+            /*popupSettings*/
+            ctx[9]
+          )),
+          action_destroyer(popupTarget.call(null, div1, {
+            popupId: (
+              /*selectId*/
+              ctx[8]
+            ),
+            placement: "bottom",
+            delay: { show: 100, hide: 150 },
+            offset: 5
+          })),
+          action_destroyer(clickOutside_action = clickOutside.call(null, div2, {
+            callback: (
+              /*hideDropDown*/
+              ctx[11]
+            ),
+            isEnabled: (
+              /*clickOutside_function*/
+              ctx[15]
+            ),
+            isOutside
+          }))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, $showDropDown, currentItem, placeHolderLabel*/
+      65648) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+      if (
+        /*$showDropDown*/
+        ctx2[6]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*$showDropDown*/
+          64) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$a(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(div1, null);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+      if (clickOutside_action && is_function(clickOutside_action.update) && dirty & /*$showDropDown*/
+      64)
+        clickOutside_action.update.call(null, {
+          callback: (
+            /*hideDropDown*/
+            ctx2[11]
+          ),
+          isEnabled: (
+            /*clickOutside_function*/
+            ctx2[15]
+          ),
+          isOutside
+        });
+      if (dirty & /*width*/
+      4) {
+        set_style(
+          div2,
+          "width",
+          /*width*/
+          ctx2[2]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div2);
+      }
+      destroy_component(flex);
+      if (if_block)
+        if_block.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+let dropDownDiv = null;
+function isOutside(node, target) {
+  return !dropDownDiv;
+}
+function instance$k($$self, $$props, $$invalidate) {
+  let currentItem;
+  let $showDropDown;
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { items = [] } = $$props;
+  let { value = {} } = $$props;
+  let { width = "100%" } = $$props;
+  let { dropdownMaxHeight = "auto" } = $$props;
+  let { placeHolderLabel = "Select..." } = $$props;
+  let showDropDown = writable(false);
+  component_subscribe($$self, showDropDown, (value2) => $$invalidate(6, $showDropDown = value2));
+  let selectId = "select-" + generateQuickGUID();
+  let popupSettings = {
+    popupId: selectId,
+    flagStore: showDropDown
+  };
+  function toggleDropDown() {
+    showDropDown.update((value2) => {
+      return !value2;
+    });
+  }
+  function hideDropDown() {
+    showDropDown.set(false);
+  }
+  function selectItem(event) {
+    $$invalidate(0, value = event.detail.value);
+    hideDropDown();
+  }
+  function selectdropdown_value_binding(value$1) {
+    value = value$1;
+    $$invalidate(0, value);
+  }
+  const clickOutside_function = () => $showDropDown;
+  $$self.$$set = ($$props2) => {
+    if ("items" in $$props2)
+      $$invalidate(1, items = $$props2.items);
+    if ("value" in $$props2)
+      $$invalidate(0, value = $$props2.value);
+    if ("width" in $$props2)
+      $$invalidate(2, width = $$props2.width);
+    if ("dropdownMaxHeight" in $$props2)
+      $$invalidate(3, dropdownMaxHeight = $$props2.dropdownMaxHeight);
+    if ("placeHolderLabel" in $$props2)
+      $$invalidate(4, placeHolderLabel = $$props2.placeHolderLabel);
+    if ("$$scope" in $$props2)
+      $$invalidate(16, $$scope = $$props2.$$scope);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*items, value*/
+    3) {
+      $$invalidate(5, currentItem = items.find((x) => {
+        return x.value === value;
+      }));
+    }
+  };
+  return [
+    value,
+    items,
+    width,
+    dropdownMaxHeight,
+    placeHolderLabel,
+    currentItem,
+    $showDropDown,
+    showDropDown,
+    selectId,
+    popupSettings,
+    toggleDropDown,
+    hideDropDown,
+    selectItem,
+    slots,
+    selectdropdown_value_binding,
+    clickOutside_function,
+    $$scope
+  ];
+}
+class Select extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$k, create_fragment$k, safe_not_equal, {
+      items: 1,
+      value: 0,
+      width: 2,
+      dropdownMaxHeight: 3,
+      placeHolderLabel: 4
+    });
+  }
+}
+function create_if_block_5(ctx) {
+  let button;
+  let current;
+  button = new Button({
+    props: {
+      class: "btn primary md",
+      $$slots: { default: [create_default_slot_1$9] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on(
+    "click",
+    /*click_handler*/
+    ctx[10]
+  );
+  return {
+    c() {
+      create_component(button.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(button, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const button_changes = {};
+      if (dirty & /*$$scope, item*/
+      4097) {
+        button_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button.$set(button_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(button, detaching);
+    }
+  };
+}
+function create_if_block_4(ctx) {
+  let select;
+  let updating_value;
+  let current;
+  function select_value_binding(value) {
+    ctx[9](value);
+  }
+  let select_props = { items: (
+    /*$valuesStore*/
+    ctx[4]
+  ) };
+  if (
+    /*$store*/
+    ctx[3] !== void 0
+  ) {
+    select_props.value = /*$store*/
+    ctx[3];
+  }
+  select = new Select({ props: select_props });
+  binding_callbacks.push(() => bind(select, "value", select_value_binding));
+  return {
+    c() {
+      create_component(select.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(select, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const select_changes = {};
+      if (dirty & /*$valuesStore*/
+      16)
+        select_changes.items = /*$valuesStore*/
+        ctx2[4];
+      if (!updating_value && dirty & /*$store*/
+      8) {
+        updating_value = true;
+        select_changes.value = /*$store*/
+        ctx2[3];
+        add_flush_callback(() => updating_value = false);
+      }
+      select.$set(select_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(select.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(select.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(select, detaching);
+    }
+  };
+}
+function create_if_block_3(ctx) {
+  let editablelist;
+  let current;
+  editablelist = new EditableList({
+    props: {
+      items: (
+        /*$store*/
+        ctx[3]
+      ),
+      dndzone: (
+        /*item*/
+        ctx[0].dndzone
+      ),
+      $$slots: {
+        default: [
+          create_default_slot$d,
+          ({ index }) => ({ 11: index }),
+          ({ index }) => index ? 2048 : 0
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  editablelist.$on("copy", function() {
+    if (is_function(
+      /*item*/
+      ctx[0].copy
+    ))
+      ctx[0].copy.apply(this, arguments);
+  });
+  editablelist.$on("create", function() {
+    if (is_function(
+      /*item*/
+      ctx[0].create
+    ))
+      ctx[0].create.apply(this, arguments);
+  });
+  editablelist.$on("listUpdated", function() {
+    if (is_function(
+      /*item*/
+      ctx[0].listUpdated
+    ))
+      ctx[0].listUpdated.apply(this, arguments);
+  });
+  return {
+    c() {
+      create_component(editablelist.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(editablelist, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const editablelist_changes = {};
+      if (dirty & /*$store*/
+      8)
+        editablelist_changes.items = /*$store*/
+        ctx[3];
+      if (dirty & /*item*/
+      1)
+        editablelist_changes.dndzone = /*item*/
+        ctx[0].dndzone;
+      if (dirty & /*$$scope, $store, index*/
+      6152) {
+        editablelist_changes.$$scope = { dirty, ctx };
+      }
+      editablelist.$set(editablelist_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(editablelist.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(editablelist.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(editablelist, detaching);
+    }
+  };
+}
+function create_if_block_2(ctx) {
+  let numberbox;
+  let updating_value;
+  let current;
+  function numberbox_value_binding(value) {
+    ctx[7](value);
+  }
+  let numberbox_props = { valueType: "number", canReset: false };
+  if (
+    /*$store*/
+    ctx[3] !== void 0
+  ) {
+    numberbox_props.value = /*$store*/
+    ctx[3];
+  }
+  numberbox = new NumberBox({ props: numberbox_props });
+  binding_callbacks.push(() => bind(numberbox, "value", numberbox_value_binding));
+  return {
+    c() {
+      create_component(numberbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(numberbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const numberbox_changes = {};
+      if (!updating_value && dirty & /*$store*/
+      8) {
+        updating_value = true;
+        numberbox_changes.value = /*$store*/
+        ctx2[3];
+        add_flush_callback(() => updating_value = false);
+      }
+      numberbox.$set(numberbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(numberbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(numberbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(numberbox, detaching);
+    }
+  };
+}
+function create_if_block_1$4(ctx) {
+  let checkbox;
+  let updating_value;
+  let current;
+  function checkbox_value_binding(value) {
+    ctx[6](value);
+  }
+  let checkbox_props = {};
+  if (
+    /*$store*/
+    ctx[3] !== void 0
+  ) {
+    checkbox_props.value = /*$store*/
+    ctx[3];
+  }
+  checkbox = new CheckBox({ props: checkbox_props });
+  binding_callbacks.push(() => bind(checkbox, "value", checkbox_value_binding));
+  return {
+    c() {
+      create_component(checkbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(checkbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const checkbox_changes = {};
+      if (!updating_value && dirty & /*$store*/
+      8) {
+        updating_value = true;
+        checkbox_changes.value = /*$store*/
+        ctx2[3];
+        add_flush_callback(() => updating_value = false);
+      }
+      checkbox.$set(checkbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(checkbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(checkbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(checkbox, detaching);
+    }
+  };
+}
+function create_if_block$9(ctx) {
+  let textbox;
+  let updating_value;
+  let current;
+  function textbox_value_binding(value) {
+    ctx[5](value);
+  }
+  let textbox_props = { canReset: false };
+  if (
+    /*$store*/
+    ctx[3] !== void 0
+  ) {
+    textbox_props.value = /*$store*/
+    ctx[3];
+  }
+  textbox = new TextBox({ props: textbox_props });
+  binding_callbacks.push(() => bind(textbox, "value", textbox_value_binding));
+  return {
+    c() {
+      create_component(textbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(textbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const textbox_changes = {};
+      if (!updating_value && dirty & /*$store*/
+      8) {
+        updating_value = true;
+        textbox_changes.value = /*$store*/
+        ctx2[3];
+        add_flush_callback(() => updating_value = false);
+      }
+      textbox.$set(textbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(textbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(textbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(textbox, detaching);
+    }
+  };
+}
+function create_default_slot_1$9(ctx) {
+  let t_value = (
+    /*item*/
+    (ctx[0].actionLabel || "Execute") + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*item*/
+      1 && t_value !== (t_value = /*item*/
+      (ctx2[0].actionLabel || "Execute") + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot$d(ctx) {
+  let textbox;
+  let updating_value;
+  let current;
+  function textbox_value_binding_1(value) {
+    ctx[8](
+      value,
+      /*index*/
+      ctx[11]
+    );
+  }
+  let textbox_props = { canReset: false };
+  if (
+    /*$store*/
+    ctx[3][
+      /*index*/
+      ctx[11]
+    ].label !== void 0
+  ) {
+    textbox_props.value = /*$store*/
+    ctx[3][
+      /*index*/
+      ctx[11]
+    ].label;
+  }
+  textbox = new TextBox({ props: textbox_props });
+  binding_callbacks.push(() => bind(textbox, "value", textbox_value_binding_1));
+  return {
+    c() {
+      create_component(textbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(textbox, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const textbox_changes = {};
+      if (!updating_value && dirty & /*$store, index*/
+      2056) {
+        updating_value = true;
+        textbox_changes.value = /*$store*/
+        ctx[3][
+          /*index*/
+          ctx[11]
+        ].label;
+        add_flush_callback(() => updating_value = false);
+      }
+      textbox.$set(textbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(textbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(textbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(textbox, detaching);
+    }
+  };
+}
+function create_fragment$j(ctx) {
+  let show_if;
+  let current_block_type_index;
+  let if_block;
+  let if_block_anchor;
+  let current;
+  const if_block_creators = [
+    create_if_block$9,
+    create_if_block_1$4,
+    create_if_block_2,
+    create_if_block_3,
+    create_if_block_4,
+    create_if_block_5
+  ];
+  const if_blocks = [];
+  function select_block_type(ctx2, dirty) {
+    if (dirty & /*$store*/
+    8)
+      show_if = null;
+    if (
+      /*item*/
+      ctx2[0].type === "Text"
+    )
+      return 0;
+    if (typeof /*$store*/
+    ctx2[3] === "boolean")
+      return 1;
+    if (
+      /*item*/
+      ctx2[0].type === "Number"
+    )
+      return 2;
+    if (show_if == null)
+      show_if = !!Array.isArray(
+        /*$store*/
+        ctx2[3]
+      );
+    if (show_if)
+      return 3;
+    if (
+      /*item*/
+      ctx2[0].type === "Enum"
+    )
+      return 4;
+    if (
+      /*item*/
+      ctx2[0].type === "Function"
+    )
+      return 5;
+    return -1;
+  }
+  if (~(current_block_type_index = select_block_type(ctx, -1))) {
+    if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  }
+  return {
+    c() {
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].m(target, anchor);
+      }
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      let previous_block_index = current_block_type_index;
+      current_block_type_index = select_block_type(ctx2, dirty);
+      if (current_block_type_index === previous_block_index) {
+        if (~current_block_type_index) {
+          if_blocks[current_block_type_index].p(ctx2, dirty);
+        }
+      } else {
+        if (if_block) {
+          group_outros();
+          transition_out(if_blocks[previous_block_index], 1, 1, () => {
+            if_blocks[previous_block_index] = null;
+          });
+          check_outros();
+        }
+        if (~current_block_type_index) {
+          if_block = if_blocks[current_block_type_index];
+          if (!if_block) {
+            if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
+            if_block.c();
+          } else {
+            if_block.p(ctx2, dirty);
+          }
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        } else {
+          if_block = null;
+        }
       }
     },
     i(local) {
@@ -16665,1626 +24714,1025 @@ function create_each_block$4(ctx) {
       if (detaching) {
         detach(if_block_anchor);
       }
-      if_blocks[current_block_type_index].d(detaching);
-    }
-  };
-}
-function create_default_slot$1(ctx) {
-  let div2;
-  let span;
-  let t1;
-  let div0;
-  let t2;
-  let div1;
-  let simplebutton;
-  let current;
-  let mounted;
-  let dispose;
-  let each_value = ensure_array_like(
-    /*$settings*/
-    ctx[1]
-  );
-  let each_blocks = [];
-  for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$4(get_each_context$4(ctx, each_value, i));
-  }
-  const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
-    each_blocks[i] = null;
-  });
-  simplebutton = new SimpleButton({
-    props: {
-      icon: "check",
-      text: locSettings(`close.button`)
-    }
-  });
-  simplebutton.$on(
-    "click",
-    /*close*/
-    ctx[3]
-  );
-  return {
-    c() {
-      div2 = element("div");
-      span = element("span");
-      span.textContent = `${locSettings("configuration.title")}`;
-      t1 = space();
-      div0 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      t2 = space();
-      div1 = element("div");
-      create_component(simplebutton.$$.fragment);
-      attr(span, "class", "drag-target title svelte-jpi-5o7jc");
-      attr(div0, "class", "drag-target setting-list svelte-jpi-5o7jc");
-      attr(div1, "class", "drag-target modalButtonContainer");
-      attr(div2, "class", "drag-target mainContent svelte-jpi-5o7jc");
-      attr(div2, "role", "application");
-    },
-    m(target, anchor) {
-      insert(target, div2, anchor);
-      append(div2, span);
-      append(div2, t1);
-      append(div2, div0);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div0, null);
-        }
-      }
-      append(div2, t2);
-      append(div2, div1);
-      mount_component(simplebutton, div1, null);
-      current = true;
-      if (!mounted) {
-        dispose = action_destroyer(draggable.call(null, div2, {
-          position: (
-            /*position*/
-            ctx[2]
-          ),
-          hasTargetClassList: ["drag-target"]
-        }));
-        mounted = true;
-      }
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*$settings*/
-      2) {
-        each_value = ensure_array_like(
-          /*$settings*/
-          ctx2[1]
-        );
-        let i;
-        for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$4(ctx2, each_value, i);
-          if (each_blocks[i]) {
-            each_blocks[i].p(child_ctx, dirty);
-            transition_in(each_blocks[i], 1);
-          } else {
-            each_blocks[i] = create_each_block$4(child_ctx);
-            each_blocks[i].c();
-            transition_in(each_blocks[i], 1);
-            each_blocks[i].m(div0, null);
-          }
-        }
-        group_outros();
-        for (i = each_value.length; i < each_blocks.length; i += 1) {
-          out(i);
-        }
-        check_outros();
-      }
-    },
-    i(local) {
-      if (current)
-        return;
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
-      transition_in(simplebutton.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      each_blocks = each_blocks.filter(Boolean);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
-      transition_out(simplebutton.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(div2);
-      }
-      destroy_each(each_blocks, detaching);
-      destroy_component(simplebutton);
-      mounted = false;
-      dispose();
-    }
-  };
-}
-function create_fragment$9(ctx) {
-  let emptyapplicationshell;
-  let updating_elementRoot;
-  let current;
-  function emptyapplicationshell_elementRoot_binding(value) {
-    ctx[4](value);
-  }
-  let emptyapplicationshell_props = {
-    $$slots: { default: [create_default_slot$1] },
-    $$scope: { ctx }
-  };
-  if (
-    /*elementRoot*/
-    ctx[0] !== void 0
-  ) {
-    emptyapplicationshell_props.elementRoot = /*elementRoot*/
-    ctx[0];
-  }
-  emptyapplicationshell = new EmptyApplicationShell$1({ props: emptyapplicationshell_props });
-  binding_callbacks.push(() => bind(emptyapplicationshell, "elementRoot", emptyapplicationshell_elementRoot_binding));
-  return {
-    c() {
-      create_component(emptyapplicationshell.$$.fragment);
-    },
-    m(target, anchor) {
-      mount_component(emptyapplicationshell, target, anchor);
-      current = true;
-    },
-    p(ctx2, [dirty]) {
-      const emptyapplicationshell_changes = {};
-      if (dirty & /*$$scope, $settings*/
-      1026) {
-        emptyapplicationshell_changes.$$scope = { dirty, ctx: ctx2 };
-      }
-      if (!updating_elementRoot && dirty & /*elementRoot*/
-      1) {
-        updating_elementRoot = true;
-        emptyapplicationshell_changes.elementRoot = /*elementRoot*/
-        ctx2[0];
-        add_flush_callback(() => updating_elementRoot = false);
-      }
-      emptyapplicationshell.$set(emptyapplicationshell_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(emptyapplicationshell.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(emptyapplicationshell.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      destroy_component(emptyapplicationshell, detaching);
-    }
-  };
-}
-function instance$9($$self, $$props, $$invalidate) {
-  let $settings;
-  component_subscribe($$self, settings, ($$value) => $$invalidate(1, $settings = $$value));
-  let { elementRoot } = $$props;
-  const { application, moduleAPI } = getContext("#external");
-  const position = application.position;
-  function close() {
-    moduleAPI.closeConfig();
-  }
-  function emptyapplicationshell_elementRoot_binding(value) {
-    elementRoot = value;
-    $$invalidate(0, elementRoot);
-  }
-  $$self.$$set = ($$props2) => {
-    if ("elementRoot" in $$props2)
-      $$invalidate(0, elementRoot = $$props2.elementRoot);
-  };
-  return [
-    elementRoot,
-    $settings,
-    position,
-    close,
-    emptyapplicationshell_elementRoot_binding
-  ];
-}
-class ConfigurationWindow extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$9, create_fragment$9, safe_not_equal, { elementRoot: 0 });
-  }
-  get elementRoot() {
-    return this.$$.ctx[0];
-  }
-  set elementRoot(elementRoot) {
-    this.$$set({ elementRoot });
-    flush();
-  }
-}
-class ConfigurationWindowApplicationProxy extends FormApplication {
-  constructor(options = {}) {
-    super({}, options);
-    ModuleAPI.instance.showConfig();
-  }
-  async _updateObject(event, formData) {
-  }
-  render() {
-    this.close();
-  }
-}
-class ConfigurationWindowApplication extends SvelteApplication {
-  static get defaultOptions() {
-    const moduleAPI = game.modules.get("just-popcorn-initiative").api;
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: "popcorn-initiative-config",
-      classes: ["tjs-essential-svelte-esm"],
-      resizable: true,
-      title: locSettings("window-title"),
-      width: 500,
-      height: 300,
-      svelte: {
-        class: ConfigurationWindow,
-        target: document.body,
-        context: { moduleAPI }
-      }
-    });
-  }
-}
-class ModuleSettings {
-  static initialize() {
-    this._settings = [];
-    this._registerSettings();
-    StoreUpdater.updateSettings();
-  }
-  static async save() {
-    let reloadRequired = false;
-    this._settings.forEach((x) => {
-      reloadRequired |= this._setSettingValue(x.id, get_store_value(x.storeValue));
-    });
-    if (reloadRequired) {
-      await SettingsConfig.reloadConfirm({ world: true });
-    }
-  }
-  static async saveSetting(storeValue) {
-    const setting = this._settings.find((x) => {
-      return x.storeValue === storeValue;
-    });
-    if (setting != null) {
-      const reloadRequired = this._setSettingValue(setting.id, get_store_value(setting.storeValue));
-      if (reloadRequired) {
-        await SettingsConfig.reloadConfirm({ world: true });
-      }
-    }
-  }
-  static _registerSettings() {
-    game.settings.registerMenu(Constants.ModuleName, "configuration", {
-      name: locSettings("configure.button"),
-      label: locSettings("configure.button"),
-      icon: "fas fa-gear",
-      type: ConfigurationWindowApplicationProxy,
-      restricted: true
-    });
-    this._addSetting(Constants.Options.OverrideNextTurnButton, Boolean, true, true, overrideEndTurnButton);
-    this._addSetting(Constants.Options.CanSelectWhenRoundIsOver, Boolean, true, false, canSelectWhenRoundIsOver);
-    this._addSetting(Constants.Options.CanLastActorSelectThemselves, Boolean, false, false, canLastActorSelectThemselves);
-    this._addSetting(Constants.Options.PreviousActorsDrawerOpen, Boolean, true, false, previousActorsDrawerOpen, false);
-    this._addSetting(Constants.Options.SelectionWindowSize, String, Constants.WindowSize.Normal.id, false, selectionWindowSize);
-    this._addSetting(Constants.Options.SelectionWindowPosition, String, "center", false, selectionWindowPosition);
-  }
-  static _addSetting(id, type, defaultValue, requiresReload, storeValue, isGlobal = true) {
-    const setting = this._createSetting(id, requiresReload, storeValue);
-    this._settings.push(setting);
-    game.settings.register(Constants.ModuleName, id, {
-      name: locSettings(`${id}-title`),
-      hint: locSettings(`${id}-description`),
-      scope: isGlobal ? "world" : "client",
-      config: false,
-      default: defaultValue,
-      requiresReload,
-      type,
-      onChange: (newValue) => {
-        storeValue.set(newValue);
-      }
-    });
-    storeValue.set(this._getSettingValue(id));
-  }
-  static _getSettingValue(id) {
-    return game.settings.get(Constants.ModuleName, id);
-  }
-  static _createSetting(id, requiresReload, storeValue) {
-    return { id, requiresReload, storeValue };
-  }
-  static _setSettingValue(id, value) {
-    if (this._getSettingValue(id) !== value) {
-      game.settings.set(Constants.ModuleName, id, value);
-      const setting = game.settings.settings.get(`${Constants.ModuleName}.${id}`);
-      return setting.requiresReload;
-    }
-    return false;
-  }
-}
-const SimpleActor_svelte_svelte_type_style_lang = "";
-function create_fragment$8(ctx) {
-  let div1;
-  let img;
-  let img_src_value;
-  let t0;
-  let div0;
-  let t1;
-  return {
-    c() {
-      div1 = element("div");
-      img = element("img");
-      t0 = space();
-      div0 = element("div");
-      t1 = text(
-        /*name*/
-        ctx[0]
-      );
-      attr(img, "class", "combatant-icon drag-target svelte-jpi-17s6ciy");
-      if (!src_url_equal(img.src, img_src_value = /*icon*/
-      ctx[1]))
-        attr(img, "src", img_src_value);
-      attr(
-        img,
-        "alt",
-        /*icon*/
-        ctx[1]
-      );
-      toggle_class(
-        img,
-        "highlighted",
-        /*isHighlighted*/
-        ctx[2]
-      );
-      attr(div0, "class", "combatant-name drag-target svelte-jpi-17s6ciy");
-      attr(div1, "class", "combatant-item drag-target svelte-jpi-17s6ciy");
-      toggle_class(
-        div1,
-        "highlighted",
-        /*isHighlighted*/
-        ctx[2]
-      );
-    },
-    m(target, anchor) {
-      insert(target, div1, anchor);
-      append(div1, img);
-      append(div1, t0);
-      append(div1, div0);
-      append(div0, t1);
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*icon*/
-      2 && !src_url_equal(img.src, img_src_value = /*icon*/
-      ctx2[1])) {
-        attr(img, "src", img_src_value);
-      }
-      if (dirty & /*icon*/
-      2) {
-        attr(
-          img,
-          "alt",
-          /*icon*/
-          ctx2[1]
-        );
-      }
-      if (dirty & /*isHighlighted*/
-      4) {
-        toggle_class(
-          img,
-          "highlighted",
-          /*isHighlighted*/
-          ctx2[2]
-        );
-      }
-      if (dirty & /*name*/
-      1)
-        set_data(
-          t1,
-          /*name*/
-          ctx2[0]
-        );
-      if (dirty & /*isHighlighted*/
-      4) {
-        toggle_class(
-          div1,
-          "highlighted",
-          /*isHighlighted*/
-          ctx2[2]
-        );
-      }
-    },
-    i: noop,
-    o: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(div1);
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].d(detaching);
       }
     }
   };
 }
-function instance$8($$self, $$props, $$invalidate) {
-  let { name } = $$props;
-  let { icon } = $$props;
-  let { isHighlighted } = $$props;
-  $$self.$$set = ($$props2) => {
-    if ("name" in $$props2)
-      $$invalidate(0, name = $$props2.name);
-    if ("icon" in $$props2)
-      $$invalidate(1, icon = $$props2.icon);
-    if ("isHighlighted" in $$props2)
-      $$invalidate(2, isHighlighted = $$props2.isHighlighted);
-  };
-  return [name, icon, isHighlighted];
-}
-class SimpleActor extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$8, create_fragment$8, safe_not_equal, { name: 0, icon: 1, isHighlighted: 2 });
+function instance$j($$self, $$props, $$invalidate) {
+  let store;
+  let valuesStore;
+  let $store, $$unsubscribe_store = noop, $$subscribe_store = () => ($$unsubscribe_store(), $$unsubscribe_store = subscribe(store, ($$value) => $$invalidate(3, $store = $$value)), store);
+  let $valuesStore, $$unsubscribe_valuesStore = noop, $$subscribe_valuesStore = () => ($$unsubscribe_valuesStore(), $$unsubscribe_valuesStore = subscribe(valuesStore, ($$value) => $$invalidate(4, $valuesStore = $$value)), valuesStore);
+  $$self.$$.on_destroy.push(() => $$unsubscribe_store());
+  $$self.$$.on_destroy.push(() => $$unsubscribe_valuesStore());
+  let { item = {} } = $$props;
+  function textbox_value_binding(value) {
+    $store = value;
+    store.set($store);
   }
-}
-const CombatantList_svelte_svelte_type_style_lang = "";
-function get_each_context$3(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[1] = list[i];
-  return child_ctx;
-}
-function create_each_block$3(key_1, ctx) {
-  let first;
-  let simpleactor;
-  let current;
-  simpleactor = new SimpleActor({
-    props: {
-      name: (
-        /*combatant*/
-        ctx[1].name
-      ),
-      icon: (
-        /*combatant*/
-        ctx[1].icon
-      ),
-      isHighlighted: (
-        /*combatant*/
-        ctx[1].isHighlighted
-      )
+  function checkbox_value_binding(value) {
+    $store = value;
+    store.set($store);
+  }
+  function numberbox_value_binding(value) {
+    $store = value;
+    store.set($store);
+  }
+  function textbox_value_binding_1(value, index) {
+    if ($$self.$$.not_equal($store[index].label, value)) {
+      $store[index].label = value;
+      store.set($store);
     }
-  });
-  return {
-    key: key_1,
-    first: null,
-    c() {
-      first = empty();
-      create_component(simpleactor.$$.fragment);
-      this.first = first;
-    },
-    m(target, anchor) {
-      insert(target, first, anchor);
-      mount_component(simpleactor, target, anchor);
-      current = true;
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      const simpleactor_changes = {};
-      if (dirty & /*combatants*/
-      1)
-        simpleactor_changes.name = /*combatant*/
-        ctx[1].name;
-      if (dirty & /*combatants*/
-      1)
-        simpleactor_changes.icon = /*combatant*/
-        ctx[1].icon;
-      if (dirty & /*combatants*/
-      1)
-        simpleactor_changes.isHighlighted = /*combatant*/
-        ctx[1].isHighlighted;
-      simpleactor.$set(simpleactor_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(simpleactor.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(simpleactor.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(first);
-      }
-      destroy_component(simpleactor, detaching);
-    }
-  };
-}
-function create_fragment$7(ctx) {
-  let main2;
-  let span;
-  let t1;
-  let div2;
-  let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
-  let current;
-  let each_value = ensure_array_like(
-    /*combatants*/
-    ctx[0]
-  );
-  const get_key = (ctx2) => (
-    /*combatant*/
-    ctx2[1].id
-  );
-  for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$3(ctx, each_value, i);
-    let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$3(key, child_ctx));
   }
-  return {
-    c() {
-      main2 = element("main");
-      span = element("span");
-      span.textContent = `${locWindow(`previous-actors.title`)}`;
-      t1 = space();
-      div2 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      attr(span, "class", "drag-target title svelte-jpi-u0n15j");
-      attr(div2, "class", "drag-target list svelte-jpi-u0n15j");
-      attr(main2, "class", "svelte-jpi-u0n15j");
-    },
-    m(target, anchor) {
-      insert(target, main2, anchor);
-      append(main2, span);
-      append(main2, t1);
-      append(main2, div2);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div2, null);
-        }
-      }
-      current = true;
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*combatants*/
-      1) {
-        each_value = ensure_array_like(
-          /*combatants*/
-          ctx2[0]
-        );
-        group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div2, outro_and_destroy_block, create_each_block$3, null, get_each_context$3);
-        check_outros();
-      }
-    },
-    i(local) {
-      if (current)
-        return;
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
-      current = true;
-    },
-    o(local) {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(main2);
-      }
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].d();
-      }
-    }
-  };
-}
-function instance$7($$self, $$props, $$invalidate) {
-  let { combatants } = $$props;
-  $$self.$$set = ($$props2) => {
-    if ("combatants" in $$props2)
-      $$invalidate(0, combatants = $$props2.combatants);
-  };
-  return [combatants];
-}
-class CombatantList extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$7, create_fragment$7, safe_not_equal, { combatants: 0 });
+  function select_value_binding(value) {
+    $store = value;
+    store.set($store);
   }
-}
-const SelectableActor_svelte_svelte_type_style_lang = "";
-function get_each_context$2(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[10] = list[i];
-  return child_ctx;
-}
-function create_each_block$2(ctx) {
-  let div2;
-  let div_style_value;
-  return {
-    c() {
-      div2 = element("div");
-      attr(div2, "class", "fa-solid fa-circle owner-icon svelte-jpi-19t1jq6");
-      attr(div2, "style", div_style_value = `--player-color:${/*owner*/
-      ctx[10].color};`);
-    },
-    m(target, anchor) {
-      insert(target, div2, anchor);
-    },
-    p(ctx2, dirty) {
-      if (dirty & /*owners*/
-      16 && div_style_value !== (div_style_value = `--player-color:${/*owner*/
-      ctx2[10].color};`)) {
-        attr(div2, "style", div_style_value);
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(div2);
-      }
-    }
-  };
-}
-function create_fragment$6(ctx) {
-  let main2;
-  let div1;
-  let img;
-  let img_src_value;
-  let t0;
-  let div0;
-  let t1;
-  let t2;
-  let div2;
-  let mounted;
-  let dispose;
-  let each_value = ensure_array_like(
-    /*owners*/
-    ctx[4]
-  );
-  let each_blocks = [];
-  for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
-  }
-  return {
-    c() {
-      main2 = element("main");
-      div1 = element("div");
-      img = element("img");
-      t0 = space();
-      div0 = element("div");
-      t1 = text(
-        /*name*/
-        ctx[0]
-      );
-      t2 = space();
-      div2 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      attr(img, "class", "combatant-icon svelte-jpi-19t1jq6");
-      if (!src_url_equal(img.src, img_src_value = /*icon*/
-      ctx[1]))
-        attr(img, "src", img_src_value);
-      attr(
-        img,
-        "alt",
-        /*icon*/
-        ctx[1]
-      );
-      attr(div0, "class", "combatant-name svelte-jpi-19t1jq6");
-      attr(div1, "class", "combatant-item svelte-jpi-19t1jq6");
-      toggle_class(
-        div1,
-        "selected",
-        /*isSelected*/
-        ctx[2]
-      );
-      toggle_class(div1, "unselected", !/*isSelected*/
-      ctx[2]);
-      toggle_class(
-        div1,
-        "highlighted",
-        /*isHighlighted*/
-        ctx[3]
-      );
-      attr(div2, "class", "owner-icon-container svelte-jpi-19t1jq6");
-      attr(main2, "class", "svelte-jpi-19t1jq6");
-      toggle_class(
-        main2,
-        "selected",
-        /*isSelected*/
-        ctx[2]
-      );
-      toggle_class(main2, "unselected", !/*isSelected*/
-      ctx[2]);
-      toggle_class(
-        main2,
-        "highlighted",
-        /*isHighlighted*/
-        ctx[3]
-      );
-    },
-    m(target, anchor) {
-      insert(target, main2, anchor);
-      append(main2, div1);
-      append(div1, img);
-      append(div1, t0);
-      append(div1, div0);
-      append(div0, t1);
-      append(main2, t2);
-      append(main2, div2);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div2, null);
-        }
-      }
-      if (!mounted) {
-        dispose = [
-          listen(
-            main2,
-            "keydown",
-            /*keydown_handler*/
-            ctx[5]
-          ),
-          listen(
-            main2,
-            "click",
-            /*click_handler*/
-            ctx[6]
-          ),
-          listen(
-            main2,
-            "dblclick",
-            /*dblclick_handler*/
-            ctx[7]
-          ),
-          listen(
-            main2,
-            "mouseenter",
-            /*mouseenter_handler*/
-            ctx[8]
-          ),
-          listen(
-            main2,
-            "mouseleave}",
-            /*mouseleave_handler*/
-            ctx[9]
-          )
-        ];
-        mounted = true;
-      }
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*icon*/
-      2 && !src_url_equal(img.src, img_src_value = /*icon*/
-      ctx2[1])) {
-        attr(img, "src", img_src_value);
-      }
-      if (dirty & /*icon*/
-      2) {
-        attr(
-          img,
-          "alt",
-          /*icon*/
-          ctx2[1]
-        );
-      }
-      if (dirty & /*name*/
-      1)
-        set_data(
-          t1,
-          /*name*/
-          ctx2[0]
-        );
-      if (dirty & /*isSelected*/
-      4) {
-        toggle_class(
-          div1,
-          "selected",
-          /*isSelected*/
-          ctx2[2]
-        );
-      }
-      if (dirty & /*isSelected*/
-      4) {
-        toggle_class(div1, "unselected", !/*isSelected*/
-        ctx2[2]);
-      }
-      if (dirty & /*isHighlighted*/
-      8) {
-        toggle_class(
-          div1,
-          "highlighted",
-          /*isHighlighted*/
-          ctx2[3]
-        );
-      }
-      if (dirty & /*owners*/
-      16) {
-        each_value = ensure_array_like(
-          /*owners*/
-          ctx2[4]
-        );
-        let i;
-        for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$2(ctx2, each_value, i);
-          if (each_blocks[i]) {
-            each_blocks[i].p(child_ctx, dirty);
-          } else {
-            each_blocks[i] = create_each_block$2(child_ctx);
-            each_blocks[i].c();
-            each_blocks[i].m(div2, null);
-          }
-        }
-        for (; i < each_blocks.length; i += 1) {
-          each_blocks[i].d(1);
-        }
-        each_blocks.length = each_value.length;
-      }
-      if (dirty & /*isSelected*/
-      4) {
-        toggle_class(
-          main2,
-          "selected",
-          /*isSelected*/
-          ctx2[2]
-        );
-      }
-      if (dirty & /*isSelected*/
-      4) {
-        toggle_class(main2, "unselected", !/*isSelected*/
-        ctx2[2]);
-      }
-      if (dirty & /*isHighlighted*/
-      8) {
-        toggle_class(
-          main2,
-          "highlighted",
-          /*isHighlighted*/
-          ctx2[3]
-        );
-      }
-    },
-    i: noop,
-    o: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(main2);
-      }
-      destroy_each(each_blocks, detaching);
-      mounted = false;
-      run_all(dispose);
-    }
-  };
-}
-function instance$6($$self, $$props, $$invalidate) {
-  let { name } = $$props;
-  let { icon } = $$props;
-  let { isSelected } = $$props;
-  let { isHighlighted } = $$props;
-  let { owners = [] } = $$props;
-  function keydown_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function click_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function dblclick_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function mouseenter_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function mouseleave_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  $$self.$$set = ($$props2) => {
-    if ("name" in $$props2)
-      $$invalidate(0, name = $$props2.name);
-    if ("icon" in $$props2)
-      $$invalidate(1, icon = $$props2.icon);
-    if ("isSelected" in $$props2)
-      $$invalidate(2, isSelected = $$props2.isSelected);
-    if ("isHighlighted" in $$props2)
-      $$invalidate(3, isHighlighted = $$props2.isHighlighted);
-    if ("owners" in $$props2)
-      $$invalidate(4, owners = $$props2.owners);
-  };
-  return [
-    name,
-    icon,
-    isSelected,
-    isHighlighted,
-    owners,
-    keydown_handler,
-    click_handler,
-    dblclick_handler,
-    mouseenter_handler,
-    mouseleave_handler
-  ];
-}
-class SelectableActor extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$6, create_fragment$6, safe_not_equal, {
-      name: 0,
-      icon: 1,
-      isSelected: 2,
-      isHighlighted: 3,
-      owners: 4
-    });
-  }
-}
-const CombatantGrid_svelte_svelte_type_style_lang = "";
-function get_each_context$1(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[10] = list[i];
-  return child_ctx;
-}
-function create_each_block$1(key_1, ctx) {
-  let first;
-  let selectableactor;
-  let current;
-  function click_handler(...args) {
-    return (
-      /*click_handler*/
-      ctx[5](
-        /*combatant*/
-        ctx[10],
-        ...args
-      )
-    );
-  }
-  function dblclick_handler(...args) {
-    return (
-      /*dblclick_handler*/
-      ctx[6](
-        /*combatant*/
-        ctx[10],
-        ...args
-      )
-    );
-  }
-  function mouseenter_handler(...args) {
-    return (
-      /*mouseenter_handler*/
-      ctx[7](
-        /*combatant*/
-        ctx[10],
-        ...args
-      )
-    );
-  }
-  function mouseleave_handler(...args) {
-    return (
-      /*mouseleave_handler*/
-      ctx[8](
-        /*combatant*/
-        ctx[10],
-        ...args
-      )
-    );
-  }
-  selectableactor = new SelectableActor({
-    props: {
-      isSelected: (
-        /*combatant*/
-        ctx[10].isSelected
-      ),
-      isHighlighted: (
-        /*combatant*/
-        ctx[10].isHighlighted
-      ),
-      name: (
-        /*combatant*/
-        ctx[10].name
-      ),
-      icon: (
-        /*combatant*/
-        ctx[10].icon
-      ),
-      owners: (
-        /*combatant*/
-        ctx[10].owners
-      )
-    }
-  });
-  selectableactor.$on("click", click_handler);
-  selectableactor.$on("dblclick", dblclick_handler);
-  selectableactor.$on("mouseenter", mouseenter_handler);
-  selectableactor.$on("mouseleave", mouseleave_handler);
-  return {
-    key: key_1,
-    first: null,
-    c() {
-      first = empty();
-      create_component(selectableactor.$$.fragment);
-      this.first = first;
-    },
-    m(target, anchor) {
-      insert(target, first, anchor);
-      mount_component(selectableactor, target, anchor);
-      current = true;
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      const selectableactor_changes = {};
-      if (dirty & /*combatants*/
-      1)
-        selectableactor_changes.isSelected = /*combatant*/
-        ctx[10].isSelected;
-      if (dirty & /*combatants*/
-      1)
-        selectableactor_changes.isHighlighted = /*combatant*/
-        ctx[10].isHighlighted;
-      if (dirty & /*combatants*/
-      1)
-        selectableactor_changes.name = /*combatant*/
-        ctx[10].name;
-      if (dirty & /*combatants*/
-      1)
-        selectableactor_changes.icon = /*combatant*/
-        ctx[10].icon;
-      if (dirty & /*combatants*/
-      1)
-        selectableactor_changes.owners = /*combatant*/
-        ctx[10].owners;
-      selectableactor.$set(selectableactor_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(selectableactor.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(selectableactor.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(first);
-      }
-      destroy_component(selectableactor, detaching);
-    }
-  };
-}
-function create_fragment$5(ctx) {
-  let main2;
-  let span;
-  let t1;
-  let div2;
-  let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
-  let current;
-  let each_value = ensure_array_like(
-    /*combatants*/
-    ctx[0]
-  );
-  const get_key = (ctx2) => (
-    /*combatant*/
-    ctx2[10].id
-  );
-  for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$1(ctx, each_value, i);
-    let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
-  }
-  return {
-    c() {
-      main2 = element("main");
-      span = element("span");
-      span.textContent = `${locWindow(`selectable-actors.title`)}`;
-      t1 = space();
-      div2 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      attr(span, "class", "drag-target title svelte-jpi-1srq5hp");
-      attr(div2, "class", "drag-target grid svelte-jpi-1srq5hp");
-      attr(main2, "class", "svelte-jpi-1srq5hp");
-    },
-    m(target, anchor) {
-      insert(target, main2, anchor);
-      append(main2, span);
-      append(main2, t1);
-      append(main2, div2);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div2, null);
-        }
-      }
-      current = true;
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*combatants, _onItemClick, _onItemDoubleClick, _onItemMouseEnter, _onItemMouseExit*/
-      31) {
-        each_value = ensure_array_like(
-          /*combatants*/
-          ctx2[0]
-        );
-        group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div2, outro_and_destroy_block, create_each_block$1, null, get_each_context$1);
-        check_outros();
-      }
-    },
-    i(local) {
-      if (current)
-        return;
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
-      current = true;
-    },
-    o(local) {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(main2);
-      }
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].d();
-      }
-    }
-  };
-}
-function instance$5($$self, $$props, $$invalidate) {
-  let { combatants } = $$props;
-  const dispatch2 = createEventDispatcher();
-  function _onItemClick(combatant) {
-    dispatch2("itemClick", combatant);
-  }
-  function _onItemDoubleClick(combatant) {
-    dispatch2("itemDoubleClick", combatant);
-  }
-  function _onItemMouseEnter(combatant) {
-    dispatch2("itemMouseEnter", combatant);
-  }
-  function _onItemMouseExit(combatant) {
-    dispatch2("itemMouseExit", combatant);
-  }
-  const click_handler = (combatant, ev) => _onItemClick(combatant);
-  const dblclick_handler = (combatant, ev) => _onItemDoubleClick(combatant);
-  const mouseenter_handler = (combatant, ev) => _onItemMouseEnter(combatant);
-  const mouseleave_handler = (combatant, ev) => _onItemMouseExit(combatant);
-  $$self.$$set = ($$props2) => {
-    if ("combatants" in $$props2)
-      $$invalidate(0, combatants = $$props2.combatants);
-  };
-  return [
-    combatants,
-    _onItemClick,
-    _onItemDoubleClick,
-    _onItemMouseEnter,
-    _onItemMouseExit,
-    click_handler,
-    dblclick_handler,
-    mouseenter_handler,
-    mouseleave_handler
-  ];
-}
-class CombatantGrid extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$5, create_fragment$5, safe_not_equal, { combatants: 0 });
-  }
-}
-const ToolboxButton_svelte_svelte_type_style_lang = "";
-function create_fragment$4(ctx) {
-  let main2;
-  let button;
-  let button_class_value;
-  let tooltip_action;
-  let mounted;
-  let dispose;
-  return {
-    c() {
-      main2 = element("main");
-      button = element("button");
-      attr(button, "class", button_class_value = "button toolboxButton " + /*icon*/
-      ctx[0] + " svelte-jpi-88iqbo");
-    },
-    m(target, anchor) {
-      insert(target, main2, anchor);
-      append(main2, button);
-      if (!mounted) {
-        dispose = [
-          listen(
-            button,
-            "click",
-            /*click_handler*/
-            ctx[4]
-          ),
-          action_destroyer(tooltip_action = tooltip.call(null, button, {
-            content: `${/*tooltipText*/
-            ctx[2]}`,
-            placement: "right",
-            theme: "just",
-            arrow: ROUND_ARROW
-          }))
-        ];
-        mounted = true;
-      }
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*icon*/
-      1 && button_class_value !== (button_class_value = "button toolboxButton " + /*icon*/
-      ctx2[0] + " svelte-jpi-88iqbo")) {
-        attr(button, "class", button_class_value);
-      }
-      if (tooltip_action && is_function(tooltip_action.update) && dirty & /*tooltipText*/
-      4)
-        tooltip_action.update.call(null, {
-          content: `${/*tooltipText*/
-          ctx2[2]}`,
-          placement: "right",
-          theme: "just",
-          arrow: ROUND_ARROW
-        });
-    },
-    i: noop,
-    o: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(main2);
-      }
-      mounted = false;
-      run_all(dispose);
-    }
-  };
-}
-function instance$4($$self, $$props, $$invalidate) {
-  const dispatch2 = createEventDispatcher();
-  let { icon } = $$props;
-  let { command } = $$props;
-  let { tooltipText } = $$props;
   const click_handler = () => {
-    dispatch2("actionRequested", command);
+    $store();
   };
   $$self.$$set = ($$props2) => {
-    if ("icon" in $$props2)
-      $$invalidate(0, icon = $$props2.icon);
-    if ("command" in $$props2)
-      $$invalidate(1, command = $$props2.command);
-    if ("tooltipText" in $$props2)
-      $$invalidate(2, tooltipText = $$props2.tooltipText);
+    if ("item" in $$props2)
+      $$invalidate(0, item = $$props2.item);
   };
-  return [icon, command, tooltipText, dispatch2, click_handler];
-}
-class ToolboxButton extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$4, create_fragment$4, safe_not_equal, { icon: 0, command: 1, tooltipText: 2 });
-  }
-}
-const Toolbox_svelte_svelte_type_style_lang = "";
-function get_each_context(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[2] = list[i];
-  return child_ctx;
-}
-function create_each_block(key_1, ctx) {
-  let first;
-  let toolboxbutton;
-  let current;
-  toolboxbutton = new ToolboxButton({
-    props: {
-      icon: (
-        /*action*/
-        ctx[2].icon
-      ),
-      command: (
-        /*action*/
-        ctx[2].command
-      ),
-      tooltipText: locWindow(
-        /*action*/
-        ctx[2].tooltip
-      )
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*item*/
+    1) {
+      $$subscribe_store($$invalidate(2, store = item.store));
     }
-  });
-  toolboxbutton.$on(
-    "actionRequested",
-    /*actionRequested_handler*/
-    ctx[1]
-  );
-  return {
-    key: key_1,
-    first: null,
-    c() {
-      first = empty();
-      create_component(toolboxbutton.$$.fragment);
-      this.first = first;
-    },
-    m(target, anchor) {
-      insert(target, first, anchor);
-      mount_component(toolboxbutton, target, anchor);
-      current = true;
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      const toolboxbutton_changes = {};
-      if (dirty & /*actions*/
-      1)
-        toolboxbutton_changes.icon = /*action*/
-        ctx[2].icon;
-      if (dirty & /*actions*/
-      1)
-        toolboxbutton_changes.command = /*action*/
-        ctx[2].command;
-      if (dirty & /*actions*/
-      1)
-        toolboxbutton_changes.tooltipText = locWindow(
-          /*action*/
-          ctx[2].tooltip
-        );
-      toolboxbutton.$set(toolboxbutton_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(toolboxbutton.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(toolboxbutton.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(first);
-      }
-      destroy_component(toolboxbutton, detaching);
+    if ($$self.$$.dirty & /*item*/
+    1) {
+      $$subscribe_valuesStore($$invalidate(1, valuesStore = item.type === "Enum" ? item.values : null));
     }
   };
-}
-function create_fragment$3(ctx) {
-  let main2;
-  let span;
-  let t1;
-  let div2;
-  let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
-  let current;
-  let each_value = ensure_array_like(
-    /*actions*/
-    ctx[0]
-  );
-  const get_key = (ctx2) => (
-    /*action*/
-    ctx2[2].id
-  );
-  for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context(ctx, each_value, i);
-    let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block(key, child_ctx));
-  }
-  return {
-    c() {
-      main2 = element("main");
-      span = element("span");
-      span.textContent = `${locWindow(`tools.title`)}`;
-      t1 = space();
-      div2 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      attr(span, "class", "title svelte-jpi-11e0ng0");
-      attr(div2, "class", "toolboxList svelte-jpi-11e0ng0");
-      attr(main2, "class", "svelte-jpi-11e0ng0");
-    },
-    m(target, anchor) {
-      insert(target, main2, anchor);
-      append(main2, span);
-      append(main2, t1);
-      append(main2, div2);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div2, null);
-        }
-      }
-      current = true;
-    },
-    p(ctx2, [dirty]) {
-      if (dirty & /*actions, locWindow*/
-      1) {
-        each_value = ensure_array_like(
-          /*actions*/
-          ctx2[0]
-        );
-        group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div2, outro_and_destroy_block, create_each_block, null, get_each_context);
-        check_outros();
-      }
-    },
-    i(local) {
-      if (current)
-        return;
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
-      current = true;
-    },
-    o(local) {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(main2);
-      }
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].d();
-      }
-    }
-  };
-}
-function instance$3($$self, $$props, $$invalidate) {
-  let { actions = [] } = $$props;
-  function actionRequested_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  $$self.$$set = ($$props2) => {
-    if ("actions" in $$props2)
-      $$invalidate(0, actions = $$props2.actions);
-  };
-  return [actions, actionRequested_handler];
-}
-class Toolbox extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { actions: 0 });
-  }
-}
-const TokenPickerWatermark_svelte_svelte_type_style_lang = "";
-function create_fragment$2(ctx) {
-  let div1;
-  let div0;
-  let raw_value = locWindow(`combatant-picker.title`) + "";
-  let t;
-  let selectableactor;
-  let current;
-  let mounted;
-  let dispose;
-  selectableactor = new SelectableActor({
-    props: {
-      icon: (
-        /*$currentTokenPickerTarget*/
-        ctx[0] && /*$currentTokenPickerTarget*/
-        ctx[0].icon
-      ),
-      name: (
-        /*$currentTokenPickerTarget*/
-        ctx[0] ? (
-          /*$currentTokenPickerTarget*/
-          ctx[0].name
-        ) : ``
-      ),
-      owners: (
-        /*$currentTokenPickerTarget*/
-        ctx[0] ? (
-          /*$currentTokenPickerTarget*/
-          ctx[0].owners
-        ) : []
-      ),
-      isSelected: true,
-      isHighlighted: false
-    }
-  });
-  return {
-    c() {
-      div1 = element("div");
-      div0 = element("div");
-      t = space();
-      create_component(selectableactor.$$.fragment);
-      attr(div0, "class", "info svelte-jpi-13a633t");
-      attr(div1, "class", "tokenPickerWatermark svelte-jpi-13a633t");
-    },
-    m(target, anchor) {
-      insert(target, div1, anchor);
-      append(div1, div0);
-      div0.innerHTML = raw_value;
-      append(div1, t);
-      mount_component(selectableactor, div1, null);
-      current = true;
-      if (!mounted) {
-        dispose = [
-          listen(
-            div1,
-            "mouseenter",
-            /*mouseenter_handler*/
-            ctx[1]
-          ),
-          listen(
-            div1,
-            "mouseleave",
-            /*mouseleave_handler*/
-            ctx[2]
-          ),
-          listen(
-            div1,
-            "click",
-            /*click_handler*/
-            ctx[3]
-          )
-        ];
-        mounted = true;
-      }
-    },
-    p(ctx2, [dirty]) {
-      const selectableactor_changes = {};
-      if (dirty & /*$currentTokenPickerTarget*/
-      1)
-        selectableactor_changes.icon = /*$currentTokenPickerTarget*/
-        ctx2[0] && /*$currentTokenPickerTarget*/
-        ctx2[0].icon;
-      if (dirty & /*$currentTokenPickerTarget*/
-      1)
-        selectableactor_changes.name = /*$currentTokenPickerTarget*/
-        ctx2[0] ? (
-          /*$currentTokenPickerTarget*/
-          ctx2[0].name
-        ) : ``;
-      if (dirty & /*$currentTokenPickerTarget*/
-      1)
-        selectableactor_changes.owners = /*$currentTokenPickerTarget*/
-        ctx2[0] ? (
-          /*$currentTokenPickerTarget*/
-          ctx2[0].owners
-        ) : [];
-      selectableactor.$set(selectableactor_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(selectableactor.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(selectableactor.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(div1);
-      }
-      destroy_component(selectableactor);
-      mounted = false;
-      run_all(dispose);
-    }
-  };
-}
-function instance$2($$self, $$props, $$invalidate) {
-  let $currentTokenPickerTarget;
-  component_subscribe($$self, currentTokenPickerTarget, ($$value) => $$invalidate(0, $currentTokenPickerTarget = $$value));
-  function mouseenter_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function mouseleave_handler(event) {
-    bubble.call(this, $$self, event);
-  }
-  function click_handler(event) {
-    bubble.call(this, $$self, event);
-  }
   return [
-    $currentTokenPickerTarget,
-    mouseenter_handler,
-    mouseleave_handler,
+    item,
+    valuesStore,
+    store,
+    $store,
+    $valuesStore,
+    textbox_value_binding,
+    checkbox_value_binding,
+    numberbox_value_binding,
+    textbox_value_binding_1,
+    select_value_binding,
     click_handler
   ];
 }
-class TokenPickerWatermark extends SvelteComponent {
+class PropertyInspectorValueStore extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
+    init(this, options, instance$j, create_fragment$j, safe_not_equal, { item: 0 });
   }
 }
-const SimpleDrawer_svelte_svelte_type_style_lang = "";
-function create_if_block_1$1(ctx) {
+const Separator_svelte_svelte_type_style_lang = "";
+function create_fragment$i(ctx) {
+  let div;
+  let div_class_value;
+  return {
+    c() {
+      div = element("div");
+      attr(div, "class", div_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx[0].class || "surface sm"
+      ) + " svelte-jpi-dkyw16");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*$$restProps*/
+      1 && div_class_value !== (div_class_value = null_to_empty(
+        /*$$restProps*/
+        ctx2[0].class || "surface sm"
+      ) + " svelte-jpi-dkyw16")) {
+        attr(div, "class", div_class_value);
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+    }
+  };
+}
+function instance$i($$self, $$props, $$invalidate) {
+  const omit_props_names = [];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(0, $$restProps = compute_rest_props($$props, omit_props_names));
+  };
+  return [$$restProps];
+}
+class Separator extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$i, create_fragment$i, safe_not_equal, {});
+  }
+}
+class CollectionItem {
+  constructor(id, data) {
+    this.id = id;
+    this.data = data;
+  }
+}
+class ElementCollection {
+  /**
+   * @type {Array<PreAddCallback>}
+   */
+  #preAddCallbacks = [];
+  /**
+   * @type {Array<PostAddCallback>}
+   */
+  #postAddCallbacks = [];
+  /**
+   * @type {Array<PostRemoveCallback>}
+   */
+  #postRemoveCallbacks = [];
+  /**
+   * @type {Array<CollectionItem>}
+   */
+  #items = [];
+  #itemsStore = writable([]);
+  get length() {
+    return this.#items.length;
+  }
+  subscribe(callback) {
+    return this.#itemsStore.subscribe(callback);
+  }
+  /**
+   * @param {PreAddCallback} callback
+   */
+  onPreAddItem(callback) {
+    this.#preAddCallbacks.push(callback);
+    return () => {
+      this.#removeCallback(this.#preAddCallbacks, callback);
+    };
+  }
+  /**
+   * @param {PostAddCallback} callback
+   */
+  onPostAddItem(callback) {
+    this.#postAddCallbacks.push(callback);
+    return () => {
+      this.#removeCallback(this.#postAddCallbacks, callback);
+    };
+  }
+  /**
+   * @param {PostRemoveCallback} callback
+   */
+  onPostRemoveItem(callback) {
+    this.#postRemoveCallbacks.push(callback);
+    return () => {
+      this.#removeCallback(this.#postRemoveCallbacks, callback);
+    };
+  }
+  /**
+   * @param {Array<Object>} array
+   * @param {Object} callback
+   */
+  #removeCallback(array, callback) {
+    const index = array.findIndex((x) => x === callback);
+    if (index !== -1) {
+      array.splice(index, 1);
+    }
+  }
+  /**
+   * @param {Object} data
+   */
+  addItem(data) {
+    let id = generateQuickGUID();
+    this.#preAddCallbacks.forEach((x) => x(id));
+    let collectionItem = new CollectionItem(id, data);
+    this.#items.push(collectionItem);
+    this.#itemsStore.update((currentValue) => {
+      currentValue.push(collectionItem);
+      return currentValue;
+    });
+    this.#postAddCallbacks.forEach((x) => x(id));
+    return id;
+  }
+  /**
+   * @param {String} itemId
+   */
+  removeItem(itemId) {
+    let index = this.#items.findIndex((x) => {
+      return x.id === itemId;
+    });
+    if (index !== 1) {
+      this.#items.splice(index, 1);
+      this.#itemsStore.update((val) => {
+        val.splice(index, 1);
+        return val;
+      });
+      this.#postRemoveCallbacks.forEach((x) => x(itemId));
+    }
+  }
+  /**
+   * @param {String} itemId
+   * @param {Object} itemData
+   */
+  updateItem(itemId, itemData) {
+    let index = this.#items.findIndex((x) => {
+      return x.id === itemId;
+    });
+    if (index !== -1) {
+      this.#items[index].data = itemData;
+      this.#itemsStore.update((val) => {
+        val[index].data = itemData;
+        return val;
+      });
+    }
+  }
+  /**
+   * @param {String} itemId
+   */
+  getIndex(itemId) {
+    return this.#items.findIndex((x) => {
+      return x.id === itemId;
+    });
+  }
+}
+function get_each_context$4(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[13] = list[i];
+  return child_ctx;
+}
+function get_each_context_1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[16] = list[i];
+  return child_ctx;
+}
+const get_header_slot_changes = (dirty) => ({ tab: dirty & /*$tabCollection*/
+4 });
+const get_header_slot_context = (ctx) => ({ tab: (
+  /*tab*/
+  ctx[16].data
+) });
+function fallback_block$3(ctx) {
+  let span;
+  let t_value = (
+    /*tab*/
+    ctx[16].data.header + ""
+  );
+  let t;
+  return {
+    c() {
+      span = element("span");
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      append(span, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*$tabCollection*/
+      4 && t_value !== (t_value = /*tab*/
+      ctx2[16].data.header + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function create_default_slot_6$3(ctx) {
+  let current;
+  const header_slot_template = (
+    /*#slots*/
+    ctx[6].header
+  );
+  const header_slot = create_slot(
+    header_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[8],
+    get_header_slot_context
+  );
+  const header_slot_or_fallback = header_slot || fallback_block$3(ctx);
+  return {
+    c() {
+      if (header_slot_or_fallback)
+        header_slot_or_fallback.c();
+    },
+    m(target, anchor) {
+      if (header_slot_or_fallback) {
+        header_slot_or_fallback.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (header_slot) {
+        if (header_slot.p && (!current || dirty & /*$$scope, $tabCollection*/
+        260)) {
+          update_slot_base(
+            header_slot,
+            header_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[8],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[8]
+            ) : get_slot_changes(
+              header_slot_template,
+              /*$$scope*/
+              ctx2[8],
+              dirty,
+              get_header_slot_changes
+            ),
+            get_header_slot_context
+          );
+        }
+      } else {
+        if (header_slot_or_fallback && header_slot_or_fallback.p && (!current || dirty & /*$tabCollection*/
+        4)) {
+          header_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(header_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(header_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (header_slot_or_fallback)
+        header_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_default_slot_5$3(ctx) {
+  let flex;
+  let t;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "vertical",
+      gap: "0",
+      $$slots: { default: [create_default_slot_6$3] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+      t = space();
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      insert(target, t, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, $tabCollection*/
+      260) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_each_block_1(key_1, ctx) {
+  let first;
+  let button;
+  let current;
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[7](
+        /*tab*/
+        ctx[16]
+      )
+    );
+  }
+  button = new Button({
+    props: {
+      class: "btn md flat",
+      width: "100%",
+      height: "100%",
+      enabled: (
+        /*tab*/
+        ctx[16].id !== /*$currentTab*/
+        ctx[1]
+      ),
+      $$slots: { default: [create_default_slot_5$3] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on("click", click_handler);
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      first = empty();
+      create_component(button.$$.fragment);
+      this.first = first;
+    },
+    m(target, anchor) {
+      insert(target, first, anchor);
+      mount_component(button, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const button_changes = {};
+      if (dirty & /*$tabCollection, $currentTab*/
+      6)
+        button_changes.enabled = /*tab*/
+        ctx[16].id !== /*$currentTab*/
+        ctx[1];
+      if (dirty & /*$$scope, $tabCollection*/
+      260) {
+        button_changes.$$scope = { dirty, ctx };
+      }
+      button.$set(button_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(first);
+      }
+      destroy_component(button, detaching);
+    }
+  };
+}
+function create_default_slot_4$4(ctx) {
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_anchor;
+  let current;
+  let each_value_1 = ensure_array_like(
+    /*$tabCollection*/
+    ctx[2]
+  );
+  const get_key = (ctx2) => (
+    /*tab*/
+    ctx2[16].id
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+  }
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*$tabCollection, $currentTab, onHeaderButtonClick, $$scope*/
+      294) {
+        each_value_1 = ensure_array_like(
+          /*$tabCollection*/
+          ctx2[2]
+        );
+        group_outros();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block_1, each_1_anchor, get_each_context_1);
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value_1.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
+    }
+  };
+}
+function create_each_block$4(key_1, ctx) {
+  let div;
+  let separator;
+  let t;
+  let rect;
+  let stop_animation = noop;
+  let current;
+  separator = new Separator({
+    props: {
+      class: (
+        /*selection*/
+        (ctx[13] === 0 ? "secondary" : "transparent") + " sm"
+      )
+    }
+  });
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      create_component(separator.$$.fragment);
+      t = space();
+      set_style(div, "width", "100%");
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(separator, div, null);
+      append(div, t);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const separator_changes = {};
+      if (dirty & /*selections*/
+      1)
+        separator_changes.class = /*selection*/
+        (ctx[13] === 0 ? "secondary" : "transparent") + " sm";
+      separator.$set(separator_changes);
+    },
+    r() {
+      rect = div.getBoundingClientRect();
+    },
+    f() {
+      fix_position(div);
+      stop_animation();
+    },
+    a() {
+      stop_animation();
+      stop_animation = create_animation(div, rect, flip, { duration: 125 });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(separator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(separator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(separator);
+    }
+  };
+}
+function create_default_slot_3$4(ctx) {
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_anchor;
+  let current;
+  let each_value = ensure_array_like(
+    /*selections*/
+    ctx[0]
+  );
+  const get_key = (ctx2) => (
+    /*selection*/
+    ctx2[13]
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$4(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$4(key, child_ctx));
+  }
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*selections*/
+      1) {
+        each_value = ensure_array_like(
+          /*selections*/
+          ctx2[0]
+        );
+        group_outros();
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].r();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, fix_and_outro_and_destroy_block, create_each_block$4, each_1_anchor, get_each_context$4);
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].a();
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
+    }
+  };
+}
+function create_default_slot_2$6(ctx) {
+  let flex0;
+  let t;
+  let flex1;
+  let current;
+  flex0 = new Flex({
+    props: {
+      class: "component horizontal",
+      gap: "0",
+      $$slots: { default: [create_default_slot_4$4] },
+      $$scope: { ctx }
+    }
+  });
+  flex1 = new Flex({
+    props: {
+      class: "component horizontal",
+      gap: "0",
+      $$slots: { default: [create_default_slot_3$4] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex0.$$.fragment);
+      t = space();
+      create_component(flex1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex0, target, anchor);
+      insert(target, t, anchor);
+      mount_component(flex1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex0_changes = {};
+      if (dirty & /*$$scope, $tabCollection, $currentTab*/
+      262) {
+        flex0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex0.$set(flex0_changes);
+      const flex1_changes = {};
+      if (dirty & /*$$scope, selections*/
+      257) {
+        flex1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex1.$set(flex1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex0.$$.fragment, local);
+      transition_in(flex1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex0.$$.fragment, local);
+      transition_out(flex1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(flex0, detaching);
+      destroy_component(flex1, detaching);
+    }
+  };
+}
+function create_default_slot_1$8(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[6].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[8],
+    null
+  );
+  return {
+    c() {
+      if (default_slot)
+        default_slot.c();
+    },
+    m(target, anchor) {
+      if (default_slot) {
+        default_slot.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        256)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[8],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[8]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[8],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function create_default_slot$c(ctx) {
+  let flex0;
+  let t0;
+  let separator;
+  let t1;
+  let flex1;
+  let current;
+  flex0 = new Flex({
+    props: {
+      class: "component vertical",
+      gap: "0",
+      $$slots: { default: [create_default_slot_2$6] },
+      $$scope: { ctx }
+    }
+  });
+  separator = new Separator({});
+  flex1 = new Flex({
+    props: {
+      class: "content vertical thick scrollable",
+      $$slots: { default: [create_default_slot_1$8] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex0.$$.fragment);
+      t0 = space();
+      create_component(separator.$$.fragment);
+      t1 = space();
+      create_component(flex1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex0, target, anchor);
+      insert(target, t0, anchor);
+      mount_component(separator, target, anchor);
+      insert(target, t1, anchor);
+      mount_component(flex1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex0_changes = {};
+      if (dirty & /*$$scope, selections, $tabCollection, $currentTab*/
+      263) {
+        flex0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex0.$set(flex0_changes);
+      const flex1_changes = {};
+      if (dirty & /*$$scope*/
+      256) {
+        flex1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex1.$set(flex1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex0.$$.fragment, local);
+      transition_in(separator.$$.fragment, local);
+      transition_in(flex1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex0.$$.fragment, local);
+      transition_out(separator.$$.fragment, local);
+      transition_out(flex1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+      }
+      destroy_component(flex0, detaching);
+      destroy_component(separator, detaching);
+      destroy_component(flex1, detaching);
+    }
+  };
+}
+function create_fragment$h(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "component vertical",
+      flex: ["0"],
+      gap: "0",
+      $$slots: { default: [create_default_slot$c] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, selections, $tabCollection, $currentTab*/
+      263) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$h($$self, $$props, $$invalidate) {
+  let $currentTab;
+  let $tabCollection;
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let selections = [];
+  let tabCollection = new ElementCollection();
+  component_subscribe($$self, tabCollection, (value) => $$invalidate(2, $tabCollection = value));
+  const preAddItemUnsubscribe = tabCollection.onPreAddItem((id) => {
+    if (tabCollection.length === 0 || $currentTab === "") {
+      setCurrentTab(id);
+    }
+  });
+  const postRemoveItemUnsubscribe = tabCollection.onPostRemoveItem((id) => {
+    if ($currentTab === id) {
+      setCurrentTab("");
+    }
+  });
+  const collectionChangedUnsubscribe = tabCollection.subscribe((newVal) => {
+    $$invalidate(0, selections = []);
+    newVal.forEach((tab, i) => {
+      selections.push(i);
+    });
+  });
+  onDestroy(() => {
+    preAddItemUnsubscribe();
+    collectionChangedUnsubscribe();
+    postRemoveItemUnsubscribe();
+  });
+  let currentTab = writable("");
+  component_subscribe($$self, currentTab, (value) => $$invalidate(1, $currentTab = value));
+  setContext("tabControl", { tabCollection, currentTab });
+  function onHeaderButtonClick(tab) {
+    setCurrentTab(tab.id);
+  }
+  function setCurrentTab(tabId) {
+    set_store_value(currentTab, $currentTab = tabId, $currentTab);
+    let tabIndex = tabCollection.getIndex(tabId);
+    if (tabIndex !== -1) {
+      let currentSelectionIndex = selections.findIndex((x) => x === 0);
+      if (currentSelectionIndex !== -1) {
+        $$invalidate(0, selections[currentSelectionIndex] = selections[tabIndex], selections);
+        $$invalidate(0, selections[tabIndex] = 0, selections);
+      }
+    }
+  }
+  const click_handler = (tab) => {
+    onHeaderButtonClick(tab);
+  };
+  $$self.$$set = ($$props2) => {
+    if ("$$scope" in $$props2)
+      $$invalidate(8, $$scope = $$props2.$$scope);
+  };
+  return [
+    selections,
+    $currentTab,
+    $tabCollection,
+    tabCollection,
+    currentTab,
+    onHeaderButtonClick,
+    slots,
+    click_handler,
+    $$scope
+  ];
+}
+class TabControl extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$h, create_fragment$h, safe_not_equal, {});
+  }
+}
+function create_if_block$8(ctx) {
   let current;
   const default_slot_template = (
     /*#slots*/
@@ -18349,525 +25797,4758 @@ function create_if_block_1$1(ctx) {
     }
   };
 }
-function create_else_block(ctx) {
-  let i;
-  return {
-    c() {
-      i = element("i");
-      attr(i, "class", "fa-solid fa-caret-right fa-xs handle-icon svelte-jpi-8ojeot");
-    },
-    m(target, anchor) {
-      insert(target, i, anchor);
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(i);
-      }
-    }
-  };
-}
-function create_if_block$1(ctx) {
-  let i;
-  return {
-    c() {
-      i = element("i");
-      attr(i, "class", "fa-solid fa-caret-left fa-xs handle-icon svelte-jpi-8ojeot");
-    },
-    m(target, anchor) {
-      insert(target, i, anchor);
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(i);
-      }
-    }
-  };
-}
-function create_fragment$1(ctx) {
-  let div2;
-  let t;
-  let button;
+function create_fragment$g(ctx) {
+  let if_block_anchor;
   let current;
-  let mounted;
-  let dispose;
-  let if_block0 = (
-    /*isOpen*/
-    ctx[0] && create_if_block_1$1(ctx)
+  let if_block = (
+    /*selected*/
+    ctx[0] && create_if_block$8(ctx)
   );
-  function select_block_type(ctx2, dirty) {
-    if (
-      /*isOpen*/
-      ctx2[0]
-    )
-      return create_if_block$1;
-    return create_else_block;
-  }
-  let current_block_type = select_block_type(ctx);
-  let if_block1 = current_block_type(ctx);
   return {
     c() {
-      div2 = element("div");
-      if (if_block0)
-        if_block0.c();
-      t = space();
-      button = element("button");
-      if_block1.c();
-      attr(button, "class", "button handle svelte-jpi-8ojeot");
-      attr(div2, "class", "drawer svelte-jpi-8ojeot");
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
     },
     m(target, anchor) {
-      insert(target, div2, anchor);
-      if (if_block0)
-        if_block0.m(div2, null);
-      append(div2, t);
-      append(div2, button);
-      if_block1.m(button, null);
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
       current = true;
-      if (!mounted) {
-        dispose = listen(
-          button,
-          "click",
-          /*toggle*/
-          ctx[1]
-        );
-        mounted = true;
-      }
     },
     p(ctx2, [dirty]) {
       if (
-        /*isOpen*/
+        /*selected*/
         ctx2[0]
       ) {
-        if (if_block0) {
-          if_block0.p(ctx2, dirty);
-          if (dirty & /*isOpen*/
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*selected*/
           1) {
-            transition_in(if_block0, 1);
+            transition_in(if_block, 1);
           }
         } else {
-          if_block0 = create_if_block_1$1(ctx2);
-          if_block0.c();
-          transition_in(if_block0, 1);
-          if_block0.m(div2, t);
+          if_block = create_if_block$8(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
         }
-      } else if (if_block0) {
+      } else if (if_block) {
         group_outros();
-        transition_out(if_block0, 1, 1, () => {
-          if_block0 = null;
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
         });
         check_outros();
       }
-      if (current_block_type !== (current_block_type = select_block_type(ctx2))) {
-        if_block1.d(1);
-        if_block1 = current_block_type(ctx2);
-        if (if_block1) {
-          if_block1.c();
-          if_block1.m(button, null);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block)
+        if_block.d(detaching);
+    }
+  };
+}
+function instance$g($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { data = {} } = $$props;
+  let selected = false;
+  let tabControl = getContext("tabControl");
+  let dataId = tabControl.tabCollection.addItem(data);
+  const unsubscribe = tabControl.currentTab.subscribe((id) => $$invalidate(0, selected = id === dataId));
+  onDestroy(() => {
+    unsubscribe();
+    tabControl.tabCollection.removeItem(dataId);
+  });
+  $$self.$$set = ($$props2) => {
+    if ("data" in $$props2)
+      $$invalidate(1, data = $$props2.data);
+    if ("$$scope" in $$props2)
+      $$invalidate(2, $$scope = $$props2.$$scope);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*data*/
+    2) {
+      tabControl.tabCollection.updateItem(dataId, data);
+    }
+  };
+  return [selected, data, $$scope, slots];
+}
+class Tab extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$g, create_fragment$g, safe_not_equal, { data: 1 });
+  }
+}
+function create_fragment$f(ctx) {
+  let div;
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[3].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[2],
+    null
+  );
+  return {
+    c() {
+      div = element("div");
+      if (default_slot)
+        default_slot.c();
+      attr(
+        div,
+        "data-just-theme",
+        /*theme*/
+        ctx[0]
+      );
+      attr(div, "data-just-theme-mode", "dark");
+      set_style(div, "height", `100%`);
+      set_style(div, "width", `100%`);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (default_slot) {
+        default_slot.m(div, null);
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        4)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[2],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[2]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[2],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (!current || dirty & /*theme*/
+      1) {
+        attr(
+          div,
+          "data-just-theme",
+          /*theme*/
+          ctx2[0]
+        );
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+    }
+  };
+}
+function instance$f($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { theme = "" } = $$props;
+  let themeStore = writable(theme);
+  setContext("currentTheme", themeStore);
+  let isMounted = false;
+  onMount(() => {
+    updateTheme(document.documentElement);
+    $$invalidate(1, isMounted = true);
+  });
+  function updateTheme(element2) {
+    if (element2 && theme) {
+      element2.setAttribute("data-just-theme", theme);
+      element2.setAttribute("data-just-theme-mode", "dark");
+    }
+  }
+  $$self.$$set = ($$props2) => {
+    if ("theme" in $$props2)
+      $$invalidate(0, theme = $$props2.theme);
+    if ("$$scope" in $$props2)
+      $$invalidate(2, $$scope = $$props2.$$scope);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*theme, isMounted*/
+    3) {
+      {
+        themeStore.set(theme);
+        if (isMounted) {
+          updateTheme(document.documentElement);
+        }
+      }
+    }
+  };
+  return [theme, isMounted, $$scope, slots];
+}
+class Theme extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$f, create_fragment$f, safe_not_equal, { theme: 0 });
+  }
+}
+function foldClick(node, [clickState, neededClick, callback, singleClickCallback]) {
+  if (clickState.count === void 0 || clickState.timer === void 0) {
+    clickState.count = 0;
+    clickState.timer = null;
+  }
+  const onClick = (e) => {
+    clickState.count++;
+    if (neededClick === clickState.count) {
+      clearTimeout(clickState.timer);
+      clickState.count = 0;
+      callback();
+    } else if (clickState.count === 1) {
+      if (singleClickCallback) {
+        singleClickCallback();
+      }
+      clickState.timer = setTimeout(() => {
+        clickState.count = 0;
+      }, 400);
+    }
+    e.stopPropagation();
+  };
+  node.addEventListener("click", onClick);
+  return {
+    destroy() {
+      node.removeEventListener("click", onClick);
+    }
+  };
+}
+const DefaultTreeViewItemContent_svelte_svelte_type_style_lang = "";
+function create_fragment$e(ctx) {
+  let span;
+  let raw_value = (
+    /*item*/
+    ctx[0].label + ""
+  );
+  return {
+    c() {
+      span = element("span");
+      attr(span, "class", "svelte-jpi-h8agdh");
+      toggle_class(span, "folderLabel", Array.isArray(
+        /*item*/
+        ctx[0].items
+      ));
+      toggle_class(span, "leafLabel", !Array.isArray(
+        /*item*/
+        ctx[0].items
+      ));
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      span.innerHTML = raw_value;
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*item*/
+      1 && raw_value !== (raw_value = /*item*/
+      ctx2[0].label + ""))
+        span.innerHTML = raw_value;
+      if (dirty & /*Array, item*/
+      1) {
+        toggle_class(span, "folderLabel", Array.isArray(
+          /*item*/
+          ctx2[0].items
+        ));
+      }
+      if (dirty & /*Array, item*/
+      1) {
+        toggle_class(span, "leafLabel", !Array.isArray(
+          /*item*/
+          ctx2[0].items
+        ));
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function instance$e($$self, $$props, $$invalidate) {
+  let { item = null } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("item" in $$props2)
+      $$invalidate(0, item = $$props2.item);
+  };
+  return [item];
+}
+class DefaultTreeViewItemContent extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$e, create_fragment$e, safe_not_equal, { item: 0 });
+  }
+}
+const TreeViewItem_svelte_svelte_type_style_lang = "";
+function get_each_context$3(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[18] = list[i];
+  return child_ctx;
+}
+const get_default_slot_changes_1 = (dirty) => ({ nodeItem: dirty & /*nodeItem*/
+2097152 });
+const get_default_slot_context_1 = (ctx) => ({ nodeItem: (
+  /*nodeItem*/
+  ctx[21]
+) });
+const get_default_slot_changes$2 = (dirty) => ({ nodeItem: dirty & /*item*/
+1 });
+const get_default_slot_context$2 = (ctx) => ({ nodeItem: (
+  /*item*/
+  ctx[0]
+) });
+function create_else_block$1(ctx) {
+  let div;
+  let div_class_value;
+  return {
+    c() {
+      div = element("div");
+      attr(div, "class", div_class_value = "fa fa-" + /*leafIcon*/
+      ctx[5] + " icon leafIcon svelte-jpi-cy1jip");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*leafIcon*/
+      32 && div_class_value !== (div_class_value = "fa fa-" + /*leafIcon*/
+      ctx2[5] + " icon leafIcon svelte-jpi-cy1jip")) {
+        attr(div, "class", div_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+    }
+  };
+}
+function create_if_block_1$3(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      attr(button, "class", "fa fa-caret-right icon folderIcon svelte-jpi-cy1jip");
+      toggle_class(
+        button,
+        "unfolded",
+        /*item*/
+        ctx[0].isOpen
+      );
+      toggle_class(button, "folded", !/*item*/
+      ctx[0].isOpen);
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(foldClick.call(null, button, [
+          /*clickState*/
+          ctx[7],
+          1,
+          /*toggleFold*/
+          ctx[8],
+          null
+        ]));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*item*/
+      1) {
+        toggle_class(
+          button,
+          "unfolded",
+          /*item*/
+          ctx2[0].isOpen
+        );
+      }
+      if (dirty & /*item*/
+      1) {
+        toggle_class(button, "folded", !/*item*/
+        ctx2[0].isOpen);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function fallback_block_1(ctx) {
+  let defaulttreeviewitemcontent;
+  let current;
+  defaulttreeviewitemcontent = new DefaultTreeViewItemContent({ props: { item: (
+    /*item*/
+    ctx[0]
+  ) } });
+  return {
+    c() {
+      create_component(defaulttreeviewitemcontent.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(defaulttreeviewitemcontent, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const defaulttreeviewitemcontent_changes = {};
+      if (dirty & /*item*/
+      1)
+        defaulttreeviewitemcontent_changes.item = /*item*/
+        ctx2[0];
+      defaulttreeviewitemcontent.$set(defaulttreeviewitemcontent_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(defaulttreeviewitemcontent.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(defaulttreeviewitemcontent.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(defaulttreeviewitemcontent, detaching);
+    }
+  };
+}
+function create_if_block$7(ctx) {
+  let div;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let div_transition;
+  let current;
+  let each_value = ensure_array_like(
+    /*item*/
+    ctx[0].items
+  );
+  const get_key = (ctx2) => (
+    /*childItem*/
+    ctx2[18].id
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$3(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$3(key, child_ctx));
+  }
+  return {
+    c() {
+      div = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div, null);
+        }
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*item, depth, focus, nodeItem, $$scope*/
+      2164739) {
+        each_value = ensure_array_like(
+          /*item*/
+          ctx2[0].items
+        );
+        group_outros();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div, outro_and_destroy_block, create_each_block$3, null, get_each_context$3);
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      if (local) {
+        add_render_callback(() => {
+          if (!current)
+            return;
+          if (!div_transition)
+            div_transition = create_bidirectional_transition(
+              div,
+              slide,
+              {
+                duration: 125,
+                axis: "y",
+                easing: quintOut
+              },
+              true
+            );
+          div_transition.run(1);
+        });
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      if (local) {
+        if (!div_transition)
+          div_transition = create_bidirectional_transition(
+            div,
+            slide,
+            {
+              duration: 125,
+              axis: "y",
+              easing: quintOut
+            },
+            false
+          );
+        div_transition.run(0);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      if (detaching && div_transition)
+        div_transition.end();
+    }
+  };
+}
+function fallback_block$2(ctx) {
+  let defaulttreeviewitemcontent;
+  let current;
+  defaulttreeviewitemcontent = new DefaultTreeViewItemContent({ props: { item: (
+    /*nodeItem*/
+    ctx[21]
+  ) } });
+  return {
+    c() {
+      create_component(defaulttreeviewitemcontent.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(defaulttreeviewitemcontent, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const defaulttreeviewitemcontent_changes = {};
+      if (dirty & /*nodeItem*/
+      2097152)
+        defaulttreeviewitemcontent_changes.item = /*nodeItem*/
+        ctx2[21];
+      defaulttreeviewitemcontent.$set(defaulttreeviewitemcontent_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(defaulttreeviewitemcontent.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(defaulttreeviewitemcontent.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(defaulttreeviewitemcontent, detaching);
+    }
+  };
+}
+function create_default_slot$b(ctx) {
+  let t;
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[12].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[16],
+    get_default_slot_context_1
+  );
+  const default_slot_or_fallback = default_slot || fallback_block$2(ctx);
+  return {
+    c() {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+      t = space();
+    },
+    m(target, anchor) {
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(target, anchor);
+      }
+      insert(target, t, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, nodeItem*/
+        2162688)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[16],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[16]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[16],
+              dirty,
+              get_default_slot_changes_1
+            ),
+            get_default_slot_context_1
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*nodeItem*/
+        2097152)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
         }
       }
     },
     i(local) {
       if (current)
         return;
-      transition_in(if_block0);
+      transition_in(default_slot_or_fallback, local);
       current = true;
     },
     o(local) {
-      transition_out(if_block0);
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_each_block$3(key_1, ctx) {
+  let first;
+  let treeviewitem;
+  let current;
+  treeviewitem = new TreeViewItem({
+    props: {
+      item: (
+        /*childItem*/
+        ctx[18]
+      ),
+      depth: (
+        /*depth*/
+        ctx[1] + 1
+      ),
+      $$slots: {
+        default: [
+          create_default_slot$b,
+          ({ nodeItem }) => ({ 21: nodeItem }),
+          ({ nodeItem }) => nodeItem ? 2097152 : 0
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  treeviewitem.$on(
+    "leafselected",
+    /*leafselected_handler*/
+    ctx[14]
+  );
+  treeviewitem.$on(
+    "folderselected",
+    /*folderselected_handler*/
+    ctx[15]
+  );
+  treeviewitem.$on(
+    "moveToParent",
+    /*focus*/
+    ctx[11]
+  );
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      first = empty();
+      create_component(treeviewitem.$$.fragment);
+      this.first = first;
+    },
+    m(target, anchor) {
+      insert(target, first, anchor);
+      mount_component(treeviewitem, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const treeviewitem_changes = {};
+      if (dirty & /*item*/
+      1)
+        treeviewitem_changes.item = /*childItem*/
+        ctx[18];
+      if (dirty & /*depth*/
+      2)
+        treeviewitem_changes.depth = /*depth*/
+        ctx[1] + 1;
+      if (dirty & /*$$scope, nodeItem*/
+      2162688) {
+        treeviewitem_changes.$$scope = { dirty, ctx };
+      }
+      treeviewitem.$set(treeviewitem_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(treeviewitem.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(treeviewitem.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(first);
+      }
+      destroy_component(treeviewitem, detaching);
+    }
+  };
+}
+function create_fragment$d(ctx) {
+  let div2;
+  let div1;
+  let div0;
+  let t0;
+  let style_margin_left = `${/*paddingLeft*/
+  ctx[6]}px`;
+  let foldClick_action;
+  let t1;
+  let genericTooltipAction_action;
+  let current;
+  let mounted;
+  let dispose;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*isFolder*/
+      ctx2[2]
+    )
+      return create_if_block_1$3;
+    return create_else_block$1;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block0 = current_block_type(ctx);
+  const default_slot_template = (
+    /*#slots*/
+    ctx[12].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[16],
+    get_default_slot_context$2
+  );
+  const default_slot_or_fallback = default_slot || fallback_block_1(ctx);
+  let if_block1 = (
+    /*item*/
+    ctx[0].items && /*item*/
+    ctx[0].isOpen && create_if_block$7(ctx)
+  );
+  return {
+    c() {
+      div2 = element("div");
+      div1 = element("div");
+      div0 = element("div");
+      if_block0.c();
+      t0 = space();
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+      t1 = space();
+      if (if_block1)
+        if_block1.c();
+      attr(div0, "class", "header svelte-jpi-cy1jip");
+      toggle_class(div0, "leafHeader", !/*isFolder*/
+      ctx[2]);
+      set_style(div0, "margin-left", style_margin_left);
+      attr(div1, "class", "header-bkg focusable svelte-jpi-cy1jip");
+      attr(div1, "role", "button");
+      attr(div1, "tabindex", -1);
+      attr(div2, "class", "tree-view-item svelte-jpi-cy1jip");
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+      append(div2, div1);
+      append(div1, div0);
+      if_block0.m(div0, null);
+      append(div0, t0);
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(div0, null);
+      }
+      ctx[13](div1);
+      append(div2, t1);
+      if (if_block1)
+        if_block1.m(div2, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div1,
+            "keydown",
+            /*onKeyDown*/
+            ctx[10]
+          ),
+          action_destroyer(foldClick_action = foldClick.call(null, div1, [
+            /*clickState*/
+            ctx[7],
+            /*isFolder*/
+            ctx[2] ? 2 : 1,
+            /*isFolder*/
+            ctx[2] ? (
+              /*toggleFold*/
+              ctx[8]
+            ) : (
+              /*itemSelected*/
+              ctx[9]
+            ),
+            /*itemSelected*/
+            ctx[9]
+          ])),
+          action_destroyer(genericTooltipAction_action = /*genericTooltipAction*/
+          ctx[4].call(null, div2, { content: (
+            /*item*/
+            ctx[0].description
+          ) }))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block0) {
+        if_block0.p(ctx2, dirty);
+      } else {
+        if_block0.d(1);
+        if_block0 = current_block_type(ctx2);
+        if (if_block0) {
+          if_block0.c();
+          if_block0.m(div0, t0);
+        }
+      }
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, item*/
+        65537)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[16],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[16]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[16],
+              dirty,
+              get_default_slot_changes$2
+            ),
+            get_default_slot_context$2
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*item*/
+        1)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+      if (!current || dirty & /*isFolder*/
+      4) {
+        toggle_class(div0, "leafHeader", !/*isFolder*/
+        ctx2[2]);
+      }
+      if (dirty & /*paddingLeft*/
+      64 && style_margin_left !== (style_margin_left = `${/*paddingLeft*/
+      ctx2[6]}px`)) {
+        set_style(div0, "margin-left", style_margin_left);
+      }
+      if (foldClick_action && is_function(foldClick_action.update) && dirty & /*isFolder*/
+      4)
+        foldClick_action.update.call(null, [
+          /*clickState*/
+          ctx2[7],
+          /*isFolder*/
+          ctx2[2] ? 2 : 1,
+          /*isFolder*/
+          ctx2[2] ? (
+            /*toggleFold*/
+            ctx2[8]
+          ) : (
+            /*itemSelected*/
+            ctx2[9]
+          ),
+          /*itemSelected*/
+          ctx2[9]
+        ]);
+      if (
+        /*item*/
+        ctx2[0].items && /*item*/
+        ctx2[0].isOpen
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+          if (dirty & /*item*/
+          1) {
+            transition_in(if_block1, 1);
+          }
+        } else {
+          if_block1 = create_if_block$7(ctx2);
+          if_block1.c();
+          transition_in(if_block1, 1);
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        group_outros();
+        transition_out(if_block1, 1, 1, () => {
+          if_block1 = null;
+        });
+        check_outros();
+      }
+      if (genericTooltipAction_action && is_function(genericTooltipAction_action.update) && dirty & /*item*/
+      1)
+        genericTooltipAction_action.update.call(null, { content: (
+          /*item*/
+          ctx2[0].description
+        ) });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      transition_in(if_block1);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      transition_out(if_block1);
       current = false;
     },
     d(detaching) {
       if (detaching) {
         detach(div2);
       }
-      if (if_block0)
-        if_block0.d();
-      if_block1.d();
+      if_block0.d();
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+      ctx[13](null);
+      if (if_block1)
+        if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$d($$self, $$props, $$invalidate) {
+  let isFolder;
+  let paddingLeft;
+  let leafIcon;
+  let genericTooltipAction;
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { item = null } = $$props;
+  let { depth = 0 } = $$props;
+  const dispatch2 = createEventDispatcher();
+  let clickState = {};
+  let headerElement = null;
+  function toggleFold() {
+    $$invalidate(0, item.isOpen = !item.isOpen, item);
+  }
+  function itemSelected() {
+    if (isFolder) {
+      dispatch2("folderselected", item);
+    } else {
+      dispatch2("leafselected", item);
+    }
+  }
+  function onKeyDown(ev) {
+    const keyCode = ev.keyCode;
+    if (keyCode === 39) {
+      if (isFolder) {
+        if (!item.isOpen) {
+          $$invalidate(0, item.isOpen = true, item);
+          ev.stopPropagation();
+        }
+      } else {
+        ev.stopPropagation();
+      }
+    } else if (keyCode === 37) {
+      if (isFolder) {
+        if (!item.isOpen) {
+          dispatch2("moveToParent");
+        } else {
+          $$invalidate(0, item.isOpen = false, item);
+        }
+      } else {
+        dispatch2("moveToParent");
+      }
+      ev.stopPropagation();
+    } else if (keyCode === 13) {
+      isFolder ? toggleFold() : itemSelected();
+      ev.stopPropagation();
+    }
+  }
+  function focus() {
+    headerElement.focus();
+  }
+  function div1_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      headerElement = $$value;
+      $$invalidate(3, headerElement);
+    });
+  }
+  function leafselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function folderselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("item" in $$props2)
+      $$invalidate(0, item = $$props2.item);
+    if ("depth" in $$props2)
+      $$invalidate(1, depth = $$props2.depth);
+    if ("$$scope" in $$props2)
+      $$invalidate(16, $$scope = $$props2.$$scope);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*item*/
+    1) {
+      $$invalidate(2, isFolder = Array.isArray(item.items));
+    }
+    if ($$self.$$.dirty & /*depth, isFolder*/
+    6) {
+      $$invalidate(6, paddingLeft = depth * 10 + (depth === 0 || isFolder ? 0 : 14));
+    }
+    if ($$self.$$.dirty & /*item*/
+    1) {
+      $$invalidate(5, leafIcon = !item.icon || item.icon === "" ? "square" : item.icon);
+    }
+    if ($$self.$$.dirty & /*isFolder*/
+    4) {
+      $$invalidate(4, genericTooltipAction = !isFolder ? genericTooltip : () => {
+      });
+    }
+  };
+  return [
+    item,
+    depth,
+    isFolder,
+    headerElement,
+    genericTooltipAction,
+    leafIcon,
+    paddingLeft,
+    clickState,
+    toggleFold,
+    itemSelected,
+    onKeyDown,
+    focus,
+    slots,
+    div1_binding,
+    leafselected_handler,
+    folderselected_handler,
+    $$scope
+  ];
+}
+class TreeViewItem extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$d, create_fragment$d, safe_not_equal, { item: 0, depth: 1 });
+  }
+}
+const TreeView_svelte_svelte_type_style_lang = "";
+function get_each_context$2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[7] = list[i];
+  return child_ctx;
+}
+const get_default_slot_changes$1 = (dirty) => ({ nodeItem: dirty & /*nodeItem*/
+1024 });
+const get_default_slot_context$1 = (ctx) => ({ nodeItem: (
+  /*nodeItem*/
+  ctx[10]
+) });
+function create_if_block$6(ctx) {
+  let label;
+  let t;
+  let separator;
+  let current;
+  label = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_1$7] },
+      $$scope: { ctx }
+    }
+  });
+  separator = new Separator({});
+  return {
+    c() {
+      create_component(label.$$.fragment);
+      t = space();
+      create_component(separator.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(label, target, anchor);
+      insert(target, t, anchor);
+      mount_component(separator, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_changes = {};
+      if (dirty & /*$$scope, descriptionText*/
+      68) {
+        label_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label.$set(label_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label.$$.fragment, local);
+      transition_in(separator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label.$$.fragment, local);
+      transition_out(separator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(label, detaching);
+      destroy_component(separator, detaching);
+    }
+  };
+}
+function create_default_slot_1$7(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*descriptionText*/
+        ctx[2]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*descriptionText*/
+      4)
+        set_data(
+          t,
+          /*descriptionText*/
+          ctx2[2]
+        );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function fallback_block$1(ctx) {
+  let defaulttreeviewitemcontent;
+  let current;
+  defaulttreeviewitemcontent = new DefaultTreeViewItemContent({ props: { item: (
+    /*nodeItem*/
+    ctx[10]
+  ) } });
+  return {
+    c() {
+      create_component(defaulttreeviewitemcontent.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(defaulttreeviewitemcontent, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const defaulttreeviewitemcontent_changes = {};
+      if (dirty & /*nodeItem*/
+      1024)
+        defaulttreeviewitemcontent_changes.item = /*nodeItem*/
+        ctx2[10];
+      defaulttreeviewitemcontent.$set(defaulttreeviewitemcontent_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(defaulttreeviewitemcontent.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(defaulttreeviewitemcontent.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(defaulttreeviewitemcontent, detaching);
+    }
+  };
+}
+function create_default_slot$a(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[3].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[6],
+    get_default_slot_context$1
+  );
+  const default_slot_or_fallback = default_slot || fallback_block$1(ctx);
+  return {
+    c() {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+    },
+    m(target, anchor) {
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, nodeItem*/
+        1088)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[6],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[6]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[6],
+              dirty,
+              get_default_slot_changes$1
+            ),
+            get_default_slot_context$1
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*nodeItem*/
+        1024)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_each_block$2(key_1, ctx) {
+  let div;
+  let treeviewitem;
+  let t;
+  let rect;
+  let stop_animation = noop;
+  let current;
+  treeviewitem = new TreeViewItem({
+    props: {
+      item: (
+        /*item*/
+        ctx[7]
+      ),
+      $$slots: {
+        default: [
+          create_default_slot$a,
+          ({ nodeItem }) => ({ 10: nodeItem }),
+          ({ nodeItem }) => nodeItem ? 1024 : 0
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  treeviewitem.$on(
+    "leafselected",
+    /*leafselected_handler*/
+    ctx[4]
+  );
+  treeviewitem.$on(
+    "folderselected",
+    /*folderselected_handler*/
+    ctx[5]
+  );
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      create_component(treeviewitem.$$.fragment);
+      t = space();
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(treeviewitem, div, null);
+      append(div, t);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const treeviewitem_changes = {};
+      if (dirty & /*items*/
+      1)
+        treeviewitem_changes.item = /*item*/
+        ctx[7];
+      if (dirty & /*$$scope, nodeItem*/
+      1088) {
+        treeviewitem_changes.$$scope = { dirty, ctx };
+      }
+      treeviewitem.$set(treeviewitem_changes);
+    },
+    r() {
+      rect = div.getBoundingClientRect();
+    },
+    f() {
+      fix_position(div);
+      stop_animation();
+    },
+    a() {
+      stop_animation();
+      stop_animation = create_animation(div, rect, flip, { duration: 125 });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(treeviewitem.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(treeviewitem.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(treeviewitem);
+    }
+  };
+}
+function create_fragment$c(ctx) {
+  let div1;
+  let t;
+  let div0;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let current;
+  let if_block = (
+    /*showDescription*/
+    ctx[1] && create_if_block$6(ctx)
+  );
+  let each_value = ensure_array_like(
+    /*items*/
+    ctx[0]
+  );
+  const get_key = (ctx2) => (
+    /*item*/
+    ctx2[7].id
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$2(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$2(key, child_ctx));
+  }
+  return {
+    c() {
+      div1 = element("div");
+      if (if_block)
+        if_block.c();
+      t = space();
+      div0 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(div1, "class", "content svelte-jpi-14fl6hu");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      if (if_block)
+        if_block.m(div1, null);
+      append(div1, t);
+      append(div1, div0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div0, null);
+        }
+      }
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      if (
+        /*showDescription*/
+        ctx2[1]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*showDescription*/
+          2) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$6(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(div1, t);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+      if (dirty & /*items, nodeItem, $$scope*/
+      1089) {
+        each_value = ensure_array_like(
+          /*items*/
+          ctx2[0]
+        );
+        group_outros();
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].r();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div0, fix_and_outro_and_destroy_block, create_each_block$2, null, get_each_context$2);
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].a();
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      if (if_block)
+        if_block.d();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+    }
+  };
+}
+function instance$c($$self, $$props, $$invalidate) {
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { items = [] } = $$props;
+  let { showDescription = true } = $$props;
+  let { descriptionText = "" } = $$props;
+  function leafselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function folderselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("items" in $$props2)
+      $$invalidate(0, items = $$props2.items);
+    if ("showDescription" in $$props2)
+      $$invalidate(1, showDescription = $$props2.showDescription);
+    if ("descriptionText" in $$props2)
+      $$invalidate(2, descriptionText = $$props2.descriptionText);
+    if ("$$scope" in $$props2)
+      $$invalidate(6, $$scope = $$props2.$$scope);
+  };
+  return [
+    items,
+    showDescription,
+    descriptionText,
+    slots,
+    leafselected_handler,
+    folderselected_handler,
+    $$scope
+  ];
+}
+class TreeView extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$c, create_fragment$c, safe_not_equal, {
+      items: 0,
+      showDescription: 1,
+      descriptionText: 2
+    });
+  }
+}
+function create_fragment$b(ctx) {
+  let textbox;
+  let updating_inputElement;
+  let updating_value;
+  let current;
+  function textbox_inputElement_binding(value) {
+    ctx[4](value);
+  }
+  function textbox_value_binding(value) {
+    ctx[5](value);
+  }
+  let textbox_props = {
+    canReset: true,
+    class: (
+      /*$$restProps*/
+      ctx[3].class
+    ),
+    defaultIcon: "search",
+    placeHolderText: (
+      /*placeHolderText*/
+      ctx[2]
+    )
+  };
+  if (
+    /*inputElement*/
+    ctx[1] !== void 0
+  ) {
+    textbox_props.inputElement = /*inputElement*/
+    ctx[1];
+  }
+  if (
+    /*value*/
+    ctx[0] !== void 0
+  ) {
+    textbox_props.value = /*value*/
+    ctx[0];
+  }
+  textbox = new TextBox({ props: textbox_props });
+  binding_callbacks.push(() => bind(textbox, "inputElement", textbox_inputElement_binding));
+  binding_callbacks.push(() => bind(textbox, "value", textbox_value_binding));
+  return {
+    c() {
+      create_component(textbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(textbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const textbox_changes = {};
+      if (dirty & /*$$restProps*/
+      8)
+        textbox_changes.class = /*$$restProps*/
+        ctx2[3].class;
+      if (dirty & /*placeHolderText*/
+      4)
+        textbox_changes.placeHolderText = /*placeHolderText*/
+        ctx2[2];
+      if (!updating_inputElement && dirty & /*inputElement*/
+      2) {
+        updating_inputElement = true;
+        textbox_changes.inputElement = /*inputElement*/
+        ctx2[1];
+        add_flush_callback(() => updating_inputElement = false);
+      }
+      if (!updating_value && dirty & /*value*/
+      1) {
+        updating_value = true;
+        textbox_changes.value = /*value*/
+        ctx2[0];
+        add_flush_callback(() => updating_value = false);
+      }
+      textbox.$set(textbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(textbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(textbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(textbox, detaching);
+    }
+  };
+}
+function instance$b($$self, $$props, $$invalidate) {
+  const omit_props_names = ["placeHolderText", "value", "inputElement"];
+  let $$restProps = compute_rest_props($$props, omit_props_names);
+  let { placeHolderText = "" } = $$props;
+  let { value = "" } = $$props;
+  let { inputElement } = $$props;
+  function textbox_inputElement_binding(value2) {
+    inputElement = value2;
+    $$invalidate(1, inputElement);
+  }
+  function textbox_value_binding(value$1) {
+    value = value$1;
+    $$invalidate(0, value);
+  }
+  $$self.$$set = ($$new_props) => {
+    $$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    $$invalidate(3, $$restProps = compute_rest_props($$props, omit_props_names));
+    if ("placeHolderText" in $$new_props)
+      $$invalidate(2, placeHolderText = $$new_props.placeHolderText);
+    if ("value" in $$new_props)
+      $$invalidate(0, value = $$new_props.value);
+    if ("inputElement" in $$new_props)
+      $$invalidate(1, inputElement = $$new_props.inputElement);
+  };
+  return [
+    value,
+    inputElement,
+    placeHolderText,
+    $$restProps,
+    textbox_inputElement_binding,
+    textbox_value_binding
+  ];
+}
+class SearchBox extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$b, create_fragment$b, safe_not_equal, {
+      placeHolderText: 2,
+      value: 0,
+      inputElement: 1
+    });
+  }
+}
+var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
+function getDefaultExportFromCjs(x) {
+  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
+}
+var fuzzysort$1 = { exports: {} };
+(function(module) {
+  ((root, UMD) => {
+    if (module.exports)
+      module.exports = UMD();
+    else
+      root["fuzzysort"] = UMD();
+  })(commonjsGlobal, (_) => {
+    var single = (search, target) => {
+      if (search == "farzher")
+        return { target: "farzher was here (^-^*)/", score: 0, _indexes: [0] };
+      if (!search || !target)
+        return NULL;
+      var preparedSearch = getPreparedSearch(search);
+      if (!isObj(target))
+        target = getPrepared(target);
+      var searchBitflags = preparedSearch.bitflags;
+      if ((searchBitflags & target._bitflags) !== searchBitflags)
+        return NULL;
+      return algorithm(preparedSearch, target);
+    };
+    var go = (search, targets, options) => {
+      if (search == "farzher")
+        return [{ target: "farzher was here (^-^*)/", score: 0, _indexes: [0], obj: targets ? targets[0] : NULL }];
+      if (!search)
+        return options && options.all ? all(search, targets, options) : noResults;
+      var preparedSearch = getPreparedSearch(search);
+      var searchBitflags = preparedSearch.bitflags;
+      preparedSearch.containsSpace;
+      var threshold = options && options.threshold || INT_MIN;
+      var limit = options && options["limit"] || INT_MAX;
+      var resultsLen = 0;
+      var limitedCount = 0;
+      var targetsLen = targets.length;
+      if (options && options.key) {
+        var key = options.key;
+        for (var i = 0; i < targetsLen; ++i) {
+          var obj = targets[i];
+          var target = getValue(obj, key);
+          if (!target)
+            continue;
+          if (!isObj(target))
+            target = getPrepared(target);
+          if ((searchBitflags & target._bitflags) !== searchBitflags)
+            continue;
+          var result = algorithm(preparedSearch, target);
+          if (result === NULL)
+            continue;
+          if (result.score < threshold)
+            continue;
+          result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: result.score, _indexes: result._indexes, obj };
+          if (resultsLen < limit) {
+            q.add(result);
+            ++resultsLen;
+          } else {
+            ++limitedCount;
+            if (result.score > q.peek().score)
+              q.replaceTop(result);
+          }
+        }
+      } else if (options && options.keys) {
+        var scoreFn = options["scoreFn"] || defaultScoreFn;
+        var keys = options.keys;
+        var keysLen = keys.length;
+        for (var i = 0; i < targetsLen; ++i) {
+          var obj = targets[i];
+          var objResults = new Array(keysLen);
+          for (var keyI = 0; keyI < keysLen; ++keyI) {
+            var key = keys[keyI];
+            var target = getValue(obj, key);
+            if (!target) {
+              objResults[keyI] = NULL;
+              continue;
+            }
+            if (!isObj(target))
+              target = getPrepared(target);
+            if ((searchBitflags & target._bitflags) !== searchBitflags)
+              objResults[keyI] = NULL;
+            else
+              objResults[keyI] = algorithm(preparedSearch, target);
+          }
+          objResults.obj = obj;
+          var score = scoreFn(objResults);
+          if (score === NULL)
+            continue;
+          if (score < threshold)
+            continue;
+          objResults.score = score;
+          if (resultsLen < limit) {
+            q.add(objResults);
+            ++resultsLen;
+          } else {
+            ++limitedCount;
+            if (score > q.peek().score)
+              q.replaceTop(objResults);
+          }
+        }
+      } else {
+        for (var i = 0; i < targetsLen; ++i) {
+          var target = targets[i];
+          if (!target)
+            continue;
+          if (!isObj(target))
+            target = getPrepared(target);
+          if ((searchBitflags & target._bitflags) !== searchBitflags)
+            continue;
+          var result = algorithm(preparedSearch, target);
+          if (result === NULL)
+            continue;
+          if (result.score < threshold)
+            continue;
+          if (resultsLen < limit) {
+            q.add(result);
+            ++resultsLen;
+          } else {
+            ++limitedCount;
+            if (result.score > q.peek().score)
+              q.replaceTop(result);
+          }
+        }
+      }
+      if (resultsLen === 0)
+        return noResults;
+      var results = new Array(resultsLen);
+      for (var i = resultsLen - 1; i >= 0; --i)
+        results[i] = q.poll();
+      results.total = resultsLen + limitedCount;
+      return results;
+    };
+    var highlight = (result, hOpen, hClose) => {
+      if (typeof hOpen === "function")
+        return highlightCallback(result, hOpen);
+      if (result === NULL)
+        return NULL;
+      if (hOpen === void 0)
+        hOpen = "<b>";
+      if (hClose === void 0)
+        hClose = "</b>";
+      var highlighted = "";
+      var matchesIndex = 0;
+      var opened = false;
+      var target = result.target;
+      var targetLen = target.length;
+      var indexes2 = result._indexes;
+      indexes2 = indexes2.slice(0, indexes2.len).sort((a, b) => a - b);
+      for (var i = 0; i < targetLen; ++i) {
+        var char = target[i];
+        if (indexes2[matchesIndex] === i) {
+          ++matchesIndex;
+          if (!opened) {
+            opened = true;
+            highlighted += hOpen;
+          }
+          if (matchesIndex === indexes2.length) {
+            highlighted += char + hClose + target.substr(i + 1);
+            break;
+          }
+        } else {
+          if (opened) {
+            opened = false;
+            highlighted += hClose;
+          }
+        }
+        highlighted += char;
+      }
+      return highlighted;
+    };
+    var highlightCallback = (result, cb) => {
+      if (result === NULL)
+        return NULL;
+      var target = result.target;
+      var targetLen = target.length;
+      var indexes2 = result._indexes;
+      indexes2 = indexes2.slice(0, indexes2.len).sort((a, b) => a - b);
+      var highlighted = "";
+      var matchI = 0;
+      var indexesI = 0;
+      var opened = false;
+      var result = [];
+      for (var i = 0; i < targetLen; ++i) {
+        var char = target[i];
+        if (indexes2[indexesI] === i) {
+          ++indexesI;
+          if (!opened) {
+            opened = true;
+            result.push(highlighted);
+            highlighted = "";
+          }
+          if (indexesI === indexes2.length) {
+            highlighted += char;
+            result.push(cb(highlighted, matchI++));
+            highlighted = "";
+            result.push(target.substr(i + 1));
+            break;
+          }
+        } else {
+          if (opened) {
+            opened = false;
+            result.push(cb(highlighted, matchI++));
+            highlighted = "";
+          }
+        }
+        highlighted += char;
+      }
+      return result;
+    };
+    var indexes = (result) => result._indexes.slice(0, result._indexes.len).sort((a, b) => a - b);
+    var prepare = (target) => {
+      if (typeof target !== "string")
+        target = "";
+      var info = prepareLowerInfo(target);
+      return { "target": target, _targetLower: info._lower, _targetLowerCodes: info.lowerCodes, _nextBeginningIndexes: NULL, _bitflags: info.bitflags, "score": NULL, _indexes: [0], "obj": NULL };
+    };
+    var prepareSearch = (search) => {
+      if (typeof search !== "string")
+        search = "";
+      search = search.trim();
+      var info = prepareLowerInfo(search);
+      var spaceSearches = [];
+      if (info.containsSpace) {
+        var searches = search.split(/\s+/);
+        searches = [...new Set(searches)];
+        for (var i = 0; i < searches.length; i++) {
+          if (searches[i] === "")
+            continue;
+          var _info = prepareLowerInfo(searches[i]);
+          spaceSearches.push({ lowerCodes: _info.lowerCodes, _lower: searches[i].toLowerCase(), containsSpace: false });
+        }
+      }
+      return { lowerCodes: info.lowerCodes, bitflags: info.bitflags, containsSpace: info.containsSpace, _lower: info._lower, spaceSearches };
+    };
+    var getPrepared = (target) => {
+      if (target.length > 999)
+        return prepare(target);
+      var targetPrepared = preparedCache.get(target);
+      if (targetPrepared !== void 0)
+        return targetPrepared;
+      targetPrepared = prepare(target);
+      preparedCache.set(target, targetPrepared);
+      return targetPrepared;
+    };
+    var getPreparedSearch = (search) => {
+      if (search.length > 999)
+        return prepareSearch(search);
+      var searchPrepared = preparedSearchCache.get(search);
+      if (searchPrepared !== void 0)
+        return searchPrepared;
+      searchPrepared = prepareSearch(search);
+      preparedSearchCache.set(search, searchPrepared);
+      return searchPrepared;
+    };
+    var all = (search, targets, options) => {
+      var results = [];
+      results.total = targets.length;
+      var limit = options && options.limit || INT_MAX;
+      if (options && options.key) {
+        for (var i = 0; i < targets.length; i++) {
+          var obj = targets[i];
+          var target = getValue(obj, options.key);
+          if (!target)
+            continue;
+          if (!isObj(target))
+            target = getPrepared(target);
+          target.score = INT_MIN;
+          target._indexes.len = 0;
+          var result = target;
+          result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: target.score, _indexes: NULL, obj };
+          results.push(result);
+          if (results.length >= limit)
+            return results;
+        }
+      } else if (options && options.keys) {
+        for (var i = 0; i < targets.length; i++) {
+          var obj = targets[i];
+          var objResults = new Array(options.keys.length);
+          for (var keyI = options.keys.length - 1; keyI >= 0; --keyI) {
+            var target = getValue(obj, options.keys[keyI]);
+            if (!target) {
+              objResults[keyI] = NULL;
+              continue;
+            }
+            if (!isObj(target))
+              target = getPrepared(target);
+            target.score = INT_MIN;
+            target._indexes.len = 0;
+            objResults[keyI] = target;
+          }
+          objResults.obj = obj;
+          objResults.score = INT_MIN;
+          results.push(objResults);
+          if (results.length >= limit)
+            return results;
+        }
+      } else {
+        for (var i = 0; i < targets.length; i++) {
+          var target = targets[i];
+          if (!target)
+            continue;
+          if (!isObj(target))
+            target = getPrepared(target);
+          target.score = INT_MIN;
+          target._indexes.len = 0;
+          results.push(target);
+          if (results.length >= limit)
+            return results;
+        }
+      }
+      return results;
+    };
+    var algorithm = (preparedSearch, prepared, allowSpaces = false) => {
+      if (allowSpaces === false && preparedSearch.containsSpace)
+        return algorithmSpaces(preparedSearch, prepared);
+      var searchLower = preparedSearch._lower;
+      var searchLowerCodes = preparedSearch.lowerCodes;
+      var searchLowerCode = searchLowerCodes[0];
+      var targetLowerCodes = prepared._targetLowerCodes;
+      var searchLen = searchLowerCodes.length;
+      var targetLen = targetLowerCodes.length;
+      var searchI = 0;
+      var targetI = 0;
+      var matchesSimpleLen = 0;
+      for (; ; ) {
+        var isMatch = searchLowerCode === targetLowerCodes[targetI];
+        if (isMatch) {
+          matchesSimple[matchesSimpleLen++] = targetI;
+          ++searchI;
+          if (searchI === searchLen)
+            break;
+          searchLowerCode = searchLowerCodes[searchI];
+        }
+        ++targetI;
+        if (targetI >= targetLen)
+          return NULL;
+      }
+      var searchI = 0;
+      var successStrict = false;
+      var matchesStrictLen = 0;
+      var nextBeginningIndexes = prepared._nextBeginningIndexes;
+      if (nextBeginningIndexes === NULL)
+        nextBeginningIndexes = prepared._nextBeginningIndexes = prepareNextBeginningIndexes(prepared.target);
+      targetI = matchesSimple[0] === 0 ? 0 : nextBeginningIndexes[matchesSimple[0] - 1];
+      var backtrackCount = 0;
+      if (targetI !== targetLen)
+        for (; ; ) {
+          if (targetI >= targetLen) {
+            if (searchI <= 0)
+              break;
+            ++backtrackCount;
+            if (backtrackCount > 200)
+              break;
+            --searchI;
+            var lastMatch = matchesStrict[--matchesStrictLen];
+            targetI = nextBeginningIndexes[lastMatch];
+          } else {
+            var isMatch = searchLowerCodes[searchI] === targetLowerCodes[targetI];
+            if (isMatch) {
+              matchesStrict[matchesStrictLen++] = targetI;
+              ++searchI;
+              if (searchI === searchLen) {
+                successStrict = true;
+                break;
+              }
+              ++targetI;
+            } else {
+              targetI = nextBeginningIndexes[targetI];
+            }
+          }
+        }
+      var substringIndex = prepared._targetLower.indexOf(searchLower, matchesSimple[0]);
+      var isSubstring = ~substringIndex;
+      if (isSubstring && !successStrict) {
+        for (var i = 0; i < matchesSimpleLen; ++i)
+          matchesSimple[i] = substringIndex + i;
+      }
+      var isSubstringBeginning = false;
+      if (isSubstring) {
+        isSubstringBeginning = prepared._nextBeginningIndexes[substringIndex - 1] === substringIndex;
+      }
+      {
+        if (successStrict) {
+          var matchesBest = matchesStrict;
+          var matchesBestLen = matchesStrictLen;
+        } else {
+          var matchesBest = matchesSimple;
+          var matchesBestLen = matchesSimpleLen;
+        }
+        var score = 0;
+        var extraMatchGroupCount = 0;
+        for (var i = 1; i < searchLen; ++i) {
+          if (matchesBest[i] - matchesBest[i - 1] !== 1) {
+            score -= matchesBest[i];
+            ++extraMatchGroupCount;
+          }
+        }
+        var unmatchedDistance = matchesBest[searchLen - 1] - matchesBest[0] - (searchLen - 1);
+        score -= (12 + unmatchedDistance) * extraMatchGroupCount;
+        if (matchesBest[0] !== 0)
+          score -= matchesBest[0] * matchesBest[0] * 0.2;
+        if (!successStrict) {
+          score *= 1e3;
+        } else {
+          var uniqueBeginningIndexes = 1;
+          for (var i = nextBeginningIndexes[0]; i < targetLen; i = nextBeginningIndexes[i])
+            ++uniqueBeginningIndexes;
+          if (uniqueBeginningIndexes > 24)
+            score *= (uniqueBeginningIndexes - 24) * 10;
+        }
+        if (isSubstring)
+          score /= 1 + searchLen * searchLen * 1;
+        if (isSubstringBeginning)
+          score /= 1 + searchLen * searchLen * 1;
+        score -= targetLen - searchLen;
+        prepared.score = score;
+        for (var i = 0; i < matchesBestLen; ++i)
+          prepared._indexes[i] = matchesBest[i];
+        prepared._indexes.len = matchesBestLen;
+        return prepared;
+      }
+    };
+    var algorithmSpaces = (preparedSearch, target) => {
+      var seen_indexes = /* @__PURE__ */ new Set();
+      var score = 0;
+      var result = NULL;
+      var first_seen_index_last_search = 0;
+      var searches = preparedSearch.spaceSearches;
+      for (var i = 0; i < searches.length; ++i) {
+        var search = searches[i];
+        result = algorithm(search, target);
+        if (result === NULL)
+          return NULL;
+        score += result.score;
+        if (result._indexes[0] < first_seen_index_last_search) {
+          score -= first_seen_index_last_search - result._indexes[0];
+        }
+        first_seen_index_last_search = result._indexes[0];
+        for (var j = 0; j < result._indexes.len; ++j)
+          seen_indexes.add(result._indexes[j]);
+      }
+      var allowSpacesResult = algorithm(
+        preparedSearch,
+        target,
+        /*allowSpaces=*/
+        true
+      );
+      if (allowSpacesResult !== NULL && allowSpacesResult.score > score) {
+        return allowSpacesResult;
+      }
+      result.score = score;
+      var i = 0;
+      for (let index of seen_indexes)
+        result._indexes[i++] = index;
+      result._indexes.len = i;
+      return result;
+    };
+    var prepareLowerInfo = (str) => {
+      var strLen = str.length;
+      var lower = str.toLowerCase();
+      var lowerCodes = [];
+      var bitflags = 0;
+      var containsSpace = false;
+      for (var i = 0; i < strLen; ++i) {
+        var lowerCode = lowerCodes[i] = lower.charCodeAt(i);
+        if (lowerCode === 32) {
+          containsSpace = true;
+          continue;
+        }
+        var bit = lowerCode >= 97 && lowerCode <= 122 ? lowerCode - 97 : lowerCode >= 48 && lowerCode <= 57 ? 26 : lowerCode <= 127 ? 30 : 31;
+        bitflags |= 1 << bit;
+      }
+      return { lowerCodes, bitflags, containsSpace, _lower: lower };
+    };
+    var prepareBeginningIndexes = (target) => {
+      var targetLen = target.length;
+      var beginningIndexes = [];
+      var beginningIndexesLen = 0;
+      var wasUpper = false;
+      var wasAlphanum = false;
+      for (var i = 0; i < targetLen; ++i) {
+        var targetCode = target.charCodeAt(i);
+        var isUpper = targetCode >= 65 && targetCode <= 90;
+        var isAlphanum = isUpper || targetCode >= 97 && targetCode <= 122 || targetCode >= 48 && targetCode <= 57;
+        var isBeginning = isUpper && !wasUpper || !wasAlphanum || !isAlphanum;
+        wasUpper = isUpper;
+        wasAlphanum = isAlphanum;
+        if (isBeginning)
+          beginningIndexes[beginningIndexesLen++] = i;
+      }
+      return beginningIndexes;
+    };
+    var prepareNextBeginningIndexes = (target) => {
+      var targetLen = target.length;
+      var beginningIndexes = prepareBeginningIndexes(target);
+      var nextBeginningIndexes = [];
+      var lastIsBeginning = beginningIndexes[0];
+      var lastIsBeginningI = 0;
+      for (var i = 0; i < targetLen; ++i) {
+        if (lastIsBeginning > i) {
+          nextBeginningIndexes[i] = lastIsBeginning;
+        } else {
+          lastIsBeginning = beginningIndexes[++lastIsBeginningI];
+          nextBeginningIndexes[i] = lastIsBeginning === void 0 ? targetLen : lastIsBeginning;
+        }
+      }
+      return nextBeginningIndexes;
+    };
+    var cleanup = () => {
+      preparedCache.clear();
+      preparedSearchCache.clear();
+      matchesSimple = [];
+      matchesStrict = [];
+    };
+    var preparedCache = /* @__PURE__ */ new Map();
+    var preparedSearchCache = /* @__PURE__ */ new Map();
+    var matchesSimple = [];
+    var matchesStrict = [];
+    var defaultScoreFn = (a) => {
+      var max2 = INT_MIN;
+      var len = a.length;
+      for (var i = 0; i < len; ++i) {
+        var result = a[i];
+        if (result === NULL)
+          continue;
+        var score = result.score;
+        if (score > max2)
+          max2 = score;
+      }
+      if (max2 === INT_MIN)
+        return NULL;
+      return max2;
+    };
+    var getValue = (obj, prop) => {
+      var tmp = obj[prop];
+      if (tmp !== void 0)
+        return tmp;
+      var segs = prop;
+      if (!Array.isArray(prop))
+        segs = prop.split(".");
+      var len = segs.length;
+      var i = -1;
+      while (obj && ++i < len)
+        obj = obj[segs[i]];
+      return obj;
+    };
+    var isObj = (x) => {
+      return typeof x === "object";
+    };
+    var INT_MAX = Infinity;
+    var INT_MIN = -INT_MAX;
+    var noResults = [];
+    noResults.total = 0;
+    var NULL = null;
+    var fastpriorityqueue = (r) => {
+      var e = [], o = 0, a = {}, v = (r2) => {
+        for (var a2 = 0, v2 = e[a2], c = 1; c < o; ) {
+          var s = c + 1;
+          a2 = c, s < o && e[s].score < e[c].score && (a2 = s), e[a2 - 1 >> 1] = e[a2], c = 1 + (a2 << 1);
+        }
+        for (var f = a2 - 1 >> 1; a2 > 0 && v2.score < e[f].score; f = (a2 = f) - 1 >> 1)
+          e[a2] = e[f];
+        e[a2] = v2;
+      };
+      return a.add = (r2) => {
+        var a2 = o;
+        e[o++] = r2;
+        for (var v2 = a2 - 1 >> 1; a2 > 0 && r2.score < e[v2].score; v2 = (a2 = v2) - 1 >> 1)
+          e[a2] = e[v2];
+        e[a2] = r2;
+      }, a.poll = (r2) => {
+        if (0 !== o) {
+          var a2 = e[0];
+          return e[0] = e[--o], v(), a2;
+        }
+      }, a.peek = (r2) => {
+        if (0 !== o)
+          return e[0];
+      }, a.replaceTop = (r2) => {
+        e[0] = r2, v();
+      }, a;
+    };
+    var q = fastpriorityqueue();
+    return { "single": single, "go": go, "highlight": highlight, "prepare": prepare, "indexes": indexes, "cleanup": cleanup };
+  });
+})(fuzzysort$1);
+var fuzzysortExports = fuzzysort$1.exports;
+const fuzzysort = /* @__PURE__ */ getDefaultExportFromCjs(fuzzysortExports);
+function filterItems(items, filter) {
+  const filteredTree = [];
+  items.forEach((item) => {
+    const [result, tree] = filterNode(item, filter, false);
+    if (result) {
+      filteredTree.push(tree);
+    }
+  });
+  return filteredTree;
+}
+function filterNode(node, filter, parentResult) {
+  const root = {
+    label: node.label,
+    isOpen: true,
+    items: Array.isArray(node.items) ? [] : null,
+    id: node.id,
+    description: node.description,
+    payload: node.payload,
+    icon: node.icon
+  };
+  const result = fuzzysort.single(filter, node.label);
+  let rootResult = result && result.score >= -1e3;
+  if (rootResult) {
+    root.label = fuzzysort.highlight(
+      result,
+      open = '<span class="just-highlighted-text"><b>',
+      close = "</b></span>"
+    );
+  }
+  rootResult |= parentResult;
+  let childResult = false;
+  if (node.items) {
+    node.items.forEach((item) => {
+      const [itemResult, itemTree] = filterNode(item, filter, rootResult);
+      if (itemResult || rootResult) {
+        root.items.push(itemTree);
+      }
+      childResult |= itemResult;
+    });
+  }
+  return [rootResult || childResult, root];
+}
+function focusNavigation(node, data) {
+  const onKeyDown = (ev) => {
+    const keyCode = ev.keyCode;
+    const current = document.activeElement;
+    if (keyCode !== 38 && keyCode !== 40 && (keyCode !== 39 || current === data.getInputElement())) {
+      return;
+    }
+    ev.preventDefault();
+    let newIndex;
+    const items = [...node.getElementsByClassName("focusable")];
+    const currentIndex = items.indexOf(current);
+    if (currentIndex === -1) {
+      newIndex = 0;
+    } else if (keyCode === 40 || keyCode === 39) {
+      newIndex = currentIndex + 1;
+    } else if (keyCode === 38) {
+      newIndex = currentIndex - 1;
+    }
+    newIndex = Math.min(Math.max(newIndex, 0), items.length - 1);
+    current.blur();
+    items[newIndex].focus();
+  };
+  node.addEventListener("keydown", onKeyDown);
+  return {
+    destroy() {
+      node.removeEventListener("keydown", onKeyDown);
+    }
+  };
+}
+const TreeViewMenu_svelte_svelte_type_style_lang = "";
+const get_default_slot_changes = (dirty) => ({ nodeItem: dirty & /*nodeItem*/
+262144 });
+const get_default_slot_context = (ctx) => ({ nodeItem: (
+  /*nodeItem*/
+  ctx[18]
+) });
+function create_default_slot_2$5(ctx) {
+  let t;
+  return {
+    c() {
+      t = text(
+        /*title*/
+        ctx[0]
+      );
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*title*/
+      1)
+        set_data(
+          t,
+          /*title*/
+          ctx2[0]
+        );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot_1$6(ctx) {
+  let label;
+  let div;
+  let current;
+  label = new Label({
+    props: {
+      $$slots: { default: [create_default_slot_2$5] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(label.$$.fragment);
+      set_style(div, "display", "contents");
+      set_style(div, "--label-align", "left");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(label, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_changes = {};
+      if (dirty & /*$$scope, title*/
+      65537) {
+        label_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label.$set(label_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching && label)
+        detach(div);
+      destroy_component(label, detaching);
+    }
+  };
+}
+function create_header_slot$5(ctx) {
+  let flex;
+  let t;
+  let searchbox;
+  let updating_inputElement;
+  let updating_value;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      $$slots: { default: [create_default_slot_1$6] },
+      $$scope: { ctx }
+    }
+  });
+  function searchbox_inputElement_binding(value) {
+    ctx[14](value);
+  }
+  function searchbox_value_binding(value) {
+    ctx[15](value);
+  }
+  let searchbox_props = { placeHolderText: "Search" };
+  if (
+    /*inputElement*/
+    ctx[4] !== void 0
+  ) {
+    searchbox_props.inputElement = /*inputElement*/
+    ctx[4];
+  }
+  if (
+    /*$filterStore*/
+    ctx[6] !== void 0
+  ) {
+    searchbox_props.value = /*$filterStore*/
+    ctx[6];
+  }
+  searchbox = new SearchBox({ props: searchbox_props });
+  binding_callbacks.push(() => bind(searchbox, "inputElement", searchbox_inputElement_binding));
+  binding_callbacks.push(() => bind(searchbox, "value", searchbox_value_binding));
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+      t = space();
+      create_component(searchbox.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      insert(target, t, anchor);
+      mount_component(searchbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, title*/
+      65537) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+      const searchbox_changes = {};
+      if (!updating_inputElement && dirty & /*inputElement*/
+      16) {
+        updating_inputElement = true;
+        searchbox_changes.inputElement = /*inputElement*/
+        ctx2[4];
+        add_flush_callback(() => updating_inputElement = false);
+      }
+      if (!updating_value && dirty & /*$filterStore*/
+      64) {
+        updating_value = true;
+        searchbox_changes.value = /*$filterStore*/
+        ctx2[6];
+        add_flush_callback(() => updating_value = false);
+      }
+      searchbox.$set(searchbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      transition_in(searchbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      transition_out(searchbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(flex, detaching);
+      destroy_component(searchbox, detaching);
+    }
+  };
+}
+function fallback_block(ctx) {
+  let defaulttreeviewitemcontent;
+  let current;
+  defaulttreeviewitemcontent = new DefaultTreeViewItemContent({ props: { item: (
+    /*nodeItem*/
+    ctx[18]
+  ) } });
+  return {
+    c() {
+      create_component(defaulttreeviewitemcontent.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(defaulttreeviewitemcontent, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const defaulttreeviewitemcontent_changes = {};
+      if (dirty & /*nodeItem*/
+      262144)
+        defaulttreeviewitemcontent_changes.item = /*nodeItem*/
+        ctx2[18];
+      defaulttreeviewitemcontent.$set(defaulttreeviewitemcontent_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(defaulttreeviewitemcontent.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(defaulttreeviewitemcontent.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(defaulttreeviewitemcontent, detaching);
+    }
+  };
+}
+function create_default_slot$9(ctx) {
+  let current;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[10].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[16],
+    get_default_slot_context
+  );
+  const default_slot_or_fallback = default_slot || fallback_block(ctx);
+  return {
+    c() {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.c();
+    },
+    m(target, anchor) {
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(target, anchor);
+      }
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope, nodeItem*/
+        327680)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[16],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[16]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[16],
+              dirty,
+              get_default_slot_changes
+            ),
+            get_default_slot_context
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*nodeItem*/
+        262144)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (default_slot_or_fallback)
+        default_slot_or_fallback.d(detaching);
+    }
+  };
+}
+function create_content_slot$3(ctx) {
+  let div;
+  let treeview;
+  let focusNavigation_action;
+  let current;
+  let mounted;
+  let dispose;
+  treeview = new TreeView({
+    props: {
+      descriptionText: (
+        /*descriptionText*/
+        ctx[2]
+      ),
+      items: (
+        /*$filteredItems*/
+        ctx[5]
+      ),
+      showDescription: (
+        /*showDescription*/
+        ctx[1]
+      ),
+      $$slots: {
+        default: [
+          create_default_slot$9,
+          ({ nodeItem }) => ({ 18: nodeItem }),
+          ({ nodeItem }) => nodeItem ? 262144 : 0
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  treeview.$on(
+    "folderselected",
+    /*folderselected_handler*/
+    ctx[11]
+  );
+  treeview.$on(
+    "leafselected",
+    /*leafselected_handler*/
+    ctx[12]
+  );
+  return {
+    c() {
+      div = element("div");
+      create_component(treeview.$$.fragment);
+      attr(div, "class", "just-tree-view-menu svelte-jpi-1ccg6tj");
+      attr(div, "slot", "content");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(treeview, div, null);
+      current = true;
+      if (!mounted) {
+        dispose = action_destroyer(focusNavigation_action = focusNavigation.call(null, div, {
+          getInputElement: (
+            /*focusNavigation_function*/
+            ctx[13]
+          )
+        }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      const treeview_changes = {};
+      if (dirty & /*descriptionText*/
+      4)
+        treeview_changes.descriptionText = /*descriptionText*/
+        ctx2[2];
+      if (dirty & /*$filteredItems*/
+      32)
+        treeview_changes.items = /*$filteredItems*/
+        ctx2[5];
+      if (dirty & /*showDescription*/
+      2)
+        treeview_changes.showDescription = /*showDescription*/
+        ctx2[1];
+      if (dirty & /*$$scope, nodeItem*/
+      327680) {
+        treeview_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      treeview.$set(treeview_changes);
+      if (focusNavigation_action && is_function(focusNavigation_action.update) && dirty & /*inputElement*/
+      16)
+        focusNavigation_action.update.call(null, {
+          getInputElement: (
+            /*focusNavigation_function*/
+            ctx2[13]
+          )
+        });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(treeview.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(treeview.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(treeview);
       mounted = false;
       dispose();
     }
   };
 }
-function instance$1($$self, $$props, $$invalidate) {
-  let { $$slots: slots = {}, $$scope } = $$props;
-  const dispatch2 = createEventDispatcher();
-  let { isOpen = true } = $$props;
-  function toggle() {
-    $$invalidate(0, isOpen = !isOpen);
-    dispatch2("toggle");
-  }
-  $$self.$$set = ($$props2) => {
-    if ("isOpen" in $$props2)
-      $$invalidate(0, isOpen = $$props2.isOpen);
-    if ("$$scope" in $$props2)
-      $$invalidate(2, $$scope = $$props2.$$scope);
-  };
-  return [isOpen, toggle, $$scope, slots];
-}
-class SimpleDrawer extends SvelteComponent {
-  constructor(options) {
-    super();
-    init(this, options, instance$1, create_fragment$1, safe_not_equal, { isOpen: 0 });
-  }
-}
-const SelectionWindow_svelte_svelte_type_style_lang = "";
-function create_default_slot_1(ctx) {
-  let combatantlist;
+function create_fragment$a(ctx) {
+  let headerbox;
   let current;
-  combatantlist = new CombatantList({
+  headerbox = new HeaderBox({
     props: {
-      combatants: (
-        /*$previousCombatants*/
-        ctx[4]
-      )
+      height: (
+        /*height*/
+        ctx[3]
+      ),
+      title: (
+        /*title*/
+        ctx[0]
+      ),
+      $$slots: {
+        content: [create_content_slot$3],
+        header: [create_header_slot$5]
+      },
+      $$scope: { ctx }
     }
   });
   return {
     c() {
-      create_component(combatantlist.$$.fragment);
+      create_component(headerbox.$$.fragment);
     },
     m(target, anchor) {
-      mount_component(combatantlist, target, anchor);
+      mount_component(headerbox, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const headerbox_changes = {};
+      if (dirty & /*height*/
+      8)
+        headerbox_changes.height = /*height*/
+        ctx2[3];
+      if (dirty & /*title*/
+      1)
+        headerbox_changes.title = /*title*/
+        ctx2[0];
+      if (dirty & /*$$scope, inputElement, descriptionText, $filteredItems, showDescription, $filterStore, title*/
+      65655) {
+        headerbox_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      headerbox.$set(headerbox_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(headerbox.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(headerbox.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(headerbox, detaching);
+    }
+  };
+}
+function instance$a($$self, $$props, $$invalidate) {
+  let $filteredItems;
+  let $filterStore;
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { title = "" } = $$props;
+  let { itemsStore } = $$props;
+  let { showDescription = false } = $$props;
+  let { descriptionText = "" } = $$props;
+  let { height = "100%" } = $$props;
+  let inputElement;
+  const filterStore = writable("");
+  component_subscribe($$self, filterStore, (value) => $$invalidate(6, $filterStore = value));
+  const filteredItems = derived([filterStore, itemsStore], ([filter, items]) => {
+    if (filter === "") {
+      return items;
+    }
+    return filterItems(items, filter);
+  });
+  component_subscribe($$self, filteredItems, (value) => $$invalidate(5, $filteredItems = value));
+  onMount(async () => {
+    await tick();
+    focusInputElement();
+  });
+  function focusInputElement() {
+    inputElement.focus();
+  }
+  function folderselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function leafselected_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  const focusNavigation_function = () => inputElement;
+  function searchbox_inputElement_binding(value) {
+    inputElement = value;
+    $$invalidate(4, inputElement);
+  }
+  function searchbox_value_binding(value) {
+    $filterStore = value;
+    filterStore.set($filterStore);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("title" in $$props2)
+      $$invalidate(0, title = $$props2.title);
+    if ("itemsStore" in $$props2)
+      $$invalidate(9, itemsStore = $$props2.itemsStore);
+    if ("showDescription" in $$props2)
+      $$invalidate(1, showDescription = $$props2.showDescription);
+    if ("descriptionText" in $$props2)
+      $$invalidate(2, descriptionText = $$props2.descriptionText);
+    if ("height" in $$props2)
+      $$invalidate(3, height = $$props2.height);
+    if ("$$scope" in $$props2)
+      $$invalidate(16, $$scope = $$props2.$$scope);
+  };
+  return [
+    title,
+    showDescription,
+    descriptionText,
+    height,
+    inputElement,
+    $filteredItems,
+    $filterStore,
+    filterStore,
+    filteredItems,
+    itemsStore,
+    slots,
+    folderselected_handler,
+    leafselected_handler,
+    focusNavigation_function,
+    searchbox_inputElement_binding,
+    searchbox_value_binding,
+    $$scope
+  ];
+}
+class TreeViewMenu extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$a, create_fragment$a, safe_not_equal, {
+      title: 0,
+      itemsStore: 9,
+      showDescription: 1,
+      descriptionText: 2,
+      height: 3
+    });
+  }
+}
+const GenericTooltip_svelte_svelte_type_style_lang = "";
+function create_if_block$5(ctx) {
+  let div;
+  let typography;
+  let div_intro;
+  let div_outro;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-sm align-center",
+      $$slots: { default: [create_default_slot$8] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(typography.$$.fragment);
+      attr(div, "class", "panel tooltip panel-shadow svelte-jpi-1on3j7m");
+      set_style(
+        div,
+        "width",
+        /*width*/
+        ctx[4]
+      );
+      set_style(
+        div,
+        "max-width",
+        /*maxWidth*/
+        ctx[5]
+      );
+      set_style(div, "height", `auto`);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(typography, div, null);
       current = true;
     },
     p(ctx2, dirty) {
-      const combatantlist_changes = {};
-      if (dirty[0] & /*$previousCombatants*/
-      16)
-        combatantlist_changes.combatants = /*$previousCombatants*/
-        ctx2[4];
-      combatantlist.$set(combatantlist_changes);
+      const typography_changes = {};
+      if (dirty & /*$$scope, $tooltipStore*/
+      384) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+      if (dirty & /*width*/
+      16) {
+        set_style(
+          div,
+          "width",
+          /*width*/
+          ctx2[4]
+        );
+      }
+      if (dirty & /*maxWidth*/
+      32) {
+        set_style(
+          div,
+          "max-width",
+          /*maxWidth*/
+          ctx2[5]
+        );
+      }
     },
     i(local) {
       if (current)
         return;
-      transition_in(combatantlist.$$.fragment, local);
+      transition_in(typography.$$.fragment, local);
+      if (local) {
+        add_render_callback(() => {
+          if (!current)
+            return;
+          if (div_outro)
+            div_outro.end(1);
+          div_intro = create_in_transition(div, fly, {
+            duration: 125,
+            easing: quadOut,
+            opacity: 0
+          });
+          div_intro.start();
+        });
+      }
       current = true;
     },
     o(local) {
-      transition_out(combatantlist.$$.fragment, local);
+      transition_out(typography.$$.fragment, local);
+      if (div_intro)
+        div_intro.invalidate();
+      if (local) {
+        div_outro = create_out_transition(div, fly, {
+          duration: 125,
+          easing: quadOut,
+          opacity: 1
+        });
+      }
       current = false;
     },
     d(detaching) {
-      destroy_component(combatantlist, detaching);
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(typography);
+      if (detaching && div_outro)
+        div_outro.end();
     }
   };
 }
-function create_if_block_1(ctx) {
-  let simplebutton;
-  let current;
-  simplebutton = new SimpleButton({
-    props: {
-      text: locWindow(`confirm.button`),
-      icon: "check"
-    }
-  });
-  simplebutton.$on(
-    "click",
-    /*_onConfirm*/
-    ctx[13]
+function create_default_slot$8(ctx) {
+  let t_value = (
+    /*$tooltipStore*/
+    ctx[7].content + ""
   );
+  let t;
   return {
     c() {
-      create_component(simplebutton.$$.fragment);
+      t = text(t_value);
     },
     m(target, anchor) {
-      mount_component(simplebutton, target, anchor);
-      current = true;
+      insert(target, t, anchor);
     },
-    p: noop,
-    i(local) {
-      if (current)
-        return;
-      transition_in(simplebutton.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(simplebutton.$$.fragment, local);
-      current = false;
+    p(ctx2, dirty) {
+      if (dirty & /*$tooltipStore*/
+      128 && t_value !== (t_value = /*$tooltipStore*/
+      ctx2[7].content + ""))
+        set_data(t, t_value);
     },
     d(detaching) {
-      destroy_component(simplebutton, detaching);
+      if (detaching) {
+        detach(t);
+      }
     }
   };
 }
-function create_if_block(ctx) {
-  let tokenpickerwatermark;
-  let current;
-  tokenpickerwatermark = new TokenPickerWatermark({});
-  tokenpickerwatermark.$on(
-    "mouseenter",
-    /*mouseenter_handler_1*/
-    ctx[26]
-  );
-  tokenpickerwatermark.$on(
-    "mouseleave",
-    /*mouseleave_handler_1*/
-    ctx[27]
-  );
-  tokenpickerwatermark.$on(
-    "click",
-    /*click_handler_1*/
-    ctx[28]
-  );
-  return {
-    c() {
-      create_component(tokenpickerwatermark.$$.fragment);
-    },
-    m(target, anchor) {
-      mount_component(tokenpickerwatermark, target, anchor);
-      current = true;
-    },
-    p: noop,
-    i(local) {
-      if (current)
-        return;
-      transition_in(tokenpickerwatermark.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(tokenpickerwatermark.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      destroy_component(tokenpickerwatermark, detaching);
-    }
-  };
-}
-function create_default_slot(ctx) {
-  let div3;
-  let div1;
-  let div0;
-  let simpledrawer;
-  let updating_isOpen;
-  let t0;
-  let combatantgrid;
-  let t1;
-  let combatantselectiontoolbox;
-  let t2;
-  let div2;
-  let t3;
-  let simplebutton;
-  let t4;
-  let if_block1_anchor;
+function create_fragment$9(ctx) {
+  let div;
+  let popupTarget_action;
   let current;
   let mounted;
   let dispose;
-  function simpledrawer_isOpen_binding(value) {
-    ctx[17](value);
-  }
-  let simpledrawer_props = {
-    $$slots: { default: [create_default_slot_1] },
-    $$scope: { ctx }
-  };
-  if (
-    /*$previousActorsDrawerOpen*/
-    ctx[1] !== void 0
-  ) {
-    simpledrawer_props.isOpen = /*$previousActorsDrawerOpen*/
-    ctx[1];
-  }
-  simpledrawer = new SimpleDrawer({ props: simpledrawer_props });
-  binding_callbacks.push(() => bind(simpledrawer, "isOpen", simpledrawer_isOpen_binding));
-  simpledrawer.$on(
-    "toggle",
-    /*toggle_handler*/
-    ctx[18]
-  );
-  combatantgrid = new CombatantGrid({
-    props: {
-      combatants: (
-        /*$selectableCombatants*/
-        ctx[5]
-      )
-    }
-  });
-  combatantgrid.$on(
-    "itemClick",
-    /*itemClick_handler*/
-    ctx[19]
-  );
-  combatantgrid.$on(
-    "itemDoubleClick",
-    /*itemDoubleClick_handler*/
-    ctx[20]
-  );
-  combatantgrid.$on(
-    "itemMouseEnter",
-    /*itemMouseEnter_handler*/
-    ctx[21]
-  );
-  combatantgrid.$on(
-    "itemMouseExit",
-    /*itemMouseExit_handler*/
-    ctx[22]
-  );
-  combatantselectiontoolbox = new Toolbox({
-    props: { actions: (
-      /*$toolboxActions*/
-      ctx[6]
-    ) }
-  });
-  combatantselectiontoolbox.$on("actionRequested", _onActionRequested);
-  let if_block0 = (
-    /*$isAnyCombatantSelected*/
-    ctx[7] && create_if_block_1(ctx)
-  );
-  simplebutton = new SimpleButton({
-    props: {
-      text: locWindow(`close.button`),
-      icon: "xmark",
-      isCancelButton: "true"
-    }
-  });
-  simplebutton.$on(
-    "click",
-    /*click_handler*/
-    ctx[23]
-  );
-  let if_block1 = (
-    /*$isTokenPickerRunning*/
-    ctx[2] && create_if_block(ctx)
+  let if_block = (
+    /*$tooltipStore*/
+    ctx[7].visible && create_if_block$5(ctx)
   );
   return {
     c() {
-      div3 = element("div");
-      div1 = element("div");
-      div0 = element("div");
-      create_component(simpledrawer.$$.fragment);
-      t0 = space();
-      create_component(combatantgrid.$$.fragment);
-      t1 = space();
-      create_component(combatantselectiontoolbox.$$.fragment);
-      t2 = space();
-      div2 = element("div");
-      if (if_block0)
-        if_block0.c();
-      t3 = space();
-      create_component(simplebutton.$$.fragment);
-      t4 = space();
-      if (if_block1)
-        if_block1.c();
-      if_block1_anchor = empty();
-      attr(div0, "class", "drag-target prevActorContainer svelte-jpi-10mg9sz");
-      attr(div1, "class", "drag-target content svelte-jpi-10mg9sz");
-      set_style(
-        div1,
-        "--max-height",
-        /*application*/
-        ctx[8].position.height - 60 + `px`
-      );
-      attr(div2, "class", "drag-target modalButtonContainer svelte-jpi-10mg9sz");
-      attr(div3, "class", "drag-target mainContent svelte-jpi-10mg9sz");
-      attr(div3, "role", "application");
+      div = element("div");
+      if (if_block)
+        if_block.c();
     },
     m(target, anchor) {
-      insert(target, div3, anchor);
-      append(div3, div1);
-      append(div1, div0);
-      mount_component(simpledrawer, div0, null);
-      append(div1, t0);
-      mount_component(combatantgrid, div1, null);
-      append(div1, t1);
-      mount_component(combatantselectiontoolbox, div1, null);
-      append(div3, t2);
-      append(div3, div2);
-      if (if_block0)
-        if_block0.m(div2, null);
-      append(div2, t3);
-      mount_component(simplebutton, div2, null);
-      insert(target, t4, anchor);
-      if (if_block1)
-        if_block1.m(target, anchor);
-      insert(target, if_block1_anchor, anchor);
+      insert(target, div, anchor);
+      if (if_block)
+        if_block.m(div, null);
+      current = true;
+      if (!mounted) {
+        dispose = action_destroyer(popupTarget_action = popupTarget.call(null, div, {
+          popupId: "global-tooltip",
+          strategy: "fixed",
+          placement: (
+            /*placement*/
+            ctx[6]
+          ),
+          delay: {
+            show: (
+              /*showDelay*/
+              ctx[1]
+            ),
+            hide: (
+              /*hideDelay*/
+              ctx[2]
+            )
+          },
+          offset: (
+            /*offset*/
+            ctx[3]
+          )
+        }));
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (
+        /*$tooltipStore*/
+        ctx2[7].visible
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*$tooltipStore*/
+          128) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$5(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(div, null);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+      if (popupTarget_action && is_function(popupTarget_action.update) && dirty & /*placement, showDelay, hideDelay, offset*/
+      78)
+        popupTarget_action.update.call(null, {
+          popupId: "global-tooltip",
+          strategy: "fixed",
+          placement: (
+            /*placement*/
+            ctx2[6]
+          ),
+          delay: {
+            show: (
+              /*showDelay*/
+              ctx2[1]
+            ),
+            hide: (
+              /*hideDelay*/
+              ctx2[2]
+            )
+          },
+          offset: (
+            /*offset*/
+            ctx2[3]
+          )
+        });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (if_block)
+        if_block.d();
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$9($$self, $$props, $$invalidate) {
+  let $tooltipStore, $$unsubscribe_tooltipStore = noop, $$subscribe_tooltipStore = () => ($$unsubscribe_tooltipStore(), $$unsubscribe_tooltipStore = subscribe(tooltipStore, ($$value) => $$invalidate(7, $tooltipStore = $$value)), tooltipStore);
+  $$self.$$.on_destroy.push(() => $$unsubscribe_tooltipStore());
+  let { tooltipStore = null } = $$props;
+  $$subscribe_tooltipStore();
+  let { showDelay = 500 } = $$props;
+  let { hideDelay = 250 } = $$props;
+  let { offset: offset2 = 5 } = $$props;
+  let { width = "100%" } = $$props;
+  let { maxWidth = "100%" } = $$props;
+  let { placement = "top" } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("tooltipStore" in $$props2)
+      $$subscribe_tooltipStore($$invalidate(0, tooltipStore = $$props2.tooltipStore));
+    if ("showDelay" in $$props2)
+      $$invalidate(1, showDelay = $$props2.showDelay);
+    if ("hideDelay" in $$props2)
+      $$invalidate(2, hideDelay = $$props2.hideDelay);
+    if ("offset" in $$props2)
+      $$invalidate(3, offset2 = $$props2.offset);
+    if ("width" in $$props2)
+      $$invalidate(4, width = $$props2.width);
+    if ("maxWidth" in $$props2)
+      $$invalidate(5, maxWidth = $$props2.maxWidth);
+    if ("placement" in $$props2)
+      $$invalidate(6, placement = $$props2.placement);
+  };
+  return [
+    tooltipStore,
+    showDelay,
+    hideDelay,
+    offset2,
+    width,
+    maxWidth,
+    placement,
+    $tooltipStore
+  ];
+}
+class GenericTooltip extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$9, create_fragment$9, safe_not_equal, {
+      tooltipStore: 0,
+      showDelay: 1,
+      hideDelay: 2,
+      offset: 3,
+      width: 4,
+      maxWidth: 5,
+      placement: 6
+    });
+  }
+}
+function create_fragment$8(ctx) {
+  let div;
+  let popupTarget_action;
+  let current;
+  let mounted;
+  let dispose;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[4].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[3],
+    null
+  );
+  return {
+    c() {
+      div = element("div");
+      if (default_slot)
+        default_slot.c();
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (default_slot) {
+        default_slot.m(div, null);
+      }
       current = true;
       if (!mounted) {
         dispose = [
-          action_destroyer(draggable.call(null, div3, {
-            position: (
-              /*position*/
-              ctx[10]
+          action_destroyer(clickOutside.call(null, div, { callback: (
+            /*hide*/
+            ctx[2]
+          ) })),
+          action_destroyer(popupTarget_action = popupTarget.call(null, div, {
+            popupId: (
+              /*$contextMenuStore*/
+              ctx[1].id
             ),
-            hasTargetClassList: ["drag-target"]
-          })),
-          listen(
-            div3,
-            "mouseenter",
-            /*mouseenter_handler*/
-            ctx[24]
-          ),
-          listen(
-            div3,
-            "mouseleave",
-            /*mouseleave_handler*/
-            ctx[25]
-          )
+            strategy: "fixed",
+            placement: (
+              /*$contextMenuStore*/
+              ctx[1].mousePosition
+            ),
+            offset: 0,
+            noAutoUpdate: true
+          }))
         ];
         mounted = true;
       }
     },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        8)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[3],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[3]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[3],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      }
+      if (popupTarget_action && is_function(popupTarget_action.update) && dirty & /*$contextMenuStore*/
+      2)
+        popupTarget_action.update.call(null, {
+          popupId: (
+            /*$contextMenuStore*/
+            ctx2[1].id
+          ),
+          strategy: "fixed",
+          placement: (
+            /*$contextMenuStore*/
+            ctx2[1].mousePosition
+          ),
+          offset: 0,
+          noAutoUpdate: true
+        });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(default_slot, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot)
+        default_slot.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$8($$self, $$props, $$invalidate) {
+  let $contextMenuStore, $$unsubscribe_contextMenuStore = noop, $$subscribe_contextMenuStore = () => ($$unsubscribe_contextMenuStore(), $$unsubscribe_contextMenuStore = subscribe(contextMenuStore, ($$value) => $$invalidate(1, $contextMenuStore = $$value)), contextMenuStore);
+  $$self.$$.on_destroy.push(() => $$unsubscribe_contextMenuStore());
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { contextMenuStore = null } = $$props;
+  $$subscribe_contextMenuStore();
+  let contextMenuStoreVal = $contextMenuStore;
+  if (!contextMenuStoreVal.controller) {
+    contextMenuStoreVal.controller = (ev) => {
+      contextMenuStoreVal.mousePosition.x = ev.clientX;
+      contextMenuStoreVal.mousePosition.y = ev.clientY;
+    };
+    document.addEventListener("mousemove", contextMenuStoreVal.controller);
+  }
+  function hide() {
+    $contextMenuStore.visibilityFlag.set(false);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("contextMenuStore" in $$props2)
+      $$subscribe_contextMenuStore($$invalidate(0, contextMenuStore = $$props2.contextMenuStore));
+    if ("$$scope" in $$props2)
+      $$invalidate(3, $$scope = $$props2.$$scope);
+  };
+  return [contextMenuStore, $contextMenuStore, hide, $$scope, slots];
+}
+class ContextMenu extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$8, create_fragment$8, safe_not_equal, { contextMenuStore: 0 });
+  }
+}
+const GeneralTab_svelte_svelte_type_style_lang = "";
+function create_default_slot_1$5(ctx) {
+  let t_value = (
+    /*$settings*/
+    ctx[0][
+      /*key*/
+      ctx[1]
+    ].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
     p(ctx2, dirty) {
-      const simpledrawer_changes = {};
-      if (dirty[0] & /*$previousCombatants*/
-      16 | dirty[1] & /*$$scope*/
-      2) {
-        simpledrawer_changes.$$scope = { dirty, ctx: ctx2 };
+      if (dirty & /*$settings, key*/
+      3 && t_value !== (t_value = /*$settings*/
+      ctx2[0][
+        /*key*/
+        ctx2[1]
+      ].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
       }
-      if (!updating_isOpen && dirty[0] & /*$previousActorsDrawerOpen*/
-      2) {
-        updating_isOpen = true;
-        simpledrawer_changes.isOpen = /*$previousActorsDrawerOpen*/
+    }
+  };
+}
+function create_name_slot(ctx) {
+  let label;
+  let current;
+  label = new Label({
+    props: {
+      slot: "name",
+      $$slots: { default: [create_default_slot_1$5] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(label.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(label, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const label_changes = {};
+      if (dirty & /*$$scope, $settings, key*/
+      7) {
+        label_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      label.$set(label_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(label.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(label.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(label, detaching);
+    }
+  };
+}
+function create_value_slot(ctx) {
+  let propertyinspectorvaluestore;
+  let current;
+  propertyinspectorvaluestore = new PropertyInspectorValueStore({
+    props: {
+      item: (
+        /*$settings*/
+        ctx[0][
+          /*key*/
+          ctx[1]
+        ]
+      ),
+      slot: "value"
+    }
+  });
+  return {
+    c() {
+      create_component(propertyinspectorvaluestore.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(propertyinspectorvaluestore, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const propertyinspectorvaluestore_changes = {};
+      if (dirty & /*$settings, key*/
+      3)
+        propertyinspectorvaluestore_changes.item = /*$settings*/
+        ctx2[0][
+          /*key*/
+          ctx2[1]
+        ];
+      propertyinspectorvaluestore.$set(propertyinspectorvaluestore_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(propertyinspectorvaluestore.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(propertyinspectorvaluestore.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(propertyinspectorvaluestore, detaching);
+    }
+  };
+}
+function create_default_slot$7(ctx) {
+  let div;
+  let propertyinspector;
+  let div_1;
+  let current;
+  propertyinspector = new PropertyInspector({
+    props: {
+      height: "100%",
+      item: (
+        /*$settings*/
+        ctx[0]
+      ),
+      title: "",
+      $$slots: {
+        value: [create_value_slot, ({ key }) => ({ 1: key }), ({ key }) => key ? 2 : 0],
+        name: [create_name_slot, ({ key }) => ({ 1: key }), ({ key }) => key ? 2 : 0]
+      },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      div_1 = element("div");
+      create_component(propertyinspector.$$.fragment);
+      set_style(div_1, "display", "contents");
+      set_style(div_1, "--columns", "1fr 2fr");
+      attr(div, "class", "property-inspector-container svelte-jpi-6u4wsz");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, div_1);
+      mount_component(propertyinspector, div_1, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const propertyinspector_changes = {};
+      if (dirty & /*$settings*/
+      1)
+        propertyinspector_changes.item = /*$settings*/
+        ctx2[0];
+      if (dirty & /*$$scope, $settings, key*/
+      7) {
+        propertyinspector_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      propertyinspector.$set(propertyinspector_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(propertyinspector.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(propertyinspector.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(propertyinspector);
+    }
+  };
+}
+function create_fragment$7(ctx) {
+  let tab;
+  let current;
+  tab = new Tab({
+    props: {
+      data: {
+        header: locSettings("general.tab"),
+        icon: "cog"
+      },
+      $$slots: { default: [create_default_slot$7] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(tab.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(tab, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const tab_changes = {};
+      if (dirty & /*$$scope, $settings*/
+      5) {
+        tab_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tab.$set(tab_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(tab.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tab.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(tab, detaching);
+    }
+  };
+}
+function instance$7($$self, $$props, $$invalidate) {
+  let $settings;
+  component_subscribe($$self, settings, ($$value) => $$invalidate(0, $settings = $$value));
+  return [$settings];
+}
+class GeneralTab extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$7, create_fragment$7, safe_not_equal, {});
+  }
+}
+const Avatar_svelte_svelte_type_style_lang = "";
+function get_each_context$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[8] = list[i];
+  return child_ctx;
+}
+function create_default_slot_4$3(ctx) {
+  let t_value = (
+    /*combatant*/
+    ctx[0].name + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*combatant*/
+      1 && t_value !== (t_value = /*combatant*/
+      ctx2[0].name + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_header_slot$4(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-2xs align-center overflow-ellipsis",
+      slot: "header",
+      width: "100%",
+      $$slots: { default: [create_default_slot_4$3] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, combatant*/
+      2049) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_content_slot$2(ctx) {
+  let image;
+  let div;
+  let current;
+  image = new Image({
+    props: {
+      class: "contain",
+      slot: "content",
+      source: (
+        /*combatant*/
+        ctx[0].icon
+      )
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(image.$$.fragment);
+      set_style(div, "display", "contents");
+      set_style(div, "--image-width", "64px");
+      set_style(div, "--image-height", "64px");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(image, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const image_changes = {};
+      if (dirty & /*combatant*/
+      1)
+        image_changes.source = /*combatant*/
+        ctx2[0].icon;
+      image.$set(image_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(image.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(image.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching && image)
+        detach(div);
+      destroy_component(image, detaching);
+    }
+  };
+}
+function create_default_slot_3$3(ctx) {
+  let card;
+  let t;
+  let separator;
+  let current;
+  card = new Card({
+    props: {
+      height: "90px",
+      width: "70px",
+      isButtonEnabled: (
+        /*isInteractable*/
+        ctx[1]
+      ),
+      isHighlighted: (
+        /*combatant*/
+        ctx[0].isHighlighted
+      ),
+      $$slots: {
+        content: [create_content_slot$2],
+        header: [create_header_slot$4]
+      },
+      $$scope: { ctx }
+    }
+  });
+  card.$on(
+    "click",
+    /*click_handler*/
+    ctx[4]
+  );
+  card.$on(
+    "dblclick",
+    /*dblclick_handler*/
+    ctx[5]
+  );
+  card.$on(
+    "mouseenter",
+    /*mouseenter_handler*/
+    ctx[6]
+  );
+  card.$on(
+    "mouseleave",
+    /*mouseleave_handler*/
+    ctx[7]
+  );
+  separator = new Separator({
+    props: {
+      class: (
+        /*combatant*/
+        (ctx[0].isSelected ? "primary" : (
+          /*combatant*/
+          ctx[0].isHighlighted ? "secondary" : "transparent"
+        )) + " sm"
+      )
+    }
+  });
+  return {
+    c() {
+      create_component(card.$$.fragment);
+      t = space();
+      create_component(separator.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(card, target, anchor);
+      insert(target, t, anchor);
+      mount_component(separator, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const card_changes = {};
+      if (dirty & /*isInteractable*/
+      2)
+        card_changes.isButtonEnabled = /*isInteractable*/
         ctx2[1];
-        add_flush_callback(() => updating_isOpen = false);
+      if (dirty & /*combatant*/
+      1)
+        card_changes.isHighlighted = /*combatant*/
+        ctx2[0].isHighlighted;
+      if (dirty & /*$$scope, combatant*/
+      2049) {
+        card_changes.$$scope = { dirty, ctx: ctx2 };
       }
-      simpledrawer.$set(simpledrawer_changes);
-      const combatantgrid_changes = {};
-      if (dirty[0] & /*$selectableCombatants*/
-      32)
-        combatantgrid_changes.combatants = /*$selectableCombatants*/
-        ctx2[5];
-      combatantgrid.$set(combatantgrid_changes);
-      const combatantselectiontoolbox_changes = {};
-      if (dirty[0] & /*$toolboxActions*/
-      64)
-        combatantselectiontoolbox_changes.actions = /*$toolboxActions*/
-        ctx2[6];
-      combatantselectiontoolbox.$set(combatantselectiontoolbox_changes);
+      card.$set(card_changes);
+      const separator_changes = {};
+      if (dirty & /*combatant*/
+      1)
+        separator_changes.class = /*combatant*/
+        (ctx2[0].isSelected ? "primary" : (
+          /*combatant*/
+          ctx2[0].isHighlighted ? "secondary" : "transparent"
+        )) + " sm";
+      separator.$set(separator_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(card.$$.fragment, local);
+      transition_in(separator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(card.$$.fragment, local);
+      transition_out(separator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(card, detaching);
+      destroy_component(separator, detaching);
+    }
+  };
+}
+function create_if_block$4(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "vertical align-start",
+      width: "100%",
+      height: "100%",
+      $$slots: { default: [create_default_slot_1$4] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, combatant*/
+      2049) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_if_block_1$2(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-xs align-left overflow-ellipsis",
+      slot: "header",
+      width: "100%",
+      $$slots: { default: [create_default_slot_2$4] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, combatant*/
+      2049) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_default_slot_2$4(ctx) {
+  let html_tag;
+  let raw_value = (
+    /*stat*/
+    ctx[8].label + ""
+  );
+  let html_anchor;
+  return {
+    c() {
+      html_tag = new HtmlTag(false);
+      html_anchor = empty();
+      html_tag.a = html_anchor;
+    },
+    m(target, anchor) {
+      html_tag.m(raw_value, target, anchor);
+      insert(target, html_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*combatant*/
+      1 && raw_value !== (raw_value = /*stat*/
+      ctx2[8].label + ""))
+        html_tag.p(raw_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(html_anchor);
+        html_tag.d();
+      }
+    }
+  };
+}
+function create_each_block$1(key_1, ctx) {
+  let div;
+  let t;
+  let rect;
+  let stop_animation = noop;
+  let current;
+  let if_block = (
+    /*stat*/
+    (ctx[8].showToPlayer || /*isGM*/
+    ctx[3]) && create_if_block_1$2(ctx)
+  );
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      if (if_block)
+        if_block.c();
+      t = space();
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (if_block)
+        if_block.m(div, null);
+      append(div, t);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
       if (
-        /*$isAnyCombatantSelected*/
-        ctx2[7]
+        /*stat*/
+        ctx[8].showToPlayer || /*isGM*/
+        ctx[3]
       ) {
-        if (if_block0) {
-          if_block0.p(ctx2, dirty);
-          if (dirty[0] & /*$isAnyCombatantSelected*/
-          128) {
-            transition_in(if_block0, 1);
+        if (if_block) {
+          if_block.p(ctx, dirty);
+          if (dirty & /*combatant*/
+          1) {
+            transition_in(if_block, 1);
           }
         } else {
-          if_block0 = create_if_block_1(ctx2);
-          if_block0.c();
-          transition_in(if_block0, 1);
-          if_block0.m(div2, t3);
+          if_block = create_if_block_1$2(ctx);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(div, t);
         }
-      } else if (if_block0) {
+      } else if (if_block) {
         group_outros();
-        transition_out(if_block0, 1, 1, () => {
-          if_block0 = null;
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
         });
         check_outros();
       }
+    },
+    r() {
+      rect = div.getBoundingClientRect();
+    },
+    f() {
+      fix_position(div);
+      stop_animation();
+    },
+    a() {
+      stop_animation();
+      stop_animation = create_animation(div, rect, flip, { duration: 500, easing: quintOut });
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (if_block)
+        if_block.d();
+    }
+  };
+}
+function create_default_slot_1$4(ctx) {
+  let div1;
+  let div0;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let div1_intro;
+  let t;
+  let separator;
+  let current;
+  let each_value = ensure_array_like(
+    /*combatant*/
+    ctx[0].stats
+  );
+  const get_key = (ctx2) => (
+    /*stat*/
+    ctx2[8].id
+  );
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context$1(ctx, each_value, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
+  }
+  separator = new Separator({ props: { class: "transparent sm" } });
+  return {
+    c() {
+      div1 = element("div");
+      div0 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t = space();
+      create_component(separator.$$.fragment);
+      set_style(div0, "width", `100%`);
+      set_style(div0, "height", `auto`);
+      attr(div1, "class", "stat-block svelte-jpi-1t6b1ex");
+      set_style(div1, "height", `90px`);
+      set_style(div1, "width", `125px`);
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, div0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div0, null);
+        }
+      }
+      insert(target, t, anchor);
+      mount_component(separator, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*combatant, isGM*/
+      9) {
+        each_value = ensure_array_like(
+          /*combatant*/
+          ctx2[0].stats
+        );
+        group_outros();
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].r();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div0, fix_and_outro_and_destroy_block, create_each_block$1, null, get_each_context$1);
+        for (let i = 0; i < each_blocks.length; i += 1)
+          each_blocks[i].a();
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      if (local) {
+        if (!div1_intro) {
+          add_render_callback(() => {
+            div1_intro = create_in_transition(div1, slide, {
+              duration: 250,
+              easing: quintOut,
+              axis: "x"
+            });
+            div1_intro.start();
+          });
+        }
+      }
+      transition_in(separator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      transition_out(separator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+        detach(t);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      destroy_component(separator, detaching);
+    }
+  };
+}
+function create_default_slot$6(ctx) {
+  let flex;
+  let t;
+  let if_block_anchor;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "vertical",
+      width: "100%",
+      height: "100%",
+      $$slots: { default: [create_default_slot_3$3] },
+      $$scope: { ctx }
+    }
+  });
+  let if_block = (
+    /*showStats*/
+    ctx[2] && create_if_block$4(ctx)
+  );
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+      t = space();
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      insert(target, t, anchor);
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, combatant, isInteractable*/
+      2051) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
       if (
-        /*$isTokenPickerRunning*/
+        /*showStats*/
+        ctx2[2]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*showStats*/
+          4) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$4(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(if_block_anchor);
+      }
+      destroy_component(flex, detaching);
+      if (if_block)
+        if_block.d(detaching);
+    }
+  };
+}
+function create_fragment$6(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      width: "100%",
+      flex: ["0", "1"],
+      $$slots: { default: [create_default_slot$6] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, combatant, showStats, isInteractable*/
+      2055) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function instance$6($$self, $$props, $$invalidate) {
+  let { combatant } = $$props;
+  let { isInteractable = false } = $$props;
+  let { showStats: showStats2 = false } = $$props;
+  let isGM = game.user.isGM;
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function dblclick_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mouseenter_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mouseleave_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("combatant" in $$props2)
+      $$invalidate(0, combatant = $$props2.combatant);
+    if ("isInteractable" in $$props2)
+      $$invalidate(1, isInteractable = $$props2.isInteractable);
+    if ("showStats" in $$props2)
+      $$invalidate(2, showStats2 = $$props2.showStats);
+  };
+  return [
+    combatant,
+    isInteractable,
+    showStats2,
+    isGM,
+    click_handler,
+    dblclick_handler,
+    mouseenter_handler,
+    mouseleave_handler
+  ];
+}
+class Avatar extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$6, create_fragment$6, safe_not_equal, {
+      combatant: 0,
+      isInteractable: 1,
+      showStats: 2
+    });
+  }
+}
+function createContextMenuStore(id) {
+  let { set, update: update2, subscribe: subscribe2 } = writable({
+    id,
+    mousePosition: { x: 0, y: 0 },
+    controller: null,
+    visibilityFlag: writable(false)
+  });
+  return {
+    set,
+    update: update2,
+    subscribe: subscribe2,
+    show: () => {
+      update2((x) => {
+        x.visibilityFlag.set(true);
+        return x;
+      });
+    },
+    hide: () => {
+      update2((x) => {
+        x.visibilityFlag.set(false);
+        return x;
+      });
+    }
+  };
+}
+const statsPickerContextMenuStore = createContextMenuStore("statsPicker");
+const StatsTab_svelte_svelte_type_style_lang = "";
+function create_default_slot_10$2(ctx) {
+  let t_value = locSettings("combatant-preview-title") + "";
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot_9$2(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      $$slots: { default: [create_default_slot_10$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope*/
+      65536) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_header_slot$3(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      slot: "header",
+      flex: ["1", "0 1"],
+      $$slots: { default: [create_default_slot_9$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope*/
+      65536) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_if_block_1$1(ctx) {
+  let select;
+  let updating_value;
+  let current;
+  function select_value_binding(value) {
+    ctx[7](value);
+  }
+  let select_props = {
+    items: (
+      /*actors*/
+      ctx[5]
+    ),
+    dropdownMaxHeight: "200px",
+    width: "190px",
+    $$slots: {
+      default: [
+        create_default_slot_6$2,
+        ({ item }) => ({ 15: item }),
+        ({ item }) => item ? 32768 : 0
+      ]
+    },
+    $$scope: { ctx }
+  };
+  if (
+    /*currentActorId*/
+    ctx[0] !== void 0
+  ) {
+    select_props.value = /*currentActorId*/
+    ctx[0];
+  }
+  select = new Select({ props: select_props });
+  binding_callbacks.push(() => bind(select, "value", select_value_binding));
+  return {
+    c() {
+      create_component(select.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(select, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const select_changes = {};
+      if (dirty & /*$$scope, item*/
+      98304) {
+        select_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_value && dirty & /*currentActorId*/
+      1) {
+        updating_value = true;
+        select_changes.value = /*currentActorId*/
+        ctx2[0];
+        add_flush_callback(() => updating_value = false);
+      }
+      select.$set(select_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(select.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(select.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(select, detaching);
+    }
+  };
+}
+function create_default_slot_8$2(ctx) {
+  let t_value = (
+    /*item*/
+    ctx[15].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*item*/
+      32768 && t_value !== (t_value = /*item*/
+      ctx2[15].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot_7$2(ctx) {
+  let typography;
+  let t;
+  let image;
+  let div;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-xs overflow-ellipsis align-left",
+      width: "140px",
+      $$slots: { default: [create_default_slot_8$2] },
+      $$scope: { ctx }
+    }
+  });
+  image = new Image({
+    props: {
+      class: "contain",
+      source: (
+        /*item*/
+        ctx[15].icon
+      )
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+      t = space();
+      div = element("div");
+      create_component(image.$$.fragment);
+      set_style(div, "display", "contents");
+      set_style(div, "--image-width", "24px");
+      set_style(div, "--image-height", "24px");
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      insert(target, t, anchor);
+      insert(target, div, anchor);
+      mount_component(image, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, item*/
+      98304) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+      const image_changes = {};
+      if (dirty & /*item*/
+      32768)
+        image_changes.source = /*item*/
+        ctx2[15].icon;
+      image.$set(image_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      transition_in(image.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      transition_out(image.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(typography, detaching);
+      if (detaching && image)
+        detach(div);
+      destroy_component(image, detaching);
+    }
+  };
+}
+function create_default_slot_6$2(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal thick",
+      width: "100%",
+      $$slots: { default: [create_default_slot_7$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, item*/
+      98304) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_if_block$3(ctx) {
+  let div;
+  let avatar;
+  let current;
+  avatar = new Avatar({
+    props: {
+      isInteractable: false,
+      showStats,
+      combatant: (
+        /*$currentActorPreview*/
+        ctx[2]
+      )
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(avatar.$$.fragment);
+      set_style(div, "width", `200px`);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(avatar, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const avatar_changes = {};
+      if (dirty & /*$currentActorPreview*/
+      4)
+        avatar_changes.combatant = /*$currentActorPreview*/
+        ctx2[2];
+      avatar.$set(avatar_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(avatar.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(avatar.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(avatar);
+    }
+  };
+}
+function create_content_slot$1(ctx) {
+  let t;
+  let if_block1_anchor;
+  let current;
+  let if_block0 = (
+    /*actors*/
+    ctx[5].length > 0 && create_if_block_1$1(ctx)
+  );
+  let if_block1 = (
+    /*$currentActorPreview*/
+    ctx[2] && create_if_block$3(ctx)
+  );
+  return {
+    c() {
+      if (if_block0)
+        if_block0.c();
+      t = space();
+      if (if_block1)
+        if_block1.c();
+      if_block1_anchor = empty();
+    },
+    m(target, anchor) {
+      if (if_block0)
+        if_block0.m(target, anchor);
+      insert(target, t, anchor);
+      if (if_block1)
+        if_block1.m(target, anchor);
+      insert(target, if_block1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (
+        /*actors*/
+        ctx2[5].length > 0
+      )
+        if_block0.p(ctx2, dirty);
+      if (
+        /*$currentActorPreview*/
         ctx2[2]
       ) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
-          if (dirty[0] & /*$isTokenPickerRunning*/
+          if (dirty & /*$currentActorPreview*/
           4) {
             transition_in(if_block1, 1);
           }
         } else {
-          if_block1 = create_if_block(ctx2);
+          if_block1 = create_if_block$3(ctx2);
           if_block1.c();
           transition_in(if_block1, 1);
           if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
@@ -18883,124 +30564,3117 @@ function create_default_slot(ctx) {
     i(local) {
       if (current)
         return;
-      transition_in(simpledrawer.$$.fragment, local);
-      transition_in(combatantgrid.$$.fragment, local);
-      transition_in(combatantselectiontoolbox.$$.fragment, local);
       transition_in(if_block0);
-      transition_in(simplebutton.$$.fragment, local);
       transition_in(if_block1);
       current = true;
     },
     o(local) {
-      transition_out(simpledrawer.$$.fragment, local);
-      transition_out(combatantgrid.$$.fragment, local);
-      transition_out(combatantselectiontoolbox.$$.fragment, local);
       transition_out(if_block0);
-      transition_out(simplebutton.$$.fragment, local);
       transition_out(if_block1);
       current = false;
     },
     d(detaching) {
       if (detaching) {
-        detach(div3);
-        detach(t4);
+        detach(t);
         detach(if_block1_anchor);
       }
-      destroy_component(simpledrawer);
-      destroy_component(combatantgrid);
-      destroy_component(combatantselectiontoolbox);
       if (if_block0)
-        if_block0.d();
-      destroy_component(simplebutton);
+        if_block0.d(detaching);
       if (if_block1)
         if_block1.d(detaching);
-      mounted = false;
-      run_all(dispose);
     }
   };
 }
-function create_fragment(ctx) {
-  let emptyapplicationshell;
+function create_default_slot_5$2(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = "fa fa-" + /*$statLabels*/
+      (ctx[1][
+        /*index*/
+        ctx[14]
+      ].showToPlayer ? "eye" : "eye-slash"));
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*$statLabels, index*/
+      16386 && i_class_value !== (i_class_value = "fa fa-" + /*$statLabels*/
+      (ctx2[1][
+        /*index*/
+        ctx2[14]
+      ].showToPlayer ? "eye" : "eye-slash"))) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_4$2(ctx) {
+  let i;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", "fa fa-list");
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_3$2(ctx) {
+  let textbox;
+  let updating_value;
+  let t0;
+  let button0;
+  let t1;
+  let button1;
+  let current;
+  function textbox_value_binding(value) {
+    ctx[8](
+      value,
+      /*index*/
+      ctx[14]
+    );
+  }
+  function valuechanged_handler(...args) {
+    return (
+      /*valuechanged_handler*/
+      ctx[9](
+        /*index*/
+        ctx[14],
+        ...args
+      )
+    );
+  }
+  let textbox_props = { canReset: false, class: "sm" };
+  if (
+    /*$statLabels*/
+    ctx[1][
+      /*index*/
+      ctx[14]
+    ].label !== void 0
+  ) {
+    textbox_props.value = /*$statLabels*/
+    ctx[1][
+      /*index*/
+      ctx[14]
+    ].label;
+  }
+  textbox = new TextBox({ props: textbox_props });
+  binding_callbacks.push(() => bind(textbox, "value", textbox_value_binding));
+  textbox.$on("valuechanged", valuechanged_handler);
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[10](
+        /*index*/
+        ctx[14]
+      )
+    );
+  }
+  button0 = new Button({
+    props: {
+      class: "icon sm",
+      tooltip: locSettings("toggle-player-visibility.title") + ".\n" + locSettings(
+        /*$statLabels*/
+        ctx[1][
+          /*index*/
+          ctx[14]
+        ].showToPlayer ? "visible" : "hidden"
+      ),
+      $$slots: { default: [create_default_slot_5$2] },
+      $$scope: { ctx }
+    }
+  });
+  button0.$on("click", click_handler);
+  button1 = new Button({
+    props: {
+      class: "icon sm",
+      actions: [
+        {
+          run: popupSource,
+          params: {
+            popupId: "statsPicker",
+            flagStore: (
+              /*$statsPickerContextMenuStore*/
+              ctx[3].visibilityFlag
+            )
+          }
+        }
+      ],
+      tooltip: locSettings("pick-stat.title"),
+      $$slots: { default: [create_default_slot_4$2] },
+      $$scope: { ctx }
+    }
+  });
+  button1.$on(
+    "click",
+    /*click_handler_1*/
+    ctx[11]
+  );
+  return {
+    c() {
+      create_component(textbox.$$.fragment);
+      t0 = space();
+      create_component(button0.$$.fragment);
+      t1 = space();
+      create_component(button1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(textbox, target, anchor);
+      insert(target, t0, anchor);
+      mount_component(button0, target, anchor);
+      insert(target, t1, anchor);
+      mount_component(button1, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const textbox_changes = {};
+      if (!updating_value && dirty & /*$statLabels, index*/
+      16386) {
+        updating_value = true;
+        textbox_changes.value = /*$statLabels*/
+        ctx[1][
+          /*index*/
+          ctx[14]
+        ].label;
+        add_flush_callback(() => updating_value = false);
+      }
+      textbox.$set(textbox_changes);
+      const button0_changes = {};
+      if (dirty & /*$statLabels, index*/
+      16386)
+        button0_changes.tooltip = locSettings("toggle-player-visibility.title") + ".\n" + locSettings(
+          /*$statLabels*/
+          ctx[1][
+            /*index*/
+            ctx[14]
+          ].showToPlayer ? "visible" : "hidden"
+        );
+      if (dirty & /*$$scope, $statLabels, index*/
+      81922) {
+        button0_changes.$$scope = { dirty, ctx };
+      }
+      button0.$set(button0_changes);
+      const button1_changes = {};
+      if (dirty & /*$statsPickerContextMenuStore*/
+      8)
+        button1_changes.actions = [
+          {
+            run: popupSource,
+            params: {
+              popupId: "statsPicker",
+              flagStore: (
+                /*$statsPickerContextMenuStore*/
+                ctx[3].visibilityFlag
+              )
+            }
+          }
+        ];
+      if (dirty & /*$$scope*/
+      65536) {
+        button1_changes.$$scope = { dirty, ctx };
+      }
+      button1.$set(button1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(textbox.$$.fragment, local);
+      transition_in(button0.$$.fragment, local);
+      transition_in(button1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(textbox.$$.fragment, local);
+      transition_out(button0.$$.fragment, local);
+      transition_out(button1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+      }
+      destroy_component(textbox, detaching);
+      destroy_component(button0, detaching);
+      destroy_component(button1, detaching);
+    }
+  };
+}
+function create_default_slot_2$3(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      $$slots: { default: [create_default_slot_3$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, $statsPickerContextMenuStore, $statLabels, index*/
+      81930) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_default_slot_1$3(ctx) {
+  let headerbox;
+  let t;
+  let div;
+  let editablelist;
+  let current;
+  headerbox = new HeaderBox({
+    props: {
+      width: "220px",
+      $$slots: {
+        content: [create_content_slot$1],
+        header: [create_header_slot$3]
+      },
+      $$scope: { ctx }
+    }
+  });
+  editablelist = new EditableList({
+    props: {
+      title: locSettings("stats.tab"),
+      items: (
+        /*$statLabels*/
+        ctx[1]
+      ),
+      dndzone: "stats",
+      $$slots: {
+        default: [
+          create_default_slot_2$3,
+          ({ index }) => ({ 14: index }),
+          ({ index }) => index ? 16384 : 0
+        ]
+      },
+      $$scope: { ctx }
+    }
+  });
+  editablelist.$on("copy", copyStat);
+  editablelist.$on("create", createStat);
+  editablelist.$on(
+    "listUpdated",
+    /*statsUpdated*/
+    ctx[4]
+  );
+  return {
+    c() {
+      create_component(headerbox.$$.fragment);
+      t = space();
+      div = element("div");
+      create_component(editablelist.$$.fragment);
+      set_style(div, "background", `red`);
+      set_style(div, "width", `100%`);
+      set_style(div, "height", `100%`);
+    },
+    m(target, anchor) {
+      mount_component(headerbox, target, anchor);
+      insert(target, t, anchor);
+      insert(target, div, anchor);
+      mount_component(editablelist, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const headerbox_changes = {};
+      if (dirty & /*$$scope, $currentActorPreview, currentActorId*/
+      65541) {
+        headerbox_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      headerbox.$set(headerbox_changes);
+      const editablelist_changes = {};
+      if (dirty & /*$statLabels*/
+      2)
+        editablelist_changes.items = /*$statLabels*/
+        ctx2[1];
+      if (dirty & /*$$scope, $statsPickerContextMenuStore, $statLabels, index*/
+      81930) {
+        editablelist_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      editablelist.$set(editablelist_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(headerbox.$$.fragment, local);
+      transition_in(editablelist.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(headerbox.$$.fragment, local);
+      transition_out(editablelist.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(div);
+      }
+      destroy_component(headerbox, detaching);
+      destroy_component(editablelist);
+    }
+  };
+}
+function create_default_slot$5(ctx) {
+  let div;
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal",
+      width: "100%",
+      $$slots: { default: [create_default_slot_1$3] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(flex.$$.fragment);
+      attr(div, "class", "property-inspector-container svelte-jpi-6u4wsz");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(flex, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, $statLabels, $statsPickerContextMenuStore, $currentActorPreview, currentActorId*/
+      65551) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(flex);
+    }
+  };
+}
+function create_fragment$5(ctx) {
+  let tab;
+  let current;
+  tab = new Tab({
+    props: {
+      data: {
+        header: locSettings("stats.tab"),
+        icon: "list"
+      },
+      $$slots: { default: [create_default_slot$5] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(tab.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(tab, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const tab_changes = {};
+      if (dirty & /*$$scope, $statLabels, $statsPickerContextMenuStore, $currentActorPreview, currentActorId*/
+      65551) {
+        tab_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tab.$set(tab_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(tab.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tab.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(tab, detaching);
+    }
+  };
+}
+let showStats = true;
+function createStat(event) {
+  event.detail.result = {
+    label: "",
+    value: "",
+    showToPlayer: false,
+    stats: []
+  };
+}
+function copyStat(event) {
+  const clone = structuredClone(event.detail.item);
+  event.detail.result = clone;
+}
+function instance$5($$self, $$props, $$invalidate) {
+  let $currentIconImageType;
+  let $statLabels;
+  let $currentActorPreview;
+  let $statsPickerContextMenuStore;
+  component_subscribe($$self, currentIconImageType, ($$value) => $$invalidate(12, $currentIconImageType = $$value));
+  component_subscribe($$self, statLabels, ($$value) => $$invalidate(1, $statLabels = $$value));
+  component_subscribe($$self, currentActorPreview, ($$value) => $$invalidate(2, $currentActorPreview = $$value));
+  component_subscribe($$self, statsPickerContextMenuStore, ($$value) => $$invalidate(3, $statsPickerContextMenuStore = $$value));
+  function statsUpdated(event) {
+    statLabels.set(event.detail);
+  }
+  let actors = [];
+  game.actors.forEach((actor) => {
+    actors.push({
+      id: actor.id,
+      label: actor.name,
+      icon: ModuleUtils.getActorIcon(actor.id, $currentIconImageType),
+      value: actor.id
+    });
+  });
+  let currentActorId = actors.length > 0 ? actors[0].id : -1;
+  function generatePreviewActorData(actorId, statLabels2) {
+    let actor = game.actors.get(actorId);
+    const actorStats = [];
+    statLabels2.forEach((x) => {
+      if (x.showToPlayer || game.user.isGM) {
+        const resolvedText = ModuleUtils.resolvePropertyText(actor, x.label);
+        actorStats.push({ label: resolvedText, id: x.id });
+      }
+    });
+    return {
+      icon: ModuleUtils.getActorIcon(actorId, $currentIconImageType),
+      name: actor.name,
+      id: actorId,
+      owners: ModuleUtils.retrieveOwnersInfo(actorId),
+      stats: actorStats
+    };
+  }
+  function togglePlayerVisibility(index) {
+    statLabels.update((x) => {
+      x[index].showToPlayer = !x[index].showToPlayer;
+      return x;
+    });
+  }
+  function select_value_binding(value) {
+    currentActorId = value;
+    $$invalidate(0, currentActorId);
+  }
+  function textbox_value_binding(value, index) {
+    if ($$self.$$.not_equal($statLabels[index].label, value)) {
+      $statLabels[index].label = value;
+      statLabels.set($statLabels);
+    }
+  }
+  const valuechanged_handler = (index, e) => {
+    statLabels.update((v) => {
+      v[index].label = e.detail;
+      return v;
+    });
+  };
+  const click_handler = (index) => {
+    togglePlayerVisibility(index);
+  };
+  const click_handler_1 = () => {
+    statsPickerContextMenuStore.show();
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*currentActorId, $statLabels*/
+    3) {
+      currentActorPreview.set(currentActorId !== -1 ? generatePreviewActorData(currentActorId, $statLabels) : null);
+    }
+  };
+  return [
+    currentActorId,
+    $statLabels,
+    $currentActorPreview,
+    $statsPickerContextMenuStore,
+    statsUpdated,
+    actors,
+    togglePlayerVisibility,
+    select_value_binding,
+    textbox_value_binding,
+    valuechanged_handler,
+    click_handler,
+    click_handler_1
+  ];
+}
+class StatsTab extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$5, create_fragment$5, safe_not_equal, {});
+  }
+}
+function create_default_slot_10$1(ctx) {
+  let generaltab;
+  let t;
+  let statstab;
+  let current;
+  generaltab = new GeneralTab({});
+  statstab = new StatsTab({});
+  return {
+    c() {
+      create_component(generaltab.$$.fragment);
+      t = space();
+      create_component(statstab.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(generaltab, target, anchor);
+      insert(target, t, anchor);
+      mount_component(statstab, target, anchor);
+      current = true;
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(generaltab.$$.fragment, local);
+      transition_in(statstab.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(generaltab.$$.fragment, local);
+      transition_out(statstab.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(generaltab, detaching);
+      destroy_component(statstab, detaching);
+    }
+  };
+}
+function create_default_slot_9$1(ctx) {
+  let t_value = (
+    /*tab*/
+    ctx[10].header + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*tab*/
+      1024 && t_value !== (t_value = /*tab*/
+      ctx2[10].header + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_default_slot_8$1(ctx) {
+  let typography;
+  let t;
+  let i;
+  let i_class_value;
+  let current;
+  typography = new Typography({
+    props: {
+      class: "size-lg color-on-surface align-center",
+      width: "auto",
+      $$slots: { default: [create_default_slot_9$1] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+      t = space();
+      i = element("i");
+      attr(i, "class", i_class_value = "fa fa-" + /*tab*/
+      ctx[10].icon);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      insert(target, t, anchor);
+      insert(target, i, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, tab*/
+      3072) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+      if (!current || dirty & /*tab*/
+      1024 && i_class_value !== (i_class_value = "fa fa-" + /*tab*/
+      ctx2[10].icon)) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(i);
+      }
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_header_slot$2(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "horizontal thin",
+      width: "auto",
+      $$slots: { default: [create_default_slot_8$1] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, tab*/
+      3072) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_default_slot_7$1(ctx) {
+  let tabcontrol;
+  let current;
+  tabcontrol = new TabControl({
+    props: {
+      $$slots: {
+        header: [
+          create_header_slot$2,
+          ({ tab }) => ({ 10: tab }),
+          ({ tab }) => tab ? 1024 : 0
+        ],
+        default: [create_default_slot_10$1]
+      },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(tabcontrol.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(tabcontrol, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const tabcontrol_changes = {};
+      if (dirty & /*$$scope, tab*/
+      3072) {
+        tabcontrol_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tabcontrol.$set(tabcontrol_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(tabcontrol.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tabcontrol.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(tabcontrol, detaching);
+    }
+  };
+}
+function create_if_block$2(ctx) {
+  let button;
+  let current;
+  button = new Button({
+    props: {
+      class: "btn secondary md",
+      width: "50%",
+      tooltip: locSettings(`${Constants.Options.InstallCommonMacros}-description`),
+      $$slots: { default: [create_default_slot_6$1] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on(
+    "click",
+    /*installMacro*/
+    ctx[3]
+  );
+  return {
+    c() {
+      create_component(button.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(button, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const button_changes = {};
+      if (dirty & /*$$scope*/
+      2048) {
+        button_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button.$set(button_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(button, detaching);
+    }
+  };
+}
+function create_default_slot_6$1(ctx) {
+  let span;
+  let t1;
+  let i;
+  return {
+    c() {
+      span = element("span");
+      span.textContent = `${locSettings(`${Constants.Options.InstallCommonMacros}-title`)}`;
+      t1 = space();
+      i = element("i");
+      attr(i, "class", "fa fa-refresh");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      insert(target, t1, anchor);
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+        detach(t1);
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_5$1(ctx) {
+  let span;
+  let t1;
+  let i;
+  return {
+    c() {
+      span = element("span");
+      span.textContent = `${locSettings(`reset-to-default-title`)}`;
+      t1 = space();
+      i = element("i");
+      attr(i, "class", "fa fa-refresh");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      insert(target, t1, anchor);
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+        detach(t1);
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_4$1(ctx) {
+  let span;
+  let t1;
+  let i;
+  return {
+    c() {
+      span = element("span");
+      span.textContent = `${locSettings(`close.button`)}`;
+      t1 = space();
+      i = element("i");
+      attr(i, "class", "fa fa-check");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      insert(target, t1, anchor);
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+        detach(t1);
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_3$1(ctx) {
+  let t0;
+  let button0;
+  let t1;
+  let button1;
+  let current;
+  let if_block = !/*areCommonMacrosInstalled*/
+  ctx[1] && create_if_block$2(ctx);
+  button0 = new Button({
+    props: {
+      class: "btn warning md",
+      width: "50%",
+      tooltip: locSettings("reset-to-default-description"),
+      $$slots: { default: [create_default_slot_5$1] },
+      $$scope: { ctx }
+    }
+  });
+  button0.$on(
+    "click",
+    /*reset*/
+    ctx[5]
+  );
+  button1 = new Button({
+    props: {
+      class: "btn success md",
+      width: "100%",
+      $$slots: { default: [create_default_slot_4$1] },
+      $$scope: { ctx }
+    }
+  });
+  button1.$on(
+    "click",
+    /*close*/
+    ctx[4]
+  );
+  return {
+    c() {
+      if (if_block)
+        if_block.c();
+      t0 = space();
+      create_component(button0.$$.fragment);
+      t1 = space();
+      create_component(button1.$$.fragment);
+    },
+    m(target, anchor) {
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, t0, anchor);
+      mount_component(button0, target, anchor);
+      insert(target, t1, anchor);
+      mount_component(button1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (!/*areCommonMacrosInstalled*/
+      ctx2[1]) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*areCommonMacrosInstalled*/
+          2) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$2(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(t0.parentNode, t0);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+      const button0_changes = {};
+      if (dirty & /*$$scope*/
+      2048) {
+        button0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button0.$set(button0_changes);
+      const button1_changes = {};
+      if (dirty & /*$$scope*/
+      2048) {
+        button1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button1.$set(button1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      transition_in(button0.$$.fragment, local);
+      transition_in(button1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      transition_out(button0.$$.fragment, local);
+      transition_out(button1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+      }
+      if (if_block)
+        if_block.d(detaching);
+      destroy_component(button0, detaching);
+      destroy_component(button1, detaching);
+    }
+  };
+}
+function create_default_slot_2$2(ctx) {
+  let flex0;
+  let t;
+  let flex1;
+  let current;
+  flex0 = new Flex({
+    props: {
+      class: "horizontal  clip-overflow",
+      height: "100%",
+      "min-height": "50px",
+      flex: ["1 0", "0 0"],
+      $$slots: { default: [create_default_slot_7$1] },
+      $$scope: { ctx }
+    }
+  });
+  flex1 = new Flex({
+    props: {
+      class: "horizontal thick",
+      $$slots: { default: [create_default_slot_3$1] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex0.$$.fragment);
+      t = space();
+      create_component(flex1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex0, target, anchor);
+      insert(target, t, anchor);
+      mount_component(flex1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex0_changes = {};
+      if (dirty & /*$$scope*/
+      2048) {
+        flex0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex0.$set(flex0_changes);
+      const flex1_changes = {};
+      if (dirty & /*$$scope, areCommonMacrosInstalled*/
+      2050) {
+        flex1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex1.$set(flex1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex0.$$.fragment, local);
+      transition_in(flex1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex0.$$.fragment, local);
+      transition_out(flex1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(flex0, detaching);
+      destroy_component(flex1, detaching);
+    }
+  };
+}
+function create_default_slot_1$2(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "vertical thick scrollable",
+      height: "100%",
+      width: "100%",
+      flex: ["1", "0 0"],
+      $$slots: { default: [create_default_slot_2$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, areCommonMacrosInstalled*/
+      2050) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_default_slot$4(ctx) {
+  let theme;
+  let current;
+  theme = new Theme({
+    props: {
+      theme: (
+        /*$currentTheme*/
+        ctx[2]
+      ),
+      $$slots: { default: [create_default_slot_1$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(theme.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(theme, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const theme_changes = {};
+      if (dirty & /*$currentTheme*/
+      4)
+        theme_changes.theme = /*$currentTheme*/
+        ctx2[2];
+      if (dirty & /*$$scope, areCommonMacrosInstalled*/
+      2050) {
+        theme_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      theme.$set(theme_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(theme.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(theme.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(theme, detaching);
+    }
+  };
+}
+function create_fragment$4(ctx) {
+  let applicationshell;
   let updating_elementRoot;
   let current;
-  function emptyapplicationshell_elementRoot_binding(value) {
-    ctx[29](value);
+  function applicationshell_elementRoot_binding(value) {
+    ctx[6](value);
   }
-  let emptyapplicationshell_props = {
-    $$slots: { default: [create_default_slot] },
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot$4] },
     $$scope: { ctx }
   };
   if (
     /*elementRoot*/
     ctx[0] !== void 0
   ) {
-    emptyapplicationshell_props.elementRoot = /*elementRoot*/
+    applicationshell_props.elementRoot = /*elementRoot*/
     ctx[0];
   }
-  emptyapplicationshell = new EmptyApplicationShell$1({ props: emptyapplicationshell_props });
-  binding_callbacks.push(() => bind(emptyapplicationshell, "elementRoot", emptyapplicationshell_elementRoot_binding));
+  applicationshell = new ApplicationShell$1({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
   return {
     c() {
-      create_component(emptyapplicationshell.$$.fragment);
+      create_component(applicationshell.$$.fragment);
     },
     m(target, anchor) {
-      mount_component(emptyapplicationshell, target, anchor);
+      mount_component(applicationshell, target, anchor);
       current = true;
     },
-    p(ctx2, dirty) {
-      const emptyapplicationshell_changes = {};
-      if (dirty[0] & /*$isTokenPickerRunning, $isAnyCombatantSelected, $toolboxActions, $selectableCombatants, $selectedCombatantId, $previousActorsDrawerOpen, $previousCombatants*/
-      254 | dirty[1] & /*$$scope*/
-      2) {
-        emptyapplicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+    p(ctx2, [dirty]) {
+      const applicationshell_changes = {};
+      if (dirty & /*$$scope, $currentTheme, areCommonMacrosInstalled*/
+      2054) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
-      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      if (!updating_elementRoot && dirty & /*elementRoot*/
       1) {
         updating_elementRoot = true;
-        emptyapplicationshell_changes.elementRoot = /*elementRoot*/
+        applicationshell_changes.elementRoot = /*elementRoot*/
         ctx2[0];
         add_flush_callback(() => updating_elementRoot = false);
       }
-      emptyapplicationshell.$set(emptyapplicationshell_changes);
+      applicationshell.$set(applicationshell_changes);
     },
     i(local) {
       if (current)
         return;
-      transition_in(emptyapplicationshell.$$.fragment, local);
+      transition_in(applicationshell.$$.fragment, local);
       current = true;
     },
     o(local) {
-      transition_out(emptyapplicationshell.$$.fragment, local);
+      transition_out(applicationshell.$$.fragment, local);
       current = false;
     },
     d(detaching) {
-      destroy_component(emptyapplicationshell, detaching);
+      destroy_component(applicationshell, detaching);
     }
   };
 }
-function _onActionRequested(ev) {
-  ev.detail();
+function instance$4($$self, $$props, $$invalidate) {
+  let $currentTheme;
+  component_subscribe($$self, currentTheme, ($$value) => $$invalidate(2, $currentTheme = $$value));
+  let { elementRoot } = $$props;
+  let areCommonMacrosInstalled = ModuleAPI.instance.areCommonMacrosInstalled();
+  const { application, moduleAPI } = getContext("#external");
+  const headerButtonNoClose = application.reactive.storeAppOptions.headerButtonNoClose;
+  setTimeout(
+    () => {
+      headerButtonNoClose.set(true);
+    },
+    1
+  );
+  function installMacro() {
+    moduleAPI.installCommonMacros();
+    $$invalidate(1, areCommonMacrosInstalled = true);
+  }
+  function close2() {
+    moduleAPI.closeConfig();
+  }
+  async function reset() {
+    const reload = await Dialog.confirm({
+      title: locSettings("reset-to-default-modal-title"),
+      content: `<p>${locSettings("reset-to-default-modal-description")}</p>`
+    });
+    if (reload) {
+      ModuleSettings.resetToDefault();
+    }
+  }
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2)
+      $$invalidate(0, elementRoot = $$props2.elementRoot);
+  };
+  return [
+    elementRoot,
+    areCommonMacrosInstalled,
+    $currentTheme,
+    installMacro,
+    close2,
+    reset,
+    applicationshell_elementRoot_binding
+  ];
 }
-function instance($$self, $$props, $$invalidate) {
-  let $previousActorsDrawerOpen;
+class ConfigurationWindow extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$4, create_fragment$4, safe_not_equal, { elementRoot: 0 });
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
+    flush();
+  }
+}
+class ConfigurationWindowApplicationProxy extends FormApplication {
+  constructor(options = {}) {
+    super({}, options);
+    ModuleAPI.instance.showConfig();
+  }
+  async _updateObject() {
+  }
+  render() {
+    this.close();
+  }
+}
+class ConfigurationWindowApplication extends SvelteApplication {
+  static get defaultOptions() {
+    const moduleAPI = game.modules.get("just-popcorn-initiative").api;
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      id: "popcorn-initiative-config",
+      classes: ["configuration-window"],
+      resizable: true,
+      title: locSettings("window-title"),
+      width: 800,
+      height: 500,
+      svelte: {
+        class: ConfigurationWindow,
+        target: document.body,
+        context: { moduleAPI }
+      }
+    });
+  }
+}
+class ModuleSettings {
+  static initialize() {
+    this._settings = [];
+    this._registerSettings();
+    combatantImageTypes.set([
+      {
+        value: Constants.CombatantImageType.token.id,
+        label: locSettings(Constants.CombatantImageType.token.text)
+      },
+      {
+        value: Constants.CombatantImageType.actor.id,
+        label: locSettings(Constants.CombatantImageType.actor.text)
+      }
+    ]);
+    layoutCorners.set([
+      { value: "topLeft", label: locSettings(`${Constants.Options.SelectionWindowAnchor}-topLeft`) },
+      { value: "topRight", label: locSettings(`${Constants.Options.SelectionWindowAnchor}-topRight`) },
+      { value: "bottomLeft", label: locSettings(`${Constants.Options.SelectionWindowAnchor}-bottomLeft`) },
+      {
+        value: "bottomRight",
+        label: locSettings(`${Constants.Options.SelectionWindowAnchor}-bottomRight`)
+      },
+      { value: "center", label: locSettings(`${Constants.Options.SelectionWindowAnchor}-center`) },
+      { value: "free", label: locSettings(`${Constants.Options.SelectionWindowAnchor}-free`) }
+    ]);
+    StoreUpdater.updateSettings();
+  }
+  static async save() {
+    let reloadRequired = false;
+    this._settings.forEach((x) => {
+      reloadRequired |= this._setSettingValue(x.id, get_store_value(x.storeValue));
+    });
+    if (reloadRequired) {
+      await SettingsConfig.reloadConfirm({ world: true });
+    }
+  }
+  static async resetToDefault() {
+    let reloadRequired = false;
+    this._settings.forEach((x) => {
+      x.storeValue.set(x.defaultValue);
+      reloadRequired |= this._setSettingValue(x.id, x.defaultValue);
+    });
+    if (reloadRequired) {
+      await SettingsConfig.reloadConfirm({ world: true });
+    }
+  }
+  static async saveSetting(storeValue) {
+    const setting = this._settings.find((x) => {
+      return x.storeValue === storeValue;
+    });
+    if (setting != null) {
+      const reloadRequired = this._setSettingValue(setting.id, get_store_value(setting.storeValue));
+      if (reloadRequired) {
+        await SettingsConfig.reloadConfirm({ world: true });
+      }
+    }
+  }
+  static _registerSettings() {
+    game.settings.registerMenu(Constants.ModuleName, "configuration", {
+      name: locSettings("configure.button"),
+      label: locSettings("configure.button"),
+      icon: "fas fa-gear",
+      type: ConfigurationWindowApplicationProxy,
+      restricted: true
+    });
+    this._addSetting(Constants.Options.OverrideNextTurnButton, Boolean, true, true, overrideEndTurnButton);
+    this._addSetting(Constants.Options.CanSelectWhenRoundIsOver, Boolean, true, false, canSelectWhenRoundIsOver);
+    this._addSetting(Constants.Options.CanLastActorSelectThemselves, Boolean, false, false, canLastActorSelectThemselves);
+    this._addSetting(Constants.Options.SelectionWindowAnchor, String, "free", false, selectionWindowAnchor);
+    this._addSetting(Constants.Options.Theme, String, "dark-juice", false, currentTheme);
+    this._addSetting(Constants.Options.CombatantImageType, String, Constants.CombatantImageType.token.id, false, currentIconImageType);
+    this._addSetting(Constants.Options.Stats, Array, [], false, statLabels);
+    this._addSetting(Constants.Options.SelectionWindowState, Object, {}, false, selectionWindowState, false);
+  }
+  static _addSetting(id, type, defaultValue, requiresReload, storeValue, isGlobal = true) {
+    const setting = this._createSetting(id, requiresReload, storeValue, defaultValue);
+    this._settings.push(setting);
+    game.settings.register(Constants.ModuleName, id, {
+      name: locSettings(`${id}-title`),
+      hint: locSettings(`${id}-description`),
+      scope: isGlobal ? "world" : "client",
+      config: false,
+      default: defaultValue,
+      requiresReload,
+      type,
+      onChange: (newValue) => {
+        storeValue.set(newValue);
+      }
+    });
+    storeValue.set(this._getSettingValue(id));
+  }
+  static _getSettingValue(id) {
+    return game.settings.get(Constants.ModuleName, id);
+  }
+  static _createSetting(id, requiresReload, storeValue, defaultValue) {
+    return { id, requiresReload, storeValue, defaultValue };
+  }
+  static _setSettingValue(id, value) {
+    if (this._getSettingValue(id) !== value || typeof value === "object") {
+      game.settings.set(Constants.ModuleName, id, value);
+      const setting = game.settings.settings.get(`${Constants.ModuleName}.${id}`);
+      return setting.requiresReload;
+    }
+    return false;
+  }
+}
+function get_each_context(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[12] = list[i];
+  return child_ctx;
+}
+function create_each_block(ctx) {
+  let avatar;
+  let current;
+  function click_handler(...args) {
+    return (
+      /*click_handler*/
+      ctx[7](
+        /*combatant*/
+        ctx[12],
+        ...args
+      )
+    );
+  }
+  function dblclick_handler(...args) {
+    return (
+      /*dblclick_handler*/
+      ctx[8](
+        /*combatant*/
+        ctx[12],
+        ...args
+      )
+    );
+  }
+  function mouseenter_handler(...args) {
+    return (
+      /*mouseenter_handler*/
+      ctx[9](
+        /*combatant*/
+        ctx[12],
+        ...args
+      )
+    );
+  }
+  function mouseleave_handler(...args) {
+    return (
+      /*mouseleave_handler*/
+      ctx[10](
+        /*combatant*/
+        ctx[12],
+        ...args
+      )
+    );
+  }
+  avatar = new Avatar({
+    props: {
+      combatant: (
+        /*combatant*/
+        ctx[12]
+      ),
+      isInteractable: (
+        /*areCombatantInteractable*/
+        ctx[2]
+      ),
+      showStats: (
+        /*showStats*/
+        ctx[1]
+      )
+    }
+  });
+  avatar.$on("click", click_handler);
+  avatar.$on("dblclick", dblclick_handler);
+  avatar.$on("mouseenter", mouseenter_handler);
+  avatar.$on("mouseleave", mouseleave_handler);
+  return {
+    c() {
+      create_component(avatar.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(avatar, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const avatar_changes = {};
+      if (dirty & /*combatants*/
+      1)
+        avatar_changes.combatant = /*combatant*/
+        ctx[12];
+      if (dirty & /*areCombatantInteractable*/
+      4)
+        avatar_changes.isInteractable = /*areCombatantInteractable*/
+        ctx[2];
+      if (dirty & /*showStats*/
+      2)
+        avatar_changes.showStats = /*showStats*/
+        ctx[1];
+      avatar.$set(avatar_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(avatar.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(avatar.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(avatar, detaching);
+    }
+  };
+}
+function create_default_slot$3(ctx) {
+  let each_1_anchor;
+  let current;
+  let each_value = ensure_array_like(
+    /*combatants*/
+    ctx[0]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+  }
+  const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+    each_blocks[i] = null;
+  });
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*combatants, areCombatantInteractable, showStats, _onItemClick, _onItemDoubleClick, _onItemMouseEnter, _onItemMouseExit*/
+      127) {
+        each_value = ensure_array_like(
+          /*combatants*/
+          ctx2[0]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_fragment$3(ctx) {
+  let grid;
+  let current;
+  grid = new Grid({
+    props: {
+      columnSize: (
+        /*showStats*/
+        ctx[1] ? "200px" : "70px"
+      ),
+      $$slots: { default: [create_default_slot$3] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(grid.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(grid, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const grid_changes = {};
+      if (dirty & /*showStats*/
+      2)
+        grid_changes.columnSize = /*showStats*/
+        ctx2[1] ? "200px" : "70px";
+      if (dirty & /*$$scope, combatants, areCombatantInteractable, showStats*/
+      32775) {
+        grid_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      grid.$set(grid_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(grid.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(grid.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(grid, detaching);
+    }
+  };
+}
+function instance$3($$self, $$props, $$invalidate) {
+  let { combatants } = $$props;
+  let { showStats: showStats2 } = $$props;
+  let { areCombatantInteractable = true } = $$props;
+  const dispatch2 = createEventDispatcher();
+  function _onItemClick(combatant) {
+    dispatch2("itemClick", combatant);
+  }
+  function _onItemDoubleClick(combatant) {
+    dispatch2("itemDoubleClick", combatant);
+  }
+  function _onItemMouseEnter(combatant) {
+    combatant.isHighlighted = true;
+    $$invalidate(0, combatants);
+    dispatch2("itemMouseEnter", combatant);
+  }
+  function _onItemMouseExit(combatant) {
+    combatant.isHighlighted = false;
+    $$invalidate(0, combatants);
+    dispatch2("itemMouseExit", combatant);
+  }
+  const click_handler = (combatant, ev) => _onItemClick(combatant);
+  const dblclick_handler = (combatant, ev) => _onItemDoubleClick(combatant);
+  const mouseenter_handler = (combatant, ev) => _onItemMouseEnter(combatant);
+  const mouseleave_handler = (combatant, ev) => _onItemMouseExit(combatant);
+  $$self.$$set = ($$props2) => {
+    if ("combatants" in $$props2)
+      $$invalidate(0, combatants = $$props2.combatants);
+    if ("showStats" in $$props2)
+      $$invalidate(1, showStats2 = $$props2.showStats);
+    if ("areCombatantInteractable" in $$props2)
+      $$invalidate(2, areCombatantInteractable = $$props2.areCombatantInteractable);
+  };
+  return [
+    combatants,
+    showStats2,
+    areCombatantInteractable,
+    _onItemClick,
+    _onItemDoubleClick,
+    _onItemMouseEnter,
+    _onItemMouseExit,
+    click_handler,
+    dblclick_handler,
+    mouseenter_handler,
+    mouseleave_handler
+  ];
+}
+class CombatantGrid extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$3, create_fragment$3, safe_not_equal, {
+      combatants: 0,
+      showStats: 1,
+      areCombatantInteractable: 2
+    });
+  }
+}
+function create_default_slot_2$1(ctx) {
+  let html_tag;
+  let raw_value = locWindow(`combatant-picker.title`) + "";
+  let html_anchor;
+  return {
+    c() {
+      html_tag = new HtmlTag(false);
+      html_anchor = empty();
+      html_tag.a = html_anchor;
+    },
+    m(target, anchor) {
+      html_tag.m(raw_value, target, anchor);
+      insert(target, html_anchor, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(html_anchor);
+        html_tag.d();
+      }
+    }
+  };
+}
+function create_default_slot_1$1(ctx) {
+  let t_value = (
+    /*$currentTokenPickerTarget*/
+    (ctx[0] ? (
+      /*$currentTokenPickerTarget*/
+      ctx[0].name
+    ) : "") + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*$currentTokenPickerTarget*/
+      1 && t_value !== (t_value = /*$currentTokenPickerTarget*/
+      (ctx2[0] ? (
+        /*$currentTokenPickerTarget*/
+        ctx2[0].name
+      ) : "") + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_header_slot$1(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      slot: "header",
+      class: "size-sm align-center overflow-ellipsis",
+      width: "100%",
+      $$slots: { default: [create_default_slot_1$1] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope, $currentTokenPickerTarget*/
+      129) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_if_block$1(ctx) {
+  let image;
+  let div;
+  let current;
+  image = new Image({
+    props: {
+      class: "cover",
+      source: (
+        /*$currentTokenPickerTarget*/
+        ctx[0] ? (
+          /*$currentTokenPickerTarget*/
+          ctx[0].icon
+        ) : ""
+      )
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(image.$$.fragment);
+      set_style(div, "display", "contents");
+      set_style(div, "--image-width", "64px");
+      set_style(div, "--image-height", "64px");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(image, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const image_changes = {};
+      if (dirty & /*$currentTokenPickerTarget*/
+      1)
+        image_changes.source = /*$currentTokenPickerTarget*/
+        ctx2[0] ? (
+          /*$currentTokenPickerTarget*/
+          ctx2[0].icon
+        ) : "";
+      image.$set(image_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(image.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(image.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching && image)
+        detach(div);
+      destroy_component(image, detaching);
+    }
+  };
+}
+function create_content_slot(ctx) {
+  let if_block_anchor;
+  let current;
+  let if_block = (
+    /*$currentTokenPickerTarget*/
+    ctx[0] && create_if_block$1(ctx)
+  );
+  return {
+    c() {
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (
+        /*$currentTokenPickerTarget*/
+        ctx2[0]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*$currentTokenPickerTarget*/
+          1) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$1(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block)
+        if_block.d(detaching);
+    }
+  };
+}
+function create_default_slot$2(ctx) {
+  let typography;
+  let t;
+  let card;
+  let current;
+  typography = new Typography({
+    props: {
+      width: "100%",
+      class: "size-md align-center",
+      $$slots: { default: [create_default_slot_2$1] },
+      $$scope: { ctx }
+    }
+  });
+  card = new Card({
+    props: {
+      width: "100px",
+      height: "100px",
+      $$slots: {
+        content: [create_content_slot],
+        header: [create_header_slot$1]
+      },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+      t = space();
+      create_component(card.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      insert(target, t, anchor);
+      mount_component(card, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty & /*$$scope*/
+      128) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+      const card_changes = {};
+      if (dirty & /*$$scope, $currentTokenPickerTarget*/
+      129) {
+        card_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      card.$set(card_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      transition_in(card.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      transition_out(card.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(typography, detaching);
+      destroy_component(card, detaching);
+    }
+  };
+}
+function create_fragment$2(ctx) {
+  let div;
+  let flex;
+  let current;
+  let mounted;
+  let dispose;
+  flex = new Flex({
+    props: {
+      class: "vertical thick component justify-center",
+      width: "100%",
+      height: "100%",
+      $$slots: { default: [create_default_slot$2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(flex.$$.fragment);
+      attr(div, "role", "button");
+      attr(div, "tabindex", "0");
+      set_style(div, "width", `100%`);
+      set_style(div, "height", `100%`);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(flex, div, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div,
+            "click",
+            /*click_handler*/
+            ctx[4]
+          ),
+          listen(
+            div,
+            "keydown",
+            /*keydown_handler*/
+            ctx[5]
+          ),
+          listen(
+            div,
+            "mouseenter",
+            /*mouseenter_handler*/
+            ctx[2]
+          ),
+          listen(
+            div,
+            "mouseleave",
+            /*mouseleave_handler*/
+            ctx[3]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      const flex_changes = {};
+      if (dirty & /*$$scope, $currentTokenPickerTarget*/
+      129) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(flex);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$2($$self, $$props, $$invalidate) {
   let $isTokenPickerRunning;
+  let $currentTokenPickerTarget;
+  component_subscribe($$self, isTokenPickerRunning, ($$value) => $$invalidate(6, $isTokenPickerRunning = $$value));
+  component_subscribe($$self, currentTokenPickerTarget, ($$value) => $$invalidate(0, $currentTokenPickerTarget = $$value));
+  function _disableTokenPicker() {
+    set_store_value(isTokenPickerRunning, $isTokenPickerRunning = false, $isTokenPickerRunning);
+  }
+  function mouseenter_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function mouseleave_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  const click_handler = (e) => _disableTokenPicker();
+  const keydown_handler = (e) => _disableTokenPicker();
+  return [
+    $currentTokenPickerTarget,
+    _disableTokenPicker,
+    mouseenter_handler,
+    mouseleave_handler,
+    click_handler,
+    keydown_handler
+  ];
+}
+class TokenPicker extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
+  }
+}
+function create_else_block(ctx) {
+  let tokenpicker;
+  let current;
+  tokenpicker = new TokenPicker({});
+  tokenpicker.$on(
+    "mouseenter",
+    /*mouseenter_handler*/
+    ctx[21]
+  );
+  tokenpicker.$on(
+    "mouseleave",
+    /*mouseleave_handler*/
+    ctx[22]
+  );
+  return {
+    c() {
+      create_component(tokenpicker.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(tokenpicker, target, anchor);
+      current = true;
+    },
+    p: noop,
+    i(local) {
+      if (current)
+        return;
+      transition_in(tokenpicker.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tokenpicker.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(tokenpicker, detaching);
+    }
+  };
+}
+function create_if_block(ctx) {
+  let flex0;
+  let t;
+  let flex1;
+  let current;
+  flex0 = new Flex({
+    props: {
+      class: "horizontal  clip-overflow",
+      height: "100%",
+      "min-height": "50px",
+      flex: ["1 0", "0 0"],
+      $$slots: { default: [create_default_slot_6] },
+      $$scope: { ctx }
+    }
+  });
+  flex1 = new Flex({
+    props: {
+      class: "horizontal thick",
+      height: "auto",
+      $$slots: { default: [create_default_slot_3] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex0.$$.fragment);
+      t = space();
+      create_component(flex1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex0, target, anchor);
+      insert(target, t, anchor);
+      mount_component(flex1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex0_changes = {};
+      if (dirty[0] & /*$toolboxActions, $previousCombatants, $showActorStats, $selectableCombatants, $selectedCombatantId*/
+      242 | dirty[1] & /*$$scope*/
+      1) {
+        flex0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex0.$set(flex0_changes);
+      const flex1_changes = {};
+      if (dirty[0] & /*$isAnyCombatantSelected*/
+      256 | dirty[1] & /*$$scope*/
+      1) {
+        flex1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex1.$set(flex1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex0.$$.fragment, local);
+      transition_in(flex1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex0.$$.fragment, local);
+      transition_out(flex1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(flex0, detaching);
+      destroy_component(flex1, detaching);
+    }
+  };
+}
+function create_default_slot_10(ctx) {
+  let combatantgrid;
+  let current;
+  combatantgrid = new CombatantGrid({
+    props: {
+      combatants: (
+        /*$selectableCombatants*/
+        ctx[4]
+      ),
+      showStats: (
+        /*$showActorStats*/
+        ctx[5]
+      )
+    }
+  });
+  combatantgrid.$on(
+    "itemClick",
+    /*itemClick_handler*/
+    ctx[16]
+  );
+  combatantgrid.$on(
+    "itemDoubleClick",
+    /*itemDoubleClick_handler*/
+    ctx[17]
+  );
+  combatantgrid.$on(
+    "itemMouseEnter",
+    /*itemMouseEnter_handler*/
+    ctx[18]
+  );
+  combatantgrid.$on(
+    "itemMouseExit",
+    /*itemMouseExit_handler*/
+    ctx[19]
+  );
+  return {
+    c() {
+      create_component(combatantgrid.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(combatantgrid, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const combatantgrid_changes = {};
+      if (dirty[0] & /*$selectableCombatants*/
+      16)
+        combatantgrid_changes.combatants = /*$selectableCombatants*/
+        ctx2[4];
+      if (dirty[0] & /*$showActorStats*/
+      32)
+        combatantgrid_changes.showStats = /*$showActorStats*/
+        ctx2[5];
+      combatantgrid.$set(combatantgrid_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(combatantgrid.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(combatantgrid.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(combatantgrid, detaching);
+    }
+  };
+}
+function create_default_slot_9(ctx) {
+  let combatantgrid;
+  let current;
+  combatantgrid = new CombatantGrid({
+    props: {
+      combatants: (
+        /*$previousCombatants*/
+        ctx[6]
+      ),
+      showStats: (
+        /*$showActorStats*/
+        ctx[5]
+      ),
+      areCombatantInteractable: false
+    }
+  });
+  return {
+    c() {
+      create_component(combatantgrid.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(combatantgrid, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const combatantgrid_changes = {};
+      if (dirty[0] & /*$previousCombatants*/
+      64)
+        combatantgrid_changes.combatants = /*$previousCombatants*/
+        ctx2[6];
+      if (dirty[0] & /*$showActorStats*/
+      32)
+        combatantgrid_changes.showStats = /*$showActorStats*/
+        ctx2[5];
+      combatantgrid.$set(combatantgrid_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(combatantgrid.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(combatantgrid.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(combatantgrid, detaching);
+    }
+  };
+}
+function create_default_slot_8(ctx) {
+  let tab0;
+  let t;
+  let tab1;
+  let current;
+  tab0 = new Tab({
+    props: {
+      data: {
+        label: locWindow(`selectable-actors.title`) + " (" + /*$selectableCombatants*/
+        ctx[4].length + ")"
+      },
+      $$slots: { default: [create_default_slot_10] },
+      $$scope: { ctx }
+    }
+  });
+  tab1 = new Tab({
+    props: {
+      data: {
+        label: locWindow(`previous-actors.title`) + " (" + /*$previousCombatants*/
+        ctx[6].length + ")"
+      },
+      $$slots: { default: [create_default_slot_9] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(tab0.$$.fragment);
+      t = space();
+      create_component(tab1.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(tab0, target, anchor);
+      insert(target, t, anchor);
+      mount_component(tab1, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const tab0_changes = {};
+      if (dirty[0] & /*$selectableCombatants*/
+      16)
+        tab0_changes.data = {
+          label: locWindow(`selectable-actors.title`) + " (" + /*$selectableCombatants*/
+          ctx2[4].length + ")"
+        };
+      if (dirty[0] & /*$selectableCombatants, $showActorStats, $selectedCombatantId*/
+      50 | dirty[1] & /*$$scope*/
+      1) {
+        tab0_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tab0.$set(tab0_changes);
+      const tab1_changes = {};
+      if (dirty[0] & /*$previousCombatants*/
+      64)
+        tab1_changes.data = {
+          label: locWindow(`previous-actors.title`) + " (" + /*$previousCombatants*/
+          ctx2[6].length + ")"
+        };
+      if (dirty[0] & /*$previousCombatants, $showActorStats*/
+      96 | dirty[1] & /*$$scope*/
+      1) {
+        tab1_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tab1.$set(tab1_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(tab0.$$.fragment, local);
+      transition_in(tab1.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tab0.$$.fragment, local);
+      transition_out(tab1.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+      destroy_component(tab0, detaching);
+      destroy_component(tab1, detaching);
+    }
+  };
+}
+function create_default_slot_7(ctx) {
+  let t_value = (
+    /*tab*/
+    ctx[30].label + ""
+  );
+  let t;
+  return {
+    c() {
+      t = text(t_value);
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*tab*/
+      1073741824 && t_value !== (t_value = /*tab*/
+      ctx2[30].label + ""))
+        set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_header_slot(ctx) {
+  let typography;
+  let current;
+  typography = new Typography({
+    props: {
+      slot: "header",
+      class: "size-sm align-center",
+      $$slots: { default: [create_default_slot_7] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(typography.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(typography, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const typography_changes = {};
+      if (dirty[0] & /*tab*/
+      1073741824 | dirty[1] & /*$$scope*/
+      1) {
+        typography_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      typography.$set(typography_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(typography.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(typography.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(typography, detaching);
+    }
+  };
+}
+function create_default_slot_6(ctx) {
+  let tabcontrol;
+  let t;
+  let div;
+  let buttontoolbar;
+  let current;
+  tabcontrol = new TabControl({
+    props: {
+      $$slots: {
+        header: [
+          create_header_slot,
+          ({ tab }) => ({ 30: tab }),
+          ({ tab }) => [tab ? 1073741824 : 0]
+        ],
+        default: [create_default_slot_8]
+      },
+      $$scope: { ctx }
+    }
+  });
+  buttontoolbar = new ButtonToolbar({
+    props: {
+      items: (
+        /*$toolboxActions*/
+        ctx[7]
+      ),
+      direction: "vertical"
+    }
+  });
+  return {
+    c() {
+      create_component(tabcontrol.$$.fragment);
+      t = space();
+      div = element("div");
+      create_component(buttontoolbar.$$.fragment);
+      set_style(div, "padding", "var(--tjust-padding-xl)");
+      set_style(div, "width", "100%");
+      set_style(div, "height", "100%");
+      set_style(div, "box-sizing", "border-box");
+    },
+    m(target, anchor) {
+      mount_component(tabcontrol, target, anchor);
+      insert(target, t, anchor);
+      insert(target, div, anchor);
+      mount_component(buttontoolbar, div, null);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const tabcontrol_changes = {};
+      if (dirty[0] & /*tab, $previousCombatants, $showActorStats, $selectableCombatants, $selectedCombatantId*/
+      1073741938 | dirty[1] & /*$$scope*/
+      1) {
+        tabcontrol_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tabcontrol.$set(tabcontrol_changes);
+      const buttontoolbar_changes = {};
+      if (dirty[0] & /*$toolboxActions*/
+      128)
+        buttontoolbar_changes.items = /*$toolboxActions*/
+        ctx2[7];
+      buttontoolbar.$set(buttontoolbar_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(tabcontrol.$$.fragment, local);
+      transition_in(buttontoolbar.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tabcontrol.$$.fragment, local);
+      transition_out(buttontoolbar.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(div);
+      }
+      destroy_component(tabcontrol, detaching);
+      destroy_component(buttontoolbar);
+    }
+  };
+}
+function create_default_slot_5(ctx) {
+  let t0_value = locWindow(`close.button`) + "";
+  let t0;
+  let t1;
+  let i;
+  return {
+    c() {
+      t0 = text(t0_value);
+      t1 = space();
+      i = element("i");
+      attr(i, "class", "fa fa-xmark");
+    },
+    m(target, anchor) {
+      insert(target, t0, anchor);
+      insert(target, t1, anchor);
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+        detach(i);
+      }
+    }
+  };
+}
+function create_if_block_1(ctx) {
+  let button;
+  let current;
+  button = new Button({
+    props: {
+      class: "btn success md",
+      width: "100%",
+      $$slots: { default: [create_default_slot_4] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on(
+    "click",
+    /*_onConfirm*/
+    ctx[13]
+  );
+  return {
+    c() {
+      create_component(button.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(button, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const button_changes = {};
+      if (dirty[1] & /*$$scope*/
+      1) {
+        button_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button.$set(button_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(button, detaching);
+    }
+  };
+}
+function create_default_slot_4(ctx) {
+  let t0_value = locWindow(`confirm.button`) + "";
+  let t0;
+  let t1;
+  let i;
+  return {
+    c() {
+      t0 = text(t0_value);
+      t1 = space();
+      i = element("i");
+      attr(i, "class", "fa fa-check");
+    },
+    m(target, anchor) {
+      insert(target, t0, anchor);
+      insert(target, t1, anchor);
+      insert(target, i, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+        detach(i);
+      }
+    }
+  };
+}
+function create_default_slot_3(ctx) {
+  let button;
+  let t;
+  let if_block_anchor;
+  let current;
+  button = new Button({
+    props: {
+      class: "btn error md",
+      width: "100%",
+      $$slots: { default: [create_default_slot_5] },
+      $$scope: { ctx }
+    }
+  });
+  button.$on(
+    "click",
+    /*click_handler*/
+    ctx[20]
+  );
+  let if_block = (
+    /*$isAnyCombatantSelected*/
+    ctx[8] && create_if_block_1(ctx)
+  );
+  return {
+    c() {
+      create_component(button.$$.fragment);
+      t = space();
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      mount_component(button, target, anchor);
+      insert(target, t, anchor);
+      if (if_block)
+        if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const button_changes = {};
+      if (dirty[1] & /*$$scope*/
+      1) {
+        button_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      button.$set(button_changes);
+      if (
+        /*$isAnyCombatantSelected*/
+        ctx2[8]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty[0] & /*$isAnyCombatantSelected*/
+          256) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block_1(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(button.$$.fragment, local);
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(button.$$.fragment, local);
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(if_block_anchor);
+      }
+      destroy_component(button, detaching);
+      if (if_block)
+        if_block.d(detaching);
+    }
+  };
+}
+function create_default_slot_2(ctx) {
+  let current_block_type_index;
+  let if_block;
+  let if_block_anchor;
+  let current;
+  const if_block_creators = [create_if_block, create_else_block];
+  const if_blocks = [];
+  function select_block_type(ctx2, dirty) {
+    if (!/*$isTokenPickerRunning*/
+    ctx2[3])
+      return 0;
+    return 1;
+  }
+  current_block_type_index = select_block_type(ctx);
+  if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  return {
+    c() {
+      if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      if_blocks[current_block_type_index].m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      let previous_block_index = current_block_type_index;
+      current_block_type_index = select_block_type(ctx2);
+      if (current_block_type_index === previous_block_index) {
+        if_blocks[current_block_type_index].p(ctx2, dirty);
+      } else {
+        group_outros();
+        transition_out(if_blocks[previous_block_index], 1, 1, () => {
+          if_blocks[previous_block_index] = null;
+        });
+        check_outros();
+        if_block = if_blocks[current_block_type_index];
+        if (!if_block) {
+          if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
+          if_block.c();
+        } else {
+          if_block.p(ctx2, dirty);
+        }
+        transition_in(if_block, 1);
+        if_block.m(if_block_anchor.parentNode, if_block_anchor);
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if_blocks[current_block_type_index].d(detaching);
+    }
+  };
+}
+function create_default_slot_1(ctx) {
+  let flex;
+  let current;
+  flex = new Flex({
+    props: {
+      class: "background vertical",
+      height: "100%",
+      width: "100%",
+      flex: ["1 1", "0 0"],
+      $$slots: { default: [create_default_slot_2] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(flex.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(flex, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const flex_changes = {};
+      if (dirty[0] & /*$isAnyCombatantSelected, $toolboxActions, $previousCombatants, $showActorStats, $selectableCombatants, $selectedCombatantId, $isTokenPickerRunning*/
+      506 | dirty[1] & /*$$scope*/
+      1) {
+        flex_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      flex.$set(flex_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(flex.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(flex.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(flex, detaching);
+    }
+  };
+}
+function create_default_slot$1(ctx) {
+  let div;
+  let theme;
+  let current;
+  let mounted;
+  let dispose;
+  theme = new Theme({
+    props: {
+      theme: (
+        /*$currentTheme*/
+        ctx[2]
+      ),
+      $$slots: { default: [create_default_slot_1] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      div = element("div");
+      create_component(theme.$$.fragment);
+      attr(div, "role", "application");
+      set_style(div, "width", `100%`);
+      set_style(div, "height", `100%`);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(theme, div, null);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div,
+            "mouseenter",
+            /*mouseenter_handler_1*/
+            ctx[23]
+          ),
+          listen(
+            div,
+            "mouseleave",
+            /*mouseleave_handler_1*/
+            ctx[24]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      const theme_changes = {};
+      if (dirty[0] & /*$currentTheme*/
+      4)
+        theme_changes.theme = /*$currentTheme*/
+        ctx2[2];
+      if (dirty[0] & /*$isAnyCombatantSelected, $toolboxActions, $previousCombatants, $showActorStats, $selectableCombatants, $selectedCombatantId, $isTokenPickerRunning*/
+      506 | dirty[1] & /*$$scope*/
+      1) {
+        theme_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      theme.$set(theme_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(theme.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(theme.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(theme);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment$1(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let current;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[25](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot$1] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell$1({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const applicationshell_changes = {};
+      if (dirty[0] & /*$currentTheme, $isAnyCombatantSelected, $toolboxActions, $previousCombatants, $showActorStats, $selectableCombatants, $selectedCombatantId, $isTokenPickerRunning*/
+      510 | dirty[1] & /*$$scope*/
+      1) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(applicationshell, detaching);
+    }
+  };
+}
+function instance$1($$self, $$props, $$invalidate) {
   let $isSelectionWindowHovered;
   let $selectedCombatantId;
-  let $previousCombatants;
+  let $position;
+  let $currentTheme;
+  let $isTokenPickerRunning;
   let $selectableCombatants;
+  let $showActorStats;
+  let $previousCombatants;
   let $toolboxActions;
   let $isAnyCombatantSelected;
-  component_subscribe($$self, previousActorsDrawerOpen, ($$value) => $$invalidate(1, $previousActorsDrawerOpen = $$value));
-  component_subscribe($$self, isTokenPickerRunning, ($$value) => $$invalidate(2, $isTokenPickerRunning = $$value));
-  component_subscribe($$self, isSelectionWindowHovered, ($$value) => $$invalidate(30, $isSelectionWindowHovered = $$value));
-  component_subscribe($$self, selectedCombatantId, ($$value) => $$invalidate(3, $selectedCombatantId = $$value));
-  component_subscribe($$self, previousCombatants, ($$value) => $$invalidate(4, $previousCombatants = $$value));
-  component_subscribe($$self, selectableCombatants, ($$value) => $$invalidate(5, $selectableCombatants = $$value));
-  component_subscribe($$self, toolboxActions, ($$value) => $$invalidate(6, $toolboxActions = $$value));
-  component_subscribe($$self, isAnyCombatantSelected, ($$value) => $$invalidate(7, $isAnyCombatantSelected = $$value));
+  component_subscribe($$self, isSelectionWindowHovered, ($$value) => $$invalidate(26, $isSelectionWindowHovered = $$value));
+  component_subscribe($$self, selectedCombatantId, ($$value) => $$invalidate(1, $selectedCombatantId = $$value));
+  component_subscribe($$self, currentTheme, ($$value) => $$invalidate(2, $currentTheme = $$value));
+  component_subscribe($$self, isTokenPickerRunning, ($$value) => $$invalidate(3, $isTokenPickerRunning = $$value));
+  component_subscribe($$self, selectableCombatants, ($$value) => $$invalidate(4, $selectableCombatants = $$value));
+  component_subscribe($$self, showActorStats, ($$value) => $$invalidate(5, $showActorStats = $$value));
+  component_subscribe($$self, previousCombatants, ($$value) => $$invalidate(6, $previousCombatants = $$value));
+  component_subscribe($$self, toolboxActions, ($$value) => $$invalidate(7, $toolboxActions = $$value));
+  component_subscribe($$self, isAnyCombatantSelected, ($$value) => $$invalidate(8, $isAnyCombatantSelected = $$value));
   let { elementRoot } = $$props;
   const { application, moduleAPI } = getContext("#external");
+  const headerButtonNoClose = application.reactive.storeAppOptions.headerButtonNoClose;
   const position = application.position;
+  component_subscribe($$self, position, (value) => $$invalidate(15, $position = value));
+  const storePosition = Timing.debounce(
+    () => {
+      selectionWindowState.set(application.state.get().position);
+      ModuleSettings.saveSetting(selectionWindowState);
+    },
+    500
+  );
+  setTimeout(
+    () => {
+      headerButtonNoClose.set(true);
+    },
+    1
+  );
   function _panToToken(id) {
     CanvasInteraction.panToCombatantToken(id);
   }
@@ -19013,27 +33687,6 @@ function instance($$self, $$props, $$invalidate) {
   function _onWindowHover(isHover) {
     set_store_value(isSelectionWindowHovered, $isSelectionWindowHovered = isHover, $isSelectionWindowHovered);
   }
-  function _disableTokenPicker() {
-    set_store_value(isTokenPickerRunning, $isTokenPickerRunning = false, $isTokenPickerRunning);
-  }
-  function _onPreviousActorsToggled() {
-    ModuleSettings.saveSetting(previousActorsDrawerOpen);
-    _updateWindowSize();
-  }
-  function _updateWindowSize() {
-    if ($previousActorsDrawerOpen) {
-      $$invalidate(0, elementRoot.style.width = "615px", elementRoot);
-    } else {
-      $$invalidate(0, elementRoot.style.width = "515px", elementRoot);
-    }
-  }
-  function simpledrawer_isOpen_binding(value) {
-    $previousActorsDrawerOpen = value;
-    previousActorsDrawerOpen.set($previousActorsDrawerOpen);
-  }
-  const toggle_handler = () => {
-    _onPreviousActorsToggled();
-  };
   const itemClick_handler = (e) => set_store_value(selectedCombatantId, $selectedCombatantId = e.detail.id, $selectedCombatantId);
   const itemDoubleClick_handler = (e) => {
     set_store_value(selectedCombatantId, $selectedCombatantId = e.detail.id, $selectedCombatantId);
@@ -19050,8 +33703,7 @@ function instance($$self, $$props, $$invalidate) {
   const mouseleave_handler = (e) => _onWindowHover(false);
   const mouseenter_handler_1 = (e) => _onWindowHover(true);
   const mouseleave_handler_1 = (e) => _onWindowHover(false);
-  const click_handler_1 = (e) => _disableTokenPicker();
-  function emptyapplicationshell_elementRoot_binding(value) {
+  function applicationshell_elementRoot_binding(value) {
     elementRoot = value;
     $$invalidate(0, elementRoot);
   }
@@ -19059,26 +33711,29 @@ function instance($$self, $$props, $$invalidate) {
     if ("elementRoot" in $$props2)
       $$invalidate(0, elementRoot = $$props2.elementRoot);
   };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*$position*/
+    32768) {
+      storePosition($position);
+    }
+  };
   return [
     elementRoot,
-    $previousActorsDrawerOpen,
-    $isTokenPickerRunning,
     $selectedCombatantId,
-    $previousCombatants,
+    $currentTheme,
+    $isTokenPickerRunning,
     $selectableCombatants,
+    $showActorStats,
+    $previousCombatants,
     $toolboxActions,
     $isAnyCombatantSelected,
-    application,
     moduleAPI,
     position,
     _panToToken,
     _highlightToken,
     _onConfirm,
     _onWindowHover,
-    _disableTokenPicker,
-    _onPreviousActorsToggled,
-    simpledrawer_isOpen_binding,
-    toggle_handler,
+    $position,
     itemClick_handler,
     itemDoubleClick_handler,
     itemMouseEnter_handler,
@@ -19088,14 +33743,13 @@ function instance($$self, $$props, $$invalidate) {
     mouseleave_handler,
     mouseenter_handler_1,
     mouseleave_handler_1,
-    click_handler_1,
-    emptyapplicationshell_elementRoot_binding
+    applicationshell_elementRoot_binding
   ];
 }
 class SelectionWindow extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
+    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -19106,15 +33760,35 @@ class SelectionWindow extends SvelteComponent {
   }
 }
 class SelectionWindowApplication extends SvelteApplication {
+  constructor(options) {
+    super(options);
+    try {
+      const app = this.state.get();
+      const state = get_store_value(selectionWindowState);
+      const anchor = get_store_value(selectionWindowAnchor);
+      const isEmptyState = Object.keys(state).length === 0;
+      if (!isEmptyState) {
+        app.position = state;
+      }
+      if (anchor !== "free" || isEmptyState) {
+        const { x, y } = ModuleUtils.getPositionForSelectionWindow();
+        app.position.left = x;
+        app.position.top = y;
+      }
+      this.state.set(app);
+    } catch (err) {
+    }
+  }
   static get defaultOptions() {
     const moduleAPI = game.modules.get("just-popcorn-initiative").api;
-    const { w, h, x, y } = ModuleUtils.getSizeAndPositionForSelectionWindow();
+    const { x, y } = ModuleUtils.getPositionForSelectionWindow();
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: "popcorn-initiative-overlay",
-      classes: ["tjs-essential-svelte-esm"],
+      classes: ["selection-window"],
+      title: locWindow("selection-window-title"),
       resizable: true,
-      width: w,
-      height: h,
+      width: 450,
+      height: 310,
       left: x,
       top: y,
       svelte: {
@@ -19200,6 +33874,156 @@ function passTurnTo(selectedCombatantId2, combatId) {
 function closeSelectionWindow() {
   ModuleAPI.instance.closeSelectionWindow();
 }
+function create_default_slot(ctx) {
+  let div;
+  let treeviewmenu;
+  let current;
+  treeviewmenu = new TreeViewMenu({
+    props: {
+      itemsStore: (
+        /*data*/
+        ctx[1]
+      ),
+      height: "300px"
+    }
+  });
+  treeviewmenu.$on(
+    "leafselected",
+    /*onStatSelected*/
+    ctx[2]
+  );
+  return {
+    c() {
+      div = element("div");
+      create_component(treeviewmenu.$$.fragment);
+      attr(div, "class", "panel panel-shadow");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      mount_component(treeviewmenu, div, null);
+      current = true;
+    },
+    p: noop,
+    i(local) {
+      if (current)
+        return;
+      transition_in(treeviewmenu.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(treeviewmenu.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_component(treeviewmenu);
+    }
+  };
+}
+function create_fragment(ctx) {
+  let contextmenu;
+  let current;
+  contextmenu = new ContextMenu({
+    props: {
+      contextMenuStore: (
+        /*contextMenuStore*/
+        ctx[0]
+      ),
+      $$slots: { default: [create_default_slot] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(contextmenu.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(contextmenu, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const contextmenu_changes = {};
+      if (dirty & /*contextMenuStore*/
+      1)
+        contextmenu_changes.contextMenuStore = /*contextMenuStore*/
+        ctx2[0];
+      if (dirty & /*$$scope*/
+      64) {
+        contextmenu_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      contextmenu.$set(contextmenu_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(contextmenu.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(contextmenu.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(contextmenu, detaching);
+    }
+  };
+}
+function updateTreeNode(object, items, counter, path) {
+  for (const childKey in object) {
+    ++counter.value;
+    let childDataNode = { id: counter.value, label: childKey };
+    if (typeof object[childKey] === "object") {
+      childDataNode.items = [];
+      updateTreeNode(object[childKey], childDataNode.items, counter, path + "." + childKey);
+    } else {
+      childDataNode.payload = { path: path + "." + childKey };
+    }
+    items.push(childDataNode);
+  }
+}
+function instance($$self, $$props, $$invalidate) {
+  let { actorId = -1 } = $$props;
+  let { contextMenuStore = null } = $$props;
+  let data = writable([]);
+  const dispatch2 = createEventDispatcher();
+  function updateTree(actorId2) {
+    let actor = game.actors.get(actorId2);
+    if (actor) {
+      let counter = { value: 0 };
+      let rootItems = [];
+      updateTreeNode(actor.system, rootItems, counter, "system");
+      data.set(rootItems);
+    }
+  }
+  function onStatSelected(ev) {
+    console.log(ev.detail);
+    contextMenuStore.hide();
+    dispatch2("statpicked", ev.detail.payload.path);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("actorId" in $$props2)
+      $$invalidate(3, actorId = $$props2.actorId);
+    if ("contextMenuStore" in $$props2)
+      $$invalidate(0, contextMenuStore = $$props2.contextMenuStore);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*actorId*/
+    8) {
+      {
+        updateTree(actorId);
+      }
+    }
+  };
+  return [contextMenuStore, data, onStatSelected, actorId];
+}
+class StatsPicker extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance, create_fragment, safe_not_equal, { actorId: 3, contextMenuStore: 0 });
+  }
+}
 class ModuleAPI {
   static get instance() {
     return game.modules.get(Constants.ModuleName).api;
@@ -19220,6 +34044,44 @@ class ModuleAPI {
     document.addEventListener("click", (e) => {
       StoreUpdater.onGlobalClick();
     });
+    this._createTooltip();
+    this._createStatsPicker();
+  }
+  _createTooltip() {
+    const tooltipDiv = document.createElement("div");
+    tooltipDiv.id = "JustTooltip";
+    new GenericTooltip({
+      target: tooltipDiv,
+      props: {
+        tooltipStore: genericTooltipStore,
+        showDelay: 250,
+        hideDelay: 125,
+        offset: 10,
+        maxWidth: "300px"
+      }
+    });
+    document.body.appendChild(tooltipDiv);
+  }
+  _createStatsPicker() {
+    const statsPickerDiv = document.createElement("div");
+    statsPickerDiv.id = "JustStatsPicker";
+    const statsPicker = new StatsPicker({
+      target: statsPickerDiv,
+      props: {
+        actorId: -1,
+        contextMenuStore: statsPickerContextMenuStore
+      }
+    });
+    currentActorPreview.subscribe((x) => {
+      if (x) {
+        statsPicker.$set({ actorId: x.id });
+      }
+    });
+    statsPicker.$on("statpicked", (ev) => {
+      navigator.clipboard.writeText(`{${ev.detail}}`);
+      NotificationUtils.message(locSettings("stat.clipboard"));
+    });
+    document.body.appendChild(statsPickerDiv);
   }
   executePassTurnTo(combatantId) {
     const currentCombat = game.combat;
@@ -19283,6 +34145,7 @@ class ModuleAPI {
   closeConfig() {
     ModuleSettings.save().then(
       () => {
+        this._updateCombatantsData(game.combat);
         this.configWindow?.close();
         this.configWindow = null;
       }
@@ -19320,6 +34183,7 @@ class ModuleAPI {
     }
   }
 }
+const globalStyles = "";
 Hooks.once("socketlib.ready", () => {
   initializeSocket();
 });
