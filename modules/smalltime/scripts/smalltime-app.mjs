@@ -277,16 +277,25 @@ Hooks.on('init', () => {
     // Default is full moon.
     default: 4,
   });
+});
 
+Hooks.on('canvasInit', () => {
+  // Start by resetting the Darkness color to the core value.
+  CONFIG.Canvas.darknessColor = ST_Config.coreDarknessColor;
+  
   if (game.modules.get('foundryvtt-simple-calendar')?.active) {
-    // Set the global Darkness color to the color of the first moon in Simple Calendar, if configured.
-    // The pSBC function drops the brightness to an appropriate level.
-    // Ignore if the moon is set to its default color of white.
-    if (SimpleCalendar.api.getAllMoons()[0].color != '#ffffff') {
-      const darknessColorFromMoon = Helpers.pSBC(-0.9, SimpleCalendar.api.getAllMoons()[0].color);
-      CONFIG.Canvas.darknessColor = darknessColorFromMoon;
+    if (game.scenes.viewed.getFlag('smalltime', 'darkness-link')) {
+      // Set the global Darkness color to the color of the first moon in Simple Calendar, if configured.
+      // The pSBC function drops the brightness to an appropriate level.
+      // Ignore if the moon is set to its default color of white.
+      if (SimpleCalendar.api.getAllMoons()[0].color != '#ffffff') {
+        const darknessColorFromMoon = Helpers.pSBC(-0.9, SimpleCalendar.api.getAllMoons()[0].color);
+        CONFIG.Canvas.darknessColor = darknessColorFromMoon;
+      }
     }
   }
+  // Re-draw the canvas with the new Darkness color.
+  canvas.colorManager.initialize()
 });
 
 // Set the initial state for newly rendered scenes.
@@ -385,6 +394,7 @@ Hooks.on('canvasReady', () => {
     if (!hasProperty(thisScene, 'flags.smalltime.player-vis')) {
       thisScene.setFlag('smalltime', 'player-vis', visDefault);
     }
+    
     // Refresh the current scene's Darkness level if it should be linked.
     if (thisScene.getFlag('smalltime', 'darkness-link')) {
       SmallTimeApp.timeTransition(Helpers.getWorldTimeAsDayTime());
@@ -703,11 +713,10 @@ Hooks.on('renderSettingsConfig', (obj) => {
   obj.setPosition();
 
   // Get the current Darkness overlay color.
-  const coreDarknessColor = Helpers.convertHexToRGB(CONFIG.Canvas.darknessColor.toString(16));
-  console.log(coreDarknessColor);
-  document.documentElement.style.setProperty('--SMLTME-darkness-r', coreDarknessColor.r);
-  document.documentElement.style.setProperty('--SMLTME-darkness-g', coreDarknessColor.g);
-  document.documentElement.style.setProperty('--SMLTME-darkness-b', coreDarknessColor.b);
+  const currentDarknessColor = Helpers.convertHexToRGB(CONFIG.Canvas.darknessColor.toString(16));
+  document.documentElement.style.setProperty('--SMLTME-darkness-r', currentDarknessColor.r);
+  document.documentElement.style.setProperty('--SMLTME-darkness-g', currentDarknessColor.g);
+  document.documentElement.style.setProperty('--SMLTME-darkness-b', currentDarknessColor.b);
 
   // Refresh the current scene BG for the settings dialog.
   Helpers.grabSceneSlice();

@@ -1,3 +1,24 @@
-2023/11/02-13:38:40.460063 7f174bfff700 Recovering log #667
-2023/11/02-13:38:40.463506 7f174bfff700 Delete type=0 #667
-2023/11/02-13:38:40.463543 7f174bfff700 Delete type=3 #665
+2023/11/02-18:56:51.929068 7facf2ffd700 Recovering log #671
+2023/11/02-18:56:51.929365 7facf2ffd700 Level-0 table #673: started
+2023/11/02-18:56:51.930431 7facf2ffd700 Level-0 table #673: 1667 bytes OK
+2023/11/02-18:56:51.932910 7facf2ffd700 Delete type=3 #670
+2023/11/02-18:56:51.932988 7facf2ffd700 Delete type=0 #671
+2023/11/03-09:48:51.706047 7facf0eed700 Level-0 table #676: started
+2023/11/03-09:48:51.707269 7facf0eed700 Level-0 table #676: 1667 bytes OK
+2023/11/03-09:48:51.707969 7facf0eed700 Delete type=0 #674
+2023/11/03-09:48:51.708421 7facf0eed700 Manual compaction at level-0 from '!settings!0Iy1aGdno3drGkLu' @ 72057594037927935 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at '!settings!x7W81zXTWjxw9i0A' @ 2215 : 1
+2023/11/03-09:48:51.708432 7facf0eed700 Compacting 2@0 + 0@1 files
+2023/11/03-09:48:51.709533 7facf0eed700 Generated table #677@0: 2 keys, 1667 bytes
+2023/11/03-09:48:51.709550 7facf0eed700 Compacted 2@0 + 0@1 files => 1667 bytes
+2023/11/03-09:48:51.710439 7facf0eed700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/11/03-09:48:51.710512 7facf0eed700 Delete type=2 #676
+2023/11/03-09:48:51.710568 7facf0eed700 Delete type=2 #673
+2023/11/03-09:48:51.713062 7facf0eed700 Manual compaction at level-0 from '!settings!x7W81zXTWjxw9i0A' @ 2215 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at (end)
+2023/11/03-09:48:51.714274 7facf0eed700 Manual compaction at level-1 from '!settings!0Iy1aGdno3drGkLu' @ 72057594037927935 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at '!settings!x7W81zXTWjxw9i0A' @ 2217 : 1
+2023/11/03-09:48:51.714284 7facf0eed700 Compacting 1@1 + 1@2 files
+2023/11/03-09:48:51.716407 7facf0eed700 Generated table #678@1: 186 keys, 31916 bytes
+2023/11/03-09:48:51.716425 7facf0eed700 Compacted 1@1 + 1@2 files => 31916 bytes
+2023/11/03-09:48:51.717174 7facf0eed700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/11/03-09:48:51.717240 7facf0eed700 Delete type=2 #669
+2023/11/03-09:48:51.717306 7facf0eed700 Delete type=2 #677
+2023/11/03-09:48:51.717751 7facf0eed700 Manual compaction at level-1 from '!settings!x7W81zXTWjxw9i0A' @ 2217 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at (end)
