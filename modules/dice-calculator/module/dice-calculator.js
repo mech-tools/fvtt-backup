@@ -379,12 +379,74 @@ class pf2eDiceCalculator extends DiceCalculator {
 	}
 }
 
+class demonlordDiceCalculator extends DiceCalculator {
+	adv = false;
+
+	abilities = ["agility", "intellect", "perception", "strength", "will"]; // The system calls these "attribtues"
+
+	attributes = ["corruption", "insanity"]; // The system calls these "Characteristics"
+
+	actorSpecificButtons(actor) {
+		const attributes = [];
+		const abilities = [];
+		const customButtons = [];
+
+		if (actor) {
+			if (actor.system?.attributes) {
+				for (let prop in actor.system.attributes) {
+					if (this.abilities.includes(prop)) {
+						if (actor.system.attributes[prop].modifier !== undefined) {
+							abilities.push({
+								label: prop,
+								name: game.i18n.localize(`DL.Attribute${prop.capitalize()}`),
+								formula: `@attr.${prop}.modifier`
+							});
+						}
+					}
+				}
+
+				if (actor.system?.level) {
+					const level = actor.system.level;
+					attributes.push(...[
+						{
+							label: "level",
+							name: game.i18n.localize("DL.CharLevel"),
+							formula: "@level"
+						},
+						{
+							label: "level_half",
+							name: `1/2 ${game.i18n.localize("DL.CharLevel")}`,
+							formula: level !== undefined ? Math.floor(level / 2) : 0
+						}
+					]);
+				}
+			}
+			if (actor.system?.characteristics) {
+				for (let prop in actor.system.characteristics) {
+					if (this.attributes.includes(prop)) {
+						if (actor.system.characteristics[prop].value !== undefined) {
+							attributes.push({
+								label: prop,
+								name: game.i18n.localize(`DL.Char${prop.capitalize()}`),
+								formula: `@characteristics.${prop}.value`
+							});
+						}
+					}
+				}
+			}
+		}
+
+		return { abilities, attributes, customButtons };
+	}
+}
+
 var diceCalculators = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	archmage: archmageDiceCalculator,
 	dcc: dccDiceCalculator,
 	dnd5e: dnd5eDiceCalculator,
-	pf2e: pf2eDiceCalculator
+	pf2e: pf2eDiceCalculator,
+	demonlord: demonlordDiceCalculator
 });
 
 class TemplateDiceMap {
@@ -985,10 +1047,6 @@ class SWADEDiceMap extends TemplateDiceMap {
 				d12: { img: "icons/dice/d12black.svg" }
 			}
 		];
-		if (game.settings.get("dice-calculator", "enableExtraDiceInSwade")) {
-			dice[0].d20 = { img: "icons/dice/d20black.svg" };
-			dice[0].d100 = { img: "icons/dice/d100black.svg" };
-		}
 		return dice;
 	}
 
@@ -1037,6 +1095,63 @@ class SWADEDiceMap extends TemplateDiceMap {
 	}
 }
 
+class demonlordDiceMap extends TemplateDiceMap {
+
+	get dice() {
+		const dice = [
+			{
+				d3: { img: "modules/dice-calculator/assets/icons/d3black.svg" },
+				d6: { img: "icons/dice/d6black.svg" },
+				d20: { img: "icons/dice/d20black.svg" }
+			}
+		];
+		return dice;
+	}
+
+	get buttonFormulas() {
+		return {
+			kh: "+",
+			kl: "-"
+		};
+	}
+
+	get labels() {
+		return {
+			advantage: game.i18n.localize("DL.DialogBoon"),
+			adv: game.i18n.localize("DL.DialogBoon"),
+			disadvantage: game.i18n.localize("DL.DialogBane"),
+			dis: game.i18n.localize("DL.DialogBane")
+		};
+	}
+
+	_extraButtonsLogic(html) {
+		html.find(".dice-tray__ad").on("click", (event) => {
+			event.preventDefault();
+			let sign = event.currentTarget.dataset.formula;
+			let $chat = html.find("#chat-form textarea");
+			let chat_val = String($chat.val());
+			let match_string = /(?<sign>[+-])(?<qty>\d*)d6kh/;
+			const match = chat_val.match(match_string);
+			if (match) {
+				let qty = parseInt(match.groups.qty);
+				let replacement = "";
+				if (match.groups.sign === sign) {
+					qty += 1;
+					replacement = `${sign}${qty}d6kh`;
+				} else if (qty !== 1) {
+					qty -=1;
+					sign = (sign === "+") ? "-" : "+";
+					replacement = `${sign}${qty}d6kh`;
+				}
+				chat_val = chat_val.replace(match_string, replacement);
+			} else {
+				chat_val = `${chat_val}${sign}1d6kh`;
+			}
+			$chat.val(chat_val);
+		});
+	}
+}
+
 // export { default as tresdetv } from "./tresdetv.js";
 
 var keymaps = /*#__PURE__*/Object.freeze({
@@ -1049,7 +1164,8 @@ var keymaps = /*#__PURE__*/Object.freeze({
 	fatex: FateDiceMap,
 	pf2e: pf2eDiceMap,
 	starwarsffg: starwarsffgDiceMap,
-	swade: SWADEDiceMap
+	swade: SWADEDiceMap,
+	demonlord: demonlordDiceMap
 });
 
 class DiceCalculatorDialog extends Dialog {
@@ -1307,12 +1423,153 @@ const KEYS = {
 async function preloadTemplates() {
 	const templatePaths = [
 		"modules/dice-calculator/templates/partials/settings.hbs",
+		"modules/dice-calculator/templates/DiceCreator.hbs",
+		"modules/dice-calculator/templates/DiceRowSettings.hbs",
 		"modules/dice-calculator/templates/GeneralSettings.hbs",
 		"modules/dice-calculator/templates/calculator.html",
 		"modules/dice-calculator/templates/tray.html",
 	];
 
 	return loadTemplates(templatePaths);
+}
+
+class DiceCreator extends FormApplication {
+	constructor(object, options = {}) {
+		super(object, options);
+		Hooks.once("closeDiceRowSettings", () => this.close());
+	}
+
+	static get defaultOptions() {
+		return mergeObject(super.defaultOptions, {
+			id: "dice-creator-form",
+			title: "DICE_TRAY.SETTINGS.DiceCreator",
+			template: "./modules/dice-calculator/templates/DiceCreator.hbs",
+			classes: ["sheet", "dice-tray-dice-creator"],
+			width: 400,
+			closeOnSubmit: true,
+		});
+	}
+
+	getData(options) {
+		const nextRow = Math.max(this.object.diceRows.findIndex((row) => Object.keys(row).length < 7), 1);
+		return {
+			dice: this.object.dice,
+			diceRows: this.object.diceRows, // this.diceRows,
+			nextRow,
+			numOfRows: Math.max(nextRow, 1)
+		};
+	}
+
+	async activateListeners(html) {
+		super.activateListeners(html);
+		html.find("button[name=cancel]").on("click", async (event) => {
+			this.close();
+		});
+	}
+
+	async _updateObject(event, formData) {
+		const { dice, row } = expandObject(formData);
+		if (this.object.dice && dice.row !== row) {
+			const key = this.object.dice.originalKey;
+			delete this.object.form.diceRows[row][key];
+		}
+		if ((row + 1) > this.object.form.diceRows.length) {
+			this.object.form.diceRows.push({});
+		}
+		const cleanKey = Object.fromEntries(Object.entries(dice).filter(([k, v]) => k !== "key" && v !== ""));
+		if (!cleanKey.img && !cleanKey.label) {
+			cleanKey.label = dice.key;
+		}
+		this.object.form.diceRows[row][dice.key] = cleanKey;
+		this.object.form.render(true);
+	}
+}
+
+class DiceRowSettings extends FormApplication {
+	constructor(object, options = {}) {
+		super(object, options);
+		this.diceRows = deepClone(game.settings.get("dice-calculator", "diceRows"));
+	}
+
+	static get defaultOptions() {
+		return mergeObject(super.defaultOptions, {
+			id: "dice-row-form",
+			title: "DICE_TRAY.SETTINGS.DiceRowSettings",
+			template: "./modules/dice-calculator/templates/DiceRowSettings.hbs",
+			classes: ["sheet", "dice-tray-row-settings"],
+			width: 320,
+			height: "auto",
+			closeOnSubmit: true,
+		});
+	}
+
+	getData(options) {
+		return {
+			diceRows: this.diceRows,
+		};
+	}
+
+	async activateListeners(html) {
+		super.activateListeners(html);
+		html.find(".dice-tray button").on("click", async (event) => {
+			event.preventDefault();
+		});
+		html.find(".dice-tray__button").on("click", async (event) => {
+			event.preventDefault();
+			const { formula: key, tooltip } = Object.keys(event.target.parentElement.dataset).length
+				? event.target.parentElement.dataset
+				: event.target.dataset;
+			const row = this.diceRows.findIndex((r) => r[key]);
+			const diceData = this.diceRows[row][key];
+			const { color, img, label } = diceData;
+			new DiceCreator({
+				form: this,
+				diceRows: this.diceRows,
+				dice: {
+					key,
+					originalKey: key, // In case the key is changed later.
+					color,
+					img,
+					label,
+					tooltip: tooltip !== key ? tooltip : "",
+					row: row
+				},
+			}).render(true);
+		});
+		html.find(".dice-tray__button").on("contextmenu", async (event) => {
+			event.preventDefault();
+			const { formula: key } = Object.keys(event.target.parentElement.dataset).length
+				? event.target.parentElement.dataset
+				: event.target.dataset;
+			const row = this.diceRows.findIndex((r) => r[key]);
+			delete this.diceRows[row][key];
+			if (!Object.keys(this.diceRows[row]).length) {
+				this.diceRows.splice(1, row);
+			}
+			this.render(false);
+		});
+		html.find("button[name=add]").on("click", async (event) => {
+			new DiceCreator({
+				form: this,
+				diceRows: this.diceRows
+			}).render(true);
+		});
+		html.find("button[name=cancel]").on("click", async (event) => {
+			this.close();
+		});
+		html.find("button[name=reset]").on("click", async (event) => {
+			this.diceRows = game.settings.settings.get("dice-calculator.diceRows").default;
+			this.render(false);
+		});
+	}
+
+	async _updateObject(event, formData) {
+		const current = game.settings.get("dice-calculator", "diceRows");
+		if (JSON.stringify(this.diceRows) !== JSON.stringify(current)) {
+			await game.settings.set("dice-calculator", "diceRows", this.diceRows);
+			await SettingsConfig.reloadConfirm({ world: true });
+		}
+	}
 }
 
 class DiceTrayGeneralSettings extends FormApplication {
@@ -1389,7 +1646,6 @@ class DiceTrayGeneralSettings extends FormApplication {
 				general: {
 					enableDiceCalculator: this._prepSetting("enableDiceCalculator"),
 					enableDiceTray: this._prepSetting("enableDiceTray"),
-					enableExtraDiceInSwade: this._prepSetting("enableExtraDiceInSwade"),
 				}
 			};
 		} else {
@@ -1397,7 +1653,6 @@ class DiceTrayGeneralSettings extends FormApplication {
 				general: {
 					enableDiceCalculator: this._prepFlag("enableDiceCalculator"),
 					enableDiceTray: this._prepFlag("enableDiceTray"),
-					enableExtraDiceInSwade: this._prepFlag("enableExtraDiceInSwade"),
 				},
 			};
 		}
@@ -1421,7 +1676,6 @@ class DiceTrayGeneralSettings extends FormApplication {
 				const keys = [
 					"enableDiceCalculator",
 					"enableDiceTray",
-					"enableExtraDiceInSwade",
 				];
 				if (game.user.isGM) {
 					await Promise.all(
@@ -1460,39 +1714,21 @@ class DiceTrayGeneralSettings extends FormApplication {
 			SettingsConfig.reloadConfirm({ world: requiresWorldReload });
 		}
 	}
-
-	static renderDiceTrayGeneralSettings(settingsConfig, html) {
-		const enableDiceTray = game.settings.get("dice-calculator", "enableDiceTray");
-		const enableDiceTrayCheckbox = html.find('input[name="enableDiceTray"]');
-		const enableExtraDiceInSwadeCheckbox = html.find('input[name="enableExtraDiceInSwade"]');
-		const gameIsSwade = game.system.id === "swade";
-
-		function hideForm(form, boolean) {
-			form.style.display = boolean ? "none" : "";
-		}
-		function disableCheckbox(checkbox, boolean) {
-			checkbox.prop("disabled", boolean);
-		}
-
-		if (gameIsSwade) {
-			disableCheckbox(enableExtraDiceInSwadeCheckbox, !enableDiceTray);
-
-			enableDiceTrayCheckbox.on("change", (event) => {
-				disableCheckbox(enableExtraDiceInSwadeCheckbox, !event.target.checked);
-			});
-		} else {
-			const swadeCheckboxGroup = enableExtraDiceInSwadeCheckbox.parent()[0];
-			hideForm(swadeCheckboxGroup, true);
-		}
-	}
 }
 
 function registerSettings() {
 	game.settings.registerMenu("dice-calculator", "GeneralSettings", {
 		name: "DICE_TRAY.SETTINGS.GeneralSettings",
-		label: game.i18n.localize("DICE_TRAY.SETTINGS.GeneralSettings"),
+		label: "DICE_TRAY.SETTINGS.GeneralSettings",
 		icon: "fas fa-cogs",
 		type: DiceTrayGeneralSettings,
+	});
+	game.settings.registerMenu("dice-calculator", "DiceRowSettings", {
+		name: "DICE_TRAY.SETTINGS.DiceRowSettings",
+		label: "DICE_TRAY.SETTINGS.DiceRowSettings",
+		icon: "fas fa-cogs",
+		type: DiceRowSettings,
+		restricted: true,
 	});
 
 	game.settings.register("dice-calculator", "enableDiceCalculator", {
@@ -1515,15 +1751,23 @@ function registerSettings() {
 		requiresReload: true
 	});
 
-	game.settings.register("dice-calculator", "enableExtraDiceInSwade", {
-		name: game.i18n.localize("DICE_TRAY.SETTINGS.enableExtraDiceInSwade.name"),
-		hint: game.i18n.localize("DICE_TRAY.SETTINGS.enableExtraDiceInSwade.hint"),
+	game.settings.register("dice-calculator", "hideAdv", {
+		name: game.i18n.localize("DICE_TRAY.SETTINGS.hideAdv.name"),
+		hint: game.i18n.localize("DICE_TRAY.SETTINGS.hideAdv.hint"),
 		scope: "world",
-		config: false,
-		condition: game.system.id === "swade",
+		config: CONFIG.DICETRAY.constructor.name === "TemplateDiceMap",
 		default: false,
 		type: Boolean,
 		requiresReload: true
+	});
+
+	// Menu Settings
+
+	game.settings.register("dice-calculator", "diceRows", {
+		scope: "world",
+		config: false,
+		default: CONFIG.DICETRAY.dice,
+		type: Array,
 	});
 
 	game.settings.register("dice-calculator", "rolls", {
@@ -1538,7 +1782,6 @@ Hooks.on("renderDiceTrayGeneralSettings", DiceTrayGeneralSettings.renderDiceTray
 
 // Initialize module
 Hooks.once("init", () => {
-	registerSettings();
 	preloadTemplates();
 });
 
@@ -1561,6 +1804,8 @@ Hooks.once("i18nInit", () => {
 	if (providerStringCalculators) {
 		CONFIG.DICETRAY.calculator = new newCalculators[providerStringCalculators]();
 	}
+
+	registerSettings();
 });
 
 function getProviderString(regex, keys) {
@@ -1581,7 +1826,7 @@ Hooks.on("renderSidebarTab", async (app, html, data) => {
 		// Prepare the dice tray for rendering.
 		let $chat_form = html.find("#chat-form");
 		const options = {
-			dicerows: CONFIG.DICETRAY.dice
+			dicerows: game.settings.get("dice-calculator", "diceRows")
 		};
 
 		const content = await renderTemplate("modules/dice-calculator/templates/tray.html", options);
