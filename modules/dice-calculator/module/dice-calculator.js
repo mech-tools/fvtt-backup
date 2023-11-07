@@ -549,17 +549,13 @@ class TemplateDiceMap {
 			event.preventDefault();
 			let spoofed = this.triggerRollClick();
 			html.find("#chat-message").trigger(spoofed);
-			html.find(".dice-tray__input").val(0);
-			html.find(".dice-tray__flag").text("");
-			html.find(".dice-tray__flag").addClass("hide");
-			if (this.removeAdvOnRoll) html.find(".dice-tray__ad").removeClass("active");
+			this._resetTray(html);
 		});
 
 		/** Sending a message on the chat form clears the text and hides the orange numbers */
 		html.find("#chat-message").keydown((e) => {
 			if (e.code === "Enter" || e.key === "Enter" || e.keycode === "13") {
-				html.find(".dice-tray__flag").text("");
-				html.find(".dice-tray__flag").addClass("hide");
+				this._resetTray(html);
 			}
 		});
 	}
@@ -644,6 +640,14 @@ class TemplateDiceMap {
 		});
 	}
 
+	_resetTray(html) {
+		html.find(".dice-tray__input").val(0);
+		html.find(".dice-tray__flag").text("").addClass("hide");
+		if (this.removeAdvOnRoll) {
+			html.find(".dice-tray__ad").removeClass("active");
+		}
+	}
+
 	/**
 	 * Logic to apply the number on the -/+ selector.
 	 * @param {HTMLElement} html
@@ -669,12 +673,13 @@ class TemplateDiceMap {
 			$chat.val(chat_val.replace(match_string, mod_string));
 		} else if (chat_val !== "") {
 			$chat.val(chat_val + mod_string);
+		} else {
+			const rollPrefix = this._getRollMode(html);
+			$chat.val(`${rollPrefix} ${mod_string}`);
 		}
-		// TODO readd but trigger _dtUpdateChatDice instead
-		// else {
-		// 	chat_val = `/r ${mod_string}`;
-		// 	$chat.val(chat_val);
-		// }
+		if (/(\/r|\/gmr|\/br|\/sr) $/g.test($chat.val())) {
+			$chat.val("");
+		}
 	}
 
 	/**
@@ -690,6 +695,10 @@ class TemplateDiceMap {
 		return `${qty === "" ? 1 : qty}${dice}`;
 	}
 
+	/**
+	 * Creates a fake Enter keypress to trigger the chat message box.
+	 * @returns {{}}
+	 */
 	triggerRollClick() {
 		// Set up the keypress event properties.
 		let spoofedProperties = {
@@ -710,7 +719,7 @@ class TemplateDiceMap {
 	}
 
 	/**
-	 * Handles clicks on the -/+ buttons.
+	 * Handles clicks on the dice buttons.
 	 * @param {Object} dataset
 	 * @param {String} direction
 	 * @param {HTMLElement} html
@@ -721,21 +730,9 @@ class TemplateDiceMap {
 		let currFormula = String($chat.val());
 		if (direction === "sub" && currFormula === "") return;
 		let newFormula = null;
-		let rollPrefix = "/r";
-		const $roll_mode_selector = html.find('select[name="rollMode"]');
+		let rollPrefix = this._getRollMode(html);
 		let qty = 0;
 		let dice = "";
-
-		if ($roll_mode_selector.length > 0) {
-			const rollMode = $roll_mode_selector.val();
-			if (rollMode === "gmroll") {
-				rollPrefix = "/gmr";
-			} else if (rollMode === "blindroll") {
-				rollPrefix = "/br";
-			} else if (rollMode === "selfroll") {
-				rollPrefix = "/sr";
-			}
-		}
 
 		let match_dice = dataset.formula;
 		if (dataset.formula === "d10") {
@@ -787,7 +784,8 @@ class TemplateDiceMap {
 			if (currFormula === "") {
 				$chat.val(`${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}`);
 			} else {
-				currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr) /g, `${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}+`);
+				const signal = (/(\/r|\/gmr|\/br|\/sr) (?!-)/g.test(currFormula)) ? "+" : "";
+				currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr) /g, `${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}${signal}`);
 				$chat.val(currFormula);
 			}
 		}
@@ -816,6 +814,41 @@ class TemplateDiceMap {
 		currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr)(( \+)| )/g, `${rollPrefix} `).replace(/\+{2}/g, "+").replace(/-{2}/g, "-").replace(/\+$/g, "");
 		$chat.val(currFormula);
 		this.applyModifier(html);
+	}
+
+	/**
+	 * Gets the selected roll mode
+	 * @param {HTMLElement} html
+	 * @returns {String}
+	 */
+	_getRollMode(html) {
+		const $roll_mode_selector = html.find('select[name="rollMode"]');
+		let rollMode;
+		if ($roll_mode_selector.length > 0) {
+			rollMode = $roll_mode_selector.val();
+		} else {
+			// There are some UI modules that remove the rollMode selector
+			const uiSections = [
+				html.find('section[id="dfcp-rt-buttons"]'),
+				html.find('section[id="dorako-rt-buttons"]'),
+				html.find('section[id="rpg-ui-buttons"]'),
+			];
+			for (const section of uiSections) {
+				const activeButton = section.find("button.active")[0];
+				if (activeButton) {
+					rollMode = activeButton.dataset.id;
+					break;
+				}
+			}
+		}
+		if (rollMode === "gmroll") {
+			return "/gmr";
+		} else if (rollMode === "blindroll") {
+			return "/br";
+		} else if (rollMode === "selfroll") {
+			return "/sr";
+		}
+		return "/r";
 	}
 
 	/**
@@ -1296,7 +1329,6 @@ class DiceCalculatorDialog extends Dialog {
 				// button formula.
 				const matchString = new RegExp(`${buttonFormula}(?!0)`, "i");
 				if (matchString.test(last)) {
-					last.match(/\d+d(\d+)(k[hl]*)*/);
 					let result = last.split("d");
 					if (result[0] && (result[0].length !== 0 || !isNaN(result[0]))) {
 						count = parseInt(result[0]);

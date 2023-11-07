@@ -1,8 +1,8 @@
-2023/11/02-18:57:12.960553 7fcf2f7fe700 Recovering log #235
-2023/11/02-18:57:12.963073 7fcf2f7fe700 Delete type=3 #234
-2023/11/02-18:57:12.963149 7fcf2f7fe700 Delete type=0 #235
-2023/11/03-09:51:11.007411 7fccad7b1700 Level-0 table #239: started
-2023/11/03-09:51:11.007432 7fccad7b1700 Level-0 table #239: 0 bytes OK
-2023/11/03-09:51:11.008204 7fccad7b1700 Delete type=0 #237
-2023/11/03-09:51:11.009295 7fccad7b1700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
-2023/11/03-09:51:11.014243 7fccad7b1700 Manual compaction at level-1 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2023/11/03-09:51:30.234302 7fcf2e7fc700 Recovering log #238
+2023/11/03-09:51:30.237014 7fcf2e7fc700 Delete type=0 #238
+2023/11/03-09:51:30.237041 7fcf2e7fc700 Delete type=3 #236
+2023/11/06-10:35:14.855226 7fccad7b1700 Level-0 table #243: started
+2023/11/06-10:35:14.855437 7fccad7b1700 Level-0 table #243: 0 bytes OK
+2023/11/06-10:35:14.856479 7fccad7b1700 Delete type=0 #241
+2023/11/06-10:35:14.862792 7fccad7b1700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2023/11/06-10:35:14.866507 7fccad7b1700 Manual compaction at level-1 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
