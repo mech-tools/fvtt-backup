@@ -1,8 +1,15 @@
-2023/11/03-09:51:30.026878 7fcf2f7fe700 Recovering log #128
-2023/11/03-09:51:30.029310 7fcf2f7fe700 Delete type=0 #128
-2023/11/03-09:51:30.029335 7fcf2f7fe700 Delete type=3 #126
-2023/11/06-10:35:14.828545 7fccad7b1700 Level-0 table #133: started
-2023/11/06-10:35:14.828900 7fccad7b1700 Level-0 table #133: 0 bytes OK
-2023/11/06-10:35:14.830006 7fccad7b1700 Delete type=0 #131
-2023/11/06-10:35:14.830216 7fccad7b1700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
-2023/11/06-10:35:14.834423 7fccad7b1700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/11/07-11:18:27.023475 7fcf2effd700 Recovering log #136
+2023/11/07-11:18:27.026461 7fcf2effd700 Delete type=3 #134
+2023/11/07-11:18:27.026519 7fcf2effd700 Delete type=0 #136
+2023/11/07-19:24:55.762004 7fccad7b1700 Level-0 table #141: started
+2023/11/07-19:24:55.764253 7fccad7b1700 Level-0 table #141: 14721 bytes OK
+2023/11/07-19:24:55.765584 7fccad7b1700 Delete type=0 #139
+2023/11/07-19:24:55.772326 7fccad7b1700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/11/07-19:24:55.772430 7fccad7b1700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at '!scenes.tiles!LK4wT7cOnoUGK5YN.bnhLmm8A71cknstu' @ 785 : 1
+2023/11/07-19:24:55.772436 7fccad7b1700 Compacting 1@1 + 1@2 files
+2023/11/07-19:24:55.775139 7fccad7b1700 Generated table #142@1: 66 keys, 17629 bytes
+2023/11/07-19:24:55.775155 7fccad7b1700 Compacted 1@1 + 1@2 files => 17629 bytes
+2023/11/07-19:24:55.776183 7fccad7b1700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/11/07-19:24:55.776265 7fccad7b1700 Delete type=2 #141
+2023/11/07-19:24:55.776352 7fccad7b1700 Delete type=2 #103
+2023/11/07-19:24:55.779926 7fccad7b1700 Manual compaction at level-1 from '!scenes.tiles!LK4wT7cOnoUGK5YN.bnhLmm8A71cknstu' @ 785 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
