@@ -2,10 +2,10 @@
   "title": "Yacht, rafiot et liqueur d'algues",
   "id": "yacht-rafiot-et-liqueur-dalgues",
   "system": "CoC7",
-  "coreVersion": "11.314",
+  "coreVersion": "11.315",
   "compatibility": {
     "minimum": "11",
-    "verified": "11.314"
+    "verified": "11.315"
   },
   "systemVersion": "0.10.6",
   "esmodules": [
@@ -18,7 +18,7 @@
   "styles": [
     "styles.css"
   ],
-  "lastPlayed": "Mon Nov 06 2023 10:40:32 GMT+0100 (Central European Standard Time)",
-  "playtime": 5946804,
+  "lastPlayed": "Tue Nov 07 2023 23:55:27 GMT+0100 (Central European Standard Time)",
+  "playtime": 5947238,
   "safeMode": false
 }
