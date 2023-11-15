@@ -1,3 +1,8 @@
-2023/11/07-11:15:08.146614 7facf1ffb700 Recovering log #394
-2023/11/07-11:15:08.149616 7facf1ffb700 Delete type=0 #394
-2023/11/07-11:15:08.149650 7facf1ffb700 Delete type=3 #392
+2023/11/07-23:55:27.906046 7f1d127fc700 Recovering log #397
+2023/11/07-23:55:27.908815 7f1d127fc700 Delete type=3 #396
+2023/11/07-23:55:27.908847 7f1d127fc700 Delete type=0 #397
+2023/11/14-09:22:10.608439 7f1a73fff700 Level-0 table #401: started
+2023/11/14-09:22:10.608688 7f1a73fff700 Level-0 table #401: 0 bytes OK
+2023/11/14-09:22:10.609796 7f1a73fff700 Delete type=0 #399
+2023/11/14-09:22:10.611140 7f1a73fff700 Manual compaction at level-0 from '!adventures!XHCQIHKxp1ciaqOQ' @ 72057594037927935 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at (end)
+2023/11/14-09:22:10.612965 7f1a73fff700 Manual compaction at level-1 from '!adventures!XHCQIHKxp1ciaqOQ' @ 72057594037927935 : 1 .. '!adventures!zV0gqBQbpbAHpK3G' @ 0 : 0; will stop at (end)

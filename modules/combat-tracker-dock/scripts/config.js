@@ -460,6 +460,7 @@ function setAllSettings() {
     setAttributeColor();
     setTooltipColor();
     setPortraitImageBorder();
+    setPortraitImageBackground();
 }
 
 function setPortraitSize() {

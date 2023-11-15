@@ -1,3 +1,24 @@
-2023/11/07-11:15:07.942253 7facf2ffd700 Recovering log #701
-2023/11/07-11:15:07.945009 7facf2ffd700 Delete type=0 #701
-2023/11/07-11:15:07.945043 7facf2ffd700 Delete type=3 #699
+2023/11/07-23:55:27.524209 7f1d11ffb700 Recovering log #705
+2023/11/07-23:55:27.524498 7f1d11ffb700 Level-0 table #707: started
+2023/11/07-23:55:27.525750 7f1d11ffb700 Level-0 table #707: 1945 bytes OK
+2023/11/07-23:55:27.535389 7f1d11ffb700 Delete type=0 #705
+2023/11/07-23:55:27.535442 7f1d11ffb700 Delete type=3 #704
+2023/11/14-09:22:10.564304 7f1a73fff700 Level-0 table #710: started
+2023/11/14-09:22:10.566091 7f1a73fff700 Level-0 table #710: 2785 bytes OK
+2023/11/14-09:22:10.567464 7f1a73fff700 Delete type=0 #708
+2023/11/14-09:22:10.572125 7f1a73fff700 Manual compaction at level-0 from '!settings!0Iy1aGdno3drGkLu' @ 72057594037927935 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at '!settings!x7W81zXTWjxw9i0A' @ 2243 : 1
+2023/11/14-09:22:10.572139 7f1a73fff700 Compacting 2@0 + 0@1 files
+2023/11/14-09:22:10.573550 7f1a73fff700 Generated table #711@0: 4 keys, 1871 bytes
+2023/11/14-09:22:10.573568 7f1a73fff700 Compacted 2@0 + 0@1 files => 1871 bytes
+2023/11/14-09:22:10.574455 7f1a73fff700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/11/14-09:22:10.575087 7f1a73fff700 Delete type=2 #710
+2023/11/14-09:22:10.575154 7f1a73fff700 Delete type=2 #707
+2023/11/14-09:22:10.578121 7f1a73fff700 Manual compaction at level-0 from '!settings!x7W81zXTWjxw9i0A' @ 2243 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at (end)
+2023/11/14-09:22:10.579904 7f1a73fff700 Manual compaction at level-1 from '!settings!0Iy1aGdno3drGkLu' @ 72057594037927935 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at '!settings!x7W81zXTWjxw9i0A' @ 2245 : 1
+2023/11/14-09:22:10.579941 7f1a73fff700 Compacting 1@1 + 1@2 files
+2023/11/14-09:22:10.582288 7f1a73fff700 Generated table #712@1: 188 keys, 32360 bytes
+2023/11/14-09:22:10.582303 7f1a73fff700 Compacted 1@1 + 1@2 files => 32360 bytes
+2023/11/14-09:22:10.583272 7f1a73fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/11/14-09:22:10.583342 7f1a73fff700 Delete type=2 #703
+2023/11/14-09:22:10.583403 7f1a73fff700 Delete type=2 #711
+2023/11/14-09:22:10.587488 7f1a73fff700 Manual compaction at level-1 from '!settings!x7W81zXTWjxw9i0A' @ 2245 : 1 .. '!settings!yzL7lWlJUbTGutux' @ 0 : 0; will stop at (end)
