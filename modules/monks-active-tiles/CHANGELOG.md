@@ -1,3 +1,95 @@
+## Version 11.12
+
+Removed references to allowDelay, it hasn't been used for a very long while.
+
+Added the option to select specific players for any of the actions that are shown to players.
+
+Revamped the code and standardised all the actions that use the show to option.
+
+Fixed issue with the pan to action
+
+Added a new action to ping the canvas at a specific location.
+
+Added current tile support for the teleport action, so you can add a click action to teleport to the tile that's clicked.
+
+Fixed issue with positioning dropdown for teleport to correctly identify what location will allow positioning.
+
+Added the option, under duress, to temporarily change the image of a Tile.  So the image will only affect spcific users.
+
+Changed the Roll Table action to be consistent with other action and selecting an entity by clicking on the directory item rather than selecting from a dropdown.
+
+Added the option to set the offset to play from when playing tile animations.
+
+Added the option to reset the tile animation to the start since Foundry likes to set a random location for an animated Tile to start from.
+
+Fixed issue with the play tile animation code not really correctly identifying when a tile should be played.
+
+Fixed issue with the scene activation code, trying to change the scene multiple times.
+
+Added the option to show a Journal Entry as an Image.
+
+Fixed issue with goto landing action when using dice notation in the fields.
+
+Fixed issues when looping using a landing running extra actions that it really shouldn't be.
+
+Fixed issues with adding and removing Tagger tags not waiting before carrying on with other actions.
+
+Changed the Scene selection to pick from the scenes directory instead of from a dropdown list.
+
+Updated the action configuration to use actual JSON data instead of a stringified version.
+
+Fixed issue when action has no controls.
+
+Fixed issue when an action has no values.
+
+Added the option to set the default restricted and controlled for new Tiles in the settings.
+
+Updated the location edit dialog to allow for multiple locations.
+
+Fixed issue that could potentially cause all Tiles to be triggered on the scene.
+
+Fixed issue that was clearing out tokens when jumping between landings.
+
+Added the option to drag and drop a Macro onto the canvas to create a Tile that would run the Macro when clicked.
+
+Fixed issue when updating a Scene having an error and not recognising the scene tiles.
+
+Added help message to inform users that Stop Token Movement only works On Enter and On Exit.
+
+Fixed the Alter code to still work in case `system` is added to the attribute.
+
+Added option to delay remaining actions until a sound file has finished playing.
+
+Fixed issue with the play sound action not respecting the correct volume level
+
+Added the option to clear all Active Effects
+
+Added a collection drop down to the permissions action so when using current collection, you can select which one to use.
+
+Added support for OSE when attacking with an attack
+
+Preventing a scene change if the scene is already on that scene
+
+Removed the old Image Cycle and Image Cycle Set actions, they've been deprecated and un-usable for awhile now.
+
+Fixed issue witht he Global Volume Change action, you can now specify who gets the volume change, so it's not just changing the GMs volume
+
+Fixed issue with displayng Scrolling Text
+
+Updated the `Set Current Collection` action to allow appending additional entities, removing specific entities, or clearing the collection.  This should allow you to build specifc lists of users or entites that might have more complex ways of determining each one.
+
+Fixed issues with using dice notation when using the Random Change action
+
+Added the option to only trigger the tile if a player has vision on the Tile
+
+Added code to make sure tabs and buttons aren't added twice to the Tile config
+
+Updated Japanese language transations, thank you doumaku
+
+Added Polish language translations, thank you nexusmrsep
+
+Foundry also fixed an issue that was causing scene changes to lock the mouse out of making any changes to the canvas.
+
 ## Version 11.11
 
 Added the option to select tiles by tags when stopping a sound from playing

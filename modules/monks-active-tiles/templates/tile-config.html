@@ -82,14 +82,21 @@
 
     <div class="form-group">
         <label>{{ localize "MonksActiveTiles.HoverPointer" }}</label>
-        <div class="form-fields">
+        <div class="form-fields" style="flex: 0 0 50px;">
             <input type="checkbox" name="flags.monks-active-tiles.pointer" {{ checked data.flags.monks-active-tiles.pointer }}>
         </div>
     </div>
 
     <div class="form-group">
+        <label>{{ localize "MonksActiveTiles.TokenVision" }}</label>
+        <div class="form-fields" style="flex: 0 0 50px;">
+            <input type="checkbox" name="flags.monks-active-tiles.vision" {{ checked data.flags.monks-active-tiles.vision }}>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label>{{ localize "MonksActiveTiles.PerToken" }}</label>
-        <div class="form-fields">
+        <div class="form-fields" style="flex: 0 0 50px;">
             <input type="checkbox" class="per-token" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
         </div>
     </div>
@@ -119,7 +126,7 @@
 <div class="tab matt-tab" data-tab="trigger-actions">
     {{#if sounds}}
     <ol class="items-list sounds-list" data-collection="sounds">
-        <li class="items-header flexrow">
+        <li class="item-header flexrow">
             <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Sounds" }}</h3>
             <div class="item-controls flexrow"></div>
         </li>
@@ -141,7 +148,7 @@
     {{/if}}
 
     <ol class="items-list action-items" data-collection="actions">
-        <li class="items-header flexrow">
+        <li class="item-header flexrow">
             <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Actions" }}</h3>
 
             <div class="item-controls flexrow">
@@ -182,7 +189,7 @@
     </div>
 
     <ol class="files-list items-list" data-collection="files">
-        <li class="items-header flexrow">
+        <li class="item-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
                 <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>
                 <button type="button" class="add-image" data-target="_file-list" style="display: none;"></button>

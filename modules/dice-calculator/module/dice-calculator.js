@@ -822,33 +822,18 @@ class TemplateDiceMap {
 	 * @returns {String}
 	 */
 	_getRollMode(html) {
-		const $roll_mode_selector = html.find('select[name="rollMode"]');
-		let rollMode;
-		if ($roll_mode_selector.length > 0) {
-			rollMode = $roll_mode_selector.val();
-		} else {
-			// There are some UI modules that remove the rollMode selector
-			const uiSections = [
-				html.find('section[id="dfcp-rt-buttons"]'),
-				html.find('section[id="dorako-rt-buttons"]'),
-				html.find('section[id="rpg-ui-buttons"]'),
-			];
-			for (const section of uiSections) {
-				const activeButton = section.find("button.active")[0];
-				if (activeButton) {
-					rollMode = activeButton.dataset.id;
-					break;
-				}
-			}
+		const rollMode = game.settings.get("core", "rollMode");
+		switch (rollMode) {
+			case "gmroll":
+				return "/gmr";
+			case "blindroll":
+				return "/br";
+			case "selfroll":
+				return "/sr";
+			case "publicroll":
+			default:
+				return "/r";
 		}
-		if (rollMode === "gmroll") {
-			return "/gmr";
-		} else if (rollMode === "blindroll") {
-			return "/br";
-		} else if (rollMode === "selfroll") {
-			return "/sr";
-		}
-		return "/r";
 	}
 
 	/**
@@ -983,6 +968,63 @@ class dccDiceMap extends TemplateDiceMap {
 			}
 
 			// Update the value.
+			$chat.val(chat_val);
+		});
+	}
+}
+
+class demonlordDiceMap extends TemplateDiceMap {
+
+	get dice() {
+		const dice = [
+			{
+				d3: { img: "modules/dice-calculator/assets/icons/d3black.svg" },
+				d6: { img: "icons/dice/d6black.svg" },
+				d20: { img: "icons/dice/d20black.svg" }
+			}
+		];
+		return dice;
+	}
+
+	get buttonFormulas() {
+		return {
+			kh: "+",
+			kl: "-"
+		};
+	}
+
+	get labels() {
+		return {
+			advantage: game.i18n.localize("DL.DialogBoon"),
+			adv: game.i18n.localize("DL.DialogBoon"),
+			disadvantage: game.i18n.localize("DL.DialogBane"),
+			dis: game.i18n.localize("DL.DialogBane")
+		};
+	}
+
+	_extraButtonsLogic(html) {
+		html.find(".dice-tray__ad").on("click", (event) => {
+			event.preventDefault();
+			let sign = event.currentTarget.dataset.formula;
+			let $chat = html.find("#chat-form textarea");
+			let chat_val = String($chat.val());
+			let match_string = /(?<sign>[+-])(?<qty>\d*)d6kh/;
+			const match = chat_val.match(match_string);
+			if (match) {
+				let qty = parseInt(match.groups.qty);
+				let replacement = "";
+				if (match.groups.sign === sign) {
+					qty += 1;
+					replacement = `${sign}${qty}d6kh`;
+				} else if (qty !== 1) {
+					qty -=1;
+					sign = (sign === "+") ? "-" : "+";
+					replacement = `${sign}${qty}d6kh`;
+				}
+				chat_val = chat_val.replace(match_string, replacement);
+			} else {
+				chat_val = `${chat_val}${sign}1d6kh`;
+			}
 			$chat.val(chat_val);
 		});
 	}
@@ -1128,77 +1170,18 @@ class SWADEDiceMap extends TemplateDiceMap {
 	}
 }
 
-class demonlordDiceMap extends TemplateDiceMap {
-
-	get dice() {
-		const dice = [
-			{
-				d3: { img: "modules/dice-calculator/assets/icons/d3black.svg" },
-				d6: { img: "icons/dice/d6black.svg" },
-				d20: { img: "icons/dice/d20black.svg" }
-			}
-		];
-		return dice;
-	}
-
-	get buttonFormulas() {
-		return {
-			kh: "+",
-			kl: "-"
-		};
-	}
-
-	get labels() {
-		return {
-			advantage: game.i18n.localize("DL.DialogBoon"),
-			adv: game.i18n.localize("DL.DialogBoon"),
-			disadvantage: game.i18n.localize("DL.DialogBane"),
-			dis: game.i18n.localize("DL.DialogBane")
-		};
-	}
-
-	_extraButtonsLogic(html) {
-		html.find(".dice-tray__ad").on("click", (event) => {
-			event.preventDefault();
-			let sign = event.currentTarget.dataset.formula;
-			let $chat = html.find("#chat-form textarea");
-			let chat_val = String($chat.val());
-			let match_string = /(?<sign>[+-])(?<qty>\d*)d6kh/;
-			const match = chat_val.match(match_string);
-			if (match) {
-				let qty = parseInt(match.groups.qty);
-				let replacement = "";
-				if (match.groups.sign === sign) {
-					qty += 1;
-					replacement = `${sign}${qty}d6kh`;
-				} else if (qty !== 1) {
-					qty -=1;
-					sign = (sign === "+") ? "-" : "+";
-					replacement = `${sign}${qty}d6kh`;
-				}
-				chat_val = chat_val.replace(match_string, replacement);
-			} else {
-				chat_val = `${chat_val}${sign}1d6kh`;
-			}
-			$chat.val(chat_val);
-		});
-	}
-}
-
-// export { default as tresdetv } from "./tresdetv.js";
-
 var keymaps = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	Template: TemplateDiceMap,
 	dcc: dccDiceMap,
+	demonlord: demonlordDiceMap,
 	dnd5e: dnd5eDiceMap,
 	ModularFate: FateDiceMap,
 	fateCoreOfficial: FateDiceMap,
 	fatex: FateDiceMap,
 	pf2e: pf2eDiceMap,
 	starwarsffg: starwarsffgDiceMap,
-	swade: SWADEDiceMap,
-	demonlord: demonlordDiceMap
+	swade: SWADEDiceMap
 });
 
 class DiceCalculatorDialog extends Dialog {
@@ -1448,6 +1431,10 @@ class DiceCalculatorDialog extends Dialog {
 	}
 }
 
+/**
+ * Javascript imports don't support dashes so the workaround
+ * for systems with dashes in their names is to create this map.
+ */
 const KEYS = {
 	"fate-core-official": "fateCoreOfficial"
 };
@@ -1818,20 +1805,19 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("i18nInit", () => {
-	const keys = deepClone(KEYS);
 	const newMaps = deepClone(keymaps);
 	const newCalculators = deepClone(diceCalculators);
 
-	Hooks.callAll("dice-calculator.keymaps", newMaps, newMaps.Template, keys);
+	Hooks.callAll("dice-calculator.keymaps", newMaps, newMaps.Template);
 	const supportedSystemMaps = Object.keys(newMaps).join("|");
 	const systemMapsRegex = new RegExp(`^(${supportedSystemMaps})$`);
-	const providerStringMaps = getProviderString(systemMapsRegex, keys) || "Template";
+	const providerStringMaps = getProviderString(systemMapsRegex) || "Template";
 	CONFIG.DICETRAY = new newMaps[providerStringMaps]();
 
-	Hooks.callAll("dice-calculator.calculator", newCalculators, keys);
+	Hooks.callAll("dice-calculator.calculator", newCalculators);
 	const supportedSystemCalculators = Object.keys(newCalculators).join("|");
 	const systemCalculatorsRegex = new RegExp(`^(${supportedSystemCalculators})$`);
-	const providerStringCalculators = getProviderString(systemCalculatorsRegex, keys);
+	const providerStringCalculators = getProviderString(systemCalculatorsRegex);
 
 	if (providerStringCalculators) {
 		CONFIG.DICETRAY.calculator = new newCalculators[providerStringCalculators]();
@@ -1840,10 +1826,10 @@ Hooks.once("i18nInit", () => {
 	registerSettings();
 });
 
-function getProviderString(regex, keys) {
+function getProviderString(regex) {
 	const id = game.system.id;
-	if (id in keys) {
-		return keys[id];
+	if (id in KEYS) {
+		return KEYS[id];
 	} else if (regex.test(id)) {
 		return id;
 	}
@@ -1958,13 +1944,12 @@ Hooks.on("renderSidebarTab", async (app, html, data) => {
 				mod_val = Number.isNaN(mod_val) ? 0 : mod_val;
 
 				switch (dataset.formula) {
-				case "+1":
-					mod_val = mod_val + 1;
-					break;
-
-				case "-1":
-					mod_val = mod_val - 1;
-					break;
+					case "+1":
+						mod_val = mod_val + 1;
+						break;
+					case "-1":
+						mod_val = mod_val - 1;
+						break;
 				}
 				$('input[name="dice.tray.modifier"]').val(mod_val);
 				CONFIG.DICETRAY.applyModifier(html);

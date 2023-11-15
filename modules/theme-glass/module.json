@@ -2,7 +2,7 @@
     "id": "theme-glass",
     "title": "Theme: Glass",
     "description": "Theme: Glass for FoundryVTT.",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "library": "false",
     "compatibility": {
         "minimum": 11,
@@ -55,7 +55,7 @@
     "bugs": "https://github.com/DarKDinDoN/theme-glass/issues",
     "changelog": "https://github.com/DarKDinDoN/theme-glass/releases",
     "manifest": "https://github.com/DarKDinDoN/theme-glass/releases/latest/download/module.json",
-    "download": "https://github.com/DarKDinDoN/theme-glass/releases/download/1.6.1/module.zip",
+    "download": "https://github.com/DarKDinDoN/theme-glass/releases/download/1.6.2/module.zip",
     "license": "https://github.com/DarKDinDoN/theme-glass/raw/main/LICENSE",
     "readme": "https://github.com/DarKDinDoN/theme-glass/raw/main/README.md",
     "media": [

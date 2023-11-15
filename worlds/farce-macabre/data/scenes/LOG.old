@@ -1,15 +1,8 @@
-2023/11/07-11:18:27.023475 7fcf2effd700 Recovering log #136
-2023/11/07-11:18:27.026461 7fcf2effd700 Delete type=3 #134
-2023/11/07-11:18:27.026519 7fcf2effd700 Delete type=0 #136
-2023/11/07-19:24:55.762004 7fccad7b1700 Level-0 table #141: started
-2023/11/07-19:24:55.764253 7fccad7b1700 Level-0 table #141: 14721 bytes OK
-2023/11/07-19:24:55.765584 7fccad7b1700 Delete type=0 #139
-2023/11/07-19:24:55.772326 7fccad7b1700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
-2023/11/07-19:24:55.772430 7fccad7b1700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at '!scenes.tiles!LK4wT7cOnoUGK5YN.bnhLmm8A71cknstu' @ 785 : 1
-2023/11/07-19:24:55.772436 7fccad7b1700 Compacting 1@1 + 1@2 files
-2023/11/07-19:24:55.775139 7fccad7b1700 Generated table #142@1: 66 keys, 17629 bytes
-2023/11/07-19:24:55.775155 7fccad7b1700 Compacted 1@1 + 1@2 files => 17629 bytes
-2023/11/07-19:24:55.776183 7fccad7b1700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/11/07-19:24:55.776265 7fccad7b1700 Delete type=2 #141
-2023/11/07-19:24:55.776352 7fccad7b1700 Delete type=2 #103
-2023/11/07-19:24:55.779926 7fccad7b1700 Manual compaction at level-1 from '!scenes.tiles!LK4wT7cOnoUGK5YN.bnhLmm8A71cknstu' @ 785 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/11/07-23:55:42.058074 7fb2ff7fe700 Recovering log #140
+2023/11/07-23:55:42.061881 7fb2ff7fe700 Delete type=3 #138
+2023/11/07-23:55:42.061913 7fb2ff7fe700 Delete type=0 #140
+2023/11/14-09:23:32.658990 7fb07d6e2700 Level-0 table #146: started
+2023/11/14-09:23:32.659187 7fb07d6e2700 Level-0 table #146: 0 bytes OK
+2023/11/14-09:23:32.660585 7fb07d6e2700 Delete type=0 #144
+2023/11/14-09:23:32.661150 7fb07d6e2700 Manual compaction at level-0 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
+2023/11/14-09:23:32.667267 7fb07d6e2700 Manual compaction at level-1 from '!scenes!7CIc2xnQNXpWB1s4' @ 72057594037927935 : 1 .. '!scenes.notes!rUxjCUjeQQb67STU.xxUKcQtKFiQmyJ3D' @ 0 : 0; will stop at (end)
