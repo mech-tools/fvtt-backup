@@ -3,12 +3,12 @@ import { IS_PRIVATE } from '../scripts/randomizer/randomizerForm.js';
 import {
   getData,
   getDocumentName,
-  spawnPlaceable,
   SUPPORT_SHEET_CONFIGS,
   SUPPORTED_COLLECTIONS,
 } from '../scripts/utils.js';
 import { getClipboardData, pasteDataUpdate, WithMassConfig } from './forms.js';
 import { MassEditGenericForm } from './generic/genericForm.js';
+import { PresetAPI } from './presets.js';
 
 export const LAYER_MAPPINGS = {
   Token: 'tokens',
@@ -68,7 +68,10 @@ function getSelectedDocuments(placeableSelect) {
     $(`.directory-list .${doc.class}.selected`).each(function (_) {
       let d;
       if (doc.name === 'Playlist') {
-        d = game.collections.get(doc.name).get(this.dataset.playlistId)?.sounds.get(this.dataset.soundId);
+        d = game.collections
+          .get(doc.name)
+          .get(this.dataset.playlistId)
+          ?.sounds.get(this.dataset.soundId);
       } else {
         d = game.collections.get(doc.name).get(this.dataset.documentId);
       }
@@ -221,9 +224,9 @@ export function pasteData() {
   if (selected) return pasteDataUpdate(selected);
   else if (IS_PRIVATE) {
     let docName = canvas.activeLayer.constructor.documentName;
-    let data = getClipboardData(docName);
-    if (data) {
-      spawnPlaceable(docName, data);
+    const preset = getClipboardData(docName);
+    if (preset) {
+      PresetAPI.spawnPreset({ preset });
       return true;
     }
   }

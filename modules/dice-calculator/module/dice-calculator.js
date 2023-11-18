@@ -549,17 +549,13 @@ class TemplateDiceMap {
 			event.preventDefault();
 			let spoofed = this.triggerRollClick();
 			html.find("#chat-message").trigger(spoofed);
-			html.find(".dice-tray__input").val(0);
-			html.find(".dice-tray__flag").text("");
-			html.find(".dice-tray__flag").addClass("hide");
-			if (this.removeAdvOnRoll) html.find(".dice-tray__ad").removeClass("active");
+			this._resetTray(html);
 		});
 
 		/** Sending a message on the chat form clears the text and hides the orange numbers */
 		html.find("#chat-message").keydown((e) => {
 			if (e.code === "Enter" || e.key === "Enter" || e.keycode === "13") {
-				html.find(".dice-tray__flag").text("");
-				html.find(".dice-tray__flag").addClass("hide");
+				this._resetTray(html);
 			}
 		});
 	}
@@ -644,6 +640,14 @@ class TemplateDiceMap {
 		});
 	}
 
+	_resetTray(html) {
+		html.find(".dice-tray__input").val(0);
+		html.find(".dice-tray__flag").text("").addClass("hide");
+		if (this.removeAdvOnRoll) {
+			html.find(".dice-tray__ad").removeClass("active");
+		}
+	}
+
 	/**
 	 * Logic to apply the number on the -/+ selector.
 	 * @param {HTMLElement} html
@@ -669,12 +673,13 @@ class TemplateDiceMap {
 			$chat.val(chat_val.replace(match_string, mod_string));
 		} else if (chat_val !== "") {
 			$chat.val(chat_val + mod_string);
+		} else {
+			const rollPrefix = this._getRollMode(html);
+			$chat.val(`${rollPrefix} ${mod_string}`);
 		}
-		// TODO readd but trigger _dtUpdateChatDice instead
-		// else {
-		// 	chat_val = `/r ${mod_string}`;
-		// 	$chat.val(chat_val);
-		// }
+		if (/(\/r|\/gmr|\/br|\/sr) $/g.test($chat.val())) {
+			$chat.val("");
+		}
 	}
 
 	/**
@@ -690,6 +695,10 @@ class TemplateDiceMap {
 		return `${qty === "" ? 1 : qty}${dice}`;
 	}
 
+	/**
+	 * Creates a fake Enter keypress to trigger the chat message box.
+	 * @returns {{}}
+	 */
 	triggerRollClick() {
 		// Set up the keypress event properties.
 		let spoofedProperties = {
@@ -710,7 +719,7 @@ class TemplateDiceMap {
 	}
 
 	/**
-	 * Handles clicks on the -/+ buttons.
+	 * Handles clicks on the dice buttons.
 	 * @param {Object} dataset
 	 * @param {String} direction
 	 * @param {HTMLElement} html
@@ -721,21 +730,9 @@ class TemplateDiceMap {
 		let currFormula = String($chat.val());
 		if (direction === "sub" && currFormula === "") return;
 		let newFormula = null;
-		let rollPrefix = "/r";
-		const $roll_mode_selector = html.find('select[name="rollMode"]');
+		let rollPrefix = this._getRollMode(html);
 		let qty = 0;
 		let dice = "";
-
-		if ($roll_mode_selector.length > 0) {
-			const rollMode = $roll_mode_selector.val();
-			if (rollMode === "gmroll") {
-				rollPrefix = "/gmr";
-			} else if (rollMode === "blindroll") {
-				rollPrefix = "/br";
-			} else if (rollMode === "selfroll") {
-				rollPrefix = "/sr";
-			}
-		}
 
 		let match_dice = dataset.formula;
 		if (dataset.formula === "d10") {
@@ -787,7 +784,8 @@ class TemplateDiceMap {
 			if (currFormula === "") {
 				$chat.val(`${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}`);
 			} else {
-				currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr) /g, `${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}+`);
+				const signal = (/(\/r|\/gmr|\/br|\/sr) (?!-)/g.test(currFormula)) ? "+" : "";
+				currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr) /g, `${rollPrefix} ${this.rawFormula(qty, dice || dataset.formula, html)}${signal}`);
 				$chat.val(currFormula);
 			}
 		}
@@ -816,6 +814,26 @@ class TemplateDiceMap {
 		currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr)(( \+)| )/g, `${rollPrefix} `).replace(/\+{2}/g, "+").replace(/-{2}/g, "-").replace(/\+$/g, "");
 		$chat.val(currFormula);
 		this.applyModifier(html);
+	}
+
+	/**
+	 * Gets the selected roll mode
+	 * @param {HTMLElement} html
+	 * @returns {String}
+	 */
+	_getRollMode(html) {
+		const rollMode = game.settings.get("core", "rollMode");
+		switch (rollMode) {
+			case "gmroll":
+				return "/gmr";
+			case "blindroll":
+				return "/br";
+			case "selfroll":
+				return "/sr";
+			case "publicroll":
+			default:
+				return "/r";
+		}
 	}
 
 	/**
@@ -950,6 +968,63 @@ class dccDiceMap extends TemplateDiceMap {
 			}
 
 			// Update the value.
+			$chat.val(chat_val);
+		});
+	}
+}
+
+class demonlordDiceMap extends TemplateDiceMap {
+
+	get dice() {
+		const dice = [
+			{
+				d3: { img: "modules/dice-calculator/assets/icons/d3black.svg" },
+				d6: { img: "icons/dice/d6black.svg" },
+				d20: { img: "icons/dice/d20black.svg" }
+			}
+		];
+		return dice;
+	}
+
+	get buttonFormulas() {
+		return {
+			kh: "+",
+			kl: "-"
+		};
+	}
+
+	get labels() {
+		return {
+			advantage: game.i18n.localize("DL.DialogBoon"),
+			adv: game.i18n.localize("DL.DialogBoon"),
+			disadvantage: game.i18n.localize("DL.DialogBane"),
+			dis: game.i18n.localize("DL.DialogBane")
+		};
+	}
+
+	_extraButtonsLogic(html) {
+		html.find(".dice-tray__ad").on("click", (event) => {
+			event.preventDefault();
+			let sign = event.currentTarget.dataset.formula;
+			let $chat = html.find("#chat-form textarea");
+			let chat_val = String($chat.val());
+			let match_string = /(?<sign>[+-])(?<qty>\d*)d6kh/;
+			const match = chat_val.match(match_string);
+			if (match) {
+				let qty = parseInt(match.groups.qty);
+				let replacement = "";
+				if (match.groups.sign === sign) {
+					qty += 1;
+					replacement = `${sign}${qty}d6kh`;
+				} else if (qty !== 1) {
+					qty -=1;
+					sign = (sign === "+") ? "-" : "+";
+					replacement = `${sign}${qty}d6kh`;
+				}
+				chat_val = chat_val.replace(match_string, replacement);
+			} else {
+				chat_val = `${chat_val}${sign}1d6kh`;
+			}
 			$chat.val(chat_val);
 		});
 	}
@@ -1095,77 +1170,18 @@ class SWADEDiceMap extends TemplateDiceMap {
 	}
 }
 
-class demonlordDiceMap extends TemplateDiceMap {
-
-	get dice() {
-		const dice = [
-			{
-				d3: { img: "modules/dice-calculator/assets/icons/d3black.svg" },
-				d6: { img: "icons/dice/d6black.svg" },
-				d20: { img: "icons/dice/d20black.svg" }
-			}
-		];
-		return dice;
-	}
-
-	get buttonFormulas() {
-		return {
-			kh: "+",
-			kl: "-"
-		};
-	}
-
-	get labels() {
-		return {
-			advantage: game.i18n.localize("DL.DialogBoon"),
-			adv: game.i18n.localize("DL.DialogBoon"),
-			disadvantage: game.i18n.localize("DL.DialogBane"),
-			dis: game.i18n.localize("DL.DialogBane")
-		};
-	}
-
-	_extraButtonsLogic(html) {
-		html.find(".dice-tray__ad").on("click", (event) => {
-			event.preventDefault();
-			let sign = event.currentTarget.dataset.formula;
-			let $chat = html.find("#chat-form textarea");
-			let chat_val = String($chat.val());
-			let match_string = /(?<sign>[+-])(?<qty>\d*)d6kh/;
-			const match = chat_val.match(match_string);
-			if (match) {
-				let qty = parseInt(match.groups.qty);
-				let replacement = "";
-				if (match.groups.sign === sign) {
-					qty += 1;
-					replacement = `${sign}${qty}d6kh`;
-				} else if (qty !== 1) {
-					qty -=1;
-					sign = (sign === "+") ? "-" : "+";
-					replacement = `${sign}${qty}d6kh`;
-				}
-				chat_val = chat_val.replace(match_string, replacement);
-			} else {
-				chat_val = `${chat_val}${sign}1d6kh`;
-			}
-			$chat.val(chat_val);
-		});
-	}
-}
-
-// export { default as tresdetv } from "./tresdetv.js";
-
 var keymaps = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	Template: TemplateDiceMap,
 	dcc: dccDiceMap,
+	demonlord: demonlordDiceMap,
 	dnd5e: dnd5eDiceMap,
 	ModularFate: FateDiceMap,
 	fateCoreOfficial: FateDiceMap,
 	fatex: FateDiceMap,
 	pf2e: pf2eDiceMap,
 	starwarsffg: starwarsffgDiceMap,
-	swade: SWADEDiceMap,
-	demonlord: demonlordDiceMap
+	swade: SWADEDiceMap
 });
 
 class DiceCalculatorDialog extends Dialog {
@@ -1415,6 +1431,10 @@ class DiceCalculatorDialog extends Dialog {
 	}
 }
 
+/**
+ * Javascript imports don't support dashes so the workaround
+ * for systems with dashes in their names is to create this map.
+ */
 const KEYS = {
 	"fate-core-official": "fateCoreOfficial"
 };
@@ -1785,20 +1805,19 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("i18nInit", () => {
-	const keys = deepClone(KEYS);
 	const newMaps = deepClone(keymaps);
 	const newCalculators = deepClone(diceCalculators);
 
-	Hooks.callAll("dice-calculator.keymaps", newMaps, newMaps.Template, keys);
+	Hooks.callAll("dice-calculator.keymaps", newMaps, newMaps.Template);
 	const supportedSystemMaps = Object.keys(newMaps).join("|");
 	const systemMapsRegex = new RegExp(`^(${supportedSystemMaps})$`);
-	const providerStringMaps = getProviderString(systemMapsRegex, keys) || "Template";
+	const providerStringMaps = getProviderString(systemMapsRegex) || "Template";
 	CONFIG.DICETRAY = new newMaps[providerStringMaps]();
 
-	Hooks.callAll("dice-calculator.calculator", newCalculators, keys);
+	Hooks.callAll("dice-calculator.calculator", newCalculators);
 	const supportedSystemCalculators = Object.keys(newCalculators).join("|");
 	const systemCalculatorsRegex = new RegExp(`^(${supportedSystemCalculators})$`);
-	const providerStringCalculators = getProviderString(systemCalculatorsRegex, keys);
+	const providerStringCalculators = getProviderString(systemCalculatorsRegex);
 
 	if (providerStringCalculators) {
 		CONFIG.DICETRAY.calculator = new newCalculators[providerStringCalculators]();
@@ -1807,10 +1826,10 @@ Hooks.once("i18nInit", () => {
 	registerSettings();
 });
 
-function getProviderString(regex, keys) {
+function getProviderString(regex) {
 	const id = game.system.id;
-	if (id in keys) {
-		return keys[id];
+	if (id in KEYS) {
+		return KEYS[id];
 	} else if (regex.test(id)) {
 		return id;
 	}
@@ -1925,13 +1944,12 @@ Hooks.on("renderSidebarTab", async (app, html, data) => {
 				mod_val = Number.isNaN(mod_val) ? 0 : mod_val;
 
 				switch (dataset.formula) {
-				case "+1":
-					mod_val = mod_val + 1;
-					break;
-
-				case "-1":
-					mod_val = mod_val - 1;
-					break;
+					case "+1":
+						mod_val = mod_val + 1;
+						break;
+					case "-1":
+						mod_val = mod_val - 1;
+						break;
 				}
 				$('input[name="dice.tray.modifier"]').val(mod_val);
 				CONFIG.DICETRAY.applyModifier(html);

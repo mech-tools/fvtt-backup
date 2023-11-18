@@ -112,83 +112,259 @@
    ====== Presets ======
    ===================== */
 
+.mass-edit-preset-form {
+  /* overflow: hidden; */
+  color: rgba(255, 255, 240, 0.8);
+}
+
+#mass-edit-presets .window-content {
+  background: rgba(50, 50, 50, 0.8);
+  padding-left: 1px;
+  padding-right: 1px;
+}
+
 .mass-edit-preset-form .item-list {
+  flex: 1;
   list-style: none;
   margin: 0;
   padding: 0;
   overflow-y: auto;
   scrollbar-width: thin;
-  color: #7a7971;
-  margin-bottom: 10px;
+  min-height: 500px;
+  /* max-height: 700px; */
 }
 
-.mass-edit-preset-form .item-control {
+.mass-edit-preset-form .preset-header {
+  flex: none;
+  line-height: var(--sidebar-header-height);
+  text-align: center;
+  margin: 0 0 3px;
+}
+
+.mass-edit-preset-form .preset-header .header-search,
+.mass-edit-preset-form .preset-header .header-select {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.mass-edit-preset-form .preset-header .header-control .fa-plus {
+  position: absolute;
+  top: 4px;
+  right: 1px;
+  font-size: 0.5rem;
+  background: black;
+  color: var(--color-text-light-highlight);
+  padding: 1px;
+  border-radius: 4px;
+}
+
+.mass-edit-preset-form .preset-header .header-search > *,
+.mass-edit-preset-form .preset-header .header-select > * {
+  flex: 0 0 24px;
+}
+
+.mass-edit-preset-form .preset-header .header-search input {
+  flex: 1;
+  margin: 0 3px px;
+  background: rgba(255, 255, 245, 0.8);
+}
+
+.mass-edit-preset-form .preset-header .active {
+  color: darkorange;
+}
+
+.mass-edit-preset-form .action-buttons button {
+  height: 28px;
+  line-height: 26px;
+  margin: 4px;
+  min-width: max-content;
+  white-space: nowrap;
+  background: rgba(255, 255, 240, 0.8);
+}
+
+.mass-edit-preset-form .document-select.active,
+.folder-edit .document-select.active {
+  color: orange;
+}
+
+.mass-edit-preset-form .static-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: black;
+  color: white;
+  margin-top: 20px;
+  border-bottom: 1px solid brown;
+  border-top: 1px solid brown;
+  padding: 2px;
+}
+
+.mass-edit-preset-form .item-list .item {
+  line-height: 48px;
+  border-top: 1px solid dimgray;
+  box-shadow: none;
+  margin-right: 3px;
+  position: relative;
+}
+
+.mass-edit-preset-form .folder {
+  line-height: 48px;
+  border: none;
+  box-shadow: none;
+  margin-right: 3px;
+  position: relative;
+}
+
+.mass-edit-preset-form .preset-items {
+  padding: 0;
+  /* min-height: 15px; */
+}
+
+.mass-edit-preset-form .folder-items {
+  list-style-type: none;
+  padding-left: 2px;
+  margin-top: 1px;
+  padding: 0;
+}
+
+.mass-edit-preset-form .folder {
+  border-width: 2px 0px 4px 7px;
+  border-color: rgba(0, 0, 0, 0.6);
+  border-style: solid;
+  margin-right: 0;
+  margin-bottom: 1px;
+}
+
+.mass-edit-preset-form .folder.drag-top {
+  border-top: 2px solid orange !important;
+}
+
+.mass-edit-preset-form .folder.drag-mid > header h3 {
+  font-size: var(--font-size-18);
+  color: orange;
+}
+
+.mass-edit-preset-form .item.drag-top {
+  border-top: 1px solid orange !important;
+}
+
+.mass-edit-preset-form .item .thumbnail {
+  pointer-events: none;
+}
+
+.mass-edit-preset-form .item.drag-bot {
+  border-bottom: 1px solid orange !important;
+}
+
+.mass-edit-preset-form .top-level-preset-items {
+  min-height: 50px;
+}
+
+.mass-edit-preset-form .folder header {
+  padding: 6px;
+  line-height: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.mass-edit-preset-form .folder header h3 {
+  margin: 0;
+  color: var(--color-text-light-highlight);
+  font-size: var(--font-size-16);
+  line-height: 24px;
+  border: none;
+}
+
+.mass-edit-preset-form .folder header h3 i {
+  margin-right: 10px;
+}
+
+.mass-edit-preset-form .folder.selected > header {
+  border-color: orange;
+  background: linear-gradient(#f005, #f005), linear-gradient(#0f05, #0f05);
+}
+
+.mass-edit-preset-form .folder.selected {
+  border-left-color: orange !important;
+}
+
+.mass-edit-preset-form .folder .item {
+  margin-left: 5px;
+}
+
+.mass-edit-preset-form .folder.collapsed > ol {
+  display: none;
+}
+
+.mass-edit-preset-form .item img {
+  flex: 0 0 var(--sidebar-item-height);
+  height: var(--sidebar-item-height);
+  width: var(--sidebar-item-height);
+  object-fit: cover;
+  object-position: 50% 0;
+  border: none;
+  margin-top: 1px;
+  margin-bottom: 1px;
+}
+
+.mass-edit-preset-form .item .icon {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: white;
+}
+
+.mass-edit-preset-form .item .item-name {
+  margin: 0 0 0 8px;
+}
+
+.mass-edit-preset-form .item .item-controls {
+  flex: 0 0 50px;
+  margin-right: 5px;
+  text-align: right;
+}
+
+.mass-edit-preset-form .item.item-s.selected {
+  border-color: orange;
+  background: linear-gradient(#f005, #f005), linear-gradient(#0f05, #0f05);
+}
+
+.mass-edit-preset-form .folder.item-s.selected {
+  border-color: orange;
+  /* background: linear-gradient(#f005, #f005), linear-gradient(#0f05, #0f05); */
+}
+
+#mass-edit-presets .overlay {
+  position: absolute;
+  display: none;
+  width: 100%;
+  height: 100%;
+  left: 0px;
+  top: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  cursor: pointer;
+}
+
+#mass-edit-presets .overlay .label {
+  font-size: large;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  color: white;
+  font-size: xx-large;
+  font-weight: 700;
+  -webkit-text-stroke: 1px black;
+  margin-top: -10px;
   text-align: center;
 }
 
-.mass-edit-preset-form .item-control.preset-keybind {
-  padding-top: 10px;
+.mass-edit-preset-form .preset-brush.active {
+  color: orange;
 }
 
-.mass-edit-preset-form .item-control.preset-keybind.active {
-  color: green;
-}
-
-.mass-edit-preset-form .item-control.preset-delete {
-  padding-top: 10px;
-  color: rgb(136, 0, 0);
-}
-
-.mass-edit-preset-form .item-control.preset-brush {
-  margin-left: 12px;
-  margin-top: 7px;
-}
-
-.mass-edit-preset-form .item-control.preset-brush.active {
-  color: green;
-}
-
-.mass-edit-preset-form .item-control.preset-update {
-  color: rgb(230, 149, 0);
-  margin-left: 10px;
-  margin-top: 7px;
-}
-.mass-edit-preset-form .items-header {
-  height: 28px;
-  margin: 2px 0;
-  padding: 0;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.05);
-  border: 2px groove #eeede0;
-  font-weight: bold;
-  color: black;
-  padding-left: 4px;
-  font-weight: bold;
-}
-
-.mass-edit-preset-form .items-header label {
-  font-size: larger;
-}
-
-.mass-edit-preset-form .item-controls {
-  flex: 0 0 90px;
-  padding-bottom: 7px;
-}
-
-.mass-edit-preset-form .item-controls.short {
-  flex: 0 0 35px;
-  padding-bottom: 7px;
-}
-
-.mass-edit-preset-form .item-name {
-  color: black;
-  border-style: outset;
-  font-weight: 500;
-}
-
-.mass-edit-preset-form .item-name > label {
-  margin-top: 5px;
-  margin-left: 3px;
+.mass-edit-scene-control {
+  color: lemonchiffon !important;
 }
 
 input.me-add {
@@ -258,7 +434,7 @@ nav > a[data-tab='me-pinned'] {
   border: none !important;
 }
 
-.mass-edit-generic-form .jsonArray {
+.mass-edit-generic-form .tva-jsonArray {
   height: 100px;
   white-space: pre-wrap;
 }

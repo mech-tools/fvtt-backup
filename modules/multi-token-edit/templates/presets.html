@@ -1,40 +1,66 @@
+<div class="overlay"><p class="label">CREATE PRESET</p></div>
 <form class="mass-edit-preset-form">
-    <ol class="item-list preset-items">
-        <li class="items-header flexrow">
-            <label class="flexrow">Presets</label>
-            <div class="item-controls flexrow {{#unless createEnabled}}short{{/unless}}">
-                {{#if createEnabled}}
-                <a class="item-control preset-create" title="Create New Preset" data-type="objective">
-                    <i class="fas fa-plus"></i>
-                </a>
-                {{/if}}
-            </div>
-        </li>
-        {{#each presets as |preset|}}
-        <li class="item flexrow" name="{{preset.name}}">
-            <div class="item-name flexrow" style="background-color: {{preset.color}};">
-                <label title="{{preset.title}}" name="{{preset.name}}">{{preset.name}} </label>
-            </div>
 
-            <div class="item-controls flexrow {{#unless ../createEnabled}}short{{/unless}}">
-            {{#if ../createEnabled}}
-                <div class="item-control preset-update"><a title="Update Preset"><i class="fas fa-sync"></i></a></div>
-                {{#if ../isPlaceable}}
-                &nbsp;
-                <div class="item-control preset-keybind {{#if hasKeybind}}active{{/if}}"><a title="Register as a Mass Edit control"><i class="fas fa-gamepad"></i></a></div>
-                {{/if}}
-                &nbsp;
-                <div class="item-control preset-delete">
-                    <a title="Delete Preset"><i class="fas fa-trash"></i></a>
-                </div>
-            {{/if}}
-                {{#if ../isPlaceable}}
-                <div class="item-control preset-brush">
-                    <a title="Activate Brush"><i class="fas fa-paint-brush"></i></a>
-                </div>
-                {{/if}}
+    <header class="preset-header flexcol">
+        {{#if allowDocumentSwap}}
+
+        <div class="header-select flexrow">
+            {{#each docs}}
+            <a class="document-select {{#if (eq @key ../currentDocument)}}active{{/if}}" title="{{@key}}" data-name="{{@key}}"><i class="{{this}} fa-lg"></i></a>
+            {{/each}}
+            <div style="flex: 0 0 60px; margin-left: 10px; border-left: 2px solid gray;">
+                <a class="header-control toggle-doc-lock {{#if docLockActive}}active{{/if}}" data-tooltip="Lock current category as default on form open."><i class="fa-solid fa-lock"></i></a>
+                <a class="header-control toggle-layer-switch {{#if layerSwitchActive}}active{{/if}}" data-tooltip="Auto layer switching."><i class="fa-solid fa-arrows-cross"></i></a>
+                <a class="header-control toggle-ext-comp {{#if extCompActive}}active{{/if}}" data-tooltip="Display external preset compendiums."><i class="fa-solid fa-books"></i></a>
             </div>
-        </li>
-        {{/each}}
-    </ol>
+        </div>
+
+        {{/if}}
+        {{#if createEnabled}}
+        <div class="header-actions action-buttons flexrow">
+            <button type="button" class="preset-create"><i class="fas fa-plus"></i> Create Preset</button>
+        </div>
+        {{/if}}
+        <div class="header-search flexrow">
+            <a class="header-control toggle-search-mode" data-tooltip="Search by Name only"><i class="fas fa-search"></i></a>
+            <input type="search" name="search" value="{{lastSearch}}" placeholder="Search" autocomplete="off">
+            <a class="header-control toggle-sort" data-tooltip="{{sortMode.tooltip}}">{{{sortMode.icon}}}</a>
+            <a class="header-control create-folder" style="position: relative;"><i class="fas fa-folder"></i><i class="fas fa-plus"></i></a>
+        </div>
+    </header>
+
+    {{#if displayDragDropMessage}}
+    <h2 style="text-align: center; margin-top: 100px; border: none;">Drag a placeable in to create a preset.</h2>
+    {{/if}}
+
+    <div class="item-list preset-items folder-items" >
+
+        <ol class="folder-items top-level-folder-items">
+            {{#each folders as |folder|}}
+                {{#if folder.visible}}
+                    {{>modules/multi-token-edit/templates/generic/presetFolder.html folder=folder refreshEnabled=../refreshEnabled createEnabled=../createEnabled isPlaceable=../isPlaceable callback=../callback editable=true}}
+                {{/if}}
+            {{/each}}
+        </ol>
+
+        <ol class="preset-items top-level-preset-items">
+            {{#each presets as |preset|}}
+            {{#if preset._visible}}
+                {{>modules/multi-token-edit/templates/generic/preset.html preset=preset refreshEnabled=../refreshEnabled createEnabled=../createEnabled isPlaceable=../isPlaceable callback=../callback editable=true}}
+            {{/if}}
+            {{/each}}
+        </ol>
+
+        {{#if staticFolders}}
+        <label class="static-label">EXTERNAL COMPENDIUMS</label>
+        <ol class="folder-items static">
+            {{#each staticFolders as |folder|}}
+                {{#if folder.visible}}
+                    {{>modules/multi-token-edit/templates/generic/presetFolder.html folder=folder refreshEnabled=../refreshEnabled createEnabled=../createEnabled isPlaceable=../isPlaceable callback=../callback}}
+                {{/if}}
+            {{/each}}
+        </ol>
+        {{/if}}
+    </div>
+
 </form>
