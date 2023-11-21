@@ -7,7 +7,7 @@
     "minimum": "11",
     "verified": "11.315"
   },
-  "systemVersion": "0.10.6",
+  "systemVersion": "0.10.7",
   "esmodules": [
     "scripts/autoscale.js",
     "scripts/better-entity-link.js",
@@ -18,7 +18,7 @@
   "styles": [
     "styles.css"
   ],
-  "lastPlayed": "Fri Nov 17 2023 09:21:31 GMT+0100 (Central European Standard Time)",
-  "playtime": 6615500,
+  "lastPlayed": "Mon Nov 20 2023 11:17:47 GMT+0100 (Central European Standard Time)",
+  "playtime": 6679264,
   "safeMode": false
 }

@@ -585,7 +585,13 @@ export class MonksActiveTiles {
         else if (id) {
             let newEntities = id.split(",");
             for (let i = 0; i < newEntities.length; i++) {
-                newEntities[i] = (newEntities[i].includes('Terrain') ? MonksActiveTiles.getTerrain(newEntities[i]) : await fromUuid(newEntities[i]));
+                let document = (newEntities[i].includes('Terrain') ? MonksActiveTiles.getTerrain(newEntities[i]) : await fromUuid(newEntities[i]));
+                if (!document && defaultType) {
+                    let collection = game[defaultType];
+                    if (collection)
+                        document = collection.get(id);
+                }
+                newEntities[i] = document;
             }
             newEntities = newEntities.filter(e => !!e);
 
@@ -2039,6 +2045,7 @@ export class MonksActiveTiles {
             });
         } catch { }
 
+        //@Tile[Scene.b77ocyto1VdgAZU5.Tile.QW3oZo39pZsf8cTX landing:test1]{Journal Click Tile}
         CONFIG.TextEditor.enrichers.push({ id: 'MonksActiveTileTrigger', pattern: new RegExp(`@(Tile)\\[([^\\]]+)\\](?:{([^}]+)})?`, 'g'), enricher: MonksActiveTiles._createTileLink });
 
         //let otherGroups = {};
@@ -2197,6 +2204,7 @@ export class MonksActiveTiles {
                     MonksActiveTiles.fixVariableName([tile]);
                     MonksActiveTiles.fixImageCycle([tile]);
                     MonksActiveTiles.fixForPlayer([tile]);
+                    MonksActiveTiles.fixForPlayerAgain([tile]);
                     MonksActiveTiles.fixRollTable([tile]);
                     MonksActiveTiles.fixScenes([tile]);
                 });
@@ -2878,7 +2886,7 @@ export class MonksActiveTiles {
 
     static async fixForPlayer(tiles) {
         MonksActiveTiles._fixAllTiles(tiles, async function (action) {
-            if (action.action == "notification" || action.action == "closedialog" || action.action == "preload") {
+            if (action.action == "notification" || action.action == "preload") {
                 if (action.data.showto == "all") {
                     action.data.showto = "everyone"
                     return true;
@@ -2921,6 +2929,30 @@ export class MonksActiveTiles {
                 action.data.showto = action.data.for;
                 delete action.data.for;
                 return true;
+            } else if (action.action == "closedialog") {
+                if (action.data.for == "all") {
+                    action.data.for = "everyone"
+                    return true;
+                }
+            }
+        });
+    }
+
+    static async fixForPlayerAgain(tiles) {
+        MonksActiveTiles._fixAllTiles(tiles, async function (action) {
+            if (action.action == "dialog") {
+                if (action.data.showto == "token")
+                    action.data.showto = "trigger";
+                return true;
+            } else if (action.action == "closedialog") {
+                if (action.data.for == "all") {
+                    action.data.for = "everyone"
+                    return true;
+                }
+                if (action.data.for == "token") {
+                    action.data.for = "trigger";
+                    return true;
+                }
             }
         });
     }
@@ -2933,7 +2965,7 @@ export class MonksActiveTiles {
                     return true;
                 }
                 if (typeof action.data.rolltableid == "string") {
-                    action.data.rolltableid = { id: action.data.rolltableid };
+                    action.data.rolltableid = { id: action.data.rolltableid.startsWith("RollTable") ? action.data.rolltableid : `RollTable.${action.data.rolltableid}` };
                     return true;
                 }
             }
@@ -2943,8 +2975,12 @@ export class MonksActiveTiles {
     static async fixScenes(tiles) {
         MonksActiveTiles._fixAllTiles(tiles, async function (action) {
             if (action.action == "scene" || action.action == "scenebackground" || action.action == "preload") {
+                if (action.data.sceneid instanceof Array) {
+                    action.data.sceneid = action.data.sceneid.length ? action.data.sceneid[0] : null;
+                    return true;
+                }
                 if (typeof action.data.sceneid == "string") {
-                    let id = action.data.sceneid;
+                    let id = action.data.sceneid.startsWith("Scene") ? action.data.sceneid : `Scene.${action.data.sceneid}`;
                     if (id == "_active")
                         id = "scene";
                     else if (id == "_previous")
@@ -2952,10 +2988,7 @@ export class MonksActiveTiles {
                     else if (id == "_token")
                         id = "token";
 
-                    action.data.sceneid = [{ id }];
-                    return true;
-                } else if (!(action.data.sceneid instanceof Array)) {
-                    action.data.sceneid = [action.data.sceneid];
+                    action.data.sceneid = { id };
                     return true;
                 }
             }
@@ -2976,6 +3009,9 @@ export class MonksActiveTiles {
         let activeProp = (props || []).find(p => p.startsWith('active:'));
         if (activeProp)
             data.dataset.active = activeProp.replace('active:', '');
+        let landingProp = (props || []).find(p => p.startsWith('landing:'));
+        if (landingProp)
+            data.dataset.landing = landingProp.replace('landing:', '');
         const constructAnchor = () => {
             const a = document.createElement("a");
             a.classList.add(...data.cls);
@@ -3010,7 +3046,11 @@ export class MonksActiveTiles {
 
                 if (a.dataset.active == "true" && !triggerData.active) return;
 
-                tile.trigger({ tokens: tokens, method: "manual", options: { journal: [this.object] } });
+                let options = { journal: [this.object] }
+                if (a.dataset.landing)
+                    options.landing = a.dataset.landing;
+
+                tile.trigger({ tokens: tokens, method: "trigger", options });
             }
         }
     }
@@ -3383,7 +3423,7 @@ export class MonksActiveTiles {
                         data.tokens.forEach(id => {
                             let token = canvas.tokens.get(id);
                             if (token)
-                                token.setTarget(data.target !== "clear", { user: game.user, releaseOthers: false, groupSelection: false })
+                                token.setTarget(data.target !== "clear" && data.target !== "remove", { user: game.user, releaseOthers: false, groupSelection: false })
                         });
                     }
                 }
@@ -4568,14 +4608,14 @@ export class MonksActiveTiles {
                     }
                 }
 
-                if (triggerData.cooldown && getProperty(this, "flags.monks-active-tiles.triggertime")) {
+                if (triggerData.cooldown && this._matt_triggertime) {
                     // calculate the difference between two dates
-                    let difference = Date.now() - getProperty(this, "flags.monks-active-tiles.triggertime");
+                    let difference = Date.now() - this._matt_triggertime;
                     if (difference < (triggerData.cooldown * 1000)) {
                         return;
                     }
                 }
-                setProperty(this, "flags.monks-active-tiles.triggertime", Date.now());
+                this._matt_triggertime = Date.now();
 
                 let actionResult = await this.runActions(context, Math.max(start, 0));
 
@@ -5051,13 +5091,18 @@ Hooks.on('ready', () => {
         MonksActiveTiles.fixForPlayer();
         game.settings.set("monks-active-tiles", "fix-forplayer", true);
     }
+    if (!setting("fix-forplayer-again") && game.user.isGM) {
+        MonksActiveTiles.fixForPlayerAgain();
+        game.settings.set("monks-active-tiles", "fix-forplayer-again", true);
+    }
     if (!setting("fix-rolltable") && game.user.isGM) {
         MonksActiveTiles.fixRollTable();
         game.settings.set("monks-active-tiles", "fix-rolltable", true);
     }
-    if (!setting("fix-scene") && game.user.isGM) {
+    if ((!setting("fix-scene") || !setting("fix-scene-again")) && game.user.isGM) {
         MonksActiveTiles.fixScenes();
         game.settings.set("monks-active-tiles", "fix-scene", true);
+        game.settings.set("monks-active-tiles", "fix-scene-again", true);
     }
 
     $("#board").on("pointerdown", function (event) {
@@ -5253,7 +5298,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                 debug("Available triggers", availableTriggers);
                 let doTrigger = async function (idx) {
-                    if (idx >= availableTriggers.length)
+                    if (idx >= availableTriggers.length || !getProperty(tile, "flags.monks-active-tiles.active"))
                         return; // We've worked through all the triggers
 
                     let when = availableTriggers[idx];

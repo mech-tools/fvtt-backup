@@ -1,3 +1,37 @@
+## Version 11.17
+
+Fixed issue with Activate/Deactivate action
+
+Fixed issue with teleporting not respecting the players scene
+
+Added the option to use the current token when using the Create action
+
+Fixed issue introduced with the latest DnD5e patch when trying to use the Chat Message with languages
+
+Fixed issue with an abnormally long delay in activating a scene
+
+Fixed issue with saving buttons when creating a custom dialog
+
+Added the option to set a landing when creating a Tile trigger link in a Journal Entry
+
+Fixed issue where removing a target was not in fact removing a target
+
+## Version 11.16
+
+Fixed issue with Hurt/Heal
+
+Fixed issue with Rolltables and Scenes not linking any more.
+
+Fixed issue with dialog action not having the correct show to value.
+
+Possibly fixed sporatic issues with cooldown not working.
+
+Fixed issue with a deactivated Tile continuing to trigger remaining actions
+
+## Version 11.15
+
+Fixing code that was supposed to fix changes, but ended up not fixing things, and actually broke stuff
+
 ## Version 11.14
 
 Fixed issue with changing the scene not figuring out which users it's supposed to change the scene for

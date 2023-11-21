@@ -1,8 +1,15 @@
-2023/11/15-23:12:17.341354 7f1d11ffb700 Recovering log #320
-2023/11/15-23:12:17.344879 7f1d11ffb700 Delete type=0 #320
-2023/11/15-23:12:17.344931 7f1d11ffb700 Delete type=3 #318
-2023/11/17-09:21:16.913747 7f1a73fff700 Level-0 table #325: started
-2023/11/17-09:21:16.913791 7f1a73fff700 Level-0 table #325: 0 bytes OK
-2023/11/17-09:21:16.915135 7f1a73fff700 Delete type=0 #323
-2023/11/17-09:21:16.917149 7f1a73fff700 Manual compaction at level-0 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
-2023/11/17-09:21:16.918439 7f1a73fff700 Manual compaction at level-1 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
+2023/11/20-11:01:23.204290 7f1d127fc700 Recovering log #328
+2023/11/20-11:01:23.206625 7f1d127fc700 Delete type=3 #326
+2023/11/20-11:01:23.206661 7f1d127fc700 Delete type=0 #328
+2023/11/20-11:13:43.657953 7f1a73fff700 Level-0 table #333: started
+2023/11/20-11:13:43.659091 7f1a73fff700 Level-0 table #333: 848 bytes OK
+2023/11/20-11:13:43.660158 7f1a73fff700 Delete type=0 #331
+2023/11/20-11:13:43.664599 7f1a73fff700 Manual compaction at level-0 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
+2023/11/20-11:13:43.664909 7f1a73fff700 Manual compaction at level-1 from '!macros!pNER2Ok9oF0sz9aC' @ 72057594037927935 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at '!macros!vS85m3LHsUFiJEVJ' @ 8 : 1
+2023/11/20-11:13:43.664925 7f1a73fff700 Compacting 1@1 + 1@2 files
+2023/11/20-11:13:43.666228 7f1a73fff700 Generated table #334@1: 2 keys, 848 bytes
+2023/11/20-11:13:43.666253 7f1a73fff700 Compacted 1@1 + 1@2 files => 848 bytes
+2023/11/20-11:13:43.667437 7f1a73fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/11/20-11:13:43.667520 7f1a73fff700 Delete type=2 #209
+2023/11/20-11:13:43.667616 7f1a73fff700 Delete type=2 #333
+2023/11/20-11:13:43.667732 7f1a73fff700 Manual compaction at level-1 from '!macros!vS85m3LHsUFiJEVJ' @ 8 : 1 .. '!macros!vS85m3LHsUFiJEVJ' @ 0 : 0; will stop at (end)
