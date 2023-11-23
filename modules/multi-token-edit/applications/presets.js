@@ -1,9 +1,11 @@
 import { Brush } from '../scripts/brush.js';
 import { importPresetFromJSONDialog } from '../scripts/dialogs.js';
 import { SortingHelpersFixed } from '../scripts/fixedSort.js';
+import { getPickerOverlay } from '../scripts/randomizer/randomizerForm.js';
 import { applyRandomization } from '../scripts/randomizer/randomizerUtils.js';
 import { SUPPORTED_PLACEABLES } from '../scripts/utils.js';
 import { TokenDataAdapter } from './dataAdapters.js';
+import { showMassEdit } from './multiConfig.js';
 
 const META_INDEX_FIELDS = ['id', 'img', 'documentName'];
 const META_INDEX_ID = 'MassEditMetaData';
@@ -98,7 +100,10 @@ export class Preset {
     if (this.document) {
       const flagUpdate = {};
       Object.keys(data).forEach((k) => {
-        if (PRESET_FIELDS.includes(k) && data[k] !== this[k]) {
+        if (k === 'randomize' || k === 'addSubtract') {
+          flagUpdate[k] = Object.entries(data[k]);
+          this[k] = data[k];
+        } else if (PRESET_FIELDS.includes(k) && data[k] !== this[k]) {
           flagUpdate[k] = data[k];
           this[k] = data[k];
         }
@@ -516,19 +521,23 @@ export class PresetAPI {
   /**
    * Retrieve saved preset
    * @param {object} [options={}]
-   * @param {String} [options.id]   Preset ID
-   * @param {String} [options.name] Preset name
-   * @param {String} [options.type] Preset type ("Token", "Tile", etc)
+   * @param {String} [options.uuid]   Preset UUID
+   * @param {String} [options.name]   Preset name
+   * @param {String} [options.type]   Preset type ("Token", "Tile", etc)
    * @returns {Preset}
    */
   static async getPreset({ uuid = null, name = null, type = null } = {}) {
     if (uuid) return await PresetCollection.get(uuid);
     else if (!name) throw Error('UUID or Name required to retrieve a Preset.');
 
+    name = name.toLowerCase();
+
     let { allPresets } = await PresetCollection.getTree();
     if (type) allPresets = allPresets.filter((p) => p.documentName === type);
-
-    return (await allPresets.find((p) => p.name === name)?.load()).clone();
+    return allPresets
+      .find((p) => p.name.toLowerCase() === name)
+      ?.clone()
+      .load();
   }
 
   /**
@@ -587,61 +596,43 @@ export class PresetAPI {
 
   /**
    * Spawn a preset on the scene (id, name or preset itself are required).
+   * By default the current mouse position is used.
    * @param {object} [options={}]
    * @param {Preset} [options.preset]             Preset
-   * @param {String} [options.id]                 Preset ID
+   * @param {String} [options.uuid]               Preset UUID
    * @param {String} [options.name]               Preset name
    * @param {String} [options.type]               Preset type ("Token", "Tile", etc)
-   * @param {Number} [options.x]                  Spawn canvas x coordinate (required if spawnOnMouse is false)
-   * @param {Number} [options.y]                  Spawn canvas y coordinate (required if spawnOnMouse is false)
-   * @param {Boolean} [options.spawnOnMouse]      If 'true' current mouse position will be used as the spawn position
+   * @param {Number} [options.x]                  Spawn canvas x coordinate (mouse position used if x or y are null)
+   * @param {Number} [options.y]                  Spawn canvas y coordinate (mouse position used if x or y are null)
+   * @param {Boolean} [options.coordPicker]       If 'true' a crosshair will be activated allowing spawn position to be picked
    * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
-   *
+   * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
+   * @returns {Array[Document]}
    */
-  static spawnPreset({
+  static async spawnPreset({
     uuid = null,
     preset = null,
     name = null,
     type = null,
     x = null,
     y = null,
-    spawnOnMouse = true,
+    coordPicker = false,
+    pickerLabel = '',
     snapToGrid = true,
     hidden = false,
+    layerSwitch = false,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
     if (!(uuid || preset || name)) throw Error('ID, Name, or Preset is needed to spawn it.');
-    if (!spawnOnMouse && (x == null || y == null))
-      throw Error(
-        'X and Y coordinates have to be provided or spawnOnMouse set to true for a preset to be spawned.'
-      );
+    if (!coordPicker && ((x == null && y != null) || (x != null && y == null)))
+      throw Error('Need both X and Y coordinates to spawn a preset.');
 
-    preset = preset ?? PresetAPI.getPreset({ uuid, name, type });
+    preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type }));
     if (!preset)
       throw Error(
         `No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`
       );
-
-    if (spawnOnMouse && x == null) {
-      x = canvas.mousePosition.x;
-      y = canvas.mousePosition.y;
-
-      if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
-        x -= canvas.dimensions.size / 2;
-        y -= canvas.dimensions.size / 2;
-      }
-    }
-
-    let pos = { x, y };
-
-    if (snapToGrid) {
-      pos = canvas.grid.getSnappedPosition(
-        pos.x,
-        pos.y,
-        canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
-      );
-    }
 
     let data;
 
@@ -662,9 +653,6 @@ export class PresetAPI {
       case 'AmbientSound':
         data = { radius: 20 };
         break;
-      case 'Wall':
-        data = { c: [pos.x, pos.y, pos.x + canvas.grid.w, pos.y] };
-        break;
       case 'Drawing':
         data = { 'shape.width': canvas.grid.w * 2, 'shape.height': canvas.grid.h * 2 };
         break;
@@ -681,13 +669,61 @@ export class PresetAPI {
     }
 
     mergeObject(data, presetData);
-    mergeObject(data, pos);
+
+    // ==================
+    // Determine position
+    if (coordPicker) {
+      const coords = await new Promise(async (resolve) => {
+        canvas.stage
+          .addChild(
+            await getPickerOverlay({
+              documentName: preset.documentName,
+              snap: snapToGrid,
+              data: data,
+              label: pickerLabel,
+            })
+          )
+          .once('pick', resolve);
+      });
+      if (coords == null) return [];
+      x = coords.end.x;
+      y = coords.end.y;
+    } else if (x == null || y == null) {
+      x = canvas.mousePosition.x;
+      y = canvas.mousePosition.y;
+
+      if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
+        x -= canvas.dimensions.size / 2;
+        y -= canvas.dimensions.size / 2;
+      }
+    }
+
+    let pos = { x, y };
+
+    if (snapToGrid) {
+      pos = canvas.grid.getSnappedPosition(
+        pos.x,
+        pos.y,
+        canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
+      );
+    }
+
+    switch (preset.documentName) {
+      case 'Wall':
+        data.c = [pos.x, pos.y, pos.x + canvas.grid.w, pos.y];
+        break;
+      default:
+        mergeObject(data, pos);
+    }
+    // ================
 
     if (hidden || game.keyboard.downKeys.has('AltLeft')) {
       data.hidden = true;
     }
 
-    canvas.scene.createEmbeddedDocuments(preset.documentName, [data]);
+    if (layerSwitch) canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
+
+    return await canvas.scene.createEmbeddedDocuments(preset.documentName, [data]);
   }
 }
 
@@ -1195,6 +1231,12 @@ export class MassEditPresets extends FormApplication {
         callback: (item) => this._onCopySelectedPresets(),
       },
       {
+        name: 'Duplicate',
+        icon: '<i class="fa-solid fa-copy"></i>',
+        condition: (item) => item.hasClass('editable'),
+        callback: (item) => this._onCopySelectedPresets(null, { keepFolder: true, keepId: false }),
+      },
+      {
         name: 'Export as JSON',
         icon: '<i class="fas fa-file-export fa-fw"></i>',
         callback: (item) => this._onExportSelectedPresets(),
@@ -1287,11 +1329,13 @@ export class MassEditPresets extends FormApplication {
     if (pack) this._onCopySelectedPresets(pack);
   }
 
-  async _onCopySelectedPresets(pack) {
+  async _onCopySelectedPresets(pack, { keepFolder = false, keepId = true } = {}) {
     const [selected, _] = await this._getSelectedPresets();
     for (const preset of selected) {
-      preset.folder = null;
-      await PresetCollection.set(preset, pack);
+      const p = preset.clone();
+      if (!keepFolder) p.folder = null;
+      if (!keepId) p.id = randomID();
+      await PresetCollection.set(p, pack);
     }
     if (selected.length) this.render(true);
   }
@@ -1663,10 +1707,7 @@ export class MassEditPresets extends FormApplication {
   // }
 
   async _onPresetUpdate(event) {
-    const uuid = $(event.target).closest('.item').data('uuid');
-    if (!uuid) return;
-
-    const preset = await PresetCollection.get(uuid);
+    const preset = await PresetCollection.get($(event.target).closest('.item').data('uuid'));
     if (!preset) return;
 
     const selectedFields =
@@ -1687,9 +1728,7 @@ export class MassEditPresets extends FormApplication {
       TokenDataAdapter.correctDetectionModeOrder(selectedFields, randomize);
     }
 
-    preset.data = selectedFields;
-    preset.randomize = randomize;
-    preset.addSubtract = addSubtract;
+    preset.update({ data: selectedFields, randomize, addSubtract });
 
     ui.notifications.info(`Preset "${preset.name}" updated`);
 
@@ -1908,8 +1947,13 @@ class PresetConfig extends FormApplication {
     if (this.presets.length === 1) data.preset = this.presets[0];
 
     data.minlength = this.presets.length > 1 ? 0 : 1;
-
     data.tva = game.modules.get('token-variants')?.active;
+
+    // Check if all presets are for the same document type and thus can be edited using a Mass Edit form
+    const docName = this.presets[0].documentName;
+    if (this.presets.every((p) => p.documentName === docName)) {
+      data.documentEdit = docName;
+    }
 
     return data;
   }
@@ -1919,6 +1963,8 @@ class PresetConfig extends FormApplication {
 
     // Auto-select so that the pre-defined names can be conveniently erased
     html.find('[name="name"]').select();
+
+    html.find('.edit-document').on('click', this._onEditDocument.bind(this));
 
     // TVA Support
     const tvaButton = html.find('.token-variants-image-select-button');
@@ -1932,23 +1978,65 @@ class PresetConfig extends FormApplication {
     });
   }
 
+  async _onEditDocument() {
+    const documents = [];
+    const cls = CONFIG[this.presets[0].documentName].documentClass;
+    for (const p of this.presets) {
+      documents.push(new cls(p.data));
+    }
+
+    const app = await showMassEdit(documents, null, {
+      presetEdit: true,
+      callback: (obj) => {
+        this.addSubtract = {};
+        this.randomize = {};
+        for (const k of Object.keys(obj.data)) {
+          if (k in obj.randomize) this.randomize[k] = obj.randomize[k];
+          if (k in obj.addSubtract) this.addSubtract[k] = obj.addSubtract[k];
+        }
+        this.data = obj.data;
+      },
+    });
+
+    // For randomize and addSubtract only take into account the first preset
+    // and apply them to the form
+    const preset = new Preset({
+      data: {},
+      randomize: this.presets[0].randomize,
+      addSubtract: this.presets[0].addSubtract,
+    });
+    setTimeout(() => {
+      app._applyPreset(preset);
+    }, 400);
+  }
+
   async _updatePresets(formData) {
     formData.name = formData.name.trim();
     formData.img = formData.img.trim() || null;
 
     if (this.isCreate) {
       for (const preset of this.presets) {
-        await preset.update({
+        const update = {
           name: formData.name || preset.name || 'New Preset',
           img: formData.img ?? preset.img,
-        });
+        };
+        if (this.data) update.data = this.data;
+        if (this.addSubtract) update.addSubtract = this.addSubtract;
+        if (this.randomize) update.randomize = this.randomize;
+
+        await preset.update(update);
       }
     } else {
       for (const preset of this.presets) {
-        await preset.update({
+        const update = {
           name: formData.name || preset.name,
           img: formData.img || preset.img,
-        });
+        };
+        if (this.data) update.data = this.data;
+        if (this.addSubtract) update.addSubtract = this.addSubtract;
+        if (this.randomize) update.randomize = this.randomize;
+
+        await preset.update(update);
       }
     }
   }

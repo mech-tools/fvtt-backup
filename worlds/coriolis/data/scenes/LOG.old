@@ -1,8 +1,15 @@
-2023/11/17-16:27:17.271745 7fcbb27fc700 Recovering log #83
-2023/11/17-16:27:17.275244 7fcbb27fc700 Delete type=3 #81
-2023/11/17-16:27:17.275278 7fcbb27fc700 Delete type=0 #83
-2023/11/17-16:27:19.512307 7fc931c09700 Level-0 table #89: started
-2023/11/17-16:27:19.512341 7fc931c09700 Level-0 table #89: 0 bytes OK
-2023/11/17-16:27:19.513801 7fc931c09700 Delete type=0 #87
-2023/11/17-16:27:19.514454 7fc931c09700 Manual compaction at level-0 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)
-2023/11/17-16:27:19.519929 7fc931c09700 Manual compaction at level-1 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)
+2023/11/17-16:27:49.264435 7fcbb2ffd700 Recovering log #88
+2023/11/17-16:27:49.267605 7fcbb2ffd700 Delete type=0 #88
+2023/11/17-16:27:49.267643 7fcbb2ffd700 Delete type=3 #86
+2023/11/22-15:56:22.620658 7fc931c09700 Level-0 table #93: started
+2023/11/22-15:56:22.622470 7fc931c09700 Level-0 table #93: 24996 bytes OK
+2023/11/22-15:56:22.623458 7fc931c09700 Delete type=0 #91
+2023/11/22-15:56:22.625383 7fc931c09700 Manual compaction at level-0 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)
+2023/11/22-15:56:22.625527 7fc931c09700 Manual compaction at level-1 from '!scenes!1lIa3vmKOtfmIzIf' @ 72057594037927935 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at '!scenes.tokens.delta!sCSHDDiodlvUUmR0.uUAeQdrN8iAa32lG.PbTEcUDAoqcyIayW' @ 3654 : 1
+2023/11/22-15:56:22.625537 7fc931c09700 Compacting 1@1 + 1@2 files
+2023/11/22-15:56:22.629018 7fc931c09700 Generated table #94@1: 341 keys, 86311 bytes
+2023/11/22-15:56:22.629045 7fc931c09700 Compacted 1@1 + 1@2 files => 86311 bytes
+2023/11/22-15:56:22.629820 7fc931c09700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/11/22-15:56:22.629899 7fc931c09700 Delete type=2 #85
+2023/11/22-15:56:22.629967 7fc931c09700 Delete type=2 #93
+2023/11/22-15:56:22.634132 7fc931c09700 Manual compaction at level-1 from '!scenes.tokens.delta!sCSHDDiodlvUUmR0.uUAeQdrN8iAa32lG.PbTEcUDAoqcyIayW' @ 3654 : 1 .. '!scenes.tokens.delta.items!oAQJFWBiinP48qng.XQKcCo3PHPVGGhkK.uBar5USc8Dl70wYr.Ww7bGvQzRkHkZLTs' @ 0 : 0; will stop at (end)

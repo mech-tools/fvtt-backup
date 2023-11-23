@@ -1,8 +1,8 @@
-2023/11/17-16:27:17.565642 7fcbb3fff700 Recovering log #68
-2023/11/17-16:27:17.568285 7fcbb3fff700 Delete type=3 #66
-2023/11/17-16:27:17.568330 7fcbb3fff700 Delete type=0 #68
-2023/11/17-16:27:19.544097 7fc931c09700 Level-0 table #73: started
-2023/11/17-16:27:19.544120 7fc931c09700 Level-0 table #73: 0 bytes OK
-2023/11/17-16:27:19.544874 7fc931c09700 Delete type=0 #71
-2023/11/17-16:27:19.546544 7fc931c09700 Manual compaction at level-0 from '!scenes!029adf682ba702d5' @ 72057594037927935 : 1 .. '!scenes!f0246a129e0d2465' @ 0 : 0; will stop at (end)
-2023/11/17-16:27:19.546813 7fc931c09700 Manual compaction at level-1 from '!scenes!029adf682ba702d5' @ 72057594037927935 : 1 .. '!scenes!f0246a129e0d2465' @ 0 : 0; will stop at (end)
+2023/11/17-16:27:49.461398 7fcbb27fc700 Recovering log #72
+2023/11/17-16:27:49.464110 7fcbb27fc700 Delete type=0 #72
+2023/11/17-16:27:49.464149 7fcbb27fc700 Delete type=3 #70
+2023/11/22-15:56:22.658088 7fc931c09700 Level-0 table #77: started
+2023/11/22-15:56:22.658321 7fc931c09700 Level-0 table #77: 0 bytes OK
+2023/11/22-15:56:22.660943 7fc931c09700 Delete type=0 #75
+2023/11/22-15:56:22.666725 7fc931c09700 Manual compaction at level-0 from '!scenes!029adf682ba702d5' @ 72057594037927935 : 1 .. '!scenes!f0246a129e0d2465' @ 0 : 0; will stop at (end)
+2023/11/22-15:56:22.666995 7fc931c09700 Manual compaction at level-1 from '!scenes!029adf682ba702d5' @ 72057594037927935 : 1 .. '!scenes!f0246a129e0d2465' @ 0 : 0; will stop at (end)

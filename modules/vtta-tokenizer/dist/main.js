@@ -183,7 +183,7 @@ class DirectoryPicker extends FilePicker {
   // Adds a FilePicker-Simulator-Button next to the input fields
   static processHtml(html) {
     $(html)
-      .find(`input[data-dtype="Directory"]`)
+      .find(`input[data-dtype="TokenizerDirectory"]`)
       .each((index, element) => {
         // $(element).prop("readonly", true);
 
@@ -306,6 +306,10 @@ class Utils {
     return suffixes.some((suffix) => {
         return string.endsWith(suffix);
     });
+  }
+
+  static dirPath(path) {
+    return path.split("/").slice(0, -1).join("/");
   }
 
   static generateUUID() {
@@ -5902,14 +5906,10 @@ class Tokenizer extends FormApplication {
 
   getWildCardPath() {
     if (!this.tokenOptions.isWildCard) return undefined;
-    let wildCardPath = `${this.tokenUploadDirectory}`;
-    if (this.tokenOptions.tokenFilename) {
-      let wildCardTokenPathArray = this.tokenOptions.tokenFilename.split("/");
-      wildCardTokenPathArray.pop();
-      wildCardPath = wildCardTokenPathArray.join("/");
-    }
-    this.wildCardPath = wildCardPath;
-    return wildCardPath;
+    this.wildCardPath = this.tokenOptions.tokenFilename
+      ? Utils.dirPath(this.tokenOptions.tokenFilename)
+      : `${this.tokenUploadDirectory}`;
+    return this.wildCardPath;
   }
 
   getOverRidePath(isToken) {
@@ -7217,8 +7217,8 @@ function linkSheets() {
         const disableAvatarClick = disableAvatarClickUser === "global"
           ? disableAvatarClickGlobal
           : disableAvatarClickUser === "default";
-
         const dataEditField = getDataEditField();
+
         $(html)
         .find(`[data-edit="${dataEditField}"]`)
         .each((index, element) => {
@@ -7238,16 +7238,18 @@ function linkSheets() {
               event.preventDefault();
             } else {
               // showing the filepicker
+              const current = data.actor ? data.actor[dataEditField] : data[dataEditField];
+              const dir = Utils.dirPath(current);
               new FilePicker({
                 type: "image",
-                current: data.actor[dataEditField],
+                current,
                 callback: (path) => {
                   event.currentTarget.src = path;
                   app._onSubmit(event);
                 },
                 top: app.position.top + 40,
                 left: app.position.left + 10,
-              }).browse(data.actor[dataEditField]);
+              }).browse(dir);
             }
           });
         });
