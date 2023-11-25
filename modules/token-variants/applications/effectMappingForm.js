@@ -129,6 +129,7 @@ export default class EffectMappingForm extends FormApplication {
     html.find('.clone-mapping').click(this._onClone.bind(this));
     html.find('.create-mapping').click(this._onCreate.bind(this));
     html.find('.save-mappings').click(this._onSaveMappings.bind(this));
+    html.find('.save-mappings-close').click(this._onSaveMappingsClose.bind(this));
     if (TVA_CONFIG.permissions.image_path_button[game.user.role]) {
       html.find('.mapping-image img').click(this._onImageClick.bind(this));
       html.find('.mapping-image img').mousedown(this._onImageMouseDown.bind(this));
@@ -143,7 +144,7 @@ export default class EffectMappingForm extends FormApplication {
     html.find('.mapping-overlay i.overlay-config').click(this._onOverlayConfigClick.bind(this));
     html.on('contextmenu', '.mapping-overlay i.overlay-config', this._onOverlayConfigRightClick.bind(this));
     html.find('.mapping-overlay input').on('change', this._onOverlayChange).trigger('change');
-    html.find('.div-input').on('input paste focus click', this._onExpressionChange);
+    html.find('.div-input').on('input paste focus', this._onExpressionChange);
     const app = this;
     html
       .find('.group-toggle > a')
@@ -611,23 +612,21 @@ export default class EffectMappingForm extends FormApplication {
   }
 
   async _exportConfigs(event) {
-    let mappings;
     let filename = '';
-    if (this.globalMappings) {
-      mappings = { globalMappings: deepClone(TVA_CONFIG.globalMappings) };
-      filename = 'token-variants-global-mappings.json';
-    } else {
-      mappings = {
-        globalMappings: deepClone(getFlagMappings(this.objectToFlag)),
-      };
 
-      let actorName = this.objectToFlag.name ?? 'Actor';
-      actorName = actorName.replace(/[/\\?%*:|"<>]/g, '-');
-      filename = 'token-variants-' + actorName + '.json';
-    }
+    let mappings = await new Promise((resolve) => {
+      showMappingSelectDialog(this.globalMappings ?? getFlagMappings(this.objectToFlag), { callback: resolve });
+    });
 
     if (mappings && !isEmpty(mappings)) {
-      saveDataToFile(JSON.stringify(mappings, null, 2), 'text/json', filename);
+      if (this.globalMappings) {
+        filename = 'token-variants-global-mappings.json';
+      } else {
+        let actorName = this.objectToFlag.name ?? 'Actor';
+        actorName = actorName.replace(/[/\\?%*:|"<>]/g, '-');
+        filename = 'token-variants-' + actorName + '.json';
+      }
+      saveDataToFile(JSON.stringify({ globalMappings: mappings }, null, 2), 'text/json', filename);
     }
   }
 
@@ -746,6 +745,11 @@ export default class EffectMappingForm extends FormApplication {
     }).render(true);
   }
 
+  async _onSaveMappingsClose(event) {
+    await this._onSaveMappings(event);
+    this.close();
+  }
+
   // TODO fix this spaghetti code related to globalMappings...
   async _onSaveMappings(event) {
     await this._onSubmit(event);
@@ -798,7 +802,6 @@ export default class EffectMappingForm extends FormApplication {
       game.socket?.emit('module.token-variants', message);
     }
     if (this.callback) this.callback();
-    this.close();
   }
 
   /**
