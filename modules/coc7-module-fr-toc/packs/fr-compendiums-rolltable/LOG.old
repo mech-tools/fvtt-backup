@@ -1,15 +1,8 @@
-2023/11/20-11:01:23.157458 7f1d10ff9700 Recovering log #436
-2023/11/20-11:01:23.160012 7f1d10ff9700 Delete type=0 #436
-2023/11/20-11:01:23.160065 7f1d10ff9700 Delete type=3 #434
-2023/11/20-11:13:43.639996 7f1a73fff700 Level-0 table #441: started
-2023/11/20-11:13:43.642057 7f1a73fff700 Level-0 table #441: 75510 bytes OK
-2023/11/20-11:13:43.642790 7f1a73fff700 Delete type=0 #439
-2023/11/20-11:13:43.646968 7f1a73fff700 Manual compaction at level-0 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)
-2023/11/20-11:13:43.647048 7f1a73fff700 Manual compaction at level-1 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 7151 : 1
-2023/11/20-11:13:43.647053 7f1a73fff700 Compacting 1@1 + 1@2 files
-2023/11/20-11:13:43.649268 7f1a73fff700 Generated table #442@1: 478 keys, 75851 bytes
-2023/11/20-11:13:43.649280 7f1a73fff700 Compacted 1@1 + 1@2 files => 75851 bytes
-2023/11/20-11:13:43.649877 7f1a73fff700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/11/20-11:13:43.649935 7f1a73fff700 Delete type=2 #441
-2023/11/20-11:13:43.649994 7f1a73fff700 Delete type=2 #313
-2023/11/20-11:13:43.653179 7f1a73fff700 Manual compaction at level-1 from '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 7151 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)
+2023/11/24-13:29:38.400980 7f1d10ff9700 Recovering log #445
+2023/11/24-13:29:38.404118 7f1d10ff9700 Delete type=0 #445
+2023/11/24-13:29:38.404160 7f1d10ff9700 Delete type=3 #443
+2023/11/24-13:30:34.903170 7f1a73fff700 Level-0 table #450: started
+2023/11/24-13:30:34.903186 7f1a73fff700 Level-0 table #450: 0 bytes OK
+2023/11/24-13:30:34.904027 7f1a73fff700 Delete type=0 #448
+2023/11/24-13:30:34.905846 7f1a73fff700 Manual compaction at level-0 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)
+2023/11/24-13:30:34.906731 7f1a73fff700 Manual compaction at level-1 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)
