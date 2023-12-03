@@ -2207,7 +2207,7 @@
     "TYPES.JournalEntryPage.text": "Texte",
     "TYPES.JournalEntryPage.video": "Vidéo",
     "TYPES.Macro.chat": "Tchat",
-    "TYPES.Macro.script": "Scénario",
+    "TYPES.Macro.script": "Script",
     "WALLS.ThresholdAttenuation": "Atténuation du seuil de proximité",
     "WALLS.ThresholdAttenuationHint": "La distance à laquelle la perception face à ce mur est adaptable en fonction de la proximité de l'observateur et du seuil d'activation. Ne s'applique que lorsqu'un seuil est défini.",
     "WALLS.SenseTypes.NONE": "Aucun",

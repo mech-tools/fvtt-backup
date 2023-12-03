@@ -1,15 +1,8 @@
-2023/11/20-11:42:51.407636 7fb2feffd700 Recovering log #266
-2023/11/20-11:42:51.411229 7fb2feffd700 Delete type=3 #264
-2023/11/20-11:42:51.411281 7fb2feffd700 Delete type=0 #266
-2023/11/24-13:30:42.695230 7fb07d6e2700 Level-0 table #271: started
-2023/11/24-13:30:42.712144 7fb07d6e2700 Level-0 table #271: 888505 bytes OK
-2023/11/24-13:30:42.713669 7fb07d6e2700 Delete type=0 #269
-2023/11/24-13:30:42.716092 7fb07d6e2700 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
-2023/11/24-13:30:42.800111 7fb07d6e2700 Manual compaction at level-1 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at '!items!zuesiHrVyGX2GDA7' @ 11192 : 1
-2023/11/24-13:30:42.800120 7fb07d6e2700 Compacting 1@1 + 1@2 files
-2023/11/24-13:30:42.823901 7fb07d6e2700 Generated table #272@1: 731 keys, 892324 bytes
-2023/11/24-13:30:42.823926 7fb07d6e2700 Compacted 1@1 + 1@2 files => 892324 bytes
-2023/11/24-13:30:42.824575 7fb07d6e2700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2023/11/24-13:30:42.824698 7fb07d6e2700 Delete type=2 #271
-2023/11/24-13:30:42.824992 7fb07d6e2700 Delete type=2 #217
-2023/11/24-13:30:42.825669 7fb07d6e2700 Manual compaction at level-1 from '!items!zuesiHrVyGX2GDA7' @ 11192 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
+2023/11/24-13:30:59.854651 7fb2fffff700 Recovering log #270
+2023/11/24-13:30:59.866491 7fb2fffff700 Delete type=3 #268
+2023/11/24-13:30:59.866527 7fb2fffff700 Delete type=0 #270
+2023/12/02-16:53:13.415992 7fb07d6e2700 Level-0 table #276: started
+2023/12/02-16:53:13.416203 7fb07d6e2700 Level-0 table #276: 0 bytes OK
+2023/12/02-16:53:13.417464 7fb07d6e2700 Delete type=0 #274
+2023/12/02-16:53:13.417899 7fb07d6e2700 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
+2023/12/02-16:53:13.419919 7fb07d6e2700 Manual compaction at level-1 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
