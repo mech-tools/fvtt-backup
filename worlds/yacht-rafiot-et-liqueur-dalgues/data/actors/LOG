@@ -1,3 +1,23 @@
-2023/12/02-17:48:05.349013 7f1d117fa700 Recovering log #616
-2023/12/02-17:48:05.351672 7f1d117fa700 Delete type=0 #616
-2023/12/02-17:48:05.351706 7f1d117fa700 Delete type=3 #614
+2023/12/03-13:04:52.638651 7f176cbb3700 Recovering log #623
+2023/12/03-13:04:52.646607 7f176cbb3700 Level-0 table #625: started
+2023/12/03-13:04:52.687661 7f176cbb3700 Level-0 table #625: 348849 bytes OK
+2023/12/03-13:04:52.690353 7f176cbb3700 Delete type=3 #622
+2023/12/03-13:04:52.690386 7f176cbb3700 Delete type=0 #623
+2023/12/03-13:11:11.024558 7f14cdd24700 Level-0 table #628: started
+2023/12/03-13:11:11.024607 7f14cdd24700 Level-0 table #628: 0 bytes OK
+2023/12/03-13:11:11.026162 7f14cdd24700 Delete type=0 #626
+2023/12/03-13:11:11.029565 7f14cdd24700 Manual compaction at level-0 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 3447 : 1
+2023/12/03-13:11:11.029578 7f14cdd24700 Compacting 1@0 + 0@1 files
+2023/12/03-13:11:11.036936 7f14cdd24700 Generated table #629@0: 388 keys, 348849 bytes
+2023/12/03-13:11:11.036953 7f14cdd24700 Compacted 1@0 + 0@1 files => 348849 bytes
+2023/12/03-13:11:11.037810 7f14cdd24700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/12/03-13:11:11.037912 7f14cdd24700 Delete type=2 #625
+2023/12/03-13:11:11.038924 7f14cdd24700 Manual compaction at level-0 from '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 3447 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)
+2023/12/03-13:11:11.042032 7f14cdd24700 Manual compaction at level-1 from '!actors!1ld0ZXDczZsrAaTX' @ 72057594037927935 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 3447 : 1
+2023/12/03-13:11:11.042041 7f14cdd24700 Compacting 1@1 + 1@2 files
+2023/12/03-13:11:11.050096 7f14cdd24700 Generated table #630@1: 388 keys, 348849 bytes
+2023/12/03-13:11:11.050112 7f14cdd24700 Compacted 1@1 + 1@2 files => 348849 bytes
+2023/12/03-13:11:11.050800 7f14cdd24700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/03-13:11:11.050884 7f14cdd24700 Delete type=2 #601
+2023/12/03-13:11:11.051041 7f14cdd24700 Delete type=2 #629
+2023/12/03-13:11:11.051531 7f14cdd24700 Manual compaction at level-1 from '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 3447 : 1 .. '!actors.items!zlcgmHKqft1J84xU.uVISH3d0cSoA6HgG' @ 0 : 0; will stop at (end)

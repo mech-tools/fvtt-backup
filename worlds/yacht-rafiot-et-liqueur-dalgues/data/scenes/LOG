@@ -1,3 +1,23 @@
-2023/12/02-17:48:05.431930 7f1d127fc700 Recovering log #650
-2023/12/02-17:48:05.436228 7f1d127fc700 Delete type=3 #648
-2023/12/02-17:48:05.436303 7f1d127fc700 Delete type=0 #650
+2023/12/03-13:04:52.820153 7f174effd700 Recovering log #658
+2023/12/03-13:04:52.820430 7f174effd700 Level-0 table #660: started
+2023/12/03-13:04:52.821596 7f174effd700 Level-0 table #660: 4257 bytes OK
+2023/12/03-13:04:52.824178 7f174effd700 Delete type=0 #658
+2023/12/03-13:04:52.824236 7f174effd700 Delete type=3 #657
+2023/12/03-13:11:11.062149 7f14cdd24700 Level-0 table #663: started
+2023/12/03-13:11:11.062169 7f14cdd24700 Level-0 table #663: 0 bytes OK
+2023/12/03-13:11:11.063294 7f14cdd24700 Delete type=0 #661
+2023/12/03-13:11:11.065721 7f14cdd24700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at '!scenes!iRadbLSeXN2B07tG' @ 5602 : 1
+2023/12/03-13:11:11.065731 7f14cdd24700 Compacting 1@0 + 0@1 files
+2023/12/03-13:11:11.067108 7f14cdd24700 Generated table #664@0: 6 keys, 4257 bytes
+2023/12/03-13:11:11.067128 7f14cdd24700 Compacted 1@0 + 0@1 files => 4257 bytes
+2023/12/03-13:11:11.068296 7f14cdd24700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/12/03-13:11:11.068447 7f14cdd24700 Delete type=2 #660
+2023/12/03-13:11:11.073612 7f14cdd24700 Manual compaction at level-0 from '!scenes!iRadbLSeXN2B07tG' @ 5602 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
+2023/12/03-13:11:11.075732 7f14cdd24700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at '!scenes!iRadbLSeXN2B07tG' @ 5602 : 1
+2023/12/03-13:11:11.075740 7f14cdd24700 Compacting 1@1 + 1@2 files
+2023/12/03-13:11:11.076899 7f14cdd24700 Generated table #665@1: 32 keys, 11228 bytes
+2023/12/03-13:11:11.076916 7f14cdd24700 Compacted 1@1 + 1@2 files => 11228 bytes
+2023/12/03-13:11:11.077704 7f14cdd24700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/03-13:11:11.077755 7f14cdd24700 Delete type=2 #664
+2023/12/03-13:11:11.077801 7f14cdd24700 Delete type=2 #652
+2023/12/03-13:11:11.081504 7f14cdd24700 Manual compaction at level-1 from '!scenes!iRadbLSeXN2B07tG' @ 5602 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
