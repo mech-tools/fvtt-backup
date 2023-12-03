@@ -17,7 +17,7 @@
   "resetKeys": false,
   "background": "modules/coriolis-corerules/images/ch11/Kap4_coriolis_start.webp",
   "lastPlayed": "Wed Nov 22 2023 15:57:07 GMT+0100 (Central European Standard Time)",
-  "playtime": 9894082,
+  "playtime": 10036488,
   "safeMode": false,
   "packs": [
     {
@@ -32,7 +32,12 @@
       "path": "packs/mass-edit-presets-main",
       "system": "yzecoriolis",
       "flags": {},
-      "package": "world"
+      "package": "world",
+      "id": "world.mass-edit-presets-main",
+      "packageType": "world",
+      "packageName": "coriolis",
+      "index": [],
+      "folders": []
     }
   ]
 }
