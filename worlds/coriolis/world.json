@@ -18,5 +18,21 @@
   "background": "modules/coriolis-corerules/images/ch11/Kap4_coriolis_start.webp",
   "lastPlayed": "Wed Nov 22 2023 15:57:07 GMT+0100 (Central European Standard Time)",
   "playtime": 9894082,
-  "safeMode": false
+  "safeMode": false,
+  "packs": [
+    {
+      "label": "Mass Edit: Presets (MAIN)",
+      "type": "JournalEntry",
+      "ownership": {
+        "GAMEMASTER": "NONE",
+        "PLAYER": "NONE",
+        "ASSISTANT": "NONE"
+      },
+      "name": "mass-edit-presets-main",
+      "path": "packs/mass-edit-presets-main",
+      "system": "yzecoriolis",
+      "flags": {},
+      "package": "world"
+    }
+  ]
 }
