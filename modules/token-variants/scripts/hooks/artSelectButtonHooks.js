@@ -33,6 +33,7 @@ export function registerArtSelectButtonHooks() {
     registerHook(feature_id, 'renderNoteConfig', _modNoteConfig);
     registerHook(feature_id, 'renderSceneConfig', _modSceneConfig);
     registerHook(feature_id, 'renderMacroConfig', _modMacroConfig);
+    //registerHook(feature_id, 'renderAmbientSoundConfig', _modSoundConfig);
     registerHook(feature_id, 'renderActiveEffectConfig', _modActiveEffectConfig);
   } else {
     [
@@ -130,6 +131,13 @@ function _modMacroConfig(macroConfig, html, options) {
       searchType: SEARCH_TYPE.MACRO,
       callback: (imgSrc) => img.attr('src', imgSrc),
     });
+  });
+}
+
+function _modSoundConfig(soundConfig, html, options) {
+  insertArtSelectButton(html, 'img', {
+    search: 'Sound',
+    searchType: SEARCH_TYPE.ITEM,
   });
 }
 
