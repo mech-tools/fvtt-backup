@@ -7,6 +7,8 @@ import { AnarchyUsers } from "../users.js";
 import { ROLL_PARAMETER_CATEGORY } from "../roll/roll-parameters.js";
 import { ANARCHY_HOOKS } from "../hooks-manager.js";
 import { AttributeActions } from "../attribute-actions.js";
+import { ErrorManager } from "../error-manager.js";
+import { Misc } from "../misc.js";
 
 const AREA_TARGETS = {
   none: { targets: 1, adjust: [0] },
@@ -34,8 +36,8 @@ const WEAPON_RANGE_PARAMETER = {
     const rangeValues = ranges.map(it => it.value);
     return {
       value: ranges[0].value,
-      min: Math.min(rangeValues),
-      max: Math.max(rangeValues),
+      min: Math.min(...rangeValues),
+      max: Math.max(...rangeValues),
       choices: ranges,
       selected: game.i18n.localize(ranges[0].labelkey)
     }
@@ -175,32 +177,35 @@ export class WeaponItem extends AnarchyBaseItem {
   }
 
   validateTargets(actor) {
-    const targets = AnarchyUsers.getTargets(game.user);
-    if (targets.length == 0) {
+    // TODO: add a weapon "plane" to define if attack is in matrix/astral/physical world
+    // use actorCannotApplyDamage?
+    const monitor = this.getDamage()?.monitor
+    const targets = AnarchyUsers.getTargetTokens(game.user);
+    const validTargets = targets.filter(token => token.actor?.canReceiveDamage(monitor))
+    const invalidTargets = targets.filter(token => !token.actor?.canReceiveDamage(monitor))
+      .map(token => token.name)
+
+    if (invalidTargets.length > 0) {
+      ui.notifications.info(game.i18n.format(ANARCHY.common.errors.ignoredTargets, {
+        targets: invalidTargets.reduce(Misc.joiner(', ')),
+      }));
+    }
+    if (validTargets.length == 0) {
       ui.notifications.info(game.i18n.format(ANARCHY.common.errors.noTargetSelected, {
         weapon: this.name ?? game.i18n.localize(ANARCHY.itemType.singular.weapon)
       }));
     }
     else {
-      this.checkWeaponTargets(targets);
+      this.checkWeaponTargetsCount(validTargets)
       // TODO: could check LOS, distance? ...
     }
-    return targets;
+    return validTargets;
   }
 
-  checkWeaponTargets(targets) {
+  checkWeaponTargetsCount(targets) {
     const area = this.system.area;
     const areaTargets = AREA_TARGETS[area] ?? {};
-    if (areaTargets.targets && targets.length > areaTargets.targets) {
-      const error = game.i18n.format(ANARCHY.common.errors.maxTargetsExceedeed, {
-        weapon: this.name,
-        area: game.i18n.localize(ANARCHY.area[area]),
-        count: targets.length,
-        max: areaTargets.targets
-      });
-      ui.notifications.error(error);
-      throw error;
-    }
+    ErrorManager.checkTargetsCount(areaTargets.targets ?? 0, targets, area);
   }
 
   getAreaModifier(countTargets) {

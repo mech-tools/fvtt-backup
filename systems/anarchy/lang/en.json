@@ -1,20 +1,22 @@
 {
-  "ACTOR": {
-    "TypeCharacter": "Character/Creature",
-    "TypeVehicle": "Vehicle/drone",
-    "TypeDevice": "Matrix device",
-    "TypeSprite": "Sprite",
-    "TypeIc": "IC"
-  },
-  "ITEM": {
-    "TypeContact": "Contact",
-    "TypeCyberdeck": "Cyberdeck",
-    "TypeGear": "Gear",
-    "TypeMetatype": "Metatype",
-    "TypeQuality": "Quality",
-    "TypeShadowamp": "Shadowamp",
-    "TypeSkill": "Skill",
-    "TypeWeapon": "Weapon"
+  "TYPES": {
+    "Actor": {
+      "character": "Character/Creature",
+      "vehicle": "Vehicle/drone",
+      "device": "Matrix device",
+      "sprite": "Sprite",
+      "ic": "IC"
+    },
+    "Item": {
+      "contact": "Contact",
+      "cyberdeck": "Cyberdeck",
+      "gear": "Gear",
+      "metatype": "Metatype",
+      "quality": "Quality",
+      "shadowamp": "Shadowamp",
+      "skill": "Skill",
+      "weapon": "Weapon"
+    }
   },
   "ANARCHY": {
     "settings": {
@@ -58,9 +60,13 @@
       "sufferedDrain": "{actor} suffered a drain of {drain}",
       "noDrain": "{actor} did not suffer any drain",
       "defendAttack": "Defense against {success} success",
+      "defendPilotAttack": "Pilot defense against {success} success",
       "partiallyDefended": "Attack exceeds defense of {success} success",
       "fullyDefended": "The attack is fully defended",
       "applyDamage": "Apply {damage}"
+    },
+    "user": {
+      "selectedTokenActors": "Selected actor tokens"
     },
     "common": {
       "newEntry": "New entry...",
@@ -68,6 +74,7 @@
       "cancel": "Cancel",
       "add": "Add",
       "edit": "Edit",
+      "activate": "Activate",
       "del": "Remove",
       "favorite": "Favorites",
       "addFavorite": "Add to favorites",
@@ -141,11 +148,14 @@
         "onlyGM": "Only allowed for GM",
         "noEdgeForActor": "{actor} is a {actorType}, so it cannot use Edge",
         "expectedType": "Item is of type {type} instead of expected type {expectedType}",
-        "noTargetSelected": "No target is selected, consider selecting a target before using this {weapon}",
+        "ignoredTargets": "This action cannot target {targets} due to its damage type",
+        "noTargetSelected": "No valid target is selected, consider selecting a valid target before using this {weapon}",
         "maxTargetsExceedeed": "{weapon} has a {area} area of effect, with a maximum of {max} targets. You are currently targetting {count} targets",
         "noDefenseOnWeapon": "No defense configured for {actor} weapon: {weapon}.<br>Configure defense against this weapon to be able to attack with it.",
         "noTokenActor": "Token is not attached to an Actor!",
+        "noValidPilotForVehicle": "No valid pilot found for {vehicle} among selected tokens, your main character, and vehicle owner",
         "cannotUseEdgeAnymore": "Too late to use edge. A defender already rolled his defense!",
+        "actorCannotApplyDamage": "Actor {actor} cannot apply {damageType} : maybe check the decker has connected his cyberdeck",
         "actorCannotReceiveDamage": "Cannot apply {damageType} to actor {actor} : it does not have a condition monitor for this type of damage",
         "actorDoesNotHaveDefense": "Actor {actor} does not have a {defense}, the attack should not to target {actorType}.<br>Or it may be a bug, please report and manage manually"
       },
@@ -195,7 +205,8 @@
       },
       "monitors": {
         "conditionMonitors": "Condition monitors",
-        "overflow": "Condition monitor {monitor} overflow of {overflow}",
+        "overflow": "{actor}: Overflow of {monitor} condition monitor, transfering {overflow} to {overflowMonitor} condition monitor",
+        "noMatrixMonitor": "{actor}: No Matrix condition monitor",
         "physical": "Physical",
         "stun": "Stun",
         "matrix": "Matrix",
@@ -277,7 +288,8 @@
       "cyberdeck": {
         "programs": "Programs",
         "processing": "Processing power",
-        "processingHelp": "re-rolls on matrix rolls"
+        "processingHelp": "re-rolls on matrix rolls",
+        "connectionMode": "Connection mode"
       }
     },
     "itemType": {
@@ -405,6 +417,11 @@
       "medium": "Medium",
       "long": "Long"
     },
+    "connectionMode": {
+      "disconnected": "Disconnected",
+      "augmented": "Augmented reality",
+      "virtual": "Virtual reality"
+    },
     "vehicleCategory": {
       "miniDrone": "Mini drone",
       "smallDrone": "Small drone",
@@ -445,8 +462,7 @@
         "category": {
           "attribute": "Attribute",
           "skill": "Skill",
-          "attributeAction": "Attribute action",
-          "defense": "Defense"
+          "attributeAction": "Attribute action"
         }
       },
       "monitor": {

@@ -4,10 +4,12 @@ import { ANARCHY } from "../config.js";
 import { BASE_MONITOR, TEMPLATE } from "../constants.js";
 import { Enums } from "../enums.js";
 import { ErrorManager } from "../error-manager.js";
+import { NO_MATRIX_MONITOR } from "../matrix-helper.js";
 import { Misc } from "../misc.js";
 import { Modifiers } from "../modifiers/modifiers.js";
 import { RollDialog } from "../roll/roll-dialog.js";
 import { ActorDamageManager } from "./actor-damage.js";
+
 
 export class AnarchyBaseActor extends Actor {
 
@@ -33,37 +35,83 @@ export class AnarchyBaseActor extends Actor {
     return undefined;
   }
 
-  getAllowedUserIds(permission = CONST.DOCUMENT_PERMISSION_LEVELS.OWNER) {
-    const allowedUsers = game.users.filter(user => this.testUserPermission(user, permission));
-    return allowedUsers.map(it => it.id);
+  getAllowedUsers(permission = CONST.DOCUMENT_PERMISSION_LEVELS.OWNER) {
+    return game.users.filter(user => this.testUserPermission(user, permission));
   }
 
-  isCharacter() { return this.type == 'character'; }
+  getAllowedUserIds(permission = CONST.DOCUMENT_PERMISSION_LEVELS.OWNER) {
+    return this.getAllowedUsers(permission).map(it => it.id);
+  }
+
+  getRightToDefend() { return CONST.DOCUMENT_PERMISSION_LEVELS.OWNER }
 
   hasOwnAnarchy() { return false; }
   hasGMAnarchy() { return !this.hasPlayerOwner; }
-  hasMatrixMonitor() { return false; }
-
+  isVehicle() { return this.type == TEMPLATE.actorTypes.vehicle }
   prepareData() {
-    super.prepareData();
-    this.cleanupFavorites();
+    super.prepareData()
+    this.cleanupFavorites()
   }
 
-  getMatrixMonitor() {
-    if (this.hasMatrixMonitor()) {
-      return this.system.monitors.matrix;
+  prepareDerivedData() {
+    this.prepareMatrixMonitor()
+    this.system.modifiers = {
+      initiative: Modifiers.sumModifiers(this.items, 'other', 'initiative')
     }
-    return {
-      canMark: true,
-      marks: [],
-      value: 0,
-      max: 0,
-      resistance: 0
-    };
+    Object.entries(this.system.monitors).forEach(kv => {
+      kv[1].maxBonus = Modifiers.sumMonitorModifiers(this.items, kv[0], 'max')
+      kv[1].resistanceBonus = Modifiers.sumMonitorModifiers(this.items, kv[0], 'resistance')
+    })
+    Object.entries(this.system.attributes).forEach(kv => kv[1].total = this.getAttributeValue(kv[0]))
   }
 
-  async setMatrixMonitorValue(value) {
-    await this.update({ 'system.monitors.matrix.value': value });
+  getAttributes() { return [undefined]; }
+  getPhysicalAgility() { return undefined }
+
+  prepareMatrixMonitor() {
+    const matrix = this.getMatrixDetails()
+    if (matrix.hasMatrix) {
+      this.system.monitors.matrix.max = this._getMonitorMax(matrix.logic)
+      this.system.monitors.matrix.canMark = true
+    }
+  }
+
+  getMatrixDetails() {
+    return {
+      hasMatrix: false,
+      logic: undefined,
+      firewall: undefined,
+      monitor: NO_MATRIX_MONITOR,
+      overflow: undefined,
+    }
+  }
+
+  getMatrixLogic() { return this.getMatrixDetails().logic }
+  getMatrixFirewall() { return this.getMatrixDetails().firewall }
+  getMatrixMonitor() { return this.getMatrixDetails().monitor }
+  getMatrixMarks() { return this.getMatrixDetails().monitor?.marks ?? [] }
+  getMatrixOverflow() { return this.getMatrixDetails().overflow }
+  hasMatrixMonitor() { return this.getMatrixDetails().hasMatrix }
+
+  async defSetMatrixMonitor(checkbarPath, value) {
+    if (!this.getMatrixDetails().hasMatrix) {
+      game.i18n.format(ANARCHY.actor.monitors.noMatrixMonitor, { actor: this.name })
+    }
+    else {
+      await this.update({ [checkbarPath]: value })
+    }
+  }
+
+  async setCheckbarValue(checkbarPath, value) {
+    if (checkbarPath.startsWith('system.monitors.matrix.')) {
+      const setMatrixMonitor = this.getMatrixDetails().setMatrixMonitor
+      if (setMatrixMonitor) {
+        return await setMatrixMonitor(checkbarPath, value)
+      } else {
+        return await this.defSetMatrixMonitor(checkbarPath, value)
+      }
+    }
+    return await this.update({ [checkbarPath]: value })
   }
 
   _getMonitorMax(attribute) {
@@ -71,25 +119,9 @@ export class AnarchyBaseActor extends Actor {
     return attributeValue == 0 ? 0 : (BASE_MONITOR + Misc.divup(attributeValue, 2));
   }
 
-  prepareDerivedData() {
-    this.system.modifiers = {
-      initiative: Modifiers.sumModifiers(this.items, 'other', 'initiative')
-    };
-    Object.entries(this.system.monitors).forEach(kv => {
-      kv[1].maxBonus = Modifiers.sumMonitorModifiers(this.items, kv[0], 'max');
-      kv[1].resistanceBonus = Modifiers.sumMonitorModifiers(this.items, kv[0], 'resistance');
-    });
-    Object.entries(this.system.attributes).forEach(kv => {
-      kv[1].total = this.getAttributeValue(kv[0]);
-    });
-  }
 
   getAttributeActions() {
     return AttributeActions.getActorActions(this);
-  }
-
-  getAttributes() {
-    return [undefined];
   }
 
   getUsableAttributes(item = undefined) {
@@ -108,8 +140,9 @@ export class AnarchyBaseActor extends Actor {
         value = this.system.attributes[attribute].value;
       }
       else if (!item) {
-        const candidateItems = this.items.filter(item => item.isActive() && item.getAttributes().includes(attribute));
-        value = Math.max(candidateItems.map(it => it.getAttributeValue(attribute) ?? 0));
+        const candidateItems = this.items.filter(item => item.isActive() && item.getAttributes().includes(attribute))
+        const candidateValues = candidateItems.map(it => it.getAttributeValue(attribute) ?? 0)
+        value = Math.max(...candidateValues)
       }
       else if (this.isEmerged() && attribute == TEMPLATE.attributes.firewall) {
         return this.getAttributeValue(TEMPLATE.attributes.logic);
@@ -154,9 +187,10 @@ export class AnarchyBaseActor extends Actor {
 
   async rollWeapon(weapon) {
     ErrorManager.checkWeaponDefense(weapon, this);
+    const targetedTokenIds = weapon.validateTargets(this)?.map(it => it.id)
     const targeting = {
       attackerTokenId: game.scenes.current?.tokens.find(it => it.actor?.id == this.id)?.id,
-      targetedTokenIds: weapon.validateTargets(this)?.map(it => it.id)
+      targetedTokenIds: targetedTokenIds
     }
     const skill = this.items.find(it => weapon.isWeaponSkill(it));
     await RollDialog.rollWeapon(this, skill, weapon, targeting);
@@ -168,11 +202,11 @@ export class AnarchyBaseActor extends Actor {
     await RollDialog.rollDefense(this, action, attack);
   }
 
-  async rollDrain(drain) {
-  }
+  async rollPilotDefense(attack) { }
 
-  async rollConvergence(convergence) {
-  }
+  async rollDrain(drain) { }
+
+  async rollConvergence(convergence) { }
 
   async switchMonitorCheck(monitor, index, checked, sourceActorId = undefined) {
     await Checkbars.switchMonitorCheck(this, monitor, index, checked, sourceActorId);
@@ -186,25 +220,33 @@ export class AnarchyBaseActor extends Actor {
     await Checkbars.setCounter(this, monitor, value, sourceActorId);
   }
 
-  canSetMarks() {
-    return false;
-  }
+  canPilotVehicle() { return false }
+
+  canSetMarks() { return false }
 
   getCyberdeck() {
     return undefined;
   }
 
-  canReceiveMarks() {
-    return this.system.monitors?.matrix?.canMark;
+  canReceiveMarks() { return this.system.monitors?.matrix?.canMark; }
+
+  canApplyDamage(monitor) {
+    switch (monitor) {
+      case TEMPLATE.monitors.matrix:
+      case TEMPLATE.monitors.marks:
+        return this.hasMatrixMonitor()
+      case TEMPLATE.monitors.physical:
+      case TEMPLATE.monitors.stun:
+        return this.getDamageMonitor(monitor) != undefined
+    }
+    return false
   }
 
-  isEmerged() {
-    return false;
+  canReceiveDamage(monitor) {
+    return this.canApplyDamage(monitor)
   }
 
-  async switchActorMarksCheck(index, checked, sourceActorId) {
-    await Checkbars.switchMonitorCheck(this, 'marks', index, checked, sourceActorId);
-  }
+  isEmerged() { return false }
 
   async addActorMark(sourceActorId) {
     await Checkbars.addActorMark(this, sourceActorId);
@@ -212,7 +254,6 @@ export class AnarchyBaseActor extends Actor {
 
   getActorMarks(sourceActorId) {
     return Checkbars.getActorMarks(this, sourceActorId)?.marks;
-
   }
 
   async onEnterCombat() {

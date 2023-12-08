@@ -46,7 +46,7 @@ export class AnarchyActorSheet extends ActorSheet {
   activateListeners(html) {
     super.activateListeners(html);
 
-    // items standard actions (add/edit/delete)
+    // items standard actions (add/edit/activate/delete)
     html.find('.click-item-add').click(async event => {
       await this.createNewItem(this.getEventItemType(event));
     });
@@ -55,11 +55,21 @@ export class AnarchyActorSheet extends ActorSheet {
       this.getEventItem(event)?.sheet.render(true);
     });
 
+    html.find('.click-item-activate').click(async event => {
+      const item = this.getEventItem(event)
+      const inactive = item.system.inactive;
+      await item.update({ 'system.inactive': !inactive })
+    })
+
+    html.find('a.click-cyberdeck-connectionMode').click(async event => {
+      const item = this.getEventItem(event)
+      await item.nextConnectionMode()
+    })
+
     html.find('.click-item-delete').click(async event => {
       const item = this.getEventItem(event);
       ConfirmationDialog.confirmDeleteItem(item, async () => {
         await this.actor.deleteEmbeddedDocuments('Item', [item.id]);
-        this.render(true);
       });
     });
 
@@ -86,7 +96,8 @@ export class AnarchyActorSheet extends ActorSheet {
 
     // counters & monitors
     html.find('a.click-checkbar-element').click(async event => {
-      const handler = this.getEventItem(event) ?? this.actor;
+      const item = this.getEventItem(event);
+      const handler = item ?? this.actor;
       const monitor = this.getEventMonitorCode(event);
       const sourceActorId = monitor == 'marks' ?
         $(event.currentTarget).closest('.anarchy-marks').attr('data-actor-id')
@@ -95,7 +106,8 @@ export class AnarchyActorSheet extends ActorSheet {
         monitor,
         this.getEventIndex(event),
         this.isEventChecked(event),
-        sourceActorId
+        sourceActorId,
+        item
       );
     });
     html.find('a.click-add-mark-actor').click(async event => {

@@ -1,20 +1,22 @@
 {
-  "ACTOR": {
-    "TypeCharacter": "Personnage/Créature",
-    "TypeVehicle": "Véhicule/drone",
-    "TypeDevice": "Objet matriciel",
-    "TypeSprite": "Sprite",
-    "TypeIc": "Glace"
-  },
-  "ITEM": {
-    "TypeContact": "Contact",
-    "TypeCyberdeck": "Cyberdeck",
-    "TypeGear": "Equipement",
-    "TypeMetatype": "Métatype",
-    "TypeQuality": "Trait",
-    "TypeShadowamp": "Atout",
-    "TypeSkill": "Compétence",
-    "TypeWeapon": "Arme"
+  "TYPES": {
+    "Actor": {
+      "character": "Personnage/Créature",
+      "vehicle": "Véhicule/drone",
+      "device": "Objet matriciel",
+      "sprite": "Sprite",
+      "ic": "Glace"
+    },
+    "Item": {
+      "contact": "Contact",
+      "cyberdeck": "Cyberdeck",
+      "gear": "Equipement",
+      "metatype": "Métatype",
+      "quality": "Trait",
+      "shadowamp": "Atout",
+      "skill": "Compétence",
+      "weapon": "Arme"
+    }
   },
   "ANARCHY": {
     "settings": {
@@ -58,9 +60,13 @@
       "sufferedDrain": "{actor} subit un drain de {drain}",
       "noDrain": "{actor} n'a pas subi de drain",
       "defendAttack": "Défense contre {success} succès",
+      "defendPilotAttack": "Défense du pilote contre {success} succès",
       "partiallyDefended": "L'attaque surpasse la défense de {success} succès",
       "fullyDefended": "L'attaque est totalement évitée",
       "applyDamage": "Appliquer {damage}"
+    },
+    "user": {
+      "selectedTokenActors": "Sélection de tokens-Acteurs"
     },
     "common": {
       "newEntry": "Valeur...",
@@ -68,6 +74,7 @@
       "cancel": "Annuler",
       "add": "Ajouter",
       "edit": "Modifier",
+      "activate": "Activer",
       "del": "Supprimer",
       "favorite": "Favoris",
       "addFavorite": "Ajouter aux favoris",
@@ -141,11 +148,14 @@
         "onlyGM": "Seul un MJ est autorisé",
         "noEdgeForActor": "{actor} est un {actorType}, il ne peut pas utiliser la Chance",
         "expectedType": "Objet de type incorrect, attendu: {expectedType}, type de l'objet: {type}",
-        "noTargetSelected": "Aucune cible sélectionnée. Vous devriez choisir une (des?) cible avant d'utiliser votre {weapon}",
+        "ignoredTargets": "Cette action ne peut pas cibler {targets} à cause de son type de dommages",
+        "noTargetSelected": "Aucune cible valide sélectionnée. Vous devriez choisir une (des?) cible valides avant d'utiliser votre {weapon}",
         "maxTargetsExceedeed": "{weapon} a une zone zone d'effet {area}, avec au maximum {max} cibles, vous en avez {count}",
         "noDefenseOnWeapon": "L'arme {weapon} de {actor} n'a pas de défense configurée. Configurez la défense contre cette arme pour pouvoir attaquer avec.",
         "noTokenActor": "Le token n'est pas lié à un Personnage!",
+        "noValidPilotForVehicle": "Aucun pilote valide pour {vehicle} parmi les tokens sélectionés, votre personnage principal, ou le propriétaire du véhicule",
         "cannotUseEdgeAnymore": "Trop tard pour utiliser la Chance. Un adversaire s'est déjà défendu!",
+        "actorCannotApplyDamage": "L'acteur {actor} ne peut pas causer de dommages {damageType}, vérifiez que le decker a connecté son cyberdeck",
         "actorCannotReceiveDamage": "L'acteur {actor} ne peut pas recevoir de dommages {damageType}: il n'a pas de moniteur de condition associé",
         "actorDoesNotHaveDefense": "L'acteur {actor} n'a pas de {defense}, l'attaque ne devrait pas cibler un(e) {actorType}.<br>Ou bien c'est un bug, à signaler, et à gérer à la main."
       },
@@ -195,7 +205,8 @@
       },
       "monitors": {
         "conditionMonitors": "Moniteurs de condition",
-        "overflow": "Dépassement de {overflow} du moniteur {monitor}",
+        "overflow": "{actor}: Dépassement du moniteur {monitor}, transfert de {overflow} sur le moniteur {overflowMonitor}",
+        "noMatrixMonitor": "{actor}: Pas de moniteur matriciel",
         "physical": "Physique",
         "stun": "Etourdissant",
         "matrix": "Matriciel",
@@ -277,7 +288,8 @@
       "cyberdeck": {
         "programs": "Programmes",
         "processing": "Puissance de calcul",
-        "processingHelp": "relances sur tests matriciels"
+        "processingHelp": "relances sur tests matriciels",
+        "connectionMode": "Mode de connection"
       }
     },
     "itemType": {
@@ -405,6 +417,11 @@
       "medium": "Moyenne",
       "long": "Longue"
     },
+    "connectionMode": {
+      "disconnected": "Déconnecté",
+      "augmented": "Réalité augmentée",
+      "virtual": "Réalité virtuelle"
+    },
     "vehicleCategory": {
       "miniDrone": "Mini drone",
       "smallDrone": "Petit drone",
@@ -445,8 +462,7 @@
         "category": {
           "attribute": "Attribut",
           "skill": "Compétence",
-          "attributeAction": "Action Attributs",
-          "defense": "Défense"
+          "attributeAction": "Action Attributs"
         }
       },
       "monitor": {

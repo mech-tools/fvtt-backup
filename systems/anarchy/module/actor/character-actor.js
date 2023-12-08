@@ -6,7 +6,7 @@ import { Misc } from "../misc.js";
 import { Modifiers } from "../modifiers/modifiers.js";
 import { Checkbars } from "../common/checkbars.js";
 import { RollCelebrity } from "../dialog/roll-celebrity.js";
-import { ANARCHY_HOOKS, HooksManager } from "../hooks-manager.js";
+import { ANARCHY_HOOKS } from "../hooks-manager.js";
 
 const HBS_TEMPLATE_ACTOR_DRAIN = `${TEMPLATES_PATH}/chat/actor-drain.hbs`;
 
@@ -18,15 +18,11 @@ export class CharacterActor extends AnarchyBaseActor {
 
   hasOwnAnarchy() { return this.hasPlayerOwner; }
 
-  prepareData() {
-    super.prepareData();
-  }
-
   prepareDerivedData() {
     this.system.monitors.physical.max = this._getMonitorMax(TEMPLATE.attributes.strength)
     this.system.monitors.stun.max = this._getMonitorMax(TEMPLATE.attributes.willpower)
-    super.prepareDerivedData();
-    this.system.ignoreWounds = Modifiers.sumModifiers(this.items, 'other', 'ignoreWounds');
+    super.prepareDerivedData()
+    this.system.ignoreWounds = Modifiers.sumModifiers(this.items, 'other', 'ignoreWounds')
   }
 
   computeEssence() {
@@ -54,27 +50,42 @@ export class CharacterActor extends AnarchyBaseActor {
       TEMPLATE.attributes.edge
     ];
   }
+  getPhysicalAgility() { return TEMPLATE.attributes.agility }
 
-  getMatrixMonitor() {
+  getMatrixDetails() {
     const cyberdeck = this.getCyberdeck();
-    if (cyberdeck) {
-      return cyberdeck.system.monitors.matrix;
+    if (cyberdeck?.isConnected()) {
+      return {
+        hasMatrix: true,
+        logic: TEMPLATE.attributes.logic,
+        firewall: TEMPLATE.attributes.firewall,
+        monitor: cyberdeck.system.monitors.matrix,
+        overflow: cyberdeck.getMatrixOverflow(),
+        setMatrixMonitor: async (checkbarPath, value) => cyberdeck.setMatrixMonitor(checkbarPath, value),
+      }
     }
     if (this.isEmerged()) {
-      return this.system.monitors.stun;
+      return {
+        hasMatrix: true,
+        logic: TEMPLATE.attributes.logic,
+        firewall: TEMPLATE.attributes.logic,
+        monitor: this.system.monitors.stun,
+        overflow: TEMPLATE.monitors.physical,
+        setMatrixMonitor: async (checkbarPath, value) => {
+          if (key == 'system.monitors.matrix.value') {
+            await Checkbars.setCheckbar(this, TEMPLATE.monitors.stun, value)
+          }
+        },
+      }
     }
-    return super.getMatrixMonitor();
+    return super.getMatrixDetails()
   }
 
-  hasMatrixMonitor() { return true; }
-
-  async setMatrixMonitorValue(value) {
-    const cyberdeck = this.getCyberdeck();
+  prepareMatrixMonitor() {
+    const cyberdeck = this.getCyberdeck()
     if (cyberdeck) {
-      return await cyberdeck.setMatrixMonitorValue(value);
-    }
-    if (this.isEmerged()) {
-      return Checkbars.setCheckbar(this, TEMPLATE.monitors.stun, value);
+      cyberdeck.system.monitors.matrix.maxBonus = Modifiers.sumMonitorModifiers(this.items, 'matrix', 'max')
+      cyberdeck.system.monitors.matrix.resistanceBonus = Modifiers.sumMonitorModifiers(this.items, 'matrix', 'resistance')
     }
   }
 
@@ -185,23 +196,21 @@ export class CharacterActor extends AnarchyBaseActor {
     }
   }
 
-  canUseEdge() {
-    return true;
-  }
+  canUseEdge() { return true }
 
   getWounds() {
-    const wounds = Misc.divint(this.system.monitors.stun.value, 3)
-      + Misc.divint(this.system.monitors.physical.value, 3);
-
+    const wounds = Misc.divint(this.system.monitors.stun.value, 3) + Misc.divint(this.system.monitors.physical.value, 3);
     return Math.max(0, wounds - this.system.ignoreWounds);
   }
 
+  canPilotVehicle() { return true }
+
   canSetMarks() {
-    return this.isEmerged() || this.getCyberdeck();
+    return this.getCyberdeck()?.isConnected() || this.isEmerged()
   }
 
   canReceiveMarks() {
-    return false;
+    return this.getCyberdeck()?.isConnected()
   }
 
   isEmerged() {

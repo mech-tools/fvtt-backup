@@ -50,8 +50,8 @@ export class RollDialog extends Dialog {
     const rollData = mergeObject(RollDialog.prepareActorRoll(actor), {
       mode: ANARCHY_SYSTEM.rollType.attributeAction,
       attributeAction: action.code,
-      attribute1: action.attribute1,
-      attribute2: action.attribute2
+      attribute1: action.attributeFunction1(actor),
+      attribute2: action.attributeFunction2(actor),
     });
     await RollDialog.create(rollData);
   }
@@ -79,18 +79,18 @@ export class RollDialog extends Dialog {
       mode: ANARCHY_SYSTEM.rollType.weapon,
       weapon: weapon,
       skill: skill,
-      attribute1: skill?.system.attribute ?? TEMPLATE.attributes.agility,
+      attribute1: skill?.system.attribute ?? actor.getPhysicalAgility(),
       specialization: skill?.system.specialization,
       targeting: targeting
     });
     await RollDialog.create(rollData);
   }
 
-  static async rollDefense(actor, action, attack) {
+  static async rollDefense(actor, action, attack, pilot = undefined) {
     const rollData = mergeObject(RollDialog.prepareActorRoll(actor), {
       mode: ANARCHY_SYSTEM.rollType.defense,
-      attribute1: action.attribute1,
-      attribute2: action.attribute2,
+      attribute1: action.attributeFunction1(actor),
+      attribute2: action.attributeFunction2(actor),
       defenseAction: action.code,
       attackRoll: attack.attackRoll,
       tokenId: attack.defenderTokenId,

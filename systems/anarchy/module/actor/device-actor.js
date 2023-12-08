@@ -12,23 +12,20 @@ export class DeviceActor extends AnarchyBaseActor {
     return AnarchyBaseActor.initiative + " + @attributes.system.value";
   }
 
-  prepareData() {
-    super.prepareData();
-  }
-
-  hasMatrixMonitor() { return true; }
-
-  prepareDerivedData() {
-    this.system.monitors.matrix.max = this._getMonitorMax(TEMPLATE.attributes.system);
-    super.prepareDerivedData();
+  getMatrixDetails() {
+    return {
+      hasMatrix: true,
+      logic: TEMPLATE.attributes.system,
+      firewall: TEMPLATE.attributes.firewall,
+      monitor: this.system.monitors.matrix,
+      overflow: undefined,
+    }
   }
 
   getAttributes() {
     return [
-      TEMPLATE.attributes.firewall,
       TEMPLATE.attributes.system,
+      TEMPLATE.attributes.firewall,
     ];
   }
-
-
 }

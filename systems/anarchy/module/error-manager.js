@@ -44,16 +44,7 @@ export class ErrorManager {
     }
   }
 
-  static checkWeaponDefense(weapon, actor) {
-    const defense = weapon.getDefense();
-    if (!defense) {
-      const error = game.i18n.format(ANARCHY.common.errors.noDefenseOnWeapon, { actor: actor.name, weapon: weapon.name });
-      ui.notifications.error(error);
-      throw error;
-    }
-  }
-
-  static checkMonitorForDamage(damageType, monitor, actor) {
+  static checkActorCanReceiveDamage(damageType, monitor, actor) {
     if (!monitor) {
       const error = game.i18n.format(ANARCHY.common.errors.actorCannotReceiveDamage, {
         actor: actor.name,
@@ -63,6 +54,39 @@ export class ErrorManager {
       throw error;
     }
   }
+
+  static checkWeaponDefense(weapon, actor) {
+    const defense = weapon.getDefense();
+    if (!defense) {
+      const error = game.i18n.format(ANARCHY.common.errors.noDefenseOnWeapon, { actor: actor.name, weapon: weapon.name });
+      ui.notifications.error(error);
+      throw error;
+    }
+  }
+
+  static checkTargetsCount(maxTargets, targets, area) {
+    if (maxTargets > 0 && targets.length > maxTargets) {
+      const error = game.i18n.format(ANARCHY.common.errors.maxTargetsExceedeed, {
+        weapon: this.name,
+        area: game.i18n.localize(ANARCHY.area[area]),
+        count: targets.length,
+        max: maxTargets
+      });
+      ui.notifications.error(error);
+      throw error;
+    }
+  }
+
+  static checkMatrixMonitor(actor) {
+    if (!actor.hasMatrixMonitor()) {
+      const error = game.i18n.format(ANARCHY.actor.monitors.noMatrixMonitor, {
+        actor: actor.name
+      });
+      ui.notifications.warn(error);
+      throw error;
+    }
+  }
+
   static checkActorDefenseAction(actorAction, actor, defense) {
     if (!actorAction) {
       const error = game.i18n.format(ANARCHY.common.errors.actorDoesNotHaveDefense, {

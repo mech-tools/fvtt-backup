@@ -228,7 +228,6 @@
         "inactive": false
       },
       "references": {
-        "equiped": true,
         "sourceReference": "",
         "description": "",
         "gmnotes": ""
@@ -296,11 +295,7 @@
       }
     },
     "cyberdeck": {
-      "templates": [
-        "modifiers",
-        "inactive",
-        "references"
-      ],
+      "templates": ["modifiers", "inactive", "references"],
       "attributes": {
         "firewall": {
           "value": 1
@@ -316,7 +311,8 @@
         }
       },
       "programs": 1,
-      "processing": 1
+      "processing": 1,
+      "connectionMode": "disconnected"
     },
     "gear": {
       "templates": [

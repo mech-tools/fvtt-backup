@@ -245,6 +245,16 @@ export class Shadowrun6ActorSheet extends ActorSheet {
             };
             return this.actor.createEmbeddedDocuments("Item", [itemData]);
         });
+        html.find(".weapon-special-create").click((ev) => {
+            const itemData = {
+                name: game.i18n.localize("shadowrun6.newitem.weaponspecial"),
+                type: "gear",
+                data: {
+                    type: "WEAPON_SPECIAL"
+                }
+            };
+            return this.actor.createEmbeddedDocuments("Item", [itemData]);
+        });
         html.find('.critterpower-create').click(ev => {
             const itemData = {
                 name: game.i18n.localize("shadowrun6.newitem.critterpower"),
@@ -368,6 +378,8 @@ export class Shadowrun6ActorSheet extends ActorSheet {
     _setDamage(html, i, monitorAttribute, id, event) {
         if (!isLifeform(getSystemData(this.actor)))
             return;
+        if (!event.currentTarget.dataset.value)
+            event.currentTarget.dataset.value = 0;
         switch (event.target.parentNode.getAttribute("id")) {
             case "barPhyBoxes":
                 console.log("setDamage (physical health to " + event.currentTarget.dataset.value + ")");
@@ -393,7 +405,7 @@ export class Shadowrun6ActorSheet extends ActorSheet {
     }
     //-----------------------------------------------------
     _redrawBar(html, id, monitorAttribute) {
-        if (!monitorAttribute || !monitorAttribute.value)
+        if (!monitorAttribute || monitorAttribute.value < 0)
             return;
         //let vMax = parseInt(html.find("#data"+id+"Max")[0].value);
         //let vCur = parseInt(html.find("#data"+id+"Cur")[0].value);

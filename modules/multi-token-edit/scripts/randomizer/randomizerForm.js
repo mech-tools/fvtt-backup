@@ -2,7 +2,7 @@ import { SPECIES_GENERATORS } from '../generator/fantasticSpeciesGenerator.js';
 import { GROUP_GENERATORS } from '../generator/groupNamesGenerator.js';
 import { NAME_GENERATOR } from '../generator/nameGenerator.js';
 import { TAVERN_GENERATOR } from '../generator/tavernGenerator.js';
-import { isImage, isVideo, recursiveTraverse } from '../utils.js';
+import { Picker, isImage, isVideo, recursiveTraverse } from '../utils.js';
 import { deselectField, nearestStep, selectField } from './randomizerUtils.js';
 import { ColorSlider } from './slider.js';
 
@@ -108,14 +108,7 @@ export default class RandomizerForm extends FormApplication {
         data.min = 0;
         data.max = 360;
       } else if (
-        [
-          'dimSight',
-          'brightSight',
-          'light.dim',
-          'light.bright',
-          'config.dim',
-          'config.bright',
-        ].includes(this.fieldName)
+        ['dimSight', 'brightSight', 'light.dim', 'light.bright', 'config.dim', 'config.bright'].includes(this.fieldName)
       ) {
         data.min = 0;
       }
@@ -183,8 +176,7 @@ export default class RandomizerForm extends FormApplication {
     if (this.configuration.selectForm) {
       this.configuration.options.forEach((opt) => {
         opt.selected =
-          !this.configuration.selection ||
-          this.configuration.selection.find((sel) => sel == opt.value) != null;
+          !this.configuration.selection || this.configuration.selection.find((sel) => sel == opt.value) != null;
       });
     }
     return data;
@@ -210,11 +202,7 @@ export default class RandomizerForm extends FormApplication {
               files = fp.result.files;
             }
             const images_ta = $(html).find('.images');
-            images_ta.val(
-              images_ta.val().trim() +
-                '\n' +
-                files.filter((f) => isImage(f) || isVideo(f)).join('\n')
-            );
+            images_ta.val(images_ta.val().trim() + '\n' + files.filter((f) => isImage(f) || isVideo(f)).join('\n'));
           },
         }).render(true);
       });
@@ -229,11 +217,7 @@ export default class RandomizerForm extends FormApplication {
           callback: (results) => {
             if (!Array.isArray(results)) results = [results];
             const images_ta = $(html).find('.images');
-            images_ta.val(
-              images_ta.val().trim() +
-                '\n' +
-                results.filter((f) => isImage(f) || isVideo(f)).join('\n')
-            );
+            images_ta.val(images_ta.val().trim() + '\n' + results.filter((f) => isImage(f) || isVideo(f)).join('\n'));
           },
         });
       }
@@ -243,12 +227,7 @@ export default class RandomizerForm extends FormApplication {
       .click(() => {
         const generator = $(html).find('.generator').val();
 
-        for (const group of [
-          NAME_GENERATOR,
-          SPECIES_GENERATORS,
-          GROUP_GENERATORS,
-          TAVERN_GENERATOR,
-        ]) {
+        for (const group of [NAME_GENERATOR, SPECIES_GENERATORS, GROUP_GENERATORS, TAVERN_GENERATOR]) {
           if (generator in group) {
             const names = [];
             for (let i = 0; i < 20; i++) {
@@ -322,7 +301,8 @@ export default class RandomizerForm extends FormApplication {
     this.configApp.minimize();
 
     const t = this;
-    canvas.stage.addChild(await getPickerOverlay()).once('pick', (position) => {
+
+    Picker.activate((position) => {
       if (position == null) return;
 
       const form = $(event.target).closest('form');
@@ -374,9 +354,7 @@ export default class RandomizerForm extends FormApplication {
         this.configApp.randomizeFields[fieldName] = {
           type: 'select',
           method: 'random',
-          selection: formData[fieldName].map((v) =>
-            this.configuration.dtype === 'Number' ? Number(v) : v
-          ),
+          selection: formData[fieldName].map((v) => (this.configuration.dtype === 'Number' ? Number(v) : v)),
         };
       }
     } else if (this.configuration.numberForm || this.configuration.rangeForm) {
@@ -444,12 +422,7 @@ export default class RandomizerForm extends FormApplication {
         };
       }
     } else if (this.configuration.coordinateForm) {
-      if (
-        formData.minX != null &&
-        formData.maxX != null &&
-        formData.minY != null &&
-        formData.maxY != null
-      ) {
+      if (formData.minX != null && formData.maxX != null && formData.minY != null && formData.maxY != null) {
         const minX = Math.min(formData.minX, formData.maxX);
         const maxX = Math.max(formData.minX, formData.maxX);
         const minY = Math.min(formData.minY, formData.maxY);
@@ -483,78 +456,6 @@ export default class RandomizerForm extends FormApplication {
 
     if (this.configApp.updateBrushFields) this.configApp.updateBrushFields();
   }
-}
-
-let pickerOverlay;
-let boundStart;
-let boundEnd;
-
-/**
- *
- * @param {Object} rect
- * @returns
- */
-export async function getPickerOverlay(preview) {
-  if (pickerOverlay) {
-    pickerOverlay.destroy(true);
-    pickerOverlay.children?.forEach((c) => c.destroy(true));
-    pickerOverlay.emit('pick', null);
-  }
-
-  pickerOverlay = new PIXI.Container();
-
-  if (preview) {
-    const layer = canvas.getLayerByEmbeddedName(preview.documentName);
-    pickerOverlay.layer = layer;
-    const previewObject = await layer._createPreview(preview.data, { renderSheet: false });
-
-    let label;
-    if (preview.label) {
-      label = new PreciseText(preview.label, { ...CONFIG.canvasTextStyle, _fontSize: 24 });
-      label.anchor.set(0.5, 1);
-      pickerOverlay.addChild(label);
-    }
-
-    const setPositions = function (pos) {
-      if (!pos) return;
-      if (preview.snap) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
-
-      if (preview.documentName === 'Wall') {
-        previewObject.document.c = [pos.x, pos.y, pos.x + canvas.grid.w, pos.y];
-      } else {
-        previewObject.document.x = pos.x;
-        previewObject.document.y = pos.y;
-      }
-      previewObject.document.alpha = 0.4;
-      previewObject.renderFlags.set({ refresh: true });
-
-      if (label) {
-        label.x = pos.x;
-        label.y = pos.y - 38;
-      }
-    };
-
-    pickerOverlay.on('pointermove', (event) => {
-      setPositions(event.data.getLocalPosition(pickerOverlay));
-    });
-    setPositions(canvas.mousePosition);
-  }
-
-  pickerOverlay.hitArea = canvas.dimensions.rect;
-  pickerOverlay.cursor = 'crosshair';
-  pickerOverlay.interactive = true;
-  pickerOverlay.zIndex = Infinity;
-  pickerOverlay.on('remove', () => pickerOverlay.off('pick'));
-  pickerOverlay.on('mousedown', (event) => {
-    boundStart = event.data.getLocalPosition(pickerOverlay);
-  });
-  pickerOverlay.on('mouseup', (event) => (boundEnd = event.data.getLocalPosition(pickerOverlay)));
-  pickerOverlay.on('click', (event) => {
-    pickerOverlay.emit('pick', { start: boundStart, end: boundEnd });
-    pickerOverlay.parent.removeChild(pickerOverlay);
-    if (pickerOverlay.layer) pickerOverlay.layer.clearPreviewContainer();
-  });
-  return pickerOverlay;
 }
 
 // Show a dialog to select randomization settings for this form-group
@@ -631,15 +532,11 @@ function processCoordinate(inputX, inputY, configApp, label) {
 }
 
 function _showRandomTextDialog(input, configApp, label) {
-  new RandomizerForm(label, input, configApp, { textForm: true, current: input.val() }).render(
-    true
-  );
+  new RandomizerForm(label, input, configApp, { textForm: true, current: input.val() }).render(true);
 }
 
 function _showRandomImageDialog(input, configApp, label) {
-  new RandomizerForm(label, input, configApp, { imageForm: true, current: input.val() }).render(
-    true
-  );
+  new RandomizerForm(label, input, configApp, { imageForm: true, current: input.val() }).render(true);
 }
 
 function _showRandomColorDialog(input, configApp, label) {

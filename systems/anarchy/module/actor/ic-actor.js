@@ -12,23 +12,22 @@ export class ICActor extends AnarchyBaseActor {
     return AnarchyBaseActor.initiative + " + @attributes.logic.value";
   }
 
-  prepareData() {
-    super.prepareData();
+  getMatrixDetails() {
+    return {
+      hasMatrix: true,
+      logic: TEMPLATE.attributes.logic,
+      firewall: TEMPLATE.attributes.firewall,
+      monitor: this.system.monitors.matrix,
+      overflow: undefined,
+    }
   }
 
-  prepareDerivedData() {
-    this.system.monitors.matrix.max = this._getMonitorMax(TEMPLATE.attributes.logic);
-    super.prepareDerivedData();
-  }
-
-  hasMatrixMonitor() { return true; }
+  canSetMarks() { return false }
 
   getAttributes() {
     return [
-      TEMPLATE.attributes.firewall,
       TEMPLATE.attributes.logic,
+      TEMPLATE.attributes.firewall,
     ];
   }
-
-
 }

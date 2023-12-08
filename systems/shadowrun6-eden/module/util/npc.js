@@ -133,7 +133,7 @@ const STATS_LINES = ["K G R S W L I C ESS", "K G R S W L I C EDG ESS", "B A R S 
 const ALTERNATE_STATS_LNIE = ["K", "B"];
 const STATS_MAGIC_LINES = ["K G R S W L I C M ESS", "K G R S W L I C EDG M ESS", "B A R S W L I C M ESS", "CON AGI RÉA FOR VOL LOG INT CHA MAG ESS"];
 const STATS_RES_LINES = ["K G R S W L I C RES ESS", "K G R S W L I C EDG R ESS", "B A R S W L I C RS ESS", "CON AGI RÉA FOR VOL LOG INT CHA RES ESS"];
-const DR_LINES = ["DR I/ID AC CM MOVE", "SD I/DI PA ME DÉPLACEMENT", "SD I/DI PA ME DÉPLACEMENT DRAIN", "SD I/DI PA ME DÉPLA. DRAIN", "SD I/DI PA ME DÉPLA.", "SD I/DI PA ME DÉPLA. TECHNO."]; // the french books are inconsistent
+const DR_LINES = ["DR I/ID AC CM MOVE", "I/ID AC CM MOVE", "SD I/DI PA ME DÉPLACEMENT", "SD I/DI PA ME DÉPLACEMENT DRAIN", "SD I/DI PA ME DÉPLA. DRAIN", "SD I/DI PA ME DÉPLA.", "SD I/DI PA ME DÉPLA. TECHNO."]; // the french books are inconsistent
 const INIT_LINES = ["Initiative:"]; // DE specific
 const INIT_ASTRAL_LINES = ["Astrale Initiative:"]; // DE specific
 const ACTIONS_LINE = ["Handlungen:"]; // DE specific
@@ -871,7 +871,7 @@ class Initiative {
     initiative;
     die;
     constructor(def) {
-        let matches = def.trim().match(/^(\d+)\s+[+]\s+(\d+)[WwDd]6/);
+        let matches = def.match(/^(\d+)\s+[+]\s+(\d+)[WwDd]6/);
         if (matches == null) {
             this.initiative = parseInt(def);
         }
@@ -988,16 +988,27 @@ export class NPC {
                     break;
                 }
                 case SectionType.DRStats: {
-                    //                                       1        2           3      4                      5      8       9
-                    //                                       2                    4    / 1     A1  ,   I2       9      10   / 15   /+  1
-                    let matches_en = section.content.match(/(\d+)(?:\((\d+)\))?\s+(\d+)\/\d+\s+A\d+,\s*I\d+\s+(\d+)\s+\d+\/\d+\/\+\d+/);
+                    //                                       1        2           3      4                      5         6        8     9
+                    //                                       2     (  7   )       4   /  1     A1  ,   I2       9       / 9       10  / 15   /+  1
+                    let matches_en = section.content.match(/(\d+)(?:\((\d*)\))?\s+(\d+)\/(\d+)\s+A\d+,\s*I\d+\s+(\d+)(?:(\/\d+))?\s+\d+\/\d+\/\+\d+/);
+                    //                                        1      2                      3         4        8     9
+                    //                                        4   /  1     A1  ,   I2       9       / 9       10  / 15   /+  1
+                    let matches_enCritter = section.content.match(/(\d+)\/(\d+)\s+A\d+,\s*I\d+\s+(\d+)(?:(\/\d+))?\s+\d+\/\d+\/\+\d+/);
                     // 9 12/1 (physique) 10/2 (astrale) MAJ 1, MIN 2 (physique) MAJ 1, MIN 3 (astrale) 11 10/15/+1 12
                     let matches_fr = section.content.match(/^(\d+)\s+(\d+)\/(\d+)(?:\s*\([^)]+\))?(?:\s*[^\/]+?\/.+?\s*\([^)]+\))*\s+MAJ\s+\d+,\s*MIN\s+\d+(?:\s*\([^)]+\))?(?:\s*MAJ\s*\d+,\s*MIN\s*\d+\s*\([^)]+\))*\s+(\d+)(?:\s+\([^)]+\))?(?:\s+\d+\s+\([^)]+\))*\s+\d+\/\s*\d+\/\s*\+\d(?:\s+\d+)?$/);
                     if (matches_en) {
-                        this.defense = parseInt(matches_en[2]) || parseInt(matches_en[1]);
-                        // This is a bit of a cheat
+                        console.log("Test 1");
+                        this.defense = parseInt(matches_en[2]) || parseInt(matches_en[1]) || 0;
+                        // This is a bit of a cheat)
                         this.initiative = new Initiative(matches_en[3] + " + " + matches_en[4] + "W6");
                         this.status = new Status(matches_en[5]);
+                    }
+                    else if (matches_enCritter) {
+                        console.log("Test 2");
+                        this.defense = 0;
+                        // This is a bit of a cheat
+                        this.initiative = new Initiative(matches_enCritter[1] + " + " + matches_enCritter[2] + "W6");
+                        this.status = new Status(matches_enCritter[3]);
                     }
                     else if (matches_fr) {
                         this.defense = parseInt(matches_fr[1]);

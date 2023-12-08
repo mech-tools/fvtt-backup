@@ -1,5 +1,5 @@
 import { constructNav } from '../applications/generic/navGenerator.js';
-import { getDocumentName } from './utils.js';
+import { getDocumentName, localize } from './utils.js';
 
 export function injectVisibility(app) {
   const docName = getDocumentName(app.meObjects[0]);
@@ -13,10 +13,9 @@ export function injectVisibility(app) {
   if (isInjected.length) return;
 
   const hidden = app.object.hidden;
-
   const newHtml = `
   <div class="form-group">
-    <label>${game.i18n.localize(`multi-token-edit.common.hidden`)}</label>
+    <label>${localize(`Hidden`, false)}</label>
     <div class="form-fields">
         <input type="checkbox" name="hidden" ${hidden ? 'checked' : ''}>
     </div>
@@ -70,10 +69,7 @@ export async function injectFlagTab(app) {
 
   await getTemplate('modules/multi-token-edit/templates/generic/form-group.html');
   await getTemplate('modules/multi-token-edit/templates/generic/navHeaderPartial.html');
-  let htmlNav = await renderTemplate(
-    'modules/multi-token-edit/templates/generic/navHeaderPartial.html',
-    flagNav
-  );
+  let htmlNav = await renderTemplate('modules/multi-token-edit/templates/generic/navHeaderPartial.html', flagNav);
 
   htmlNav = $(htmlNav);
 
@@ -81,9 +77,7 @@ export async function injectFlagTab(app) {
   if (app.options.massSelect) {
     htmlNav.find('.me-pinned').remove();
   } else {
-    htmlNav
-      .find('.me-pinned')
-      .replaceWith(`<a class="me-delete-flag" title="DELETE"><i class="fas fa-trash"></i></a>`);
+    htmlNav.find('.me-pinned').replaceWith(`<a class="me-delete-flag" title="DELETE"><i class="fas fa-trash"></i></a>`);
     html.on('click', '.me-delete-flag', (event) => {
       const delFlag = $(event.target).closest('a');
       delFlag.toggleClass('active');
@@ -106,9 +100,7 @@ export async function injectFlagTab(app) {
   // Insert Flags tab into
   const sheetMainNav = html.find('.sheet-tabs').first();
   if (!sheetMainNav.length) return;
-  sheetMainNav.append(
-    '<a class="item" data-tab="flags"><i class="fa-solid fa-flag"></i> Flags</a>'
-  );
+  sheetMainNav.append('<a class="item" data-tab="flags"><i class="fa-solid fa-flag"></i> Flags</a>');
 
   if (!sheetMainNav.attr('data-group')) {
     htmlNav.removeAttr('data-group');

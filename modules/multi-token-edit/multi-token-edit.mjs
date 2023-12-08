@@ -19,8 +19,10 @@ import { MassEditGenericForm } from './applications/generic/genericForm.js';
 import {
   activeEffectPresetSelect,
   applyAddSubtract,
+  createDocuments,
   flagCompare,
   getDocumentName,
+  resolveCreateDocumentRequest,
   SUPPORTED_COLLECTIONS,
   SUPPORTED_HISTORY_DOCS,
   SUPPORTED_PLACEABLES,
@@ -374,6 +376,8 @@ Hooks.once('init', () => {
           : this;
         app.presetFromPlaceable(placeables, ...args);
       }
+      // Pass in a fake event that hopefully is enough to allow other modules to function
+      this._onDragLeftCancel(...args);
     } else {
       return wrapped(...args);
     }
@@ -388,6 +392,36 @@ Hooks.once('init', () => {
     );
   });
 
+  // Handle broadcasts
+  // Needed to allow players to spawn Presets by delegating create document request to GMs
+  game.socket?.on(`module.multi-token-edit`, async (message) => {
+    const args = message.args;
+
+    if (message.handlerName === 'document' && message.type === 'CREATE') {
+      const isResponsibleGM = !game.users
+        .filter((user) => user.isGM && (user.active || user.isActive))
+        .some((other) => other.id < game.user.id);
+      if (!isResponsibleGM) return;
+
+      const documents = await createDocuments(args.documentName, args.data, args.sceneID);
+      const documentIDs = documents.map((d) => d.id);
+
+      const message = {
+        handlerName: 'document',
+        args: {
+          requestID: args.requestID,
+          sceneID: args.sceneID,
+          documentName: args.documentName,
+          documentIDs,
+        },
+        type: 'RESOLVE',
+      };
+      game.socket.emit(`module.multi-token-edit`, message);
+    } else if (message.handlerName === 'document' && message.type === 'RESOLVE') {
+      resolveCreateDocumentRequest(args);
+    }
+  });
+
   globalThis.MassEdit = {
     GeneralDataAdapter,
     MassEditGenericForm,
@@ -396,6 +430,7 @@ Hooks.once('init', () => {
     performMassSearch,
     showMassEdit,
     getPreset: PresetAPI.getPreset,
+    getPresets: PresetAPI.getPresets,
     createPreset: PresetAPI.createPreset,
     spawnPreset: PresetAPI.spawnPreset,
   };

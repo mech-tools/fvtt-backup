@@ -2,6 +2,7 @@ import { Checkbars } from "../common/checkbars.js";
 import { Misc } from "../misc.js";
 import { TEMPLATE } from "../constants.js";
 import { RollDialog } from "../roll/roll-dialog.js";
+import { NO_MATRIX_MONITOR } from "../matrix-helper.js";
 
 export class AnarchyBaseItem extends Item {
 
@@ -47,13 +48,21 @@ export class AnarchyBaseItem extends Item {
 
   hasOwnAnarchy() { return false; }
   hasGMAnarchy() { return false; }
+
   hasMatrixMonitor() { return false; }
+  getMatrixMonitor() { return NO_MATRIX_MONITOR }
+
+  async nextConnectionMode() { }
+
+  async setCheckbarValue(checkbarPath, value) {
+    return await this.update({ [checkbarPath]: value })
+  }
 
   isMetatype() { return this.type == TEMPLATE.itemType.metatype; }
   isCyberdeck() { return this.type == TEMPLATE.itemType.cyberdeck; }
   isWeapon() { return this.type == TEMPLATE.itemType.weapon; }
 
-  isActive() { return this.system.equiped && !this.system.inactive; }
+  isActive() { return !this.system.inactive; }
 
   canReceiveMarks() { return this.system.monitors?.matrix?.canMark; }
 
@@ -64,16 +73,13 @@ export class AnarchyBaseItem extends Item {
   }
 
   async switchMonitorCheck(monitor, index, checked, sourceActorId = undefined) {
-    await Checkbars.switchMonitorCheck(this, monitor, index, checked, sourceActorId);
+    await Checkbars.switchMonitorCheck(this.parent, monitor, index, checked, sourceActorId, this);
   }
 
   async setCounter(monitor, value) {
     await Checkbars.setCounter(this, monitor, value);
   }
 
-  async switchActorMarksCheck(index, checked, sourceActorId) {
-    await Checkbars.switchMonitorCheck(this, 'marks', index, checked, sourceActorId);
-  }
 
   async addActorMark(sourceActorId) {
     await Checkbars.addActorMark(this, sourceActorId);

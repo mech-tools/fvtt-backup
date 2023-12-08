@@ -2,7 +2,7 @@
   "id": "illandril-turn-marker",
   "title": "Illandril's Turn Marker",
   "description": "Adds images over tokens when they are the active combatant in the combat tracker to mark who the active combatant is and where the combatant started their turn. All markers can be optionally disabled based on user role, and additional settings related to combat turn management are also available.",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "manifestPlusVersion": "1.2.0",
   "authors": [
     {
@@ -40,7 +40,7 @@
   },
   "changelog": "https://github.com/illandril/FoundryVTT-turn-marker/releases",
   "manifest": "https://github.com/illandril/FoundryVTT-turn-marker/releases/latest/download/module.json",
-  "download": "https://github.com/illandril/FoundryVTT-turn-marker/releases/download/v1.0.1/module.zip",
+  "download": "https://github.com/illandril/FoundryVTT-turn-marker/releases/download/v1.0.3/module.zip",
   "media": [
     {
       "type": "cover",

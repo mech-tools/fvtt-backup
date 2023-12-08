@@ -13,22 +13,20 @@ export const SUPPORTED_PLACEABLES = [
   'Note',
 ];
 
+// TODO add 'Actor'
+export const UI_DOCS = ['ALL', ...SUPPORTED_PLACEABLES];
+
 export const SUPPORT_SHEET_CONFIGS = [...SUPPORTED_PLACEABLES, 'Actor', 'PlaylistSound', 'Scene'];
 
 export const SUPPORTED_HISTORY_DOCS = [...SUPPORTED_PLACEABLES, 'Scene', 'Actor', 'PlaylistSound'];
 
-export const SUPPORTED_COLLECTIONS = [
-  'Item',
-  'Cards',
-  'RollTable',
-  'Actor',
-  'JournalEntry',
-  'Scene',
-];
+export const SUPPORTED_COLLECTIONS = ['Item', 'Cards', 'RollTable', 'Actor', 'JournalEntry', 'Scene'];
 
 export function interpolateColor(u, c1, c2) {
   return c1.map((a, i) => Math.floor((1 - u) * a + u * c2[i]));
 }
+
+export const MODULE_ID = 'multi-token-edit';
 
 /**
  * Returns true of provided path points to an image
@@ -77,10 +75,7 @@ export function flagCompare(data, flag, flagVal) {
   if (data[flag] == flagVal) return true;
 
   const falseyFlagVal =
-    flagVal == null ||
-    flagVal === false ||
-    flagVal === '' ||
-    (getType(flagVal) === 'Object' && isEmpty(flagVal));
+    flagVal == null || flagVal === false || flagVal === '' || (getType(flagVal) === 'Object' && isEmpty(flagVal));
 
   const falseyDataVal =
     data[flag] == null ||
@@ -130,7 +125,10 @@ export function selectAddSubtractFields(form, fields) {
       .removeClass('me-add')
       .removeClass('me-subtract')
       .addClass(fields[key].method === 'add' ? 'me-add' : 'me-subtract')
-      .attr('title', fields[key].method === 'add' ? '+ Adding' : '- Subtracting');
+      .attr(
+        'title',
+        fields[key].method === 'add' ? `+ ${localize('form.adding')}` : `- ${localize('form.subtracting')}`
+      );
   }
 }
 
@@ -151,9 +149,7 @@ export function applyAddSubtract(updates, objects, docName, addSubtractFields) {
 
         // Special processing for Tagger module fields
         if (field === 'flags.tagger.tags') {
-          const currentTags = Array.isArray(val)
-            ? val
-            : (val ?? '').split(',').map((s) => s.trim());
+          const currentTags = Array.isArray(val) ? val : (val ?? '').split(',').map((s) => s.trim());
           const modTags = (update[field] ?? '').split(',').map((s) => s.trim());
           for (const tag of modTags) {
             if (ctrl.method === 'add') {
@@ -338,16 +334,16 @@ export function activeEffectPresetSelect(aeConfig) {
       aeConfig,
       (preset) => {
         if (!isEmpty(preset.randomize)) {
-          applyRandomization([preset.data], null, preset.randomize);
+          applyRandomization(preset.data, null, preset.randomize);
         }
 
         const changes = aeConfig.object.changes ?? [];
         let nChanges = [];
 
-        Object.keys(preset.data).forEach((k) => {
+        Object.keys(preset.data[0]).forEach((k) => {
           let value;
-          if (getType(preset.data[k]) === 'string') value = preset.data[k];
-          else value = JSON.stringify(preset.data[k]);
+          if (getType(preset.data[0][k]) === 'string') value = preset.data[0][k];
+          else value = JSON.stringify(preset.data[0][k]);
 
           nChanges.push({
             key: docName === 'Token' ? 'ATL.' + k : k,
@@ -374,11 +370,9 @@ export function activeEffectPresetSelect(aeConfig) {
         const changes = aeConfig.object.changes ?? [];
         let nChanges = [];
 
-        preset.data.changes?.forEach((change) => {
+        preset.data[0].changes?.forEach((change) => {
           if (change.key) {
-            nChanges.push(
-              mergeObject({ mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, priority: 20 }, change)
-            );
+            nChanges.push(mergeObject({ mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, priority: 20 }, change));
           }
         });
 
@@ -393,7 +387,7 @@ export function activeEffectPresetSelect(aeConfig) {
   };
 
   new Dialog({
-    title: 'Open Presets',
+    title: localize('common.presets'),
     content: ``,
     buttons: {
       activeEffect: {
@@ -415,4 +409,298 @@ export function activeEffectPresetSelect(aeConfig) {
 export function getDocumentName(doc) {
   const docName = doc.document ? doc.document.documentName : doc.documentName;
   return docName ?? 'NONE';
+}
+
+export const DOCUMENT_CREATE_REQUESTS = {};
+
+/**
+ * Creates documents either directly or by delegating the task to a GM
+ * @param {String} documentName  document type to be created
+ * @param {Array[Object]} data   data defining the documents
+ * @param {String} sceneID       scene the documents should be created on
+ * @returns placeable documents that have been created
+ */
+export async function createDocuments(documentName, data, sceneID) {
+  if (game.user.isGM) {
+    return game.scenes.get(sceneID).createEmbeddedDocuments(documentName, data);
+  }
+
+  const requestID = randomID();
+
+  const message = {
+    handlerName: 'document',
+    args: { sceneID, documentName, data, requestID },
+    type: 'CREATE',
+  };
+  game.socket.emit(`module.multi-token-edit`, message);
+
+  // Self resolve in 4s if no response from a GM is received
+  setTimeout(() => {
+    DOCUMENT_CREATE_REQUESTS[requestID]?.([]);
+  }, 4000);
+
+  return new Promise((resolve) => {
+    DOCUMENT_CREATE_REQUESTS[requestID] = resolve;
+  });
+}
+
+/**
+ * Resolves the delegated create documents request
+ * @param {object} options
+ * @param {String} options.requestID          request to be resolved
+ * @param {String} options.sceneID            scene the documents have been created on
+ * @param {String} options.documentName       type of document that has been created
+ * @param {Array[String]} options.documentIDs array of document ids that have been created
+ */
+export function resolveCreateDocumentRequest({ requestID, sceneID, documentName, documentIDs } = {}) {
+  if (!DOCUMENT_CREATE_REQUESTS.hasOwnProperty(requestID)) return;
+
+  const scene = game.scenes.get(sceneID);
+  const documents = [];
+  for (const docID of documentIDs) {
+    documents.push(scene.getEmbeddedDocument(documentName, docID));
+  }
+
+  DOCUMENT_CREATE_REQUESTS[requestID](documents);
+  delete DOCUMENT_CREATE_REQUESTS[requestID];
+}
+
+/**
+ * Cross-hair and optional preview image/label that can be activated to allow the user to select
+ * an area on the screen.
+ */
+export class Picker {
+  static pickerOverlay;
+  static boundStart;
+  static boundEnd;
+  static callback;
+
+  /**
+   * Activates the picker overlay.
+   * @param {Function} callback callback function with coordinates returned as starting and ending bounds of a rectangles
+   *                            { start: {x1, y1}, end: {x2, y2} }
+   * @param {Object}  preview
+   * @param {String}  preview.documentName (optional) preview placeables document name
+   * @param {Array[Object]}  preview.previewData    (req) preview placeables data
+   * @param {String}  preview.taPreview            (optional) Designates the preview placeable when spawning a `Token Attacher` prefab.
+   *                                                e.g. "Tile", "Tile.1", "MeasuredTemplate.3"
+   * @param {Boolean} preview.snap                  (optional) if true returned coordinates will be snapped to grid
+   * @param {String}  preview.label                  (optional) preview placeables document name
+   */
+  static async activate(callback, preview) {
+    if (this.pickerOverlay) {
+      canvas.stage.removeChild(this.pickerOverlay);
+      this.pickerOverlay.destroy(true);
+      this.pickerOverlay.children?.forEach((c) => c.destroy(true));
+      this.callback?.(null);
+    }
+
+    const pickerOverlay = new PIXI.Container();
+    this.callback = callback;
+
+    if (preview) {
+      let label;
+      if (preview.label) {
+        label = new PreciseText(preview.label, { ...CONFIG.canvasTextStyle, _fontSize: 24 });
+        label.anchor.set(0.5, 1);
+        pickerOverlay.addChild(label);
+      }
+
+      const { previews, layer, previewDocuments } = await this._genPreviews(preview);
+
+      const setPositions = function (pos) {
+        if (!pos) return;
+        if (preview.snap && layer) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
+
+        for (const preview of previews) {
+          if (preview.document.documentName === 'Wall') {
+            const c = preview.document.c;
+            c[0] = pos.x + preview._previewOffset[0];
+            c[1] = pos.y + preview._previewOffset[1];
+            c[2] = pos.x + preview._previewOffset[2];
+            c[3] = pos.y + preview._previewOffset[3];
+            preview.document.c = c;
+          } else {
+            preview.document.x = pos.x + preview._previewOffset.x;
+            preview.document.y = pos.y + preview._previewOffset.y;
+          }
+          preview.document.alpha = 0.4;
+          preview.renderFlags.set({ refresh: true });
+
+          preview.visible = true;
+          if (preview.controlIcon) {
+            preview.controlIcon.alpha = 0.4;
+            preview.controlIcon.visible = true;
+          }
+        }
+
+        if (label) {
+          label.x = pos.x;
+          label.y = pos.y - 38;
+        }
+
+        pickerOverlay.previewDocuments = previewDocuments;
+      };
+
+      pickerOverlay.on('pointermove', (event) => {
+        setPositions(event.data.getLocalPosition(pickerOverlay));
+      });
+      setPositions(canvas.mousePosition);
+    }
+
+    pickerOverlay.hitArea = canvas.dimensions.rect;
+    pickerOverlay.cursor = 'crosshair';
+    pickerOverlay.interactive = true;
+    pickerOverlay.zIndex = Infinity;
+    pickerOverlay.on('remove', () => pickerOverlay.off('pick'));
+    pickerOverlay.on('mousedown', (event) => {
+      Picker.boundStart = event.data.getLocalPosition(pickerOverlay);
+    });
+    pickerOverlay.on('mouseup', (event) => (Picker.boundEnd = event.data.getLocalPosition(pickerOverlay)));
+    pickerOverlay.on('click', (event) => {
+      this.callback?.({ start: this.boundStart, end: this.boundEnd });
+      pickerOverlay.parent.removeChild(pickerOverlay);
+      if (pickerOverlay.previewDocuments)
+        pickerOverlay.previewDocuments.forEach((name) => canvas.getLayerByEmbeddedName(name)?.clearPreviewContainer());
+    });
+
+    this.pickerOverlay = pickerOverlay;
+
+    canvas.stage.addChild(this.pickerOverlay);
+  }
+
+  // Modified Foundry _createPreview
+  // Does not throw warning if user lacks document create permissions
+  static async _createPreview(createData) {
+    const documentName = this.constructor.documentName;
+    const cls = getDocumentClass(documentName);
+    createData._id = randomID(); // Needed to allow rendering of multiple previews at the same time
+    const document = new cls(createData, { parent: canvas.scene });
+
+    const object = new CONFIG[documentName].objectClass(document);
+    this.preview.addChild(object);
+    await object.draw();
+
+    return object;
+  }
+
+  static async _genPreviews(preview) {
+    const previewData = preview.previewData;
+    const documentName = preview.documentName;
+    if (!previewData || !documentName) return { previews: [] };
+
+    const previewDocuments = new Set([documentName]);
+    const layer = canvas.getLayerByEmbeddedName(documentName);
+    const previews = [];
+
+    let mainPreview;
+    for (const data of previewData) {
+      // Create Preview
+      const previewObject = await this._createPreview.call(layer, data);
+      previews.push(previewObject);
+
+      if (!mainPreview) mainPreview = previewObject;
+
+      // Calculate offset from first preview
+      if (preview.documentName === 'Wall') {
+        const off = [
+          previewObject.document.c[0] - mainPreview.document.c[0],
+          previewObject.document.c[1] - mainPreview.document.c[1],
+          previewObject.document.c[2] - mainPreview.document.c[0],
+          previewObject.document.c[3] - mainPreview.document.c[1],
+        ];
+        previewObject._previewOffset = off;
+      } else {
+        previewObject._previewOffset = {
+          x: previewObject.document.x - mainPreview.document.x,
+          y: previewObject.document.y - mainPreview.document.y,
+        };
+      }
+
+      if (preview.taPreview) {
+        const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
+        documentNames.forEach((dName) => previewDocuments.add(dName));
+      }
+    }
+
+    return { previews, layer, previewDocuments };
+  }
+
+  static _parseTAPreview(taPreview, attached) {
+    if (taPreview === 'ALL') return attached;
+
+    const attachedData = {};
+    taPreview = taPreview.split(',');
+
+    for (const taIndex of taPreview) {
+      let [name, index] = taIndex.trim().split('.');
+      if (!attached[name]) continue;
+
+      if (index == null) {
+        attachedData[name] = attached[name];
+      } else {
+        if (attached[name][index]) {
+          if (!attachedData[name]) attachedData[name] = [];
+          attachedData[name].push(attached[name][index]);
+        }
+      }
+    }
+
+    return attachedData;
+  }
+
+  static async _genTAPreviews(data, taPreview, parent, previews) {
+    if (!game.modules.get('token-attacher')?.active) return [];
+
+    const attached = getProperty(data, 'flags.token-attacher.prototypeAttached');
+    const pos = getProperty(data, 'flags.token-attacher.pos');
+    const grid = getProperty(data, 'flags.token-attacher.grid');
+
+    if (!(attached && pos && grid)) return [];
+
+    const documentNames = new Set();
+
+    const ratio = canvas.grid.size / grid.size;
+    const attachedData = this._parseTAPreview(taPreview, attached);
+
+    for (const [name, dataList] of Object.entries(attachedData)) {
+      for (const data of dataList) {
+        if (['Token', 'Tile', 'Drawing'].includes(name)) {
+          data.width *= ratio;
+          data.height *= ratio;
+        }
+
+        const taPreviewObject = await this._createPreview.call(canvas.getLayerByEmbeddedName(name), data);
+        documentNames.add(name);
+        previews.push(taPreviewObject);
+
+        // Calculate offset from parent preview
+        if (name === 'Wall') {
+          taPreviewObject._previewOffset = [
+            (data.c[0] - pos.xy.x) * ratio + parent._previewOffset.x,
+            (data.c[1] - pos.xy.y) * ratio + parent._previewOffset.y,
+            (data.c[2] - pos.xy.x) * ratio + parent._previewOffset.x,
+            (data.c[3] - pos.xy.y) * ratio + parent._previewOffset.y,
+          ];
+        } else {
+          taPreviewObject._previewOffset = {
+            x: (data.x - pos.xy.x) * ratio + parent._previewOffset.x,
+            y: (data.y - pos.xy.y) * ratio + parent._previewOffset.y,
+          };
+        }
+      }
+    }
+
+    return documentNames;
+  }
+}
+
+export function localize(path, moduleLocalization = true) {
+  if (moduleLocalization) return game.i18n.localize(`${MODULE_ID}.${path}`);
+  return game.i18n.localize(path);
+}
+
+export function localFormat(path, insert, moduleLocalization = true) {
+  if (moduleLocalization) return game.i18n.format(`${MODULE_ID}.${path}`, insert);
+  return game.i18n.format(path, insert);
 }

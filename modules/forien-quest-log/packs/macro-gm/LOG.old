@@ -1,7 +1,3 @@
-2023/11/17-16:27:49.488713 7fcbb27fc700 Recovering log #72
-2023/11/17-16:27:49.492320 7fcbb27fc700 Delete type=0 #72
-2023/11/17-16:27:49.492361 7fcbb27fc700 Delete type=3 #70
-2023/11/22-15:56:22.673758 7fc931c09700 Level-0 table #77: started
-2023/11/22-15:56:22.674788 7fc931c09700 Level-0 table #77: 0 bytes OK
-2023/11/22-15:56:22.675913 7fc931c09700 Delete type=0 #75
-2023/11/22-15:56:22.676973 7fc931c09700 Manual compaction at level-0 from '!macros!3zlgPO8hvQEGxreF' @ 72057594037927935 : 1 .. '!macros!lxglbIWnirUmf6fX' @ 0 : 0; will stop at (end)
+2023/11/22-15:57:07.742732 7fcbb27fc700 Recovering log #76
+2023/11/22-15:57:07.744857 7fcbb27fc700 Delete type=3 #74
+2023/11/22-15:57:07.744889 7fcbb27fc700 Delete type=0 #76

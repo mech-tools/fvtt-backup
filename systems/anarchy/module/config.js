@@ -1,5 +1,24 @@
 
 export const ANARCHY = {
+    TYPES: {
+        Actor: {
+            character: "TYPES.Actor.character",
+            vehicle: "TYPES.Actor.vehicle",
+            device: "TYPES.Actor.device",
+            sprite: "TYPES.Actor.sprite",
+            ic: "TYPES.Actor.ic"
+        },
+        Item: {
+            contact: "TYPES.Item.contact",
+            cyberdeck: "TYPES.Item.cyberdeck",
+            gear: "TYPES.Item.gear",
+            metatype: "TYPES.Item.metatype",
+            quality: "TYPES.Item.quality",
+            shadowamp: "TYPES.Item.shadowamp",
+            skill: "TYPES.Item.skill",
+            weapon: "TYPES.Item.weapon"
+        }
+    },
     settings: {
         defaultCssClass: {
             name: 'ANARCHY.settings.defaultCssClass.name',
@@ -41,9 +60,13 @@ export const ANARCHY = {
         sufferedDrain: 'ANARCHY.chat.sufferedDrain',
         noDrain: 'ANARCHY.chat.noDrain',
         defendAttack: 'ANARCHY.chat.defendAttack',
+        defendPilotAttack: 'ANARCHY.chat.defendPilotAttack',
         partiallyDefended: 'ANARCHY.chat.partiallyDefended',
         fullyDefended: 'ANARCHY.chat.fullyDefended',
         applyDamage: 'ANARCHY.chat.applyDamage',
+    },
+    user: {
+        selectedTokenActors: 'ANARCHY.user.selectedTokenActors'
     },
     common: {
         newEntry: 'ANARCHY.common.newEntry',
@@ -51,6 +74,7 @@ export const ANARCHY = {
         cancel: 'ANARCHY.common.cancel',
         add: 'ANARCHY.common.add',
         edit: 'ANARCHY.common.edit',
+        activate: 'ANARCHY.common.activate',
         del: 'ANARCHY.common.del',
         favorite: 'ANARCHY.common.favorite',
         addFavorite: 'ANARCHY.common.addFavorite',
@@ -124,11 +148,14 @@ export const ANARCHY = {
             onlyGM: 'ANARCHY.common.errors.onlyGM',
             noEdgeForActor: 'ANARCHY.common.errors.noEdgeForActor',
             expectedType: 'ANARCHY.common.errors.expectedType',
+            ignoredTargets: 'ANARCHY.common.errors.ignoredTargets',
             noTargetSelected: 'ANARCHY.common.errors.noTargetSelected',
             maxTargetsExceedeed: 'ANARCHY.common.errors.maxTargetsExceedeed',
             noDefenseOnWeapon: 'ANARCHY.common.errors.noDefenseOnWeapon',
             noTokenActor: 'ANARCHY.common.errors.noTokenActor',
+            noValidPilotForVehicle: 'ANARCHY.common.errors.noValidPilotForVehicle',
             cannotUseEdgeAnymore: 'ANARCHY.common.errors.cannotUseEdgeAnymore',
+            actorCannotApplyDamage: 'ANARCHY.common.errors.actorCannotApplyDamage',
             actorCannotReceiveDamage: 'ANARCHY.common.errors.actorCannotReceiveDamage',
             actorDoesNotHaveDefense: 'ANARCHY.common.errors.actorDoesNotHaveDefense',
         },
@@ -179,6 +206,7 @@ export const ANARCHY = {
         monitors: {
             conditionMonitors: 'ANARCHY.actor.monitors.conditionMonitors',
             overflow: 'ANARCHY.actor.monitors.overflow',
+            noMatrixMonitor: 'ANARCHY.actor.monitors.noMatrixMonitor',
             physical: 'ANARCHY.actor.monitors.physical',
             stun: 'ANARCHY.actor.monitors.stun',
             matrix: 'ANARCHY.actor.monitors.matrix',
@@ -260,7 +288,8 @@ export const ANARCHY = {
         cyberdeck: {
             programs: 'ANARCHY.item.cyberdeck.programs',
             processing: 'ANARCHY.item.cyberdeck.processing',
-            processingHelp: 'ANARCHY.item.cyberdeck.processingHelp'
+            processingHelp: 'ANARCHY.item.cyberdeck.processingHelp',
+            connectionMode: 'ANARCHY.item.cyberdeck.connectionMode',
         }
     },
     itemType: {
@@ -388,6 +417,11 @@ export const ANARCHY = {
         medium: 'ANARCHY.range.medium',
         long: 'ANARCHY.range.long',
     },
+    connectionMode: {
+        disconnected: 'ANARCHY.connectionMode.disconnected',
+        augmented: 'ANARCHY.connectionMode.augmented',
+        virtual: 'ANARCHY.connectionMode.virtual',
+    },
     vehicleCategory: {
         miniDrone: 'ANARCHY.vehicleCategory.miniDrone',
         smallDrone: 'ANARCHY.vehicleCategory.smallDrone',
@@ -430,7 +464,6 @@ export const ANARCHY = {
                 attribute: 'ANARCHY.modifier.roll.category.attribute',
                 skill: 'ANARCHY.modifier.roll.category.skill',
                 attributeAction: 'ANARCHY.modifier.roll.category.attributeAction',
-                defense: 'ANARCHY.modifier.roll.category.defense',
             },
         },
         monitor: {
