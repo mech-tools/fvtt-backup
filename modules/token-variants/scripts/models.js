@@ -16,6 +16,20 @@ export const DEFAULT_ACTIVE_EFFECT_CONFIG = {
   group: 'Default',
 };
 
+// export const IDEAL_OVERLAY_CONFIG = {
+//   images: [], //img
+//   texts: [], //text
+//   shapes: [],
+//   appearances: [],
+// };
+
+// const IMG_CONFIG = {
+//   src: '', //img
+//   linked: false, //imgLinked
+//   repeating: false,
+//   repeat: null,
+// };
+
 export const DEFAULT_OVERLAY_CONFIG = {
   img: '',
   imgLinked: false,

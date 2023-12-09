@@ -1,8 +1,15 @@
-2023/12/03-13:43:34.608906 7fec57fff700 Recovering log #662
-2023/12/03-13:43:34.611714 7fec57fff700 Delete type=0 #662
-2023/12/03-13:43:34.611742 7fec57fff700 Delete type=3 #659
-2023/12/05-20:46:40.669696 7fe9d5883700 Level-0 table #669: started
-2023/12/05-20:46:40.669715 7fe9d5883700 Level-0 table #669: 0 bytes OK
-2023/12/05-20:46:40.670551 7fe9d5883700 Delete type=0 #667
-2023/12/05-20:46:40.670743 7fe9d5883700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
-2023/12/05-20:46:40.673056 7fe9d5883700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
+2023/12/05-20:47:08.569939 7fec56ffd700 Recovering log #668
+2023/12/05-20:47:08.572793 7fec56ffd700 Delete type=0 #668
+2023/12/05-20:47:08.572825 7fec56ffd700 Delete type=3 #666
+2023/12/08-22:49:47.321298 7fe9d5883700 Level-0 table #673: started
+2023/12/08-22:49:47.322465 7fe9d5883700 Level-0 table #673: 4871 bytes OK
+2023/12/08-22:49:47.323583 7fe9d5883700 Delete type=0 #671
+2023/12/08-22:49:47.328354 7fe9d5883700 Manual compaction at level-0 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
+2023/12/08-22:49:47.328425 7fe9d5883700 Manual compaction at level-1 from '!scenes!CO1bBsO8IwAn26Wp' @ 72057594037927935 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.yaaYseXzXcBd1mcI.FvS1KYwYoUyUJ7V5' @ 5609 : 1
+2023/12/08-22:49:47.328429 7fe9d5883700 Compacting 1@1 + 1@2 files
+2023/12/08-22:49:47.330068 7fe9d5883700 Generated table #674@1: 32 keys, 11227 bytes
+2023/12/08-22:49:47.330081 7fe9d5883700 Compacted 1@1 + 1@2 files => 11227 bytes
+2023/12/08-22:49:47.330635 7fe9d5883700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/08-22:49:47.330684 7fe9d5883700 Delete type=2 #665
+2023/12/08-22:49:47.330915 7fe9d5883700 Delete type=2 #673
+2023/12/08-22:49:47.335212 7fe9d5883700 Manual compaction at level-1 from '!scenes.tokens.delta!CO1bBsO8IwAn26Wp.yaaYseXzXcBd1mcI.FvS1KYwYoUyUJ7V5' @ 5609 : 1 .. '!scenes.tiles!agx64AybxWnHVk0Q.WxrO1ZAArXpVzyKx' @ 0 : 0; will stop at (end)
