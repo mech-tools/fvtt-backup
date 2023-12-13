@@ -1,7 +1,8 @@
 import { ANARCHY } from "../config.js";
-import { ANARCHY_SYSTEM, LOG_HEAD, TEMPLATES_PATH } from "../constants.js";
+import { ANARCHY_SYSTEM, LOG_HEAD, TEMPLATE, TEMPLATES_PATH } from "../constants.js";
 import { Enums } from "../enums.js";
 import { ANARCHY_HOOKS, HooksManager } from "../hooks-manager.js";
+import { MATRIX } from "../matrix-helper.js";
 import { Misc } from "../misc.js";
 import { Modifiers } from "../modifiers/modifiers.js";
 
@@ -164,6 +165,26 @@ const DEFAULT_ROLL_PARAMETERS = [
         used: true,
       }
     }
+  },
+  // modifier for deckers/technomancers connected in virtual reality
+  {
+    code: 'virtualReality',
+    options: {
+      flags: { editDice: false, editable: false },
+      order: 24, category: ROLL_PARAMETER_CATEGORY.pool,
+      value: 1,
+      labelkey: ANARCHY.common.roll.modifiers.virtualReality,
+      hbsTemplateRoll: `${TEMPLATES_PATH}/roll/parts/input-numeric.hbs`,
+      min: 1, max: 1,
+    },
+    condition: context => context.actor.isMatrixSkill(context.skill) && context.actor.isMatrixConnected(MATRIX.connectionMode.virtual),
+    factory: context => {
+      return {
+        isUsed: (p) => context.actor.isMatrixSkill(context.skill),
+        flags: { used: context.actor.isMatrixSkill(context.skill) && context.actor.isMatrixConnected(MATRIX.connectionMode.virtual) },
+      }
+    }
+
   },
   // other modifiers
   {
@@ -440,7 +461,8 @@ export class RollParameters {
   }
 
   build(context) {
-    return Object.values(this.registeredParameters).filter(p => !p.condition || p.condition(context))
+    return Object.values(this.registeredParameters)
+      .filter(p => !p.condition || p.condition(context))
       .map(p => this._computeParameter(p, context));
   }
 
@@ -485,7 +507,9 @@ export class RollParameters {
   }
 
   static computeRollModifiers(effect, context) {
-    return Modifiers.computeRollModifiers(context.actor.items, context, effect);
+    const itemsFilter = it => it.type != TEMPLATE.itemType.weapon || (context.weapon && it.id == context.weapon.id)
+    const items = context.actor.items.filter(itemsFilter)
+    return Modifiers.computeRollModifiers(items, context, effect);
   }
 
 }

@@ -1,6 +1,24 @@
-2023/11/22-15:57:07.382050 7fcbb3fff700 Recovering log #81
-2023/11/22-15:57:07.384822 7fcbb3fff700 Delete type=3 #79
-2023/11/22-15:57:07.384858 7fcbb3fff700 Delete type=0 #81
-2023/11/26-00:36:17.925921 7fc931c09700 Level-0 table #87: started
-2023/11/26-00:36:17.970331 7fc931c09700 Level-0 table #87: 2466623 bytes OK
-2023/11/26-00:36:17.971694 7fc931c09700 Delete type=0 #85
+2023/12/07-11:30:35.267025 7fb8e8ff9700 Recovering log #86
+2023/12/07-11:30:35.269567 7fb8e8ff9700 Level-0 table #89: started
+2023/12/07-11:30:35.273133 7fb8e8ff9700 Level-0 table #89: 277622 bytes OK
+2023/12/07-11:30:35.275838 7fb8e8ff9700 Delete type=3 #84
+2023/12/07-11:30:35.275881 7fb8e8ff9700 Delete type=0 #86
+2023/12/12-22:19:17.962885 7fb64bfe3700 Level-0 table #92: started
+2023/12/12-22:19:17.963110 7fb64bfe3700 Level-0 table #92: 0 bytes OK
+2023/12/12-22:19:17.964288 7fb64bfe3700 Delete type=0 #90
+2023/12/12-22:19:17.969926 7fb64bfe3700 Manual compaction at level-0 from '!fog!1LjVlvCf5jQiI3u4' @ 72057594037927935 : 1 .. '!fog!uXzBcnsUULwPmCOo' @ 0 : 0; will stop at '!fog!uXzBcnsUULwPmCOo' @ 73 : 1
+2023/12/12-22:19:17.969935 7fb64bfe3700 Compacting 1@0 + 1@1 files
+2023/12/12-22:19:17.981566 7fb64bfe3700 Generated table #93@0: 6 keys, 197644 bytes
+2023/12/12-22:19:17.981585 7fb64bfe3700 Compacted 1@0 + 1@1 files => 197644 bytes
+2023/12/12-22:19:17.982419 7fb64bfe3700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/12/12-22:19:17.982561 7fb64bfe3700 Delete type=2 #87
+2023/12/12-22:19:17.983475 7fb64bfe3700 Delete type=2 #89
+2023/12/12-22:19:17.984057 7fb64bfe3700 Manual compaction at level-0 from '!fog!uXzBcnsUULwPmCOo' @ 73 : 1 .. '!fog!uXzBcnsUULwPmCOo' @ 0 : 0; will stop at (end)
+2023/12/12-22:19:17.985750 7fb64bfe3700 Manual compaction at level-1 from '!fog!1LjVlvCf5jQiI3u4' @ 72057594037927935 : 1 .. '!fog!uXzBcnsUULwPmCOo' @ 0 : 0; will stop at '!fog!uXzBcnsUULwPmCOo' @ 78 : 1
+2023/12/12-22:19:17.985758 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2023/12/12-22:19:17.988499 7fb64bfe3700 Generated table #94@1: 7 keys, 207379 bytes
+2023/12/12-22:19:17.988520 7fb64bfe3700 Compacted 1@1 + 1@2 files => 207379 bytes
+2023/12/12-22:19:17.989408 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/12-22:19:17.989477 7fb64bfe3700 Delete type=2 #93
+2023/12/12-22:19:17.989549 7fb64bfe3700 Delete type=2 #83
+2023/12/12-22:19:17.997016 7fb64bfe3700 Manual compaction at level-1 from '!fog!uXzBcnsUULwPmCOo' @ 78 : 1 .. '!fog!uXzBcnsUULwPmCOo' @ 0 : 0; will stop at (end)

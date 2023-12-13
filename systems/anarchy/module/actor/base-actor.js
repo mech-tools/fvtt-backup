@@ -8,6 +8,7 @@ import { NO_MATRIX_MONITOR } from "../matrix-helper.js";
 import { Misc } from "../misc.js";
 import { Modifiers } from "../modifiers/modifiers.js";
 import { RollDialog } from "../roll/roll-dialog.js";
+import { MATRIX_SKILLS } from "../skills.js";
 import { ActorDamageManager } from "./actor-damage.js";
 
 
@@ -92,7 +93,12 @@ export class AnarchyBaseActor extends Actor {
   getMatrixMarks() { return this.getMatrixDetails().monitor?.marks ?? [] }
   getMatrixOverflow() { return this.getMatrixDetails().overflow }
   hasMatrixMonitor() { return this.getMatrixDetails().hasMatrix }
+  isMatrixConnected(mode = undefined) { return false }
+  isMatrixSkill(skill) {
+    return MATRIX_SKILLS.includes(skill?.system.code)
+  }
 
+  async nextConnectionMode(cyberdeck) { }
   async defSetMatrixMonitor(checkbarPath, value) {
     if (!this.getMatrixDetails().hasMatrix) {
       game.i18n.format(ANARCHY.actor.monitors.noMatrixMonitor, { actor: this.name })
@@ -224,11 +230,9 @@ export class AnarchyBaseActor extends Actor {
 
   canSetMarks() { return false }
 
-  getCyberdeck() {
-    return undefined;
-  }
+  getCyberdeck() { return undefined }
 
-  canReceiveMarks() { return this.system.monitors?.matrix?.canMark; }
+  canReceiveMarks() { return this.system.monitors?.matrix?.canMark }
 
   canApplyDamage(monitor) {
     switch (monitor) {

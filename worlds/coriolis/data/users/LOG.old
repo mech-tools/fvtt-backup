@@ -1,3 +1,24 @@
-2023/11/22-15:57:07.511303 7fcbb37fe700 Recovering log #85
-2023/11/22-15:57:07.514160 7fcbb37fe700 Delete type=3 #83
-2023/11/22-15:57:07.514202 7fcbb37fe700 Delete type=0 #85
+2023/12/07-11:30:35.488523 7fb8ea7fc700 Recovering log #89
+2023/12/07-11:30:35.489518 7fb8ea7fc700 Level-0 table #91: started
+2023/12/07-11:30:35.490957 7fb8ea7fc700 Level-0 table #91: 21287 bytes OK
+2023/12/07-11:30:35.494257 7fb8ea7fc700 Delete type=0 #89
+2023/12/07-11:30:35.494402 7fb8ea7fc700 Delete type=3 #88
+2023/12/12-22:19:17.907428 7fb64bfe3700 Level-0 table #94: started
+2023/12/12-22:19:17.908951 7fb64bfe3700 Level-0 table #94: 4780 bytes OK
+2023/12/12-22:19:17.909832 7fb64bfe3700 Delete type=0 #92
+2023/12/12-22:19:17.916926 7fb64bfe3700 Manual compaction at level-0 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at '!users!S1eV1ZRPv1Ov8leK' @ 186 : 1
+2023/12/12-22:19:17.917125 7fb64bfe3700 Compacting 2@0 + 0@1 files
+2023/12/12-22:19:17.919168 7fb64bfe3700 Generated table #95@0: 5 keys, 4523 bytes
+2023/12/12-22:19:17.919189 7fb64bfe3700 Compacted 2@0 + 0@1 files => 4523 bytes
+2023/12/12-22:19:17.920413 7fb64bfe3700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/12/12-22:19:17.920499 7fb64bfe3700 Delete type=2 #91
+2023/12/12-22:19:17.920569 7fb64bfe3700 Delete type=2 #94
+2023/12/12-22:19:17.924966 7fb64bfe3700 Manual compaction at level-0 from '!users!S1eV1ZRPv1Ov8leK' @ 186 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)
+2023/12/12-22:19:17.927271 7fb64bfe3700 Manual compaction at level-1 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at '!users!fuzzHojJrfguk9dA' @ 154 : 1
+2023/12/12-22:19:17.927276 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2023/12/12-22:19:17.928539 7fb64bfe3700 Generated table #96@1: 5 keys, 4523 bytes
+2023/12/12-22:19:17.928559 7fb64bfe3700 Compacted 1@1 + 1@2 files => 4523 bytes
+2023/12/12-22:19:17.929435 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/12-22:19:17.929491 7fb64bfe3700 Delete type=2 #95
+2023/12/12-22:19:17.929539 7fb64bfe3700 Delete type=2 #87
+2023/12/12-22:19:17.931445 7fb64bfe3700 Manual compaction at level-1 from '!users!fuzzHojJrfguk9dA' @ 154 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)

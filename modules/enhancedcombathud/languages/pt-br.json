@@ -1,0 +1,184 @@
+{
+  "enhancedcombathud": {
+    "controls": {
+      "toggle": {
+        "title": "Alternar Argon Combat HUD",
+        "warning": "Argon Combat HUD: Nenhum token selecionado. Por favor selecione um token para ativar o HUD"
+      }
+    },
+    "settings": {
+      "color": {
+        "label": "Cor",
+        "text": "Cor principal",
+        "hint": "Color of the actions tab and other main features of the HUD"
+      },
+      "fore-color": {
+        "text": "Cor do Texto",
+        "hint": "Cor do texto"
+      },
+      "color-bonus-action": {
+        "text": "Bonus Action Color",
+        "hint": "Color of the bonus action tab"
+      },
+      "color-free-action": {
+        "text": "Free Action Color",
+        "hint": "Color of the free action tab"
+      },
+      "color-reaction": {
+        "text": "Reaction Color",
+        "hint": "Color of the reaction tab"
+      },
+      "color-end-turn": {
+        "text": "End Turn Color",
+        "hint": "Color of the end turn tab"
+      },
+      "color-tooltip": {
+        "text": "Tooltip Color",
+        "hint": "Color of the tooltips and save/skills/tools popup"
+      },
+      "theme": {
+        "name": "Tema",
+        "hint": "Tema do HUD",
+        "custom": "Customizado",
+        "helium": "Helium",
+        "neon": "Neon",
+        "argon": "Argon",
+        "krypton": "Krypton",
+        "xenon": "Xenon",
+        "radon": "Radon",
+        "oganesson": "Oganesson"
+      },
+      "scale": {
+        "name": "Escala",
+        "hint": "HUD Scale - if autoscale is enabled this setting will be used as a multiplier on top of the calculated scale"
+      },
+      "noAutoscale": {
+        "name": "Don't Autoscale",
+        "hint": "Don't scale the HUD to fit the screen, use the flat value in the Scale setting instead"
+      },
+      "leftPos": {
+        "name": "Left Position",
+        "hint": "Distance from the left border in pixels"
+      },
+      "botPos": {
+        "name": "Bottom Position",
+        "hint": "Distance from the bottom border in pixels"
+      },
+      "playerDetailsBottom": {
+        "name": "Player Details on Bottom",
+        "hint": "Positions players name and class information at bottom for portrait"
+      },
+      "preparedSpells": {
+        "name": "Prepared Spells Only",
+        "hint": "Show only prepared spells"
+      },
+      "showTooltips": {
+        "name": "Show Tooltips",
+        "hint": "Show tooltips on hover"
+      },
+      "showTooltipsSpecial": {
+        "name": "Show Tooltips for Special Actions",
+        "hint": "Show tooltips on hover for special actions (dodge,disengage,shove...)"
+      },
+      "showTooltipsAbilityMenuAbilities": {
+        "name": "Show Tooltips for Abilities",
+        "hint": "Show tooltips on hover for abilities in the ability menu"
+      },
+      "showTooltipsAbilityMenuSkills": {
+        "name": "Show Tooltips for Skills",
+        "hint": "Show tooltips on hover for skills in the ability menu"
+      },
+      "showTooltipsAbilityMenuTools": {
+        "name": "Show Tooltips for Tools",
+        "hint": "Show tooltips on hover for tools in the ability menu"
+      },
+      "fadeOutInactive": {
+        "name": "Fade Out",
+        "hint": "Fade out the HUD after not mouse overing it for 5 seconds"
+      },
+      "fadeoutDelay": {
+        "name": "Fadeout Delay",
+        "hint": "Delay before fading out the HUD in seconds"
+      },
+      "fadeoutOpacity": {
+        "name": "Fadeout Opacity",
+        "hint": "Opacity of the HUD when faded out"
+      },
+      "hideMacroPlayers": {
+        "name": "Hide Macro Bar and Player list",
+        "hint": "Hide Macro Bar and Player list while the HUD is opened"
+      },
+      "openCombatStart": {
+        "name": "Open on Combat Start",
+        "hint": "Open the HUD when a combat is started"
+      },
+      "tooltipScale": {
+        "name": "Tooltip Scale",
+        "hint": "Scale of the tooltips"
+      },
+      "thememenu": {
+        "name": "Configuração do Tema",
+        "hint": "Configure, choose and cusomize Argon themes",
+        "label": "Configure Themes"
+      }
+    },
+    "tooltip": {
+      "target": {
+        "name": "Alvo"
+      },
+      "range": {
+        "name": "Alcance"
+      },
+      "properties": {
+        "name": "Propriedades"
+      }
+    },
+    "themeOptions": {
+      "save": "Salvar Mudanças",
+      "export": "Exportar Tema",
+      "autoTextColorTitle": "Autoset Text Colors Based off Background",
+      "autoTextColorHint": "This setting adjust the text color based on the background color to a color that should be legiable.",
+      "exportThemeName": "Export Theme Name:",
+      "exportTheme": {
+        "save": "Salvar",
+        "cancel": "Cancelar"
+      },
+      "themeTitle": "Escolha um tema",
+      "themeHint": "Selecting a theme will apply a predefined color pallet to Argon.",
+      "mainAction": "Main Action Colors",
+      "bonusAction": "Bonus Action Colors",
+      "freeAction": "Free Action Colors",
+      "reaction": "Reaction Colors",
+      "endTurn": "End Turn Colors",
+      "tooltip": "Tooltip Colors",
+      "abilityMenu": "Ability Menu Colors",
+      "buttons": "Button Colors",
+      "movement": "Movement Box Colors",
+      "background": "Background Color",
+      "color": "Text Color",
+      "border": "Border Color",
+      "boxShadow": "Box Shadow Color",
+      "mainActionBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "mainActionHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "bonusActionBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "bonusActionHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "freeActionBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "freeActionHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "reactionBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "reactionHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "endTurnBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "endTurnHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "tooltipHeader": "Background/Foreground/Border Colors of the Header of Tooltips/Windows",
+      "tooltipSubtitle": "Background/Foreground/Border Colors of the Subtitle in Tooltips",
+      "tooltipBody": "Background/Foreground/Border Colors of the Body of Tooltips/Windows",
+      "abilityMenuBase": "Foreground/Box Shadow Colors when Mouse isn't over Element",
+      "abilityMenuHover": "Foreground/Box Shadow Colors when Mouse is over Element",
+      "buttonsBase": "Background/Foreground/Border Colors when Mouse isn't over Element",
+      "buttonsHover": "Background/Foreground/Border Colors when Mouse is over Element",
+      "movementUsed": "Background/Box Shadow of box indicating used movement spaces",
+      "movementBaseMovement": "Background/Box Shadow of box indicating available movement spaces",
+      "movementDashMovement": "Background/Box Shadow of box indicating dash movement spaces",
+      "movementDangerMovement": "Background/Box Shadow of box indicating exceeded movement spaces"
+    }
+  }
+}

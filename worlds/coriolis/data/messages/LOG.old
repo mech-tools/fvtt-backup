@@ -1,3 +1,24 @@
-2023/11/22-15:57:07.356245 7fcbb2ffd700 Recovering log #88
-2023/11/22-15:57:07.359141 7fcbb2ffd700 Delete type=0 #88
-2023/11/22-15:57:07.359182 7fcbb2ffd700 Delete type=3 #86
+2023/12/07-11:30:35.223929 7fb8e97fa700 Recovering log #92
+2023/12/07-11:30:35.227711 7fb8e97fa700 Level-0 table #94: started
+2023/12/07-11:30:35.232706 7fb8e97fa700 Level-0 table #94: 285740 bytes OK
+2023/12/07-11:30:35.235391 7fb8e97fa700 Delete type=0 #92
+2023/12/07-11:30:35.235508 7fb8e97fa700 Delete type=3 #91
+2023/12/12-22:19:17.770395 7fb64bfe3700 Level-0 table #97: started
+2023/12/12-22:19:17.773901 7fb64bfe3700 Level-0 table #97: 134353 bytes OK
+2023/12/12-22:19:17.774884 7fb64bfe3700 Delete type=0 #95
+2023/12/12-22:19:17.782626 7fb64bfe3700 Manual compaction at level-0 from '!messages!0QMBNuf8lMs0jquN' @ 72057594037927935 : 1 .. '!messages!ysZtTmtztdFOgmCP' @ 0 : 0; will stop at '!messages!zIvTE5h6Qalp7MmY' @ 1629 : 0
+2023/12/12-22:19:17.782635 7fb64bfe3700 Compacting 2@0 + 0@1 files
+2023/12/12-22:19:17.786877 7fb64bfe3700 Generated table #98@0: 238 keys, 82153 bytes
+2023/12/12-22:19:17.786890 7fb64bfe3700 Compacted 2@0 + 0@1 files => 82153 bytes
+2023/12/12-22:19:17.787747 7fb64bfe3700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2023/12/12-22:19:17.787842 7fb64bfe3700 Delete type=2 #97
+2023/12/12-22:19:17.787921 7fb64bfe3700 Delete type=2 #94
+2023/12/12-22:19:17.818462 7fb64bfe3700 Manual compaction at level-0 from '!messages!zIvTE5h6Qalp7MmY' @ 1629 : 0 .. '!messages!ysZtTmtztdFOgmCP' @ 0 : 0; will stop at (end)
+2023/12/12-22:19:17.821997 7fb64bfe3700 Manual compaction at level-1 from '!messages!0QMBNuf8lMs0jquN' @ 72057594037927935 : 1 .. '!messages!ysZtTmtztdFOgmCP' @ 0 : 0; will stop at '!messages!ysZtTmtztdFOgmCP' @ 1722 : 1
+2023/12/12-22:19:17.822013 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2023/12/12-22:19:17.825127 7fb64bfe3700 Generated table #99@1: 67 keys, 75453 bytes
+2023/12/12-22:19:17.825141 7fb64bfe3700 Compacted 1@1 + 1@2 files => 75453 bytes
+2023/12/12-22:19:17.826040 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/12-22:19:17.826105 7fb64bfe3700 Delete type=2 #90
+2023/12/12-22:19:17.826169 7fb64bfe3700 Delete type=2 #98
+2023/12/12-22:19:17.832765 7fb64bfe3700 Manual compaction at level-1 from '!messages!ysZtTmtztdFOgmCP' @ 1722 : 1 .. '!messages!ysZtTmtztdFOgmCP' @ 0 : 0; will stop at (end)
