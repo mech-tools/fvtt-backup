@@ -1,9 +1,15 @@
-2023/12/07-11:30:35.244704 7fb8e8ff9700 Recovering log #85
-2023/12/07-11:30:35.245947 7fb8e8ff9700 Level-0 table #87: started
-2023/12/07-11:30:35.247811 7fb8e8ff9700 Level-0 table #87: 29456 bytes OK
-2023/12/07-11:30:35.250554 7fb8e8ff9700 Delete type=3 #84
-2023/12/07-11:30:35.250585 7fb8e8ff9700 Delete type=0 #85
-2023/12/12-22:19:17.775423 7fb64bfe3700 Level-0 table #90: started
-2023/12/12-22:19:17.779187 7fb64bfe3700 Level-0 table #90: 17277 bytes OK
-2023/12/12-22:19:17.780247 7fb64bfe3700 Delete type=0 #88
-2023/12/12-22:19:17.788007 7fb64bfe3700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2023/12/13-13:04:18.897874 7fb8e97fa700 Recovering log #93
+2023/12/13-13:04:18.900875 7fb8e97fa700 Delete type=0 #93
+2023/12/13-13:04:18.900920 7fb8e97fa700 Delete type=3 #91
+2023/12/13-13:15:52.365796 7fb64bfe3700 Level-0 table #100: started
+2023/12/13-13:15:52.367143 7fb64bfe3700 Level-0 table #100: 1148 bytes OK
+2023/12/13-13:15:52.368414 7fb64bfe3700 Delete type=0 #98
+2023/12/13-13:15:52.368868 7fb64bfe3700 Manual compaction at level-0 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!JUmeL0JkfJgmTuXq.uUyDXkbynDuN8CiJ' @ 0 : 0; will stop at (end)
+2023/12/13-13:15:52.392960 7fb64bfe3700 Manual compaction at level-1 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!JUmeL0JkfJgmTuXq.uUyDXkbynDuN8CiJ' @ 0 : 0; will stop at '!combats.combatants!JUmeL0JkfJgmTuXq.KZ7Sx5SDXAsjNibq' @ 1417 : 1
+2023/12/13-13:15:52.392969 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2023/12/13-13:15:52.394135 7fb64bfe3700 Generated table #101@1: 6 keys, 1408 bytes
+2023/12/13-13:15:52.394159 7fb64bfe3700 Compacted 1@1 + 1@2 files => 1408 bytes
+2023/12/13-13:15:52.395126 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2023/12/13-13:15:52.395201 7fb64bfe3700 Delete type=2 #96
+2023/12/13-13:15:52.395296 7fb64bfe3700 Delete type=2 #100
+2023/12/13-13:15:52.395893 7fb64bfe3700 Manual compaction at level-1 from '!combats.combatants!JUmeL0JkfJgmTuXq.KZ7Sx5SDXAsjNibq' @ 1417 : 1 .. '!combats.combatants!JUmeL0JkfJgmTuXq.uUyDXkbynDuN8CiJ' @ 0 : 0; will stop at (end)
