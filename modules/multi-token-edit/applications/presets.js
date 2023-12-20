@@ -2,13 +2,21 @@ import { Brush } from '../scripts/brush.js';
 import { importPresetFromJSONDialog } from '../scripts/dialogs.js';
 import { SortingHelpersFixed } from '../scripts/fixedSort.js';
 import { applyRandomization } from '../scripts/randomizer/randomizerUtils.js';
-import { Picker, SUPPORTED_PLACEABLES, UI_DOCS, createDocuments, localFormat, localize } from '../scripts/utils.js';
+import {
+  MODULE_ID,
+  Picker,
+  SUPPORTED_PLACEABLES,
+  UI_DOCS,
+  createDocuments,
+  localFormat,
+  localize,
+} from '../scripts/utils.js';
 import { TokenDataAdapter } from './dataAdapters.js';
 import { showMassEdit } from './multiConfig.js';
 
 const META_INDEX_FIELDS = ['id', 'img', 'documentName'];
 const META_INDEX_ID = 'MassEditMetaData';
-const DEFAULT_PACK = 'world.mass-edit-presets-main';
+export const DEFAULT_PACK = 'world.mass-edit-presets-main';
 
 const DOCUMENT_FIELDS = ['id', 'name', 'sort', 'folder'];
 
@@ -30,7 +38,7 @@ const PRESET_FIELDS = [
   'addSubtract',
   'randomize',
   'img',
-  //'actor',
+  'gridSize',
 ];
 
 export class Preset {
@@ -51,7 +59,7 @@ export class Preset {
     this.img = data.img;
     this.folder = data.folder;
     this.uuid = data.uuid;
-    // this.actor = data.actor;
+    this.gridSize = data.gridSize;
     this._visible = true;
   }
 
@@ -87,7 +95,7 @@ export class Preset {
     if (!this.document && this.uuid) {
       this.document = await fromUuid(this.uuid);
       if (this.document) {
-        const preset = this.document.getFlag('multi-token-edit', 'preset') ?? {};
+        const preset = this.document.getFlag(MODULE_ID, 'preset') ?? {};
         this.documentName = preset.documentName;
         this.img = preset.img;
         this.data = preset.data;
@@ -95,6 +103,7 @@ export class Preset {
           getType(preset.randomize) === 'Object' ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
         this.addSubtract =
           getType(preset.addSubtract) === 'Object' ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
+        this.gridSize = preset.gridSize;
       }
     }
     return this;
@@ -105,33 +114,33 @@ export class Preset {
     if (this.document) this.document.sheet.render(true);
   }
 
-  async update(data) {
+  async update(update) {
     if (this.document) {
       const flagUpdate = {};
-      Object.keys(data).forEach((k) => {
+      Object.keys(update).forEach((k) => {
         if (k === 'randomize' || k === 'addSubtract') {
-          flagUpdate[k] = Object.entries(data[k]);
-          this[k] = data[k];
-        } else if (k === 'data' && !(data.data instanceof Array)) {
+          flagUpdate[k] = Object.entries(update[k]);
+          this[k] = update[k];
+        } else if (k === 'data' && !(update.data instanceof Array)) {
           flagUpdate.data = this.data.map((d) => {
-            return mergeObject(d, data.data);
+            return mergeObject(d, update.data);
           });
           this.data = flagUpdate.data;
-        } else if (PRESET_FIELDS.includes(k) && data[k] !== this[k]) {
-          flagUpdate[k] = data[k];
-          this[k] = data[k];
+        } else if (PRESET_FIELDS.includes(k) && update[k] !== this[k]) {
+          flagUpdate[k] = update[k];
+          this[k] = update[k];
         }
       });
 
       if (!isEmpty(flagUpdate)) {
-        const update = { flags: { 'multi-token-edit': { preset: flagUpdate } } };
+        const docUpdate = { flags: { [MODULE_ID]: { preset: flagUpdate } } };
         DOCUMENT_FIELDS.forEach((field) => {
           if (field in flagUpdate && this.document[field] !== flagUpdate[field]) {
-            update[field] = flagUpdate[field];
+            docUpdate[field] = flagUpdate[field];
           }
         });
 
-        await this.document.update(update);
+        await this.document.update(docUpdate);
       }
       await this._updateIndex(flagUpdate);
     } else {
@@ -152,7 +161,7 @@ export class Preset {
       if (metaDoc) {
         let tmp = {};
         tmp[this.id] = update;
-        await metaDoc.setFlag('multi-token-edit', 'index', tmp);
+        await metaDoc.setFlag(MODULE_ID, 'index', tmp);
       } else {
         console.warn(`META INDEX missing in ${this.document.pack}`);
         return;
@@ -253,7 +262,7 @@ export class PresetCollection {
         draggable: f.pack === this.workingPack,
         expanded: game.folders._expanded[f.uuid],
         folder: f.folder?.uuid,
-        visible: type ? (f.flags['multi-token-edit']?.types || ['ALL']).includes(type) : true,
+        visible: type ? (f.flags[MODULE_ID]?.types || ['ALL']).includes(type) : true,
       });
       topLevelFolders.set(f.uuid, folders.get(f.uuid));
     }
@@ -271,7 +280,7 @@ export class PresetCollection {
     const allPresets = [];
     const topLevelPresets = [];
     let hasVisible = false; // tracks whether there exists at least one visible preset within this tree
-    let metaIndex = (await pack.getDocument(META_INDEX_ID))?.getFlag('multi-token-edit', 'index');
+    let metaIndex = (await pack.getDocument(META_INDEX_ID))?.getFlag(MODULE_ID, 'index');
 
     const index = pack.index.contents;
     for (const idx of index) {
@@ -307,7 +316,7 @@ export class PresetCollection {
     }
 
     // Sort folders
-    const sorting = game.settings.get('multi-token-edit', 'presetSortMode') === 'manual' ? 'm' : 'a';
+    const sorting = game.settings.get(MODULE_ID, 'presetSortMode') === 'manual' ? 'm' : 'a';
     const sortedFolders = this._sortFolders(Array.from(topLevelFolders.values()), sorting);
     const sortedPresets = this._sortPresets(topLevelPresets, sorting);
 
@@ -340,7 +349,7 @@ export class PresetCollection {
 
     const presets = [];
 
-    let metaIndex = (await pack.getDocument(META_INDEX_ID))?.getFlag('multi-token-edit', 'index');
+    let metaIndex = (await pack.getDocument(META_INDEX_ID))?.getFlag(MODULE_ID, 'index');
 
     const index = pack.index.contents;
     for (const idx of index) {
@@ -358,7 +367,7 @@ export class PresetCollection {
     const doc = await compendium.getDocument(preset.id);
     const updateDoc = {
       name: preset.name,
-      flags: { 'multi-token-edit': { preset: preset.toJSON() } },
+      flags: { [MODULE_ID]: { preset: preset.toJSON() } },
     };
     const pages = preset.pages;
     if (pages) updateDoc.pages = pages;
@@ -372,7 +381,7 @@ export class PresetCollection {
       documentName: preset.documentName,
     };
 
-    await metaDoc.setFlag('multi-token-edit', 'index', update);
+    await metaDoc.setFlag(MODULE_ID, 'index', update);
   }
 
   /**
@@ -410,7 +419,7 @@ export class PresetCollection {
           name: preset.name,
           pages: preset.pages ?? [],
           folder: preset.folder,
-          flags: { 'multi-token-edit': { preset: preset.toJSON() } },
+          flags: { [MODULE_ID]: { preset: preset.toJSON() } },
         },
       ],
       {
@@ -430,7 +439,7 @@ export class PresetCollection {
       documentName: preset.documentName,
     };
 
-    await metaDoc.setFlag('multi-token-edit', 'index', update);
+    await metaDoc.setFlag(MODULE_ID, 'index', update);
   }
 
   static async get(uuid, { full = true } = {}) {
@@ -438,7 +447,7 @@ export class PresetCollection {
     const index = collection.index.get(documentId);
 
     if (index) {
-      const metaIndex = (await collection.getDocument(META_INDEX_ID))?.getFlag('multi-token-edit', 'index');
+      const metaIndex = (await collection.getDocument(META_INDEX_ID))?.getFlag(MODULE_ID, 'index');
       const mIndex = metaIndex[index._id];
 
       const preset = new Preset({ ...index, ...mIndex, pack: collection.collection });
@@ -479,7 +488,7 @@ export class PresetCollection {
         metaUpdate['-=' + preset.id] = null;
       }
 
-      metaDoc.setFlag('multi-token-edit', 'index', metaUpdate);
+      metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
     }
   }
 
@@ -513,7 +522,7 @@ export class PresetCollection {
         {
           _id: META_INDEX_ID,
           name: '!!! METADATA: DO NOT DELETE !!!',
-          flags: { 'multi-token-edit': { index: {} } },
+          flags: { [MODULE_ID]: { index: {} } },
         },
       ],
       {
@@ -640,7 +649,7 @@ export class PresetAPI {
       const defPreset = {
         name: 'New Preset',
         documentName: docName,
-        data: data.length > 1 ? data : data[0],
+        data: data,
       };
 
       switch (defPreset.documentName) {
@@ -663,6 +672,8 @@ export class PresetAPI {
           defPreset.img = 'icons/svg/circle.svg';
           break;
       }
+
+      defPreset.gridSize = placeables[0].document.parent.grid.size;
 
       mergeObject(defPreset, options, { inplace: true });
 
@@ -687,6 +698,7 @@ export class PresetAPI {
    * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
    * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
+   * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
    * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
    * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
    * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
@@ -708,6 +720,7 @@ export class PresetAPI {
     snapToGrid = true,
     hidden = false,
     layerSwitch = false,
+    scaleToGrid = false,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
     if (!(uuid || preset || name || type || folder)) throw Error('ID, Name, Folder, or Preset is needed to spawn it.');
@@ -728,6 +741,10 @@ export class PresetAPI {
     const randomizer = preset.randomize;
     if (!isEmpty(randomizer)) {
       applyRandomization(toCreate, null, randomizer);
+    }
+
+    if (scaleToGrid) {
+      scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
     }
 
     // ==================
@@ -827,6 +844,7 @@ const DOC_ICONS = {
   AmbientSound: 'fa-solid fa-music',
   Note: 'fa-solid fa-bookmark',
   Actor: 'fas fa-user-alt',
+  Scene: 'fas fa-map',
   DEFAULT: 'fa-solid fa-question',
 };
 
@@ -859,7 +877,7 @@ export class MassEditPresets extends FormApplication {
     this.draggedElements = null;
 
     if (!configApp) {
-      const docLock = game.settings.get('multi-token-edit', 'presetDocLock');
+      const docLock = game.settings.get(MODULE_ID, 'presetDocLock');
       this.docName = docLock || docName;
     } else {
       this.configApp = configApp;
@@ -871,7 +889,7 @@ export class MassEditPresets extends FormApplication {
     return mergeObject(super.defaultOptions, {
       id: 'mass-edit-presets',
       classes: ['sheet'],
-      template: 'modules/multi-token-edit/templates/presets.html',
+      template: `modules/${MODULE_ID}/templates/preset/presets.html`,
       resizable: true,
       minimizable: false,
       title: `Presets`,
@@ -889,10 +907,10 @@ export class MassEditPresets extends FormApplication {
     const data = super.getData(options);
 
     // Cache partials
-    await getTemplate('modules/multi-token-edit/templates/generic/preset.html');
-    await getTemplate('modules/multi-token-edit/templates/generic/presetFolder.html');
+    await getTemplate(`modules/${MODULE_ID}/templates/preset/preset.html`);
+    await getTemplate(`modules/${MODULE_ID}/templates/preset/presetFolder.html`);
 
-    const displayExtCompendiums = game.settings.get('multi-token-edit', 'presetExtComp');
+    const displayExtCompendiums = game.settings.get(MODULE_ID, 'presetExtComp');
 
     this.tree = await PresetCollection.getTree(this.docName, !displayExtCompendiums);
     data.presets = this.tree.presets;
@@ -902,10 +920,11 @@ export class MassEditPresets extends FormApplication {
     data.createEnabled = Boolean(this.configApp);
     data.isPlaceable = SUPPORTED_PLACEABLES.includes(this.docName) || this.docName === 'ALL';
     data.allowDocumentSwap = UI_DOCS.includes(this.docName) && !this.configApp;
-    data.docLockActive = game.settings.get('multi-token-edit', 'presetDocLock') === this.docName;
-    data.layerSwitchActive = game.settings.get('multi-token-edit', 'presetLayerSwitch');
+    data.docLockActive = game.settings.get(MODULE_ID, 'presetDocLock') === this.docName;
+    data.layerSwitchActive = game.settings.get(MODULE_ID, 'presetLayerSwitch');
+    data.scaling = game.settings.get(MODULE_ID, 'presetScaling');
     data.extCompActive = displayExtCompendiums;
-    data.sortMode = SORT_MODES[game.settings.get('multi-token-edit', 'presetSortMode')];
+    data.sortMode = SORT_MODES[game.settings.get(MODULE_ID, 'presetSortMode')];
     data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
 
     data.lastSearch = MassEditPresets.lastSearch;
@@ -954,43 +973,7 @@ export class MassEditPresets extends FormApplication {
 
     // Multi-select
     html.on('click', '.item', (e) => {
-      const item = $(e.target).closest('.item');
-      const items = itemList.find('.item');
-      const lastSelected = items.filter('.last-selected');
-
-      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        lastSelected.removeClass('last-selected');
-        items.removeClass('selected');
-        item.addClass('selected').addClass('last-selected');
-      } else if (e.ctrlKey || e.metaKey) {
-        item.toggleClass('selected');
-        if (item.hasClass('selected')) {
-          lastSelected.removeClass('last-selected');
-          item.addClass('last-selected');
-        } else item.removeClass('last-index');
-      } else if (e.shiftKey) {
-        if (lastSelected.length) {
-          let itemIndex = items.index(item);
-          let lastSelectedIndex = items.index(lastSelected);
-
-          if (itemIndex === lastSelectedIndex) {
-            item.toggleClass('selected');
-            if (item.hasClass('selected')) item.addClass('last-selected');
-            else lastSelected.removeClass('last-selected');
-          } else {
-            let itemArr = items.toArray();
-            if (itemIndex > lastSelectedIndex) {
-              for (let i = lastSelectedIndex; i <= itemIndex; i++) $(itemArr[i]).addClass('selected');
-            } else {
-              for (let i = lastSelectedIndex; i >= itemIndex; i--) $(itemArr[i]).addClass('selected');
-            }
-          }
-        } else {
-          lastSelected.removeClass('last-selected');
-          item.toggleClass('selected');
-          if (item.hasClass('selected')) item.addClass('last-selected');
-        }
-      }
+      itemSelect(e, itemList);
     });
     html.on('dragstart', '.item', (event) => {
       this.dragType = 'item';
@@ -1229,6 +1212,7 @@ export class MassEditPresets extends FormApplication {
     html.find('.toggle-sort').on('click', this._onToggleSort.bind(this));
     html.find('.toggle-doc-lock').on('click', this._onToggleLock.bind(this));
     html.find('.toggle-ext-comp').on('click', this._onToggleExtComp.bind(this));
+    html.find('.toggle-scaling').on('click', this._onToggleScaling.bind(this));
     html.find('.toggle-layer-switch').on('click', this._onToggleLayerSwitch.bind(this));
     html.find('.document-select').on('click', this._onDocumentChange.bind(this));
     html.find('.item').on('contextmenu', this._onRightClickPreset.bind(this));
@@ -1250,6 +1234,8 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onDoubleClickPreset(event) {
+    if (!UI_DOCS.includes(this.docName)) return;
+
     const uuid = $(event.target).closest('.item').data('uuid');
     if (!uuid) return;
     ui.notifications.info(`Mass Edit: ${localize('presets.spawning')}`);
@@ -1257,7 +1243,8 @@ export class MassEditPresets extends FormApplication {
       uuid,
       coordPicker: true,
       taPreview: 'ALL',
-      layerSwitch: game.settings.get('multi-token-edit', 'presetLayerSwitch'),
+      layerSwitch: game.settings.get(MODULE_ID, 'presetLayerSwitch'),
+      scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
     });
   }
 
@@ -1356,7 +1343,7 @@ export class MassEditPresets extends FormApplication {
 
     if (folder) {
       let types;
-      if (folderDoc) types = folderDoc.flags['multi-token-edit']?.types ?? ['ALL'];
+      if (folderDoc) types = folderDoc.flags[MODULE_ID]?.types ?? ['ALL'];
       else types = ['ALL'];
 
       const data = {
@@ -1364,7 +1351,7 @@ export class MassEditPresets extends FormApplication {
         color: folder.color,
         sorting: folder.sorting,
         folder: parentId,
-        flags: { 'multi-token-edit': { types } },
+        flags: { [MODULE_ID]: { types } },
         type: 'JournalEntry',
       };
 
@@ -1462,7 +1449,7 @@ export class MassEditPresets extends FormApplication {
         name: Folder.defaultName(),
         type: 'JournalEntry',
         sorting: 'm',
-        flags: { 'multi-token-edit': { types } },
+        flags: { [MODULE_ID]: { types } },
       },
       { pack: PresetCollection.workingPack }
     );
@@ -1481,7 +1468,6 @@ export class MassEditPresets extends FormApplication {
       const options = { resolve, ...header.offset() };
       options.top += header.height();
 
-      console.log(folder);
       new PresetFolderConfig(folder, options).render(true);
     }).then(() => this.render(true));
   }
@@ -1614,9 +1600,9 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onToggleSort(event) {
-    const currentSort = game.settings.get('multi-token-edit', 'presetSortMode');
+    const currentSort = game.settings.get(MODULE_ID, 'presetSortMode');
     const newSort = currentSort === 'manual' ? 'alphabetical' : 'manual';
-    await game.settings.set('multi-token-edit', 'presetSortMode', newSort);
+    await game.settings.set(MODULE_ID, 'presetSortMode', newSort);
 
     this.render(true);
   }
@@ -1624,7 +1610,7 @@ export class MassEditPresets extends FormApplication {
   _onToggleLock(event) {
     const lockControl = $(event.target).closest('.toggle-doc-lock');
 
-    let currentLock = game.settings.get('multi-token-edit', 'presetDocLock');
+    let currentLock = game.settings.get(MODULE_ID, 'presetDocLock');
     let newLock = this.docName;
 
     if (newLock !== currentLock) lockControl.addClass('active');
@@ -1633,28 +1619,38 @@ export class MassEditPresets extends FormApplication {
       newLock = '';
     }
 
-    game.settings.set('multi-token-edit', 'presetDocLock', newLock);
+    game.settings.set(MODULE_ID, 'presetDocLock', newLock);
   }
 
   _onToggleLayerSwitch(event) {
     const switchControl = $(event.target).closest('.toggle-layer-switch');
 
-    const value = !game.settings.get('multi-token-edit', 'presetLayerSwitch');
+    const value = !game.settings.get(MODULE_ID, 'presetLayerSwitch');
     if (value) switchControl.addClass('active');
     else switchControl.removeClass('active');
 
-    game.settings.set('multi-token-edit', 'presetLayerSwitch', value);
+    game.settings.set(MODULE_ID, 'presetLayerSwitch', value);
   }
 
   async _onToggleExtComp(event) {
     const switchControl = $(event.target).closest('.toggle-ext-comp');
 
-    const value = !game.settings.get('multi-token-edit', 'presetExtComp');
+    const value = !game.settings.get(MODULE_ID, 'presetExtComp');
     if (value) switchControl.addClass('active');
     else switchControl.removeClass('active');
 
-    await game.settings.set('multi-token-edit', 'presetExtComp', value);
+    await game.settings.set(MODULE_ID, 'presetExtComp', value);
     this.render(true);
+  }
+
+  async _onToggleScaling(event) {
+    const switchControl = $(event.target).closest('.toggle-scaling');
+
+    const value = !game.settings.get(MODULE_ID, 'presetScaling');
+    if (value) switchControl.addClass('active');
+    else switchControl.removeClass('active');
+
+    game.settings.set(MODULE_ID, 'presetScaling', value);
   }
 
   _onDocumentChange(event) {
@@ -1663,7 +1659,7 @@ export class MassEditPresets extends FormApplication {
       this.docName = newDocName;
 
       if (this.docName !== 'ALL') {
-        if (game.settings.get('multi-token-edit', 'presetLayerSwitch'))
+        if (game.settings.get(MODULE_ID, 'presetLayerSwitch'))
           canvas.getLayerByEmbeddedName(this.docName === 'Actor' ? 'Token' : this.docName)?.activate();
       }
 
@@ -1698,11 +1694,13 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onPresetDragOut(event) {
+    if (!UI_DOCS.includes(this.docName)) return;
+
     const uuid = $(event.originalEvent.target).closest('.item').data('uuid');
     const preset = await PresetCollection.get(uuid);
     if (!preset) return;
 
-    if (game.settings.get('multi-token-edit', 'presetLayerSwitch'))
+    if (game.settings.get(MODULE_ID, 'presetLayerSwitch'))
       canvas.getLayerByEmbeddedName(preset.documentName === 'Actor' ? 'Token' : preset.documentName)?.activate();
 
     // For some reason canvas.mousePosition does not get updated during drag and drop
@@ -1717,7 +1715,14 @@ export class MassEditPresets extends FormApplication {
       mouseY -= canvas.dimensions.size / 2;
     }
 
-    PresetAPI.spawnPreset({ preset, x: mouseX, y: mouseY, mousePosition: false });
+    PresetAPI.spawnPreset({
+      preset,
+      x: mouseX,
+      y: mouseY,
+      mousePosition: false,
+      layerSwitch: game.settings.get(MODULE_ID, 'presetLayerSwitch'),
+      scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
+    });
   }
 
   async _onPresetBrush(event) {
@@ -1854,7 +1859,7 @@ export class MassEditPresets extends FormApplication {
       getCompendiumDialog(resolve, { preselectPack: PresetCollection.workingPack })
     );
     if (pack && pack !== PresetCollection.workingPack) {
-      await game.settings.set('multi-token-edit', 'workingPack', pack);
+      await game.settings.set(MODULE_ID, 'workingPack', pack);
       this.render(true);
     }
   }
@@ -1927,14 +1932,13 @@ class PresetConfig extends FormApplication {
     this.presets = presets;
     this.callback = options.callback;
     this.isCreate = options.isCreate;
-    console.log(presets);
   }
 
   /** @inheritdoc */
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ['sheet'],
-      template: 'modules/multi-token-edit/templates/presetEdit.html',
+      template: `modules/${MODULE_ID}/templates/preset/presetEdit.html`,
       width: 360,
     });
   }
@@ -1989,7 +1993,10 @@ class PresetConfig extends FormApplication {
     const data = {};
 
     data.preset = {};
-    if (this.presets.length === 1) data.preset = this.presets[0];
+    if (this.presets.length === 1) {
+      data.preset = this.presets[0];
+      data.allowFieldDelete = true;
+    }
 
     data.minlength = this.presets.length > 1 ? 0 : 1;
     data.tva = game.modules.get('token-variants')?.active;
@@ -1998,6 +2005,7 @@ class PresetConfig extends FormApplication {
     const docName = this.presets[0].documentName;
     if (docName !== 'Actor' && this.presets.every((p) => p.documentName === docName)) {
       data.documentEdit = docName;
+      data.isPlaceable = SUPPORTED_PLACEABLES.includes(docName);
     }
 
     return data;
@@ -2011,6 +2019,7 @@ class PresetConfig extends FormApplication {
 
     html.find('.edit-document').on('click', this._onEditDocument.bind(this));
     html.find('.assign-document').on('click', this._onAssignDocument.bind(this));
+    html.find('.delete-fields').on('click', this._onDeleteFields.bind(this));
 
     // TVA Support
     const tvaButton = html.find('.token-variants-image-select-button');
@@ -2024,6 +2033,12 @@ class PresetConfig extends FormApplication {
     });
   }
 
+  async _onDeleteFields() {
+    new PresetFieldDelete(this.data ?? this.presets[0].data, (data) => {
+      this.data = data;
+    }).render(true);
+  }
+
   async _onAssignDocument() {
     const layer = canvas.getLayerByEmbeddedName(this.presets[0].documentName);
     if (!layer) return;
@@ -2032,7 +2047,10 @@ class PresetConfig extends FormApplication {
     if (data.length) {
       this.data = data;
       ui.notifications.info(
-        localFormat('presets.assign', { count: data.length, document: this.presets[0].documentName })
+        localFormat('presets.assign', {
+          count: data.length,
+          document: this.presets[0].documentName,
+        })
       );
     }
   }
@@ -2042,8 +2060,7 @@ class PresetConfig extends FormApplication {
     const cls = CONFIG[this.presets[0].documentName].documentClass;
 
     for (const p of this.presets) {
-      let data = p.data instanceof Array ? p.data : [p.data];
-      data.forEach((d) => documents.push(new cls(mergePresetDataToDefaultDoc(p, d))));
+      p.data.forEach((d) => documents.push(new cls(mergePresetDataToDefaultDoc(p, d))));
     }
 
     const app = await showMassEdit(documents, null, {
@@ -2113,6 +2130,95 @@ class PresetConfig extends FormApplication {
   }
 }
 
+class PresetFieldDelete extends FormApplication {
+  static name = 'PresetFieldDelete';
+
+  constructor(data, callback) {
+    super();
+    this.presetData = data;
+    this.isObject = !(data instanceof Array);
+    this.singleData = !this.isObject && data.length === 1;
+    this.callback = callback;
+  }
+
+  /** @inheritdoc */
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      classes: ['sheet', 'preset-field-delete'],
+      template: `modules/${MODULE_ID}/templates/preset/presetFieldDelete.html`,
+      width: 600,
+      resizable: false,
+    });
+  }
+
+  /* -------------------------------------------- */
+
+  /** @override */
+  get title() {
+    return localize('presets.select-fields');
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find('.item').on('click', this._onFieldClick);
+  }
+
+  _onFieldClick(e) {
+    itemSelect(e, $(e.target).closest('.preset-field-list'));
+  }
+
+  /** @override */
+  async getData(options = {}) {
+    let data;
+    if (this.singleData) {
+      data = this.presetData[0];
+    } else {
+      data = this.presetData;
+    }
+    data = flattenObject(data);
+
+    let fields = [];
+    for (const [k, v] of Object.entries(data)) {
+      fields.push({ name: k, value: JSON.stringify(v) });
+    }
+
+    return { fields };
+  }
+
+  /* -------------------------------------------- */
+
+  /** @override */
+  async _updateObject(event, formData) {
+    let data;
+    if (this.singleData) {
+      data = this.presetData[0];
+    } else {
+      data = this.presetData;
+    }
+    data = flattenObject(data);
+
+    const form = $(event.target).closest('form');
+    form.find('.item.selected').each(function () {
+      const name = $(this).attr('name');
+      delete data[name];
+    });
+    data = expandObject(data);
+
+    if (this.singleData) {
+      data = [data];
+    } else if (!this.isObject) {
+      let reorganizedData = [];
+      for (let i = 0; i < this.presetData.length; i++) {
+        if (!data[i]) continue;
+        reorganizedData.push(data[i]);
+      }
+      data = reorganizedData;
+    }
+
+    this.callback(data);
+  }
+}
+
 class PresetFolderConfig extends FolderConfig {
   static name = 'PresetFolderConfig';
 
@@ -2120,7 +2226,7 @@ class PresetFolderConfig extends FolderConfig {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ['sheet', 'folder-edit'],
-      template: 'modules/multi-token-edit/templates/presetFolderEdit.html',
+      template: `modules/${MODULE_ID}/templates/preset/presetFolderEdit.html`,
       width: 360,
     });
   }
@@ -2164,7 +2270,7 @@ class PresetFolderConfig extends FolderConfig {
     const folder = this.document.toObject();
     const label = localize(Folder.implementation.metadata.label, false);
 
-    let folderDocs = folder.flags['multi-token-edit']?.types ?? ['ALL'];
+    let folderDocs = folder.flags[MODULE_ID]?.types ?? ['ALL'];
     let docs = [];
     UI_DOCS.forEach((type) => {
       docs.push({ name: type, icon: DOC_ICONS[type], active: folderDocs.includes(type) });
@@ -2193,7 +2299,7 @@ class PresetFolderConfig extends FolderConfig {
       });
     if (!visibleTypes.length) visibleTypes.push('ALL');
 
-    formData['flags.multi-token-edit.types'] = visibleTypes;
+    formData[`flags.${MODULE_ID}.types`] = visibleTypes;
 
     let doc = this.object;
     if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
@@ -2302,6 +2408,9 @@ function mergePresetDataToDefaultDoc(preset, presetData) {
         data = { 'config.dim': 20, 'config.bright': 10 };
         break;
       }
+    case 'Scene':
+      data = { name: preset.name };
+      break;
     default:
       data = {};
   }
@@ -2332,4 +2441,78 @@ function placeableToData(placeable) {
   }
 
   return data;
+}
+
+/**
+ * Controls select/multi-select flow for item lists
+ * @param {*} e item click event
+ * @param {*} itemList list of items that this item exists within
+ */
+function itemSelect(e, itemList) {
+  const item = $(e.target).closest('.item');
+  const items = itemList.find('.item');
+  const lastSelected = items.filter('.last-selected');
+
+  if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    lastSelected.removeClass('last-selected');
+    items.removeClass('selected');
+    item.addClass('selected').addClass('last-selected');
+  } else if (e.ctrlKey || e.metaKey) {
+    item.toggleClass('selected');
+    if (item.hasClass('selected')) {
+      lastSelected.removeClass('last-selected');
+      item.addClass('last-selected');
+    } else item.removeClass('last-index');
+  } else if (e.shiftKey) {
+    if (lastSelected.length) {
+      let itemIndex = items.index(item);
+      let lastSelectedIndex = items.index(lastSelected);
+
+      if (itemIndex === lastSelectedIndex) {
+        item.toggleClass('selected');
+        if (item.hasClass('selected')) item.addClass('last-selected');
+        else lastSelected.removeClass('last-selected');
+      } else {
+        let itemArr = items.toArray();
+        if (itemIndex > lastSelectedIndex) {
+          for (let i = lastSelectedIndex; i <= itemIndex; i++) $(itemArr[i]).addClass('selected');
+        } else {
+          for (let i = lastSelectedIndex; i >= itemIndex; i--) $(itemArr[i]).addClass('selected');
+        }
+      }
+    } else {
+      lastSelected.removeClass('last-selected');
+      item.toggleClass('selected');
+      if (item.hasClass('selected')) item.addClass('last-selected');
+    }
+  }
+}
+
+function scaleDataToGrid(data, documentName, gridSize) {
+  if (!['Tile', 'Drawing', 'Wall'].includes(documentName)) return;
+  if (!gridSize) gridSize = 100;
+
+  const ratio = canvas.grid.size / gridSize;
+
+  console.log(data, documentName, gridSize);
+
+  for (const d of data) {
+    switch (documentName) {
+      case 'Tile':
+        if ('width' in d) d.width *= ratio;
+        if ('height' in d) d.height *= ratio;
+        break;
+      case 'Drawing':
+        if ('shape.width' in d) d['shape.width'] *= ratio;
+        if ('shape.height' in d) d['shape.height'] *= ratio;
+        break;
+      case 'Wall':
+        if ('c' in d) {
+          for (let i = 0; i < d.c.length; i++) {
+            d.c[i] *= ratio;
+          }
+        }
+        break;
+    }
+  }
 }

@@ -13,6 +13,7 @@ import {
   localFormat,
   localize,
   mergeObjectPreserveDot,
+  MODULE_ID,
   panToFitPlaceables,
   selectAddSubtractFields,
   SUPPORTED_COLLECTIONS,
@@ -79,7 +80,7 @@ export const WithMassEditForm = (cls) => {
       html.on('paste', 'input', onInputChange.bind(this));
       html.on('click', 'button', onInputChange.bind(this));
 
-      const rangeSpanToTextbox = game.settings.get('multi-token-edit', 'rangeToTextbox');
+      const rangeSpanToTextbox = game.settings.get(MODULE_ID, 'rangeToTextbox');
 
       // Attach classes and controls to all relevant form-groups
       const commonData = flattenObject(this.commonData || {});
@@ -339,7 +340,7 @@ export const WithMassEditForm = (cls) => {
         (this.documentName === 'Tile' || this.documentName === 'Token') &&
         !this.options?.simplified &&
         game.modules.get('tokenmagic')?.active &&
-        game.settings.get('multi-token-edit', 'tmfxFieldsEnable')
+        game.settings.get(MODULE_ID, 'tmfxFieldsEnable')
       ) {
         let content = '<datalist id="tmfxPresets"><option value="DELETE ALL">';
         TokenMagic.getPresets().forEach((p) => (content += `<option value="${p.name}">`));
@@ -816,8 +817,18 @@ export const WithMassConfig = (docName = 'NONE') => {
         label: '',
         class: 'mass-edit-presets',
         icon: 'fas fa-box',
-        onclick: (ev) =>
-          new MassEditPresets(this, async (preset) => this._processPreset(preset), this.docName).render(true),
+        onclick: () => {
+          this.linkedPresetForm = new MassEditPresets(
+            this,
+            async (preset) => this._processPreset(preset),
+            this.docName,
+            {
+              left: this.position.left - 370,
+              top: this.position.top,
+            }
+          );
+          this.linkedPresetForm.render(true);
+        },
       });
 
       // Apply JSON data onto the form
@@ -857,7 +868,7 @@ export const WithMassConfig = (docName = 'NONE') => {
       });
 
       // History
-      if (game.settings.get('multi-token-edit', 'enableHistory') && SUPPORTED_HISTORY_DOCS.includes(this.docName)) {
+      if (game.settings.get(MODULE_ID, 'enableHistory') && SUPPORTED_HISTORY_DOCS.includes(this.docName)) {
         buttons.unshift({
           label: '',
           class: 'mass-edit-history',
@@ -909,6 +920,7 @@ export const WithMassConfig = (docName = 'NONE') => {
       ) {
         this._resetPreview();
       }
+      if (this.linkedPresetForm) this.linkedPresetForm.close();
       return super.close(options);
     }
 
@@ -1132,7 +1144,7 @@ export function performMassSearch(
         if (obj.control) obj.control({ releaseOthers: false });
       });
 
-      if (pan && found.length && game.settings.get('multi-token-edit', 'panToSearch')) {
+      if (pan && found.length && game.settings.get(MODULE_ID, 'panToSearch')) {
         panToFitPlaceables(found);
       }
     }, 100);
@@ -1231,7 +1243,7 @@ export async function performMassUpdate(data, objects, docName, applyType) {
 
   // If history is enabled we'll want to attach additional controls to the updates
   // so that they can be tracked.
-  if (game.settings.get('multi-token-edit', 'enableHistory')) {
+  if (game.settings.get(MODULE_ID, 'enableHistory')) {
     context['mass-edit-randomize'] = [deepClone(this.randomizeFields)];
     context['mass-edit-addSubtract'] = [deepClone(this.addSubtractFields)];
   }

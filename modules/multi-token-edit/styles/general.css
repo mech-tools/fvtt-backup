@@ -116,7 +116,8 @@
   color: rgba(255, 255, 240, 0.8);
 }
 
-#mass-edit-presets .window-content {
+#mass-edit-presets .window-content,
+.preset-field-delete .window-content {
   background: rgba(50, 50, 50, 0.8);
   padding-left: 1px;
   padding-right: 1px;
@@ -145,6 +146,20 @@
   flex: 1;
   justify-content: center;
   align-items: center;
+}
+
+.mass-edit-preset-form .preset-header .window-controls {
+  margin-left: 4px;
+  border-left: 2px solid gray;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding-bottom: 12px;
+  padding-left: 5px;
+}
+
+.mass-edit-preset-form .preset-header .window-controls .header-control {
+  width: 20px;
+  height: 20px;
 }
 
 .mass-edit-preset-form .preset-header .header-control .fa-plus {
@@ -363,7 +378,7 @@
 }
 
 .mass-edit-scene-control {
-  color: lemonchiffon !important;
+  color: cornflowerblue !important;
 }
 
 input.me-add {
@@ -372,6 +387,23 @@ input.me-add {
 
 input.me-subtract {
   background-color: orangered;
+}
+
+.preset-field-delete .item {
+  border-top: 1px solid dimgray;
+  box-shadow: none;
+  line-height: 24px;
+}
+
+.preset-field-delete .item .value {
+  flex: 0.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-field-delete .item.selected {
+  background-color: darkred;
 }
 
 /* ===================== 

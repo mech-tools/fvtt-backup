@@ -1,6 +1,7 @@
 import {registerCORIOLISECHSItems, CORIOLISECHActionItems, CORIOLISECHFreeActionItems} from "./specialItems.js";
 import {ModuleName, SystemName, getTooltipDetails, openRollDialoge, openItemRollDialoge, firstUpperCase} from "./utils.js";
 import {openNewInput} from "./popupInput.js";
+import {gainXPWindow} from "./levelup.js";
 
 const talenttypes = ["group", "icon", "general", "humanite", "cybernetic", "bionicsculpt", "mysticalpowers"];
 
@@ -33,6 +34,10 @@ Hooks.on("argonInit", (CoreHUD) => {
 			});
 			
 			this.wasDead = {};
+			
+			for (const key of ["hitPoints", "mindPoints"]) {
+				this.wasDead[key] = (this.actor.system[key].value <= 0 && this.actor.system[key].max > 0);
+			}
 		}
 
 		get description() {
@@ -47,7 +52,7 @@ Hooks.on("argonInit", (CoreHUD) => {
 			}
 			
 			if (game.settings.get(ModuleName, "AutoRollInjuries")) {
-				if (isDead.hitPoints && !isDead.mindPoints) {
+				if (isDead.hitPoints && !this.wasDead.hitPoints) {
 					CORIOLISPortraitPanel.rollInjuries();
 				}
 			}
@@ -138,6 +143,23 @@ Hooks.on("argonInit", (CoreHUD) => {
 			return bars;
 		}
 		
+		async getLevelUPIcon() {
+			if (this.actor?.getFlag(ModuleName, "levelup") && game.settings.get(ModuleName, "useXPautomation")) {
+				let levelupicon = document.createElement("div");
+				
+				levelupicon.style.backgroundImage = `url("modules/${ModuleName}/icons/upgrade.svg")`;
+				levelupicon.style.width = "30px";
+				levelupicon.style.height = "30px";
+				levelupicon.setAttribute("data-tooltip", game.i18n.localize(ModuleName + ".Titles.OpenXPMenu"));
+				
+				levelupicon.onclick = () => {new gainXPWindow(this.actor).render(true)}
+				
+				return levelupicon;
+			}
+			
+			return;
+		}
+		
 		async _renderInner(data) {
 			await super._renderInner(data);
 			
@@ -168,6 +190,18 @@ Hooks.on("argonInit", (CoreHUD) => {
 			}
 					
 			this.element.querySelector(".player-buttons").style.right = "0%";
+			
+			const CornerIcons = document.createElement("div");
+			CornerIcons.style.position = "absolute";
+			CornerIcons.style.right = "0";
+			CornerIcons.style.top = "0";
+			CornerIcons.style.zIndex = 100;
+			let levelupicon = await this.getLevelUPIcon();
+			
+			if (levelupicon) {
+				CornerIcons.appendChild(levelupicon);
+			}
+			this.element.appendChild(CornerIcons);
 		}
 		
 		async onResourceBarClick(id) {
@@ -539,7 +573,7 @@ Hooks.on("argonInit", (CoreHUD) => {
 			let Options = [];
 			
 			if (game.settings.get(ModuleName, "ShowAimedQuick")) {
-				if (this.item.type == "weapon") {
+				if (this.item?.type == "weapon") {
 					if (!this.item.system.melee) {
 						Options.push({
 							text : game.i18n.localize(ModuleName+".Titles.AimedShot"),

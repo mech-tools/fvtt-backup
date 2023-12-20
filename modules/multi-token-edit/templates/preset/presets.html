@@ -1,0 +1,68 @@
+<div class="overlay"><p class="label">{{localize 'MassEdit.presets.drag-over-message'}}</p></div>
+<form class="mass-edit-preset-form">
+
+    <header class="preset-header flexcol">
+        {{#if allowDocumentSwap}}
+        <div class="header-select flexrow">
+            {{#each docs}}
+            <a class="document-select {{#if (eq @key ../currentDocument)}}active{{/if}}" title="{{@key}}" data-name="{{@key}}"><i class="{{this}} fa-lg"></i></a>
+            {{/each}}
+            <div class="window-controls">
+                <a class="header-control toggle-doc-lock {{#if docLockActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.document-lock'}}"><i class="fa-solid fa-lock"></i></a>
+                <a class="header-control toggle-layer-switch {{#if layerSwitchActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.layer-switch'}}"><i class="fa-solid fa-arrows-cross"></i></a>
+                <a class="header-control toggle-scaling {{#if scaling}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.scale-to-grid'}}"><i class="fa-solid fa-arrow-down-big-small"></i></a>
+                <a class="header-control toggle-ext-comp {{#if extCompActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.external-compendiums'}}"><i class="fa-solid fa-books"></i></a>
+            </div>
+        </div>
+        {{/if}}
+        {{#if createEnabled}}
+        <div class="header-actions action-buttons flexrow">
+            <button type="button" class="preset-create"><i class="fas fa-plus"></i> {{localize 'MassEdit.presets.drag-over-message'}}</button>
+        </div>
+        {{/if}}
+        <div class="header-search flexrow">
+            <a class="header-control toggle-search-mode" data-tooltip="Search by Name only"><i class="fas fa-search"></i></a>
+            <input type="search" name="search" value="{{lastSearch}}" placeholder="Search" autocomplete="off">
+            <a class="header-control toggle-sort" data-tooltip="{{sortMode.tooltip}}">{{{sortMode.icon}}}</a>
+            <a class="header-control create-folder" style="position: relative;"><i class="fas fa-folder"></i><i class="fas fa-plus"></i></a>
+            {{#unless allowDocumentSwap}}
+            <a class="header-control toggle-ext-comp {{#if extCompActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.external-compendiums'}}" style="flex: 0 0 30px;"><i class="fa-solid fa-books"></i></a>
+            {{/unless}}
+        </div>
+    </header>
+
+    {{#if displayDragDropMessage}}
+    <h2 style="text-align: center; margin-top: 100px; border: none;">{{localize 'MassEdit.presets.drag-placeable-message'}}</h2>
+    {{/if}}
+
+    <div class="item-list preset-items folder-items" >
+
+        <ol class="folder-items top-level-folder-items">
+            {{#each folders as |folder|}}
+                {{#if folder.visible}}
+                    {{>modules/multi-token-edit/templates/preset/presetFolder.html folder=folder refreshEnabled=../refreshEnabled createEnabled=../createEnabled callback=../callback editable=true}}
+                {{/if}}
+            {{/each}}
+        </ol>
+
+        <ol class="preset-items top-level-preset-items">
+            {{#each presets as |preset|}}
+            {{#if preset._visible}}
+                {{>modules/multi-token-edit/templates/preset/preset.html preset=preset refreshEnabled=../refreshEnabled createEnabled=../createEnabled callback=../callback editable=true}}
+            {{/if}}
+            {{/each}}
+        </ol>
+
+        {{#if staticFolders}}
+        <label class="static-label">EXTERNAL COMPENDIUMS</label>
+        <ol class="folder-items static">
+            {{#each staticFolders as |folder|}}
+                {{#if folder.visible}}
+                    {{>modules/multi-token-edit/templates/preset/presetFolder.html folder=folder refreshEnabled=../refreshEnabled createEnabled=../createEnabled callback=../callback}}
+                {{/if}}
+            {{/each}}
+        </ol>
+        {{/if}}
+    </div>
+
+</form>

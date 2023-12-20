@@ -1,5 +1,5 @@
 {
-  "multi-token-edit": {
+  "MassEdit": {
     "form": {
       "immediate-update-title": "Automatically apply updates on field changes.",
       "global-search-title": "Enable world search.",
@@ -44,7 +44,11 @@
     "keybindings": {
       "presetApply": {
         "name": "Open Presets",
-        "hint": "Opens Preset dialog for the hovered/selected placeables to immediately apply them."
+        "hint": "Opens placeable preset window."
+      },
+      "presetApplyScene": {
+        "name": "Open Scene Presets",
+        "hint": "Opens scene preset window."
       },
       "selectKey": {
         "name": "Open Placeable Search and Select",
@@ -115,6 +119,8 @@
       "snapToGrid": "Snap to grid"
     },
     "presets": {
+      "drag-placeable-message": "Drag in placeables to create a preset.",
+      "drag-over-message": "CREATE PRESET",
       "default-name": "New Preset",
       "spawning": "Spawning Preset",
       "warn-no-fields": "No fields selected, unable to update.",
@@ -125,7 +131,17 @@
       "export-directory-message": "This operation will make the destination into a Mass Edit preset compendium. Make sure it does not contain Journals that are not presets to avoid unexpected problems.",
       "working-directory-message": "Change the compendium the module will store and edit presets within. Make sure it does not contains Journals that are not presets to avoid unexpected problems.",
       "update-preset": "Update Preset",
-      "activate-brush": "Activate Brush"
+      "delete-fields": "Delete Fields",
+      "select-fields": "Select fields you wish to remove from this preset.",
+      "data-edit": "Edit {document} data stored in the preset/s.",
+      "data-assign": "Assign currently selected {document}/s to the preset/s.",
+      "controls": {
+        "activate-brush": "Activate Brush",
+        "document-lock": "Lock current category as default on form open.",
+        "layer-switch": "Automatic layer switching.",
+        "external-compendiums": "Display external preset compendiums.",
+        "scale-to-grid": "Scale Tiles, Drawings, and Walls according to grid size."
+      }
     },
     "css": {
       "pick": "Pick a style:"
@@ -153,7 +169,8 @@
       "all": "All",
       "swap": "Swap",
       "import": "Import",
-      "copy": "Copy"
+      "copy": "Copy",
+      "data": "Data"
     }
   }
 }

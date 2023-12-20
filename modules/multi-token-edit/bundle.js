@@ -82,8 +82,11 @@ class $59fc6fe4c07de9fd$var$NoteDataAdapter {
         }
     }
     static dataToForm(note, data) {
-        data["icon.selected"] = (note.document ?? note).texture.src;
-        data["icon.custom"] = (note.document ?? note).texture.src;
+        const doc = note.document ?? note;
+        if (doc.texture?.src != null) {
+            data["icon.selected"] = doc.texture.src;
+            data["icon.custom"] = doc.texture.src;
+        }
     }
 }
 class $59fc6fe4c07de9fd$export$7fe60b94e2075390 {
@@ -99,9 +102,9 @@ class $59fc6fe4c07de9fd$export$7fe60b94e2075390 {
     }
     static dataToForm(token, data) {
         const doc = token.document ?? token;
-        data.scale = Math.abs(doc.texture.scaleX);
-        data.mirrorX = doc.texture.scaleX < 0;
-        data.mirrorY = doc.texture.scaleY < 0;
+        if (doc.texture?.scaleX != null) data.scale = Math.abs(doc.texture.scaleX);
+        if (doc.texture?.scaleX != null) data.mirrorX = doc.texture.scaleX < 0;
+        if (doc.texture?.scaleY != null) data.mirrorY = doc.texture.scaleY < 0;
     }
     static formToData(token, formData) {
         const doc = token.document ?? token;
@@ -288,7 +291,7 @@ function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, custom
     else {
         for (const k of editableKeys)if (k in allData) object[k] = allData[k];
     }
-    const pinned = documentName ? game.settings.get("multi-token-edit", "pinnedFields")[documentName] || {} : {};
+    const pinned = documentName ? game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields")[documentName] || {} : {};
     $2d0c7cad90c7ba3c$var$_constructControls(nav, object, tabSelectors, "", pinned, customControls);
     const pinned_groups = [];
     const flatObject = flattenObject(object);
@@ -18436,7 +18439,7 @@ class $2693f7af118c914b$export$44fd664bcca5b6fb {
 }
 
 
-const $9d9c8b96086115aa$export$37e829338e648c57 = true;
+const $9d9c8b96086115aa$export$37e829338e648c57 = false;
 class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
     constructor(title, control, configApp, options){
         let height = undefined;
@@ -18492,7 +18495,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/randomizerForm.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/randomizerForm.html`,
             resizable: true,
             minimizable: false
         });
@@ -18693,7 +18696,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             form.find('[name="maxY"]').val(Math.floor(maxY));
             t.maximize();
             t.configApp.maximize();
-            if (game.settings.get("multi-token-edit", "autoSnap")) t._onSnapToGrid(event);
+            if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "autoSnap")) t._onSnapToGrid(event);
         });
     }
     _onSnapToGrid(event) {
@@ -19010,15 +19013,16 @@ function $aec7a07dafc003fd$var$_string2hex(color) {
 
 
 
+
 function $2f2bd158cac8dcd3$export$455a4bc28dcdcc44() {
-    const styleInUse = game.settings.get("multi-token-edit", "cssStyle");
+    const styleInUse = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssStyle");
     if (styleInUse in $2f2bd158cac8dcd3$export$1c0e52168af9675e) return [
         styleInUse,
         $2f2bd158cac8dcd3$export$1c0e52168af9675e[styleInUse]
     ];
     else return [
         "CUSTOM",
-        game.settings.get("multi-token-edit", "cssCustom") || ""
+        game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssCustom") || ""
     ];
 }
 class $2f2bd158cac8dcd3$export$2e2bcd8739ae039 extends FormApplication {
@@ -19031,7 +19035,7 @@ class $2f2bd158cac8dcd3$export$2e2bcd8739ae039 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/cssEdit.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/cssEdit.html`,
             resizable: true,
             minimizable: false,
             title: "Edit CSS",
@@ -19055,7 +19059,7 @@ class $2f2bd158cac8dcd3$export$2e2bcd8739ae039 extends FormApplication {
         super.activateListeners(html);
         $(html).on("change", ".selectStyle", (event)=>{
             let css;
-            if (event.target.value === "CUSTOM") css = game.settings.get("multi-token-edit", "cssCustom");
+            if (event.target.value === "CUSTOM") css = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssCustom");
             else css = $2f2bd158cac8dcd3$export$1c0e52168af9675e[event.target.value];
             $(html).find(".cssTextArea").val(css).prop("disabled", event.target.value !== "CUSTOM");
             $(html).find(".previewStyle").html(css);
@@ -19068,8 +19072,8 @@ class $2f2bd158cac8dcd3$export$2e2bcd8739ae039 extends FormApplication {
    * @param {Event} event
    * @param {Object} formData
    */ async _updateObject(event, formData) {
-        if (formData.selectedStyle === "CUSTOM") game.settings.set("multi-token-edit", "cssCustom", formData.css);
-        game.settings.set("multi-token-edit", "cssStyle", formData.selectedStyle);
+        if (formData.selectedStyle === "CUSTOM") game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssCustom", formData.css);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssStyle", formData.selectedStyle);
     }
 }
 const $2f2bd158cac8dcd3$export$1c0e52168af9675e = {
@@ -19252,7 +19256,7 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/history.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/history.html`,
             resizable: false,
             minimizable: false,
             title: `History`,
@@ -19699,7 +19703,7 @@ function $f4363e46af180743$export$ac528515d0bfd647(options) {
 function $f4363e46af180743$var$genMacroDependencies(options, docName) {
     let dep = "";
     const depWarning = (module)=>{
-        return `ui.notifications.warn('${game.i18n.format("multi-token-edit.macro.dependency-warning", {
+        return `ui.notifications.warn('${(0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("macro.dependency-warning", {
             module: module
         })}');`;
     };
@@ -19711,7 +19715,7 @@ if (!game.modules.get('tagger')?.active) {
 
 `;
     if ($f4363e46af180743$export$33b5c78768d02f15(options)) dep += `
-const MassEdit = game.modules.get('multi-token-edit');
+const MassEdit = game.modules.get('${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}');
 if(!MassEdit?.active){
   ${depWarning("Mass Edit")}
   return;
@@ -19761,7 +19765,7 @@ class $0893cc7e7e2c4c85$export$2e2bcd8739ae039 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/macro.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/macro.html`,
             resizable: true,
             minimizable: false,
             title: `Generate Macro`,
@@ -20005,7 +20009,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             html.on("change", "textarea, input, select", $8d51a9873394e4eb$var$onInputChange.bind(this));
             html.on("paste", "input", $8d51a9873394e4eb$var$onInputChange.bind(this));
             html.on("click", "button", $8d51a9873394e4eb$var$onInputChange.bind(this));
-            const rangeSpanToTextbox = game.settings.get("multi-token-edit", "rangeToTextbox");
+            const rangeSpanToTextbox = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "rangeToTextbox");
             // Attach classes and controls to all relevant form-groups
             const commonData = flattenObject(this.commonData || {});
             const insertRNGControl = this.randomizerEnabled;
@@ -20179,7 +20183,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             // = Additional Fields =
             // =====================
             // // Token Magic FX
-            if ((this.documentName === "Tile" || this.documentName === "Token") && !this.options?.simplified && game.modules.get("tokenmagic")?.active && game.settings.get("multi-token-edit", "tmfxFieldsEnable")) {
+            if ((this.documentName === "Tile" || this.documentName === "Token") && !this.options?.simplified && game.modules.get("tokenmagic")?.active && game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "tmfxFieldsEnable")) {
                 let content = '<datalist id="tmfxPresets"><option value="DELETE ALL">';
                 TokenMagic.getPresets().forEach((p)=>content += `<option value="${p.name}">`);
                 content += `</datalist><input list="tmfxPresets" name="tokenmagic.preset">`;
@@ -20552,7 +20556,13 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 label: "",
                 class: "mass-edit-presets",
                 icon: "fas fa-box",
-                onclick: (ev)=>new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(this, async (preset)=>this._processPreset(preset), this.docName).render(true)
+                onclick: ()=>{
+                    this.linkedPresetForm = new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(this, async (preset)=>this._processPreset(preset), this.docName, {
+                        left: this.position.left - 370,
+                        top: this.position.top
+                    });
+                    this.linkedPresetForm.render(true);
+                }
             });
             // Apply JSON data onto the form
             buttons.unshift({
@@ -20589,7 +20599,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 }
             });
             // History
-            if (game.settings.get("multi-token-edit", "enableHistory") && (0, $32e43d7a62aba58c$export$de10d55d23082cf5).includes(this.docName)) buttons.unshift({
+            if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory") && (0, $32e43d7a62aba58c$export$de10d55d23082cf5).includes(this.docName)) buttons.unshift({
                 label: "",
                 class: "mass-edit-history",
                 icon: "fas fa-history",
@@ -20625,6 +20635,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 "Token",
                 "AmbientLight"
             ].includes(this.docName) && this.preview?.object) this._resetPreview();
+            if (this.linkedPresetForm) this.linkedPresetForm.close();
             return super.close(options);
         }
         // Some forms will manipulate themselves via modifying internal objects and re-rendering
@@ -20794,7 +20805,7 @@ function $8d51a9873394e4eb$export$3a950926bf0f8193(command, docName, selectedFie
                     releaseOthers: false
                 });
             });
-            if (pan && found.length && game.settings.get("multi-token-edit", "panToSearch")) (0, $32e43d7a62aba58c$export$835b3e9cf0bd96cf)(found);
+            if (pan && found.length && game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "panToSearch")) (0, $32e43d7a62aba58c$export$835b3e9cf0bd96cf)(found);
         }, 100);
     }
     if (command === "searchAndEdit") setTimeout(()=>{
@@ -20867,7 +20878,7 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
     }
     // If history is enabled we'll want to attach additional controls to the updates
     // so that they can be tracked.
-    if (game.settings.get("multi-token-edit", "enableHistory")) {
+    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) {
         context["mass-edit-randomize"] = [
             deepClone(this.randomizeFields)
         ];
@@ -21081,6 +21092,7 @@ function $8d51a9873394e4eb$export$33e5d9c131e68cf2(docName) {
 
 
 
+
 class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
     static app;
     static deactivateCallback;
@@ -21154,7 +21166,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         else this.documentName = this.preset.documentName;
         this.updatedPlaceables = [];
         const interaction = canvas.app.renderer.events;
-        if (!interaction.cursorStyles["brush"]) interaction.cursorStyles["brush"] = "url('modules/multi-token-edit/images/brush_icon.png'), auto";
+        if (!interaction.cursorStyles["brush"]) interaction.cursorStyles["brush"] = `url('modules/${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}/images/brush_icon.png'), auto`;
         this.active = true;
         this.refreshPreset();
         if (game.Levels3DPreview?._active) return this._activate3d();
@@ -21465,7 +21477,7 @@ const $d0a1f06830d69799$var$META_INDEX_FIELDS = [
     "documentName"
 ];
 const $d0a1f06830d69799$var$META_INDEX_ID = "MassEditMetaData";
-const $d0a1f06830d69799$var$DEFAULT_PACK = "world.mass-edit-presets-main";
+const $d0a1f06830d69799$export$2a34b6e4e19d9a25 = "world.mass-edit-presets-main";
 const $d0a1f06830d69799$var$DOCUMENT_FIELDS = [
     "id",
     "name",
@@ -21488,7 +21500,8 @@ const $d0a1f06830d69799$var$PRESET_FIELDS = [
     "documentName",
     "addSubtract",
     "randomize",
-    "img"
+    "img",
+    "gridSize"
 ];
 class $d0a1f06830d69799$export$3463c369d5cc977f {
     static name = "Preset";
@@ -21504,7 +21517,7 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         this.img = data.img;
         this.folder = data.folder;
         this.uuid = data.uuid;
-        // this.actor = data.actor;
+        this.gridSize = data.gridSize;
         this._visible = true;
     }
     get icon() {
@@ -21535,12 +21548,13 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         if (!this.document && this.uuid) {
             this.document = await fromUuid(this.uuid);
             if (this.document) {
-                const preset = this.document.getFlag("multi-token-edit", "preset") ?? {};
+                const preset = this.document.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "preset") ?? {};
                 this.documentName = preset.documentName;
                 this.img = preset.img;
                 this.data = preset.data;
                 this.randomize = getType(preset.randomize) === "Object" ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
                 this.addSubtract = getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
+                this.gridSize = preset.gridSize;
             }
         }
         return this;
@@ -21549,35 +21563,35 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         if (!this.document) await this.load();
         if (this.document) this.document.sheet.render(true);
     }
-    async update(data) {
+    async update(update) {
         if (this.document) {
             const flagUpdate = {};
-            Object.keys(data).forEach((k)=>{
+            Object.keys(update).forEach((k)=>{
                 if (k === "randomize" || k === "addSubtract") {
-                    flagUpdate[k] = Object.entries(data[k]);
-                    this[k] = data[k];
-                } else if (k === "data" && !(data.data instanceof Array)) {
+                    flagUpdate[k] = Object.entries(update[k]);
+                    this[k] = update[k];
+                } else if (k === "data" && !(update.data instanceof Array)) {
                     flagUpdate.data = this.data.map((d)=>{
-                        return mergeObject(d, data.data);
+                        return mergeObject(d, update.data);
                     });
                     this.data = flagUpdate.data;
-                } else if ($d0a1f06830d69799$var$PRESET_FIELDS.includes(k) && data[k] !== this[k]) {
-                    flagUpdate[k] = data[k];
-                    this[k] = data[k];
+                } else if ($d0a1f06830d69799$var$PRESET_FIELDS.includes(k) && update[k] !== this[k]) {
+                    flagUpdate[k] = update[k];
+                    this[k] = update[k];
                 }
             });
             if (!isEmpty(flagUpdate)) {
-                const update = {
+                const docUpdate = {
                     flags: {
-                        "multi-token-edit": {
+                        [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                             preset: flagUpdate
                         }
                     }
                 };
                 $d0a1f06830d69799$var$DOCUMENT_FIELDS.forEach((field)=>{
-                    if (field in flagUpdate && this.document[field] !== flagUpdate[field]) update[field] = flagUpdate[field];
+                    if (field in flagUpdate && this.document[field] !== flagUpdate[field]) docUpdate[field] = flagUpdate[field];
                 });
-                await this.document.update(update);
+                await this.document.update(docUpdate);
             }
             await this._updateIndex(flagUpdate);
         } else console.warn("Updating preset without document", this.id, this.uuid, this.name);
@@ -21593,7 +21607,7 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
             if (metaDoc) {
                 let tmp = {};
                 tmp[this.id] = update;
-                await metaDoc.setFlag("multi-token-edit", "index", tmp);
+                await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", tmp);
             } else {
                 console.warn(`META INDEX missing in ${this.document.pack}`);
                 return;
@@ -21674,7 +21688,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 draggable: f.pack === this.workingPack,
                 expanded: game.folders._expanded[f.uuid],
                 folder: f.folder?.uuid,
-                visible: type ? (f.flags["multi-token-edit"]?.types || [
+                visible: type ? (f.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types || [
                     "ALL"
                 ]).includes(type) : true
             });
@@ -21690,7 +21704,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
         const allPresets = [];
         const topLevelPresets = [];
         let hasVisible = false; // tracks whether there exists at least one visible preset within this tree
-        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag("multi-token-edit", "index");
+        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
         const index = pack.index.contents;
         for (const idx of index){
             if (idx._id === $d0a1f06830d69799$var$META_INDEX_ID) continue;
@@ -21722,7 +21736,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             hasVisible |= preset._visible;
         }
         // Sort folders
-        const sorting = game.settings.get("multi-token-edit", "presetSortMode") === "manual" ? "m" : "a";
+        const sorting = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode") === "manual" ? "m" : "a";
         const sortedFolders = this._sortFolders(Array.from(topLevelFolders.values()), sorting);
         const sortedPresets = this._sortPresets(topLevelPresets, sorting);
         return {
@@ -21752,7 +21766,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
     static async packToPresets(pack) {
         if (!pack) return [];
         const presets = [];
-        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag("multi-token-edit", "index");
+        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
         const index = pack.index.contents;
         for (const idx of index){
             if (idx._id === $d0a1f06830d69799$var$META_INDEX_ID) continue;
@@ -21772,7 +21786,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
         const updateDoc = {
             name: preset.name,
             flags: {
-                "multi-token-edit": {
+                [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                     preset: preset.toJSON()
                 }
             }
@@ -21787,7 +21801,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             img: preset.img,
             documentName: preset.documentName
         };
-        await metaDoc.setFlag("multi-token-edit", "index", update);
+        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", update);
     }
     /**
    * Update multiple presets at the same time
@@ -21818,7 +21832,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 pages: preset.pages ?? [],
                 folder: preset.folder,
                 flags: {
-                    "multi-token-edit": {
+                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                         preset: preset.toJSON()
                     }
                 }
@@ -21836,13 +21850,13 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             img: preset.img,
             documentName: preset.documentName
         };
-        await metaDoc.setFlag("multi-token-edit", "index", update);
+        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", update);
     }
     static async get(uuid, { full: full = true } = {}) {
         let { collection: collection, documentId: documentId, documentType: documentType, embedded: embedded, doc: doc } = foundry.utils.parseUuid(uuid);
         const index = collection.index.get(documentId);
         if (index) {
-            const metaIndex = (await collection.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag("multi-token-edit", "index");
+            const metaIndex = (await collection.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
             const mIndex = metaIndex[index._id];
             const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
                 ...index,
@@ -21883,12 +21897,12 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 }
                 metaUpdate["-=" + preset.id] = null;
             }
-            metaDoc.setFlag("multi-token-edit", "index", metaUpdate);
+            metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", metaUpdate);
         }
     }
     static async _initCompendium(pack) {
         let compendium = game.packs.get(pack);
-        if (!compendium && pack === $d0a1f06830d69799$var$DEFAULT_PACK) {
+        if (!compendium && pack === $d0a1f06830d69799$export$2a34b6e4e19d9a25) {
             compendium = await CompendiumCollection.createCompendium({
                 label: "Mass Edit: Presets (MAIN)",
                 type: "JournalEntry",
@@ -21899,7 +21913,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 },
                 packageType: "world"
             });
-            await this._initMetaDocument($d0a1f06830d69799$var$DEFAULT_PACK);
+            await this._initMetaDocument($d0a1f06830d69799$export$2a34b6e4e19d9a25);
         }
         return compendium;
     }
@@ -21912,7 +21926,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 _id: $d0a1f06830d69799$var$META_INDEX_ID,
                 name: "!!! METADATA: DO NOT DELETE !!!",
                 flags: {
-                    "multi-token-edit": {
+                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                         index: {}
                     }
                 }
@@ -22020,7 +22034,7 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             const defPreset = {
                 name: "New Preset",
                 documentName: docName,
-                data: data.length > 1 ? data : data[0]
+                data: data
             };
             switch(defPreset.documentName){
                 case "Token":
@@ -22042,6 +22056,7 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
                     defPreset.img = "icons/svg/circle.svg";
                     break;
             }
+            defPreset.gridSize = placeables[0].document.parent.grid.size;
             mergeObject(defPreset, options, {
                 inplace: true
             });
@@ -22064,13 +22079,14 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
    * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
    * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
+   * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
    * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
    * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
    * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
    *                                                Accepted values are "ALL" for all elements and document name optionally followed by an index number
    *                                                 e.g. "ALL", "Tile", "AmbientLight.1"
    * @returns {Array[Document]}
-   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false } = {}) {
+   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false } = {}) {
         if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
         if (!(uuid || preset || name || type || folder)) throw Error("ID, Name, Folder, or Preset is needed to spawn it.");
         if (!coordPicker && (x == null && y != null || x != null && y == null)) throw Error("Need both X and Y coordinates to spawn a preset.");
@@ -22089,6 +22105,7 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
         }
         const randomizer = preset.randomize;
         if (!isEmpty(randomizer)) (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(toCreate, null, randomizer);
+        if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
         // ==================
         // Determine spawn position
         if (coordPicker) {
@@ -22177,6 +22194,7 @@ const $d0a1f06830d69799$var$DOC_ICONS = {
     AmbientSound: "fa-solid fa-music",
     Note: "fa-solid fa-bookmark",
     Actor: "fas fa-user-alt",
+    Scene: "fas fa-map",
     DEFAULT: "fa-solid fa-question"
 };
 const $d0a1f06830d69799$var$SORT_MODES = {
@@ -22204,7 +22222,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         this.dragData = null;
         this.draggedElements = null;
         if (!configApp) {
-            const docLock = game.settings.get("multi-token-edit", "presetDocLock");
+            const docLock = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock");
             this.docName = docLock || docName;
         } else {
             this.configApp = configApp;
@@ -22217,7 +22235,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/presets.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presets.html`,
             resizable: true,
             minimizable: false,
             title: `Presets`,
@@ -22234,9 +22252,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     async getData(options) {
         const data = super.getData(options);
         // Cache partials
-        await getTemplate("modules/multi-token-edit/templates/generic/preset.html");
-        await getTemplate("modules/multi-token-edit/templates/generic/presetFolder.html");
-        const displayExtCompendiums = game.settings.get("multi-token-edit", "presetExtComp");
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/preset.html`);
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolder.html`);
+        const displayExtCompendiums = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetExtComp");
         this.tree = await $d0a1f06830d69799$export$9cea25aeb7365a59.getTree(this.docName, !displayExtCompendiums);
         data.presets = this.tree.presets;
         data.folders = this.tree.folders;
@@ -22244,10 +22262,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         data.createEnabled = Boolean(this.configApp);
         data.isPlaceable = (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.docName) || this.docName === "ALL";
         data.allowDocumentSwap = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName) && !this.configApp;
-        data.docLockActive = game.settings.get("multi-token-edit", "presetDocLock") === this.docName;
-        data.layerSwitchActive = game.settings.get("multi-token-edit", "presetLayerSwitch");
+        data.docLockActive = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock") === this.docName;
+        data.layerSwitchActive = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch");
+        data.scaling = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling");
         data.extCompActive = displayExtCompendiums;
-        data.sortMode = $d0a1f06830d69799$var$SORT_MODES[game.settings.get("multi-token-edit", "presetSortMode")];
+        data.sortMode = $d0a1f06830d69799$var$SORT_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode")];
         data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
         data.lastSearch = $d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch;
         data.docs = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).reduce((obj, key)=>{
@@ -22283,38 +22302,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const itemList = html.find(".item-list");
         // Multi-select
         html.on("click", ".item", (e)=>{
-            const item = $(e.target).closest(".item");
-            const items = itemList.find(".item");
-            const lastSelected = items.filter(".last-selected");
-            if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-                lastSelected.removeClass("last-selected");
-                items.removeClass("selected");
-                item.addClass("selected").addClass("last-selected");
-            } else if (e.ctrlKey || e.metaKey) {
-                item.toggleClass("selected");
-                if (item.hasClass("selected")) {
-                    lastSelected.removeClass("last-selected");
-                    item.addClass("last-selected");
-                } else item.removeClass("last-index");
-            } else if (e.shiftKey) {
-                if (lastSelected.length) {
-                    let itemIndex = items.index(item);
-                    let lastSelectedIndex = items.index(lastSelected);
-                    if (itemIndex === lastSelectedIndex) {
-                        item.toggleClass("selected");
-                        if (item.hasClass("selected")) item.addClass("last-selected");
-                        else lastSelected.removeClass("last-selected");
-                    } else {
-                        let itemArr = items.toArray();
-                        if (itemIndex > lastSelectedIndex) for(let i = lastSelectedIndex; i <= itemIndex; i++)$(itemArr[i]).addClass("selected");
-                        else for(let i = lastSelectedIndex; i >= itemIndex; i--)$(itemArr[i]).addClass("selected");
-                    }
-                } else {
-                    lastSelected.removeClass("last-selected");
-                    item.toggleClass("selected");
-                    if (item.hasClass("selected")) item.addClass("last-selected");
-                }
-            }
+            $d0a1f06830d69799$var$itemSelect(e, itemList);
         });
         html.on("dragstart", ".item", (event)=>{
             this.dragType = "item";
@@ -22497,6 +22485,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         html.find(".toggle-sort").on("click", this._onToggleSort.bind(this));
         html.find(".toggle-doc-lock").on("click", this._onToggleLock.bind(this));
         html.find(".toggle-ext-comp").on("click", this._onToggleExtComp.bind(this));
+        html.find(".toggle-scaling").on("click", this._onToggleScaling.bind(this));
         html.find(".toggle-layer-switch").on("click", this._onToggleLayerSwitch.bind(this));
         html.find(".document-select").on("click", this._onDocumentChange.bind(this));
         html.find(".item").on("contextmenu", this._onRightClickPreset.bind(this));
@@ -22515,6 +22504,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         this._contextMenu(html.find(".item-list"));
     }
     async _onDoubleClickPreset(event) {
+        if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName)) return;
         const uuid = $(event.target).closest(".item").data("uuid");
         if (!uuid) return;
         ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.spawning")}`);
@@ -22522,7 +22512,8 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             uuid: uuid,
             coordPicker: true,
             taPreview: "ALL",
-            layerSwitch: game.settings.get("multi-token-edit", "presetLayerSwitch")
+            layerSwitch: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch"),
+            scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
         });
     }
     _contextMenu(html) {
@@ -22618,7 +22609,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const folderDoc = await fromUuid(uuid);
         if (folder) {
             let types;
-            if (folderDoc) types = folderDoc.flags["multi-token-edit"]?.types ?? [
+            if (folderDoc) types = folderDoc.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types ?? [
                 "ALL"
             ];
             else types = [
@@ -22630,7 +22621,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 sorting: folder.sorting,
                 folder: parentId,
                 flags: {
-                    "multi-token-edit": {
+                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                         types: types
                     }
                 },
@@ -22721,7 +22712,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             type: "JournalEntry",
             sorting: "m",
             flags: {
-                "multi-token-edit": {
+                [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
                     types: types
                 }
             }
@@ -22743,7 +22734,6 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 ...header.offset()
             };
             options.top += header.height();
-            console.log(folder);
             new $d0a1f06830d69799$var$PresetFolderConfig(folder, options).render(true);
         }).then(()=>this.render(true));
     }
@@ -22845,43 +22835,50 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     // this.render(true);
     }
     async _onToggleSort(event) {
-        const currentSort = game.settings.get("multi-token-edit", "presetSortMode");
+        const currentSort = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode");
         const newSort = currentSort === "manual" ? "alphabetical" : "manual";
-        await game.settings.set("multi-token-edit", "presetSortMode", newSort);
+        await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode", newSort);
         this.render(true);
     }
     _onToggleLock(event) {
         const lockControl = $(event.target).closest(".toggle-doc-lock");
-        let currentLock = game.settings.get("multi-token-edit", "presetDocLock");
+        let currentLock = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock");
         let newLock = this.docName;
         if (newLock !== currentLock) lockControl.addClass("active");
         else {
             lockControl.removeClass("active");
             newLock = "";
         }
-        game.settings.set("multi-token-edit", "presetDocLock", newLock);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock", newLock);
     }
     _onToggleLayerSwitch(event) {
         const switchControl = $(event.target).closest(".toggle-layer-switch");
-        const value = !game.settings.get("multi-token-edit", "presetLayerSwitch");
+        const value = !game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch");
         if (value) switchControl.addClass("active");
         else switchControl.removeClass("active");
-        game.settings.set("multi-token-edit", "presetLayerSwitch", value);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch", value);
     }
     async _onToggleExtComp(event) {
         const switchControl = $(event.target).closest(".toggle-ext-comp");
-        const value = !game.settings.get("multi-token-edit", "presetExtComp");
+        const value = !game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetExtComp");
         if (value) switchControl.addClass("active");
         else switchControl.removeClass("active");
-        await game.settings.set("multi-token-edit", "presetExtComp", value);
+        await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetExtComp", value);
         this.render(true);
+    }
+    async _onToggleScaling(event) {
+        const switchControl = $(event.target).closest(".toggle-scaling");
+        const value = !game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling");
+        if (value) switchControl.addClass("active");
+        else switchControl.removeClass("active");
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling", value);
     }
     _onDocumentChange(event) {
         const newDocName = $(event.target).closest(".document-select").data("name");
         if (newDocName != this.docName) {
             this.docName = newDocName;
             if (this.docName !== "ALL") {
-                if (game.settings.get("multi-token-edit", "presetLayerSwitch")) canvas.getLayerByEmbeddedName(this.docName === "Actor" ? "Token" : this.docName)?.activate();
+                if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch")) canvas.getLayerByEmbeddedName(this.docName === "Actor" ? "Token" : this.docName)?.activate();
             }
             this.render(true);
         }
@@ -22909,10 +22906,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }
     }
     async _onPresetDragOut(event) {
+        if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName)) return;
         const uuid = $(event.originalEvent.target).closest(".item").data("uuid");
         const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
         if (!preset) return;
-        if (game.settings.get("multi-token-edit", "presetLayerSwitch")) canvas.getLayerByEmbeddedName(preset.documentName === "Actor" ? "Token" : preset.documentName)?.activate();
+        if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch")) canvas.getLayerByEmbeddedName(preset.documentName === "Actor" ? "Token" : preset.documentName)?.activate();
         // For some reason canvas.mousePosition does not get updated during drag and drop
         // Acquire the cursor position transformed to Canvas coordinates
         const [x, y] = [
@@ -22930,7 +22928,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             preset: preset,
             x: mouseX,
             y: mouseY,
-            mousePosition: false
+            mousePosition: false,
+            layerSwitch: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch"),
+            scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
         });
     }
     async _onPresetBrush(event) {
@@ -23052,7 +23052,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 preselectPack: $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack
             }));
         if (pack && pack !== $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack) {
-            await game.settings.set("multi-token-edit", "workingPack", pack);
+            await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", pack);
             this.render(true);
         }
     }
@@ -23104,14 +23104,13 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         this.presets = presets;
         this.callback = options.callback;
         this.isCreate = options.isCreate;
-        console.log(presets);
     }
     /** @inheritdoc */ static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/presetEdit.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetEdit.html`,
             width: 360
         });
     }
@@ -23144,12 +23143,18 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
     /* -------------------------------------------- */ /** @override */ async getData(options = {}) {
         const data = {};
         data.preset = {};
-        if (this.presets.length === 1) data.preset = this.presets[0];
+        if (this.presets.length === 1) {
+            data.preset = this.presets[0];
+            data.allowFieldDelete = true;
+        }
         data.minlength = this.presets.length > 1 ? 0 : 1;
         data.tva = game.modules.get("token-variants")?.active;
         // Check if all presets are for the same document type and thus can be edited using a Mass Edit form
         const docName = this.presets[0].documentName;
-        if (docName !== "Actor" && this.presets.every((p)=>p.documentName === docName)) data.documentEdit = docName;
+        if (docName !== "Actor" && this.presets.every((p)=>p.documentName === docName)) {
+            data.documentEdit = docName;
+            data.isPlaceable = (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(docName);
+        }
         return data;
     }
     activateListeners(html) {
@@ -23158,6 +23163,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         html.find('[name="name"]').select();
         html.find(".edit-document").on("click", this._onEditDocument.bind(this));
         html.find(".assign-document").on("click", this._onAssignDocument.bind(this));
+        html.find(".delete-fields").on("click", this._onDeleteFields.bind(this));
         // TVA Support
         const tvaButton = html.find(".token-variants-image-select-button");
         tvaButton.on("click", (event)=>{
@@ -23168,6 +23174,11 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 searchType: "Item"
             });
         });
+    }
+    async _onDeleteFields() {
+        new $d0a1f06830d69799$var$PresetFieldDelete(this.data ?? this.presets[0].data, (data)=>{
+            this.data = data;
+        }).render(true);
     }
     async _onAssignDocument() {
         const layer = canvas.getLayerByEmbeddedName(this.presets[0].documentName);
@@ -23184,12 +23195,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
     async _onEditDocument() {
         const documents = [];
         const cls = CONFIG[this.presets[0].documentName].documentClass;
-        for (const p of this.presets){
-            let data = p.data instanceof Array ? p.data : [
-                p.data
-            ];
-            data.forEach((d)=>documents.push(new cls($d0a1f06830d69799$var$mergePresetDataToDefaultDoc(p, d))));
-        }
+        for (const p of this.presets)p.data.forEach((d)=>documents.push(new cls($d0a1f06830d69799$var$mergePresetDataToDefaultDoc(p, d))));
         const app = await (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(documents, null, {
             presetEdit: true,
             callback: (obj)=>{
@@ -23243,6 +23249,75 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         return this.presets;
     }
 }
+class $d0a1f06830d69799$var$PresetFieldDelete extends FormApplication {
+    static name = "PresetFieldDelete";
+    constructor(data, callback){
+        super();
+        this.presetData = data;
+        this.isObject = !(data instanceof Array);
+        this.singleData = !this.isObject && data.length === 1;
+        this.callback = callback;
+    }
+    /** @inheritdoc */ static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            classes: [
+                "sheet",
+                "preset-field-delete"
+            ],
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFieldDelete.html`,
+            width: 600,
+            resizable: false
+        });
+    }
+    /* -------------------------------------------- */ /** @override */ get title() {
+        return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-fields");
+    }
+    activateListeners(html) {
+        super.activateListeners(html);
+        html.find(".item").on("click", this._onFieldClick);
+    }
+    _onFieldClick(e) {
+        $d0a1f06830d69799$var$itemSelect(e, $(e.target).closest(".preset-field-list"));
+    }
+    /** @override */ async getData(options = {}) {
+        let data;
+        if (this.singleData) data = this.presetData[0];
+        else data = this.presetData;
+        data = flattenObject(data);
+        let fields = [];
+        for (const [k, v] of Object.entries(data))fields.push({
+            name: k,
+            value: JSON.stringify(v)
+        });
+        return {
+            fields: fields
+        };
+    }
+    /* -------------------------------------------- */ /** @override */ async _updateObject(event, formData) {
+        let data;
+        if (this.singleData) data = this.presetData[0];
+        else data = this.presetData;
+        data = flattenObject(data);
+        const form = $(event.target).closest("form");
+        form.find(".item.selected").each(function() {
+            const name = $(this).attr("name");
+            delete data[name];
+        });
+        data = expandObject(data);
+        if (this.singleData) data = [
+            data
+        ];
+        else if (!this.isObject) {
+            let reorganizedData = [];
+            for(let i = 0; i < this.presetData.length; i++){
+                if (!data[i]) continue;
+                reorganizedData.push(data[i]);
+            }
+            data = reorganizedData;
+        }
+        this.callback(data);
+    }
+}
 class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
     static name = "PresetFolderConfig";
     /** @inheritdoc */ static get defaultOptions() {
@@ -23251,7 +23326,7 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
                 "sheet",
                 "folder-edit"
             ],
-            template: "modules/multi-token-edit/templates/presetFolderEdit.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolderEdit.html`,
             width: 360
         });
     }
@@ -23276,7 +23351,7 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
     /* -------------------------------------------- */ /** @override */ async getData(options = {}) {
         const folder = this.document.toObject();
         const label = (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(Folder.implementation.metadata.label, false);
-        let folderDocs = folder.flags["multi-token-edit"]?.types ?? [
+        let folderDocs = folder.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types ?? [
             "ALL"
         ];
         let docs = [];
@@ -23308,7 +23383,7 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
             visibleTypes.push($(this).data("name"));
         });
         if (!visibleTypes.length) visibleTypes.push("ALL");
-        formData["flags.multi-token-edit.types"] = visibleTypes;
+        formData[`flags.${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}.types`] = visibleTypes;
         let doc = this.object;
         if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
         if (this.object.id) await this.object.update(formData);
@@ -23413,6 +23488,11 @@ function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
                 };
                 break;
             }
+        case "Scene":
+            data = {
+                name: preset.name
+            };
+            break;
         default:
             data = {};
     }
@@ -23435,6 +23515,67 @@ function $d0a1f06830d69799$var$placeableToData(placeable) {
         }
     }
     return data;
+}
+/**
+ * Controls select/multi-select flow for item lists
+ * @param {*} e item click event
+ * @param {*} itemList list of items that this item exists within
+ */ function $d0a1f06830d69799$var$itemSelect(e, itemList) {
+    const item = $(e.target).closest(".item");
+    const items = itemList.find(".item");
+    const lastSelected = items.filter(".last-selected");
+    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        lastSelected.removeClass("last-selected");
+        items.removeClass("selected");
+        item.addClass("selected").addClass("last-selected");
+    } else if (e.ctrlKey || e.metaKey) {
+        item.toggleClass("selected");
+        if (item.hasClass("selected")) {
+            lastSelected.removeClass("last-selected");
+            item.addClass("last-selected");
+        } else item.removeClass("last-index");
+    } else if (e.shiftKey) {
+        if (lastSelected.length) {
+            let itemIndex = items.index(item);
+            let lastSelectedIndex = items.index(lastSelected);
+            if (itemIndex === lastSelectedIndex) {
+                item.toggleClass("selected");
+                if (item.hasClass("selected")) item.addClass("last-selected");
+                else lastSelected.removeClass("last-selected");
+            } else {
+                let itemArr = items.toArray();
+                if (itemIndex > lastSelectedIndex) for(let i = lastSelectedIndex; i <= itemIndex; i++)$(itemArr[i]).addClass("selected");
+                else for(let i = lastSelectedIndex; i >= itemIndex; i--)$(itemArr[i]).addClass("selected");
+            }
+        } else {
+            lastSelected.removeClass("last-selected");
+            item.toggleClass("selected");
+            if (item.hasClass("selected")) item.addClass("last-selected");
+        }
+    }
+}
+function $d0a1f06830d69799$var$scaleDataToGrid(data, documentName, gridSize) {
+    if (![
+        "Tile",
+        "Drawing",
+        "Wall"
+    ].includes(documentName)) return;
+    if (!gridSize) gridSize = 100;
+    const ratio = canvas.grid.size / gridSize;
+    console.log(data, documentName, gridSize);
+    for (const d of data)switch(documentName){
+        case "Tile":
+            if ("width" in d) d.width *= ratio;
+            if ("height" in d) d.height *= ratio;
+            break;
+        case "Drawing":
+            if ("shape.width" in d) d["shape.width"] *= ratio;
+            if ("shape.height" in d) d["shape.height"] *= ratio;
+            break;
+        case "Wall":
+            if ("c" in d) for(let i = 0; i < d.c.length; i++)d.c[i] *= ratio;
+            break;
+    }
 }
 
 
@@ -23770,7 +23911,7 @@ async function $32e43d7a62aba58c$export$24b03028f6f659d0(documentName, data, sce
         },
         type: "CREATE"
     };
-    game.socket.emit(`module.multi-token-edit`, message);
+    game.socket.emit(`module.${$32e43d7a62aba58c$export$59dbefa3c1eecdf}`, message);
     // Self resolve in 4s if no response from a GM is received
     setTimeout(()=>{
         $32e43d7a62aba58c$export$3bb8c85ed320ac91[requestID]?.([]);
@@ -23986,11 +24127,11 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
     }
 }
 function $32e43d7a62aba58c$export$b3bd0bc58e36cd63(path, moduleLocalization = true) {
-    if (moduleLocalization) return game.i18n.localize(`${$32e43d7a62aba58c$export$59dbefa3c1eecdf}.${path}`);
+    if (moduleLocalization) return game.i18n.localize(`MassEdit.${path}`);
     return game.i18n.localize(path);
 }
 function $32e43d7a62aba58c$export$6ea486f4767e8a74(path, insert, moduleLocalization = true) {
-    if (moduleLocalization) return game.i18n.format(`${$32e43d7a62aba58c$export$59dbefa3c1eecdf}.${path}`, insert);
+    if (moduleLocalization) return game.i18n.format(`MassEdit.${path}`, insert);
     return game.i18n.format(path, insert);
 }
 
@@ -24569,7 +24710,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
         const allData = {};
         for(let i = objects.length; i >= 0; i--)mergeObject(allData, objects[i]);
         let documentName = options.documentName ?? "NONE";
-        let customControls = mergeObject((0, $d90d2371b0027c40$export$549879c0f3abf4f2)[documentName] ?? {}, game.settings.get("multi-token-edit", "customControls")[documentName] ?? {});
+        let customControls = mergeObject((0, $d90d2371b0027c40$export$549879c0f3abf4f2)[documentName] ?? {}, game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls")[documentName] ?? {});
         customControls = mergeObject(customControls, options.customControls?.[documentName] ?? {});
         const [nav, tabSelectors] = (0, $2d0c7cad90c7ba3c$export$6171357ef4337306)(allData, documentName, customControls);
         const commonData = (0, $32e43d7a62aba58c$export$a88e9f7fc35c8ffa)(objects);
@@ -24581,7 +24722,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
         this.allData = allData;
         this.nav = nav;
         this.editableLabels = {};
-        this.pinnedFields = game.settings.get("multi-token-edit", "pinnedFields")[this.documentName] ?? {};
+        this.pinnedFields = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields")[this.documentName] ?? {};
         this.customControls = customControls;
         if (options.callback) this.callbackOnUpdate = options.callback;
     }
@@ -24591,7 +24732,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
             classes: [
                 "sheet"
             ],
-            template: "modules/multi-token-edit/templates/generic/genericForm.html",
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/genericForm.html`,
             resizable: true,
             minimizable: false,
             title: `Generic`,
@@ -24615,8 +24756,8 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
     async getData(options) {
         const data = await super.getData(options);
         // Cache partials
-        await getTemplate("modules/multi-token-edit/templates/generic/navHeaderPartial.html");
-        await getTemplate("modules/multi-token-edit/templates/generic/form-group.html");
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/navHeaderPartial.html`);
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/form-group.html`);
         data.nav = this.nav;
         return data;
     }
@@ -24676,7 +24817,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
    */ async _updateObject(event, formData) {
         super._updateObject(event, formData);
         // Save pinned field values and labels
-        const pinned = game.settings.get("multi-token-edit", "pinnedFields");
+        const pinned = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields");
         pinned[this.documentName] = this.pinnedFields;
         for (const name of Object.keys(this.pinnedFields))this.pinnedFields[name].value = formData[name];
         if (!isEmpty(this.editableLabels)) {
@@ -24686,7 +24827,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
             }
             this.editableLabels = {};
         }
-        game.settings.set("multi-token-edit", "pinnedFields", pinned);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields", pinned);
     }
 }
 function $581145b22b1135a9$var$defineRangeControl(name, val, customControls, docName, { min: min = null, max: max = null, step: step = null } = {}) {
@@ -24719,9 +24860,9 @@ function $581145b22b1135a9$var$defineRangeControl(name, val, customControls, doc
                         max: max,
                         step: step
                     });
-                    const allControls = game.settings.get("multi-token-edit", "customControls");
+                    const allControls = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls");
                     allControls[docName] = customControls;
-                    game.settings.set("multi-token-edit", "customControls", allControls);
+                    game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls", allControls);
                 }
             }
         }
@@ -24747,9 +24888,9 @@ function $581145b22b1135a9$var$defineSelectControl(name, val, customControls, do
                             select: true,
                             options: options.split("\n").filter((o)=>o)
                         });
-                        const allControls = game.settings.get("multi-token-edit", "customControls");
+                        const allControls = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls");
                         allControls[docName] = customControls;
-                        game.settings.set("multi-token-edit", "customControls", allControls);
+                        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls", allControls);
                     }
                 }
             }
@@ -24757,10 +24898,10 @@ function $581145b22b1135a9$var$defineSelectControl(name, val, customControls, do
     }).render(true);
 }
 function $581145b22b1135a9$var$unsetCustomControl(name, docName) {
-    const allControls = game.settings.get("multi-token-edit", "customControls");
+    const allControls = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls");
     let docControls = allControls[docName] || {};
     setProperty(docControls, name, null);
-    game.settings.set("multi-token-edit", "customControls", allControls);
+    game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls", allControls);
 }
 
 
@@ -24908,7 +25049,7 @@ async function $f3b8698a65c76e19$export$7ac7726310ec4fa4(found = null, documentN
     let [target, selected] = $f3b8698a65c76e19$export$f9f1f4119b3df74(found);
     // If there are no placeable in control or just one, then either exit or display the default config window
     if (!selected || !selected.length) return;
-    if (game.settings.get("multi-token-edit", "singleDocDefaultConfig")) {
+    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "singleDocDefaultConfig")) {
         if (selected.length === 1) {
             if (selected[0].sheet) selected[0].sheet.render(true, {});
             return;
@@ -25073,45 +25214,45 @@ const $15e9db69c2322773$export$149eb684a26496a2 = {};
 // Initialize module
 Hooks.once("init", ()=>{
     // Register Settings
-    game.settings.register("multi-token-edit", "cssStyle", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssStyle", {
         scope: "world",
         config: false,
         type: String,
         default: "Default"
     });
-    game.settings.register("multi-token-edit", "cssCustom", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssCustom", {
         scope: "world",
         config: false,
         type: String,
         default: (0, $2f2bd158cac8dcd3$export$1c0e52168af9675e).Default
     });
-    game.settings.registerMenu("multi-token-edit", "cssEdit", {
-        name: game.i18n.localize("multi-token-edit.settings.cssEdit.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.cssEdit.hint"),
+    game.settings.registerMenu((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssEdit", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.cssEdit.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.cssEdit.hint"),
         label: "",
         scope: "world",
         icon: "fas fa-cog",
         type: (0, $2f2bd158cac8dcd3$export$2e2bcd8739ae039),
         restricted: true
     });
-    game.settings.register("multi-token-edit", "singleDocDefaultConfig", {
-        name: game.i18n.localize("multi-token-edit.settings.singleDocDefaultConfig.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.singleDocDefaultConfig.hint"),
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "singleDocDefaultConfig", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.singleDocDefaultConfig.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.singleDocDefaultConfig.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: false
     });
-    game.settings.register("multi-token-edit", "rangeToTextbox", {
-        name: game.i18n.localize("multi-token-edit.settings.rangeToTextbox.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.rangeToTextbox.hint"),
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "rangeToTextbox", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.rangeToTextbox.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.rangeToTextbox.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: false
     });
     // Deprecated
-    game.settings.register("multi-token-edit", "presets", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presets", {
         scope: "world",
         config: false,
         type: Object,
@@ -25119,7 +25260,7 @@ Hooks.once("init", ()=>{
     });
     // ===============
     // Preset Settings
-    game.settings.register("multi-token-edit", "workingPack", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", {
         scope: "world",
         config: false,
         type: String,
@@ -25128,52 +25269,58 @@ Hooks.once("init", ()=>{
             (0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack = val;
         }
     });
-    (0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack = game.settings.get("multi-token-edit", "workingPack");
-    game.settings.register("multi-token-edit", "docPresets", {
+    (0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack");
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets", {
         scope: "world",
         config: false,
         type: Array,
         default: []
     });
     // Temp setting needed for migration
-    game.settings.register("multi-token-edit", "presetsMigrated", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsMigrated", {
         scope: "world",
         config: false,
         type: Boolean,
         default: false
     });
     // Temp setting needed for migration
-    game.settings.register("multi-token-edit", "presetsCompMigrated", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsCompMigrated", {
         scope: "world",
         config: false,
         type: Boolean,
         default: false
     });
-    game.settings.register("multi-token-edit", "presetDocLock", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock", {
         scope: "world",
         config: false,
         type: String,
         default: ""
     });
-    game.settings.register("multi-token-edit", "presetLayerSwitch", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch", {
         scope: "world",
         config: false,
         type: Boolean,
         default: true
     });
-    game.settings.register("multi-token-edit", "presetExtComp", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetExtComp", {
         scope: "world",
         config: false,
         type: Boolean,
         default: true
     });
-    game.settings.register("multi-token-edit", "presetSortMode", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode", {
         scope: "world",
         config: false,
         type: String,
         default: "manual"
     });
-    game.settings.register("multi-token-edit", "presetSceneControl", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSceneControl", {
         name: "Scene Controls: Preset Button",
         scope: "world",
         config: true,
@@ -25185,76 +25332,76 @@ Hooks.once("init", ()=>{
     });
     // end of Preset Settings
     // ======================
-    game.settings.register("multi-token-edit", "pinnedFields", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
-    game.settings.register("multi-token-edit", "customControls", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
     // Disable until duplicate flag value bug is fixed
-    // game.settings.register('multi-token-edit', 'enableFlagsTab', {
-    //   name: game.i18n.localize('multi-token-edit.settings.enableFlagsTab.name'),
-    //   hint: game.i18n.localize('multi-token-edit.settings.enableFlagsTab.hint'),
+    // game.settings.register(MODULE_ID, 'enableFlagsTab', {
+    //   name: localize('settings.enableFlagsTab.name'),
+    //   hint: localize('settings.enableFlagsTab.hint'),
     //   scope: 'world',
     //   config: true,
     //   type: Boolean,
     //   default: true,
     // });
-    game.settings.register("multi-token-edit", "enableHistory", {
-        name: game.i18n.localize("multi-token-edit.settings.enableHistory.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.enableHistory.hint"),
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.enableHistory.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.enableHistory.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: false
     });
-    game.settings.register("multi-token-edit", "historyMaxLength", {
-        name: game.i18n.localize("multi-token-edit.settings.historyMaxLength.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.historyMaxLength.hint"),
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "historyMaxLength", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.historyMaxLength.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.historyMaxLength.hint"),
         scope: "world",
         config: true,
         type: Number,
         default: 10
     });
-    if (0, $9d9c8b96086115aa$export$37e829338e648c57) game.settings.register("multi-token-edit", "autoSnap", {
-        name: game.i18n.localize("multi-token-edit.settings.autoSnap.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.autoSnap.hint"),
+    if (0, $9d9c8b96086115aa$export$37e829338e648c57) game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "autoSnap", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.autoSnap.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.autoSnap.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: true
     });
-    game.settings.register("multi-token-edit", "panToSearch", {
-        name: game.i18n.localize("multi-token-edit.settings.panToSearch.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.panToSearch.hint"),
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "panToSearch", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.panToSearch.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.panToSearch.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: true
     });
-    if (game.modules.get("tokenmagic")?.active) game.settings.register("multi-token-edit", "tmfxFieldsEnable", {
-        name: game.i18n.localize("multi-token-edit.settings.tmfxFieldsEnable.name"),
-        hint: game.i18n.localize("multi-token-edit.settings.tmfxFieldsEnable.hint"),
+    if (game.modules.get("tokenmagic")?.active) game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "tmfxFieldsEnable", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.tmfxFieldsEnable.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.tmfxFieldsEnable.hint"),
         scope: "world",
         config: true,
         type: Boolean,
         default: true
     });
     // Register history related hooks
-    if (game.settings.get("multi-token-edit", "enableHistory")) (0, $32e43d7a62aba58c$export$de10d55d23082cf5).forEach((docName)=>{
+    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) (0, $32e43d7a62aba58c$export$de10d55d23082cf5).forEach((docName)=>{
         Hooks.on(`preUpdate${docName}`, (doc, update, options, userId)=>{
             $15e9db69c2322773$var$updateHistory(doc, update, options, userId);
         });
     });
-    game.keybindings.register("multi-token-edit", "editKey", {
-        name: game.i18n.localize("multi-token-edit.keybindings.editKey.name"),
-        hint: game.i18n.localize("multi-token-edit.keybindings.editKey.hint"),
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "editKey", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.editKey.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.editKey.hint"),
         editable: [
             {
                 key: "KeyE",
@@ -25264,14 +25411,19 @@ Hooks.once("init", ()=>{
             }
         ],
         onDown: ()=>{
+            const app = Object.values(ui.windows).find((w)=>w.meObjects);
+            if (app) {
+                app.close();
+                return;
+            }
             (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)();
         },
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
     });
-    game.keybindings.register("multi-token-edit", "selectKey", {
-        name: game.i18n.localize("multi-token-edit.keybindings.selectKey.name"),
-        hint: game.i18n.localize("multi-token-edit.keybindings.selectKey.hint"),
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "selectKey", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.selectKey.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.selectKey.hint"),
         editable: [
             {
                 key: "KeyF",
@@ -25286,9 +25438,9 @@ Hooks.once("init", ()=>{
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
     });
-    game.keybindings.register("multi-token-edit", "presetApply", {
-        name: game.i18n.localize("multi-token-edit.keybindings.presetApply.name"),
-        hint: game.i18n.localize("multi-token-edit.keybindings.presetApply.hint"),
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetApply", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.presetApply.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.presetApply.hint"),
         editable: [
             {
                 key: "KeyX",
@@ -25316,9 +25468,34 @@ Hooks.once("init", ()=>{
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
     });
-    game.keybindings.register("multi-token-edit", "genericFormKey", {
-        name: game.i18n.localize("multi-token-edit.keybindings.genericForm.name"),
-        hint: game.i18n.localize("multi-token-edit.keybindings.genericForm.hint"),
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetApplyScene", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.presetApplyScene.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.presetApplyScene.hint"),
+        editable: [],
+        onDown: ()=>{
+            const app = Object.values(ui.windows).find((w)=>w instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
+            if (app) {
+                app.close(true);
+                return;
+            }
+            new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, async (preset)=>{
+                if (preset && canvas.scene) {
+                    const data = flattenObject(preset.data[0]);
+                    await canvas.scene.update(data);
+                    // Grid doesn't redraw on scene update, do it manually here
+                    if ("grid.color" in data || "grid.alpha" in data) canvas.grid.grid.draw({
+                        color: data["grid.color"].replace("#", "0x"),
+                        alpha: Number(data["grid.alpha"])
+                    });
+                }
+            }, "Scene").render(true);
+        },
+        restricted: true,
+        precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    });
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "genericFormKey", {
+        name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.genericForm.name"),
+        hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.genericForm.hint"),
         editable: [
             {
                 key: "KeyR",
@@ -25347,7 +25524,7 @@ Hooks.once("init", ()=>{
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
     });
     // Register copy-paste wrappers
-    (0, $82712238b276cf54$export$a5fe556005dcec2e).register("multi-token-edit", "ClientKeybindings._onCopy", function(wrapped, ...args) {
+    (0, $82712238b276cf54$export$a5fe556005dcec2e).register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "ClientKeybindings._onCopy", function(wrapped, ...args) {
         if (window.getSelection().toString() === "") {
             // Check if a Mass Config form is open and if so copy data from there
             const meForm = Object.values(ui.windows).find((app)=>app.meObjects != null);
@@ -25358,10 +25535,24 @@ Hooks.once("init", ()=>{
         if (result) (0, $8d51a9873394e4eb$export$9ffa5d419081ba23)(canvas.activeLayer.constructor.documentName);
         return result;
     }, "MIXED");
-    (0, $82712238b276cf54$export$a5fe556005dcec2e).register("multi-token-edit", "ClientKeybindings._onPaste", function(wrapped, ...args) {
+    (0, $82712238b276cf54$export$a5fe556005dcec2e).register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "ClientKeybindings._onPaste", function(wrapped, ...args) {
         if ((0, $f3b8698a65c76e19$export$c5485820df61364)()) return true;
         return wrapped(...args);
     }, "MIXED");
+    // Add SceneControl option to open Mass Edit form
+    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSceneControl")) (0, $82712238b276cf54$export$a5fe556005dcec2e).register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "SceneNavigation.prototype._getContextMenuOptions", function(wrapped, ...args) {
+        const options = wrapped(...args);
+        options.push({
+            name: "Mass Edit",
+            icon: '<i class="fa-solid fa-pen-to-square"></i>',
+            condition: game.user.isGM,
+            callback: (li)=>{
+                const sceneId = li.attr("data-scene-id");
+                (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(game.scenes.get(sceneId));
+            }
+        });
+        return options;
+    }, "WRAPPER");
     // Intercept and prevent certain placeable drag and drop if they are hovering over the MassEditPresets form
     // passing on the placeable to it to perform preset creation.
     const dragDropHandler = function(wrapped, ...args) {
@@ -25379,11 +25570,11 @@ Hooks.once("init", ()=>{
         } else return wrapped(...args);
     };
     (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).forEach((name)=>{
-        (0, $82712238b276cf54$export$a5fe556005dcec2e).register("multi-token-edit", `${name}.prototype._onDragLeftDrop`, dragDropHandler, "MIXED");
+        (0, $82712238b276cf54$export$a5fe556005dcec2e).register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), `${name}.prototype._onDragLeftDrop`, dragDropHandler, "MIXED");
     });
     // Handle broadcasts
     // Needed to allow players to spawn Presets by delegating create document request to GMs
-    game.socket?.on(`module.multi-token-edit`, async (message)=>{
+    game.socket?.on(`module.${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}`, async (message)=>{
         const args = message.args;
         if (message.handlerName === "document" && message.type === "CREATE") {
             const isResponsibleGM = !game.users.filter((user)=>user.isGM && (user.active || user.isActive)).some((other)=>other.id < game.user.id);
@@ -25400,7 +25591,7 @@ Hooks.once("init", ()=>{
                 },
                 type: "RESOLVE"
             };
-            game.socket.emit(`module.multi-token-edit`, message);
+            game.socket.emit(`module.${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}`, message);
         } else if (message.handlerName === "document" && message.type === "RESOLVE") (0, $32e43d7a62aba58c$export$c36e29304d06f075)(args);
     });
     globalThis.MassEdit = {
@@ -25415,7 +25606,7 @@ Hooks.once("init", ()=>{
         createPreset: (0, $d0a1f06830d69799$export$619760a5720f8054).createPreset,
         spawnPreset: (0, $d0a1f06830d69799$export$619760a5720f8054).spawnPreset
     };
-    game.modules.get("multi-token-edit").api = {
+    game.modules.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)).api = {
         ...globalThis.MassEdit,
         applyRandomization: $3180f13c9e24a345$export$4bafa436c0fa0cbb,
         applyAddSubtract: $32e43d7a62aba58c$export$1ced7b3ceb2cd439,
@@ -25425,7 +25616,7 @@ Hooks.once("init", ()=>{
 // Preset Scene Control
 Hooks.on("renderSceneControls", (sceneControls, html, options)=>{
     if (!game.user.isGM) return;
-    if (!game.settings.get("multi-token-edit", "presetSceneControl")) return;
+    if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSceneControl")) return;
     const presetControl = $(`
 <li class="scene-control mass-edit-scene-control" data-control="me-presets" aria-label="Mass Edit: Presets" role="tab" data-tooltip="Mass Edit: Presets">
 <i class="fa-solid fa-books"></i>
@@ -25447,8 +25638,9 @@ Hooks.on("renderSceneControls", (sceneControls, html, options)=>{
 });
 // Migrate Presets (02/11/2023)
 Hooks.on("ready", async ()=>{
-    if (!game.settings.get("multi-token-edit", "presetsMigrated")) {
-        const presets = game.settings.get("multi-token-edit", "presets");
+    if (!game.packs.get((0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack)) game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", (0, $d0a1f06830d69799$export$2a34b6e4e19d9a25));
+    if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsMigrated")) {
+        const presets = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presets");
         if (getType(presets) === "Object" && !isEmpty(presets)) {
             let newPresets = [];
             for (const documentName of Object.keys(presets)){
@@ -25471,16 +25663,16 @@ Hooks.on("ready", async ()=>{
                     newPreset.data = deepClone(oldPreset);
                     newPresets.push(newPreset);
                 }
-                game.settings.set("multi-token-edit", "docPresets", newPresets);
+                game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets", newPresets);
             }
         }
-        game.settings.set("multi-token-edit", "presetsMigrated", true);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsMigrated", true);
     }
-    if (!game.settings.get("multi-token-edit", "presetsCompMigrated")) {
-        const docPresets = game.settings.get("multi-token-edit", "docPresets");
+    if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsCompMigrated")) {
+        const docPresets = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets");
         const presets = docPresets.map((p)=>new (0, $d0a1f06830d69799$export$3463c369d5cc977f)(p));
         if (presets.length) (0, $d0a1f06830d69799$export$9cea25aeb7365a59).set(presets);
-        game.settings.set("multi-token-edit", "presetsCompMigrated", true);
+        game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsCompMigrated", true);
     }
 });
 // Attach Mass Config buttons to Token and Tile HUDs
@@ -25530,7 +25722,7 @@ function $15e9db69c2322773$var$getDiffData(obj, docName, update, protoData = tru
     return diff;
 }
 function $15e9db69c2322773$var$updateHistory(obj, update, options, userId) {
-    if (game.user.id !== userId || !game.settings.get("multi-token-edit", "enableHistory")) return;
+    if (game.user.id !== userId || !game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) return;
     const historyItem = {
         timestamp: new Date().toLocaleTimeString(),
         ctrl: {}
@@ -25554,7 +25746,7 @@ function $15e9db69c2322773$var$saveHistory(obj, update, historyItem, _id, docNam
     historyItem.update = flattenObject(update);
     historyItem.diff = $15e9db69c2322773$var$getDiffData(obj, docName, update);
     historyItem._id = _id;
-    const maxLength = game.settings.get("multi-token-edit", "historyMaxLength") ?? 0;
+    const maxLength = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "historyMaxLength") ?? 0;
     const docHistory = $15e9db69c2322773$export$149eb684a26496a2[docName] ?? [];
     docHistory.push(historyItem);
     if (docHistory.length > maxLength) docHistory.splice(0, 1);
