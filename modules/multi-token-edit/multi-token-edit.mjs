@@ -19,6 +19,7 @@ import { MassEditGenericForm } from './applications/generic/genericForm.js';
 import {
   activeEffectPresetSelect,
   applyAddSubtract,
+  applyPresetToScene,
   createDocuments,
   flagCompare,
   getDocumentName,
@@ -335,24 +336,7 @@ Hooks.once('init', () => {
         app.close(true);
         return;
       }
-      new MassEditPresets(
-        null,
-        async (preset) => {
-          if (preset && canvas.scene) {
-            const data = flattenObject(preset.data[0]);
-            await canvas.scene.update(data);
-
-            // Grid doesn't redraw on scene update, do it manually here
-            if ('grid.color' in data || 'grid.alpha' in data) {
-              canvas.grid.grid.draw({
-                color: data['grid.color'].replace('#', '0x'),
-                alpha: Number(data['grid.alpha']),
-              });
-            }
-          }
-        },
-        'Scene'
-      ).render(true);
+      new MassEditPresets(null, null, 'Scene').render(true);
     },
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
@@ -542,12 +526,12 @@ Hooks.on('ready', async () => {
 
   if (!game.settings.get(MODULE_ID, 'presetsMigrated')) {
     const presets = game.settings.get(MODULE_ID, 'presets');
-    if (getType(presets) === 'Object' && !isEmpty(presets)) {
+    if (foundry.utils.getType(presets) === 'Object' && !foundry.utils.isEmpty(presets)) {
       let newPresets = [];
       for (const documentName of Object.keys(presets)) {
         for (const name of Object.keys(presets[documentName])) {
           let oldPreset = presets[documentName][name];
-          let newPreset = { id: randomID() };
+          let newPreset = { id: foundry.utils.randomID() };
 
           newPreset.name = name;
           newPreset.documentName = documentName;
@@ -562,7 +546,7 @@ Hooks.on('ready', async () => {
           delete oldPreset['mass-edit-addSubtract'];
           delete oldPreset['mass-edit-randomize'];
           delete oldPreset['mass-edit-keybind'];
-          newPreset.data = deepClone(oldPreset);
+          newPreset.data = foundry.utils.deepClone(oldPreset);
 
           newPresets.push(newPreset);
         }
@@ -622,9 +606,9 @@ Hooks.on('renderTileHUD', (hud, html, tileData) => {
 
 // Retrieve only the data that is different
 function getDiffData(obj, docName, update, protoData = true) {
-  const flatUpdate = flattenObject(update);
+  const flatUpdate = foundry.utils.flattenObject(update);
   const flatObjData = getObjFormData(obj, docName, protoData);
-  const diff = diffObject(flatObjData, flatUpdate);
+  const diff = foundry.utils.diffObject(flatObjData, flatUpdate);
 
   for (const [k, v] of Object.entries(diff)) {
     // Special handling for empty/undefined data
@@ -657,7 +641,7 @@ function updateHistory(obj, update, options, userId) {
       historyItem.ctrl[ctrl] = options[ctrl][0];
     }
   });
-  let cUpdate = deepClone(update);
+  let cUpdate = foundry.utils.deepClone(update);
   delete cUpdate._id;
 
   let docName = obj.document ? obj.document.documentName : obj.documentName;
@@ -666,7 +650,7 @@ function updateHistory(obj, update, options, userId) {
       saveHistory(
         obj.prototypeToken ?? obj.token,
         cUpdate.prototypeToken ?? cUpdate.token,
-        deepClone(historyItem),
+        foundry.utils.deepClone(historyItem),
         update._id,
         'Token'
       );
@@ -677,9 +661,9 @@ function updateHistory(obj, update, options, userId) {
 }
 
 function saveHistory(obj, update, historyItem, _id, docName) {
-  if (!obj || isEmpty(update)) return;
+  if (!obj || foundry.utils.isEmpty(update)) return;
 
-  historyItem.update = flattenObject(update);
+  historyItem.update = foundry.utils.flattenObject(update);
   historyItem.diff = getDiffData(obj, docName, update);
   historyItem._id = _id;
 

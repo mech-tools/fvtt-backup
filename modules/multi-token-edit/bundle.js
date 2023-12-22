@@ -172,16 +172,16 @@ class $59fc6fe4c07de9fd$export$7fe60b94e2075390 {
         }
         if (!detectionModes.length) return;
         // Merge current detectionModes assigned to the token and the new ones being added
-        const mergedModes = deepClone(token.detectionModes).filter((d)=>d.id);
+        const mergedModes = foundry.utils.deepClone(token.detectionModes).filter((d)=>d.id);
         for (const dm of detectionModes){
             if (dm.id == null) continue;
             let found = false;
             for (const tdm of mergedModes)if (tdm.id === dm.id) {
-                mergeObject(tdm, dm);
+                foundry.utils.mergeObject(tdm, dm);
                 found = true;
                 break;
             }
-            if (!found) mergedModes.push(mergeObject({
+            if (!found) mergedModes.push(foundry.utils.mergeObject({
                 id: "",
                 range: 0,
                 enabled: true
@@ -193,7 +193,7 @@ class $59fc6fe4c07de9fd$export$7fe60b94e2075390 {
         const pModes = Object.values(foundry.utils.expandObject(data)?.detectionModes || {});
         if (!pModes.length) return;
         const modes = Object.values(foundry.utils.expandObject(app._getSubmitData())?.detectionModes || {});
-        const dataClone = deepClone(data);
+        const dataClone = foundry.utils.deepClone(data);
         const randomize = data["mass-edit-randomize"] ?? {};
         const addSubtract = data["mass-edit-addSubtract"] ?? {};
         const modCustomFields = function(fields, key, i, k, data) {
@@ -294,10 +294,10 @@ function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, custom
     const pinned = documentName ? game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields")[documentName] || {} : {};
     $2d0c7cad90c7ba3c$var$_constructControls(nav, object, tabSelectors, "", pinned, customControls);
     const pinned_groups = [];
-    const flatObject = flattenObject(object);
+    const flatObject = foundry.utils.flattenObject(object);
     for (const [k, v] of Object.entries(pinned)){
         const value = k in flatObject ? flatObject[k] : v.value;
-        let control = $2d0c7cad90c7ba3c$var$genControl(getType(value), v.label, value, k, {}, true, customControls);
+        let control = $2d0c7cad90c7ba3c$var$genControl(foundry.utils.getType(value), v.label, value, k, {}, true, customControls);
         control.pinned = true;
         pinned_groups.push(control);
     }
@@ -336,7 +336,7 @@ function $2d0c7cad90c7ba3c$var$_constructControls(nav, data, tabSelectors, name,
     for (const [k, v] of Object.entries(data)){
         const name2 = name ? name + "." + k : k;
         if (v !== null) {
-            let t = getType(v);
+            let t = foundry.utils.getType(v);
             let control;
             if (t === "Object") {
                 if ($2d0c7cad90c7ba3c$var$_hasNonNullKeys(v)) {
@@ -379,9 +379,9 @@ function $2d0c7cad90c7ba3c$var$_constructControls(nav, data, tabSelectors, name,
     }
 }
 function $2d0c7cad90c7ba3c$var$_hasNonNullKeys(obj) {
-    if (isEmpty(obj)) return false;
+    if (foundry.utils.isEmpty(obj)) return false;
     for (const [k, v] of Object.entries(obj)){
-        if (getType(v) === "Object") {
+        if (foundry.utils.getType(v) === "Object") {
             if ($2d0c7cad90c7ba3c$var$_hasNonNullKeys(v)) return true;
         } else if (v != null) return true;
     }
@@ -418,7 +418,7 @@ function $2d0c7cad90c7ba3c$var$genControl(type, label, value, name, pinned, edit
     // if (name === 'animated.intensity.animType') {
     //   console.log(name, customControls, customControls[name]);
     // }
-    if (getProperty(customControls, name)) control = mergeObject(control, getProperty(customControls, name));
+    if (getProperty(customControls, name)) control = foundry.utils.mergeObject(control, getProperty(customControls, name));
     else if (type === "number") {
         control.number = true;
         const varName = name.split(".").pop();
@@ -434,7 +434,7 @@ function $2d0c7cad90c7ba3c$var$genControl(type, label, value, name, pinned, edit
         if ($2d0c7cad90c7ba3c$var$IMAGE_FIELDS.includes(varName) || varName.toLowerCase().includes("image") || varName.toLowerCase().includes("path")) control.filePicker = true;
         else if ($2d0c7cad90c7ba3c$export$3bc23beea9300df4(varName)) control.colorPicker = true;
     } else if (type === "boolean") control.boolean = true;
-    else if (type === "Array" && value.every((el)=>allowedArrayElTypes.includes(getType(el)))) {
+    else if (type === "Array" && value.every((el)=>allowedArrayElTypes.includes(foundry.utils.getType(el)))) {
         control.value = value.join(", ");
         control.array = true;
     } else if (type === "Array") {
@@ -18016,9 +18016,9 @@ function $3180f13c9e24a345$export$2ee69c6850ef1bab(form, fields) {
     if (!fields) return;
     for (const key of Object.keys(fields))$3180f13c9e24a345$export$a33d8ee3eb2c1a9b(form.find(`[name="${key}"]`));
 }
-function $3180f13c9e24a345$export$4bafa436c0fa0cbb(updates, objects, randomizeFields) {
+async function $3180f13c9e24a345$export$4bafa436c0fa0cbb(updates, objects, randomizeFields) {
     // See if any field is to be randomized
-    if (!randomizeFields || isEmpty(randomizeFields)) return;
+    if (!randomizeFields || foundry.utils.isEmpty(randomizeFields)) return;
     let requiresCoordRandomization = false;
     for(let i = 0; i < updates.length; i++){
         const update = updates[i];
@@ -18108,10 +18108,30 @@ function $3180f13c9e24a345$export$4bafa436c0fa0cbb(updates, objects, randomizeFi
             } else if (obj.type === "image") {
                 if (obj.method === "sequential") update[field] = obj.images[i % obj.images.length];
                 else update[field] = obj.images[Math.floor(Math.random() * obj.images.length)];
+                if (obj.maintainAspect) {
+                    const width = objects?.[i]?.width ?? update.width;
+                    const height = objects?.[i]?.height ?? update.height;
+                    if (height != null && width != null) try {
+                        const tex = await loadTexture(update[field]);
+                        if (tex) {
+                            const tileRatio = width / height;
+                            const texRatio = tex.width / tex.height;
+                            if (texRatio !== tileRatio) {
+                                if (texRatio > tileRatio) {
+                                    update["texture.scaleX"] = 1;
+                                    update["texture.scaleY"] = tileRatio;
+                                } else {
+                                    update["texture.scaleX"] = height / width;
+                                    update["texture.scaleY"] = 1;
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
             } else if (obj.type === "text") {
                 if (obj.method === "findAndReplace" || obj.method === "findAndReplaceRegex") {
                     if (objects) {
-                        const data = flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(objects[i]).toObject());
+                        const data = foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(objects[i]).toObject());
                         if (!data[field] && !obj.find) update[field] = obj.replace;
                         else if (data[field]) {
                             // special handling for Tagger tags
@@ -18462,14 +18482,14 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
         this.fieldName = control.attr("name");
         if (configApp.randomizeFields && configApp.randomizeFields[this.fieldName]) {
             if (options.rangeForm) {
-                let ctrl = deepClone(configApp.randomizeFields[this.fieldName]);
+                let ctrl = foundry.utils.deepClone(configApp.randomizeFields[this.fieldName]);
                 ctrl.minVal = ctrl.min;
                 ctrl.maxVal = ctrl.max;
                 delete ctrl.min;
                 delete ctrl.max;
-                mergeObject(this.configuration, ctrl);
+                foundry.utils.mergeObject(this.configuration, ctrl);
             } else if (options.colorForm) {
-                let ctrl = deepClone(configApp.randomizeFields[this.fieldName]);
+                let ctrl = foundry.utils.deepClone(configApp.randomizeFields[this.fieldName]);
                 if (ctrl.color1) {
                     ctrl.colors = [
                         {
@@ -18484,13 +18504,13 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
                     delete ctrl.color1;
                     delete ctrl.color2;
                 }
-                mergeObject(this.configuration, ctrl);
-            } else mergeObject(this.configuration, configApp.randomizeFields[this.fieldName]);
+                foundry.utils.mergeObject(this.configuration, ctrl);
+            } else foundry.utils.mergeObject(this.configuration, configApp.randomizeFields[this.fieldName]);
             this.configuration.existing = true;
         }
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-randomizer-form",
             classes: [
                 "sheet"
@@ -18505,13 +18525,14 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
     }
     async getData(options) {
         const data = super.getData(options);
-        mergeObject(data, this.configuration);
+        foundry.utils.mergeObject(data, this.configuration);
         if (data.step != null) {
             if (data.step === "any" || data.step === "") data.step = 0.1;
         }
         data.tokenVariantsActive = game.modules.get("token-variants")?.active;
         data.fieldName = this.fieldName;
         data.title = this.title;
+        data.isTile = "Tile" === this.configApp.docName;
         // Assign default values for some specific fields
         if (this.configuration.numberForm && !this.configuration.existing) {
             if ([
@@ -18560,6 +18581,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             if (this.configuration.images) data.images = this.configuration.images.join("\n");
             data.find = this.configuration.find ?? this.configuration.current;
             data.replace = this.configuration.replace ?? this.configuration.current;
+            data.maintainAspect = this.configuration.maintainAspect;
         }
         if (this.configuration.rangeForm && !this.configuration.existing) {
             data.minVal = this.configuration.current;
@@ -18739,7 +18761,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             method: "random"
         };
         else if (this.configuration.colorForm) {
-            let colors = deepClone(this.colorSlider.colors).sort((a, b)=>a.offset - b.offset);
+            let colors = foundry.utils.deepClone(this.colorSlider.colors).sort((a, b)=>a.offset - b.offset);
             this.configApp.randomizeFields[fieldName] = {
                 type: "color",
                 method: formData.method,
@@ -18759,7 +18781,8 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
                 this.configApp.randomizeFields[fieldName] = {
                     type: "image",
                     method: formData.method,
-                    images: images
+                    images: images,
+                    maintainAspect: formData.maintainAspect
                 };
             }
         } else if (this.configuration.textForm) {
@@ -18999,7 +19022,7 @@ async function $aec7a07dafc003fd$export$e43fe9e17895939b(placeable, presetName, 
     else if (remove) await TokenMagic.deleteFilters(placeable, presetName);
     else {
         const preset = TokenMagic.getPreset(presetName);
-        if (preset) await TokenMagic.addUpdateFilters(placeable, deepClone(preset));
+        if (preset) await TokenMagic.addUpdateFilters(placeable, foundry.utils.deepClone(preset));
     }
 }
 function $aec7a07dafc003fd$var$_hex2string(color) {
@@ -19030,7 +19053,7 @@ class $2f2bd158cac8dcd3$export$2e2bcd8739ae039 extends FormApplication {
         super({}, {});
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-css",
             classes: [
                 "sheet"
@@ -19248,10 +19271,10 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
         super({}, {});
         this.callback = callback;
         this.docName = docName;
-        this.history = deepClone((0, $15e9db69c2322773$export$149eb684a26496a2));
+        this.history = foundry.utils.deepClone((0, $15e9db69c2322773$export$149eb684a26496a2));
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-history",
             classes: [
                 "sheet"
@@ -19291,8 +19314,8 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
         for (const item of historyItems){
             const rdm = item.ctrl["mass-edit-randomize"] || {};
             const addSubtract = item.ctrl["mass-edit-addSubtract"] || {};
-            const fullTitle = getTitle(deepClone(item.update), rdm, addSubtract);
-            const title = getTitle(deepClone(item.diff), rdm, addSubtract);
+            const fullTitle = getTitle(foundry.utils.deepClone(item.update), rdm, addSubtract);
+            const title = getTitle(foundry.utils.deepClone(item.diff), rdm, addSubtract);
             const hasDifferences = fullTitle !== title;
             if (hasDifferences) formHasDiff = true;
             data.updates.push({
@@ -19329,7 +19352,7 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
             if (historyItem) {
                 const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
                     documentName: docName,
-                    data: deepClone(historyItem[type]),
+                    data: foundry.utils.deepClone(historyItem[type]),
                     randomize: historyItem.ctrl["mass-edit-randomize"],
                     addSubtract: historyItem.ctrl["mass-edit-addSubtract"]
                 });
@@ -19351,7 +19374,7 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
         const docHistory = this.history[this.docName] ?? [];
         const historyItem = docHistory[index];
         if (historyItem) {
-            const update = deepClone(historyItem[event.submitter.name]);
+            const update = foundry.utils.deepClone(historyItem[event.submitter.name]);
             (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).updateToForm(this.docName, update);
             const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
                 documentName: this.docName,
@@ -19411,8 +19434,8 @@ function $fd6a2dce4ab54ee1$var$genUpdate(options, docName) {
     // Update related code
     let command = "";
     // Macro only execution, ignore update code
-    if (isEmpty(options.fields) && !options.toggle) return "";
-    else if (options.toggle && isEmpty(options.toggle.fields) && isEmpty(options.fields)) return `
+    if (foundry.utils.isEmpty(options.fields) && !options.toggle) return "";
+    else if (options.toggle && foundry.utils.isEmpty(options.toggle.fields) && foundry.utils.isEmpty(options.fields)) return `
 const toggleOnTargets = [];
 const toggleOffTargets = [];
 
@@ -19438,9 +19461,9 @@ targets.forEach((t) => {
 
   let u;
   if(toggleOn(t, update)) {
-    u = deepClone(update2);${macroTracking ? "\ntoggleOffTargets.push(t);" : ""}
+    u = foundry.utils.deepClone(update2);${macroTracking ? "\ntoggleOffTargets.push(t);" : ""}
   } else {
-    u = deepClone(update);${macroTracking ? "\ntoggleOnTargets.push(t);" : ""}
+    u = foundry.utils.deepClone(update);${macroTracking ? "\ntoggleOnTargets.push(t);" : ""}
   }
   u._id = t.id;
 
@@ -19452,7 +19475,7 @@ targets.forEach((t) => {
   const sceneId = t.parent.id;
   if(!updates[sceneId]) updates[sceneId] = [];
   
-  let u = deepClone(update);
+  let u = foundry.utils.deepClone(update);
   u._id = t.id;
     updates[sceneId].push(u);
 });
@@ -19463,9 +19486,9 @@ targets.forEach((t) => {
 targets.forEach((t) => {
   let u;
   if(toggleOn(t, update)) {
-    u = deepClone(update2);${macroTracking ? "\ntoggleOffTargets.push(t);" : ""}
+    u = foundry.utils.deepClone(update2);${macroTracking ? "\ntoggleOffTargets.push(t);" : ""}
   } else {
-    u = deepClone(update);${macroTracking ? "\ntoggleOnTargets.push(t);" : ""}
+    u = foundry.utils.deepClone(update);${macroTracking ? "\ntoggleOnTargets.push(t);" : ""}
   }
   u._id = t.id;
   updates.push(u);
@@ -19473,7 +19496,7 @@ targets.forEach((t) => {
   `;
         else command += `
 targets.forEach((t) => {
-  let u = deepClone(update);
+  let u = foundry.utils.deepClone(update);
   u._id = t.id;
   updates.push(u);
 });
@@ -19522,9 +19545,9 @@ function $fd6a2dce4ab54ee1$var$genToggleUtil(options) {
     let command = `\n// Toggle; Helper function`;
     if (options.toggle.method === "field") command += `
 const toggleOn = function (obj, fields) {
-  const data = flattenObject(obj.toObject());
-  fields = flattenObject(fields);
-  return isEmpty(diffObject(data, fields));
+  const data = foundry.utils.flattenObject(obj.toObject());
+  fields = foundry.utils.flattenObject(fields);
+  return foundry.utils.isEmpty(foundry.utils.diffObject(data, fields));
 };
   `;
     else command += `
@@ -19756,11 +19779,11 @@ class $0893cc7e7e2c4c85$export$2e2bcd8739ae039 extends FormApplication {
         this.fields = fields;
         this.randomizeFields = randomizeFields;
         this.addSubtractFields = addSubtractFields;
-        if (randomizeFields && !isEmpty(randomizeFields) || addSubtractFields && !isEmpty(addSubtractFields)) ;
+        if (randomizeFields && !foundry.utils.isEmpty(randomizeFields) || addSubtractFields && !foundry.utils.isEmpty(addSubtractFields)) ;
         else (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).formToData(this.docName, this.mainObject, this.fields);
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-macro",
             classes: [
                 "sheet"
@@ -19807,11 +19830,11 @@ class $0893cc7e7e2c4c85$export$2e2bcd8739ae039 extends FormApplication {
             label: "Tagger"
         });
         data.targetingOptions = targetingOptions;
-        if (this.addSubtractFields && !isEmpty(this.addSubtractFields)) {
+        if (this.addSubtractFields && !foundry.utils.isEmpty(this.addSubtractFields)) {
             data.hasAddSubtract = true;
             data.addSubtract = JSON.stringify(this.addSubtractFields);
         }
-        if (this.randomizeFields && !isEmpty(this.randomizeFields)) {
+        if (this.randomizeFields && !foundry.utils.isEmpty(this.randomizeFields)) {
             data.hasRandom = true;
             data.randomize = JSON.stringify(this.randomizeFields);
         }
@@ -19842,7 +19865,7 @@ class $0893cc7e7e2c4c85$export$2e2bcd8739ae039 extends FormApplication {
                     callback: (html)=>{
                         try {
                             const val = JSON.parse(html.find('[name="json"]').val() || "{}");
-                            if (isEmpty(val)) {
+                            if (foundry.utils.isEmpty(val)) {
                                 control.hide();
                                 store.prop("disabled", true);
                                 this.setPosition({
@@ -19916,7 +19939,7 @@ class $0893cc7e7e2c4c85$export$2e2bcd8739ae039 extends FormApplication {
         });
         html.find('[name="method"]').on("change", (event)=>{
             if (event.target.value === "toggle") {
-                let data = flattenObject($0893cc7e7e2c4c85$var$getData(this.mainObject).toObject());
+                let data = foundry.utils.flattenObject($0893cc7e7e2c4c85$var$getData(this.mainObject).toObject());
                 const toggleFields = {};
                 Object.keys(this.fields).forEach((k)=>toggleFields[k] = data[k]);
                 html.find('[name="toggle.fields"]').val(JSON.stringify(toggleFields, null, 2));
@@ -19988,6 +20011,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             ];
             this.randomizeFields = {};
             this.addSubtractFields = {};
+            this.meForm = true;
         }
         async getData(options) {
             // During Preset editing we will be editing AmbientLight document directly, which causes the preview to be set to null
@@ -20011,12 +20035,12 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             html.on("click", "button", $8d51a9873394e4eb$var$onInputChange.bind(this));
             const rangeSpanToTextbox = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "rangeToTextbox");
             // Attach classes and controls to all relevant form-groups
-            const commonData = flattenObject(this.commonData || {});
+            const commonData = foundry.utils.flattenObject(this.commonData || {});
             const insertRNGControl = this.randomizerEnabled;
             const processFormGroup = function(formGroup, typeOverride = null) {
                 // We only want to attach extra controls if the form-group contains named fields
                 if (!$(formGroup).find("[name]").length) return;
-                if ($(formGroup).find("[name]:disabled").length) return;
+                // if ($(formGroup).find('[name]:disabled').length) return;
                 // Check if fields within this form-group are part of common data or control a flag
                 let fieldType = "meCommon";
                 if (commonData) $(formGroup).find("[name]").each(function() {
@@ -20264,7 +20288,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             if (!formData) formData = this._getSubmitData();
             // Some module flags get un-flattened
             // Flatten them again before attempting to find selected
-            formData = flattenObject(formData);
+            formData = foundry.utils.flattenObject(formData);
             // Modules Specific Logic
             // 3D Canvas
             if ("flags.levels-3d-preview.shaders" in formData) formData["flags.levels-3d-preview.shaders"] = this.object.getFlag("levels-3d-preview", "shaders");
@@ -20293,7 +20317,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
                     const name = $(this).attr("name");
                     // Module specific logic
                     if (name === "flags.limits") {
-                        const limits = flattenObject(app.object.toObject().flags["limits"] ?? {});
+                        const limits = foundry.utils.flattenObject(app.object.toObject().flags["limits"] ?? {});
                         for (const [k, v1] of Object.entries(limits))selectedFields["flags.limits." + k] = v1;
                     }
                     // == End of Module specific logic
@@ -20306,7 +20330,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
                         selectedFields[name] = formData[name];
                         if (name in addSubtractFields) addSubtractFields[name].value = formData[name];
                     }
-                    if (getType(selectedFields[name]) === "string") {
+                    if (foundry.utils.getType(selectedFields[name]) === "string") {
                         const input = $(this);
                         if (input.hasClass("tva-array")) {
                             if (v.trim()) selectedFields[name] = selectedFields[name].trim().split(",").map((s)=>s.trim());
@@ -20449,7 +20473,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
         async _updateObject(event, formData) {
             await this.massUpdateObject(event, formData);
             // On v11 certain placeable will freeze the canvas layer if parent _updateObject is not called
-            if (!isNewerVersion("11", game.version) && [
+            if ([
                 "Token",
                 "AmbientLight"
             ].includes(this.docName) && this.preview?.object) this._resetPreview();
@@ -20488,7 +20512,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 selectedFields = this.getSelectedFields();
                 if (this.documentName === "Token") (0, $59fc6fe4c07de9fd$export$7fe60b94e2075390).correctDetectionModeOrder(selectedFields, this.randomizeFields);
             }
-            if (isEmpty(selectedFields)) return false;
+            if (foundry.utils.isEmpty(selectedFields)) return false;
             const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
                 documentName: this.documentName,
                 data: selectedFields,
@@ -20551,7 +20575,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                     }
                 });
             }
-            // Open Preset form
+            if (!this.options.simplified) // Open Preset form
             buttons.unshift({
                 label: "",
                 class: "mass-edit-presets",
@@ -20571,7 +20595,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 icon: "far fa-money-check-edit",
                 onclick: (ev)=>{
                     let selFields = expandObject(this.getSelectedFields());
-                    if (isEmpty(selFields)) selFields = "";
+                    if (foundry.utils.isEmpty(selFields)) selFields = "";
                     else selFields = JSON.stringify(selFields, null, 2);
                     let content = `<textarea class="json" style="width:100%; height: 300px;">${selFields}</textarea>`;
                     new Dialog({
@@ -20585,10 +20609,10 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                                     try {
                                         json = JSON.parse(html.find(".json").val());
                                     } catch (e) {}
-                                    if (!isEmpty(json)) {
+                                    if (!foundry.utils.isEmpty(json)) {
                                         const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
                                             documentName: this.docName,
-                                            data: flattenObject(json)
+                                            data: foundry.utils.flattenObject(json)
                                         });
                                         this._processPreset(preset);
                                     }
@@ -20631,7 +20655,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
         async close(options = {}) {
             (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
             options.force = true;
-            if (!isNewerVersion("11", game.version) && [
+            if ([
                 "Token",
                 "AmbientLight"
             ].includes(this.docName) && this.preview?.object) this._resetPreview();
@@ -20670,7 +20694,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
             // Module specific logic
             // =====================
             let timeoutRequired = false;
-            const data = flattenObject(preset.data[0]);
+            const data = foundry.utils.flattenObject(preset.data[0]);
             // Monk's Active Tiles
             if ("flags.monks-active-tiles.actions" in data) {
                 timeoutRequired = true;
@@ -20714,7 +20738,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
             this.addSubtractFields = customMerge(this.addSubtractFields, preset.addSubtract);
             (0, $3180f13c9e24a345$export$2ee69c6850ef1bab)(form, this.randomizeFields);
             (0, $32e43d7a62aba58c$export$cb264c2e048afacf)(form, this.addSubtractFields);
-            const data = flattenObject(preset.data[0]);
+            const data = foundry.utils.flattenObject(preset.data[0]);
             (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).dataToForm(this.documentName, preset.data[0], data);
             for (const key of Object.keys(data)){
                 const el = form.find(`[name="${key}"]`);
@@ -20765,15 +20789,15 @@ function $8d51a9873394e4eb$export$85a626beb2f6e17a(docs, preset, suppressNotif =
         const context = {
             meObjects: docs
         };
-        if (!isEmpty(preset.randomize)) context.randomizeFields = preset.randomize;
-        if (!isEmpty(preset.addSubtract)) context.addSubtractFields = preset.addSubtract;
-        let data = deepClone(preset.data[Math.floor(Math.random() * preset.data.length)]);
+        if (!foundry.utils.isEmpty(preset.randomize)) context.randomizeFields = preset.randomize;
+        if (!foundry.utils.isEmpty(preset.addSubtract)) context.addSubtractFields = preset.addSubtract;
+        let data = foundry.utils.deepClone(preset.data[Math.floor(Math.random() * preset.data.length)]);
         if (excludePosition) {
             delete data.x;
             delete data.y;
             delete data.c;
         }
-        $8d51a9873394e4eb$export$f13f6f89b098ca30.call(context, flattenObject(data), docs, preset.documentName, applyType);
+        $8d51a9873394e4eb$export$f13f6f89b098ca30.call(context, foundry.utils.flattenObject(data), docs, preset.documentName, applyType);
         if (!suppressNotif) ui.notifications.info((0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("clipboard.paste", {
             document: preset.documentName,
             count: docs.length
@@ -20821,7 +20845,7 @@ function $8d51a9873394e4eb$var$performDocSearch(docs, docName, selectedFields, f
     // Next select objects that match the selected fields
     for (const c of docs){
         let matches = true;
-        const data = flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(c).toObject());
+        const data = foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(c).toObject());
         // Special processing for some placeable types
         // Necessary when form data is not directly mappable to placeable
         (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).dataToForm(docName, c, data);
@@ -20860,7 +20884,7 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
         if (this.options.callback) this.options.callback(data);
         return;
     }
-    if (isEmpty(data)) {
+    if (foundry.utils.isEmpty(data)) {
         if (this.callbackOnUpdate) this.callbackOnUpdate(objects);
         return;
     }
@@ -20871,7 +20895,7 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
     const context = {};
     const total = objects.length;
     for(let i = 0; i < total; i++){
-        const update = deepClone(data);
+        const update = foundry.utils.deepClone(data);
         update._id = objects[i].id;
         // push update
         updates.push(update);
@@ -20880,14 +20904,14 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
     // so that they can be tracked.
     if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) {
         context["mass-edit-randomize"] = [
-            deepClone(this.randomizeFields)
+            foundry.utils.deepClone(this.randomizeFields)
         ];
         context["mass-edit-addSubtract"] = [
-            deepClone(this.addSubtractFields)
+            foundry.utils.deepClone(this.addSubtractFields)
         ];
     }
     // Applies randomization
-    if (this) (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(updates, objects, this.randomizeFields);
+    if (this) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(updates, objects, this.randomizeFields);
     if (this) (0, $32e43d7a62aba58c$export$1ced7b3ceb2cd439)(updates, objects, docName, this.addSubtractFields);
     // Special processing for some placeable types
     // Necessary when form data is not directly mappable to placeable
@@ -20935,7 +20959,7 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
         for(let i = 0; i < updates.length; i++){
             const update = updates[i];
             delete update._id;
-            (0, $32e43d7a62aba58c$export$1c723ddaaf731bd0)(objects[i], mergeObject(objects[i], update));
+            (0, $32e43d7a62aba58c$export$1c723ddaaf731bd0)(objects[i], foundry.utils.mergeObject(objects[i], update));
         }
         if (this.callbackOnUpdate) this.callbackOnUpdate(objects);
     }
@@ -20949,7 +20973,7 @@ async function $8d51a9873394e4eb$export$f13f6f89b098ca30(data, objects, docName,
                 prototypeToken: updates[i]
             };
         }
-        if (!isEmpty(actorUpdates)) {
+        if (!foundry.utils.isEmpty(actorUpdates)) {
             const updates = [];
             for (const id of Object.keys(actorUpdates))updates.push(actorUpdates[id]);
             Actor.updateDocuments(updates);
@@ -20994,7 +21018,7 @@ function $8d51a9873394e4eb$var$deselectTabs(target) {
     }
 }
 function $8d51a9873394e4eb$export$de8c6f734ca56d8f(obj, docName) {
-    const data = flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(obj).toObject());
+    const data = foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(obj).toObject());
     // Special processing for some placeable types
     // Necessary when form data is not directly mappable to placeable
     (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).dataToForm(docName, obj, data);
@@ -21012,7 +21036,7 @@ const $8d51a9873394e4eb$export$3800f10fd10126e9 = ()=>{
         constructor(target, docs, options = {}){
             // Generate common permissions
             const data = (0, $32e43d7a62aba58c$export$7a171f172be0782e)(docs[0]);
-            const commonData = flattenObject(data.ownership);
+            const commonData = foundry.utils.flattenObject(data.ownership);
             const metaLevels = CONST.DOCUMENT_META_OWNERSHIP_LEVELS;
             // Permissions are only present if they differ from default, for simplicity simple add them before comparing
             const addMissingPerms = function(perms) {
@@ -21024,9 +21048,9 @@ const $8d51a9873394e4eb$export$3800f10fd10126e9 = ()=>{
             addMissingPerms(commonData);
             for(let i = 1; i < docs.length; i++){
                 const data = (0, $32e43d7a62aba58c$export$7a171f172be0782e)(docs[i]);
-                const flatData = flattenObject(data.ownership);
+                const flatData = foundry.utils.flattenObject(data.ownership);
                 addMissingPerms(flatData);
-                const diff = flattenObject(diffObject(commonData, flatData));
+                const diff = foundry.utils.flattenObject(foundry.utils.diffObject(commonData, flatData));
                 for (const k of Object.keys(diff))delete commonData[k];
             }
             options.commonData = commonData;
@@ -21036,7 +21060,7 @@ const $8d51a9873394e4eb$export$3800f10fd10126e9 = ()=>{
         async _updateObject(event, formData) {
             const selectedFields = this.getSelectedFields(formData);
             const metaLevels = CONST.DOCUMENT_META_OWNERSHIP_LEVELS;
-            if (isEmpty(selectedFields)) return;
+            if (foundry.utils.isEmpty(selectedFields)) return;
             const ids = new Set();
             const updates = [];
             for (const d of this.meObjects)if (!ids.has(d.id)) {
@@ -21077,7 +21101,7 @@ function $8d51a9873394e4eb$export$2cdf1b96a9f86d16(preset, command, isPrototype)
         }
     }
     // Also copy the fields to the game clipboard as plain text
-    game.clipboard.copyPlainText(JSON.stringify(deepClone(preset.data[0]), null, 2));
+    game.clipboard.copyPlainText(JSON.stringify(foundry.utils.deepClone(preset.data[0]), null, 2));
     ui.notifications.info((0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("clipboard.copy", {
         document: preset.documentName
     }));
@@ -21292,7 +21316,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         ];
         const completed = await CanvasAnimation.animate(translate, {
             duration: 700,
-            name: randomID(5)
+            name: foundry.utils.randomID(5)
         });
         if (completed) this.brushOverlay.removeChild(cross).destroy();
     }
@@ -21501,23 +21525,25 @@ const $d0a1f06830d69799$var$PRESET_FIELDS = [
     "addSubtract",
     "randomize",
     "img",
-    "gridSize"
+    "gridSize",
+    "modifyOnSpawn"
 ];
 class $d0a1f06830d69799$export$3463c369d5cc977f {
     static name = "Preset";
     document;
     constructor(data){
-        this.id = data.id ?? data._id ?? randomID();
+        this.id = data.id ?? data._id ?? foundry.utils.randomID();
         this.name = data.name ?? "Mass Edit Preset";
         this.documentName = data.documentName;
         this.sort = data.sort ?? 0;
-        this.addSubtract = data.addSubtract instanceof Array ? Object.fromEntries(data.addSubtract) : deepClone(data.addSubtract ?? {});
-        this.randomize = data.randomize instanceof Array ? Object.fromEntries(data.randomize) : deepClone(data.randomize ?? {});
-        this.data = deepClone(data.data);
+        this.addSubtract = data.addSubtract instanceof Array ? Object.fromEntries(data.addSubtract) : foundry.utils.deepClone(data.addSubtract ?? {});
+        this.randomize = data.randomize instanceof Array ? Object.fromEntries(data.randomize) : foundry.utils.deepClone(data.randomize ?? {});
+        this.data = foundry.utils.deepClone(data.data);
         this.img = data.img;
         this.folder = data.folder;
         this.uuid = data.uuid;
         this.gridSize = data.gridSize;
+        this.modifyOnSpawn = data.modifyOnSpawn;
         this._visible = true;
     }
     get icon() {
@@ -21552,9 +21578,10 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
                 this.documentName = preset.documentName;
                 this.img = preset.img;
                 this.data = preset.data;
-                this.randomize = getType(preset.randomize) === "Object" ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
-                this.addSubtract = getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
+                this.randomize = foundry.utils.getType(preset.randomize) === "Object" ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
+                this.addSubtract = foundry.utils.getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
                 this.gridSize = preset.gridSize;
+                this.modifyOnSpawn = preset.modifyOnSpawn;
             }
         }
         return this;
@@ -21572,7 +21599,7 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
                     this[k] = update[k];
                 } else if (k === "data" && !(update.data instanceof Array)) {
                     flagUpdate.data = this.data.map((d)=>{
-                        return mergeObject(d, update.data);
+                        return foundry.utils.mergeObject(d, update.data);
                     });
                     this.data = flagUpdate.data;
                 } else if ($d0a1f06830d69799$var$PRESET_FIELDS.includes(k) && update[k] !== this[k]) {
@@ -21580,7 +21607,7 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
                     this[k] = update[k];
                 }
             });
-            if (!isEmpty(flagUpdate)) {
+            if (!foundry.utils.isEmpty(flagUpdate)) {
                 const docUpdate = {
                     flags: {
                         [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
@@ -21601,7 +21628,7 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         $d0a1f06830d69799$var$META_INDEX_FIELDS.forEach((field)=>{
             if (field in data) update[field] = data[field];
         });
-        if (!isEmpty(update)) {
+        if (!foundry.utils.isEmpty(update)) {
             const pack = game.packs.get(this.document.pack);
             const metaDoc = await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID);
             if (metaDoc) {
@@ -22057,7 +22084,7 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
                     break;
             }
             defPreset.gridSize = placeables[0].document.parent.grid.size;
-            mergeObject(defPreset, options, {
+            foundry.utils.mergeObject(defPreset, options, {
                 inplace: true
             });
             const preset = new $d0a1f06830d69799$export$3463c369d5cc977f(defPreset);
@@ -22080,13 +22107,14 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
    * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
    * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
+   * @param {Boolean} [options.modifyPrompt]       If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
    * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
    * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
    * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
    *                                                Accepted values are "ALL" for all elements and document name optionally followed by an index number
    *                                                 e.g. "ALL", "Tile", "AmbientLight.1"
    * @returns {Array[Document]}
-   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false } = {}) {
+   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false, modifyPrompt: modifyPrompt = true } = {}) {
         if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
         if (!(uuid || preset || name || type || folder)) throw Error("ID, Name, Folder, or Preset is needed to spawn it.");
         if (!coordPicker && (x == null && y != null || x != null && y == null)) throw Error("Need both X and Y coordinates to spawn a preset.");
@@ -22098,13 +22126,20 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             folder: folder
         });
         if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
+        let presetData = preset.data;
+        if (modifyPrompt && preset.modifyOnSpawn?.length) {
+            presetData = await $d0a1f06830d69799$var$modifySpawnData(presetData, preset.modifyOnSpawn);
+            // presetData being returned as null means that the modify field form has been canceled
+            // in which case we should cancel spawning as well
+            if (presetData == null) return;
+        }
         let toCreate = [];
-        for (let presetData of preset.data){
-            const data = $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData);
-            toCreate.push(flattenObject(data));
+        for (let data of presetData){
+            data = $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, data);
+            toCreate.push(foundry.utils.flattenObject(data));
         }
         const randomizer = preset.randomize;
-        if (!isEmpty(randomizer)) (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(toCreate, null, randomizer);
+        if (!foundry.utils.isEmpty(randomizer)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(toCreate, null, randomizer);
         if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
         // ==================
         // Determine spawn position
@@ -22221,7 +22256,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         this.dragType = null;
         this.dragData = null;
         this.draggedElements = null;
-        if (!configApp) {
+        if (!configApp && (0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(docName)) {
             const docLock = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetDocLock");
             this.docName = docLock || docName;
         } else {
@@ -22230,7 +22265,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-presets",
             classes: [
                 "sheet"
@@ -22238,7 +22273,6 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presets.html`,
             resizable: true,
             minimizable: false,
-            title: `Presets`,
             width: 350,
             height: 900,
             scrollY: [
@@ -22247,7 +22281,10 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         });
     }
     get title() {
-        return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.presets");
+        let title = (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.presets");
+        if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName)) title += ` [${this.docName}]`;
+        else title += ` [${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.placeable")}]`;
+        return title;
     }
     async getData(options) {
         const data = super.getData(options);
@@ -22504,12 +22541,20 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         this._contextMenu(html.find(".item-list"));
     }
     async _onDoubleClickPreset(event) {
-        if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName)) return;
         const uuid = $(event.target).closest(".item").data("uuid");
         if (!uuid) return;
-        ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.spawning")}`);
+        const preset = await $d0a1f06830d69799$export$619760a5720f8054.getPreset({
+            uuid: uuid
+        });
+        if (!preset) return;
+        if (preset.documentName === "Scene") {
+            ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.apply")} [${preset.name}]`);
+            (0, $32e43d7a62aba58c$export$767e4c91777ecf4c)(preset);
+        }
+        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(preset.documentName)) return;
+        ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.spawning")} [${preset.name}]`);
         $d0a1f06830d69799$export$619760a5720f8054.spawnPreset({
-            uuid: uuid,
+            preset: preset,
             coordPicker: true,
             taPreview: "ALL",
             layerSwitch: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch"),
@@ -22650,7 +22695,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         for (const preset of selected){
             const p = preset.clone();
             if (!keepFolder) p.folder = null;
-            if (!keepId) p.id = randomID();
+            if (!keepId) p.id = foundry.utils.randomID();
             await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
         }
         if (selected.length) this.render(true);
@@ -22906,11 +22951,20 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }
     }
     async _onPresetDragOut(event) {
-        if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName)) return;
         const uuid = $(event.originalEvent.target).closest(".item").data("uuid");
         const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
         if (!preset) return;
-        if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch")) canvas.getLayerByEmbeddedName(preset.documentName === "Actor" ? "Token" : preset.documentName)?.activate();
+        // If released on top of a Mass Edit form, apply the preset to it instead of spawning it
+        const form = $d0a1f06830d69799$var$hoverMassEditForm(event.pageX, event.pageY, preset.documentName);
+        if (form) {
+            form._applyPreset(preset);
+            return;
+        }
+        // If it's a scene preset apply it to the currently active scene
+        if (preset.documentName === "Scene") {
+            (0, $32e43d7a62aba58c$export$767e4c91777ecf4c)(preset);
+            return;
+        }
         // For some reason canvas.mousePosition does not get updated during drag and drop
         // Acquire the cursor position transformed to Canvas coordinates
         const [x, y] = [
@@ -22920,6 +22974,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const t = canvas.stage.worldTransform;
         let mouseX = (x - t.tx) / canvas.stage.scale.x;
         let mouseY = (y - t.ty) / canvas.stage.scale.y;
+        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(preset.documentName)) return;
         if (preset.documentName === "Token" || preset.documentName === "Tile") {
             mouseX -= canvas.dimensions.size / 2;
             mouseY -= canvas.dimensions.size / 2;
@@ -22966,12 +23021,12 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get($(event.target).closest(".item").data("uuid"));
         if (!preset) return;
         const selectedFields = this.configApp instanceof ActiveEffectConfig ? this._getActiveEffectFields() : this.configApp.getSelectedFields();
-        if (!selectedFields || isEmpty(selectedFields)) {
+        if (!selectedFields || foundry.utils.isEmpty(selectedFields)) {
             ui.notifications.warn((0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.warn-no-fields"));
             return;
         }
-        const randomize = deepClone(this.configApp.randomizeFields || {});
-        const addSubtract = deepClone(this.configApp.addSubtractFields || {});
+        const randomize = foundry.utils.deepClone(this.configApp.randomizeFields || {});
+        const addSubtract = foundry.utils.deepClone(this.configApp.addSubtractFields || {});
         // Detection modes may have been selected out of order
         // Fix that here
         if (this.docName === "Token") (0, $59fc6fe4c07de9fd$export$7fe60b94e2075390).correctDetectionModeOrder(selectedFields, randomize);
@@ -22985,7 +23040,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     async _onPresetCreate(event) {
         const selectedFields = this.configApp instanceof ActiveEffectConfig ? this._getActiveEffectFields() : this.configApp.getSelectedFields();
-        if (!selectedFields || isEmpty(selectedFields)) {
+        if (!selectedFields || foundry.utils.isEmpty(selectedFields)) {
             ui.notifications.warn((0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.warn-no-fields"));
             return;
         }
@@ -23022,7 +23077,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     _getActiveEffectFields() {
         return {
-            changes: deepClone(this.configApp.object.changes ?? [])
+            changes: foundry.utils.deepClone(this.configApp.object.changes ?? [])
         };
     }
     _getHeaderButtons() {
@@ -23064,9 +23119,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const json = await (0, $159f597adada9fb6$export$54355b03ee60ee6e)();
         if (!json) return;
         let importCount = 0;
-        if (getType(json) === "Array") for (const p of json){
+        if (foundry.utils.getType(json) === "Array") for (const p of json){
             if (!("documentName" in p)) continue;
-            if (!("data" in p) || isEmpty(p.data)) continue;
+            if (!("data" in p) || foundry.utils.isEmpty(p.data)) continue;
             const preset = new $d0a1f06830d69799$export$3463c369d5cc977f(p);
             preset._pages = p.pages;
             await $d0a1f06830d69799$export$9cea25aeb7365a59.set(preset);
@@ -23145,10 +23200,15 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         data.preset = {};
         if (this.presets.length === 1) {
             data.preset = this.presets[0];
-            data.allowFieldDelete = true;
+            data.displayFieldDelete = true;
+            data.displayFieldModify = true;
         }
         data.minlength = this.presets.length > 1 ? 0 : 1;
         data.tva = game.modules.get("token-variants")?.active;
+        if (this.data && !(this.data instanceof Array)) {
+            data.modifyDisabled = true;
+            data.deleteDisabled = true;
+        }
         // Check if all presets are for the same document type and thus can be edited using a Mass Edit form
         const docName = this.presets[0].documentName;
         if (docName !== "Actor" && this.presets.every((p)=>p.documentName === docName)) {
@@ -23164,6 +23224,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         html.find(".edit-document").on("click", this._onEditDocument.bind(this));
         html.find(".assign-document").on("click", this._onAssignDocument.bind(this));
         html.find(".delete-fields").on("click", this._onDeleteFields.bind(this));
+        html.find(".spawn-fields").on("click", this._onSpawnFields.bind(this));
         // TVA Support
         const tvaButton = html.find(".token-variants-image-select-button");
         tvaButton.on("click", (event)=>{
@@ -23174,6 +23235,11 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 searchType: "Item"
             });
         });
+    }
+    async _onSpawnFields() {
+        new $d0a1f06830d69799$var$PresetFieldModify(this.data ?? this.presets[0].data, (modifyOnSpawn)=>{
+            this.modifyOnSpawn = modifyOnSpawn;
+        }, this.modifyOnSpawn ?? this.presets[0].modifyOnSpawn).render(true);
     }
     async _onDeleteFields() {
         new $d0a1f06830d69799$var$PresetFieldDelete(this.data ?? this.presets[0].data, (data)=>{
@@ -23190,6 +23256,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 count: data.length,
                 document: this.presets[0].documentName
             }));
+            this.render(true);
         }
     }
     async _onEditDocument() {
@@ -23206,6 +23273,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                     if (k in obj.addSubtract) this.addSubtract[k] = obj.addSubtract[k];
                 }
                 this.data = obj.data;
+                this.render(true);
             }
         });
         // For randomize and addSubtract only take into account the first preset
@@ -23230,6 +23298,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
             if (this.data) update.data = this.data;
             if (this.addSubtract) update.addSubtract = this.addSubtract;
             if (this.randomize) update.randomize = this.randomize;
+            if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
             await preset.update(update);
         }
         else for (const preset of this.presets){
@@ -23240,6 +23309,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
             if (this.data) update.data = this.data;
             if (this.addSubtract) update.addSubtract = this.addSubtract;
             if (this.randomize) update.randomize = this.randomize;
+            if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
             await preset.update(update);
         }
     }
@@ -23249,30 +23319,26 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         return this.presets;
     }
 }
-class $d0a1f06830d69799$var$PresetFieldDelete extends FormApplication {
-    static name = "PresetFieldDelete";
+class $d0a1f06830d69799$var$PresetFieldSelect extends FormApplication {
+    static name = "PresetFieldSelect";
     constructor(data, callback){
         super();
         this.presetData = data;
         this.isObject = !(data instanceof Array);
-        this.singleData = !this.isObject && data.length === 1;
         this.callback = callback;
     }
     /** @inheritdoc */ static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: [
                 "sheet",
-                "preset-field-delete"
+                "preset-field-select"
             ],
-            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFieldDelete.html`,
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFieldSelect.html`,
             width: 600,
             resizable: false
         });
     }
-    /* -------------------------------------------- */ /** @override */ get title() {
-        return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-fields");
-    }
-    activateListeners(html) {
+    /* -------------------------------------------- */ activateListeners(html) {
         super.activateListeners(html);
         html.find(".item").on("click", this._onFieldClick);
     }
@@ -23280,34 +23346,63 @@ class $d0a1f06830d69799$var$PresetFieldDelete extends FormApplication {
         $d0a1f06830d69799$var$itemSelect(e, $(e.target).closest(".preset-field-list"));
     }
     /** @override */ async getData(options = {}) {
-        let data;
-        if (this.singleData) data = this.presetData[0];
-        else data = this.presetData;
-        data = flattenObject(data);
+        let data = foundry.utils.flattenObject(this.presetData);
+        const singleData = !this.isObject && this.presetData.length === 1;
+        let index;
         let fields = [];
-        for (const [k, v] of Object.entries(data))fields.push({
-            name: k,
-            value: JSON.stringify(v)
-        });
+        for (const [k, v] of Object.entries(data)){
+            if (!singleData) {
+                const i = k.split(".")[0];
+                if (!index) fields.push({
+                    header: true,
+                    index: 0
+                });
+                else if (i !== index) fields.push({
+                    header: true,
+                    index: i
+                });
+                index = i;
+            }
+            let label = k;
+            if (singleData) label = label.substring(label.indexOf(".") + 1);
+            let value;
+            const t = foundry.utils.getType(v);
+            if (t === "Object" || t === "Array" || t === "null") value = JSON.stringify(v);
+            else value = v;
+            fields.push({
+                name: k,
+                label: label,
+                value: value,
+                selected: false
+            });
+        }
         return {
             fields: fields
         };
     }
+}
+class $d0a1f06830d69799$var$PresetFieldDelete extends $d0a1f06830d69799$var$PresetFieldSelect {
+    static name = "PresetFieldDelete";
+    /* -------------------------------------------- */ /** @override */ get title() {
+        return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-delete");
+    }
+    /** @override */ async getData(options = {}) {
+        const data = await super.getData(options);
+        data.button = {
+            icon: '<i class="fas fa-trash"></i>',
+            text: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.delete")
+        };
+        return data;
+    }
     /* -------------------------------------------- */ /** @override */ async _updateObject(event, formData) {
-        let data;
-        if (this.singleData) data = this.presetData[0];
-        else data = this.presetData;
-        data = flattenObject(data);
+        let data = foundry.utils.flattenObject(this.presetData);
         const form = $(event.target).closest("form");
         form.find(".item.selected").each(function() {
             const name = $(this).attr("name");
             delete data[name];
         });
         data = expandObject(data);
-        if (this.singleData) data = [
-            data
-        ];
-        else if (!this.isObject) {
+        if (!this.isObject) {
             let reorganizedData = [];
             for(let i = 0; i < this.presetData.length; i++){
                 if (!data[i]) continue;
@@ -23316,6 +23411,34 @@ class $d0a1f06830d69799$var$PresetFieldDelete extends FormApplication {
             data = reorganizedData;
         }
         this.callback(data);
+    }
+}
+class $d0a1f06830d69799$var$PresetFieldModify extends $d0a1f06830d69799$var$PresetFieldSelect {
+    static name = "PresetFieldModify";
+    constructor(data, callback, modifyOnSpawn){
+        super(data, callback);
+        this.modifyOnSpawn = modifyOnSpawn ?? [];
+    }
+    /* -------------------------------------------- */ /** @override */ get title() {
+        return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-modify");
+    }
+    /** @override */ async getData(options = {}) {
+        const data = await super.getData(options);
+        data.button = {
+            icon: '<i class="fas fa-check"></i>',
+            text: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("CONTROLS.CommonSelect", false)
+        };
+        for (const field of data.fields)if (this.modifyOnSpawn.includes(field.name)) field.selected = true;
+        return data;
+    }
+    /* -------------------------------------------- */ /** @override */ async _updateObject(event, formData) {
+        const form = $(event.target).closest("form");
+        const modifyOnSpawn = [];
+        form.find(".item.selected").each(function() {
+            let name = $(this).attr("name");
+            modifyOnSpawn.push(name);
+        });
+        this.callback(modifyOnSpawn);
     }
 }
 class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
@@ -23450,7 +23573,7 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { exportTo: exportTo
 }
 function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
     let data;
-    presetData = flattenObject(presetData);
+    presetData = foundry.utils.flattenObject(presetData);
     // Set default values if needed
     switch(preset.documentName){
         case "Token":
@@ -23496,14 +23619,14 @@ function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
         default:
             data = {};
     }
-    return mergeObject(data, presetData);
+    return foundry.utils.mergeObject(data, presetData);
 }
 function $d0a1f06830d69799$var$placeableToData(placeable) {
     const data = placeable.document.toCompendium();
     // Check if `Token Attacher` has attached elements to this token
     if (placeable.document.documentName === "Token" && game.modules.get("token-attacher")?.active && tokenAttacher?.generatePrototypeAttached) {
         const attached = data.flags?.["token-attacher"]?.attached || {};
-        if (!isEmpty(attached)) {
+        if (!foundry.utils.isEmpty(attached)) {
             const prototypeAttached = tokenAttacher.generatePrototypeAttached(data, attached);
             setProperty(data, "flags.token-attacher.attached", null);
             setProperty(data, "flags.token-attacher.prototypeAttached", prototypeAttached);
@@ -23562,7 +23685,6 @@ function $d0a1f06830d69799$var$scaleDataToGrid(data, documentName, gridSize) {
     ].includes(documentName)) return;
     if (!gridSize) gridSize = 100;
     const ratio = canvas.grid.size / gridSize;
-    console.log(data, documentName, gridSize);
     for (const d of data)switch(documentName){
         case "Tile":
             if ("width" in d) d.width *= ratio;
@@ -23576,6 +23698,55 @@ function $d0a1f06830d69799$var$scaleDataToGrid(data, documentName, gridSize) {
             if ("c" in d) for(let i = 0; i < d.c.length; i++)d.c[i] *= ratio;
             break;
     }
+}
+/**
+ * Opens a GenericMassEdit form to modify specific fields within the provided data
+ * @param {Object} data            data to be modified
+ * @param {Array[String]} toModify fields within data to be modified
+ * @returns modified data or null if form was canceled
+ */ async function $d0a1f06830d69799$var$modifySpawnData(data, toModify) {
+    const fields = {};
+    const flatData = foundry.utils.flattenObject(data);
+    for (const field of toModify)if (field in flatData) {
+        if (flatData[field] == null) fields[field] = "";
+        else fields[field] = flatData[field];
+    }
+    if (!foundry.utils.isEmpty(fields)) await new Promise((resolve)=>{
+        (0, $f3b8698a65c76e19$export$609bf259f643e4ef)(fields, "PresetFieldModify", {
+            callback: (modified)=>{
+                if (foundry.utils.isEmpty(modified)) {
+                    if (modified == null) data = null;
+                    resolve();
+                    return;
+                }
+                for (const [k, v] of Object.entries(modified))flatData[k] = v;
+                const tmpData = foundry.utils.expandObject(flatData);
+                const reorganizedData = [];
+                for(let i = 0; i < data.length; i++)reorganizedData.push(tmpData[i]);
+                data = reorganizedData;
+                resolve();
+            },
+            simplified: true,
+            noTabs: true
+        });
+    });
+    return data;
+}
+/**
+ * Return Mass Edit form that the mouse is over if any
+ * @param {Number} mouseX
+ * @param {Number} mouseY
+ * @param {String} documentName
+ * @returns {Application|null} MassEdit form
+ */ function $d0a1f06830d69799$var$hoverMassEditForm(mouseX, mouseY, documentName) {
+    const hitTest = function(app) {
+        const position = app.position;
+        const appX = position.left;
+        const appY = position.top;
+        if (mouseX > appX && mouseX < appX + position.width && mouseY > appY && mouseY < appY + position.height) return true;
+        return false;
+    };
+    return Object.values(ui.windows).find((app)=>app.meForm && app.documentName === documentName && hitTest(app));
 }
 
 
@@ -23655,8 +23826,8 @@ function $32e43d7a62aba58c$export$7a171f172be0782e(obj) {
 }
 function $32e43d7a62aba58c$export$be67e9bf7f25c9c4(data, flag, flagVal) {
     if (data[flag] == flagVal) return true;
-    const falseyFlagVal = flagVal == null || flagVal === false || flagVal === "" || getType(flagVal) === "Object" && isEmpty(flagVal);
-    const falseyDataVal = data[flag] == null || data[flag] === false || data[flag] === "" || getType(data[flag]) === "Object" && isEmpty(data[flag]);
+    const falseyFlagVal = flagVal == null || flagVal === false || flagVal === "" || foundry.utils.getType(flagVal) === "Object" && foundry.utils.isEmpty(flagVal);
+    const falseyDataVal = data[flag] == null || data[flag] === false || data[flag] === "" || foundry.utils.getType(data[flag]) === "Object" && foundry.utils.isEmpty(data[flag]);
     if (falseyFlagVal && falseyDataVal) return true;
     // Special treatment for Tagger module's tags
     // Instead of directly comparing string we check if it contains the string
@@ -23686,10 +23857,10 @@ function $32e43d7a62aba58c$export$cb264c2e048afacf(form, fields) {
 }
 function $32e43d7a62aba58c$export$1ced7b3ceb2cd439(updates, objects, docName, addSubtractFields) {
     // See if any field need to be added or subtracted
-    if (!addSubtractFields || isEmpty(addSubtractFields)) return;
+    if (!addSubtractFields || foundry.utils.isEmpty(addSubtractFields)) return;
     for(let i = 0; i < updates.length; i++){
         const update = updates[i];
-        const data = flattenObject($32e43d7a62aba58c$export$7a171f172be0782e(objects[i]).toObject());
+        const data = foundry.utils.flattenObject($32e43d7a62aba58c$export$7a171f172be0782e(objects[i]).toObject());
         (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).dataToForm(docName, objects[i], data);
         for (const field of Object.keys(update))if (field in addSubtractFields && field in data) {
             const ctrl = addSubtractFields[field];
@@ -23727,9 +23898,9 @@ function $32e43d7a62aba58c$export$1ced7b3ceb2cd439(updates, objects, docName, ad
 }
 function $32e43d7a62aba58c$export$a88e9f7fc35c8ffa(objects) {
     if (!objects || !objects.length) return {};
-    const commonData = flattenObject(objects[0]);
+    const commonData = foundry.utils.flattenObject(objects[0]);
     for(let i = 1; i < objects.length; i++){
-        const diff = flattenObject(diffObject(commonData, flattenObject(objects[i])));
+        const diff = foundry.utils.flattenObject(foundry.utils.diffObject(commonData, foundry.utils.flattenObject(objects[i])));
         for (const k of Object.keys(diff)){
             // Special handling for empty/undefined data
             if ((diff[k] === "" || diff[k] == null) && (commonData[k] === "" || commonData[k] == null)) ;
@@ -23742,7 +23913,7 @@ function $32e43d7a62aba58c$export$1c723ddaaf731bd0(original, other = {}, nestedK
     if (!other) return;
     for (const [key, val] of Object.entries(original)){
         const fullKey = nestedKey ? nestedKey + "." + key : key;
-        const t = getType(val);
+        const t = foundry.utils.getType(val);
         if (t === "Object") $32e43d7a62aba58c$export$1c723ddaaf731bd0(val, other, fullKey);
         else {
             const prop = getProperty(other, fullKey);
@@ -23826,9 +23997,9 @@ function $32e43d7a62aba58c$export$8aed4ff85b767892(obj, d = 0) {
     if (d === 0) return obj;
     const flat = {};
     for (let [k, v] of Object.entries(obj)){
-        let t = getType(v);
+        let t = foundry.utils.getType(v);
         if (t === "Object") {
-            if (isEmpty(v)) flat[k] = v;
+            if (foundry.utils.isEmpty(v)) flat[k] = v;
             let inner = $32e43d7a62aba58c$export$8aed4ff85b767892(v, d - 1);
             for (let [ik, iv] of Object.entries(inner))flat[`${k}.${ik}`] = iv;
         } else flat[k] = v;
@@ -23837,13 +24008,13 @@ function $32e43d7a62aba58c$export$8aed4ff85b767892(obj, d = 0) {
 }
 function $32e43d7a62aba58c$export$1eeaf2f7f77dcac8(aeConfig) {
     const showPresetGeneric = function(docName) {
-        new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(aeConfig, (preset)=>{
-            if (!isEmpty(preset.randomize)) (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(preset.data, null, preset.randomize);
+        new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(aeConfig, async (preset)=>{
+            if (!foundry.utils.isEmpty(preset.randomize)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(preset.data, null, preset.randomize);
             const changes = aeConfig.object.changes ?? [];
             let nChanges = [];
             Object.keys(preset.data[0]).forEach((k)=>{
                 let value;
-                if (getType(preset.data[0][k]) === "string") value = preset.data[0][k];
+                if (foundry.utils.getType(preset.data[0][k]) === "string") value = preset.data[0][k];
                 else value = JSON.stringify(preset.data[0][k]);
                 nChanges.push({
                     key: docName === "Token" ? "ATL." + k : k,
@@ -23863,7 +24034,7 @@ function $32e43d7a62aba58c$export$1eeaf2f7f77dcac8(aeConfig) {
             const changes = aeConfig.object.changes ?? [];
             let nChanges = [];
             preset.data[0].changes?.forEach((change)=>{
-                if (change.key) nChanges.push(mergeObject({
+                if (change.key) nChanges.push(foundry.utils.mergeObject({
                     mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
                     priority: 20
                 }, change));
@@ -23900,7 +24071,7 @@ function $32e43d7a62aba58c$export$c29f08336649747(doc) {
 const $32e43d7a62aba58c$export$3bb8c85ed320ac91 = {};
 async function $32e43d7a62aba58c$export$24b03028f6f659d0(documentName, data, sceneID) {
     if (game.user.isGM) return game.scenes.get(sceneID).createEmbeddedDocuments(documentName, data);
-    const requestID = randomID();
+    const requestID = foundry.utils.randomID();
     const message = {
         handlerName: "document",
         args: {
@@ -24025,7 +24196,7 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
     static async _createPreview(createData) {
         const documentName = this.constructor.documentName;
         const cls = getDocumentClass(documentName);
-        createData._id = randomID(); // Needed to allow rendering of multiple previews at the same time
+        createData._id = foundry.utils.randomID(); // Needed to allow rendering of multiple previews at the same time
         const document = new cls(createData, {
             parent: canvas.scene
         });
@@ -24133,6 +24304,17 @@ function $32e43d7a62aba58c$export$b3bd0bc58e36cd63(path, moduleLocalization = tr
 function $32e43d7a62aba58c$export$6ea486f4767e8a74(path, insert, moduleLocalization = true) {
     if (moduleLocalization) return game.i18n.format(`MassEdit.${path}`, insert);
     return game.i18n.format(path, insert);
+}
+async function $32e43d7a62aba58c$export$767e4c91777ecf4c(preset) {
+    if (preset && canvas.scene) {
+        const data = foundry.utils.flattenObject(preset.data[0]);
+        await canvas.scene.update(data);
+        // Grid doesn't redraw on scene update, do it manually here
+        if ("grid.color" in data || "grid.alpha" in data) canvas.grid.grid.draw({
+            color: data["grid.color"].replace("#", "0x"),
+            alpha: Number(data["grid.alpha"])
+        });
+    }
 }
 
 
@@ -24707,11 +24889,12 @@ const $581145b22b1135a9$var$WMC = (0, $8d51a9873394e4eb$export$ef937e3799bf3b88)
 class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WMC {
     constructor(docs, options = {}){
         const objects = docs.map((a)=>a.toObject ? a.toObject() : a);
-        const allData = {};
-        for(let i = objects.length; i >= 0; i--)mergeObject(allData, objects[i]);
+        let allData = {};
+        for(let i = objects.length; i >= 0; i--)foundry.utils.mergeObject(allData, objects[i]);
+        if (options.noTabs) allData = foundry.utils.flattenObject(allData);
         let documentName = options.documentName ?? "NONE";
-        let customControls = mergeObject((0, $d90d2371b0027c40$export$549879c0f3abf4f2)[documentName] ?? {}, game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls")[documentName] ?? {});
-        customControls = mergeObject(customControls, options.customControls?.[documentName] ?? {});
+        let customControls = foundry.utils.mergeObject((0, $d90d2371b0027c40$export$549879c0f3abf4f2)[documentName] ?? {}, game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls")[documentName] ?? {});
+        customControls = foundry.utils.mergeObject(customControls, options.customControls?.[documentName] ?? {});
         const [nav, tabSelectors] = (0, $2d0c7cad90c7ba3c$export$6171357ef4337306)(allData, documentName, customControls);
         const commonData = (0, $32e43d7a62aba58c$export$a88e9f7fc35c8ffa)(objects);
         super(docs[0], docs, {
@@ -24727,7 +24910,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
         if (options.callback) this.callbackOnUpdate = options.callback;
     }
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "mass-edit-generic-form",
             classes: [
                 "sheet"
@@ -24820,7 +25003,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
         const pinned = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields");
         pinned[this.documentName] = this.pinnedFields;
         for (const name of Object.keys(this.pinnedFields))this.pinnedFields[name].value = formData[name];
-        if (!isEmpty(this.editableLabels)) {
+        if (!foundry.utils.isEmpty(this.editableLabels)) {
             for (const [name, label] of Object.entries(this.editableLabels))if (name in this.pinnedFields) {
                 this.pinnedFields[name].label = label;
                 this.pinnedFields[name].value = formData[name];
@@ -24828,6 +25011,10 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
             this.editableLabels = {};
         }
         game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields", pinned);
+    }
+    async close(options = {}) {
+        if (this.callbackOnUpdate) this.callbackOnUpdate(null);
+        return super.close(options);
     }
 }
 function $581145b22b1135a9$var$defineRangeControl(name, val, customControls, docName, { min: min = null, max: max = null, step: step = null } = {}) {
@@ -25036,7 +25223,7 @@ function $f3b8698a65c76e19$export$5092c3abb1d2db42(basePlaceable) {
     }
     const docName = (0, $32e43d7a62aba58c$export$c29f08336649747)(target);
     const options = {
-        commonData: flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(target).toObject()),
+        commonData: foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(target).toObject()),
         massSelect: true,
         documentName: docName
     };
@@ -25478,17 +25665,7 @@ Hooks.once("init", ()=>{
                 app.close(true);
                 return;
             }
-            new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, async (preset)=>{
-                if (preset && canvas.scene) {
-                    const data = flattenObject(preset.data[0]);
-                    await canvas.scene.update(data);
-                    // Grid doesn't redraw on scene update, do it manually here
-                    if ("grid.color" in data || "grid.alpha" in data) canvas.grid.grid.draw({
-                        color: data["grid.color"].replace("#", "0x"),
-                        alpha: Number(data["grid.alpha"])
-                    });
-                }
-            }, "Scene").render(true);
+            new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, null, "Scene").render(true);
         },
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
@@ -25641,13 +25818,13 @@ Hooks.on("ready", async ()=>{
     if (!game.packs.get((0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack)) game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", (0, $d0a1f06830d69799$export$2a34b6e4e19d9a25));
     if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsMigrated")) {
         const presets = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presets");
-        if (getType(presets) === "Object" && !isEmpty(presets)) {
+        if (foundry.utils.getType(presets) === "Object" && !foundry.utils.isEmpty(presets)) {
             let newPresets = [];
             for (const documentName of Object.keys(presets)){
                 for (const name of Object.keys(presets[documentName])){
                     let oldPreset = presets[documentName][name];
                     let newPreset = {
-                        id: randomID()
+                        id: foundry.utils.randomID()
                     };
                     newPreset.name = name;
                     newPreset.documentName = documentName;
@@ -25660,7 +25837,7 @@ Hooks.on("ready", async ()=>{
                     delete oldPreset["mass-edit-addSubtract"];
                     delete oldPreset["mass-edit-randomize"];
                     delete oldPreset["mass-edit-keybind"];
-                    newPreset.data = deepClone(oldPreset);
+                    newPreset.data = foundry.utils.deepClone(oldPreset);
                     newPresets.push(newPreset);
                 }
                 game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets", newPresets);
@@ -25702,9 +25879,9 @@ Hooks.on("renderTileHUD", (hud, html, tileData)=>{
 //
 // Retrieve only the data that is different
 function $15e9db69c2322773$var$getDiffData(obj, docName, update, protoData = true) {
-    const flatUpdate = flattenObject(update);
+    const flatUpdate = foundry.utils.flattenObject(update);
     const flatObjData = (0, $8d51a9873394e4eb$export$de8c6f734ca56d8f)(obj, docName, protoData);
-    const diff = diffObject(flatObjData, flatUpdate);
+    const diff = foundry.utils.diffObject(flatObjData, flatUpdate);
     for (const [k, v] of Object.entries(diff)){
         // Special handling for empty/undefined data
         if ((v === "" || v == null) && (flatObjData[k] === "" || flatObjData[k] == null)) // matches
@@ -25733,17 +25910,17 @@ function $15e9db69c2322773$var$updateHistory(obj, update, options, userId) {
     ].forEach((ctrl)=>{
         if (ctrl in options) historyItem.ctrl[ctrl] = options[ctrl][0];
     });
-    let cUpdate = deepClone(update);
+    let cUpdate = foundry.utils.deepClone(update);
     delete cUpdate._id;
     let docName = obj.document ? obj.document.documentName : obj.documentName;
     if (docName === "Actor") {
-        if (cUpdate.prototypeToken || cUpdate.token) $15e9db69c2322773$var$saveHistory(obj.prototypeToken ?? obj.token, cUpdate.prototypeToken ?? cUpdate.token, deepClone(historyItem), update._id, "Token");
+        if (cUpdate.prototypeToken || cUpdate.token) $15e9db69c2322773$var$saveHistory(obj.prototypeToken ?? obj.token, cUpdate.prototypeToken ?? cUpdate.token, foundry.utils.deepClone(historyItem), update._id, "Token");
     }
     $15e9db69c2322773$var$saveHistory(obj, cUpdate, historyItem, update._id, docName);
 }
 function $15e9db69c2322773$var$saveHistory(obj, update, historyItem, _id, docName) {
-    if (!obj || isEmpty(update)) return;
-    historyItem.update = flattenObject(update);
+    if (!obj || foundry.utils.isEmpty(update)) return;
+    historyItem.update = foundry.utils.flattenObject(update);
     historyItem.diff = $15e9db69c2322773$var$getDiffData(obj, docName, update);
     historyItem._id = _id;
     const maxLength = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "historyMaxLength") ?? 0;
