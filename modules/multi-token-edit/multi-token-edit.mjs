@@ -19,7 +19,6 @@ import { MassEditGenericForm } from './applications/generic/genericForm.js';
 import {
   activeEffectPresetSelect,
   applyAddSubtract,
-  applyPresetToScene,
   createDocuments,
   flagCompare,
   getDocumentName,
@@ -44,7 +43,7 @@ Hooks.once('init', () => {
     scope: 'world',
     config: false,
     type: String,
-    default: 'Default',
+    default: 'Solid Background',
   });
 
   game.settings.register(MODULE_ID, 'cssCustom', {
@@ -160,6 +159,15 @@ Hooks.once('init', () => {
     config: false,
     type: String,
     default: 'manual',
+  });
+
+  // p = preset only
+  // pf = preset & folder
+  game.settings.register(MODULE_ID, 'presetSearchMode', {
+    scope: 'world',
+    config: false,
+    type: String,
+    default: 'pf',
   });
 
   game.settings.register(MODULE_ID, 'presetSceneControl', {

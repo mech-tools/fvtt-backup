@@ -268,7 +268,7 @@ class $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f {
 
 
 
-function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, customControls) {
+function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, customControls, pins = true) {
     const nav = {
         dataGroup: "main",
         items: [],
@@ -292,12 +292,12 @@ function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, custom
         for (const k of editableKeys)if (k in allData) object[k] = allData[k];
     }
     const pinned = documentName ? game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pinnedFields")[documentName] || {} : {};
-    $2d0c7cad90c7ba3c$var$_constructControls(nav, object, tabSelectors, "", pinned, customControls);
+    $2d0c7cad90c7ba3c$var$_constructControls(nav, object, tabSelectors, "", pinned, customControls, pins);
     const pinned_groups = [];
     const flatObject = foundry.utils.flattenObject(object);
     for (const [k, v] of Object.entries(pinned)){
         const value = k in flatObject ? flatObject[k] : v.value;
-        let control = $2d0c7cad90c7ba3c$var$genControl(foundry.utils.getType(value), v.label, value, k, {}, true, customControls);
+        let control = $2d0c7cad90c7ba3c$var$genControl(foundry.utils.getType(value), v.label, value, k, {}, true, customControls, pins);
         control.pinned = true;
         pinned_groups.push(control);
     }
@@ -330,7 +330,7 @@ function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, custom
         tabSelectors
     ];
 }
-function $2d0c7cad90c7ba3c$var$_constructControls(nav, data, tabSelectors, name, pinned, customControls) {
+function $2d0c7cad90c7ba3c$var$_constructControls(nav, data, tabSelectors, name, pinned, customControls, pins) {
     const groups = [];
     let containsNav = false;
     for (const [k, v] of Object.entries(data)){
@@ -358,10 +358,10 @@ function $2d0c7cad90c7ba3c$var$_constructControls(nav, data, tabSelectors, name,
                         contentSelector: `.tab[data-tab="${name2}"]`,
                         initial: k + "-me-main"
                     });
-                    $2d0c7cad90c7ba3c$var$_constructControls(newNav, v, tabSelectors, name2, pinned, customControls);
+                    $2d0c7cad90c7ba3c$var$_constructControls(newNav, v, tabSelectors, name2, pinned, customControls, pins);
                     containsNav = true;
                 }
-            } else control = $2d0c7cad90c7ba3c$var$genControl(t, $2d0c7cad90c7ba3c$var$_genLabel(k), v, name2, pinned, false, customControls);
+            } else control = $2d0c7cad90c7ba3c$var$genControl(t, $2d0c7cad90c7ba3c$var$_genLabel(k), v, name2, pinned, false, customControls, pins);
             if (control) groups.push(control);
         }
     }
@@ -404,7 +404,7 @@ function $2d0c7cad90c7ba3c$export$3bc23beea9300df4(name) {
     name = name.split(".").pop();
     return $2d0c7cad90c7ba3c$var$COLOR_FIELDS.includes(name) || name.toLowerCase().includes("color");
 }
-function $2d0c7cad90c7ba3c$var$genControl(type, label, value, name, pinned, editableLabel = false, customControls = {}) {
+function $2d0c7cad90c7ba3c$var$genControl(type, label, value, name, pinned, editableLabel = false, customControls = {}, pins) {
     const allowedArrayElTypes = [
         "number",
         "string"
@@ -413,11 +413,9 @@ function $2d0c7cad90c7ba3c$var$genControl(type, label, value, name, pinned, edit
         label: label,
         value: value,
         name: name,
-        editableLabel: editableLabel
+        editableLabel: editableLabel,
+        pins: pins
     };
-    // if (name === 'animated.intensity.animType') {
-    //   console.log(name, customControls, customControls[name]);
-    // }
     if (getProperty(customControls, name)) control = foundry.utils.mergeObject(control, getProperty(customControls, name));
     else if (type === "number") {
         control.number = true;
@@ -15966,7 +15964,6 @@ function $2dca407f99b477df$var$deltaECMC(color, sample, { l: l = 2, c: c = 1 } =
     // trying instead the equation from Industrial Color Physics
     // By Georg A. Klein
     // let ΔH = ((a1 * b2) - (a2 * b1)) / Math.sqrt(0.5 * ((C2 * C1) + (a2 * a1) + (b2 * b1)));
-    // console.log({ΔH});
     // This gives the same result to 12 decimal places
     // except it sometimes NaNs when trying to root a negative number
     // let ΔH = Math.sqrt(H2); we never actually use the root, it gets squared again!!
@@ -15983,7 +15980,6 @@ function $2dca407f99b477df$var$deltaECMC(color, sample, { l: l = 2, c: c = 1 } =
     if (Number.isNaN(H1)) H1 = 0;
     if (H1 >= 164 && H1 <= 345) T = 0.56 + Math.abs(0.2 * Math.cos((H1 + 168) * $2dca407f99b477df$var$d2r));
     else T = 0.36 + Math.abs(0.4 * Math.cos((H1 + 35) * $2dca407f99b477df$var$d2r));
-    // console.log({T});
     // SH Hue factor also depends on C1,
     let C4 = Math.pow(C1, 4);
     let F = Math.sqrt(C4 / (C4 + 1900));
@@ -16168,7 +16164,6 @@ var $2dca407f99b477df$var$Jzazbz = new $2dca407f99b477df$var$ColorSpace({
         });
         // almost there, calculate Iz az bz
         let [Iz, az, bz] = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$ConetoIab_M, PQLMS);
-        // console.log({Iz, az, bz});
         let Jz = (1 + $2dca407f99b477df$var$d) * Iz / (1 + $2dca407f99b477df$var$d * Iz) - $2dca407f99b477df$var$d0;
         return [
             Jz,
@@ -17400,10 +17395,8 @@ function $2dca407f99b477df$var$adapt(W1, W2, id = "Bradford") {
             βd / βs
         ]
     ];
-    // console.log({scale});
     let scaled_cone_M = $2dca407f99b477df$var$multiplyMatrices(scale, method.toCone_M);
     let adapt_M = $2dca407f99b477df$var$multiplyMatrices(method.fromCone_M, scaled_cone_M);
-    // console.log({scaled_cone_M, adapt_M});
     return adapt_M;
 }
 $2dca407f99b477df$var$defineCAT({
@@ -20127,7 +20120,7 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
                 if (this.options.massEdit && !this.options.simplified && !this.options.presetEdit) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.immediate-update-title`)}"><input type="checkbox" data-submit="${button.value}"><i class="fas fa-cogs"></i></div>`;
             }
             if (this.options.massSelect && (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.documentName)) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.global-search-title`)}"><input type="checkbox" data-submit="world"><i class="far fa-globe"></i></div>`;
-            let footer = $(html).find(".sheet-footer");
+            let footer = $(html).find(".sheet-footer").last();
             if (footer.length) footer.append(htmlButtons);
             else {
                 footer = $(`<footer class="sheet-footer flexrow">${htmlButtons}</footer>`);
@@ -20581,9 +20574,10 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 class: "mass-edit-presets",
                 icon: "fas fa-box",
                 onclick: ()=>{
-                    this.linkedPresetForm = new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(this, async (preset)=>this._processPreset(preset), this.docName, {
+                    this.linkedPresetForm = new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(this, null, this.docName, {
                         left: this.position.left - 370,
-                        top: this.position.top
+                        top: this.position.top,
+                        preventPositionOverride: true
                     });
                     this.linkedPresetForm.render(true);
                 }
@@ -21101,7 +21095,7 @@ function $8d51a9873394e4eb$export$2cdf1b96a9f86d16(preset, command, isPrototype)
         }
     }
     // Also copy the fields to the game clipboard as plain text
-    game.clipboard.copyPlainText(JSON.stringify(foundry.utils.deepClone(preset.data[0]), null, 2));
+    game.clipboard.copyPlainText(JSON.stringify(foundry.utils.deepClone(preset.data.length === 1 ? preset.data[0] : preset.data), null, 2));
     ui.notifications.info((0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("clipboard.copy", {
         document: preset.documentName
     }));
@@ -21123,7 +21117,9 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
     // @type {Preset}
     static preset;
     static brushOverlay;
-    static updatedPlaceables = [];
+    static updatedPlaceables = new Map();
+    static hoveredPlaceables = new Set();
+    static hoveredPlaceable;
     static documentName;
     static active = false;
     static hitTest;
@@ -21137,7 +21133,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         (0, $8d51a9873394e4eb$export$85a626beb2f6e17a)([
             placeable
         ], this.preset, true, true);
-        this.updatedPlaceables.push(placeable);
+        this.updatedPlaceables.set(placeable.id, placeable);
     }
     static _hitTestWall(point, wall) {
         return wall.line.hitArea.contains(point.x, point.y);
@@ -21145,15 +21141,42 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
     static _hitTestControlIcon(point, placeable) {
         return Number.between(point.x, placeable.x - placeable.controlIcon.width / 2, placeable.x + placeable.controlIcon.width / 2) && Number.between(point.y, placeable.y - placeable.controlIcon.height / 2, placeable.y + placeable.controlIcon.height / 2);
     }
+    static _hitTestTile(point, placeable) {
+        const foreground = ui.controls.control.foreground ?? false;
+        if (placeable.document.overhead !== foreground) return false;
+        return this._hitTestArea(point, placeable);
+    }
+    static _hoverTestArea(placeable) {
+        return this.hoveredPlaceable && this.hoveredPlaceable.hitArea.width * this.hoveredPlaceable.hitArea.height > placeable.hitArea.width * placeable.hitArea.height;
+    }
     static _hitTestArea(point, placeable) {
         return Number.between(point.x, placeable.x, placeable.x + placeable.hitArea.width) && Number.between(point.y, placeable.y, placeable.y + placeable.hitArea.height);
     }
     static _onBrushMove(event) {
-        if (this.brushOverlay.isMouseDown) {
-            const pos = event.data.getLocalPosition(this.brushOverlay);
-            const layer = canvas.getLayerByEmbeddedName(this.documentName);
-            for (const p of layer.placeables)if (p.visible && this.hitTest(pos, p) && !this.updatedPlaceables.find((u)=>u.id === p.id)) this._performBrushDocumentUpdate(pos, p);
+        const pos = event.data.getLocalPosition(this.brushOverlay);
+        const layer = canvas.getLayerByEmbeddedName(this.documentName);
+        this._clearHover(event, pos);
+        for (const p of layer.placeables)if (p.visible && this.hitTest(pos, p) && !this.updatedPlaceables.has(p.id) && this.hoveredPlaceable !== p) {
+            if (this.hoverTest?.(p)) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = p;
+            } else if (!this.hoverTest && this.hoveredPlaceable && this.hoveredPlaceable !== p) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = p;
+            } else if (!this.hoveredPlaceable) this.hoveredPlaceable = p;
+            this.hoveredPlaceable._onHoverIn(event);
         }
+    }
+    static _clearHover(event, pos, force = false) {
+        if (this.hoveredPlaceable) {
+            if (force || !this.hoveredPlaceable.visible || !this.hitTest(pos, this.hoveredPlaceable)) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = null;
+            }
+        }
+    }
+    static _onBrushClickMove(event) {
+        if (this.hoveredPlaceable && this.hoveredPlaceable.visible && !this.updatedPlaceables.has(this.hoveredPlaceable.id)) this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
     }
     static _on3DBrushClick(event) {
         if (this.brush3d) {
@@ -21162,7 +21185,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
                 game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
                 this._performBrushDocumentUpdate(null, p);
             }
-            this.updatedPlaceables = [];
+            this.updatedPlaceables.clear();
         }
     }
     static refreshPreset() {
@@ -21188,7 +21211,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         this.deactivateCallback = deactivateCallback;
         if (this.app) this.documentName = this.app.documentName;
         else this.documentName = this.preset.documentName;
-        this.updatedPlaceables = [];
+        this.updatedPlaceables.clear();
         const interaction = canvas.app.renderer.events;
         if (!interaction.cursorStyles["brush"]) interaction.cursorStyles["brush"] = `url('modules/${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}/images/brush_icon.png'), auto`;
         this.active = true;
@@ -21205,8 +21228,13 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
             case "Note":
                 this.hitTest = this._hitTestControlIcon;
                 break;
+            case "Tile":
+                this.hitTest = this._hitTestTile;
+                this.hoverTest = this._hoverTestArea;
+                break;
             default:
                 this.hitTest = this._hitTestArea;
+                this.hoverTest = this._hoverTestArea;
         }
         // Create the brush overlay
         this.brushOverlay = new PIXI.Container();
@@ -21214,16 +21242,13 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         this.brushOverlay.cursor = "brush";
         this.brushOverlay.interactive = true;
         this.brushOverlay.zIndex = Infinity;
-        this.brushOverlay.on("mousedown", (event)=>{
-            this.brushOverlay.isMouseDown = true;
-        });
         this.brushOverlay.on("mousemove", (event)=>{
             this._onBrushMove(event);
+            if (event.buttons === 1) this._onBrushClickMove(event);
         });
         this.brushOverlay.on("mouseup", (event)=>{
-            if (event.nativeEvent.which !== 2) this._onBrushMove(event);
-            this.brushOverlay.isMouseDown = false;
-            this.updatedPlaceables = [];
+            if (event.nativeEvent.which !== 2) this._onBrushClickMove(event);
+            this.updatedPlaceables.clear();
         });
         this.brushOverlay.on("click", (event)=>{
             if (event.nativeEvent.which == 2) this.deactivate();
@@ -21289,7 +21314,9 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
                 this.deactivate3DListeners();
             }
             this.active = false;
-            this.updatedPlaceables = [];
+            this.updatedPlaceables.clear();
+            this._clearHover(null, null, true);
+            this.hoverTest = null;
             this.deactivateCallback?.();
             this.deactivateCallback = null;
             this.app = null;
@@ -21489,6 +21516,7 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
         ];
     }
 }
+
 
 
 
@@ -22059,13 +22087,13 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             for (const placeable of placeables)data.push($d0a1f06830d69799$var$placeableToData(placeable));
             // Preset data before merging with user provided
             const defPreset = {
-                name: "New Preset",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.default-name"),
                 documentName: docName,
                 data: data
             };
+            // Assign preset image
             switch(defPreset.documentName){
                 case "Token":
-                    defPreset.name = data[0].name;
                 case "Tile":
                 case "Note":
                     defPreset.img = data[0].texture.src;
@@ -22081,6 +22109,16 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
                     break;
                 case "MeasuredTemplate":
                     defPreset.img = "icons/svg/circle.svg";
+                    break;
+            }
+            //  Assign preset name
+            switch(defPreset.documentName){
+                case "Token":
+                    defPreset.name = data[0].name;
+                    break;
+                default:
+                    const taggerTag = data[0].flags?.tagger?.tags?.[0];
+                    if (taggerTag) defPreset.name = taggerTag;
                     break;
             }
             defPreset.gridSize = placeables[0].document.parent.grid.size;
@@ -22127,13 +22165,17 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
         });
         if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
         let presetData = preset.data;
+        // ==================
+        // Display modify data prompt if needed
         if (modifyPrompt && preset.modifyOnSpawn?.length) {
             presetData = await $d0a1f06830d69799$var$modifySpawnData(presetData, preset.modifyOnSpawn);
             // presetData being returned as null means that the modify field form has been canceled
             // in which case we should cancel spawning as well
             if (presetData == null) return;
         }
-        let toCreate = [];
+        // ==================
+        // Array of objects to be created
+        const toCreate = [];
         for (let data of presetData){
             data = $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, data);
             toCreate.push(foundry.utils.flattenObject(data));
@@ -22169,6 +22211,8 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             y: y
         };
         if (snapToGrid) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision);
+        // ==================
+        // ==================
         // Set positions taking into account relative distances between each object
         let diffX = 0;
         let diffY = 0;
@@ -22187,27 +22231,33 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             diffX = pos.x;
             diffY = pos.y;
         }
-        for (const data of toCreate){
-            if (preset.documentName === "Wall") {
-                if (!data.c) data.c = [
-                    pos.x,
-                    pos.y,
-                    pos.x + canvas.grid.w * 2,
-                    pos.y
-                ];
-                else {
-                    data.c[0] += diffX;
-                    data.c[1] += diffY;
-                    data.c[2] += diffX;
-                    data.c[3] += diffY;
-                }
-            } else {
-                data.x = data.x != null ? data.x + diffX : diffX;
-                data.y = data.y != null ? data.y + diffY : diffY;
+        for (const data of toCreate)if (preset.documentName === "Wall") {
+            if (!data.c) data.c = [
+                pos.x,
+                pos.y,
+                pos.x + canvas.grid.w * 2,
+                pos.y
+            ];
+            else {
+                data.c[0] += diffX;
+                data.c[1] += diffY;
+                data.c[2] += diffX;
+                data.c[3] += diffY;
             }
-            if (hidden || game.keyboard.downKeys.has("AltLeft")) data.hidden = true;
+        } else {
+            data.x = data.x != null ? data.x + diffX : diffX;
+            data.y = data.y != null ? data.y + diffY : diffY;
         }
-        // ================
+        // ==================
+        if (hidden || game.keyboard.downKeys.has("AltLeft")) for (const data of toCreate)data.hidden = true;
+        // Assign ownership for Drawings and MeasuredTemplates
+        if ([
+            "Drawing",
+            "MeasuredTemplate"
+        ].includes(preset.documentName)) for (const data of toCreate){
+            if (preset.documentName === "Drawing") data.author = game.user.id;
+            else if (preset.documentName === "MeasuredTemplate") data.user = game.user.id;
+        }
         if (layerSwitch) {
             if (game.user.isGM || [
                 "Token",
@@ -22246,10 +22296,28 @@ const $d0a1f06830d69799$var$SORT_MODES = {
         icon: '<i class="fa-solid fa-arrow-down-a-z"></i>'
     }
 };
+const $d0a1f06830d69799$var$SEARCH_MODES = {
+    p: {
+        get tooltip () {
+            return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.search-presets");
+        },
+        icon: '<i class="fas fa-search"></i>'
+    },
+    pf: {
+        get tooltip () {
+            return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.search-presets-folders");
+        },
+        icon: '<i class="fa-solid fa-folder-magnifying-glass"></i>'
+    }
+};
 class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     static objectHover = false;
     static lastSearch;
     constructor(configApp, callback, docName, options = {}){
+        if (!options.preventPositionOverride && $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft) {
+            options.left = $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft;
+            options.top = $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionTop;
+        }
         super({}, options);
         this.callback = callback;
         // Drag/Drop tracking
@@ -22288,6 +22356,8 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     async getData(options) {
         const data = super.getData(options);
+        // If we're re-rendering deactivate the brush
+        if (this._activeBrush) (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
         // Cache partials
         await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/preset.html`);
         await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolder.html`);
@@ -22304,6 +22374,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         data.scaling = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling");
         data.extCompActive = displayExtCompendiums;
         data.sortMode = $d0a1f06830d69799$var$SORT_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode")];
+        data.searchMode = $d0a1f06830d69799$var$SEARCH_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode")];
         data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
         data.lastSearch = $d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch;
         data.docs = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).reduce((obj, key)=>{
@@ -22338,8 +22409,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         // Preset multi-select & drag Listeners
         const itemList = html.find(".item-list");
         // Multi-select
-        html.on("click", ".item", (e)=>{
-            $d0a1f06830d69799$var$itemSelect(e, itemList);
+        html.on("click", ".item", (event)=>{
+            $d0a1f06830d69799$var$itemSelect(event, itemList);
+            if (this._activeBrush) this._toggleBrush(event);
         });
         html.on("dragstart", ".item", (event)=>{
             this.dragType = "item";
@@ -22509,17 +22581,8 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         });
         // End of Folder Listeners
         // ================
-        // const form = html.closest('.mass-edit-preset-form');
-        // form.on('dragover', (event) => {
-        //   console.log('FORM DRAGOVER', event);
-        // });
-        // form.on('drop', (event) => {
-        //   const data = TextEditor.getDragEventData(event.originalEvent);
-        //   if (data.type === 'Actor') {
-        //     console.log(data.uuid);
-        //   }
-        // });
         html.find(".toggle-sort").on("click", this._onToggleSort.bind(this));
+        html.find(".toggle-search-mode").on("click", this._onToggleSearch.bind(this));
         html.find(".toggle-doc-lock").on("click", this._onToggleLock.bind(this));
         html.find(".toggle-ext-comp").on("click", this._onToggleExtComp.bind(this));
         html.find(".toggle-scaling").on("click", this._onToggleScaling.bind(this));
@@ -22530,7 +22593,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         html.find(".create-folder").on("click", this._onCreateFolder.bind(this));
         html.on("click", ".preset-create", this._onPresetCreate.bind(this));
         html.on("click", ".preset-update a", this._onPresetUpdate.bind(this));
-        html.on("click", ".preset-brush", this._onPresetBrush.bind(this));
+        html.on("click", ".preset-brush", this._toggleBrush.bind(this));
         html.on("click", ".preset-callback", this._onApplyPreset.bind(this));
         const headerSearch = html.find(".header-search input");
         const items = html.find(".item");
@@ -22572,24 +22635,18 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     _getItemContextOptions() {
         return [
             {
-                name: "Edit",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("CONTROLS.CommonEdit", false),
                 icon: '<i class="fas fa-edit"></i>',
                 condition: (item)=>item.hasClass("editable"),
                 callback: (item)=>this._onEditSelectedPresets(item)
             },
             {
-                name: "Open Journal",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.open-journal"),
                 icon: '<i class="fas fa-book-open"></i>',
                 callback: (item)=>this._onOpenJournal(item)
             },
             {
-                name: "Copy",
-                icon: '<i class="fa-solid fa-copy"></i>',
-                condition: (item)=>!item.hasClass("editable"),
-                callback: (item)=>this._onCopySelectedPresets()
-            },
-            {
-                name: "Duplicate",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("Duplicate", false),
                 icon: '<i class="fa-solid fa-copy"></i>',
                 condition: (item)=>item.hasClass("editable"),
                 callback: (item)=>this._onCopySelectedPresets(null, {
@@ -22598,17 +22655,23 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                     })
             },
             {
-                name: "Export as JSON",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.copy-to-clipboard"),
+                icon: '<i class="fa-solid fa-copy"></i>',
+                condition: (item)=>$(this.form).find(".item-list").find(".item.selected").length === 1,
+                callback: (item)=>this._onCopyPresetToClipboard()
+            },
+            {
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.export-as-json"),
                 icon: '<i class="fas fa-file-export fa-fw"></i>',
                 callback: (item)=>this._onExportSelectedPresets()
             },
             {
-                name: "Export to Compendium",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.export-to-compendium"),
                 icon: '<i class="fas fa-file-export fa-fw"></i>',
                 callback: (item)=>this._onExportSelectedPresetsToComp()
             },
             {
-                name: "Delete",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("CONTROLS.CommonDelete", false),
                 icon: '<i class="fas fa-trash fa-fw"></i>',
                 condition: (item)=>item.hasClass("editable"),
                 callback: (item)=>this._onDeleteSelectedPresets(item)
@@ -22629,12 +22692,6 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 callback: (header)=>this._onExportFolder(header.closest(".folder").data("uuid"))
             },
             {
-                name: "Copy",
-                icon: '<i class="fa-solid fa-copy"></i>',
-                condition: (header)=>!header.closest(".folder").hasClass("editable"),
-                callback: (header)=>this._onCopyFolder(header.closest(".folder").data("uuid"))
-            },
-            {
                 name: "Delete",
                 icon: '<i class="fas fa-trash fa-fw"></i>',
                 condition: (header)=>header.closest(".folder").hasClass("editable"),
@@ -22643,12 +22700,13 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         ];
     }
     async _onExportFolder(uuid) {
-        let pack = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
-                exportTo: true
+        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
+                exportTo: true,
+                keepIdSelect: true
             }));
-        if (pack) this._onCopyFolder(uuid, null, pack);
+        if (pack) this._onCopyFolder(uuid, null, pack, true, keepId);
     }
-    async _onCopyFolder(uuid, parentId = null, pack, render = true) {
+    async _onCopyFolder(uuid, parentId = null, pack, render = true, keepId = true) {
         if (!pack) pack = $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack;
         const folder = this.tree.allFolders.get(uuid);
         const folderDoc = await fromUuid(uuid);
@@ -22676,19 +22734,23 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 pack: pack
             });
             for (const preset of folder.presets){
-                const p = await preset.load();
+                const p = (await preset.load()).clone();
                 p.folder = nFolder.id;
+                if (!keepId) p.id = foundry.utils.randomID();
                 await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
             }
-            for (const child of folder.children)await this._onCopyFolder(child.uuid, nFolder.id, pack, false);
+            for (const child of folder.children)await this._onCopyFolder(child.uuid, nFolder.id, pack, false, keepId);
             if (render) this.render(true);
         }
     }
     async _onExportSelectedPresetsToComp() {
-        let pack = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
-                exportTo: true
+        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
+                exportTo: true,
+                keepIdSelect: true
             }));
-        if (pack) this._onCopySelectedPresets(pack);
+        if (pack) this._onCopySelectedPresets(pack, {
+            keepId: keepId
+        });
     }
     async _onCopySelectedPresets(pack, { keepFolder: keepFolder = false, keepId: keepId = true } = {}) {
         const [selected, _] = await this._getSelectedPresets();
@@ -22699,6 +22761,10 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
         }
         if (selected.length) this.render(true);
+    }
+    async _onCopyPresetToClipboard() {
+        const [selected, _] = await this._getSelectedPresets();
+        if (selected.length) (0, $8d51a9873394e4eb$export$2cdf1b96a9f86d16)(selected[0]);
     }
     async _getSelectedPresets({ editableOnly: editableOnly = false } = {}) {
         const uuids = [];
@@ -22800,6 +22866,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }
         const matchedFolderUuids = new Set();
         const filter = event.target.value.trim().toLowerCase();
+        $(event.target).addClass("active");
         // First hide/show items
         const app = this;
         items.each(function() {
@@ -22815,13 +22882,32 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 }
             } else item.hide();
         });
+        const parentMatchedFolderUuids = new Set();
         // Next hide/show folders depending on whether they contained matched items
         folder.each(function() {
             const folder = $(this);
-            if (matchedFolderUuids.has(folder.data("uuid"))) {
+            const uuid = folder.data("uuid");
+            if (matchedFolderUuids.has(uuid)) {
                 folder.removeClass("collapsed");
                 folder.show();
-            } else folder.hide();
+            } else if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode") === "pf" && folder.data("name").toLowerCase().includes(filter)) {
+                folder.show();
+                if (!game.folders._expanded[uuid]) folder.addClass("collapsed");
+                folder.find(".item").show();
+                folder.find(".folder").each(function() {
+                    const folder = $(this);
+                    const uuid = folder.data("uuid");
+                    parentMatchedFolderUuids.add(uuid);
+                    folder.show();
+                    if (!matchedFolderUuids.has(uuid) && !game.folders._expanded[uuid]) folder.addClass("collapsed");
+                });
+                let parent = folder.parent().closest(".folder");
+                while(parent.length){
+                    parent.show();
+                    parent.removeClass("collapsed");
+                    parent = parent.parent().closest(".folder");
+                }
+            } else if (!parentMatchedFolderUuids.has(uuid)) folder.hide();
         });
     }
     async _onFolderSort(sourceUuid, targetUuid, { inside: inside = true, folderUuid: folderUuid = null } = {}) {
@@ -22884,6 +22970,15 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const newSort = currentSort === "manual" ? "alphabetical" : "manual";
         await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode", newSort);
         this.render(true);
+    }
+    async _onToggleSearch(event) {
+        const searchControl = $(event.target).closest(".toggle-search-mode");
+        const currentMode = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode");
+        const newMode = currentMode === "p" ? "pf" : "p";
+        await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode", newMode);
+        const mode = $d0a1f06830d69799$var$SEARCH_MODES[newMode];
+        searchControl.attr("data-tooltip", mode.tooltip).html(mode.icon);
+        $(this.form).find(".header-search input").trigger("input");
     }
     _onToggleLock(event) {
         const lockControl = $(event.target).closest(".toggle-doc-lock");
@@ -22988,29 +23083,41 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
         });
     }
-    async _onPresetBrush(event) {
-        const uuid = $(event.target).closest(".item").data("uuid");
-        const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
-        if (preset) {
-            let activated = (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).activate({
+    async _toggleBrush(event) {
+        const item = $(event.target).closest(".item");
+        const brushControl = item.find(".preset-brush");
+        if (brushControl.hasClass("active")) {
+            (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
+            this._onPresetBrushDeactivate();
+        } else {
+            const uuid = item.data("uuid");
+            const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
+            if (!preset) {
+                (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
+                this._onPresetBrushDeactivate();
+                return;
+            }
+            if (this._activeBrush) (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
+            const activated = (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).activate({
                 preset: preset,
                 deactivateCallback: this._onPresetBrushDeactivate.bind(this)
             });
-            const brushControl = $(event.target).closest(".preset-brush");
-            if (brushControl.hasClass("active")) brushControl.removeClass("active");
-            else {
-                $(event.target).closest("form").find(".preset-brush").removeClass("active");
-                if (!activated) {
-                    if ((0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).activate({
-                        preset: preset,
-                        deactivateCallback: this._onPresetBrushDeactivate.bind(this)
-                    })) brushControl.addClass("active");
-                } else brushControl.addClass("active");
-            }
+            if (activated) {
+                brushControl.addClass("active").addClass("fa-bounce");
+                this._activeBrush = true;
+            } else this._onPresetBrushDeactivate();
         }
     }
     _onPresetBrushDeactivate() {
-        $(this.form).find(".preset-brush").removeClass("active");
+        $(this.form).find(".preset-brush").removeClass("active").removeClass("fa-bounce");
+        this._activeBrush = false;
+    }
+    setPosition(options) {
+        super.setPosition(options);
+        if (!this.options.preventPositionOverride) {
+            $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft = this.position.left;
+            $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionTop = this.position.top;
+        }
     }
     async close(options = {}) {
         if (!Boolean(this.configApp)) (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
@@ -23103,9 +23210,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         return buttons;
     }
     async _onWorkingPackChange() {
-        let pack = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
-                preselectPack: $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack
-            }));
+        let pack = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {}));
         if (pack && pack !== $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack) {
             await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", pack);
             this.render(true);
@@ -23256,6 +23361,8 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 count: data.length,
                 document: this.presets[0].documentName
             }));
+            this.gridSize = canvas.grid.size;
+            this.modifyOnSpawn = [];
             this.render(true);
         }
     }
@@ -23290,19 +23397,13 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
     async _updatePresets(formData) {
         formData.name = formData.name.trim();
         formData.img = formData.img.trim() || null;
-        if (this.isCreate) for (const preset of this.presets){
-            const update = {
+        for (const preset of this.presets){
+            let update;
+            if (this.isCreate) update = {
                 name: formData.name || preset.name || (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.default-name"),
                 img: formData.img ?? preset.img
             };
-            if (this.data) update.data = this.data;
-            if (this.addSubtract) update.addSubtract = this.addSubtract;
-            if (this.randomize) update.randomize = this.randomize;
-            if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
-            await preset.update(update);
-        }
-        else for (const preset of this.presets){
-            const update = {
+            else update = {
                 name: formData.name || preset.name,
                 img: formData.img || preset.img
             };
@@ -23310,6 +23411,7 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
             if (this.addSubtract) update.addSubtract = this.addSubtract;
             if (this.randomize) update.randomize = this.randomize;
             if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
+            if (this.gridSize) update.gridSize = this.gridSize;
             await preset.update(update);
         }
     }
@@ -23477,14 +23579,19 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
         let folderDocs = folder.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types ?? [
             "ALL"
         ];
-        let docs = [];
-        (0, $32e43d7a62aba58c$export$6ba969594e8d224d).forEach((type)=>{
-            docs.push({
-                name: type,
-                icon: $d0a1f06830d69799$var$DOC_ICONS[type],
-                active: folderDocs.includes(type)
+        let docs;
+        // This is a non-placeable folder type, so we will not display controls to change types
+        if (folderDocs.length === 1 && !(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(folderDocs[0])) this.nonPlaceable = true;
+        else {
+            docs = [];
+            (0, $32e43d7a62aba58c$export$6ba969594e8d224d).forEach((type)=>{
+                docs.push({
+                    name: type,
+                    icon: $d0a1f06830d69799$var$DOC_ICONS[type],
+                    active: folderDocs.includes(type)
+                });
             });
-        });
+        }
         return {
             folder: folder,
             name: folder._id ? folder.name : "",
@@ -23501,12 +23608,14 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
         };
     }
     /* -------------------------------------------- */ /** @override */ async _updateObject(event, formData) {
-        let visibleTypes = [];
-        $(this.form).find(".document-select.active").each(function() {
-            visibleTypes.push($(this).data("name"));
-        });
-        if (!visibleTypes.length) visibleTypes.push("ALL");
-        formData[`flags.${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}.types`] = visibleTypes;
+        if (!this.nonPlaceable) {
+            let visibleTypes = [];
+            $(this.form).find(".document-select.active").each(function() {
+                visibleTypes.push($(this).data("name"));
+            });
+            if (!visibleTypes.length) visibleTypes.push("ALL");
+            formData[`flags.${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}.types`] = visibleTypes;
+        }
         let doc = this.object;
         if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
         if (this.object.id) await this.object.update(formData);
@@ -23532,7 +23641,7 @@ function $d0a1f06830d69799$var$checkMouseInWindow(event) {
     if (mouseX > appX && mouseX < appX + appW && mouseY > appY && mouseY < appY + appH) return true;
     return false;
 }
-function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { exportTo: exportTo = false, preselectPack: preselectPack = "" } = {}) {
+function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: excludePack, exportTo: exportTo = false, keepIdSelect: keepIdSelect = false } = {}) {
     let config;
     if (exportTo) config = {
         title: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-compendium"),
@@ -23545,7 +23654,11 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { exportTo: exportTo
         buttonLabel: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.swap")
     };
     let options = "";
-    for (const p of game.packs)if (!p.locked && p.documentName === "JournalEntry") options += `<option value="${p.collection}" ${preselectPack === p.collection ? 'selected="selected"' : ""}>${p.title}</option>`;
+    for (const p of game.packs)if (!p.locked && p.documentName === "JournalEntry") {
+        if (p.collection === excludePack) continue;
+        const workingPack = p.collection === $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack;
+        options += `<option value="${p.collection}" ${workingPack ? 'selected="selected"' : ""}>${p.title}</option>`;
+    }
     let content = `
   <p style="color: orangered;">${config.message}</p>
   <div class="form-group">
@@ -23554,20 +23667,33 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { exportTo: exportTo
       <select style="width: 100%; margin-bottom: 10px;">${options}</select>
     </div>
   </div>`;
+    if (keepIdSelect) content += `
+<div class="form-group">
+    <label>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-preset-ids")}</label>
+    <input type="checkbox" name="keepId">
+    <p style="font-size: smaller;">${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-preset-ids-hint")}</p>
+</div>`;
     new Dialog({
         title: config.title,
         content: content,
         buttons: {
             export: {
                 label: config.buttonLabel,
-                callback: (html)=>resolve($(html).find("select").val())
+                callback: (html)=>{
+                    const pack = $(html).find("select").val();
+                    if (keepIdSelect) resolve({
+                        pack: pack,
+                        keepId: $(html).find('[name="keepId"]').is(":checked")
+                    });
+                    else resolve(pack);
+                }
             },
             cancel: {
                 label: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("Cancel", false),
-                callback: ()=>resolve(null)
+                callback: ()=>resolve(keepIdSelect ? {} : null)
             }
         },
-        close: ()=>resolve(null),
+        close: ()=>resolve(keepIdSelect ? {} : null),
         default: "cancel"
     }).render(true);
 }
@@ -24181,7 +24307,8 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
         });
         pickerOverlay.on("mouseup", (event)=>$32e43d7a62aba58c$export$ba25329847403e11.boundEnd = event.data.getLocalPosition(pickerOverlay));
         pickerOverlay.on("click", (event)=>{
-            this.callback?.({
+            if (event.nativeEvent.which == 2) this.callback?.(null);
+            else this.callback?.({
                 start: this.boundStart,
                 end: this.boundEnd
             });
@@ -24308,11 +24435,15 @@ function $32e43d7a62aba58c$export$6ea486f4767e8a74(path, insert, moduleLocalizat
 async function $32e43d7a62aba58c$export$767e4c91777ecf4c(preset) {
     if (preset && canvas.scene) {
         const data = foundry.utils.flattenObject(preset.data[0]);
+        const randomizer = preset.randomize;
+        if (!foundry.utils.isEmpty(randomizer)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)([
+            data
+        ], null, randomizer);
         await canvas.scene.update(data);
         // Grid doesn't redraw on scene update, do it manually here
         if ("grid.color" in data || "grid.alpha" in data) canvas.grid.grid.draw({
-            color: data["grid.color"].replace("#", "0x"),
-            alpha: Number(data["grid.alpha"])
+            color: (data["grid.color"] ?? canvas.scene.grid.color).replace("#", "0x"),
+            alpha: Number(data["grid.alpha"] ?? canvas.scene.grid.alpha)
         });
     }
 }
@@ -24895,7 +25026,7 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
         let documentName = options.documentName ?? "NONE";
         let customControls = foundry.utils.mergeObject((0, $d90d2371b0027c40$export$549879c0f3abf4f2)[documentName] ?? {}, game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls")[documentName] ?? {});
         customControls = foundry.utils.mergeObject(customControls, options.customControls?.[documentName] ?? {});
-        const [nav, tabSelectors] = (0, $2d0c7cad90c7ba3c$export$6171357ef4337306)(allData, documentName, customControls);
+        const [nav, tabSelectors] = (0, $2d0c7cad90c7ba3c$export$6171357ef4337306)(allData, documentName, customControls, !options.noTabs);
         const commonData = (0, $32e43d7a62aba58c$export$a88e9f7fc35c8ffa)(objects);
         super(docs[0], docs, {
             tabs: tabSelectors,
@@ -25405,7 +25536,7 @@ Hooks.once("init", ()=>{
         scope: "world",
         config: false,
         type: String,
-        default: "Default"
+        default: "Solid Background"
     });
     game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssCustom", {
         scope: "world",
@@ -25506,6 +25637,14 @@ Hooks.once("init", ()=>{
         config: false,
         type: String,
         default: "manual"
+    });
+    // p = preset only
+    // pf = preset & folder
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode", {
+        scope: "world",
+        config: false,
+        type: String,
+        default: "pf"
     });
     game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSceneControl", {
         name: "Scene Controls: Preset Button",

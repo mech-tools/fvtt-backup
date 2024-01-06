@@ -13,6 +13,7 @@ import {
   localize,
 } from '../scripts/utils.js';
 import { TokenDataAdapter } from './dataAdapters.js';
+import { copyToClipboard } from './forms.js';
 import { showGenericForm, showMassEdit } from './multiConfig.js';
 
 const META_INDEX_FIELDS = ['id', 'img', 'documentName'];
@@ -659,14 +660,14 @@ export class PresetAPI {
 
       // Preset data before merging with user provided
       const defPreset = {
-        name: 'New Preset',
+        name: localize('presets.default-name'),
         documentName: docName,
         data: data,
       };
 
+      // Assign preset image
       switch (defPreset.documentName) {
         case 'Token':
-          defPreset.name = data[0].name;
         case 'Tile':
         case 'Note':
           defPreset.img = data[0].texture.src;
@@ -682,6 +683,17 @@ export class PresetAPI {
           break;
         case 'MeasuredTemplate':
           defPreset.img = 'icons/svg/circle.svg';
+          break;
+      }
+
+      //  Assign preset name
+      switch (defPreset.documentName) {
+        case 'Token':
+          defPreset.name = data[0].name;
+          break;
+        default:
+          const taggerTag = data[0].flags?.tagger?.tags?.[0];
+          if (taggerTag) defPreset.name = taggerTag;
           break;
       }
 
@@ -747,14 +759,18 @@ export class PresetAPI {
 
     let presetData = preset.data;
 
+    // ==================
+    // Display modify data prompt if needed
     if (modifyPrompt && preset.modifyOnSpawn?.length) {
       presetData = await modifySpawnData(presetData, preset.modifyOnSpawn);
       // presetData being returned as null means that the modify field form has been canceled
       // in which case we should cancel spawning as well
       if (presetData == null) return;
     }
+    // ==================
 
-    let toCreate = [];
+    // Array of objects to be created
+    const toCreate = [];
 
     for (let data of presetData) {
       data = mergePresetDataToDefaultDoc(preset, data);
@@ -804,7 +820,9 @@ export class PresetAPI {
         canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
       );
     }
+    // ==================
 
+    // ==================
     // Set positions taking into account relative distances between each object
     let diffX = 0;
     let diffY = 0;
@@ -840,12 +858,25 @@ export class PresetAPI {
         data.x = data.x != null ? data.x + diffX : diffX;
         data.y = data.y != null ? data.y + diffY : diffY;
       }
+    }
+    // ==================
 
-      if (hidden || game.keyboard.downKeys.has('AltLeft')) {
+    if (hidden || game.keyboard.downKeys.has('AltLeft')) {
+      for (const data of toCreate) {
         data.hidden = true;
       }
     }
-    // ================
+
+    // Assign ownership for Drawings and MeasuredTemplates
+    if (['Drawing', 'MeasuredTemplate'].includes(preset.documentName)) {
+      for (const data of toCreate) {
+        if (preset.documentName === 'Drawing') {
+          data.author = game.user.id;
+        } else if (preset.documentName === 'MeasuredTemplate') {
+          data.user = game.user.id;
+        }
+      }
+    }
 
     if (layerSwitch) {
       if (game.user.isGM || ['Token', 'MeasuredTemplate', 'Note'].includes(preset.documentName))
@@ -886,11 +917,31 @@ const SORT_MODES = {
   },
 };
 
+const SEARCH_MODES = {
+  p: {
+    get tooltip() {
+      return localize('presets.search-presets');
+    },
+    icon: '<i class="fas fa-search"></i>',
+  },
+  pf: {
+    get tooltip() {
+      return localize('presets.search-presets-folders');
+    },
+    icon: '<i class="fa-solid fa-folder-magnifying-glass"></i>',
+  },
+};
+
 export class MassEditPresets extends FormApplication {
   static objectHover = false;
   static lastSearch;
 
   constructor(configApp, callback, docName, options = {}) {
+    if (!options.preventPositionOverride && MassEditPresets.lastPositionLeft) {
+      options.left = MassEditPresets.lastPositionLeft;
+      options.top = MassEditPresets.lastPositionTop;
+    }
+
     super({}, options);
     this.callback = callback;
 
@@ -931,6 +982,9 @@ export class MassEditPresets extends FormApplication {
   async getData(options) {
     const data = super.getData(options);
 
+    // If we're re-rendering deactivate the brush
+    if (this._activeBrush) Brush.deactivate();
+
     // Cache partials
     await getTemplate(`modules/${MODULE_ID}/templates/preset/preset.html`);
     await getTemplate(`modules/${MODULE_ID}/templates/preset/presetFolder.html`);
@@ -950,6 +1004,7 @@ export class MassEditPresets extends FormApplication {
     data.scaling = game.settings.get(MODULE_ID, 'presetScaling');
     data.extCompActive = displayExtCompendiums;
     data.sortMode = SORT_MODES[game.settings.get(MODULE_ID, 'presetSortMode')];
+    data.searchMode = SEARCH_MODES[game.settings.get(MODULE_ID, 'presetSearchMode')];
     data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
 
     data.lastSearch = MassEditPresets.lastSearch;
@@ -997,8 +1052,9 @@ export class MassEditPresets extends FormApplication {
     const itemList = html.find('.item-list');
 
     // Multi-select
-    html.on('click', '.item', (e) => {
-      itemSelect(e, itemList);
+    html.on('click', '.item', (event) => {
+      itemSelect(event, itemList);
+      if (this._activeBrush) this._toggleBrush(event);
     });
     html.on('dragstart', '.item', (event) => {
       this.dragType = 'item';
@@ -1221,20 +1277,8 @@ export class MassEditPresets extends FormApplication {
     // End of Folder Listeners
     // ================
 
-    // const form = html.closest('.mass-edit-preset-form');
-
-    // form.on('dragover', (event) => {
-    //   console.log('FORM DRAGOVER', event);
-    // });
-
-    // form.on('drop', (event) => {
-    //   const data = TextEditor.getDragEventData(event.originalEvent);
-    //   if (data.type === 'Actor') {
-    //     console.log(data.uuid);
-    //   }
-    // });
-
     html.find('.toggle-sort').on('click', this._onToggleSort.bind(this));
+    html.find('.toggle-search-mode').on('click', this._onToggleSearch.bind(this));
     html.find('.toggle-doc-lock').on('click', this._onToggleLock.bind(this));
     html.find('.toggle-ext-comp').on('click', this._onToggleExtComp.bind(this));
     html.find('.toggle-scaling').on('click', this._onToggleScaling.bind(this));
@@ -1245,7 +1289,7 @@ export class MassEditPresets extends FormApplication {
     html.find('.create-folder').on('click', this._onCreateFolder.bind(this));
     html.on('click', '.preset-create', this._onPresetCreate.bind(this));
     html.on('click', '.preset-update a', this._onPresetUpdate.bind(this));
-    html.on('click', '.preset-brush', this._onPresetBrush.bind(this));
+    html.on('click', '.preset-brush', this._toggleBrush.bind(this));
     html.on('click', '.preset-callback', this._onApplyPreset.bind(this));
 
     const headerSearch = html.find('.header-search input');
@@ -1295,40 +1339,40 @@ export class MassEditPresets extends FormApplication {
   _getItemContextOptions() {
     return [
       {
-        name: 'Edit',
+        name: localize('CONTROLS.CommonEdit', false),
         icon: '<i class="fas fa-edit"></i>',
         condition: (item) => item.hasClass('editable'),
         callback: (item) => this._onEditSelectedPresets(item),
       },
       {
-        name: 'Open Journal',
+        name: localize('presets.open-journal'),
         icon: '<i class="fas fa-book-open"></i>',
         callback: (item) => this._onOpenJournal(item),
       },
       {
-        name: 'Copy',
-        icon: '<i class="fa-solid fa-copy"></i>',
-        condition: (item) => !item.hasClass('editable'),
-        callback: (item) => this._onCopySelectedPresets(),
-      },
-      {
-        name: 'Duplicate',
+        name: localize('Duplicate', false),
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) => item.hasClass('editable'),
         callback: (item) => this._onCopySelectedPresets(null, { keepFolder: true, keepId: false }),
       },
       {
-        name: 'Export as JSON',
+        name: localize('presets.copy-to-clipboard'),
+        icon: '<i class="fa-solid fa-copy"></i>',
+        condition: (item) => $(this.form).find('.item-list').find('.item.selected').length === 1,
+        callback: (item) => this._onCopyPresetToClipboard(),
+      },
+      {
+        name: localize('presets.export-as-json'),
         icon: '<i class="fas fa-file-export fa-fw"></i>',
         callback: (item) => this._onExportSelectedPresets(),
       },
       {
-        name: 'Export to Compendium',
+        name: localize('presets.export-to-compendium'),
         icon: '<i class="fas fa-file-export fa-fw"></i>',
         callback: (item) => this._onExportSelectedPresetsToComp(),
       },
       {
-        name: 'Delete',
+        name: localize('CONTROLS.CommonDelete', false),
         icon: '<i class="fas fa-trash fa-fw"></i>',
         condition: (item) => item.hasClass('editable'),
         callback: (item) => this._onDeleteSelectedPresets(item),
@@ -1350,12 +1394,6 @@ export class MassEditPresets extends FormApplication {
         callback: (header) => this._onExportFolder(header.closest('.folder').data('uuid')),
       },
       {
-        name: 'Copy',
-        icon: '<i class="fa-solid fa-copy"></i>',
-        condition: (header) => !header.closest('.folder').hasClass('editable'),
-        callback: (header) => this._onCopyFolder(header.closest('.folder').data('uuid')),
-      },
-      {
         name: 'Delete',
         icon: '<i class="fas fa-trash fa-fw"></i>',
         condition: (header) => header.closest('.folder').hasClass('editable'),
@@ -1365,11 +1403,13 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onExportFolder(uuid) {
-    let pack = await new Promise((resolve) => getCompendiumDialog(resolve, { exportTo: true }));
-    if (pack) this._onCopyFolder(uuid, null, pack);
+    let { pack, keepId } = await new Promise((resolve) =>
+      getCompendiumDialog(resolve, { exportTo: true, keepIdSelect: true })
+    );
+    if (pack) this._onCopyFolder(uuid, null, pack, true, keepId);
   }
 
-  async _onCopyFolder(uuid, parentId = null, pack, render = true) {
+  async _onCopyFolder(uuid, parentId = null, pack, render = true, keepId = true) {
     if (!pack) pack = PresetCollection.workingPack;
 
     const folder = this.tree.allFolders.get(uuid);
@@ -1392,13 +1432,14 @@ export class MassEditPresets extends FormApplication {
       const nFolder = await Folder.create(data, { pack });
 
       for (const preset of folder.presets) {
-        const p = await preset.load();
+        const p = (await preset.load()).clone();
         p.folder = nFolder.id;
+        if (!keepId) p.id = foundry.utils.randomID();
         await PresetCollection.set(p, pack);
       }
 
       for (const child of folder.children) {
-        await this._onCopyFolder(child.uuid, nFolder.id, pack, false);
+        await this._onCopyFolder(child.uuid, nFolder.id, pack, false, keepId);
       }
 
       if (render) this.render(true);
@@ -1406,8 +1447,10 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onExportSelectedPresetsToComp() {
-    let pack = await new Promise((resolve) => getCompendiumDialog(resolve, { exportTo: true }));
-    if (pack) this._onCopySelectedPresets(pack);
+    let { pack, keepId } = await new Promise((resolve) =>
+      getCompendiumDialog(resolve, { exportTo: true, keepIdSelect: true })
+    );
+    if (pack) this._onCopySelectedPresets(pack, { keepId });
   }
 
   async _onCopySelectedPresets(pack, { keepFolder = false, keepId = true } = {}) {
@@ -1419,6 +1462,11 @@ export class MassEditPresets extends FormApplication {
       await PresetCollection.set(p, pack);
     }
     if (selected.length) this.render(true);
+  }
+
+  async _onCopyPresetToClipboard() {
+    const [selected, _] = await this._getSelectedPresets();
+    if (selected.length) copyToClipboard(selected[0]);
   }
 
   async _getSelectedPresets({ editableOnly = false } = {}) {
@@ -1531,6 +1579,7 @@ export class MassEditPresets extends FormApplication {
 
     const matchedFolderUuids = new Set();
     const filter = event.target.value.trim().toLowerCase();
+    $(event.target).addClass('active');
 
     // First hide/show items
     const app = this;
@@ -1550,13 +1599,36 @@ export class MassEditPresets extends FormApplication {
       }
     });
 
+    const parentMatchedFolderUuids = new Set();
     // Next hide/show folders depending on whether they contained matched items
     folder.each(function () {
       const folder = $(this);
-      if (matchedFolderUuids.has(folder.data('uuid'))) {
+      const uuid = folder.data('uuid');
+
+      if (matchedFolderUuids.has(uuid)) {
         folder.removeClass('collapsed');
         folder.show();
-      } else {
+      } else if (
+        game.settings.get(MODULE_ID, 'presetSearchMode') === 'pf' &&
+        folder.data('name').toLowerCase().includes(filter)
+      ) {
+        folder.show();
+        if (!game.folders._expanded[uuid]) folder.addClass('collapsed');
+        folder.find('.item').show();
+        folder.find('.folder').each(function () {
+          const folder = $(this);
+          const uuid = folder.data('uuid');
+          parentMatchedFolderUuids.add(uuid);
+          folder.show();
+          if (!matchedFolderUuids.has(uuid) && !game.folders._expanded[uuid]) folder.addClass('collapsed');
+        });
+        let parent = folder.parent().closest('.folder');
+        while (parent.length) {
+          parent.show();
+          parent.removeClass('collapsed');
+          parent = parent.parent().closest('.folder');
+        }
+      } else if (!parentMatchedFolderUuids.has(uuid)) {
         folder.hide();
       }
     });
@@ -1639,6 +1711,19 @@ export class MassEditPresets extends FormApplication {
     await game.settings.set(MODULE_ID, 'presetSortMode', newSort);
 
     this.render(true);
+  }
+
+  async _onToggleSearch(event) {
+    const searchControl = $(event.target).closest('.toggle-search-mode');
+
+    const currentMode = game.settings.get(MODULE_ID, 'presetSearchMode');
+    const newMode = currentMode === 'p' ? 'pf' : 'p';
+    await game.settings.set(MODULE_ID, 'presetSearchMode', newMode);
+
+    const mode = SEARCH_MODES[newMode];
+    searchControl.attr('data-tooltip', mode.tooltip).html(mode.icon);
+
+    $(this.form).find('.header-search input').trigger('input');
   }
 
   _onToggleLock(event) {
@@ -1769,33 +1854,49 @@ export class MassEditPresets extends FormApplication {
     });
   }
 
-  async _onPresetBrush(event) {
-    const uuid = $(event.target).closest('.item').data('uuid');
-    const preset = await PresetCollection.get(uuid);
-    if (preset) {
-      let activated = Brush.activate({
+  async _toggleBrush(event) {
+    const item = $(event.target).closest('.item');
+    const brushControl = item.find('.preset-brush');
+
+    if (brushControl.hasClass('active')) {
+      Brush.deactivate();
+      this._onPresetBrushDeactivate();
+    } else {
+      const uuid = item.data('uuid');
+      const preset = await PresetCollection.get(uuid);
+      if (!preset) {
+        Brush.deactivate();
+        this._onPresetBrushDeactivate();
+        return;
+      }
+
+      if (this._activeBrush) Brush.deactivate();
+
+      const activated = Brush.activate({
         preset,
         deactivateCallback: this._onPresetBrushDeactivate.bind(this),
       });
 
-      const brushControl = $(event.target).closest('.preset-brush');
-      if (brushControl.hasClass('active')) {
-        brushControl.removeClass('active');
+      if (activated) {
+        brushControl.addClass('active').addClass('fa-bounce');
+        this._activeBrush = true;
       } else {
-        $(event.target).closest('form').find('.preset-brush').removeClass('active');
-        if (!activated) {
-          if (Brush.activate({ preset, deactivateCallback: this._onPresetBrushDeactivate.bind(this) })) {
-            brushControl.addClass('active');
-          }
-        } else {
-          brushControl.addClass('active');
-        }
+        this._onPresetBrushDeactivate();
       }
     }
   }
 
   _onPresetBrushDeactivate() {
-    $(this.form).find('.preset-brush').removeClass('active');
+    $(this.form).find('.preset-brush').removeClass('active').removeClass('fa-bounce');
+    this._activeBrush = false;
+  }
+
+  setPosition(options) {
+    super.setPosition(options);
+    if (!this.options.preventPositionOverride) {
+      MassEditPresets.lastPositionLeft = this.position.left;
+      MassEditPresets.lastPositionTop = this.position.top;
+    }
   }
 
   async close(options = {}) {
@@ -1899,9 +2000,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onWorkingPackChange() {
-    let pack = await new Promise((resolve) =>
-      getCompendiumDialog(resolve, { preselectPack: PresetCollection.workingPack })
-    );
+    let pack = await new Promise((resolve) => getCompendiumDialog(resolve, {}));
     if (pack && pack !== PresetCollection.workingPack) {
       await game.settings.set(MODULE_ID, 'workingPack', pack);
       this.render(true);
@@ -2113,6 +2212,8 @@ class PresetConfig extends FormApplication {
           document: this.presets[0].documentName,
         })
       );
+      this.gridSize = canvas.grid.size;
+      this.modifyOnSpawn = [];
       this.render(true);
     }
   }
@@ -2155,32 +2256,27 @@ class PresetConfig extends FormApplication {
     formData.name = formData.name.trim();
     formData.img = formData.img.trim() || null;
 
-    if (this.isCreate) {
-      for (const preset of this.presets) {
-        const update = {
+    for (const preset of this.presets) {
+      let update;
+      if (this.isCreate) {
+        update = {
           name: formData.name || preset.name || localize('presets.default-name'),
           img: formData.img ?? preset.img,
         };
-        if (this.data) update.data = this.data;
-        if (this.addSubtract) update.addSubtract = this.addSubtract;
-        if (this.randomize) update.randomize = this.randomize;
-        if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
-
-        await preset.update(update);
-      }
-    } else {
-      for (const preset of this.presets) {
-        const update = {
+      } else {
+        update = {
           name: formData.name || preset.name,
           img: formData.img || preset.img,
         };
-        if (this.data) update.data = this.data;
-        if (this.addSubtract) update.addSubtract = this.addSubtract;
-        if (this.randomize) update.randomize = this.randomize;
-        if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
-
-        await preset.update(update);
       }
+
+      if (this.data) update.data = this.data;
+      if (this.addSubtract) update.addSubtract = this.addSubtract;
+      if (this.randomize) update.randomize = this.randomize;
+      if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
+      if (this.gridSize) update.gridSize = this.gridSize;
+
+      await preset.update(update);
     }
   }
 
@@ -2395,10 +2491,17 @@ class PresetFolderConfig extends FolderConfig {
     const label = localize(Folder.implementation.metadata.label, false);
 
     let folderDocs = folder.flags[MODULE_ID]?.types ?? ['ALL'];
-    let docs = [];
-    UI_DOCS.forEach((type) => {
-      docs.push({ name: type, icon: DOC_ICONS[type], active: folderDocs.includes(type) });
-    });
+
+    let docs;
+    // This is a non-placeable folder type, so we will not display controls to change types
+    if (folderDocs.length === 1 && !UI_DOCS.includes(folderDocs[0])) {
+      this.nonPlaceable = true;
+    } else {
+      docs = [];
+      UI_DOCS.forEach((type) => {
+        docs.push({ name: type, icon: DOC_ICONS[type], active: folderDocs.includes(type) });
+      });
+    }
 
     return {
       folder: folder,
@@ -2415,15 +2518,17 @@ class PresetFolderConfig extends FolderConfig {
 
   /** @override */
   async _updateObject(event, formData) {
-    let visibleTypes = [];
-    $(this.form)
-      .find('.document-select.active')
-      .each(function () {
-        visibleTypes.push($(this).data('name'));
-      });
-    if (!visibleTypes.length) visibleTypes.push('ALL');
+    if (!this.nonPlaceable) {
+      let visibleTypes = [];
+      $(this.form)
+        .find('.document-select.active')
+        .each(function () {
+          visibleTypes.push($(this).data('name'));
+        });
+      if (!visibleTypes.length) visibleTypes.push('ALL');
 
-    formData[`flags.${MODULE_ID}.types`] = visibleTypes;
+      formData[`flags.${MODULE_ID}.types`] = visibleTypes;
+    }
 
     let doc = this.object;
     if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
@@ -2454,7 +2559,7 @@ function checkMouseInWindow(event) {
   return false;
 }
 
-function getCompendiumDialog(resolve, { exportTo = false, preselectPack = '' } = {}) {
+function getCompendiumDialog(resolve, { excludePack, exportTo = false, keepIdSelect = false } = {}) {
   let config;
   if (exportTo) {
     config = {
@@ -2473,9 +2578,9 @@ function getCompendiumDialog(resolve, { exportTo = false, preselectPack = '' } =
   let options = '';
   for (const p of game.packs) {
     if (!p.locked && p.documentName === 'JournalEntry') {
-      options += `<option value="${p.collection}" ${preselectPack === p.collection ? 'selected="selected"' : ''}>${
-        p.title
-      }</option>`;
+      if (p.collection === excludePack) continue;
+      const workingPack = p.collection === PresetCollection.workingPack;
+      options += `<option value="${p.collection}" ${workingPack ? 'selected="selected"' : ''}>${p.title}</option>`;
     }
   }
 
@@ -2488,20 +2593,33 @@ function getCompendiumDialog(resolve, { exportTo = false, preselectPack = '' } =
     </div>
   </div>`;
 
+  if (keepIdSelect) {
+    content += `
+<div class="form-group">
+    <label>${localize('presets.keep-preset-ids')}</label>
+    <input type="checkbox" name="keepId">
+    <p style="font-size: smaller;">${localize('presets.keep-preset-ids-hint')}</p>
+</div>`;
+  }
+
   new Dialog({
     title: config.title,
     content: content,
     buttons: {
       export: {
         label: config.buttonLabel,
-        callback: (html) => resolve($(html).find('select').val()),
+        callback: (html) => {
+          const pack = $(html).find('select').val();
+          if (keepIdSelect) resolve({ pack, keepId: $(html).find('[name="keepId"]').is(':checked') });
+          else resolve(pack);
+        },
       },
       cancel: {
         label: localize('Cancel', false),
-        callback: () => resolve(null),
+        callback: () => resolve(keepIdSelect ? {} : null),
       },
     },
-    close: () => resolve(null),
+    close: () => resolve(keepIdSelect ? {} : null),
     default: 'cancel',
   }).render(true);
 }

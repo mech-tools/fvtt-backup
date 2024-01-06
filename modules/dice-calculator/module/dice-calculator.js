@@ -215,6 +215,67 @@ class dccDiceCalculator extends DiceCalculator {
 	}
 }
 
+class demonlordDiceCalculator extends DiceCalculator {
+	adv = false;
+
+	abilities = ["agility", "intellect", "perception", "strength", "will"]; // The system calls these "attribtues"
+
+	attributes = ["corruption", "insanity"]; // The system calls these "Characteristics"
+
+	actorSpecificButtons(actor) {
+		const attributes = [];
+		const abilities = [];
+		const customButtons = [];
+
+		if (actor) {
+			if (actor.system?.attributes) {
+				for (let prop in actor.system.attributes) {
+					if (this.abilities.includes(prop)) {
+						if (actor.system.attributes[prop].modifier !== undefined) {
+							abilities.push({
+								label: prop,
+								name: game.i18n.localize(`DL.Attribute${prop.capitalize()}`),
+								formula: `@attr.${prop}.modifier`
+							});
+						}
+					}
+				}
+
+				if (actor.system?.level) {
+					const level = actor.system.level;
+					attributes.push(...[
+						{
+							label: "level",
+							name: game.i18n.localize("DL.CharLevel"),
+							formula: "@level"
+						},
+						{
+							label: "level_half",
+							name: `1/2 ${game.i18n.localize("DL.CharLevel")}`,
+							formula: level !== undefined ? Math.floor(level / 2) : 0
+						}
+					]);
+				}
+			}
+			if (actor.system?.characteristics) {
+				for (let prop in actor.system.characteristics) {
+					if (this.attributes.includes(prop)) {
+						if (actor.system.characteristics[prop].value !== undefined) {
+							attributes.push({
+								label: prop,
+								name: game.i18n.localize(`DL.Char${prop.capitalize()}`),
+								formula: `@characteristics.${prop}.value`
+							});
+						}
+					}
+				}
+			}
+		}
+
+		return { abilities, attributes, customButtons };
+	}
+}
+
 class dnd5eDiceCalculator extends DiceCalculator {
 	adv = true;
 
@@ -379,74 +440,13 @@ class pf2eDiceCalculator extends DiceCalculator {
 	}
 }
 
-class demonlordDiceCalculator extends DiceCalculator {
-	adv = false;
-
-	abilities = ["agility", "intellect", "perception", "strength", "will"]; // The system calls these "attribtues"
-
-	attributes = ["corruption", "insanity"]; // The system calls these "Characteristics"
-
-	actorSpecificButtons(actor) {
-		const attributes = [];
-		const abilities = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system?.attributes) {
-				for (let prop in actor.system.attributes) {
-					if (this.abilities.includes(prop)) {
-						if (actor.system.attributes[prop].modifier !== undefined) {
-							abilities.push({
-								label: prop,
-								name: game.i18n.localize(`DL.Attribute${prop.capitalize()}`),
-								formula: `@attr.${prop}.modifier`
-							});
-						}
-					}
-				}
-
-				if (actor.system?.level) {
-					const level = actor.system.level;
-					attributes.push(...[
-						{
-							label: "level",
-							name: game.i18n.localize("DL.CharLevel"),
-							formula: "@level"
-						},
-						{
-							label: "level_half",
-							name: `1/2 ${game.i18n.localize("DL.CharLevel")}`,
-							formula: level !== undefined ? Math.floor(level / 2) : 0
-						}
-					]);
-				}
-			}
-			if (actor.system?.characteristics) {
-				for (let prop in actor.system.characteristics) {
-					if (this.attributes.includes(prop)) {
-						if (actor.system.characteristics[prop].value !== undefined) {
-							attributes.push({
-								label: prop,
-								name: game.i18n.localize(`DL.Char${prop.capitalize()}`),
-								formula: `@characteristics.${prop}.value`
-							});
-						}
-					}
-				}
-			}
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
 var diceCalculators = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	archmage: archmageDiceCalculator,
 	dcc: dccDiceCalculator,
+	demonlord: demonlordDiceCalculator,
 	dnd5e: dnd5eDiceCalculator,
-	pf2e: pf2eDiceCalculator,
-	demonlord: demonlordDiceCalculator
+	pf2e: pf2eDiceCalculator
 });
 
 class TemplateDiceMap {
@@ -850,7 +850,9 @@ class TemplateDiceMap {
 	updateDiceKeep(count, dice, khl, countDiff, newKhl) {
 		// Start by getting the current number of dice (minimum 1).
 		let keep = Number.isNumeric(count) ? Number(count) : 1;
-		if (keep === 0) keep = 1;
+		if (keep === 0) {
+			keep = 1;
+		}
 
 		// Apply the count diff to adjust how many dice we need for adv/dis.
 		let newCount = keep + countDiff;
@@ -888,7 +890,9 @@ class TemplateDiceMap {
 		// Create the updated text string.
 		let result = `${newCount > 0 ? newCount : 1}${dice}`;
 		// Append kh or kl if needed.
-		if (newCount > 1 && newKeep > 0) result = `${result}${newKhl.includes("kh") ? "kh" : "kl"}`;
+		if (newCount > 1 && newKeep > 0) {
+			result = `${result}${newKhl.includes("kh") ? "kh" : "kl"}`;
+		}
 
 		// TODO: This allows for keeping multiple dice, but in this case, we only need to keep one.
 		// if (newCount > 1 && newKeep > 1) result = `${result}${newKeep}`;
@@ -1898,18 +1902,18 @@ Hooks.on("renderSidebarTab", async (app, html, data) => {
 			});
 
 			// Handle drop for dice.
-			$("html").on("drop", async (event) => {
-				let data = null;
+			$("html").on("drop", (event) => {
 				// This try-catch is needed because it conflicts with other modules
 				try {
-					data = JSON.parse(event.originalEvent.dataTransfer.getData("text/plain"));
+					const data = JSON.parse(event.originalEvent.dataTransfer.getData("text/plain"));
+					// If there's a formula, trigger the roll.
+					if (data?.origin === "dice-calculator" && data?.formula) {
+						new Roll(data.formula).toMessage();
+						event.stopImmediatePropagation();
+					}
 				} catch(err) {
 					// Unable to Parse Data, Return Event
 					return event;
-				}
-				// If there's a formula, trigger the roll.
-				if (data?.origin === "dice-calculator" && data?.formula) {
-					new Roll(data.formula).toMessage();
 				}
 			});
 

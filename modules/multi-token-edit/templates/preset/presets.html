@@ -1,11 +1,11 @@
 <div class="overlay"><p class="label">{{localize 'MassEdit.presets.drag-over-message'}}</p></div>
-<form class="mass-edit-preset-form">
+<form class="mass-edit-preset-form" style="display: flex; flex-direction: column; overflow: hidden;">
 
     <header class="preset-header flexcol">
         {{#if allowDocumentSwap}}
         <div class="header-select flexrow">
             {{#each docs}}
-            <a class="document-select {{#if (eq @key ../currentDocument)}}active{{/if}}" title="{{@key}}" data-name="{{@key}}"><i class="{{this}} fa-lg"></i></a>
+            <a class="document-select {{#if (eq @key ../currentDocument)}}active{{/if}}" data-tooltip="{{@key}}" data-name="{{@key}}"><i class="{{this}} fa-lg"></i></a>
             {{/each}}
             <div class="window-controls">
                 <a class="header-control toggle-doc-lock {{#if docLockActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.document-lock'}}"><i class="fa-solid fa-lock"></i></a>
@@ -21,10 +21,10 @@
         </div>
         {{/if}}
         <div class="header-search flexrow">
-            <a class="header-control toggle-search-mode" data-tooltip="Search by Name only"><i class="fas fa-search"></i></a>
-            <input type="search" name="search" value="{{lastSearch}}" placeholder="Search" autocomplete="off">
+            <a class="header-control toggle-search-mode" data-tooltip="{{searchMode.tooltip}}">{{{searchMode.icon}}}</a>
+            <input class="{{#if lastSearch}}active{{/if}}" type="search" name="search" value="{{lastSearch}}" placeholder="{{localize 'FILES.Search'}}" autocomplete="off">
             <a class="header-control toggle-sort" data-tooltip="{{sortMode.tooltip}}">{{{sortMode.icon}}}</a>
-            <a class="header-control create-folder" style="position: relative;"><i class="fas fa-folder"></i><i class="fas fa-plus"></i></a>
+            <a class="header-control create-folder" data-tooltip="{{localize 'FOLDER.Create'}}" style="position: relative;"><i class="fas fa-folder"></i><i class="fas fa-plus"></i></a>
             {{#unless allowDocumentSwap}}
             <a class="header-control toggle-ext-comp {{#if extCompActive}}active{{/if}}" data-tooltip="{{localize 'MassEdit.presets.controls.external-compendiums'}}" style="flex: 0 0 30px;"><i class="fa-solid fa-books"></i></a>
             {{/unless}}

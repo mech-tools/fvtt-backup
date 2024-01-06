@@ -13,7 +13,6 @@ export const SUPPORTED_PLACEABLES = [
   'Note',
 ];
 
-// TODO add 'Actor'
 export const UI_DOCS = ['ALL', ...SUPPORTED_PLACEABLES];
 
 export const SUPPORT_SHEET_CONFIGS = [...SUPPORTED_PLACEABLES, 'Actor', 'PlaylistSound', 'Scene'];
@@ -565,7 +564,11 @@ export class Picker {
     });
     pickerOverlay.on('mouseup', (event) => (Picker.boundEnd = event.data.getLocalPosition(pickerOverlay)));
     pickerOverlay.on('click', (event) => {
-      this.callback?.({ start: this.boundStart, end: this.boundEnd });
+      if (event.nativeEvent.which == 2) {
+        this.callback?.(null);
+      } else {
+        this.callback?.({ start: this.boundStart, end: this.boundEnd });
+      }
       pickerOverlay.parent.removeChild(pickerOverlay);
       if (pickerOverlay.previewDocuments)
         pickerOverlay.previewDocuments.forEach((name) => canvas.getLayerByEmbeddedName(name)?.clearPreviewContainer());
@@ -715,13 +718,19 @@ export function localFormat(path, insert, moduleLocalization = true) {
 export async function applyPresetToScene(preset) {
   if (preset && canvas.scene) {
     const data = foundry.utils.flattenObject(preset.data[0]);
+
+    const randomizer = preset.randomize;
+    if (!foundry.utils.isEmpty(randomizer)) {
+      await applyRandomization([data], null, randomizer);
+    }
+
     await canvas.scene.update(data);
 
     // Grid doesn't redraw on scene update, do it manually here
     if ('grid.color' in data || 'grid.alpha' in data) {
       canvas.grid.grid.draw({
-        color: data['grid.color'].replace('#', '0x'),
-        alpha: Number(data['grid.alpha']),
+        color: (data['grid.color'] ?? canvas.scene.grid.color).replace('#', '0x'),
+        alpha: Number(data['grid.alpha'] ?? canvas.scene.grid.alpha),
       });
     }
   }

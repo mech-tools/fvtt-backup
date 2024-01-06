@@ -246,6 +246,15 @@ Hooks.on('init', () => {
     default: false,
   });
 
+  game.settings.register('smalltime', 'moon-tint', {
+    name: game.i18n.localize('SMLTME.Moon_Tint'),
+    hint: game.i18n.localize('SMLTME.Moon_Tint_Hint'),
+    scope: 'world',
+    config: game.modules.get('foundryvtt-simple-calendar')?.active,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register('smalltime', 'phase-impact', {
     name: game.i18n.localize('SMLTME.Phase_Impact'),
     hint: game.i18n.localize('SMLTME.Phase_Impact_Hint'),
@@ -282,8 +291,8 @@ Hooks.on('init', () => {
 Hooks.on('canvasInit', () => {
   // Start by resetting the Darkness color to the core value.
   CONFIG.Canvas.darknessColor = ST_Config.coreDarknessColor;
-  
-  if (game.modules.get('foundryvtt-simple-calendar')?.active) {
+
+  if (game.modules.get('foundryvtt-simple-calendar')?.active && game.settings.get('smalltime', 'moon-tint')) {
     if (game.scenes.viewed.getFlag('smalltime', 'darkness-link')) {
       // Set the global Darkness color to the color of the first moon in Simple Calendar, if configured.
       // The pSBC function drops the brightness to an appropriate level.
@@ -295,7 +304,7 @@ Hooks.on('canvasInit', () => {
     }
   }
   // Re-draw the canvas with the new Darkness color.
-  canvas.colorManager.initialize()
+  canvas.colorManager.initialize();
 });
 
 // Set the initial state for newly rendered scenes.
@@ -307,20 +316,13 @@ Hooks.on('canvasReady', () => {
   if (game.system.id === 'dsa5') {
     ST_Config.PinOffset += ST_Config.DasSchwarzeAugeOffset;
   }
-  if (
-    game.modules.get('foundry-taskbar')?.active &&
-    game.settings.get('foundry-taskbar', 'moveplayersmacro')
-  ) {
+  if (game.modules.get('foundry-taskbar')?.active && game.settings.get('foundry-taskbar', 'moveplayersmacro')) {
     ST_Config.PinOffset += ST_Config.TaskbarOffset;
   }
 
   // Only allow the date display to show if there's a calendar provider available.
   game.modules.get('smalltime').dateAvailable = false;
-  if (
-    game.system.id === 'pf2e' ||
-    game.modules.get('foundryvtt-simple-calendar')?.active ||
-    game.modules.get('calendar-weather')?.active
-  ) {
+  if (game.system.id === 'pf2e' || game.modules.get('foundryvtt-simple-calendar')?.active || game.modules.get('calendar-weather')?.active) {
     game.modules.get('smalltime').dateAvailable = true;
   }
 
@@ -352,10 +354,7 @@ Hooks.on('canvasReady', () => {
   }
   // If the Allow Trusted Player Control setting is on, give Trusted
   // Players control privs as well.
-  if (
-    game.settings.get('smalltime', 'allow-trusted') &&
-    game.user.role === CONST.USER_ROLES.TRUSTED
-  ) {
+  if (game.settings.get('smalltime', 'allow-trusted') && game.user.role === CONST.USER_ROLES.TRUSTED) {
     game.modules.get('smalltime').viewAuth = true;
     game.modules.get('smalltime').clockAuth = true;
     game.modules.get('smalltime').controlAuth = true;
@@ -394,7 +393,7 @@ Hooks.on('canvasReady', () => {
     if (!hasProperty(thisScene, 'flags.smalltime.player-vis')) {
       thisScene.setFlag('smalltime', 'player-vis', visDefault);
     }
-    
+
     // Refresh the current scene's Darkness level if it should be linked.
     if (thisScene.getFlag('smalltime', 'darkness-link')) {
       SmallTimeApp.timeTransition(Helpers.getWorldTimeAsDayTime());
@@ -418,8 +417,7 @@ Hooks.on('ready', () => {
       Helpers.handleTimeChange(data.payload);
     }
     if (data.type === 'changeSetting') {
-      if (game.user.isGM)
-        await game.settings.set(data.payload.scope, data.payload.key, data.payload.value);
+      if (game.user.isGM) await game.settings.set(data.payload.scope, data.payload.key, data.payload.value);
     }
     if (data.type === 'changeDarkness') {
       if (game.user.isGM) {
@@ -441,11 +439,7 @@ Hooks.on('ready', () => {
   // Obtain the custom worldTime epoch offset for the current PF2E world.
   if (game.system.id === 'pf2e') {
     const localEpoch = game.pf2e.worldClock.worldCreatedOn.c;
-    const deltaInSeconds =
-      localEpoch.hour * 3600 +
-      localEpoch.minute * 60 +
-      localEpoch.second +
-      localEpoch.millisecond * 0.001;
+    const deltaInSeconds = localEpoch.hour * 3600 + localEpoch.minute * 60 + localEpoch.second + localEpoch.millisecond * 0.001;
     ST_Config.EpochOffset = deltaInSeconds;
   }
 });
@@ -469,10 +463,7 @@ Hooks.on('renderSmallTimeApp', () => {
     $('#timeDisplay').removeClass('hide-for-players');
     $('#smalltime-app').css({ height: '58px' });
   }
-  if (
-    game.settings.get('smalltime', 'date-showing') &&
-    game.modules.get('smalltime').dateAvailable
-  ) {
+  if (game.settings.get('smalltime', 'date-showing') && game.modules.get('smalltime').dateAvailable) {
     $('#smalltime-app').addClass('show-date');
     $('#smalltime-app').css({ height: '79px' });
   }
@@ -520,9 +511,7 @@ Hooks.on('renderSceneConfig', async (obj) => {
   const moonlightHint = game.i18n.localize('SMLTME.Moonlight_Adjust_Hint');
   let moonlightDisabledPF2e;
   if (game.system.id === 'pf2e') {
-    moonlightDisabledPF2e = game.settings.get('pf2e', 'automation.rulesBasedVision')
-      ? 'disabled'
-      : '';
+    moonlightDisabledPF2e = game.settings.get('pf2e', 'automation.rulesBasedVision') ? 'disabled' : '';
   }
   const injection = `
     <fieldset class="st-scene-config">
@@ -639,9 +628,7 @@ Hooks.on('renderSettingsConfig', (obj) => {
   $('input[name="smalltime.sunset-start"]').parent().parent().css('display', 'none');
 
   // Add a reset-position popup to the setting title.
-  const opacityTitleElement = $(
-    'label:contains(' + game.i18n.localize('SMLTME.Resting_Opacity') + ')'
-  );
+  const opacityTitleElement = $('label:contains(' + game.i18n.localize('SMLTME.Resting_Opacity') + ')');
   let popupDirection = 'right';
   if (game.modules.get('tidy-ui_game-settings')?.active) popupDirection = 'up';
   opacityTitleElement.attr({
@@ -658,9 +645,7 @@ Hooks.on('renderSettingsConfig', (obj) => {
   });
 
   // Add a reset-to-defaults popup to the setting title.
-  const darknessTitleElement = $(
-    'label:contains(' + game.i18n.localize('SMLTME.Darkness_Config') + ')'
-  );
+  const darknessTitleElement = $('label:contains(' + game.i18n.localize('SMLTME.Darkness_Config') + ')');
   popupDirection = 'right';
   if (game.modules.get('tidy-ui_game-settings')?.active) popupDirection = 'up';
   darknessTitleElement.attr({
@@ -982,10 +967,7 @@ class SmallTimeApp extends FormApplication {
         const startingPhase = game.settings.get('smalltime', 'moon-phase');
         const newPhase = (startingPhase + 1) % ST_Config.MoonPhases.length;
 
-        document.documentElement.style.setProperty(
-          '--SMLTME-phaseURL',
-          `url('../images/moon-phases/${ST_Config.MoonPhases[newPhase]}.webp')`
-        );
+        document.documentElement.style.setProperty('--SMLTME-phaseURL', `url('../images/moon-phases/${ST_Config.MoonPhases[newPhase]}.webp')`);
 
         // Set and broadcast the change.
         if (game.user.isGM) {
@@ -1032,12 +1014,7 @@ class SmallTimeApp extends FormApplication {
     // The inline CSS overrides are a bit hacky, but were the
     // only way I could get the desired behaviour.
     html.find('#timeDisplay').on('click', async function () {
-      if (
-        event.shiftKey &&
-        game.modules.get('smalltime').controlAuth &&
-        !game.paused &&
-        game.modules.get('foundryvtt-simple-calendar')?.active
-      ) {
+      if (event.shiftKey && game.modules.get('smalltime').controlAuth && !game.paused && game.modules.get('foundryvtt-simple-calendar')?.active) {
         if (SimpleCalendar.api.clockStatus().started) {
           SimpleCalendar.api.stopClock();
         } else {
@@ -1048,10 +1025,7 @@ class SmallTimeApp extends FormApplication {
         }
         SmallTimeApp.emitSocket('handleRealtime');
       } else {
-        if (
-          !game.settings.get('smalltime', 'date-showing') &&
-          game.modules.get('smalltime').dateAvailable
-        ) {
+        if (!game.settings.get('smalltime', 'date-showing') && game.modules.get('smalltime').dateAvailable) {
           $('#smalltime-app').addClass('show-date');
           $('#smalltime-app').animate({ height: '79px' }, 80);
           if (game.settings.get('smalltime', 'pinned')) {
@@ -1073,10 +1047,7 @@ class SmallTimeApp extends FormApplication {
 
     // Open the Simple Calendar interface on date clicks.
     html.find('#dateDisplay').on('click', async function () {
-      if (
-        game.settings.get('smalltime', 'calendar-provider') === 'sc' &&
-        game.modules.get('foundryvtt-simple-calendar')?.active
-      )
+      if (game.settings.get('smalltime', 'calendar-provider') === 'sc' && game.modules.get('foundryvtt-simple-calendar')?.active)
         SimpleCalendar.api.showCalendar();
     });
 
@@ -1205,18 +1176,12 @@ class SmallTimeApp extends FormApplication {
     } else {
       $('#timeSlider').removeClass('sun');
       $('#timeSlider').addClass('moon');
-      document.documentElement.style.setProperty(
-        '--SMLTME-phaseURL',
-        `url('../images/moon-phases/${ST_Config.MoonPhases[currentPhase]}.webp')`
-      );
+      document.documentElement.style.setProperty('--SMLTME-phaseURL', `url('../images/moon-phases/${ST_Config.MoonPhases[currentPhase]}.webp')`);
     }
 
     // If requested, adjust the scene's Darkness level.
     const currentScene = canvas.scene;
-    if (
-      currentScene.getFlag('smalltime', 'darkness-link') &&
-      game.modules.get('smalltime').controlAuth
-    ) {
+    if (currentScene.getFlag('smalltime', 'darkness-link') && game.modules.get('smalltime').controlAuth) {
       let darknessValue = canvas.darknessLevel;
       const maxD = game.settings.get('smalltime', 'max-darkness');
       const minD = game.settings.get('smalltime', 'min-darkness');
@@ -1245,19 +1210,15 @@ class SmallTimeApp extends FormApplication {
 
       if (minDarkness > maxDarkness) {
         if (timeNow >= sunriseStart && timeNow <= sunriseEnd) {
-          darknessValue =
-            maxDarkness + ((timeNow - sunriseStart) / (sunriseEnd - sunriseStart)) * multiplier;
+          darknessValue = maxDarkness + ((timeNow - sunriseStart) / (sunriseEnd - sunriseStart)) * multiplier;
         } else if (timeNow >= sunsetStart && timeNow <= sunsetEnd) {
-          darknessValue =
-            maxDarkness + (1 - (timeNow - sunsetStart) / (sunsetEnd - sunsetStart)) * multiplier;
+          darknessValue = maxDarkness + (1 - (timeNow - sunsetStart) / (sunsetEnd - sunsetStart)) * multiplier;
         }
       } else {
         if (timeNow >= sunriseStart && timeNow <= sunriseEnd) {
-          darknessValue =
-            minDarkness + (1 - (timeNow - sunriseStart) / (sunriseEnd - sunriseStart)) * multiplier;
+          darknessValue = minDarkness + (1 - (timeNow - sunriseStart) / (sunriseEnd - sunriseStart)) * multiplier;
         } else if (timeNow >= sunsetStart && timeNow <= sunsetEnd) {
-          darknessValue =
-            minDarkness + ((timeNow - sunsetStart) / (sunsetEnd - sunsetStart)) * multiplier;
+          darknessValue = minDarkness + ((timeNow - sunsetStart) / (sunsetEnd - sunsetStart)) * multiplier;
         }
       }
       // Truncate long decimals.
@@ -1356,10 +1317,7 @@ class SmallTimeApp extends FormApplication {
 
   // Get the date from various calendar providers.
   static async updateDate() {
-    let displayDate = Helpers.getDate(
-      game.settings.get('smalltime', 'calendar-provider'),
-      game.settings.get('smalltime', 'date-format')
-    );
+    let displayDate = Helpers.getDate(game.settings.get('smalltime', 'calendar-provider'), game.settings.get('smalltime', 'date-format'));
 
     $('#dateDisplay').html(displayDate);
 

@@ -1,15 +1,18 @@
+import {fontColorContrast}  from "./lib/FontColorContrast.js"
+
 const API = {
   /**
-  * Turn hex rgba into rgba object
-  * @param {String} hex 8 long hex value in string form, eg: "#123456ff"
-  * @returns object of {r, g, b, a}
-  */
+   * Turn hex rgba into rgba object
+   * @param {String} hex 8 long hex value in string form, eg: "#123456ff"
+   * @returns object of {r, g, b, a}
+   */
   hexToRGBA(hex) {
     const hexArr = hex.slice(1).match(new RegExp(".{2}", "g"));
     const [r, g, b, a] = hexArr.map((hexStr) => {
       return parseInt(hexStr.repeat(2 / hexStr.length), 16);
     });
-    const rgba = [r, g, b, Math.round((a / 256 + Number.EPSILON) * 100) / 100];
+    const realAlpha = this._isRealNumber(a) ? a : 1;
+    const rgba = [r, g, b, Math.round((realAlpha / 256 + Number.EPSILON) * 100) / 100];
     return {
       r: rgba[0] ?? 255,
       g: rgba[1] ?? 255,
@@ -19,22 +22,31 @@ const API = {
   },
 
   /**
-  * Makes text white or black according to background color
-  * @param {String} rgbaHex 8 long hex value in string form, eg: "#123456ff"
-  * @returns {String} "black" or "white"
-  */
-  getTextColor(rgbaHex) {
+   * Makes text white or black according to background color
+   * @href https://wunnle.com/dynamic-text-color-based-on-background
+   * @href https://stackoverflow.com/questions/54230440/how-to-change-text-color-based-on-rgb-and-rgba-background-color
+   * @param {String} rgbaHex 8 long hex value in string form, eg: "#123456ff"
+   * @param {number} threshold Contrast threshold to control the resulting font color, float values from 0 to 1. Default is 0.5.
+   * @returns {( '#ffffff'|'#000000')} hex color
+   */
+  getTextColor(rgbaHex, threshold = 0.5) {
+    // return game.modules.get("colorsettings").api.getTextColor(rgbaHex);
+
     const rgba = this.hexToRGBA(rgbaHex);
-    const brightness = Math.round((
-        (rgba.r * 299) +
-        (rgba.g * 587) +
-        (rgba.b * 114)
-    ) / 1000);
-    if (rgba.a > 0.5) {
-        return (brightness > 125) ? 'black' : 'white';
+    // OLD METHOD
+    /*
+    //const realAlpha = this._isRealNumber(rgba.a) ? rgba.a : 1;
+    const brightness = Math.round((rgba.r * 299 + rgba.g * 587 + rgba.b * 114) / 1000);
+    // const realAlpha = this._isRealNumber(rgba.a) ? rgba.a : 1;
+    if (this._isRealNumber(rgba.a) && rgba.a > 0.5) {
+      return brightness > 125 ? "black" : "white";
     } else {
-        return 'black';
+      //return 'black';
+      return brightness > 125 ? "black" : "white";
     }
+    */
+    const hexTextColor = fontColorContrast(rgba.r, rgba.g, rgba.b, threshold);
+    return hexTextColor;
   },
 
   /**
@@ -95,7 +107,7 @@ const API = {
    * @param alpha
    * @return rgba as string e.g. rgba('xxx','xxx','xxx','xxx')
    */
-  hexToRGBAString(colorHex, alpha = 0.25) {
+  hexToRGBAString(colorHex, alpha = 1) {
     let rgba = Color.from(colorHex);
     // return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + alpha + ")";
     if (colorHex.length > 7) {
@@ -104,11 +116,50 @@ const API = {
       const colorHex2 = `${colorHex}${Math.floor(alpha * 255)
         .toString(16)
         .padStart(2, "0")}`;
-        rgba = this.hexToRGBA(colorHex2);
+      rgba = this.hexToRGBA(colorHex2);
       // const c = Color.from(colorHex);
       // rgba = c.toRGBA();
     }
-    return "rgba(" + rgba.r + ", " + rgba.g + ", " + rgba.b + ", " + rgba.a ?? alpha + ")";
+    const realAlpha = this._isRealNumber(rgba.a) ? rgba.a : alpha;
+    return "rgba(" + rgba.r + ", " + rgba.g + ", " + rgba.b + ", " + realAlpha + ")";
+  },
+
+  /**
+   * Calculate brightness value by RGB or HEX color.
+   * @param color (String) The color value in RGB or HEX (for example: #000000 || #000 || rgb(0,0,0) || rgba(0,0,0,0))
+   * @returns (Number) The brightness value (dark) 0 ... 255 (light)
+   * @return {number} brigthness
+   */
+  brightnessByColor(colorHexOrRgb) {
+    let color = "" + colorHexOrRgb;
+    let isHEX = color.indexOf("#") == 0;
+    let isRGB = color.indexOf("rgb") == 0;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (isHEX) {
+      const rgba = this.hexToRGBA(color);
+      r = rgba.r;
+      g = rgba.g;
+      b = rgba.b;
+    }
+    if (isRGB) {
+      var m = color.match(/(\d+){3}/g);
+      if (m) {
+        r = m[0];
+        g = m[1];
+        b = m[2];
+      }
+    }
+    if (typeof r != "undefined") {
+      return (r * 299 + g * 587 + b * 114) / 1000;
+    } else {
+      return undefined;
+    }
+  },
+
+  _isRealNumber(inNumber) {
+    return !isNaN(inNumber) && typeof inNumber === "number" && isFinite(inNumber);
   }
 }
 export default API;
