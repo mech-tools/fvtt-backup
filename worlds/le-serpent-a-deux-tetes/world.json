@@ -1,0 +1,14 @@
+{
+  "title": "Le Serpent à Deux Têtes",
+  "id": "le-serpent-a-deux-tetes",
+  "system": "CoC7",
+  "joinTheme": "default",
+  "coreVersion": "11.315",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11"
+  },
+  "systemVersion": "0.10.9",
+  "lastPlayed": "Thu Jan 11 2024 14:08:19 GMT+0100 (Central European Standard Time)",
+  "playtime": 67
+}
