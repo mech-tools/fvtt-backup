@@ -1,15 +1,13 @@
-2024/01/11-13:54:53.891449 7fe03bfff700 Recovering log #61
-2024/01/11-13:54:53.895210 7fe03bfff700 Delete type=3 #59
-2024/01/11-13:54:53.895263 7fe03bfff700 Delete type=0 #61
-2024/01/11-13:54:57.423048 7fddba4df700 Level-0 table #67: started
-2024/01/11-13:54:57.424462 7fddba4df700 Level-0 table #67: 566 bytes OK
-2024/01/11-13:54:57.425440 7fddba4df700 Delete type=0 #65
-2024/01/11-13:54:57.427428 7fddba4df700 Manual compaction at level-0 from '!settings!3StIIXp2LapF1WKO' @ 72057594037927935 : 1 .. '!settings!zOzYK3SR3BI8DQpX' @ 0 : 0; will stop at (end)
-2024/01/11-13:54:57.428804 7fddba4df700 Manual compaction at level-1 from '!settings!3StIIXp2LapF1WKO' @ 72057594037927935 : 1 .. '!settings!zOzYK3SR3BI8DQpX' @ 0 : 0; will stop at '!settings!yNDzLvSxu1pZPaI3' @ 68 : 1
-2024/01/11-13:54:57.428817 7fddba4df700 Compacting 1@1 + 1@2 files
-2024/01/11-13:54:57.430070 7fddba4df700 Generated table #68@1: 27 keys, 3142 bytes
-2024/01/11-13:54:57.430087 7fddba4df700 Compacted 1@1 + 1@2 files => 3142 bytes
-2024/01/11-13:54:57.430711 7fddba4df700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/01/11-13:54:57.430784 7fddba4df700 Delete type=2 #63
-2024/01/11-13:54:57.430843 7fddba4df700 Delete type=2 #67
-2024/01/11-13:54:57.431307 7fddba4df700 Manual compaction at level-1 from '!settings!yNDzLvSxu1pZPaI3' @ 68 : 1 .. '!settings!zOzYK3SR3BI8DQpX' @ 0 : 0; will stop at (end)
+2024/01/11-15:34:38.154952 7fdf81e6d700 Recovering log #94
+2024/01/11-15:34:38.154997 7fdf81e6d700 Level-0 table #96: started
+2024/01/11-15:34:38.156026 7fdf81e6d700 Level-0 table #96: 652 bytes OK
+2024/01/11-15:34:38.158023 7fdf81e6d700 Delete type=0 #94
+2024/01/11-15:34:38.158055 7fdf81e6d700 Delete type=3 #92
+2024/01/11-15:34:38.158102 7fdf737fe700 Compacting 4@0 + 0@1 files
+2024/01/11-15:34:38.159031 7fdf737fe700 Generated table #98@0: 2 keys, 605 bytes
+2024/01/11-15:34:38.159044 7fdf737fe700 Compacted 4@0 + 0@1 files => 605 bytes
+2024/01/11-15:34:38.160212 7fdf737fe700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/01/11-15:34:38.160268 7fdf737fe700 Delete type=2 #90
+2024/01/11-15:34:38.160314 7fdf737fe700 Delete type=2 #96
+2024/01/11-15:34:38.160343 7fdf737fe700 Delete type=2 #87
+2024/01/11-15:34:38.160374 7fdf737fe700 Delete type=2 #93
