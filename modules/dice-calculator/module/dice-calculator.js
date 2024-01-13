@@ -566,7 +566,7 @@ class TemplateDiceMap {
 	 */
 	_createExtraButtons(html) {
 		const { kh, kl } = this.buttonFormulas;
-		html.find("#dice-tray-math").show();
+		html.find("#dice-tray-math").removeAttr("hidden");
 		html.find("#dice-tray-math").append(
 			`<div class="dice-tray__stacked flexcol">
                 <button class="dice-tray__ad dice-tray__advantage"
@@ -1474,12 +1474,12 @@ class DiceCreator extends FormApplication {
 	}
 
 	getData(options) {
-		const nextRow = Math.max(this.object.diceRows.findIndex((row) => Object.keys(row).length < 7), 1);
+		const nextRow = this.object.diceRows.findIndex((row) => Object.keys(row).length < 7);
 		return {
 			dice: this.object.dice,
 			diceRows: this.object.diceRows, // this.diceRows,
-			nextRow,
-			numOfRows: Math.max(nextRow, 1)
+			nextRow: nextRow < 0 ? this.object.diceRows.length : nextRow,
+			maxRows: Math.max(nextRow + 1, this.object.diceRows.length)
 		};
 	}
 
@@ -1800,8 +1800,6 @@ function registerSettings() {
 		type: Array,
 	});
 }
-
-Hooks.on("renderDiceTrayGeneralSettings", DiceTrayGeneralSettings.renderDiceTrayGeneralSettings);
 
 // Initialize module
 Hooks.once("init", () => {
