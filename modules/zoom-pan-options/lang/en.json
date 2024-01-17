@@ -9,9 +9,13 @@
         "name": "Middle-mouse to pan",
         "hint": "Middle mouse press will pan the canvas, instead of the default of doing nothing."
       },
-      "min-max-zoom-override": {
-        "name": "Minimum/maximum zoom override",
-        "hint": "Override for the minimum and maximum zoom scale limits. 3 is the Foundry default (x3 and x0.333 scaling)."
+      "max-zoom-override": {
+        "name": "Maximum zoom override",
+        "hint": "Override for the maximum zoom scale limit. 3 is the Foundry default (up to x3 scaling)."
+      },
+      "min-zoom-override": {
+        "name": "Minimum zoom override",
+        "hint": "Override for the minimum zoom scale limit. 0.333 is the Foundry default (down to x0.333 scaling)."
       },
       "drag-resistance-mode": {
         "name": "Drag resistance mode",
@@ -63,6 +67,18 @@
         "Mouse": "Zoom/Pan Options: Mouse mode enabled.",
         "Touchpad": "Zoom/Pan Options: Touchscreen mode enabled.",
         "Alternative": "Zoom/Pan Options: Alternative mode enabled."
+      }
+    },
+    "ui": {
+      "scene-field-group-label": {
+        "name": "Scene Zoom Overrides",
+        "hint": "Set override values for min/max zoom on this scene.  delete to reset to default behavior."
+      },
+      "scene-min-field-label": {
+        "name": "Min"
+      },
+      "scene-max-field-label": {
+        "name": "Max"
       }
     }
   }

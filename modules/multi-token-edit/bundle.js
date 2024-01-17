@@ -21554,7 +21554,9 @@ const $d0a1f06830d69799$var$PRESET_FIELDS = [
     "randomize",
     "img",
     "gridSize",
-    "modifyOnSpawn"
+    "modifyOnSpawn",
+    "preSpawnScript",
+    "postSpawnScript"
 ];
 class $d0a1f06830d69799$export$3463c369d5cc977f {
     static name = "Preset";
@@ -21572,6 +21574,8 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         this.uuid = data.uuid;
         this.gridSize = data.gridSize;
         this.modifyOnSpawn = data.modifyOnSpawn;
+        this.preSpawnScript = data.preSpawnScript;
+        this.postSpawnScript = data.postSpawnScript;
         this._visible = true;
     }
     get icon() {
@@ -21610,6 +21614,8 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
                 this.addSubtract = foundry.utils.getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
                 this.gridSize = preset.gridSize;
                 this.modifyOnSpawn = preset.modifyOnSpawn;
+                this.preSpawnScript = preset.preSpawnScript;
+                this.postSpawnScript = preset.postSpawnScript;
             }
         }
         return this;
@@ -22183,6 +22189,9 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
         const randomizer = preset.randomize;
         if (!foundry.utils.isEmpty(randomizer)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(toCreate, null, randomizer);
         if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
+        if (preset.preSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.preSpawnScript, {
+            data: toCreate
+        });
         // ==================
         // Determine spawn position
         if (coordPicker) {
@@ -22265,7 +22274,12 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
                 "Note"
             ].includes(preset.documentName)) canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
         }
-        return (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(preset.documentName, toCreate, canvas.scene.id);
+        const documents = await (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(preset.documentName, toCreate, canvas.scene.id);
+        if (preset.postSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.postSpawnScript, {
+            documents: documents,
+            objects: documents.map((d)=>d.object).filter(Boolean)
+        });
+        return documents;
     }
 }
 const $d0a1f06830d69799$var$DOC_ICONS = {
@@ -23330,6 +23344,9 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         html.find(".assign-document").on("click", this._onAssignDocument.bind(this));
         html.find(".delete-fields").on("click", this._onDeleteFields.bind(this));
         html.find(".spawn-fields").on("click", this._onSpawnFields.bind(this));
+        html.find("summary").on("click", ()=>setTimeout(()=>this.setPosition({
+                    height: "auto"
+                }), 30));
         // TVA Support
         const tvaButton = html.find(".token-variants-image-select-button");
         tvaButton.on("click", (event)=>{
@@ -23397,6 +23414,8 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
     async _updatePresets(formData) {
         formData.name = formData.name.trim();
         formData.img = formData.img.trim() || null;
+        formData.preSpawnScript = formData.preSpawnScript?.trim();
+        formData.postSpawnScript = formData.postSpawnScript?.trim();
         for (const preset of this.presets){
             let update;
             if (this.isCreate) update = {
@@ -23412,6 +23431,8 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
             if (this.randomize) update.randomize = this.randomize;
             if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
             if (this.gridSize) update.gridSize = this.gridSize;
+            if (formData.preSpawnScript != null) update.preSpawnScript = formData.preSpawnScript;
+            if (formData.postSpawnScript != null) update.postSpawnScript = formData.postSpawnScript;
             await preset.update(update);
         }
     }
@@ -23721,7 +23742,9 @@ function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
         case "Drawing":
             data = {
                 "shape.width": canvas.grid.w * 2,
-                "shape.height": canvas.grid.h * 2
+                "shape.height": canvas.grid.h * 2,
+                strokeWidth: 8,
+                strokeAlpha: 1.0
             };
             break;
         case "MeasuredTemplate":
@@ -24444,6 +24467,32 @@ async function $32e43d7a62aba58c$export$767e4c91777ecf4c(preset) {
         if ("grid.color" in data || "grid.alpha" in data) canvas.grid.grid.draw({
             color: (data["grid.color"] ?? canvas.scene.grid.color).replace("#", "0x"),
             alpha: Number(data["grid.alpha"] ?? canvas.scene.grid.alpha)
+        });
+    }
+}
+async function $32e43d7a62aba58c$export$9087f1a05b437404(command, { actor: actor, token: token, ...scope } = {}) {
+    // Add variables to the evaluation scope
+    const speaker = ChatMessage.implementation.getSpeaker({
+        actor: actor,
+        token: token
+    });
+    const character = game.user.character;
+    token = token || (canvas.ready ? canvas.tokens.get(speaker.token) : null);
+    actor = actor || token?.actor || game.actors.get(speaker.actor);
+    // Unpack argument names and values
+    const argNames = Object.keys(scope);
+    if (argNames.some((k)=>Number.isNumeric(k))) throw new Error("Illegal numeric Macro parameter passed to execution scope.");
+    const argValues = Object.values(scope);
+    // Define an AsyncFunction that wraps the macro content
+    const AsyncFunction = (async function() {}).constructor;
+    // eslint-disable-next-line no-new-func
+    const fn = new AsyncFunction("speaker", "actor", "token", "character", "scope", ...argNames, `{${command}\n}`);
+    // Attempt macro execution
+    try {
+        return await fn.call(this, speaker, actor, token, character, scope, ...argValues);
+    } catch (err) {
+        ui.notifications.error("MACRO.Error", {
+            localize: true
         });
     }
 }
