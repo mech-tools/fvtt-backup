@@ -1,0 +1,66 @@
+{
+  "id": "keyboard-layout",
+  "title": "Keyboard Layout",
+  "description": "A module for Foundry Virtual Tabletop that allows users to select their keyboard layout to be used for keybindings.",
+  "authors": [
+    {
+      "name": "Johannes Loher",
+      "email": "johannes.loher@fg4f.de",
+      "discord": "ghost#2000",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/ghost-fvtt/keyboard-layout",
+  "license": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.3.0/LICENSE.md",
+  "readme": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.3.0/README.md",
+  "bugs": "https://github.com/ghost-fvtt/keyboard-layout/issues",
+  "changelog": "https://raw.githubusercontent.com/ghost-fvtt/keyboard-layout/v1.3.0/CHANGELOG.md",
+  "version": "1.3.0",
+  "compatibility": {
+    "minimum": "9.238",
+    "verified": "11"
+  },
+  "esmodules": [
+    "keyboard-layout.js"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json",
+      "flags": {}
+    },
+    {
+      "lang": "sv",
+      "name": "Svenska",
+      "path": "lang/sv.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    }
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {
+          "minimum": "1.12.7.0",
+          "verified": "1.12.7.0"
+        }
+      }
+    ]
+  },
+  "manifest": "https://github.com/ghost-fvtt/keyboard-layout/releases/latest/download/module.json",
+  "download": "https://github.com/ghost-fvtt/keyboard-layout/releases/download/v1.3.0/module.zip"
+}
