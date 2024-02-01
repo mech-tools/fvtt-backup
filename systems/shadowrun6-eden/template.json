@@ -546,6 +546,7 @@
 			"name": "Someone",
 			"rating": 1,
 			"loyalty": 1,
+			"favors": 0,
 			"type": "",
 			"description": ""
 		},
@@ -623,6 +624,7 @@
 			"vehicle": {
 				"opMode": "manual"
 			},
+			"strWeapon": false,
 			"templates": [
 				"genesis",
 				"dice-pool"
@@ -718,7 +720,8 @@
 			"multiSense": false,
 			"isOpposed": true,
 			"withEssence": false,
-			"wildDie": false
+			"wildDie": false,
+			"isSustained": false
 		}
 	}
 }

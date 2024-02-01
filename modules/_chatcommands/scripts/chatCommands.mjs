@@ -49,28 +49,29 @@ class ChatCommands {
      * @param {boolean=} override Force the new command to override existing entries. Defaults to false.
      */
     register(command, override = false) {
+        let deprecations = [];
+        if (!command.module) {
+            deprecations.push(`Missing module property. Please provide it with the ID of your module.`);
+            command.module = "Unknown";
+        }
+
         if (command.commandKey) {
+            deprecations.push("The commandKey property is deprecated. Please use the newer name property.");
             command.name = command.commandKey;
-            console.warn("Chat Commander | The commandKey property is deprecated. Please use the newer name property.");
         }
 
         if (command.iconClass) {
+            deprecations.push("The iconClass property is deprecated. Please use the newer icon property.");
             command.icon = `<i class="fas ${command.iconClass}"></i>`;
-            console.warn("Chat Commander | The iconClass property is deprecated. Please use the newer icon property.");
-        }
-
-        if (!command.module) {
-            command.module = "Unknown";
-            console.warn(`Chat Commander | Command ${command.name} does not have a module property (should be module ID).`);
         }
 
         if (command.gmOnly) {
+            deprecations.push("The gmOnly property is deprecated. Please use the newer requiredRole property.");
             command.requiredRole = "GAMEMASTER";
-            console.warn("Chat Commander | The gmOnly property is deprecated. Please use the newer requiredRole property.");
         }
 
         if (command.invokeOnCommand) {
-            console.warn("Chat Commander | The invokeOnCommand property is deprecated. Please use the newer callback property.");
+            deprecations.push("The invokeOnCommand property is deprecated. Please use the newer callback property.");
             command.callback = async (chat, parameters, messageData) => {
                 let text = command.invokeOnCommand(chat, parameters.trimEnd(), messageData);
                 if (text instanceof Promise) text = await text;
@@ -82,36 +83,51 @@ class ChatCommands {
             }
         }
 
+        if (deprecations.length) {
+            deprecations.unshift(`Chat Commander | Command ${command.name} has deprecations:`);
+            console.warn(deprecations.join("\n"));
+        }
+
         if (!(command instanceof ChatCommand)) command = new ChatCommand(command);
-        command.names.forEach(c => {
-            const existing = this.commands.get(c);
-            if (existing) {
-                if (override || existing.module === "core") {
-                    // Allow force override or replacing core commands.
-                    console.info(`Chat Commander | Overriding existing command ${c}.`);
-                } else if (c === command.name) {
-                    if (c === existing.name) {
-                        // Both commands are original names, use a namespace to disambiguate.
-                        console.warn(`Chat Commander | Using namespace for command ${c} due to conflict.`);
-                        command.name = c = c[0] + command.module + "." + command.name.substring(1);
-                    } else {
-                        // Allow replacing aliases.
-                        console.warn(`Chat Commander | Overriding alias ${c} with new command.`);
-                        existing.removeAlias(c);
-                    }
-                } else {
-                    // Prevent aliases from replacing commands.
-                    console.warn(`Chat Commander | Prevented alias override for command ${c}.`);
-                    command.removeAlias(c);
-                    return;
-                }
-            }
-
-            this.commands.set(c, command);
-            this.startChars.add(c[0]);
-        });
-
+        command.names.forEach(alias => this._registerAlias(command, alias, override));
         console.info(`Chat Commander | Module ${command.module} registered command ${command.name} with ${command.aliases.length} aliases.`);
+    }
+
+    /**
+     * Attempts to register an alias for the given command.
+     * Depending on the currently registered commands, the new alias may replace other aliases or receive a namespace.
+     * The registration may be skipped when the new alias isn't the command's original name.
+     * @param {ChatCommand} command The command to register the alias for.
+     * @param {string} alias The alias to register.
+     * @param {boolean} override Force the alias to override existing entries.
+     * @private
+     */
+    _registerAlias(command, alias, override) {
+        const existing = this.commands.get(alias);
+        if (existing) {
+            if (override || existing.module === "core") {
+                // Allow force override or replacing core commands.
+                console.info(`Chat Commander | Overriding existing command ${alias}.`);
+            } else if (alias === command.name) {
+                if (alias === existing.name) {
+                    // Both commands are original names, use a namespace to disambiguate.
+                    console.warn(`Chat Commander | Using namespace for command ${alias} due to conflict.`);
+                    command.name = alias = alias[0] + command.module + "." + command.name.substring(1);
+                } else {
+                    // Allow replacing aliases.
+                    console.warn(`Chat Commander | Overriding alias ${alias} with new command.`);
+                    existing.removeAlias(alias);
+                }
+            } else {
+                // Prevent aliases from replacing commands.
+                console.warn(`Chat Commander | Prevented alias override for command ${alias}.`);
+                command.removeAlias(alias);
+                return;
+            }
+        }
+
+        this.commands.set(alias, command);
+        this.startChars.add(alias[0]);
     }
 
     /**

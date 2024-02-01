@@ -12,6 +12,7 @@
 	        <th style="text-align:left">{{ localize 'shadowrun6.label.column.name' }}</th>
 	        <th>{{ localize 'shadowrun6.section.spells.column.range' }}</th>
 	        <th></th>
+			<th>{{ localize 'shadowrun6.section.spells.column.sustained' }}</th>
 	        <th>{{ localize 'shadowrun6.section.spells.column.drain' }}</th>
 	        <th colspan="2">{{ localize 'shadowrun6.label.column.action' }}</th>
 	      </tr>
@@ -20,12 +21,20 @@
 		{{#iff item.type '==' 'spell'}}
 		<tr class="item list-item" data-item-id="{{item.id}}">
       	<td style="width:1rem"><button type="button" class="collapsible {{item.flags.shadowrun6-eden.collapse-state}}" data-item-id="{{this.id}}">+</button></td>
-			<td> <input type="text" value="{{item.name}}" data-field="name" title="{{description item.system item.type}}"/></td>
+			<td> <input type="text" value="{{item.name}}" data-field="name" title="{{sr6_description item.system item.type}}"/></td>
 			<td class="centered" style="width: 3em"> {{localize (concat (concat "shadowrun6.spell.range_" item.system.range) "_short")}}</td>
 			<td class="centered" style="width: 1em">
 				{{#if item.system.alchemic}}
 				<i class="fas fa-flask"></i>
 				{{/if}}
+			</td>
+			<td>
+				{{#iff item.system.duration '==' 'sustained'}}
+				<label class="switch">
+					<input type="checkbox" data-item-id="{{this.id}}" data-check="data.isSustained" {{checked item.system.isSustained}} type="checkbox" data-dtype="Boolean"/>
+						<span class="shadowrun6-slider round"></span>
+				</label>
+				{{/iff}}
 			</td>
 			<td class="centered"style="width: 3em"> <input type="text" value="{{item.system.drain}}" data-field="data.drain" data-type="Number"/></td>
 			<td class="centered">

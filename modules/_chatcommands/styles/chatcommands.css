@@ -62,6 +62,9 @@
 #autocomplete-menu li.context-item.command > * {
     text-indent: 0px;
 }
+#autocomplete-menu li.context-item.separator > hr {
+    margin: 0;
+}
 
 #autocomplete-menu .command-title {
     font-size: larger;

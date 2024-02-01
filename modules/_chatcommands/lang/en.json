@@ -2,11 +2,11 @@
     "_chatcommands": {
         "settings": {
             "enableAutocomplete": "Enable autocomplete",
-            "enableAutocompleteHint": "Display an autocomplete menu while entering commands in the chat. Changing this setting will reload the window.",
+            "enableAutocompleteHint": "Display an autocomplete menu while entering commands in the chat. Requires a reload to apply.",
             "maxEntries": "Maximum autocomplete entries",
             "maxEntriesHint": "Limits how many entries can be displayed in the autocomplete menu. Additional entries will be replaced with an overflow message.",
             "autocompleteCore": "Autocomplete core commands",
-            "autocompleteCoreHint": "Include FoundryVTT core commands for autocompletion. Changing this setting will reload the window.",
+            "autocompleteCoreHint": "Include FoundryVTT core commands for autocompletion. Requires a reload to apply.",
             "displayFooter": "Show aliases and module",
             "displayFooterHint": "Display aliases and the source module when autocompleting commands."
         },

@@ -94,6 +94,7 @@ export class Spell extends Gear {
     withEssence;
     wildDie;
     threshold = 0;
+    isSustained = false;
 }
 export class Weapon extends Gear {
     /** Base weapon damage */
@@ -105,6 +106,7 @@ export class Weapon extends Gear {
     /** Attack rating for 5 ranges */
     attackRating = [0, 0, 0, 0, 0];
     modes;
+    strWeapon;
 }
 export class Armor extends Gear {
     defense;

@@ -55,6 +55,7 @@ async function _showRollDialog(data) {
             data.calcPool = data.pool;
             if (data.actor) {
                 data.calcPool -= data.actor.getWoundModifier();
+                data.calcPool -= data.actor._getSustainedSpellsModifier() * 2;
             }
         }
         /*
@@ -211,7 +212,8 @@ function _dialogClosed(type, form, prepared, dialog, configured) {
             let base = configured.pool ? configured.pool : 0;
             let mod = dialog.modifier ? dialog.modifier : 0;
             let woundMod = (form.useWoundModifier.checked && prepared.actor) ? prepared.actor.getWoundModifier() : 0;
-            configured.pool = +base + +mod + -woundMod;
+            let sustMod = (form.useSustainedSpellModifier.checked && prepared.actor) ? prepared.actor._getSustainedSpellsModifier() * 2 : 0;
+            configured.pool = +base + +mod + -woundMod + -sustMod;
             prepared.calcPool = configured.pool;
             /* Check for a negative pool! Set to 0 if negative so the universe doesn't explode */
             if (configured.pool < 0)

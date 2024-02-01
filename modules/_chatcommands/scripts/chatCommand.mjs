@@ -25,7 +25,9 @@ class ChatCommand {
         Object.assign(this, data);
         this.name = data.name.toLowerCase();
         this.aliases = (data.aliases ?? []).map(a => a.toLowerCase());
-        this.moduleName = data.module === "core" ? "FoundryVTT" : (game.modules.get(data.module)?.title ?? data.module);
+        if (data.module === "core") this.moduleName = "FoundryVTT";
+        else if (data.module === game.system.id) this.moduleName = game.system.title;
+        else this.moduleName = game.modules.get(data.module)?.title ?? data.module;
         this.requiredRole ??= "NONE";
     }
 

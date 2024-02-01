@@ -10,7 +10,7 @@ export function initializeSettings() {
         config: true,
         type: Boolean,
         default: true,
-        onChange: () => window.location.reload()
+        requiresReload: true
     });
 
     game.settings.register("_chatcommands", "maxEntries", {
@@ -33,7 +33,7 @@ export function initializeSettings() {
         config: true,
         type: Boolean,
         default: true,
-        onChange: () => window.location.reload()
+        requiresReload: true
     });
 
     game.settings.register("_chatcommands", "displayFooter", {
