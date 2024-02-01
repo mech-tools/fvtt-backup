@@ -1,8 +1,15 @@
-2024/01/29-15:11:40.478941 7f7617fff700 Recovering log #62
-2024/01/29-15:11:40.482533 7f7617fff700 Delete type=0 #62
-2024/01/29-15:11:40.482559 7f7617fff700 Delete type=3 #60
-2024/01/29-15:13:30.812765 7f76173cd700 Level-0 table #68: started
-2024/01/29-15:13:30.812798 7f76173cd700 Level-0 table #68: 0 bytes OK
-2024/01/29-15:13:30.813876 7f76173cd700 Delete type=0 #66
-2024/01/29-15:13:30.817651 7f76173cd700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
-2024/01/29-15:13:30.817811 7f76173cd700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2024/01/29-15:13:54.989783 7f7625ffb700 Recovering log #67
+2024/01/29-15:13:54.992959 7f7625ffb700 Delete type=0 #67
+2024/01/29-15:13:54.992991 7f7625ffb700 Delete type=3 #65
+2024/01/31-13:43:33.768451 7f76173cd700 Level-0 table #72: started
+2024/01/31-13:43:33.771611 7f76173cd700 Level-0 table #72: 110835 bytes OK
+2024/01/31-13:43:33.772952 7f76173cd700 Delete type=0 #70
+2024/01/31-13:43:33.778958 7f76173cd700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2024/01/31-13:43:33.779112 7f76173cd700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at '!actors.items!ipPmzB22MpQUGUgZ.x2EV27Fo4DGiH6ne' @ 3700 : 1
+2024/01/31-13:43:33.779120 7f76173cd700 Compacting 1@1 + 1@2 files
+2024/01/31-13:43:33.800400 7f76173cd700 Generated table #73@1: 1716 keys, 1514784 bytes
+2024/01/31-13:43:33.800415 7f76173cd700 Compacted 1@1 + 1@2 files => 1514784 bytes
+2024/01/31-13:43:33.801292 7f76173cd700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/01/31-13:43:33.801363 7f76173cd700 Delete type=2 #64
+2024/01/31-13:43:33.801817 7f76173cd700 Delete type=2 #72
+2024/01/31-13:43:33.815984 7f76173cd700 Manual compaction at level-1 from '!actors.items!ipPmzB22MpQUGUgZ.x2EV27Fo4DGiH6ne' @ 3700 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
