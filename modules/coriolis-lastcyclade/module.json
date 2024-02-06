@@ -1,0 +1,71 @@
+{
+  "id": "coriolis-lastcyclade",
+  "title": "Coriolis The Last Cyclade",
+  "description": "A Module containing all the data from the Coriolis The Last Cyclade Campaign Book.",
+  "authors": [{
+    "name": "Alex Okafor"
+  }],
+  "version": "4.0.0",
+  "compatibility": {
+    "minimum": 10,
+    "verified": 10,
+    "maximum": 11
+  },
+  "scripts": [],
+  "esmodules": ["modules/coriolis.js"],
+  "relationships": {
+    "systems": [{
+      "id": "yzecoriolis",
+      "type": "system",
+      "manifest": "https://github.com/winks-vtt/yze-coriolis/releases/latest/download/system.json",
+      "compatibility": {
+        "verified": "3.0.5"
+      }
+    }]
+  },
+  "styles": ["/css/corioliscore.css"],
+  "packs": [{
+    "name": "actor",
+    "system": "yzecoriolis",
+    "label": "Coriolis Actors",
+    "path": "packs/actor.db",
+    "type": "Actor",
+    "module": "coriolis-lastcyclade"
+  }, {
+    "name": "item",
+    "system": "yzecoriolis",
+    "label": "Coriolis Items",
+    "path": "packs/item.db",
+    "type": "Item",
+    "module": "coriolis-lastcyclade"
+  }, {
+    "name": "journalentry",
+    "system": "yzecoriolis",
+    "label": "Coriolis Journals",
+    "path": "packs/journalentry.db",
+    "type": "JournalEntry",
+    "module": "coriolis-lastcyclade"
+  }, {
+    "name": "scene",
+    "system": "yzecoriolis",
+    "label": "Coriolis Scenes",
+    "path": "packs/scene.db",
+    "type": "Scene",
+    "module": "coriolis-lastcyclade"
+  }, {
+    "name": "table",
+    "system": "yzecoriolis",
+    "label": "Coriolis Roll Tables",
+    "path": "packs/table.db",
+    "type": "RollTable",
+    "module": "coriolis-lastcyclade"
+  }],
+  "languages": [{
+    "lang": "en",
+    "name": "English",
+    "path": "lang/en.json"
+  }],
+  "protected": true,
+  "url": "https://frialigan.se/",
+  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-lastcyclade/coriolis-lastcyclade-latest.json"
+}
