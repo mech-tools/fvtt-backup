@@ -1,5 +1,3 @@
-2024/02/10-13:57:49.982667 7f7624ff9700 Delete type=3 #1
-2024/02/15-09:23:47.905940 7f76173cd700 Level-0 table #5: started
-2024/02/15-09:23:47.907233 7f76173cd700 Level-0 table #5: 4565 bytes OK
-2024/02/15-09:23:47.908153 7f76173cd700 Delete type=0 #3
-2024/02/15-09:23:47.924387 7f76173cd700 Manual compaction at level-0 from '!items!2dqgtyGfwr8M60he' @ 72057594037927935 : 1 .. '!items!zyCszwqyTg21l9E2' @ 0 : 0; will stop at (end)
+2024/02/17-20:50:01.252193 7fe4567fc700 Recovering log #11
+2024/02/17-20:50:01.254921 7fe4567fc700 Delete type=3 #10
+2024/02/17-20:50:01.254965 7fe4567fc700 Delete type=0 #11
