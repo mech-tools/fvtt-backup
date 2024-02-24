@@ -14,7 +14,7 @@ import {
   localize,
 } from '../scripts/utils.js';
 import { TokenDataAdapter } from './dataAdapters.js';
-import { copyToClipboard } from './forms.js';
+import { copyToClipboard, pasteDataUpdate } from './forms.js';
 import { showGenericForm, showMassEdit } from './multiConfig.js';
 
 const META_INDEX_FIELDS = ['id', 'img', 'documentName'];
@@ -45,11 +45,12 @@ const PRESET_FIELDS = [
   'modifyOnSpawn',
   'preSpawnScript',
   'postSpawnScript',
+  'spawnRandom',
+  'attached',
 ];
 
 export class Preset {
   static name = 'Preset';
-
   document;
 
   constructor(data) {
@@ -73,6 +74,8 @@ export class Preset {
     this.modifyOnSpawn = data.modifyOnSpawn;
     this.preSpawnScript = data.preSpawnScript;
     this.postSpawnScript = data.postSpawnScript;
+    this.attached = data.attached;
+    this.spawnRandom = data.spawnRandom;
     this._visible = true;
   }
 
@@ -104,6 +107,10 @@ export class Preset {
     return this._data;
   }
 
+  /**
+   * Loads underlying JournalEntry document from the compendium
+   * @returns this
+   */
   async load() {
     if (!this.document && this.uuid) {
       this.document = await fromUuid(this.uuid);
@@ -124,6 +131,8 @@ export class Preset {
         this.modifyOnSpawn = preset.modifyOnSpawn;
         this.preSpawnScript = preset.preSpawnScript;
         this.postSpawnScript = preset.postSpawnScript;
+        this.attached = preset.attached;
+        this.spawnRandom = preset.spawnRandom;
       }
     }
     return this;
@@ -134,6 +143,27 @@ export class Preset {
     if (this.document) this.document.sheet.render(true);
   }
 
+  /**
+   * Attach placeables
+   * @param {Placeable|Array[Placeable]} placeables
+   * @returns
+   */
+  async attach(placeables) {
+    if (!placeables) return;
+    if (!(placeables instanceof Array)) placeables = [placeables];
+
+    if (!this.attached) this.attached = [];
+    for (const placeable of placeables) {
+      this.attached.push({ documentName: placeable.document.documentName, data: placeableToData(placeable) });
+    }
+
+    await this.update({ attached: this.attached });
+  }
+
+  /**
+   * Update preset with the provided data
+   * @param {Object} update
+   */
   async update(update) {
     if (this.document) {
       const flagUpdate = {};
@@ -241,7 +271,7 @@ export class PresetCollection {
             }),
             presets: tree.presets,
             draggable: false,
-            expanded: game.folders._expanded[p.collection],
+            expanded: FolderState.expanded(p.collection),
             folder: null,
             visible: true,
           };
@@ -280,7 +310,7 @@ export class PresetCollection {
         children: [],
         presets: [],
         draggable: f.pack === this.workingPack,
-        expanded: game.folders._expanded[f.uuid],
+        expanded: FolderState.expanded(f.uuid),
         folder: f.folder?.uuid,
         visible: type ? (f.flags[MODULE_ID]?.types || ['ALL']).includes(type) : true,
       });
@@ -317,12 +347,15 @@ export class PresetCollection {
       }
 
       if (preset.folder) {
+        let matched = false;
         for (const [uuid, folder] of folders) {
           if (folder.id === preset.folder) {
             folder.presets.push(preset);
+            matched = true;
             break;
           }
         }
+        if (!matched) topLevelPresets.push(preset);
       } else topLevelPresets.push(preset);
 
       if (type) {
@@ -717,7 +750,7 @@ export class PresetAPI {
   }
 
   /**
-   * Spawn a preset on the scene (id, name or preset itself are required).
+   * Spawn a preset on the scene (uuid, name or preset itself are required).
    * By default the current mouse position is used.
    * @param {object} [options={}]
    * @param {Preset} [options.preset]             Preset
@@ -726,15 +759,16 @@ export class PresetAPI {
    * @param {String} [options.type]               Preset type ("Token", "Tile", etc)
    * @param {Number} [options.x]                  Spawn canvas x coordinate (mouse position used if x or y are null)
    * @param {Number} [options.y]                  Spawn canvas y coordinate (mouse position used if x or y are null)
+   * @param {Number} [options.z]                  Spawn canvas z coordinate (3D Canvas)
    * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
    * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
    * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
-   * @param {Boolean} [options.modifyPrompt]       If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
+   * @param {Boolean} [options.modifyPrompt]      If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
    * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
    * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
    * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
-   *                                                Accepted values are "ALL" for all elements and document name optionally followed by an index number
+   *                                                Accepted values are "ALL" (for all elements) and document name optionally followed by an index number
    *                                                 e.g. "ALL", "Tile", "AmbientLight.1"
    * @returns {Array[Document]}
    */
@@ -746,6 +780,7 @@ export class PresetAPI {
     folder,
     x,
     y,
+    z,
     coordPicker = false,
     pickerLabel,
     taPreview,
@@ -764,37 +799,52 @@ export class PresetAPI {
     preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type, folder }));
     if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
 
-    let presetData = preset.data;
+    let presetData = deepClone(preset.data);
 
-    // ==================
-    // Display modify data prompt if needed
+    // Instead of using the entire data group use only one random one
+    if (preset.spawnRandom && presetData.length)
+      presetData = [presetData[Math.floor(Math.random() * presetData.length)]];
+
+    // Display prompt to modify data if needed
     if (modifyPrompt && preset.modifyOnSpawn?.length) {
       presetData = await modifySpawnData(presetData, preset.modifyOnSpawn);
       // presetData being returned as null means that the modify field form has been canceled
       // in which case we should cancel spawning as well
       if (presetData == null) return;
     }
-    // ==================
 
-    // Array of objects to be created
-    const toCreate = [];
+    // Populate preset data with default placeable data
+    presetData = presetData.map((data) => {
+      return mergePresetDataToDefaultDoc(preset, data);
+    });
 
-    for (let data of presetData) {
-      data = mergePresetDataToDefaultDoc(preset, data);
-      toCreate.push(foundry.utils.flattenObject(data));
-    }
-
+    // Randomize data if needed
     const randomizer = preset.randomize;
     if (!foundry.utils.isEmpty(randomizer)) {
-      await applyRandomization(toCreate, null, randomizer);
+      // Flat data required for randomizer
+      presetData = presetData.map((d) => foundry.utils.flattenObject(d));
+      await applyRandomization(presetData, null, randomizer);
+      presetData = presetData.map((d) => foundry.utils.expandObject(d));
     }
 
+    // Scale dimensions relative to grid size
     if (scaleToGrid) {
-      scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
+      scaleDataToGrid(presetData, preset.documentName, preset.gridSize);
     }
 
     if (preset.preSpawnScript) {
-      await executeScript(preset.preSpawnScript, { data: toCreate });
+      await executeScript(preset.preSpawnScript, { data: presetData });
+    }
+
+    // Lets sort the preset data as well as any attached placeable data into document groups
+    // documentName -> data array
+    const docToData = new Map();
+    docToData.set(preset.documentName, presetData);
+    if (preset.attached) {
+      for (const attached of preset.attached) {
+        if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
+        docToData.get(attached.documentName).push(deepClone(attached.data));
+      }
     }
 
     // ==================
@@ -803,8 +853,8 @@ export class PresetAPI {
       const coords = await new Promise(async (resolve) => {
         Picker.activate(resolve, {
           documentName: preset.documentName,
+          previewData: docToData,
           snap: snapToGrid,
-          previewData: expandObject(toCreate),
           label: pickerLabel,
           taPreview: taPreview,
         });
@@ -813,18 +863,25 @@ export class PresetAPI {
       x = coords.end.x;
       y = coords.end.y;
     } else if (x == null || y == null) {
-      x = canvas.mousePosition.x;
-      y = canvas.mousePosition.y;
+      if (game.Levels3DPreview?._active) {
+        const pos3d = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
+        x = pos3d.x;
+        y = pos3d.y;
+        z = pos3d.z;
+      } else {
+        x = canvas.mousePosition.x;
+        y = canvas.mousePosition.y;
 
-      if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
-        x -= canvas.dimensions.size / 2;
-        y -= canvas.dimensions.size / 2;
+        if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
+          x -= canvas.dimensions.size / 2;
+          y -= canvas.dimensions.size / 2;
+        }
       }
     }
 
     let pos = { x, y };
 
-    if (snapToGrid) {
+    if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
       pos = canvas.grid.getSnappedPosition(
         pos.x,
         pos.y,
@@ -835,75 +892,127 @@ export class PresetAPI {
 
     // ==================
     // Set positions taking into account relative distances between each object
-    let diffX = 0;
-    let diffY = 0;
+    let diffX, diffY, diffZ;
+    docToData.forEach((dataArr, documentName) => {
+      for (const data of dataArr) {
+        // We need to establish the first found coordinate as the reference point
+        if (diffX == null || diffY == null) {
+          if (documentName === 'Wall') {
+            if (data.c) {
+              diffX = pos.x - data.c[0];
+              diffY = pos.y - data.c[1];
+            }
+          } else {
+            if (data.x != null && data.y != null) {
+              diffX = pos.x - data.x;
+              diffY = pos.y - data.y;
+            }
+          }
 
-    if (preset.documentName === 'Wall') {
-      if (toCreate[0].c) {
-        diffX = pos.x - toCreate[0].c[0];
-        diffY = pos.y - toCreate[0].c[1];
-      } else {
-        diffX = pos.x;
-        diffY = pos.y;
-      }
-    } else {
-      if (toCreate[0].x && toCreate[0].y) {
-        diffX = pos.x - toCreate[0].x;
-        diffY = pos.y - toCreate[0].y;
-      } else {
-        diffX = pos.x;
-        diffY = pos.y;
-      }
-    }
-
-    for (const data of toCreate) {
-      if (preset.documentName === 'Wall') {
-        if (!data.c) data.c = [pos.x, pos.y, pos.x + canvas.grid.w * 2, pos.y];
-        else {
-          data.c[0] += diffX;
-          data.c[1] += diffY;
-          data.c[2] += diffX;
-          data.c[3] += diffY;
+          // 3D Canvas
+          if (z != null) {
+            const property = documentName === 'Token' ? 'elevation' : 'flags.levels.rangeBottom';
+            if (getProperty(data, property) != null) {
+              diffZ = z - getProperty(data, property);
+            }
+          }
         }
-      } else {
-        data.x = data.x != null ? data.x + diffX : diffX;
-        data.y = data.y != null ? data.y + diffY : diffY;
+
+        // Assign relative position
+        if (documentName === 'Wall') {
+          if (!data.c || diffX == null) data.c = [pos.x, pos.y, pos.x + canvas.grid.w * 2, pos.y];
+          else {
+            data.c[0] += diffX;
+            data.c[1] += diffY;
+            data.c[2] += diffX;
+            data.c[3] += diffY;
+          }
+        } else {
+          data.x = data.x == null || diffX == null ? pos.x : data.x + diffX;
+          data.y = data.y == null || diffY == null ? pos.y : data.y + diffY;
+        }
+
+        // 3D Canvas
+        if (z != null) {
+          delete data.z;
+          let elevation;
+
+          const property = documentName === 'Token' ? 'elevation' : 'flags.levels.rangeBottom';
+
+          if (diffZ !== null && getProperty(data, property) != null) elevation = getProperty(data, property) + diffZ;
+          else elevation = z;
+
+          setProperty(data, property, elevation);
+
+          if (documentName !== 'Token') {
+            setProperty(data, 'flags.levels.rangeTop', elevation);
+          }
+        }
+
+        // Assign ownership for Drawings and MeasuredTemplates
+        if (['Drawing', 'MeasuredTemplate'].includes(documentName)) {
+          if (documentName === 'Drawing') data.author = game.user.id;
+          else if (documentName === 'MeasuredTemplate') data.user = game.user.id;
+        }
+
+        // Hide
+        if (hidden || game.keyboard.downKeys.has('AltLeft')) data.hidden = true;
       }
-    }
+    });
+
     // ==================
-
-    if (hidden || game.keyboard.downKeys.has('AltLeft')) {
-      for (const data of toCreate) {
-        data.hidden = true;
-      }
-    }
-
-    // Assign ownership for Drawings and MeasuredTemplates
-    if (['Drawing', 'MeasuredTemplate'].includes(preset.documentName)) {
-      for (const data of toCreate) {
-        if (preset.documentName === 'Drawing') {
-          data.author = game.user.id;
-        } else if (preset.documentName === 'MeasuredTemplate') {
-          data.user = game.user.id;
-        }
-      }
-    }
 
     if (layerSwitch) {
       if (game.user.isGM || ['Token', 'MeasuredTemplate', 'Note'].includes(preset.documentName))
         canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
     }
 
-    const documents = await createDocuments(preset.documentName, toCreate, canvas.scene.id);
+    // Create Documents
+    const allDocuments = [];
 
+    for (const [documentName, dataArr] of docToData.entries()) {
+      const documents = await createDocuments(documentName, dataArr, canvas.scene.id);
+      documents.forEach((d) => allDocuments.push(d));
+    }
+
+    // Execute post spawn scripts
     if (preset.postSpawnScript) {
       await executeScript(preset.postSpawnScript, {
-        documents,
+        documents: allDocuments,
         objects: documents.map((d) => d.object).filter(Boolean),
       });
     }
 
-    return documents;
+    return allDocuments;
+  }
+}
+
+/**
+ * Tracking of folder open/close state as a persistent setting
+ */
+export class FolderState {
+  static scope = 'world';
+  static setting = 'expandedFolders';
+
+  static init() {
+    game.settings.register(this.scope, this.setting, {
+      scope: 'world',
+      config: false,
+      type: Object,
+      default: {},
+    });
+    this.states = game.settings.get(this.scope, this.setting) ?? {};
+  }
+
+  static expanded(uuid) {
+    return this.states[uuid];
+  }
+
+  static setExpanded(uuid, state) {
+    if (Boolean(this.states[uuid]) !== state) {
+      this.states[uuid] = state;
+      game.settings.set(this.scope, this.setting, this.states);
+    }
   }
 }
 
@@ -977,6 +1086,8 @@ export class MassEditPresets extends FormApplication {
       this.configApp = configApp;
       this.docName = docName || this.configApp.documentName;
     }
+
+    this.canvas3dActive = Boolean(game.Levels3DPreview?._active);
   }
 
   static get defaultOptions() {
@@ -1026,6 +1137,7 @@ export class MassEditPresets extends FormApplication {
     data.sortMode = SORT_MODES[game.settings.get(MODULE_ID, 'presetSortMode')];
     data.searchMode = SEARCH_MODES[game.settings.get(MODULE_ID, 'presetSearchMode')];
     data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
+    data.canvas3dActive = this.canvas3dActive;
 
     data.lastSearch = MassEditPresets.lastSearch;
 
@@ -1050,7 +1162,7 @@ export class MassEditPresets extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
 
-    const hoverOverlay = html.closest('.window-content').find('.overlay');
+    const hoverOverlay = html.closest('.window-content').find('.drag-drop-overlay');
     html
       .closest('.window-content')
       .on('mouseover', (event) => {
@@ -1066,6 +1178,14 @@ export class MassEditPresets extends FormApplication {
         hoverOverlay.hide();
         MassEditPresets.objectHover = false;
       });
+
+    // Create Preset from Selected
+    html.find('.create-preset').on('click', () => {
+      const controlled = canvas.activeLayer.controlled;
+      if (controlled.length && SUPPORTED_PLACEABLES.includes(controlled[0].document.documentName)) {
+        this.dropPlaceable(controlled);
+      }
+    });
 
     // =====================
     // Preset multi-select & drag Listeners
@@ -1165,12 +1285,12 @@ export class MassEditPresets extends FormApplication {
       const uuid = folder.data('uuid');
       const icon = folder.find('header h3 i').first();
 
-      if (!game.folders._expanded[uuid]) {
-        game.folders._expanded[uuid] = true;
+      if (!FolderState.expanded(uuid)) {
+        FolderState.setExpanded(uuid, true);
         folder.removeClass('collapsed');
         icon.removeClass('fa-folder-closed').addClass('fa-folder-open');
       } else {
-        game.folders._expanded[uuid] = false;
+        FolderState.setExpanded(uuid, false);
         folder.addClass('collapsed');
         icon.removeClass('fa-folder-open').addClass('fa-folder-closed');
       }
@@ -1323,6 +1443,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onDoubleClickPreset(event) {
+    if (this.canvas3dActive) return;
     const uuid = $(event.target).closest('.item').data('uuid');
     if (!uuid) return;
 
@@ -1368,6 +1489,14 @@ export class MassEditPresets extends FormApplication {
         name: localize('presets.open-journal'),
         icon: '<i class="fas fa-book-open"></i>',
         callback: (item) => this._onOpenJournal(item),
+      },
+      {
+        name: localize('presets.apply-to-selected'),
+        icon: '<i class="fas fa-arrow-circle-right"></i>',
+        condition: (item) =>
+          SUPPORTED_PLACEABLES.includes(item.data('doc-name')) &&
+          canvas.getLayerByEmbeddedName(item.data('doc-name')).controlled.length,
+        callback: (item) => this._onApplyToSelected(item),
       },
       {
         name: localize('Duplicate', false),
@@ -1526,14 +1655,48 @@ export class MassEditPresets extends FormApplication {
   async _onDeleteSelectedPresets(item) {
     const [selected, items] = await this._getSelectedPresets({ editableOnly: true });
     if (selected.length) {
-      await PresetCollection.delete(selected);
-      items.remove();
+      const confirm =
+        selected.length < 3
+          ? true
+          : await Dialog.confirm({
+              title: `${localize('common.delete')} [ ${selected.length} ]`,
+              content: `<p>${localize('AreYouSure', false)}</p><p>${localFormat('presets.delete-presets-warn', {
+                count: selected.length,
+              })}</p>`,
+            });
+
+      if (confirm) {
+        await PresetCollection.delete(selected);
+        items.remove();
+      }
     }
   }
 
   async _onOpenJournal(item) {
     const [selected, _] = await this._getSelectedPresets({ editableOnly: false });
     selected.forEach((p) => p.openJournal());
+  }
+
+  async _onApplyToSelected(item) {
+    const [selected, _] = await this._getSelectedPresets({ editableOnly: false });
+    if (!selected.length) return;
+
+    // Confirm that all presets are of the same document type
+    const types = new Set();
+    for (const s of selected) {
+      types.add(s.documentName);
+      if (types.size > 1) {
+        ui.notifications.warn(localize('presets.apply-to-selected-warn'));
+        return;
+      }
+    }
+
+    const controlled = canvas.getLayerByEmbeddedName(selected[0].documentName).controlled;
+    if (!controlled.length) return;
+
+    for (const s of selected) {
+      pasteDataUpdate(controlled, s, false, true);
+    }
   }
 
   async _onCreateFolder(event) {
@@ -1577,15 +1740,17 @@ export class MassEditPresets extends FormApplication {
   async _onFolderDelete(uuid, render = true) {
     const folder = this.tree.allFolders.get(uuid);
     if (folder) {
-      await PresetCollection.delete(folder.presets);
-      for (const c of folder.children) {
-        await this._onFolderDelete(c.uuid, false);
+      const confirm = await Dialog.confirm({
+        title: `${localize('FOLDER.Remove', false)}: ${folder.name}`,
+        content: `<h4>${localize('AreYouSure', false)}</h4><p>${localize('FOLDER.RemoveWarning', false)}</p>`,
+      });
+
+      if (confirm) {
+        const folderDoc = await fromUuid(uuid);
+        await folderDoc.delete({ deleteSubfolders: false, deleteContents: false });
+
+        if (render) this.render(true);
       }
-
-      const folderDoc = await fromUuid(uuid);
-      await folderDoc.delete();
-
-      if (render) this.render(true);
     }
   }
 
@@ -1633,14 +1798,14 @@ export class MassEditPresets extends FormApplication {
         folder.data('name').toLowerCase().includes(filter)
       ) {
         folder.show();
-        if (!game.folders._expanded[uuid]) folder.addClass('collapsed');
+        if (!FolderState.expanded(uuid)) folder.addClass('collapsed');
         folder.find('.item').show();
         folder.find('.folder').each(function () {
           const folder = $(this);
           const uuid = folder.data('uuid');
           parentMatchedFolderUuids.add(uuid);
           folder.show();
-          if (!matchedFolderUuids.has(uuid) && !game.folders._expanded[uuid]) folder.addClass('collapsed');
+          if (!matchedFolderUuids.has(uuid) && !FolderState.expanded(uuid)) folder.addClass('collapsed');
         });
         let parent = folder.parent().closest('.folder');
         while (parent.length) {
@@ -1818,7 +1983,7 @@ export class MassEditPresets extends FormApplication {
 
   _editPresets(presets, options = {}, event) {
     options.callback = () => this.render(true);
-    if (!('left' in options)) {
+    if (!('left' in options) && event) {
       options.left = event.originalEvent.x - PresetConfig.defaultOptions.width / 2;
       options.top = event.originalEvent.y;
     }
@@ -1850,24 +2015,38 @@ export class MassEditPresets extends FormApplication {
       return;
     }
 
-    // For some reason canvas.mousePosition does not get updated during drag and drop
-    // Acquire the cursor position transformed to Canvas coordinates
-    const [x, y] = [event.clientX, event.clientY];
-    const t = canvas.stage.worldTransform;
-    let mouseX = (x - t.tx) / canvas.stage.scale.x;
-    let mouseY = (y - t.ty) / canvas.stage.scale.y;
-
     if (!SUPPORTED_PLACEABLES.includes(preset.documentName)) return;
 
-    if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
-      mouseX -= canvas.dimensions.size / 2;
-      mouseY -= canvas.dimensions.size / 2;
+    // For some reason canvas.mousePosition does not get updated during drag and drop
+    // Acquire the cursor position transformed to Canvas coordinates
+    let mouseX;
+    let mouseY;
+    let mouseZ;
+
+    if (this.canvas3dActive) {
+      game.Levels3DPreview.interactionManager._onMouseMove(event, true);
+      const { x, y, z } = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
+      mouseX = x;
+      mouseY = y;
+      mouseZ = z;
+    } else {
+      const [x, y] = [event.clientX, event.clientY];
+      const t = canvas.stage.worldTransform;
+
+      mouseX = (x - t.tx) / canvas.stage.scale.x;
+      mouseY = (y - t.ty) / canvas.stage.scale.y;
+
+      if (preset.documentName === 'Token' || preset.documentName === 'Tile') {
+        mouseX -= canvas.dimensions.size / 2;
+        mouseY -= canvas.dimensions.size / 2;
+      }
     }
 
     PresetAPI.spawnPreset({
       preset,
       x: mouseX,
       y: mouseY,
+      z: mouseZ,
       mousePosition: false,
       layerSwitch: game.settings.get(MODULE_ID, 'presetLayerSwitch'),
       scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
@@ -1974,8 +2153,12 @@ export class MassEditPresets extends FormApplication {
     this._editPresets([preset], { isCreate: true }, event);
   }
 
-  async presetFromPlaceable(placeables, event) {
-    if (!(placeables instanceof Array)) placeables = [placeables];
+  /**
+   * Create a preset from placeables dragged and dropped ont he form
+   * @param {Array[Placeable]} placeables
+   * @param {Event} event
+   */
+  async dropPlaceable(placeables, event) {
     const presets = await PresetAPI.createPreset(placeables);
 
     // Switch to just created preset's category before rendering if not set to 'ALL'
@@ -2084,7 +2267,7 @@ async function exportPresets(presets, fileName) {
   saveDataToFile(JSON.stringify(presets, null, 2), 'text/json', (fileName ?? 'mass-edit-presets') + '.json');
 }
 
-class PresetConfig extends FormApplication {
+export class PresetConfig extends FormApplication {
   static name = 'PresetConfig';
 
   /**
@@ -2154,12 +2337,25 @@ class PresetConfig extends FormApplication {
   /** @override */
   async getData(options = {}) {
     const data = {};
+    data.advancedOpen = this.advancedOpen;
 
     data.preset = {};
     if (this.presets.length === 1) {
       data.preset = this.presets[0];
       data.displayFieldDelete = true;
       data.displayFieldModify = true;
+
+      data.attached = this.attached || data.preset.attached;
+      if (data.attached) {
+        data.attached = data.attached.map((at) => {
+          let tooltip = at.documentName;
+          if (at.documentName === 'Token' && at.data.name) tooltip += ': ' + at.data.name;
+          return {
+            icon: DOC_ICONS[at.documentName] ?? DOC_ICONS.DEFAULT,
+            tooltip,
+          };
+        });
+      }
     }
 
     data.minlength = this.presets.length > 1 ? 0 : 1;
@@ -2191,6 +2387,13 @@ class PresetConfig extends FormApplication {
     html.find('.delete-fields').on('click', this._onDeleteFields.bind(this));
     html.find('.spawn-fields').on('click', this._onSpawnFields.bind(this));
     html.find('summary').on('click', () => setTimeout(() => this.setPosition({ height: 'auto' }), 30));
+    html.find('.attached').on('click', this.onAttachedRemove.bind(this));
+    html.find('.attach-selected').on('click', () => {
+      const controlled = canvas.activeLayer.controlled;
+      if (controlled.length && SUPPORTED_PLACEABLES.includes(controlled[0].document.documentName)) {
+        this.dropPlaceable(controlled);
+      }
+    });
 
     // TVA Support
     const tvaButton = html.find('.token-variants-image-select-button');
@@ -2202,6 +2405,54 @@ class PresetConfig extends FormApplication {
         searchType: 'Item',
       });
     });
+
+    // Advanced Options tracking between renders
+    html.find('details').on('toggle', (event) => {
+      this.advancedOpen = Boolean($(event.target).attr('open'));
+    });
+
+    //Hover
+    const hoverOverlay = html.closest('.window-content').find('.drag-drop-overlay');
+    html
+      .closest('.window-content')
+      .on('mouseover', (event) => {
+        if (this.presets.length !== 1) return;
+        if (canvas.activeLayer?.preview?.children.some((c) => c._original?.mouseInteractionManager?.isDragging)) {
+          hoverOverlay.show();
+          PresetConfig.objectHover = true;
+        } else {
+          hoverOverlay.hide();
+          PresetConfig.objectHover = false;
+        }
+      })
+      .on('mouseout', () => {
+        if (this.presets.length !== 1) return;
+        hoverOverlay.hide();
+        PresetConfig.objectHover = false;
+      });
+  }
+
+  /**
+   * Create a preset from placeables dragged and dropped ont he form
+   * @param {Array[Placeable]} placeables
+   * @param {Event} event
+   */
+  async dropPlaceable(placeables, event) {
+    this.advancedOpen = true;
+
+    if (!this.attached) this.attached = deepClone(this.presets[0].attached ?? []);
+    placeables.forEach((p) => this.attached.push({ documentName: p.document.documentName, data: placeableToData(p) }));
+
+    await this.render(true);
+    setTimeout(() => this.setPosition({ height: 'auto' }), 30);
+  }
+
+  async onAttachedRemove(event) {
+    const index = $(event.target).closest('.attached').data('index');
+    this.attached = this.attached || deepClone(this.presets[0].attached);
+    this.attached.splice(index, 1);
+    await this.render(true);
+    setTimeout(() => this.setPosition({ height: 'auto' }), 30);
   }
 
   async _onSpawnFields() {
@@ -2259,6 +2510,7 @@ class PresetConfig extends FormApplication {
         this.data = obj.data;
         this.render(true);
       },
+      forceForm: true,
     });
 
     // For randomize and addSubtract only take into account the first preset
@@ -2298,8 +2550,10 @@ class PresetConfig extends FormApplication {
       if (this.randomize) update.randomize = this.randomize;
       if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
       if (this.gridSize) update.gridSize = this.gridSize;
+      if (this.attached) update.attached = this.attached;
       if (formData.preSpawnScript != null) update.preSpawnScript = formData.preSpawnScript;
       if (formData.postSpawnScript != null) update.postSpawnScript = formData.postSpawnScript;
+      if (formData.spawnRandom != null) update.spawnRandom = formData.spawnRandom;
 
       await preset.update(update);
     }
@@ -2651,7 +2905,6 @@ function getCompendiumDialog(resolve, { excludePack, exportTo = false, keepIdSel
 
 function mergePresetDataToDefaultDoc(preset, presetData) {
   let data;
-  presetData = foundry.utils.flattenObject(presetData);
 
   // Set default values if needed
   switch (preset.documentName) {
@@ -2665,14 +2918,21 @@ function mergePresetDataToDefaultDoc(preset, presetData) {
       data = { radius: 20 };
       break;
     case 'Drawing':
-      data = { 'shape.width': canvas.grid.w * 2, 'shape.height': canvas.grid.h * 2, strokeWidth: 8, strokeAlpha: 1.0 };
+      data = {
+        shape: {
+          width: canvas.grid.w * 2,
+          height: canvas.grid.h * 2,
+          strokeWidth: 8,
+          strokeAlpha: 1.0,
+        },
+      };
       break;
     case 'MeasuredTemplate':
       data = { distance: 10 };
       break;
     case 'AmbientLight':
-      if (!('config.dim' in presetData) && !('config.bright' in presetData)) {
-        data = { 'config.dim': 20, 'config.bright': 10 };
+      if (presetData.config?.dim == null && presetData.config?.bright == null) {
+        data = { config: { dim: 20, bright: 20 } };
         break;
       }
     case 'Scene':
@@ -2768,8 +3028,8 @@ function scaleDataToGrid(data, documentName, gridSize) {
         if ('height' in d) d.height *= ratio;
         break;
       case 'Drawing':
-        if ('shape.width' in d) d['shape.width'] *= ratio;
-        if ('shape.height' in d) d['shape.height'] *= ratio;
+        if (d.shape?.width != null) d.shape.width *= ratio;
+        if (d.shape?.height != null) d.shape.height *= ratio;
         break;
       case 'Wall':
         if ('c' in d) {

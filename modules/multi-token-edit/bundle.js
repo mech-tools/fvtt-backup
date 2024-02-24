@@ -20033,6 +20033,8 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             const processFormGroup = function(formGroup, typeOverride = null) {
                 // We only want to attach extra controls if the form-group contains named fields
                 if (!$(formGroup).find("[name]").length) return;
+                // Return if a checkbox is already inserted
+                if ($(formGroup).find(".mass-edit-checkbox").length) return;
                 // if ($(formGroup).find('[name]:disabled').length) return;
                 // Check if fields within this form-group are part of common data or control a flag
                 let fieldType = "meCommon";
@@ -20114,27 +20116,30 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
             $(html).find('button[type="submit"]').remove();
             // Add submit buttons
             let htmlButtons = "";
-            for (const button of this.massFormButtons){
-                htmlButtons += `<button type="submit" value="${button.value}"><i class="${button.icon}"></i> ${button.title}</button>`;
-                // Auto update control
-                if (this.options.massEdit && !this.options.simplified && !this.options.presetEdit) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.immediate-update-title`)}"><input type="checkbox" data-submit="${button.value}"><i class="fas fa-cogs"></i></div>`;
+            if (!this._meSubmitInserted) {
+                this._meSubmitInserted = true;
+                for (const button of this.massFormButtons){
+                    htmlButtons += `<button class="me-submit" type="submit" value="${button.value}"><i class="${button.icon}"></i> ${button.title}</button>`;
+                    // Auto update control
+                    if (this.options.massEdit && !this.options.simplified && !this.options.presetEdit) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.immediate-update-title`)}"><input type="checkbox" data-submit="${button.value}"><i class="fas fa-cogs"></i></div>`;
+                }
+                if (this.options.massSelect && (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.documentName)) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.global-search-title`)}"><input type="checkbox" data-submit="world"><i class="far fa-globe"></i></div>`;
+                let footer = $(html).find(".sheet-footer").last();
+                if (footer.length) footer.append(htmlButtons);
+                else {
+                    footer = $(`<footer class="sheet-footer flexrow">${htmlButtons}</footer>`);
+                    $(html).closest("form").append(footer);
+                }
+                // Auto update listeners
+                footer.find(".me-mod-update > input").on("change", (event)=>{
+                    event.stopPropagation();
+                    const isChecked = event.target.checked;
+                    footer.find(".me-mod-update > input").not(this).prop("checked", false);
+                    $(event.target).prop("checked", isChecked);
+                    this.modUpdate = isChecked;
+                    this.modUpdateType = event.target.dataset?.submit;
+                });
             }
-            if (this.options.massSelect && (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.documentName)) htmlButtons += `<div class="me-mod-update" title="${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(`form.global-search-title`)}"><input type="checkbox" data-submit="world"><i class="far fa-globe"></i></div>`;
-            let footer = $(html).find(".sheet-footer").last();
-            if (footer.length) footer.append(htmlButtons);
-            else {
-                footer = $(`<footer class="sheet-footer flexrow">${htmlButtons}</footer>`);
-                $(html).closest("form").append(footer);
-            }
-            // Auto update listeners
-            footer.find(".me-mod-update > input").on("change", (event)=>{
-                event.stopPropagation();
-                const isChecked = event.target.checked;
-                footer.find(".me-mod-update > input").not(this).prop("checked", false);
-                $(event.target).prop("checked", isChecked);
-                this.modUpdate = isChecked;
-                this.modUpdateType = event.target.dataset?.submit;
-            });
             if (this.options.inputChangeCallback) html.on("change", "input, select", async (event)=>{
                 setTimeout(()=>this.options.inputChangeCallback(this.getSelectedFields()), 100);
             });
@@ -20406,12 +20411,10 @@ const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
 const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
     let cls;
     const sheets = CONFIG[docName]?.sheetClasses;
-    if (!sheets) cls = FormApplication;
-    else if (docName === "Drawing") {
-        if (CONFIG.Drawing.sheetClasses.e) cls = CONFIG.Drawing.sheetClasses.e["core.DrawingConfig"].cls;
-        else cls = CONFIG.Drawing.sheetClasses.base["core.DrawingConfig"].cls;
-    } else if (docName === "Actor") cls = FormApplication;
-    else cls = sheets.base[`core.${docName}Config`].cls;
+    if (!sheets || docName === "Actor") {
+        cls = FormApplication;
+        cls = FormApplication;
+    } else cls = Object.values(Object.values(sheets).pop() ?? {}).pop()?.cls;
     const MEF = $8d51a9873394e4eb$export$69134d6aac39cf4e(cls);
     class MassConfig extends MEF {
         constructor(target, docs, options){
@@ -21556,7 +21559,9 @@ const $d0a1f06830d69799$var$PRESET_FIELDS = [
     "gridSize",
     "modifyOnSpawn",
     "preSpawnScript",
-    "postSpawnScript"
+    "postSpawnScript",
+    "spawnRandom",
+    "attached"
 ];
 class $d0a1f06830d69799$export$3463c369d5cc977f {
     static name = "Preset";
@@ -21576,6 +21581,8 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         this.modifyOnSpawn = data.modifyOnSpawn;
         this.preSpawnScript = data.preSpawnScript;
         this.postSpawnScript = data.postSpawnScript;
+        this.attached = data.attached;
+        this.spawnRandom = data.spawnRandom;
         this._visible = true;
     }
     get icon() {
@@ -21602,7 +21609,10 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
     get data() {
         return this._data;
     }
-    async load() {
+    /**
+   * Loads underlying JournalEntry document from the compendium
+   * @returns this
+   */ async load() {
         if (!this.document && this.uuid) {
             this.document = await fromUuid(this.uuid);
             if (this.document) {
@@ -21616,6 +21626,8 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
                 this.modifyOnSpawn = preset.modifyOnSpawn;
                 this.preSpawnScript = preset.preSpawnScript;
                 this.postSpawnScript = preset.postSpawnScript;
+                this.attached = preset.attached;
+                this.spawnRandom = preset.spawnRandom;
             }
         }
         return this;
@@ -21624,7 +21636,28 @@ class $d0a1f06830d69799$export$3463c369d5cc977f {
         if (!this.document) await this.load();
         if (this.document) this.document.sheet.render(true);
     }
-    async update(update) {
+    /**
+   * Attach placeables
+   * @param {Placeable|Array[Placeable]} placeables
+   * @returns
+   */ async attach(placeables) {
+        if (!placeables) return;
+        if (!(placeables instanceof Array)) placeables = [
+            placeables
+        ];
+        if (!this.attached) this.attached = [];
+        for (const placeable of placeables)this.attached.push({
+            documentName: placeable.document.documentName,
+            data: $d0a1f06830d69799$var$placeableToData(placeable)
+        });
+        await this.update({
+            attached: this.attached
+        });
+    }
+    /**
+   * Update preset with the provided data
+   * @param {Object} update
+   */ async update(update) {
         if (this.document) {
             const flagUpdate = {};
             Object.keys(update).forEach((k)=>{
@@ -21717,7 +21750,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                     }),
                     presets: tree.presets,
                     draggable: false,
-                    expanded: game.folders._expanded[p.collection],
+                    expanded: $d0a1f06830d69799$export$511ed1dd332818c6.expanded(p.collection),
                     folder: null,
                     visible: true
                 };
@@ -21747,7 +21780,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 children: [],
                 presets: [],
                 draggable: f.pack === this.workingPack,
-                expanded: game.folders._expanded[f.uuid],
+                expanded: $d0a1f06830d69799$export$511ed1dd332818c6.expanded(f.uuid),
                 folder: f.folder?.uuid,
                 visible: type ? (f.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types || [
                     "ALL"
@@ -21783,10 +21816,13 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
                 if (!preset.documentName) continue;
             }
             if (preset.folder) {
+                let matched = false;
                 for (const [uuid, folder] of folders)if (folder.id === preset.folder) {
                     folder.presets.push(preset);
+                    matched = true;
                     break;
                 }
+                if (!matched) topLevelPresets.push(preset);
             } else topLevelPresets.push(preset);
             if (type) {
                 if (type === "ALL") {
@@ -21886,7 +21922,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             await this.update(preset);
             return;
         }
-        const documents = await JournalEntry.createDocuments([
+        const documents1 = await JournalEntry.createDocuments([
             {
                 _id: preset.id,
                 name: preset.name,
@@ -21902,8 +21938,8 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             pack: pack,
             keepId: true
         });
-        preset.uuid = documents[0].uuid;
-        preset.document = documents[0];
+        preset.uuid = documents1[0].uuid;
+        preset.document = documents1[0];
         const metaDoc = await this._initMetaDocument(pack);
         const update = {};
         update[preset.id] = {
@@ -21982,7 +22018,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
         const compendium = game.packs.get(pack);
         const metaDoc = await compendium.getDocument($d0a1f06830d69799$var$META_INDEX_ID);
         if (metaDoc) return metaDoc;
-        const documents = await JournalEntry.createDocuments([
+        const documents1 = await JournalEntry.createDocuments([
             {
                 _id: $d0a1f06830d69799$var$META_INDEX_ID,
                 name: "!!! METADATA: DO NOT DELETE !!!",
@@ -21996,7 +22032,7 @@ class $d0a1f06830d69799$export$9cea25aeb7365a59 {
             pack: pack,
             keepId: true
         });
-        return documents[0];
+        return documents1[0];
     }
     static _searchPresetTree(tree, options) {
         const presets = [];
@@ -22138,7 +22174,7 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
         return presets;
     }
     /**
-   * Spawn a preset on the scene (id, name or preset itself are required).
+   * Spawn a preset on the scene (uuid, name or preset itself are required).
    * By default the current mouse position is used.
    * @param {object} [options={}]
    * @param {Preset} [options.preset]             Preset
@@ -22147,18 +22183,19 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
    * @param {String} [options.type]               Preset type ("Token", "Tile", etc)
    * @param {Number} [options.x]                  Spawn canvas x coordinate (mouse position used if x or y are null)
    * @param {Number} [options.y]                  Spawn canvas y coordinate (mouse position used if x or y are null)
+   * @param {Number} [options.z]                  Spawn canvas z coordinate (3D Canvas)
    * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
    * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
    * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
    * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
-   * @param {Boolean} [options.modifyPrompt]       If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
+   * @param {Boolean} [options.modifyPrompt]      If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
    * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
    * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
    * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
-   *                                                Accepted values are "ALL" for all elements and document name optionally followed by an index number
+   *                                                Accepted values are "ALL" (for all elements) and document name optionally followed by an index number
    *                                                 e.g. "ALL", "Tile", "AmbientLight.1"
    * @returns {Array[Document]}
-   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false, modifyPrompt: modifyPrompt = true } = {}) {
+   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, z: z, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false, modifyPrompt: modifyPrompt = true } = {}) {
         if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
         if (!(uuid || preset || name || type || folder)) throw Error("ID, Name, Folder, or Preset is needed to spawn it.");
         if (!coordPicker && (x == null && y != null || x != null && y == null)) throw Error("Need both X and Y coordinates to spawn a preset.");
@@ -22170,36 +22207,51 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             folder: folder
         });
         if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
-        let presetData = preset.data;
-        // ==================
-        // Display modify data prompt if needed
+        let presetData = deepClone(preset.data);
+        // Instead of using the entire data group use only one random one
+        if (preset.spawnRandom && presetData.length) presetData = [
+            presetData[Math.floor(Math.random() * presetData.length)]
+        ];
+        // Display prompt to modify data if needed
         if (modifyPrompt && preset.modifyOnSpawn?.length) {
             presetData = await $d0a1f06830d69799$var$modifySpawnData(presetData, preset.modifyOnSpawn);
             // presetData being returned as null means that the modify field form has been canceled
             // in which case we should cancel spawning as well
             if (presetData == null) return;
         }
-        // ==================
-        // Array of objects to be created
-        const toCreate = [];
-        for (let data of presetData){
-            data = $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, data);
-            toCreate.push(foundry.utils.flattenObject(data));
-        }
-        const randomizer = preset.randomize;
-        if (!foundry.utils.isEmpty(randomizer)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(toCreate, null, randomizer);
-        if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(toCreate, preset.documentName, preset.gridSize);
-        if (preset.preSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.preSpawnScript, {
-            data: toCreate
+        // Populate preset data with default placeable data
+        presetData = presetData.map((data)=>{
+            return $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, data);
         });
+        // Randomize data if needed
+        const randomizer = preset.randomize;
+        if (!foundry.utils.isEmpty(randomizer)) {
+            // Flat data required for randomizer
+            presetData = presetData.map((d)=>foundry.utils.flattenObject(d));
+            await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(presetData, null, randomizer);
+            presetData = presetData.map((d)=>foundry.utils.expandObject(d));
+        }
+        // Scale dimensions relative to grid size
+        if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(presetData, preset.documentName, preset.gridSize);
+        if (preset.preSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.preSpawnScript, {
+            data: presetData
+        });
+        // Lets sort the preset data as well as any attached placeable data into document groups
+        // documentName -> data array
+        const docToData = new Map();
+        docToData.set(preset.documentName, presetData);
+        if (preset.attached) for (const attached of preset.attached){
+            if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
+            docToData.get(attached.documentName).push(deepClone(attached.data));
+        }
         // ==================
         // Determine spawn position
         if (coordPicker) {
             const coords = await new Promise(async (resolve)=>{
                 (0, $32e43d7a62aba58c$export$ba25329847403e11).activate(resolve, {
                     documentName: preset.documentName,
+                    previewData: docToData,
                     snap: snapToGrid,
-                    previewData: expandObject(toCreate),
                     label: pickerLabel,
                     taPreview: taPreview
                 });
@@ -22208,65 +22260,89 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
             x = coords.end.x;
             y = coords.end.y;
         } else if (x == null || y == null) {
-            x = canvas.mousePosition.x;
-            y = canvas.mousePosition.y;
-            if (preset.documentName === "Token" || preset.documentName === "Tile") {
-                x -= canvas.dimensions.size / 2;
-                y -= canvas.dimensions.size / 2;
+            if (game.Levels3DPreview?._active) {
+                const pos3d = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
+                x = pos3d.x;
+                y = pos3d.y;
+                z = pos3d.z;
+            } else {
+                x = canvas.mousePosition.x;
+                y = canvas.mousePosition.y;
+                if (preset.documentName === "Token" || preset.documentName === "Tile") {
+                    x -= canvas.dimensions.size / 2;
+                    y -= canvas.dimensions.size / 2;
+                }
             }
         }
         let pos = {
             x: x,
             y: y
         };
-        if (snapToGrid) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision);
+        if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision);
         // ==================
         // ==================
         // Set positions taking into account relative distances between each object
-        let diffX = 0;
-        let diffY = 0;
-        if (preset.documentName === "Wall") {
-            if (toCreate[0].c) {
-                diffX = pos.x - toCreate[0].c[0];
-                diffY = pos.y - toCreate[0].c[1];
-            } else {
-                diffX = pos.x;
-                diffY = pos.y;
+        let diffX, diffY, diffZ;
+        docToData.forEach((dataArr, documentName)=>{
+            for (const data of dataArr){
+                // We need to establish the first found coordinate as the reference point
+                if (diffX == null || diffY == null) {
+                    if (documentName === "Wall") {
+                        if (data.c) {
+                            diffX = pos.x - data.c[0];
+                            diffY = pos.y - data.c[1];
+                        }
+                    } else if (data.x != null && data.y != null) {
+                        diffX = pos.x - data.x;
+                        diffY = pos.y - data.y;
+                    }
+                    // 3D Canvas
+                    if (z != null) {
+                        const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
+                        if (getProperty(data, property) != null) diffZ = z - getProperty(data, property);
+                    }
+                }
+                // Assign relative position
+                if (documentName === "Wall") {
+                    if (!data.c || diffX == null) data.c = [
+                        pos.x,
+                        pos.y,
+                        pos.x + canvas.grid.w * 2,
+                        pos.y
+                    ];
+                    else {
+                        data.c[0] += diffX;
+                        data.c[1] += diffY;
+                        data.c[2] += diffX;
+                        data.c[3] += diffY;
+                    }
+                } else {
+                    data.x = data.x == null || diffX == null ? pos.x : data.x + diffX;
+                    data.y = data.y == null || diffY == null ? pos.y : data.y + diffY;
+                }
+                // 3D Canvas
+                if (z != null) {
+                    delete data.z;
+                    let elevation;
+                    const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
+                    if (diffZ !== null && getProperty(data, property) != null) elevation = getProperty(data, property) + diffZ;
+                    else elevation = z;
+                    setProperty(data, property, elevation);
+                    if (documentName !== "Token") setProperty(data, "flags.levels.rangeTop", elevation);
+                }
+                // Assign ownership for Drawings and MeasuredTemplates
+                if ([
+                    "Drawing",
+                    "MeasuredTemplate"
+                ].includes(documentName)) {
+                    if (documentName === "Drawing") data.author = game.user.id;
+                    else if (documentName === "MeasuredTemplate") data.user = game.user.id;
+                }
+                // Hide
+                if (hidden || game.keyboard.downKeys.has("AltLeft")) data.hidden = true;
             }
-        } else if (toCreate[0].x && toCreate[0].y) {
-            diffX = pos.x - toCreate[0].x;
-            diffY = pos.y - toCreate[0].y;
-        } else {
-            diffX = pos.x;
-            diffY = pos.y;
-        }
-        for (const data of toCreate)if (preset.documentName === "Wall") {
-            if (!data.c) data.c = [
-                pos.x,
-                pos.y,
-                pos.x + canvas.grid.w * 2,
-                pos.y
-            ];
-            else {
-                data.c[0] += diffX;
-                data.c[1] += diffY;
-                data.c[2] += diffX;
-                data.c[3] += diffY;
-            }
-        } else {
-            data.x = data.x != null ? data.x + diffX : diffX;
-            data.y = data.y != null ? data.y + diffY : diffY;
-        }
+        });
         // ==================
-        if (hidden || game.keyboard.downKeys.has("AltLeft")) for (const data of toCreate)data.hidden = true;
-        // Assign ownership for Drawings and MeasuredTemplates
-        if ([
-            "Drawing",
-            "MeasuredTemplate"
-        ].includes(preset.documentName)) for (const data of toCreate){
-            if (preset.documentName === "Drawing") data.author = game.user.id;
-            else if (preset.documentName === "MeasuredTemplate") data.user = game.user.id;
-        }
         if (layerSwitch) {
             if (game.user.isGM || [
                 "Token",
@@ -22274,12 +22350,40 @@ class $d0a1f06830d69799$export$619760a5720f8054 {
                 "Note"
             ].includes(preset.documentName)) canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
         }
-        const documents = await (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(preset.documentName, toCreate, canvas.scene.id);
+        // Create Documents
+        const allDocuments = [];
+        for (const [documentName, dataArr] of docToData.entries()){
+            const documents1 = await (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(documentName, dataArr, canvas.scene.id);
+            documents1.forEach((d)=>allDocuments.push(d));
+        }
+        // Execute post spawn scripts
         if (preset.postSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.postSpawnScript, {
-            documents: documents,
+            documents: allDocuments,
             objects: documents.map((d)=>d.object).filter(Boolean)
         });
-        return documents;
+        return allDocuments;
+    }
+}
+class $d0a1f06830d69799$export$511ed1dd332818c6 {
+    static scope = "world";
+    static setting = "expandedFolders";
+    static init() {
+        game.settings.register(this.scope, this.setting, {
+            scope: "world",
+            config: false,
+            type: Object,
+            default: {}
+        });
+        this.states = game.settings.get(this.scope, this.setting) ?? {};
+    }
+    static expanded(uuid) {
+        return this.states[uuid];
+    }
+    static setExpanded(uuid, state) {
+        if (Boolean(this.states[uuid]) !== state) {
+            this.states[uuid] = state;
+            game.settings.set(this.scope, this.setting, this.states);
+        }
     }
 }
 const $d0a1f06830d69799$var$DOC_ICONS = {
@@ -22345,6 +22449,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             this.configApp = configApp;
             this.docName = docName || this.configApp.documentName;
         }
+        this.canvas3dActive = Boolean(game.Levels3DPreview?._active);
     }
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
@@ -22390,6 +22495,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         data.sortMode = $d0a1f06830d69799$var$SORT_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode")];
         data.searchMode = $d0a1f06830d69799$var$SEARCH_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode")];
         data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
+        data.canvas3dActive = this.canvas3dActive;
         data.lastSearch = $d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch;
         data.docs = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).reduce((obj, key)=>{
             return {
@@ -22406,7 +22512,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
    * @param {JQuery} html
    */ activateListeners(html) {
         super.activateListeners(html);
-        const hoverOverlay = html.closest(".window-content").find(".overlay");
+        const hoverOverlay = html.closest(".window-content").find(".drag-drop-overlay");
         html.closest(".window-content").on("mouseover", (event)=>{
             if (canvas.activeLayer?.preview?.children.some((c)=>c._original?.mouseInteractionManager?.isDragging)) {
                 hoverOverlay.show();
@@ -22418,6 +22524,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }).on("mouseout", ()=>{
             hoverOverlay.hide();
             $d0a1f06830d69799$export$7a966e8b4abecc03.objectHover = false;
+        });
+        // Create Preset from Selected
+        html.find(".create-preset").on("click", ()=>{
+            const controlled = canvas.activeLayer.controlled;
+            if (controlled.length && (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(controlled[0].document.documentName)) this.dropPlaceable(controlled);
         });
         // =====================
         // Preset multi-select & drag Listeners
@@ -22494,12 +22605,12 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             const folder = $(event.target).closest(".folder");
             const uuid = folder.data("uuid");
             const icon = folder.find("header h3 i").first();
-            if (!game.folders._expanded[uuid]) {
-                game.folders._expanded[uuid] = true;
+            if (!$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) {
+                $d0a1f06830d69799$export$511ed1dd332818c6.setExpanded(uuid, true);
                 folder.removeClass("collapsed");
                 icon.removeClass("fa-folder-closed").addClass("fa-folder-open");
             } else {
-                game.folders._expanded[uuid] = false;
+                $d0a1f06830d69799$export$511ed1dd332818c6.setExpanded(uuid, false);
                 folder.addClass("collapsed");
                 icon.removeClass("fa-folder-open").addClass("fa-folder-closed");
             }
@@ -22618,6 +22729,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         this._contextMenu(html.find(".item-list"));
     }
     async _onDoubleClickPreset(event) {
+        if (this.canvas3dActive) return;
         const uuid = $(event.target).closest(".item").data("uuid");
         if (!uuid) return;
         const preset = await $d0a1f06830d69799$export$619760a5720f8054.getPreset({
@@ -22658,6 +22770,12 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.open-journal"),
                 icon: '<i class="fas fa-book-open"></i>',
                 callback: (item)=>this._onOpenJournal(item)
+            },
+            {
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.apply-to-selected"),
+                icon: '<i class="fas fa-arrow-circle-right"></i>',
+                condition: (item)=>(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(item.data("doc-name")) && canvas.getLayerByEmbeddedName(item.data("doc-name")).controlled.length,
+                callback: (item)=>this._onApplyToSelected(item)
             },
             {
                 name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("Duplicate", false),
@@ -22817,8 +22935,16 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             editableOnly: true
         });
         if (selected.length) {
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.delete(selected);
-            items.remove();
+            const confirm = selected.length < 3 ? true : await Dialog.confirm({
+                title: `${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.delete")} [ ${selected.length} ]`,
+                content: `<p>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("AreYouSure", false)}</p><p>${(0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("presets.delete-presets-warn", {
+                    count: selected.length
+                })}</p>`
+            });
+            if (confirm) {
+                await $d0a1f06830d69799$export$9cea25aeb7365a59.delete(selected);
+                items.remove();
+            }
         }
     }
     async _onOpenJournal(item) {
@@ -22826,6 +22952,24 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             editableOnly: false
         });
         selected.forEach((p)=>p.openJournal());
+    }
+    async _onApplyToSelected(item) {
+        const [selected, _] = await this._getSelectedPresets({
+            editableOnly: false
+        });
+        if (!selected.length) return;
+        // Confirm that all presets are of the same document type
+        const types = new Set();
+        for (const s of selected){
+            types.add(s.documentName);
+            if (types.size > 1) {
+                ui.notifications.warn((0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.apply-to-selected-warn"));
+                return;
+            }
+        }
+        const controlled = canvas.getLayerByEmbeddedName(selected[0].documentName).controlled;
+        if (!controlled.length) return;
+        for (const s of selected)(0, $8d51a9873394e4eb$export$85a626beb2f6e17a)(controlled, s, false, true);
     }
     async _onCreateFolder(event) {
         const types = [];
@@ -22865,11 +23009,18 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     async _onFolderDelete(uuid, render = true) {
         const folder = this.tree.allFolders.get(uuid);
         if (folder) {
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.delete(folder.presets);
-            for (const c of folder.children)await this._onFolderDelete(c.uuid, false);
-            const folderDoc = await fromUuid(uuid);
-            await folderDoc.delete();
-            if (render) this.render(true);
+            const confirm = await Dialog.confirm({
+                title: `${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.Remove", false)}: ${folder.name}`,
+                content: `<h4>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("AreYouSure", false)}</h4><p>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.RemoveWarning", false)}</p>`
+            });
+            if (confirm) {
+                const folderDoc = await fromUuid(uuid);
+                await folderDoc.delete({
+                    deleteSubfolders: false,
+                    deleteContents: false
+                });
+                if (render) this.render(true);
+            }
         }
     }
     _onSearchInput(event, items, folder) {
@@ -22906,14 +23057,14 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 folder.show();
             } else if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode") === "pf" && folder.data("name").toLowerCase().includes(filter)) {
                 folder.show();
-                if (!game.folders._expanded[uuid]) folder.addClass("collapsed");
+                if (!$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) folder.addClass("collapsed");
                 folder.find(".item").show();
                 folder.find(".folder").each(function() {
                     const folder = $(this);
                     const uuid = folder.data("uuid");
                     parentMatchedFolderUuids.add(uuid);
                     folder.show();
-                    if (!matchedFolderUuids.has(uuid) && !game.folders._expanded[uuid]) folder.addClass("collapsed");
+                    if (!matchedFolderUuids.has(uuid) && !$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) folder.addClass("collapsed");
                 });
                 let parent = folder.parent().closest(".folder");
                 while(parent.length){
@@ -23047,11 +23198,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     _editPresets(presets, options = {}, event) {
         options.callback = ()=>this.render(true);
-        if (!("left" in options)) {
-            options.left = event.originalEvent.x - $d0a1f06830d69799$var$PresetConfig.defaultOptions.width / 2;
+        if (!("left" in options) && event) {
+            options.left = event.originalEvent.x - $d0a1f06830d69799$export$c7d846246fcba8fd.defaultOptions.width / 2;
             options.top = event.originalEvent.y;
         }
-        new $d0a1f06830d69799$var$PresetConfig(presets, options).render(true);
+        new $d0a1f06830d69799$export$c7d846246fcba8fd(presets, options).render(true);
     }
     async _onApplyPreset(event) {
         if (this.callback) {
@@ -23074,24 +23225,36 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             (0, $32e43d7a62aba58c$export$767e4c91777ecf4c)(preset);
             return;
         }
+        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(preset.documentName)) return;
         // For some reason canvas.mousePosition does not get updated during drag and drop
         // Acquire the cursor position transformed to Canvas coordinates
-        const [x, y] = [
-            event.clientX,
-            event.clientY
-        ];
-        const t = canvas.stage.worldTransform;
-        let mouseX = (x - t.tx) / canvas.stage.scale.x;
-        let mouseY = (y - t.ty) / canvas.stage.scale.y;
-        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(preset.documentName)) return;
-        if (preset.documentName === "Token" || preset.documentName === "Tile") {
-            mouseX -= canvas.dimensions.size / 2;
-            mouseY -= canvas.dimensions.size / 2;
+        let mouseX;
+        let mouseY;
+        let mouseZ;
+        if (this.canvas3dActive) {
+            game.Levels3DPreview.interactionManager._onMouseMove(event, true);
+            const { x: x, y: y, z: z } = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
+            mouseX = x;
+            mouseY = y;
+            mouseZ = z;
+        } else {
+            const [x, y] = [
+                event.clientX,
+                event.clientY
+            ];
+            const t = canvas.stage.worldTransform;
+            mouseX = (x - t.tx) / canvas.stage.scale.x;
+            mouseY = (y - t.ty) / canvas.stage.scale.y;
+            if (preset.documentName === "Token" || preset.documentName === "Tile") {
+                mouseX -= canvas.dimensions.size / 2;
+                mouseY -= canvas.dimensions.size / 2;
+            }
         }
         $d0a1f06830d69799$export$619760a5720f8054.spawnPreset({
             preset: preset,
             x: mouseX,
             y: mouseY,
+            z: mouseZ,
             mousePosition: false,
             layerSwitch: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch"),
             scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
@@ -23180,10 +23343,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             isCreate: true
         }, event);
     }
-    async presetFromPlaceable(placeables, event) {
-        if (!(placeables instanceof Array)) placeables = [
-            placeables
-        ];
+    /**
+   * Create a preset from placeables dragged and dropped ont he form
+   * @param {Array[Placeable]} placeables
+   * @param {Event} event
+   */ async dropPlaceable(placeables, event) {
         const presets = await $d0a1f06830d69799$export$619760a5720f8054.createPreset(placeables);
         // Switch to just created preset's category before rendering if not set to 'ALL'
         const documentName = placeables[0].document.documentName;
@@ -23269,7 +23433,7 @@ async function $d0a1f06830d69799$var$exportPresets(presets, fileName) {
     });
     saveDataToFile(JSON.stringify(presets, null, 2), "text/json", (fileName ?? "mass-edit-presets") + ".json");
 }
-class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
+class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
     static name = "PresetConfig";
     /**
    * @param {Array[Preset]} presets
@@ -23316,11 +23480,21 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
     }
     /* -------------------------------------------- */ /** @override */ async getData(options = {}) {
         const data = {};
+        data.advancedOpen = this.advancedOpen;
         data.preset = {};
         if (this.presets.length === 1) {
             data.preset = this.presets[0];
             data.displayFieldDelete = true;
             data.displayFieldModify = true;
+            data.attached = this.attached || data.preset.attached;
+            if (data.attached) data.attached = data.attached.map((at)=>{
+                let tooltip = at.documentName;
+                if (at.documentName === "Token" && at.data.name) tooltip += ": " + at.data.name;
+                return {
+                    icon: $d0a1f06830d69799$var$DOC_ICONS[at.documentName] ?? $d0a1f06830d69799$var$DOC_ICONS.DEFAULT,
+                    tooltip: tooltip
+                };
+            });
         }
         data.minlength = this.presets.length > 1 ? 0 : 1;
         data.tva = game.modules.get("token-variants")?.active;
@@ -23347,6 +23521,11 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         html.find("summary").on("click", ()=>setTimeout(()=>this.setPosition({
                     height: "auto"
                 }), 30));
+        html.find(".attached").on("click", this.onAttachedRemove.bind(this));
+        html.find(".attach-selected").on("click", ()=>{
+            const controlled = canvas.activeLayer.controlled;
+            if (controlled.length && (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(controlled[0].document.documentName)) this.dropPlaceable(controlled);
+        });
         // TVA Support
         const tvaButton = html.find(".token-variants-image-select-button");
         tvaButton.on("click", (event)=>{
@@ -23357,6 +23536,51 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 searchType: "Item"
             });
         });
+        // Advanced Options tracking between renders
+        html.find("details").on("toggle", (event)=>{
+            this.advancedOpen = Boolean($(event.target).attr("open"));
+        });
+        //Hover
+        const hoverOverlay = html.closest(".window-content").find(".drag-drop-overlay");
+        html.closest(".window-content").on("mouseover", (event)=>{
+            if (this.presets.length !== 1) return;
+            if (canvas.activeLayer?.preview?.children.some((c)=>c._original?.mouseInteractionManager?.isDragging)) {
+                hoverOverlay.show();
+                $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = true;
+            } else {
+                hoverOverlay.hide();
+                $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = false;
+            }
+        }).on("mouseout", ()=>{
+            if (this.presets.length !== 1) return;
+            hoverOverlay.hide();
+            $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = false;
+        });
+    }
+    /**
+   * Create a preset from placeables dragged and dropped ont he form
+   * @param {Array[Placeable]} placeables
+   * @param {Event} event
+   */ async dropPlaceable(placeables, event) {
+        this.advancedOpen = true;
+        if (!this.attached) this.attached = deepClone(this.presets[0].attached ?? []);
+        placeables.forEach((p)=>this.attached.push({
+                documentName: p.document.documentName,
+                data: $d0a1f06830d69799$var$placeableToData(p)
+            }));
+        await this.render(true);
+        setTimeout(()=>this.setPosition({
+                height: "auto"
+            }), 30);
+    }
+    async onAttachedRemove(event) {
+        const index = $(event.target).closest(".attached").data("index");
+        this.attached = this.attached || deepClone(this.presets[0].attached);
+        this.attached.splice(index, 1);
+        await this.render(true);
+        setTimeout(()=>this.setPosition({
+                height: "auto"
+            }), 30);
     }
     async _onSpawnFields() {
         new $d0a1f06830d69799$var$PresetFieldModify(this.data ?? this.presets[0].data, (modifyOnSpawn)=>{
@@ -23384,10 +23608,10 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
         }
     }
     async _onEditDocument() {
-        const documents = [];
+        const documents1 = [];
         const cls = CONFIG[this.presets[0].documentName].documentClass;
-        for (const p of this.presets)p.data.forEach((d)=>documents.push(new cls($d0a1f06830d69799$var$mergePresetDataToDefaultDoc(p, d))));
-        const app = await (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(documents, null, {
+        for (const p of this.presets)p.data.forEach((d)=>documents1.push(new cls($d0a1f06830d69799$var$mergePresetDataToDefaultDoc(p, d))));
+        const app = await (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(documents1, null, {
             presetEdit: true,
             callback: (obj)=>{
                 this.addSubtract = {};
@@ -23398,7 +23622,8 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
                 }
                 this.data = obj.data;
                 this.render(true);
-            }
+            },
+            forceForm: true
         });
         // For randomize and addSubtract only take into account the first preset
         // and apply them to the form
@@ -23431,8 +23656,10 @@ class $d0a1f06830d69799$var$PresetConfig extends FormApplication {
             if (this.randomize) update.randomize = this.randomize;
             if (this.modifyOnSpawn) update.modifyOnSpawn = this.modifyOnSpawn;
             if (this.gridSize) update.gridSize = this.gridSize;
+            if (this.attached) update.attached = this.attached;
             if (formData.preSpawnScript != null) update.preSpawnScript = formData.preSpawnScript;
             if (formData.postSpawnScript != null) update.postSpawnScript = formData.postSpawnScript;
+            if (formData.spawnRandom != null) update.spawnRandom = formData.spawnRandom;
             await preset.update(update);
         }
     }
@@ -23720,7 +23947,6 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: exclu
 }
 function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
     let data;
-    presetData = foundry.utils.flattenObject(presetData);
     // Set default values if needed
     switch(preset.documentName){
         case "Token":
@@ -23741,10 +23967,12 @@ function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
             break;
         case "Drawing":
             data = {
-                "shape.width": canvas.grid.w * 2,
-                "shape.height": canvas.grid.h * 2,
-                strokeWidth: 8,
-                strokeAlpha: 1.0
+                shape: {
+                    width: canvas.grid.w * 2,
+                    height: canvas.grid.h * 2,
+                    strokeWidth: 8,
+                    strokeAlpha: 1.0
+                }
             };
             break;
         case "MeasuredTemplate":
@@ -23753,10 +23981,12 @@ function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
             };
             break;
         case "AmbientLight":
-            if (!("config.dim" in presetData) && !("config.bright" in presetData)) {
+            if (presetData.config?.dim == null && presetData.config?.bright == null) {
                 data = {
-                    "config.dim": 20,
-                    "config.bright": 10
+                    config: {
+                        dim: 20,
+                        bright: 20
+                    }
                 };
                 break;
             }
@@ -23840,8 +24070,8 @@ function $d0a1f06830d69799$var$scaleDataToGrid(data, documentName, gridSize) {
             if ("height" in d) d.height *= ratio;
             break;
         case "Drawing":
-            if ("shape.width" in d) d["shape.width"] *= ratio;
-            if ("shape.height" in d) d["shape.height"] *= ratio;
+            if (d.shape?.width != null) d.shape.width *= ratio;
+            if (d.shape?.height != null) d.shape.height *= ratio;
             break;
         case "Wall":
             if ("c" in d) for(let i = 0; i < d.c.length; i++)d.c[i] *= ratio;
@@ -24259,7 +24489,7 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
    *                            { start: {x1, y1}, end: {x2, y2} }
    * @param {Object}  preview
    * @param {String}  preview.documentName (optional) preview placeables document name
-   * @param {Array[Object]}  preview.previewData    (req) preview placeables data
+   * @param {Map[String,Array]}  preview.previewData    (req) preview placeables data
    * @param {String}  preview.taPreview            (optional) Designates the preview placeable when spawning a `Token Attacher` prefab.
    *                                                e.g. "Tile", "Tile.1", "MeasuredTemplate.3"
    * @param {Boolean} preview.snap                  (optional) if true returned coordinates will be snapped to grid
@@ -24286,7 +24516,7 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
             const { previews: previews, layer: layer, previewDocuments: previewDocuments } = await this._genPreviews(preview);
             const setPositions = function(pos) {
                 if (!pos) return;
-                if (preview.snap && layer) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
+                if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
                 for (const preview of previews){
                     if (preview.document.documentName === "Wall") {
                         const c = preview.document.c;
@@ -24304,9 +24534,17 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
                         refresh: true
                     });
                     preview.visible = true;
-                    if (preview.controlIcon) {
+                    if (preview.controlIcon && !preview.controlIcon._meVInsert) {
                         preview.controlIcon.alpha = 0.4;
-                        preview.controlIcon.visible = true;
+                        // ControlIcon visibility is difficult to set and keep as true
+                        // Lets hack it by defining a getter that always returns true
+                        Object.defineProperty(preview.controlIcon, "visible", {
+                            get: function() {
+                                return true;
+                            },
+                            set: function() {}
+                        });
+                        preview.controlIcon._meVInsert = true;
                     }
                 }
                 if (label) {
@@ -24356,43 +24594,54 @@ class $32e43d7a62aba58c$export$ba25329847403e11 {
         return object;
     }
     static async _genPreviews(preview) {
-        const previewData = preview.previewData;
-        const documentName = preview.documentName;
-        if (!previewData || !documentName) return {
+        if (!preview.previewData) return {
             previews: []
         };
-        const previewDocuments = new Set([
-            documentName
-        ]);
-        const layer = canvas.getLayerByEmbeddedName(documentName);
+        const previewDocuments = new Set();
         const previews = [];
-        let mainPreview;
-        for (const data of previewData){
-            // Create Preview
-            const previewObject = await this._createPreview.call(layer, data);
-            previews.push(previewObject);
-            if (!mainPreview) mainPreview = previewObject;
-            // Calculate offset from first preview
-            if (preview.documentName === "Wall") {
-                const off = [
-                    previewObject.document.c[0] - mainPreview.document.c[0],
-                    previewObject.document.c[1] - mainPreview.document.c[1],
-                    previewObject.document.c[2] - mainPreview.document.c[0],
-                    previewObject.document.c[3] - mainPreview.document.c[1]
-                ];
-                previewObject._previewOffset = off;
-            } else previewObject._previewOffset = {
-                x: previewObject.document.x - mainPreview.document.x,
-                y: previewObject.document.y - mainPreview.document.y
-            };
-            if (preview.taPreview) {
-                const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
-                documentNames.forEach((dName)=>previewDocuments.add(dName));
+        let mainPreviewX;
+        let mainPreviewY;
+        for (const [documentName, dataArr] of preview.previewData.entries()){
+            const layer = canvas.getLayerByEmbeddedName(documentName);
+            for (const data of dataArr){
+                // Create Preview
+                const previewObject = await this._createPreview.call(layer, deepClone(data));
+                previews.push(previewObject);
+                previewDocuments.add(documentName);
+                // Determine point around which other previews are to be placed
+                if (mainPreviewX == null) {
+                    if (documentName === "Wall") {
+                        if (data.c != null) {
+                            mainPreviewX = previewObject.document.c[0];
+                            mainPreviewY = previewObject.document.c[1];
+                        }
+                    } else if (data.x != null && data.y != null) {
+                        mainPreviewX = previewObject.document.x;
+                        mainPreviewY = previewObject.document.y;
+                    }
+                }
+                // Calculate offset from first preview
+                if (documentName === "Wall") {
+                    const off = [
+                        previewObject.document.c[0] - (mainPreviewX ?? 0),
+                        previewObject.document.c[1] - (mainPreviewY ?? 0),
+                        previewObject.document.c[2] - (mainPreviewX ?? 0),
+                        previewObject.document.c[3] - (mainPreviewY ?? 0)
+                    ];
+                    previewObject._previewOffset = off;
+                } else previewObject._previewOffset = {
+                    x: previewObject.document.x - (mainPreviewX ?? 0),
+                    y: previewObject.document.y - (mainPreviewY ?? 0)
+                };
+                if (preview.taPreview && documentName === "Token") {
+                    const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
+                    documentNames.forEach((dName)=>previewDocuments.add(dName));
+                }
             }
         }
         return {
             previews: previews,
-            layer: layer,
+            layer: canvas.getLayerByEmbeddedName(preview.documentName),
             previewDocuments: previewDocuments
         };
     }
@@ -25416,7 +25665,7 @@ async function $f3b8698a65c76e19$export$7ac7726310ec4fa4(found = null, documentN
     let [target, selected] = $f3b8698a65c76e19$export$f9f1f4119b3df74(found);
     // If there are no placeable in control or just one, then either exit or display the default config window
     if (!selected || !selected.length) return;
-    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "singleDocDefaultConfig")) {
+    if (!options.forceForm && game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "singleDocDefaultConfig")) {
         if (selected.length === 1) {
             if (selected[0].sheet) selected[0].sheet.render(true, {});
             return;
@@ -25581,6 +25830,7 @@ const $15e9db69c2322773$export$149eb684a26496a2 = {};
 // Initialize module
 Hooks.once("init", ()=>{
     // Register Settings
+    (0, $d0a1f06830d69799$export$511ed1dd332818c6).init();
     game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssStyle", {
         scope: "world",
         config: false,
@@ -25921,14 +26171,16 @@ Hooks.once("init", ()=>{
     // Intercept and prevent certain placeable drag and drop if they are hovering over the MassEditPresets form
     // passing on the placeable to it to perform preset creation.
     const dragDropHandler = function(wrapped, ...args) {
-        if ((0, $d0a1f06830d69799$export$7a966e8b4abecc03).objectHover) {
+        if ((0, $d0a1f06830d69799$export$7a966e8b4abecc03).objectHover || (0, $d0a1f06830d69799$export$c7d846246fcba8fd).objectHover) {
             this.mouseInteractionManager.cancel(...args);
-            const app = Object.values(ui.windows).find((x)=>x instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
+            const app = Object.values(ui.windows).find((x)=>(0, $d0a1f06830d69799$export$7a966e8b4abecc03).objectHover && x instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03) || (0, $d0a1f06830d69799$export$c7d846246fcba8fd).objectHover && x instanceof (0, $d0a1f06830d69799$export$c7d846246fcba8fd));
             if (app) {
                 const placeables = canvas.activeLayer.controlled.length ? [
                     ...canvas.activeLayer.controlled
-                ] : this;
-                app.presetFromPlaceable(placeables, ...args);
+                ] : [
+                    this
+                ];
+                app.dropPlaceable(placeables, ...args);
             }
             // Pass in a fake event that hopefully is enough to allow other modules to function
             this._onDragLeftCancel(...args);
@@ -25984,12 +26236,12 @@ Hooks.on("renderSceneControls", (sceneControls, html, options)=>{
     if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSceneControl")) return;
     const presetControl = $(`
 <li class="scene-control mass-edit-scene-control" data-control="me-presets" aria-label="Mass Edit: Presets" role="tab" data-tooltip="Mass Edit: Presets">
-<i class="fa-solid fa-books"></i>
+  <i class="fa-solid fa-books"></i>
 </li>
   `);
     presetControl.on("click", ()=>{
         let docName = canvas.activeLayer.constructor.documentName;
-        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(docName)) docName;
+        if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(docName)) docName = "ALL";
         const presetForm = Object.values(ui.windows).find((app)=>app instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
         if (presetForm) {
             presetForm.close();

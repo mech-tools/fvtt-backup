@@ -1,7 +1,3 @@
-2024/02/05-11:08:05.059824 7fb8e97fa700 Recovering log #55
-2024/02/05-11:08:05.062554 7fb8e97fa700 Delete type=3 #53
-2024/02/05-11:08:05.062584 7fb8e97fa700 Delete type=0 #55
-2024/02/08-13:58:19.913573 7fb64bfe3700 Level-0 table #60: started
-2024/02/08-13:58:19.913817 7fb64bfe3700 Level-0 table #60: 0 bytes OK
-2024/02/08-13:58:19.915006 7fb64bfe3700 Delete type=0 #58
-2024/02/08-13:58:19.918263 7fb64bfe3700 Manual compaction at level-0 from '!folders!cSyPT5Tq9HGIHW2A' @ 72057594037927935 : 1 .. '!macros!tJvTor7RW3Nx5473' @ 0 : 0; will stop at (end)
+2024/02/23-20:48:41.828461 7fb8e8ff9700 Recovering log #59
+2024/02/23-20:48:41.831217 7fb8e8ff9700 Delete type=3 #57
+2024/02/23-20:48:41.831338 7fb8e8ff9700 Delete type=0 #59

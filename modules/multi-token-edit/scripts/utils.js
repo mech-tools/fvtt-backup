@@ -487,7 +487,7 @@ export class Picker {
    *                            { start: {x1, y1}, end: {x2, y2} }
    * @param {Object}  preview
    * @param {String}  preview.documentName (optional) preview placeables document name
-   * @param {Array[Object]}  preview.previewData    (req) preview placeables data
+   * @param {Map[String,Array]}  preview.previewData    (req) preview placeables data
    * @param {String}  preview.taPreview            (optional) Designates the preview placeable when spawning a `Token Attacher` prefab.
    *                                                e.g. "Tile", "Tile.1", "MeasuredTemplate.3"
    * @param {Boolean} preview.snap                  (optional) if true returned coordinates will be snapped to grid
@@ -516,7 +516,8 @@ export class Picker {
 
       const setPositions = function (pos) {
         if (!pos) return;
-        if (preview.snap && layer) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
+        if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT))
+          pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
 
         for (const preview of previews) {
           if (preview.document.documentName === 'Wall') {
@@ -532,11 +533,20 @@ export class Picker {
           }
           preview.document.alpha = 0.4;
           preview.renderFlags.set({ refresh: true });
-
           preview.visible = true;
-          if (preview.controlIcon) {
+
+          if (preview.controlIcon && !preview.controlIcon._meVInsert) {
             preview.controlIcon.alpha = 0.4;
-            preview.controlIcon.visible = true;
+
+            // ControlIcon visibility is difficult to set and keep as true
+            // Lets hack it by defining a getter that always returns true
+            Object.defineProperty(preview.controlIcon, 'visible', {
+              get: function () {
+                return true;
+              },
+              set: function () {},
+            });
+            preview.controlIcon._meVInsert = true;
           }
         }
 
@@ -595,45 +605,61 @@ export class Picker {
   }
 
   static async _genPreviews(preview) {
-    const previewData = preview.previewData;
-    const documentName = preview.documentName;
-    if (!previewData || !documentName) return { previews: [] };
+    if (!preview.previewData) return { previews: [] };
 
-    const previewDocuments = new Set([documentName]);
-    const layer = canvas.getLayerByEmbeddedName(documentName);
+    const previewDocuments = new Set();
     const previews = [];
 
-    let mainPreview;
-    for (const data of previewData) {
-      // Create Preview
-      const previewObject = await this._createPreview.call(layer, data);
-      previews.push(previewObject);
+    let mainPreviewX;
+    let mainPreviewY;
 
-      if (!mainPreview) mainPreview = previewObject;
+    for (const [documentName, dataArr] of preview.previewData.entries()) {
+      const layer = canvas.getLayerByEmbeddedName(documentName);
+      for (const data of dataArr) {
+        // Create Preview
+        const previewObject = await this._createPreview.call(layer, deepClone(data));
+        previews.push(previewObject);
+        previewDocuments.add(documentName);
 
-      // Calculate offset from first preview
-      if (preview.documentName === 'Wall') {
-        const off = [
-          previewObject.document.c[0] - mainPreview.document.c[0],
-          previewObject.document.c[1] - mainPreview.document.c[1],
-          previewObject.document.c[2] - mainPreview.document.c[0],
-          previewObject.document.c[3] - mainPreview.document.c[1],
-        ];
-        previewObject._previewOffset = off;
-      } else {
-        previewObject._previewOffset = {
-          x: previewObject.document.x - mainPreview.document.x,
-          y: previewObject.document.y - mainPreview.document.y,
-        };
-      }
+        // Determine point around which other previews are to be placed
+        if (mainPreviewX == null) {
+          if (documentName === 'Wall') {
+            if (data.c != null) {
+              mainPreviewX = previewObject.document.c[0];
+              mainPreviewY = previewObject.document.c[1];
+            }
+          } else {
+            if (data.x != null && data.y != null) {
+              mainPreviewX = previewObject.document.x;
+              mainPreviewY = previewObject.document.y;
+            }
+          }
+        }
 
-      if (preview.taPreview) {
-        const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
-        documentNames.forEach((dName) => previewDocuments.add(dName));
+        // Calculate offset from first preview
+        if (documentName === 'Wall') {
+          const off = [
+            previewObject.document.c[0] - (mainPreviewX ?? 0),
+            previewObject.document.c[1] - (mainPreviewY ?? 0),
+            previewObject.document.c[2] - (mainPreviewX ?? 0),
+            previewObject.document.c[3] - (mainPreviewY ?? 0),
+          ];
+          previewObject._previewOffset = off;
+        } else {
+          previewObject._previewOffset = {
+            x: previewObject.document.x - (mainPreviewX ?? 0),
+            y: previewObject.document.y - (mainPreviewY ?? 0),
+          };
+        }
+
+        if (preview.taPreview && documentName === 'Token') {
+          const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
+          documentNames.forEach((dName) => previewDocuments.add(dName));
+        }
       }
     }
 
-    return { previews, layer, previewDocuments };
+    return { previews, layer: canvas.getLayerByEmbeddedName(preview.documentName), previewDocuments };
   }
 
   static _parseTAPreview(taPreview, attached) {
