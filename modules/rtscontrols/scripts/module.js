@@ -419,7 +419,8 @@ class MovementManager {
 }
 
 class VisualManager {
-    constructor() {
+    constructor(settingsManager) {
+        this.settingsManager = settingsManager;
         this.pathLineDrawings = new Map();
         this.drawingOperationsQueue = []; // Queue for drawing operations
         this.processingQueue = false; // Flag to indicate if the queue is currently being processed
@@ -479,7 +480,13 @@ class VisualManager {
         return path.every(p => this.isValidPoint(p));
     }
 
-    async drawPathLine(tokenId, path, color = "#00FF00") {
+    async drawPathLine(tokenId, path, color = game.settings.get("rtscontrols", "destinationCircleColor")) {
+        // Check if line drawing is enabled
+        if (!game.settings.get("rtscontrols", "drawPathLine")) {
+            console.log("Line drawing is disabled.");
+            return;
+        }
+
         this.enqueueDrawingOperation(async () => {
             if (!this.validatePath(path)) {
                 console.error("drawPathLine: Invalid path data.");
@@ -516,7 +523,10 @@ class VisualManager {
         });
     }
 
-    async drawCircleAtEndpoint(tokenId, endpoint, color = game.settings.get("rtscontrols", "destinationCircleColor")) {
+    async drawCircleAtEndpoint(tokenId, endpoint) {
+        // Directly fetch the color setting within the method
+        const color = game.settings.get("rtscontrols", "destinationCircleColor");
+
         this.enqueueDrawingOperation(async () => {
             const circleData = {
                 type: "e", // Ellipse type
@@ -1017,7 +1027,6 @@ class GridSpaceManager {
 }
 
 Hooks.on("ready", function () {
-    console.log("THIS IS AN EXTREMELEY LOUD AND ANNOYTING CONSOLE LOG THAT IS MEANT TO BE EASY TO SPOT!")
     const settingsManager = new SettingsManager();
     settingsManager.registerSettings();
     initializePathfindingModule(settingsManager);
@@ -1031,10 +1040,9 @@ Hooks.on("updateScene", function () {
 function initializePathfindingModule(settingsManager) {
     const gridSpaceManager = new GridSpaceManager();
     const pathfindingModule = new PathfindingModule(gridSpaceManager);
-    const visualManager = new VisualManager();
+    const visualManager = new VisualManager(settingsManager);
     const movementManager = new MovementManager(gridSpaceManager, visualManager);
     const cameraManager = new CameraManager(movementManager);
     movementManager.cameraManager = cameraManager;
     const eventManager = new EventManager(pathfindingModule, movementManager, visualManager, settingsManager);
 }
-

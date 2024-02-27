@@ -1,3 +1,23 @@
-2024/02/17-20:50:01.503878 7fe456ffd700 Recovering log #53
-2024/02/17-20:50:01.509933 7fe456ffd700 Delete type=3 #52
-2024/02/17-20:50:01.509987 7fe456ffd700 Delete type=0 #53
+2024/02/17-20:57:36.271542 7f27aa7fc700 Recovering log #55
+2024/02/17-20:57:36.271599 7f27aa7fc700 Level-0 table #57: started
+2024/02/17-20:57:36.272963 7f27aa7fc700 Level-0 table #57: 6304 bytes OK
+2024/02/17-20:57:36.275358 7f27aa7fc700 Delete type=0 #55
+2024/02/17-20:57:36.275393 7f27aa7fc700 Delete type=3 #54
+2024/02/26-14:41:12.405343 7f250bfff700 Level-0 table #60: started
+2024/02/26-14:41:12.405697 7f250bfff700 Level-0 table #60: 0 bytes OK
+2024/02/26-14:41:12.406604 7f250bfff700 Delete type=0 #58
+2024/02/26-14:41:12.409872 7f250bfff700 Manual compaction at level-0 from '!macros!0zAQ2jjR58HIam9C' @ 72057594037927935 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at '!macros!ufubQZzNsZMkf3oo' @ 36 : 1
+2024/02/26-14:41:12.409883 7f250bfff700 Compacting 1@0 + 0@1 files
+2024/02/26-14:41:12.411148 7f250bfff700 Generated table #61@0: 9 keys, 6304 bytes
+2024/02/26-14:41:12.411168 7f250bfff700 Compacted 1@0 + 0@1 files => 6304 bytes
+2024/02/26-14:41:12.411846 7f250bfff700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/02/26-14:41:12.411894 7f250bfff700 Delete type=2 #57
+2024/02/26-14:41:12.411952 7f250bfff700 Manual compaction at level-0 from '!macros!ufubQZzNsZMkf3oo' @ 36 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at (end)
+2024/02/26-14:41:12.411975 7f250bfff700 Manual compaction at level-1 from '!macros!0zAQ2jjR58HIam9C' @ 72057594037927935 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at '!macros!ufubQZzNsZMkf3oo' @ 36 : 1
+2024/02/26-14:41:12.411980 7f250bfff700 Compacting 1@1 + 1@2 files
+2024/02/26-14:41:12.413026 7f250bfff700 Generated table #62@1: 9 keys, 6304 bytes
+2024/02/26-14:41:12.413038 7f250bfff700 Compacted 1@1 + 1@2 files => 6304 bytes
+2024/02/26-14:41:12.413612 7f250bfff700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/02/26-14:41:12.413654 7f250bfff700 Delete type=2 #47
+2024/02/26-14:41:12.413693 7f250bfff700 Delete type=2 #61
+2024/02/26-14:41:12.413739 7f250bfff700 Manual compaction at level-1 from '!macros!ufubQZzNsZMkf3oo' @ 36 : 1 .. '!macros!ufubQZzNsZMkf3oo' @ 0 : 0; will stop at (end)
