@@ -1,6 +1,6 @@
 import * as api from "./api.js";
 import { getDefaultResources, setDefaultResources } from "./settings.js";
-import { createOverrideData, prepareUpdate } from "./synchronization.js";
+import { prepareUpdate } from "./synchronization.js";
 
 /**
  * Extends the way Foundry updates the configuration of the default token. If
@@ -18,6 +18,11 @@ export const extendDefaultTokenConfig = function () {
                 prepareUpdate(this.token, formData);
                 return formData;
             }, "WRAPPER");
+
+        libWrapper.register("barbrawl", "CONFIG.Token.prototypeSheetClass.prototype._onBarChange",
+            onChangeBarAttribute, "OVERRIDE");
+        libWrapper.register("barbrawl", "DefaultTokenConfig.prototype._onBarChange",
+            onChangeBarAttribute, "OVERRIDE");
     } else {
         // Manual override
         const originalGetSubmitData = DefaultTokenConfig.prototype._getSubmitData;
@@ -29,6 +34,9 @@ export const extendDefaultTokenConfig = function () {
             prepareUpdate(this.token, formData);
             return formData;
         };
+
+        CONFIG.Token.prototypeSheetClass.prototype._onBarChange = onChangeBarAttribute;
+        DefaultTokenConfig.prototype._onBarChange = onChangeBarAttribute;
     }
 }
 
@@ -52,34 +60,42 @@ export const extendTokenConfig = async function (tokenConfig, html, data) {
         }
     }
 
+    const saveEntries = createSaveEntries(tokenConfig);
+    data.canSaveDefaults = saveEntries.length > 0;
+    const loadEntries = createLoadEntries(tokenConfig, data.barAttributes);
+    data.canLoadDefaults = loadEntries.length > 0;
     const barConfiguration = await renderTemplate("modules/barbrawl/templates/token-resources.hbs", data);
 
     const resourceTab = html.find("div[data-tab='resources']");
     resourceTab.find("div.form-fields").parent().remove();
     resourceTab.append(barConfiguration);
-    if (resourceTab.hasClass("active")) adjustConfigHeight(html, data.brawlBars.length);
 
-    resourceTab.on("change", ".brawlbar-attribute", onChangeBarAttribute.bind(tokenConfig.token));
     resourceTab.on("click", ".bar-modifiers .fa-trash", onDeleteBar);
     resourceTab.on("click", ".bar-modifiers .fa-chevron-up", onMoveBarUp);
     resourceTab.on("click", ".bar-modifiers .fa-chevron-down", onMoveBarDown);
     resourceTab.on("click", "button.file-picker", tokenConfig._activateFilePicker.bind(tokenConfig));
+    resourceTab.on("change", ".bar-attribute", tokenConfig._onBarChange.bind(tokenConfig));
 
     resourceTab.find(".brawlbar-add").click(event => onAddResource(event, tokenConfig, data));
-    resourceTab.find(".brawlbar-save").click(() => onSaveDefaults(tokenConfig));
-    resourceTab.find(".brawlbar-load").click(() => onLoadDefaults(tokenConfig, data));
+    if (data.canSaveDefaults) {
+        new ContextMenu(resourceTab, ".brawlbar-save", saveEntries, { eventName: "click" });
+    }
+    if (data.canLoadDefaults) {
+        new ContextMenu(resourceTab, ".brawlbar-load", loadEntries, { eventName: "click" });
+    }
 
-    // Trigger change event once to update resource values.
+    // Refresh diplayed value for all attributes.
+    if (game.system.id === "dnde5") return;
     resourceTab.find("select.brawlbar-attribute").each((_, el) => refreshValueInput(tokenConfig.token, el));
 }
 
 /**
  * Handles an attribute selection change event by updating the resource value.
- * @constant {Token} this The token that this function is bound to.
+ * @constant {TokenConfig} this The token configuration that fired the event.
  * @param {jQuery.Event} event The event of the selection change.
  */
-export const onChangeBarAttribute = function (event) {
-    refreshValueInput(this, event.target, event.originalEvent);
+function onChangeBarAttribute(event) {
+    refreshValueInput(this.token, event.target, event.originalEvent);
 }
 
 /**
@@ -92,7 +108,7 @@ function refreshValueInput(token, target, event) {
     const barId = target.name.split(".")[3];
     if (!barId) return;
     let form = target.form;
-    if (!form.classList.contains("brawlbar-configuration")) form = form.querySelector("#" + barId);
+    if (form && !form.classList.contains("brawlbar-configuration")) form = form.querySelector("#" + barId);
     if (!form) return;
 
     // Set a hidden attribute input to make sure FoundryVTT doesn't override it with null.
@@ -210,8 +226,7 @@ function swapButtonState(selector, firstElement, secondElement) {
  * @param {Object} data The data of the token configuration.
  */
 async function onAddResource(event, tokenConfig, data) {
-    const barControls = $(event.currentTarget.parentElement);
-    const allBarEls = barControls.siblings("details");
+    const allBarEls = $(event.currentTarget).siblings("details");
     const barEls = allBarEls.filter(":visible");
 
     // Create raw bar data.
@@ -221,84 +236,215 @@ async function onAddResource(event, tokenConfig, data) {
     // Remove insibible elements with the same ID.
     if (allBarEls.length !== barEls.length) allBarEls.find("div#" + newBar.id).parent().remove();
 
-    const barConfiguration = $(await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
+    event.currentTarget.insertAdjacentHTML("beforebegin", await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
         brawlBars: [newBar],
         barAttributes: data.barAttributes
     }));
+    const barConfiguration = event.currentTarget.previousElementSibling;
 
+    if (game.system.id === "dnd5e" && tokenConfig._prepareResourceLabels) tokenConfig._prepareResourceLabels(barConfiguration);
     if (barEls.length) {
         const prevBarConf = barEls[barEls.length - 1];
         prevBarConf.removeAttribute("open");
         prevBarConf.querySelector("a.fa-chevron-down").classList.remove("disabled");
 
-        const newBarConf = barConfiguration[0];
-        newBarConf.querySelector(`input[name="flags.barbrawl.resourceBars.${newBar.id}.order"]`).value = barEls.length;
-        newBarConf.querySelector("a.fa-chevron-up").classList.remove("disabled");
+        barConfiguration.querySelector(`input[name="flags.barbrawl.resourceBars.${newBar.id}.order"]`).value = barEls.length;
+        barConfiguration.querySelector("a.fa-chevron-up").classList.remove("disabled");
     }
 
-    adjustConfigHeight(tokenConfig.element, barEls.length + 1);
-    barControls.before(barConfiguration);
+    tokenConfig.setPosition();
 }
 
 /**
- * Handles a save button click by storing the current resource configuration in
- *  the user configuration.
- * @param {TokenConfig} tokenConfig The token configuration object.
+ * Retrieves the currently rendered resource settings.
+ * @param {TokenConfig} app The configuration window containing the resources.
+ * @returns {object} An object containing the current resoures.
  */
-async function onSaveDefaults(tokenConfig) {
-    const html = tokenConfig.element;
-    if (!html?.length) return;
+function getCurrentResources(app) {
+    if (!app.element?.length) return {};
 
     // Parse form data.
-    let data = tokenConfig._getSubmitData();
-    data = foundry.utils.expandObject(data).flags.barbrawl.resourceBars;
+    let data = app._getSubmitData();
+    data = data.flags ?? foundry.utils.expandObject(data).flags;
+    data = data?.barbrawl?.resourceBars ?? {};
 
     // Drop bars that were removed.
     for (let id of Object.keys(data)) if (!data[id].attribute) delete data[id];
-
-    await setDefaultResources(tokenConfig.token.actor?.type, data);
+    return data;
 }
 
 /**
- * Handles a load button click by updating the token with the default bar
- *  configuration and re-rendering the config application.
- * @param {TokenConfig} tokenConfig The token configuration object.
- * @param {Object} data The data of the token configuration.
+ * Creates menu entries for saving the current resource configuration in various locations.
+ * @param {TokenConfig} tokenConfig The token configuration to create the entries for.
+ * @returns {object[]} An array of menu entries for saving resources.
  */
-async function onLoadDefaults(tokenConfig, data) {
-    const defaults = getDefaultResources(tokenConfig.token.actor?.type, false);
-    if (tokenConfig instanceof DefaultTokenConfig) {
-        const setting = game.settings.get("core", DefaultTokenConfig.SETTING);
-        for (let prop of Object.entries(createOverrideData(defaults))) {
-            foundry.utils.setProperty(setting, prop[0], prop[1]);
+function createSaveEntries(tokenConfig) {
+    const actor = tokenConfig.token.baseActor;
+    if (!actor) return [];
+
+    const entries = [];
+    if (game.user.isGM) {
+        if (!(tokenConfig instanceof DefaultTokenConfig)) {
+            entries.push({
+                name: "barbrawl.defaults.defaultToken",
+                icon: '<i class="fas fa-cogs"></i>',
+                callback: () => replaceDefaultTokenResources(getCurrentResources(tokenConfig)),
+            });
         }
-        await game.settings.set("core", DefaultTokenConfig.SETTING, setting);
-    } else if (tokenConfig.token instanceof foundry.data.PrototypeToken) {
-        await tokenConfig.token.actor.update(createOverrideData(defaults, true), { diff: false });
-    } else {
-        await tokenConfig.token.update(createOverrideData(defaults), { diff: false });
+
+        const typeLabel = game.i18n.format(
+            "barbrawl.defaults.typeDefaults",
+            { type: game.i18n.localize(CONFIG.Actor.typeLabels[actor.type]) });
+        entries.push({
+            name: typeLabel,
+            icon: '<i class="fas fa-users"></i>',
+            callback: () => setDefaultResources(actor.type, getCurrentResources(tokenConfig), typeLabel),
+        });
     }
 
-    // Replace rendered resource configuration.
-    const barData = Object.values(defaults);
-    const resourceTab = tokenConfig.element.find("div[data-tab='resources']");
-    resourceTab.find("details").remove();
-    resourceTab.prepend(await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
-        brawlBars: barData,
-        barAttributes: data.barAttributes
-    }));
-    if (resourceTab.hasClass("active")) adjustConfigHeight(tokenConfig.element, barData.length);
+    if (actor.isOwner && !(tokenConfig.token instanceof foundry.data.PrototypeToken)) {
+        const actorLabel = game.i18n.format("barbrawl.defaults.prototypeToken", { name: actor.name });
+        entries.push({
+            name: actorLabel,
+            icon: '<i class="fas fa-user"></i>',
+            callback: () => replaceActorResources(actor, getCurrentResources(tokenConfig), actorLabel),
+        });
+    }
+
+    let tokens = actor.getActiveTokens(false, true).filter(t => t.isOwner && t !== tokenConfig.token);
+    if (tokens.length > 1) {
+        const tokenLabel = game.i18n.format("barbrawl.defaults.activeTokens", { name: actor.name });
+        entries.push({
+            name: tokenLabel,
+            icon: '<i class="fas fa-user-circle"></i>',
+            callback: () => replaceTokenResources(tokens, getCurrentResources(tokenConfig), tokenLabel),
+        });
+    }
+
+    return entries;
 }
 
 /**
- * Adjusts the height of the given container to account for additional bar
- *  configuration sections.
- * @param {jQuery.Element} html The JQuery element of the token configuration.
- * @param {number} barCount The number of additional bars to account for.
+ * Replaces the resource configuration of the global default token with the given resources.
+ * @param {object} resources The resource configuration to store.
+ * @returns {Promise} A promise representing the default token update.
  */
-function adjustConfigHeight(html, barCount) {
-    if (barCount <= 0) return;
-    if (html[0].tagName === "FORM") html = html.parent().parent(); // Fix parent when force render is false.
-    const height = parseInt(html.css("height"), 10);
-    html.css("height", Math.max(height, barCount * 17 + 415) + "px");
+async function replaceDefaultTokenResources(resources) {
+    const defaultTokenData = game.settings.get("core", DefaultTokenConfig.SETTING) ?? {};
+    foundry.utils.setProperty(defaultTokenData, "flags.barbrawl.resourceBars", resources);
+    await game.settings.set("core", DefaultTokenConfig.SETTING, defaultTokenData);
+
+    const target = game.i18n.localize("barbrawl.defaults.defaultToken");
+    ui.notifications.info("Bar Brawl | " + game.i18n.format("barbrawl.defaults.saveConfirmation", { target }));
+}
+
+/**
+ * Replaces the given actor's prototype token resources with the given resource configuration.
+ * @param {Actor} actor The actor to store the resources in.
+ * @param {object} resources The resource configuration to store.
+ * @param {string} label The human readable name of the type setting.
+ * @returns {Promise} A promise representing the actor update.
+ */
+async function replaceActorResources(actor, resources, label) {
+    await actor.update(
+        { "prototypeToken.flags.barbrawl.resourceBars": resources },
+        { recursive: false, diff: false }
+    );
+
+    ui.notifications.info("Bar Brawl | " + game.i18n.format("barbrawl.defaults.saveConfirmation", { target: label }));
+}
+
+/**
+ * Replaces the resource configuration of the given tokens within the current scene.
+ * @param {TokenDocument[]} tokens The tokens to store the resources in.
+ * @param {object} resources The resource configuration to store.
+ * @param {string} label The human readable name of the type setting.
+ * @returns {Promise} A promise representing the scene update.
+ */
+async function replaceTokenResources(tokens, resources, label) {
+    const update = tokens.map(t => ({ _id: t.id, "flags.barbrawl.resourceBars": resources }));
+    await canvas.scene.updateEmbeddedDocuments("Token", update, { recursive: false, diff: false });
+
+    ui.notifications.info("Bar Brawl | " + game.i18n.format("barbrawl.defaults.saveConfirmation", { target: label }));
+}
+
+/**
+ * Replaces the resource configuration of the given token configuration with the given resources.
+ * @param {TokenConfig} app The token configuration to render the entries into.
+ * @param {object} attributes The bar attributes required for rendering the resources.
+ * @param {object} resources The resource configuration to render.
+ * @returns {Promise} A promise representing the rendering process.
+ */
+async function setCurrentResources(app, attributes, resources) {
+    const barData = Object.values(resources);
+    const container = app.element[0].querySelector("div[data-tab='resources'] .bar-container");
+
+    // Remove current bars.
+    container.querySelectorAll(".indent-details").forEach(el => {
+        if (!el.id) return;
+        if (!resources[el.id]) {
+            // Bar no longer exists, flag it for removal in the next update.
+            el.parentElement.hidden = true;
+            el.querySelector("select.brawlbar-attribute").value = "";
+        } else {
+            // Bar still exists, so it will be rerendered.
+            el.parentElement.remove();
+        }
+    });
+
+    if (barData.length === 0) return;
+
+    // Render and insert bars.
+    container.insertAdjacentHTML("afterbegin", await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
+        brawlBars: barData,
+        barAttributes: attributes
+    }));
+    if (container.parentElement.classList.contains("active")) app.setPosition();
+    container.querySelectorAll("select.brawlbar-attribute").forEach(el => refreshValueInput(app.token, el));
+    if (game.system.id === "dnd5e") app._prepareResourceLabels(container);
+}
+
+/**
+ * Creates menu entries for loading resource configurations stored in various locations.
+ * @param {TokenConfig} tokenConfig The token configuration to create the entries for.
+ * @param {object} attributes The bar attributes for rerendering resources.
+ * @returns {object[]} An array of menu entries for loading resources.
+ */
+function createLoadEntries(tokenConfig, attributes) {
+    const actor = tokenConfig.token.actor;
+    if (!actor) return [];
+
+    const entries = [];
+    if (!(tokenConfig instanceof DefaultTokenConfig)) {
+        entries.push({
+            name: "barbrawl.defaults.defaultToken",
+            icon: '<i class="fas fa-cogs"></i>',
+            callback: () => setCurrentResources(tokenConfig, attributes, getDefaultTokenResources()),
+        });
+    }
+
+    entries.push({
+        name: game.i18n.format("barbrawl.defaults.typeDefaults", { type: game.i18n.localize(CONFIG.Actor.typeLabels[actor.type]) }),
+        icon: '<i class="fas fa-users"></i>',
+        callback: () => setCurrentResources(tokenConfig, attributes, getDefaultResources(actor.type, false)),
+    });
+
+    if (!(tokenConfig.token instanceof foundry.data.PrototypeToken)) {
+        entries.push({
+            name: game.i18n.format("barbrawl.defaults.prototypeToken", { name: actor.name }),
+            icon: '<i class="fas fa-user"></i>',
+            callback: () => setCurrentResources(tokenConfig, attributes, actor.prototypeToken.flags?.barbrawl?.resourceBars ?? {}),
+        });
+    }
+
+    return entries;
+}
+
+/**
+ * Retrieves the resource configuration of the global default token.
+ * @returns {object} The default resource configuration for all new tokens.
+ */
+function getDefaultTokenResources() {
+    const defaultTokenData = game.settings.get("core", DefaultTokenConfig.SETTING) ?? {};
+    return defaultTokenData.flags?.barbrawl?.resourceBars ?? {};
 }

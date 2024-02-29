@@ -1,8 +1,15 @@
-2024/02/05-11:08:04.767783 7fb8e8ff9700 Recovering log #142
-2024/02/05-11:08:04.770348 7fb8e8ff9700 Delete type=3 #140
-2024/02/05-11:08:04.770382 7fb8e8ff9700 Delete type=0 #142
-2024/02/08-13:58:19.856381 7fb64bfe3700 Level-0 table #148: started
-2024/02/08-13:58:19.856612 7fb64bfe3700 Level-0 table #148: 0 bytes OK
-2024/02/08-13:58:19.857706 7fb64bfe3700 Delete type=0 #146
-2024/02/08-13:58:19.858012 7fb64bfe3700 Manual compaction at level-0 from '!journal!03GqCKHarRknoFgi' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
-2024/02/08-13:58:19.861402 7fb64bfe3700 Manual compaction at level-1 from '!journal!03GqCKHarRknoFgi' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2024/02/28-11:20:02.058565 7fb8ea7fc700 Recovering log #151
+2024/02/28-11:20:02.061696 7fb8ea7fc700 Delete type=3 #149
+2024/02/28-11:20:02.061760 7fb8ea7fc700 Delete type=0 #151
+2024/02/28-14:10:17.280005 7fb64bfe3700 Level-0 table #157: started
+2024/02/28-14:10:17.281474 7fb64bfe3700 Level-0 table #157: 8978 bytes OK
+2024/02/28-14:10:17.282387 7fb64bfe3700 Delete type=0 #155
+2024/02/28-14:10:17.286779 7fb64bfe3700 Manual compaction at level-0 from '!journal!03GqCKHarRknoFgi' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2024/02/28-14:10:17.287277 7fb64bfe3700 Manual compaction at level-1 from '!journal!03GqCKHarRknoFgi' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal.pages!Iw9XtC0C5keqXJie.sR2o6DmJlJz8uDlx' @ 1550 : 1
+2024/02/28-14:10:17.287290 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2024/02/28-14:10:17.316176 7fb64bfe3700 Generated table #158@1: 822 keys, 1813551 bytes
+2024/02/28-14:10:17.316200 7fb64bfe3700 Compacted 1@1 + 1@2 files => 1813551 bytes
+2024/02/28-14:10:17.317099 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/02/28-14:10:17.317190 7fb64bfe3700 Delete type=2 #153
+2024/02/28-14:10:17.317357 7fb64bfe3700 Delete type=2 #157
+2024/02/28-14:10:17.322824 7fb64bfe3700 Manual compaction at level-1 from '!journal.pages!Iw9XtC0C5keqXJie.sR2o6DmJlJz8uDlx' @ 1550 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
