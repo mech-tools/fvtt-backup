@@ -1,16 +1,3 @@
-2024/02/17-20:57:36.215349 7f27aa7fc700 Recovering log #392
-2024/02/17-20:57:36.215646 7f27aa7fc700 Level-0 table #394: started
-2024/02/17-20:57:36.217256 7f27aa7fc700 Level-0 table #394: 141070 bytes OK
-2024/02/17-20:57:36.219708 7f27aa7fc700 Delete type=3 #391
-2024/02/17-20:57:36.219740 7f27aa7fc700 Delete type=0 #392
-2024/02/26-14:41:12.387582 7f250bfff700 Level-0 table #397: started
-2024/02/26-14:41:12.387847 7f250bfff700 Level-0 table #397: 0 bytes OK
-2024/02/26-14:41:12.389454 7f250bfff700 Delete type=0 #395
-2024/02/26-14:41:12.394120 7f250bfff700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 272 : 1
-2024/02/26-14:41:12.394139 7f250bfff700 Compacting 1@0 + 1@1 files
-2024/02/26-14:41:12.396217 7f250bfff700 Generated table #398@0: 13 keys, 141412 bytes
-2024/02/26-14:41:12.396242 7f250bfff700 Compacted 1@0 + 1@1 files => 141412 bytes
-2024/02/26-14:41:12.397133 7f250bfff700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2024/02/26-14:41:12.397233 7f250bfff700 Delete type=2 #394
-2024/02/26-14:41:12.397343 7f250bfff700 Delete type=2 #384
-2024/02/26-14:41:12.399970 7f250bfff700 Manual compaction at level-0 from '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 272 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2024/03/09-13:19:39.708431 7fa448f70700 Recovering log #485
+2024/03/09-13:19:39.711081 7fa448f70700 Delete type=0 #485
+2024/03/09-13:19:39.711106 7fa448f70700 Delete type=3 #484
