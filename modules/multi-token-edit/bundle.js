@@ -268,6 +268,6918 @@ class $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f {
 
 
 
+
+
+/**
+ * Cross-hair and optional preview image/label that can be activated to allow the user to select
+ * an area on the screen.
+ */ class $2620a6fdb001d88f$export$ba25329847403e11 {
+    static pickerOverlay;
+    static boundStart;
+    static boundEnd;
+    static callback;
+    /**
+   * Activates the picker overlay.
+   * @param {Function} callback callback function with coordinates returned as starting and ending bounds of a rectangles
+   *                            { start: {x1, y1}, end: {x2, y2} }
+   * @param {Object}  preview
+   * @param {String}  preview.documentName (optional) preview placeables document name
+   * @param {Map[String,Array]}  preview.previewData    (req) preview placeables data
+   * @param {String}  preview.taPreview            (optional) Designates the preview placeable when spawning a `Token Attacher` prefab.
+   *                                                e.g. "Tile", "Tile.1", "MeasuredTemplate.3"
+   * @param {Boolean} preview.snap                  (optional) if true returned coordinates will be snapped to grid
+   * @param {String}  preview.label                  (optional) preview placeables document name
+   */ static async activate(callback, preview) {
+        this.destroy();
+        const pickerOverlay = new PIXI.Container();
+        this.callback = callback;
+        if (preview) {
+            let label;
+            if (preview.label) {
+                label = new PreciseText(preview.label, {
+                    ...CONFIG.canvasTextStyle,
+                    _fontSize: 24
+                });
+                label.anchor.set(0.5, 1);
+                pickerOverlay.addChild(label);
+            }
+            const { previews: previews, layer: layer, previewDocuments: previewDocuments } = await this._genPreviews(preview);
+            const setPositions = function(pos) {
+                if (!pos) return;
+                if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
+                for (const preview of previews){
+                    if (preview.document.documentName === "Wall") {
+                        const c = preview.document.c;
+                        c[0] = pos.x + preview._previewOffset[0];
+                        c[1] = pos.y + preview._previewOffset[1];
+                        c[2] = pos.x + preview._previewOffset[2];
+                        c[3] = pos.y + preview._previewOffset[3];
+                        preview.document.c = c;
+                    } else {
+                        preview.document.x = pos.x + preview._previewOffset.x;
+                        preview.document.y = pos.y + preview._previewOffset.y;
+                    }
+                    preview.document.alpha = 0.4;
+                    preview.renderFlags.set({
+                        refresh: true
+                    });
+                    preview.visible = true;
+                    if (preview.controlIcon && !preview.controlIcon._meVInsert) {
+                        preview.controlIcon.alpha = 0.4;
+                        // ControlIcon visibility is difficult to set and keep as true
+                        // Lets hack it by defining a getter that always returns true
+                        Object.defineProperty(preview.controlIcon, "visible", {
+                            get: function() {
+                                return true;
+                            },
+                            set: function() {}
+                        });
+                        preview.controlIcon._meVInsert = true;
+                    }
+                }
+                if (label) {
+                    label.x = pos.x;
+                    label.y = pos.y - 38;
+                }
+                pickerOverlay.previewDocuments = previewDocuments;
+            };
+            pickerOverlay.on("pointermove", (event)=>{
+                setPositions(event.data.getLocalPosition(pickerOverlay));
+            });
+            setPositions(canvas.mousePosition);
+        }
+        pickerOverlay.hitArea = canvas.dimensions.rect;
+        pickerOverlay.cursor = "crosshair";
+        pickerOverlay.interactive = true;
+        pickerOverlay.zIndex = Infinity;
+        pickerOverlay.on("remove", ()=>pickerOverlay.off("pick"));
+        pickerOverlay.on("mousedown", (event)=>{
+            $2620a6fdb001d88f$export$ba25329847403e11.boundStart = event.data.getLocalPosition(pickerOverlay);
+        });
+        pickerOverlay.on("mouseup", (event)=>$2620a6fdb001d88f$export$ba25329847403e11.boundEnd = event.data.getLocalPosition(pickerOverlay));
+        pickerOverlay.on("click", (event)=>{
+            if (event.nativeEvent.which == 2) this.callback?.(null);
+            else this.callback?.({
+                start: this.boundStart,
+                end: this.boundEnd
+            });
+            pickerOverlay.parent.removeChild(pickerOverlay);
+            if (pickerOverlay.previewDocuments) pickerOverlay.previewDocuments.forEach((name)=>canvas.getLayerByEmbeddedName(name)?.clearPreviewContainer());
+            this.destroy();
+        });
+        this.pickerOverlay = pickerOverlay;
+        canvas.stage.addChild(this.pickerOverlay);
+    }
+    static destroy() {
+        if (this.pickerOverlay) {
+            canvas.stage.removeChild(this.pickerOverlay);
+            this.pickerOverlay.destroy(true);
+            this.pickerOverlay.children?.forEach((c)=>c.destroy(true));
+            this.callback?.(null);
+            this.pickerOverlay = null;
+            this.callback = null;
+        }
+    }
+    // Modified Foundry _createPreview
+    // Does not throw warning if user lacks document create permissions
+    static async _createPreview(createData) {
+        const documentName = this.constructor.documentName;
+        const cls = getDocumentClass(documentName);
+        createData._id = foundry.utils.randomID(); // Needed to allow rendering of multiple previews at the same time
+        const document = new cls(createData, {
+            parent: canvas.scene
+        });
+        const object = new CONFIG[documentName].objectClass(document);
+        this.preview.addChild(object);
+        await object.draw();
+        return object;
+    }
+    static async _genPreviews(preview) {
+        if (!preview.previewData) return {
+            previews: []
+        };
+        const previewDocuments = new Set();
+        const previews = [];
+        let mainPreviewX;
+        let mainPreviewY;
+        for (const [documentName, dataArr] of preview.previewData.entries()){
+            const layer = canvas.getLayerByEmbeddedName(documentName);
+            for (const data of dataArr){
+                // Create Preview
+                const previewObject = await this._createPreview.call(layer, deepClone(data));
+                previews.push(previewObject);
+                previewDocuments.add(documentName);
+                // Determine point around which other previews are to be placed
+                if (mainPreviewX == null) {
+                    if (documentName === "Wall") {
+                        if (data.c != null) {
+                            mainPreviewX = previewObject.document.c[0];
+                            mainPreviewY = previewObject.document.c[1];
+                        }
+                    } else if (data.x != null && data.y != null) {
+                        mainPreviewX = previewObject.document.x;
+                        mainPreviewY = previewObject.document.y;
+                    }
+                }
+                // Calculate offset from first preview
+                if (documentName === "Wall") {
+                    const off = [
+                        previewObject.document.c[0] - (mainPreviewX ?? 0),
+                        previewObject.document.c[1] - (mainPreviewY ?? 0),
+                        previewObject.document.c[2] - (mainPreviewX ?? 0),
+                        previewObject.document.c[3] - (mainPreviewY ?? 0)
+                    ];
+                    previewObject._previewOffset = off;
+                } else previewObject._previewOffset = {
+                    x: previewObject.document.x - (mainPreviewX ?? 0),
+                    y: previewObject.document.y - (mainPreviewY ?? 0)
+                };
+                if (preview.taPreview && documentName === "Token") {
+                    const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
+                    documentNames.forEach((dName)=>previewDocuments.add(dName));
+                }
+            }
+        }
+        return {
+            previews: previews,
+            layer: canvas.getLayerByEmbeddedName(preview.documentName),
+            previewDocuments: previewDocuments
+        };
+    }
+    static _parseTAPreview(taPreview, attached) {
+        if (taPreview === "ALL") return attached;
+        const attachedData = {};
+        taPreview = taPreview.split(",");
+        for (const taIndex of taPreview){
+            let [name, index] = taIndex.trim().split(".");
+            if (!attached[name]) continue;
+            if (index == null) attachedData[name] = attached[name];
+            else if (attached[name][index]) {
+                if (!attachedData[name]) attachedData[name] = [];
+                attachedData[name].push(attached[name][index]);
+            }
+        }
+        return attachedData;
+    }
+    static async _genTAPreviews(data, taPreview, parent, previews) {
+        if (!game.modules.get("token-attacher")?.active) return [];
+        const attached = getProperty(data, "flags.token-attacher.prototypeAttached");
+        const pos = getProperty(data, "flags.token-attacher.pos");
+        const grid = getProperty(data, "flags.token-attacher.grid");
+        if (!(attached && pos && grid)) return [];
+        const documentNames = new Set();
+        const ratio = canvas.grid.size / grid.size;
+        const attachedData = this._parseTAPreview(taPreview, attached);
+        for (const [name, dataList] of Object.entries(attachedData))for (const data of dataList){
+            if ([
+                "Token",
+                "Tile",
+                "Drawing"
+            ].includes(name)) {
+                data.width *= ratio;
+                data.height *= ratio;
+            }
+            const taPreviewObject = await this._createPreview.call(canvas.getLayerByEmbeddedName(name), data);
+            documentNames.add(name);
+            previews.push(taPreviewObject);
+            // Calculate offset from parent preview
+            if (name === "Wall") taPreviewObject._previewOffset = [
+                (data.c[0] - pos.xy.x) * ratio + parent._previewOffset.x,
+                (data.c[1] - pos.xy.y) * ratio + parent._previewOffset.y,
+                (data.c[2] - pos.xy.x) * ratio + parent._previewOffset.x,
+                (data.c[3] - pos.xy.y) * ratio + parent._previewOffset.y
+            ];
+            else taPreviewObject._previewOffset = {
+                x: (data.x - pos.xy.x) * ratio + parent._previewOffset.x,
+                y: (data.y - pos.xy.y) * ratio + parent._previewOffset.y
+            };
+        }
+        return documentNames;
+    }
+}
+
+
+// MIT License
+// Original Library
+//   - Copyright (c) Marak Squires
+// Additional Functionality
+//  - Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+// A is m x n. B is n x p. product is m x p.
+function $2dca407f99b477df$var$multiplyMatrices(A, B) {
+    let m = A.length;
+    if (!Array.isArray(A[0])) // A is vector, convert to [[a, b, c, ...]]
+    A = [
+        A
+    ];
+    if (!Array.isArray(B[0])) // B is vector, convert to [[a], [b], [c], ...]]
+    B = B.map((x)=>[
+            x
+        ]);
+    let p = B[0].length;
+    let B_cols = B[0].map((_, i)=>B.map((x)=>x[i])); // transpose B
+    let product = A.map((row)=>B_cols.map((col)=>{
+            let ret = 0;
+            if (!Array.isArray(row)) {
+                for (let c of col)ret += row * c;
+                return ret;
+            }
+            for(let i = 0; i < row.length; i++)ret += row[i] * (col[i] || 0);
+            return ret;
+        }));
+    if (m === 1) product = product[0]; // Avoid [[a, b, c, ...]]
+    if (p === 1) return product.map((x)=>x[0]); // Avoid [[a], [b], [c], ...]]
+    return product;
+}
+/**
+ * Various utility functions
+ */ /**
+ * Check if a value is a string (including a String object)
+ * @param {*} str - Value to check
+ * @returns {boolean}
+ */ function $2dca407f99b477df$var$isString(str) {
+    return $2dca407f99b477df$var$type(str) === "string";
+}
+/**
+ * Determine the internal JavaScript [[Class]] of an object.
+ * @param {*} o - Value to check
+ * @returns {string}
+ */ function $2dca407f99b477df$var$type(o) {
+    let str = Object.prototype.toString.call(o);
+    return (str.match(/^\[object\s+(.*?)\]$/)[1] || "").toLowerCase();
+}
+/**
+ * Round a number to a certain number of significant digits
+ * @param {number} n - The number to round
+ * @param {number} precision - Number of significant digits
+ */ function $2dca407f99b477df$var$toPrecision(n, precision) {
+    n = +n;
+    precision = +precision;
+    let integerLength = (Math.floor(n) + "").length;
+    if (precision > integerLength) return +n.toFixed(precision - integerLength);
+    else {
+        let p10 = 10 ** (integerLength - precision);
+        return Math.round(n / p10) * p10;
+    }
+}
+/**
+ * Parse a CSS function, regardless of its name and arguments
+ * @param String str String to parse
+ * @return {{name, args, rawArgs}}
+ */ function $2dca407f99b477df$var$parseFunction(str) {
+    if (!str) return;
+    str = str.trim();
+    const isFunctionRegex = /^([a-z]+)\((.+?)\)$/i;
+    const isNumberRegex = /^-?[\d.]+$/;
+    let parts = str.match(isFunctionRegex);
+    if (parts) {
+        // It is a function, parse args
+        let args = [];
+        parts[2].replace(/\/?\s*([-\w.]+(?:%|deg)?)/g, ($0, arg)=>{
+            if (/%$/.test(arg)) {
+                // Convert percentages to 0-1 numbers
+                arg = new Number(arg.slice(0, -1) / 100);
+                arg.type = "<percentage>";
+            } else if (/deg$/.test(arg)) {
+                // Drop deg from degrees and convert to number
+                // TODO handle other units too
+                arg = new Number(+arg.slice(0, -3));
+                arg.type = "<angle>";
+                arg.unit = "deg";
+            } else if (isNumberRegex.test(arg)) {
+                // Convert numerical args to numbers
+                arg = new Number(arg);
+                arg.type = "<number>";
+            }
+            if ($0.startsWith("/")) {
+                // It's alpha
+                arg = arg instanceof Number ? arg : new Number(arg);
+                arg.alpha = true;
+            }
+            args.push(arg);
+        });
+        return {
+            name: parts[1].toLowerCase(),
+            rawName: parts[1],
+            rawArgs: parts[2],
+            args: // An argument could be (as of css-color-4):
+            // a number, percentage, degrees (hue), ident (in color())
+            args
+        };
+    }
+}
+function $2dca407f99b477df$var$last(arr) {
+    return arr[arr.length - 1];
+}
+function $2dca407f99b477df$var$interpolate(start, end, p) {
+    if (isNaN(start)) return end;
+    if (isNaN(end)) return start;
+    return start + (end - start) * p;
+}
+function $2dca407f99b477df$var$interpolateInv(start, end, value1) {
+    return (value1 - start) / (end - start);
+}
+function $2dca407f99b477df$var$mapRange(from, to, value1) {
+    return $2dca407f99b477df$var$interpolate(to[0], to[1], $2dca407f99b477df$var$interpolateInv(from[0], from[1], value1));
+}
+function $2dca407f99b477df$var$parseCoordGrammar(coordGrammars) {
+    return coordGrammars.map((coordGrammar)=>{
+        return coordGrammar.split("|").map((type)=>{
+            type = type.trim();
+            let range = type.match(/^(<[a-z]+>)\[(-?[.\d]+),\s*(-?[.\d]+)\]?$/);
+            if (range) {
+                let ret = new String(range[1]);
+                ret.range = [
+                    +range[2],
+                    +range[3]
+                ];
+                return ret;
+            }
+            return type;
+        });
+    });
+}
+var $2dca407f99b477df$var$util = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    isString: $2dca407f99b477df$var$isString,
+    type: $2dca407f99b477df$var$type,
+    toPrecision: $2dca407f99b477df$var$toPrecision,
+    parseFunction: $2dca407f99b477df$var$parseFunction,
+    last: $2dca407f99b477df$var$last,
+    interpolate: $2dca407f99b477df$var$interpolate,
+    interpolateInv: $2dca407f99b477df$var$interpolateInv,
+    mapRange: $2dca407f99b477df$var$mapRange,
+    parseCoordGrammar: $2dca407f99b477df$var$parseCoordGrammar,
+    multiplyMatrices: $2dca407f99b477df$var$multiplyMatrices
+});
+/**
+ * A class for adding deep extensibility to any piece of JS code
+ */ class $2dca407f99b477df$var$Hooks {
+    add(name, callback, first) {
+        if (typeof arguments[0] != "string") {
+            // Multiple hooks
+            for(var name in arguments[0])this.add(name, arguments[0][name], arguments[1]);
+            return;
+        }
+        (Array.isArray(name) ? name : [
+            name
+        ]).forEach(function(name) {
+            this[name] = this[name] || [];
+            if (callback) this[name][first ? "unshift" : "push"](callback);
+        }, this);
+    }
+    run(name, env) {
+        this[name] = this[name] || [];
+        this[name].forEach(function(callback) {
+            callback.call(env && env.context ? env.context : env, env);
+        });
+    }
+}
+/**
+ * The instance of {@link Hooks} used throughout Color.js
+ */ const $2dca407f99b477df$var$hooks = new $2dca407f99b477df$var$Hooks();
+// Global defaults one may want to configure
+var $2dca407f99b477df$var$defaults = {
+    gamut_mapping: "lch.c",
+    precision: 5,
+    deltaE: "76"
+};
+const $2dca407f99b477df$var$WHITES = {
+    // for compatibility, the four-digit chromaticity-derived ones everyone else uses
+    D50: [
+        0.3457 / 0.3585,
+        1.0,
+        0.8251046025104602
+    ],
+    D65: [
+        0.3127 / 0.329,
+        1.0,
+        1.0890577507598784
+    ]
+};
+function $2dca407f99b477df$var$getWhite(name) {
+    if (Array.isArray(name)) return name;
+    return $2dca407f99b477df$var$WHITES[name];
+}
+// Adapt XYZ from white point W1 to W2
+function $2dca407f99b477df$var$adapt$1(W1, W2, XYZ, options = {}) {
+    W1 = $2dca407f99b477df$var$getWhite(W1);
+    W2 = $2dca407f99b477df$var$getWhite(W2);
+    if (!W1 || !W2) throw new TypeError(`Missing white point to convert ${!W1 ? "from" : ""}${!W1 && !W2 ? "/" : ""}${!W2 ? "to" : ""}`);
+    if (W1 === W2) // Same whitepoints, no conversion needed
+    return XYZ;
+    let env = {
+        W1: W1,
+        W2: W2,
+        XYZ: XYZ,
+        options: options
+    };
+    $2dca407f99b477df$var$hooks.run("chromatic-adaptation-start", env);
+    if (!env.M) {
+        if (env.W1 === $2dca407f99b477df$var$WHITES.D65 && env.W2 === $2dca407f99b477df$var$WHITES.D50) env.M = [
+            [
+                1.0479298208405488,
+                0.022946793341019088,
+                -0.05019222954313557
+            ],
+            [
+                0.029627815688159344,
+                0.990434484573249,
+                -0.01707382502938514
+            ],
+            [
+                -0.009243058152591178,
+                0.015055144896577895,
+                0.7518742899580008
+            ]
+        ];
+        else if (env.W1 === $2dca407f99b477df$var$WHITES.D50 && env.W2 === $2dca407f99b477df$var$WHITES.D65) env.M = [
+            [
+                0.9554734527042182,
+                -0.023098536874261423,
+                0.0632593086610217
+            ],
+            [
+                -0.028369706963208136,
+                1.0099954580058226,
+                0.021041398966943008
+            ],
+            [
+                0.012314001688319899,
+                -0.020507696433477912,
+                1.3303659366080753
+            ]
+        ];
+    }
+    $2dca407f99b477df$var$hooks.run("chromatic-adaptation-end", env);
+    if (env.M) return $2dca407f99b477df$var$multiplyMatrices(env.M, env.XYZ);
+    else throw new TypeError("Only Bradford CAT with white points D50 and D65 supported for now.");
+}
+const $2dca407f99b477df$var$ε$4 = 0.000075;
+/**
+ * Class to represent a color space
+ */ class $2dca407f99b477df$var$ColorSpace {
+    constructor(options){
+        this.id = options.id;
+        this.name = options.name;
+        this.base = options.base ? $2dca407f99b477df$var$ColorSpace.get(options.base) : null;
+        this.aliases = options.aliases;
+        if (this.base) {
+            this.fromBase = options.fromBase;
+            this.toBase = options.toBase;
+        }
+        // Coordinate metadata
+        let coords = options.coords ?? this.base.coords;
+        this.coords = coords;
+        // White point
+        let white = options.white ?? this.base.white ?? "D65";
+        this.white = $2dca407f99b477df$var$getWhite(white);
+        // Sort out formats
+        this.formats = options.formats ?? {};
+        for(let name in this.formats){
+            let format = this.formats[name];
+            format.type ||= "function";
+            format.name ||= name;
+        }
+        if (options.cssId && !this.formats.functions?.color) {
+            this.formats.color = {
+                id: options.cssId
+            };
+            Object.defineProperty(this, "cssId", {
+                value: options.cssId
+            });
+        } else if (this.formats?.color && !this.formats?.color.id) this.formats.color.id = this.id;
+        // Other stuff
+        this.referred = options.referred;
+        // Compute ancestors and store them, since they will never change
+        this.#path = this.#getPath().reverse();
+        $2dca407f99b477df$var$hooks.run("colorspace-init-end", this);
+    }
+    inGamut(coords, { epsilon: epsilon = $2dca407f99b477df$var$ε$4 } = {}) {
+        if (this.isPolar) {
+            // Do not check gamut through polar coordinates
+            coords = this.toBase(coords);
+            return this.base.inGamut(coords, {
+                epsilon: epsilon
+            });
+        }
+        let coordMeta = Object.values(this.coords);
+        return coords.every((c, i)=>{
+            let meta = coordMeta[i];
+            if (meta.type !== "angle" && meta.range) {
+                if (Number.isNaN(c)) // NaN is always in gamut
+                return true;
+                let [min, max] = meta.range;
+                return (min === undefined || c >= min - epsilon) && (max === undefined || c <= max + epsilon);
+            }
+            return true;
+        });
+    }
+    get cssId() {
+        return this.formats.functions?.color?.id || this.id;
+    }
+    get isPolar() {
+        for(let id in this.coords){
+            if (this.coords[id].type === "angle") return true;
+        }
+        return false;
+    }
+    #processFormat(format) {
+        if (format.coords && !format.coordGrammar) {
+            format.type ||= "function";
+            format.name ||= "color";
+            // Format has not been processed
+            format.coordGrammar = $2dca407f99b477df$var$parseCoordGrammar(format.coords);
+            let coordFormats = Object.entries(this.coords).map(([id, coordMeta], i)=>{
+                // Preferred format for each coord is the first one
+                let outputType = format.coordGrammar[i][0];
+                let fromRange = coordMeta.range || coordMeta.refRange;
+                let toRange = outputType.range, suffix = "";
+                // Non-strict equals intentional since outputType could be a string object
+                if (outputType == "<percentage>") {
+                    toRange = [
+                        0,
+                        100
+                    ];
+                    suffix = "%";
+                } else if (outputType == "<angle>") suffix = "deg";
+                return {
+                    fromRange: fromRange,
+                    toRange: toRange,
+                    suffix: suffix
+                };
+            });
+            format.serializeCoords = (coords, precision)=>{
+                return coords.map((c, i)=>{
+                    let { fromRange: fromRange, toRange: toRange, suffix: suffix } = coordFormats[i];
+                    if (fromRange && toRange) c = $2dca407f99b477df$var$mapRange(fromRange, toRange, c);
+                    c = $2dca407f99b477df$var$toPrecision(c, precision);
+                    if (suffix) c += suffix;
+                    return c;
+                });
+            };
+        }
+        return format;
+    }
+    getFormat(format) {
+        if (typeof format === "object") {
+            format = this.#processFormat(format);
+            return format;
+        }
+        let ret;
+        if (format === "default") // Get first format
+        ret = Object.values(this.formats)[0];
+        else ret = this.formats[format];
+        if (ret) {
+            ret = this.#processFormat(ret);
+            return ret;
+        }
+        return null;
+    }
+    #path;
+    #getPath() {
+        let ret = [
+            this
+        ];
+        for(let space = this; space = space.base;)ret.push(space);
+        return ret;
+    }
+    to(space, coords) {
+        if (arguments.length === 1) [space, coords] = [
+            space.space,
+            space.coords
+        ];
+        space = $2dca407f99b477df$var$ColorSpace.get(space);
+        if (this === space) // Same space, no change needed
+        return coords;
+        // Convert NaN to 0, which seems to be valid in every coordinate of every color space
+        coords = coords.map((c)=>Number.isNaN(c) ? 0 : c);
+        // Find connection space = lowest common ancestor in the base tree
+        let myPath = this.#path;
+        let otherPath = space.#path;
+        let connectionSpace, connectionSpaceIndex;
+        for(let i = 0; i < myPath.length; i++){
+            if (myPath[i] === otherPath[i]) {
+                connectionSpace = myPath[i];
+                connectionSpaceIndex = i;
+            } else break;
+        }
+        if (!connectionSpace) // This should never happen
+        throw new Error(`Cannot convert between color spaces ${this} and ${space}: no connection space was found`);
+        // Go up from current space to connection space
+        for(let i = myPath.length - 1; i > connectionSpaceIndex; i--)coords = myPath[i].toBase(coords);
+        // Go down from connection space to target space
+        for(let i = connectionSpaceIndex + 1; i < otherPath.length; i++)coords = otherPath[i].fromBase(coords);
+        return coords;
+    }
+    from(space, coords) {
+        if (arguments.length === 1) [space, coords] = [
+            space.space,
+            space.coords
+        ];
+        space = $2dca407f99b477df$var$ColorSpace.get(space);
+        return space.to(this, coords);
+    }
+    toString() {
+        return `${this.name} (${this.id})`;
+    }
+    getMinCoords() {
+        let ret = [];
+        for(let id in this.coords){
+            let meta = this.coords[id];
+            let range = meta.range || meta.refRange;
+            ret.push(range?.min ?? 0);
+        }
+        return ret;
+    }
+    static registry = {};
+    // Returns array of unique color spaces
+    static get all() {
+        return [
+            ...new Set(Object.values($2dca407f99b477df$var$ColorSpace.registry))
+        ];
+    }
+    static register(id, space) {
+        if (arguments.length === 1) {
+            space = arguments[0];
+            id = space.id;
+        }
+        space = this.get(space);
+        if (this.registry[id] && this.registry[id] !== space) throw new Error(`Duplicate color space registration: '${id}'`);
+        this.registry[id] = space;
+        // Register aliases when called without an explicit ID.
+        if (arguments.length === 1 && space.aliases) for (let alias of space.aliases)this.register(alias, space);
+        return space;
+    }
+    /**
+   * Lookup ColorSpace object by name
+   * @param {ColorSpace | string} name
+   */ static get(space, ...alternatives) {
+        if (!space || space instanceof $2dca407f99b477df$var$ColorSpace) return space;
+        let argType = $2dca407f99b477df$var$type(space);
+        if (argType === "string") {
+            // It's a color space id
+            let ret = $2dca407f99b477df$var$ColorSpace.registry[space.toLowerCase()];
+            if (!ret) throw new TypeError(`No color space found with id = "${space}"`);
+            return ret;
+        }
+        if (alternatives.length) return $2dca407f99b477df$var$ColorSpace.get(...alternatives);
+        throw new TypeError(`${space} is not a valid color space`);
+    }
+    /**
+   * Get metadata about a coordinate of a color space
+   *
+   * @static
+   * @param {Array | string} ref
+   * @param {ColorSpace | string} [workingSpace]
+   * @return {Object}
+   */ static resolveCoord(ref, workingSpace) {
+        let coordType = $2dca407f99b477df$var$type(ref);
+        let space, coord;
+        if (coordType === "string") {
+            if (ref.includes(".")) // Absolute coordinate
+            [space, coord] = ref.split(".");
+            else // Relative coordinate
+            [space, coord] = [
+                ,
+                ref
+            ];
+        } else if (Array.isArray(ref)) [space, coord] = ref;
+        else {
+            // Object
+            space = ref.space;
+            coord = ref.coordId;
+        }
+        space = $2dca407f99b477df$var$ColorSpace.get(space);
+        if (!space) space = workingSpace;
+        if (!space) throw new TypeError(`Cannot resolve coordinate reference ${ref}: No color space specified and relative references are not allowed here`);
+        coordType = $2dca407f99b477df$var$type(coord);
+        if (coordType === "number" || coordType === "string" && coord >= 0) {
+            // Resolve numerical coord
+            let meta = Object.entries(space.coords)[coord];
+            if (meta) return {
+                space: space,
+                id: meta[0],
+                index: coord,
+                ...meta[1]
+            };
+        }
+        space = $2dca407f99b477df$var$ColorSpace.get(space);
+        let normalizedCoord = coord.toLowerCase();
+        let i = 0;
+        for(let id in space.coords){
+            let meta = space.coords[id];
+            if (id.toLowerCase() === normalizedCoord || meta.name?.toLowerCase() === normalizedCoord) return {
+                space: space,
+                id: id,
+                index: i,
+                ...meta
+            };
+            i++;
+        }
+        throw new TypeError(`No "${coord}" coordinate found in ${space.name}. Its coordinates are: ${Object.keys(space.coords).join(", ")}`);
+    }
+    static DEFAULT_FORMAT = {
+        type: "functions",
+        name: "color"
+    };
+}
+var $2dca407f99b477df$var$XYZ_D65 = new $2dca407f99b477df$var$ColorSpace({
+    id: "xyz-d65",
+    name: "XYZ D65",
+    coords: {
+        x: {
+            name: "X"
+        },
+        y: {
+            name: "Y"
+        },
+        z: {
+            name: "Z"
+        }
+    },
+    white: "D65",
+    formats: {
+        color: {
+            ids: [
+                "xyz-d65",
+                "xyz"
+            ]
+        }
+    },
+    aliases: [
+        "xyz"
+    ]
+});
+/**
+ * Convenience class for RGB color spaces
+ * @extends {ColorSpace}
+ */ class $2dca407f99b477df$var$RGBColorSpace extends $2dca407f99b477df$var$ColorSpace {
+    /**
+   * Creates a new RGB ColorSpace.
+   * If coords are not specified, they will use the default RGB coords.
+   * Instead of `fromBase()` and `toBase()` functions,
+   * you can specify to/from XYZ matrices and have `toBase()` and `fromBase()` automatically generated.
+   * @param {*} options - Same options as {@link ColorSpace} plus:
+   * @param {number[][]} options.toXYZ_M - Matrix to convert to XYZ
+   * @param {number[][]} options.fromXYZ_M - Matrix to convert from XYZ
+   */ constructor(options){
+        if (!options.coords) options.coords = {
+            r: {
+                range: [
+                    0,
+                    1
+                ],
+                name: "Red"
+            },
+            g: {
+                range: [
+                    0,
+                    1
+                ],
+                name: "Green"
+            },
+            b: {
+                range: [
+                    0,
+                    1
+                ],
+                name: "Blue"
+            }
+        };
+        if (!options.base) options.base = $2dca407f99b477df$var$XYZ_D65;
+        if (options.toXYZ_M && options.fromXYZ_M) {
+            options.toBase ??= (rgb)=>{
+                let xyz = $2dca407f99b477df$var$multiplyMatrices(options.toXYZ_M, rgb);
+                if (this.white !== this.base.white) // Perform chromatic adaptation
+                xyz = $2dca407f99b477df$var$adapt$1(this.white, this.base.white, xyz);
+                return xyz;
+            };
+            options.fromBase ??= (xyz)=>{
+                xyz = $2dca407f99b477df$var$adapt$1(this.base.white, this.white, xyz);
+                return $2dca407f99b477df$var$multiplyMatrices(options.fromXYZ_M, xyz);
+            };
+        }
+        options.referred ??= "display";
+        super(options);
+    }
+}
+// CSS color to Color object
+function $2dca407f99b477df$var$parse(str) {
+    let env = {
+        str: String(str)?.trim()
+    };
+    $2dca407f99b477df$var$hooks.run("parse-start", env);
+    if (env.color) return env.color;
+    env.parsed = $2dca407f99b477df$var$parseFunction(env.str);
+    if (env.parsed) {
+        // Is a functional syntax
+        let name = env.parsed.name;
+        if (name === "color") {
+            // color() function
+            let id = env.parsed.args.shift();
+            let alpha = env.parsed.rawArgs.indexOf("/") > 0 ? env.parsed.args.pop() : 1;
+            for (let space of $2dca407f99b477df$var$ColorSpace.all){
+                let colorSpec = space.getFormat("color");
+                if (colorSpec) {
+                    if (id === colorSpec.id || colorSpec.ids?.includes(id)) {
+                        // From https://drafts.csswg.org/css-color-4/#color-function
+                        // If more <number>s or <percentage>s are provided than parameters that the colorspace takes, the excess <number>s at the end are ignored.
+                        // If less <number>s or <percentage>s are provided than parameters that the colorspace takes, the missing parameters default to 0. (This is particularly convenient for multichannel printers where the additional inks are spot colors or varnishes that most colors on the page won’t use.)
+                        let argCount = Object.keys(space.coords).length;
+                        let coords = Array(argCount).fill(0);
+                        coords.forEach((_, i)=>coords[i] = env.parsed.args[i] || 0);
+                        return {
+                            spaceId: space.id,
+                            coords: coords,
+                            alpha: alpha
+                        };
+                    }
+                }
+            }
+            // Not found
+            let didYouMean = "";
+            if (id in $2dca407f99b477df$var$ColorSpace.registry) {
+                // Used color space id instead of color() id, these are often different
+                let cssId = $2dca407f99b477df$var$ColorSpace.registry[id].formats?.functions?.color?.id;
+                if (cssId) didYouMean = `Did you mean color(${cssId})?`;
+            }
+            throw new TypeError(`Cannot parse color(${id}). ` + (didYouMean || "Missing a plugin?"));
+        } else for (let space of $2dca407f99b477df$var$ColorSpace.all){
+            // color space specific function
+            let format = space.getFormat(name);
+            if (format && format.type === "function") {
+                let alpha = 1;
+                if (format.lastAlpha || $2dca407f99b477df$var$last(env.parsed.args).alpha) alpha = env.parsed.args.pop();
+                let coords = env.parsed.args;
+                if (format.coordGrammar) Object.entries(space.coords).forEach(([id, coordMeta], i)=>{
+                    let coordGrammar = format.coordGrammar[i];
+                    let providedType = coords[i]?.type;
+                    // Find grammar alternative that matches the provided type
+                    // Non-strict equals is intentional because we are comparing w/ string objects
+                    coordGrammar = coordGrammar.find((c)=>c == providedType);
+                    // Check that each coord conforms to its grammar
+                    if (!coordGrammar) {
+                        // Type does not exist in the grammar, throw
+                        let coordName = coordMeta.name || id;
+                        throw new TypeError(`${providedType} not allowed for ${coordName} in ${name}()`);
+                    }
+                    let fromRange = coordGrammar.range;
+                    if (providedType === "<percentage>") fromRange ||= [
+                        0,
+                        1
+                    ];
+                    let toRange = coordMeta.range || coordMeta.refRange;
+                    if (fromRange && toRange) coords[i] = $2dca407f99b477df$var$mapRange(fromRange, toRange, coords[i]);
+                });
+                return {
+                    spaceId: space.id,
+                    coords: coords,
+                    alpha: alpha
+                };
+            }
+        }
+    } else {
+        // Custom, colorspace-specific format
+        for (let space of $2dca407f99b477df$var$ColorSpace.all)for(let formatId in space.formats){
+            let format = space.formats[formatId];
+            if (format.type !== "custom") continue;
+            if (format.test && !format.test(env.str)) continue;
+            let color = format.parse(env.str);
+            if (color) {
+                color.alpha ??= 1;
+                return color;
+            }
+        }
+    }
+    // If we're here, we couldn't parse
+    throw new TypeError(`Could not parse ${str} as a color. Missing a plugin?`);
+}
+/**
+ * Resolves a color reference (object or string) to a plain color object
+ * @param {Color | {space, coords, alpha} | string} color
+ * @returns {{space, coords, alpha}}
+ */ function $2dca407f99b477df$var$getColor(color) {
+    if (!color) throw new TypeError("Empty color reference");
+    if ($2dca407f99b477df$var$isString(color)) color = $2dca407f99b477df$var$parse(color);
+    // Object fixup
+    let space = color.space || color.spaceId;
+    if (!(space instanceof $2dca407f99b477df$var$ColorSpace)) // Convert string id to color space object
+    color.space = $2dca407f99b477df$var$ColorSpace.get(space);
+    if (color.alpha === undefined) color.alpha = 1;
+    return color;
+}
+/**
+ * Get the coordinates of a color in another color space
+ *
+ * @param {string | ColorSpace} space
+ * @returns {number[]}
+ */ function $2dca407f99b477df$var$getAll(color, space) {
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    return space.from(color);
+}
+function $2dca407f99b477df$var$get(color, prop) {
+    let { space: space, index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord(prop, color.space);
+    let coords = $2dca407f99b477df$var$getAll(color, space);
+    return coords[index];
+}
+function $2dca407f99b477df$var$setAll(color, space, coords) {
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    color.coords = space.to(color.space, coords);
+    return color;
+}
+// Set properties and return current instance
+function $2dca407f99b477df$var$set$1(color, prop, value1) {
+    color = $2dca407f99b477df$var$getColor(color);
+    if (arguments.length === 2 && $2dca407f99b477df$var$type(arguments[1]) === "object") {
+        // Argument is an object literal
+        let object = arguments[1];
+        for(let p in object)$2dca407f99b477df$var$set$1(color, p, object[p]);
+    } else {
+        if (typeof value1 === "function") value1 = value1($2dca407f99b477df$var$get(color, prop));
+        let { space: space, index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord(prop, color.space);
+        let coords = $2dca407f99b477df$var$getAll(color, space);
+        coords[index] = value1;
+        $2dca407f99b477df$var$setAll(color, space, coords);
+    }
+    return color;
+}
+var $2dca407f99b477df$var$XYZ_D50 = new $2dca407f99b477df$var$ColorSpace({
+    id: "xyz-d50",
+    name: "XYZ D50",
+    white: "D50",
+    base: $2dca407f99b477df$var$XYZ_D65,
+    fromBase: (coords)=>$2dca407f99b477df$var$adapt$1($2dca407f99b477df$var$XYZ_D65.white, "D50", coords),
+    toBase: (coords)=>$2dca407f99b477df$var$adapt$1("D50", $2dca407f99b477df$var$XYZ_D65.white, coords),
+    formats: {
+        color: {}
+    }
+});
+// κ * ε  = 2^3 = 8
+const $2dca407f99b477df$var$ε$3 = 216 / 24389; // 6^3/29^3 == (24/116)^3
+const $2dca407f99b477df$var$ε3$1 = 24 / 116;
+const $2dca407f99b477df$var$κ$1 = 24389 / 27; // 29^3/3^3
+let $2dca407f99b477df$var$white$1 = $2dca407f99b477df$var$WHITES.D50;
+var $2dca407f99b477df$var$lab = new $2dca407f99b477df$var$ColorSpace({
+    id: "lab",
+    name: "Lab",
+    coords: {
+        l: {
+            refRange: [
+                0,
+                100
+            ],
+            name: "L"
+        },
+        a: {
+            refRange: [
+                -125,
+                125
+            ]
+        },
+        b: {
+            refRange: [
+                -125,
+                125
+            ]
+        }
+    },
+    // Assuming XYZ is relative to D50, convert to CIE Lab
+    // from CIE standard, which now defines these as a rational fraction
+    white: $2dca407f99b477df$var$white$1,
+    base: $2dca407f99b477df$var$XYZ_D50,
+    // Convert D50-adapted XYX to Lab
+    //  CIE 15.3:2004 section 8.2.1.1
+    fromBase (XYZ) {
+        // compute xyz, which is XYZ scaled relative to reference white
+        let xyz = XYZ.map((value1, i)=>value1 / $2dca407f99b477df$var$white$1[i]);
+        // now compute f
+        let f = xyz.map((value1)=>value1 > $2dca407f99b477df$var$ε$3 ? Math.cbrt(value1) : ($2dca407f99b477df$var$κ$1 * value1 + 16) / 116);
+        return [
+            116 * f[1] - 16,
+            500 * (f[0] - f[1]),
+            200 * (f[1] - f[2])
+        ];
+    },
+    // Convert Lab to D50-adapted XYZ
+    // Same result as CIE 15.3:2004 Appendix D although the derivation is different
+    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+    toBase (Lab) {
+        // compute f, starting with the luminance-related term
+        let f = [];
+        f[1] = (Lab[0] + 16) / 116;
+        f[0] = Lab[1] / 500 + f[1];
+        f[2] = f[1] - Lab[2] / 200;
+        // compute xyz
+        let xyz = [
+            f[0] > $2dca407f99b477df$var$ε3$1 ? Math.pow(f[0], 3) : (116 * f[0] - 16) / $2dca407f99b477df$var$κ$1,
+            Lab[0] > 8 ? Math.pow((Lab[0] + 16) / 116, 3) : Lab[0] / $2dca407f99b477df$var$κ$1,
+            f[2] > $2dca407f99b477df$var$ε3$1 ? Math.pow(f[2], 3) : (116 * f[2] - 16) / $2dca407f99b477df$var$κ$1
+        ];
+        // Compute XYZ by scaling xyz by reference white
+        return xyz.map((value1, i)=>value1 * $2dca407f99b477df$var$white$1[i]);
+    },
+    formats: {
+        lab: {
+            coords: [
+                "<percentage> | <number>",
+                "<number>",
+                "<number>"
+            ]
+        }
+    }
+});
+function $2dca407f99b477df$var$constrain(angle) {
+    return (angle % 360 + 360) % 360;
+}
+function $2dca407f99b477df$var$adjust(arc, angles) {
+    if (arc === "raw") return angles;
+    let [a1, a2] = angles.map($2dca407f99b477df$var$constrain);
+    let angleDiff = a2 - a1;
+    if (arc === "increasing") {
+        if (angleDiff < 0) a2 += 360;
+    } else if (arc === "decreasing") {
+        if (angleDiff > 0) a1 += 360;
+    } else if (arc === "longer") {
+        if (-180 < angleDiff && angleDiff < 180) {
+            if (angleDiff > 0) a2 += 360;
+            else a1 += 360;
+        }
+    } else if (arc === "shorter") {
+        if (angleDiff > 180) a1 += 360;
+        else if (angleDiff < -180) a2 += 360;
+    }
+    return [
+        a1,
+        a2
+    ];
+}
+var $2dca407f99b477df$var$lch = new $2dca407f99b477df$var$ColorSpace({
+    id: "lch",
+    name: "LCH",
+    coords: {
+        l: {
+            refRange: [
+                0,
+                100
+            ],
+            name: "Lightness"
+        },
+        c: {
+            refRange: [
+                0,
+                150
+            ],
+            name: "Chroma"
+        },
+        h: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        }
+    },
+    base: $2dca407f99b477df$var$lab,
+    fromBase (Lab) {
+        // Convert to polar form
+        let [L, a, b] = Lab;
+        let hue;
+        const ε = 0.02;
+        if (Math.abs(a) < ε && Math.abs(b) < ε) hue = NaN;
+        else hue = Math.atan2(b, a) * 180 / Math.PI;
+        return [
+            L,
+            Math.sqrt(a ** 2 + b ** 2),
+            $2dca407f99b477df$var$constrain(hue)
+        ];
+    },
+    toBase (LCH) {
+        // Convert from polar form
+        let [Lightness, Chroma, Hue] = LCH;
+        // Clamp any negative Chroma
+        if (Chroma < 0) Chroma = 0;
+         // Deal with NaN Hue
+        if (isNaN(Hue)) Hue = 0;
+        return [
+            Lightness,
+            Chroma * Math.cos(Hue * Math.PI / 180),
+            Chroma * Math.sin(Hue * Math.PI / 180)
+        ];
+    },
+    formats: {
+        lch: {
+            coords: [
+                "<percentage> | <number>",
+                "<number>",
+                "<number> | <angle>"
+            ]
+        }
+    }
+});
+// deltaE2000 is a statistically significant improvement
+// and is recommended by the CIE and Idealliance
+// especially for color differences less than 10 deltaE76
+// but is wicked complicated
+// and many implementations have small errors!
+// DeltaE2000 is also discontinuous; in case this
+// matters to you, use deltaECMC instead.
+const $2dca407f99b477df$var$Gfactor = 25 ** 7;
+const $2dca407f99b477df$var$π$1 = Math.PI;
+const $2dca407f99b477df$var$r2d = 180 / $2dca407f99b477df$var$π$1;
+const $2dca407f99b477df$var$d2r$1 = $2dca407f99b477df$var$π$1 / 180;
+function $2dca407f99b477df$var$deltaE2000(color, sample, { kL: kL = 1, kC: kC = 1, kH: kH = 1 } = {}) {
+    // Given this color as the reference
+    // and the function parameter as the sample,
+    // calculate deltaE 2000.
+    // This implementation assumes the parametric
+    // weighting factors kL, kC and kH
+    // for the influence of viewing conditions
+    // are all 1, as sadly seems typical.
+    // kL should be increased for lightness texture or noise
+    // and kC increased for chroma noise
+    let [L1, a1, b1] = $2dca407f99b477df$var$lab.from(color);
+    let C1 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
+        L1,
+        a1,
+        b1
+    ])[1];
+    let [L2, a2, b2] = $2dca407f99b477df$var$lab.from(sample);
+    let C2 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
+        L2,
+        a2,
+        b2
+    ])[1];
+    // Check for negative Chroma,
+    // which might happen through
+    // direct user input of LCH values
+    if (C1 < 0) C1 = 0;
+    if (C2 < 0) C2 = 0;
+    let Cbar = (C1 + C2) / 2; // mean Chroma
+    // calculate a-axis asymmetry factor from mean Chroma
+    // this turns JND ellipses for near-neutral colors back into circles
+    let C7 = Cbar ** 7;
+    let G = 0.5 * (1 - Math.sqrt(C7 / (C7 + $2dca407f99b477df$var$Gfactor)));
+    // scale a axes by asymmetry factor
+    // this by the way is why there is no Lab2000 colorspace
+    let adash1 = (1 + G) * a1;
+    let adash2 = (1 + G) * a2;
+    // calculate new Chroma from scaled a and original b axes
+    let Cdash1 = Math.sqrt(adash1 ** 2 + b1 ** 2);
+    let Cdash2 = Math.sqrt(adash2 ** 2 + b2 ** 2);
+    // calculate new hues, with zero hue for true neutrals
+    // and in degrees, not radians
+    let h1 = adash1 === 0 && b1 === 0 ? 0 : Math.atan2(b1, adash1);
+    let h2 = adash2 === 0 && b2 === 0 ? 0 : Math.atan2(b2, adash2);
+    if (h1 < 0) h1 += 2 * $2dca407f99b477df$var$π$1;
+    if (h2 < 0) h2 += 2 * $2dca407f99b477df$var$π$1;
+    h1 *= $2dca407f99b477df$var$r2d;
+    h2 *= $2dca407f99b477df$var$r2d;
+    // Lightness and Chroma differences; sign matters
+    let ΔL = L2 - L1;
+    let ΔC = Cdash2 - Cdash1;
+    // Hue difference, getting the sign correct
+    let hdiff = h2 - h1;
+    let hsum = h1 + h2;
+    let habs = Math.abs(hdiff);
+    let Δh;
+    if (Cdash1 * Cdash2 === 0) Δh = 0;
+    else if (habs <= 180) Δh = hdiff;
+    else if (hdiff > 180) Δh = hdiff - 360;
+    else if (hdiff < -180) Δh = hdiff + 360;
+    else console.log("the unthinkable has happened");
+    // weighted Hue difference, more for larger Chroma
+    let ΔH = 2 * Math.sqrt(Cdash2 * Cdash1) * Math.sin(Δh * $2dca407f99b477df$var$d2r$1 / 2);
+    // calculate mean Lightness and Chroma
+    let Ldash = (L1 + L2) / 2;
+    let Cdash = (Cdash1 + Cdash2) / 2;
+    let Cdash7 = Math.pow(Cdash, 7);
+    // Compensate for non-linearity in the blue region of Lab.
+    // Four possibilities for hue weighting factor,
+    // depending on the angles, to get the correct sign
+    let hdash;
+    if (Cdash1 * Cdash2 === 0) hdash = hsum; // which should be zero
+    else if (habs <= 180) hdash = hsum / 2;
+    else if (hsum < 360) hdash = (hsum + 360) / 2;
+    else hdash = (hsum - 360) / 2;
+    // positional corrections to the lack of uniformity of CIELAB
+    // These are all trying to make JND ellipsoids more like spheres
+    // SL Lightness crispening factor
+    // a background with L=50 is assumed
+    let lsq = (Ldash - 50) ** 2;
+    let SL = 1 + 0.015 * lsq / Math.sqrt(20 + lsq);
+    // SC Chroma factor, similar to those in CMC and deltaE 94 formulae
+    let SC = 1 + 0.045 * Cdash;
+    // Cross term T for blue non-linearity
+    let T = 1;
+    T -= 0.17 * Math.cos((hdash - 30) * $2dca407f99b477df$var$d2r$1);
+    T += 0.24 * Math.cos(2 * hdash * $2dca407f99b477df$var$d2r$1);
+    T += 0.32 * Math.cos((3 * hdash + 6) * $2dca407f99b477df$var$d2r$1);
+    T -= 0.2 * Math.cos((4 * hdash - 63) * $2dca407f99b477df$var$d2r$1);
+    // SH Hue factor depends on Chroma,
+    // as well as adjusted hue angle like deltaE94.
+    let SH = 1 + 0.015 * Cdash * T;
+    // RT Hue rotation term compensates for rotation of JND ellipses
+    // and Munsell constant hue lines
+    // in the medium-high Chroma blue region
+    // (Hue 225 to 315)
+    let Δθ = 30 * Math.exp(-1 * ((hdash - 275) / 25) ** 2);
+    let RC = 2 * Math.sqrt(Cdash7 / (Cdash7 + $2dca407f99b477df$var$Gfactor));
+    let RT = -1 * Math.sin(2 * Δθ * $2dca407f99b477df$var$d2r$1) * RC;
+    // Finally calculate the deltaE, term by term as root sume of squares
+    let dE = (ΔL / (kL * SL)) ** 2;
+    dE += (ΔC / (kC * SC)) ** 2;
+    dE += (ΔH / (kH * SH)) ** 2;
+    dE += RT * (ΔC / (kC * SC)) * (ΔH / (kH * SH));
+    return Math.sqrt(dE);
+// Yay!!!
+}
+const $2dca407f99b477df$var$ε$2 = 0.000075;
+/**
+ * Check if a color is in gamut of either its own or another color space
+ * @return {Boolean} Is the color in gamut?
+ */ function $2dca407f99b477df$var$inGamut(color, space = color.space, { epsilon: epsilon = $2dca407f99b477df$var$ε$2 } = {}) {
+    color = $2dca407f99b477df$var$getColor(color);
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    let coords = color.coords;
+    if (space !== color.space) coords = space.from(color);
+    return space.inGamut(coords, {
+        epsilon: epsilon
+    });
+}
+function $2dca407f99b477df$var$clone(color) {
+    return {
+        space: color.space,
+        coords: color.coords.slice(),
+        alpha: color.alpha
+    };
+}
+/**
+ * Force coordinates to be in gamut of a certain color space.
+ * Mutates the color it is passed.
+ * @param {Object} options
+ * @param {string} options.method - How to force into gamut.
+ *        If "clip", coordinates are just clipped to their reference range.
+ *        If in the form [colorSpaceId].[coordName], that coordinate is reduced
+ *        until the color is in gamut. Please note that this may produce nonsensical
+ *        results for certain coordinates (e.g. hue) or infinite loops if reducing the coordinate never brings the color in gamut.
+ * @param {ColorSpace|string} options.space - The space whose gamut we want to map to
+ */ function $2dca407f99b477df$var$toGamut(color, { method: method = $2dca407f99b477df$var$defaults.gamut_mapping, space: space = color.space } = {}) {
+    if ($2dca407f99b477df$var$isString(arguments[1])) space = arguments[1];
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    if ($2dca407f99b477df$var$inGamut(color, space, {
+        epsilon: 0
+    })) return color;
+    // 3 spaces:
+    // color.space: current color space
+    // space: space whose gamut we are mapping to
+    // mapSpace: space with the coord we're reducing
+    let spaceColor = $2dca407f99b477df$var$to(color, space);
+    if (method !== "clip" && !$2dca407f99b477df$var$inGamut(color, space)) {
+        let clipped = $2dca407f99b477df$var$toGamut($2dca407f99b477df$var$clone(spaceColor), {
+            method: "clip",
+            space: space
+        });
+        if ($2dca407f99b477df$var$deltaE2000(color, clipped) > 2) {
+            // Reduce a coordinate of a certain color space until the color is in gamut
+            let coordMeta = $2dca407f99b477df$var$ColorSpace.resolveCoord(method);
+            let mapSpace = coordMeta.space;
+            let coordId = coordMeta.id;
+            let mappedColor = $2dca407f99b477df$var$to(spaceColor, mapSpace);
+            let bounds = coordMeta.range || coordMeta.refRange;
+            let min = bounds[0];
+            let ε = 0.01; // for deltaE
+            let low = min;
+            let high = $2dca407f99b477df$var$get(mappedColor, coordId);
+            while(high - low > ε){
+                let clipped = $2dca407f99b477df$var$clone(mappedColor);
+                clipped = $2dca407f99b477df$var$toGamut(clipped, {
+                    space: space,
+                    method: "clip"
+                });
+                let deltaE = $2dca407f99b477df$var$deltaE2000(mappedColor, clipped);
+                if (deltaE - 2 < ε) low = $2dca407f99b477df$var$get(mappedColor, coordId);
+                else high = $2dca407f99b477df$var$get(mappedColor, coordId);
+                $2dca407f99b477df$var$set$1(mappedColor, coordId, (low + high) / 2);
+            }
+            spaceColor = $2dca407f99b477df$var$to(mappedColor, space);
+        } else spaceColor = clipped;
+    }
+    if (method === "clip" || // Dumb coord clipping
+    // finish off smarter gamut mapping with clip to get rid of ε, see #17
+    !$2dca407f99b477df$var$inGamut(spaceColor, space, {
+        epsilon: 0
+    })) {
+        let bounds = Object.values(space.coords).map((c)=>c.range || []);
+        spaceColor.coords = spaceColor.coords.map((c, i)=>{
+            let [min, max] = bounds[i];
+            if (min !== undefined) c = Math.max(min, c);
+            if (max !== undefined) c = Math.min(c, max);
+            return c;
+        });
+    }
+    if (space !== color.space) spaceColor = $2dca407f99b477df$var$to(spaceColor, color.space);
+    color.coords = spaceColor.coords;
+    return color;
+}
+$2dca407f99b477df$var$toGamut.returns = "color";
+/**
+ * Convert to color space and return a new color
+ * @param {Object|string} space - Color space object or id
+ * @param {Object} options
+ * @param {boolean} options.inGamut - Whether to force resulting color in gamut
+ * @returns {Color}
+ */ function $2dca407f99b477df$var$to(color, space, { inGamut: inGamut } = {}) {
+    color = $2dca407f99b477df$var$getColor(color);
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    let coords = space.from(color);
+    let ret = {
+        space: space,
+        coords: coords,
+        alpha: color.alpha
+    };
+    if (inGamut) ret = $2dca407f99b477df$var$toGamut(ret);
+    return ret;
+}
+$2dca407f99b477df$var$to.returns = "color";
+/**
+ * Generic toString() method, outputs a color(spaceId ...coords) function, a functional syntax, or custom formats defined by the color space
+ * @param {Object} options
+ * @param {number} options.precision - Significant digits
+ * @param {boolean} options.inGamut - Adjust coordinates to fit in gamut first? [default: false]
+ */ function $2dca407f99b477df$var$serialize(color, { precision: precision = $2dca407f99b477df$var$defaults.precision, format: format = "default", inGamut: inGamut$1 = true, ...customOptions } = {}) {
+    let ret;
+    color = $2dca407f99b477df$var$getColor(color);
+    let formatId = format;
+    format = color.space.getFormat(format) ?? color.space.getFormat("default") ?? $2dca407f99b477df$var$ColorSpace.DEFAULT_FORMAT;
+    inGamut$1 ||= format.toGamut;
+    let coords = color.coords;
+    // Convert NaN to zeros to have a chance at a valid CSS color
+    // Also convert -0 to 0
+    // This also clones it so we can manipulate it
+    coords = coords.map((c)=>c ? c : 0);
+    if (inGamut$1 && !$2dca407f99b477df$var$inGamut(color)) coords = $2dca407f99b477df$var$toGamut($2dca407f99b477df$var$clone(color), inGamut$1 === true ? undefined : inGamut$1).coords;
+    if (format.type === "custom") {
+        customOptions.precision = precision;
+        if (format.serialize) ret = format.serialize(coords, color.alpha, customOptions);
+        else throw new TypeError(`format ${formatId} can only be used to parse colors, not for serialization`);
+    } else {
+        // Functional syntax
+        let name = format.name || "color";
+        if (format.serializeCoords) coords = format.serializeCoords(coords, precision);
+        else if (precision !== null) coords = coords.map((c)=>$2dca407f99b477df$var$toPrecision(c, precision));
+        let args = [
+            ...coords
+        ];
+        if (name === "color") {
+            // If output is a color() function, add colorspace id as first argument
+            let cssId = format.id || format.ids?.[0] || color.space.id;
+            args.unshift(cssId);
+        }
+        let alpha = color.alpha;
+        if (precision !== null) alpha = $2dca407f99b477df$var$toPrecision(alpha, precision);
+        let strAlpha = color.alpha < 1 ? ` ${format.commas ? "," : "/"} ${alpha}` : "";
+        ret = `${name}(${args.join(format.commas ? ", " : " ")}${strAlpha})`;
+    }
+    return ret;
+}
+// convert an array of linear-light rec2020 values to CIE XYZ
+// using  D65 (no chromatic adaptation)
+// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+// 0 is actually calculated as  4.994106574466076e-17
+const $2dca407f99b477df$var$toXYZ_M$5 = [
+    [
+        0.6369580483012914,
+        0.14461690358620832,
+        0.1688809751641721
+    ],
+    [
+        0.2627002120112671,
+        0.6779980715188708,
+        0.05930171646986196
+    ],
+    [
+        0.0,
+        0.028072693049087428,
+        1.060985057710791
+    ]
+];
+// from ITU-R BT.2124-0 Annex 2 p.3
+const $2dca407f99b477df$var$fromXYZ_M$5 = [
+    [
+        1.716651187971268,
+        -0.355670783776392,
+        -0.25336628137366
+    ],
+    [
+        -0.666684351832489,
+        1.616481236634939,
+        0.0157685458139111
+    ],
+    [
+        0.017639857445311,
+        -0.042770613257809,
+        0.942103121235474
+    ]
+];
+var $2dca407f99b477df$var$REC2020Linear = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "rec2020-linear",
+    name: "Linear REC.2020",
+    white: "D65",
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$5,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$5
+});
+// import sRGB from "./srgb.js";
+const $2dca407f99b477df$var$α = 1.09929682680944;
+const $2dca407f99b477df$var$β = 0.018053968510807;
+var $2dca407f99b477df$var$REC2020 = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "rec2020",
+    name: "REC.2020",
+    base: $2dca407f99b477df$var$REC2020Linear,
+    // Non-linear transfer function from Rec. ITU-R BT.2020-2 table 4
+    toBase (RGB) {
+        return RGB.map(function(val) {
+            if (val < $2dca407f99b477df$var$β * 4.5) return val / 4.5;
+            return Math.pow((val + $2dca407f99b477df$var$α - 1) / $2dca407f99b477df$var$α, 1 / 0.45);
+        });
+    },
+    fromBase (RGB) {
+        return RGB.map(function(val) {
+            if (val >= $2dca407f99b477df$var$β) return $2dca407f99b477df$var$α * Math.pow(val, 0.45) - ($2dca407f99b477df$var$α - 1);
+            return 4.5 * val;
+        });
+    },
+    formats: {
+        color: {}
+    }
+});
+const $2dca407f99b477df$var$toXYZ_M$4 = [
+    [
+        0.4865709486482162,
+        0.26566769316909306,
+        0.1982172852343625
+    ],
+    [
+        0.2289745640697488,
+        0.6917385218365064,
+        0.079286914093745
+    ],
+    [
+        0.0,
+        0.04511338185890264,
+        1.043944368900976
+    ]
+];
+const $2dca407f99b477df$var$fromXYZ_M$4 = [
+    [
+        2.493496911941425,
+        -0.9313836179191239,
+        -0.40271078445071684
+    ],
+    [
+        -0.8294889695615747,
+        1.7626640603183463,
+        0.023624685841943577
+    ],
+    [
+        0.03584583024378447,
+        -0.07617238926804182,
+        0.9568845240076872
+    ]
+];
+var $2dca407f99b477df$var$P3Linear = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "p3-linear",
+    name: "Linear P3",
+    white: "D65",
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$4,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$4
+});
+// This is the linear-light version of sRGB
+// as used for example in SVG filters
+// or in Canvas
+// This matrix was calculated directly from the RGB and white chromaticities
+// when rounded to 8 decimal places, it agrees completely with the official matrix
+// see https://github.com/w3c/csswg-drafts/issues/5922
+const $2dca407f99b477df$var$toXYZ_M$3 = [
+    [
+        0.41239079926595934,
+        0.357584339383878,
+        0.1804807884018343
+    ],
+    [
+        0.21263900587151027,
+        0.715168678767756,
+        0.07219231536073371
+    ],
+    [
+        0.01933081871559182,
+        0.11919477979462598,
+        0.9505321522496607
+    ]
+];
+// This matrix is the inverse of the above;
+// again it agrees with the official definition when rounded to 8 decimal places
+const $2dca407f99b477df$var$fromXYZ_M$3 = [
+    [
+        3.2409699419045226,
+        -1.537383177570094,
+        -0.4986107602930034
+    ],
+    [
+        -0.9692436362808796,
+        1.8759675015077202,
+        0.04155505740717559
+    ],
+    [
+        0.05563007969699366,
+        -0.20397695888897652,
+        1.0569715142428786
+    ]
+];
+var $2dca407f99b477df$var$sRGBLinear = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "srgb-linear",
+    name: "Linear sRGB",
+    white: "D65",
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$3,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$3,
+    formats: {
+        color: {}
+    }
+});
+/* List of CSS color keywords
+ * Note that this does not include currentColor, transparent,
+ * or system colors
+ */ // To produce: Visit https://www.w3.org/TR/css-color-4/#named-colors
+// and run in the console:
+// copy($$("tr", $(".named-color-table tbody")).map(tr => `"${tr.cells[2].textContent.trim()}": [${tr.cells[4].textContent.trim().split(/\s+/).map(c => c === "0"? "0" : c === "255"? "1" : c + " / 255").join(", ")}]`).join(",\n"))
+var $2dca407f99b477df$var$KEYWORDS = {
+    aliceblue: [
+        240 / 255,
+        248 / 255,
+        1
+    ],
+    antiquewhite: [
+        250 / 255,
+        235 / 255,
+        215 / 255
+    ],
+    aqua: [
+        0,
+        1,
+        1
+    ],
+    aquamarine: [
+        127 / 255,
+        1,
+        212 / 255
+    ],
+    azure: [
+        240 / 255,
+        1,
+        1
+    ],
+    beige: [
+        245 / 255,
+        245 / 255,
+        220 / 255
+    ],
+    bisque: [
+        1,
+        228 / 255,
+        196 / 255
+    ],
+    black: [
+        0,
+        0,
+        0
+    ],
+    blanchedalmond: [
+        1,
+        235 / 255,
+        205 / 255
+    ],
+    blue: [
+        0,
+        0,
+        1
+    ],
+    blueviolet: [
+        138 / 255,
+        43 / 255,
+        226 / 255
+    ],
+    brown: [
+        165 / 255,
+        42 / 255,
+        42 / 255
+    ],
+    burlywood: [
+        222 / 255,
+        184 / 255,
+        135 / 255
+    ],
+    cadetblue: [
+        95 / 255,
+        158 / 255,
+        160 / 255
+    ],
+    chartreuse: [
+        127 / 255,
+        1,
+        0
+    ],
+    chocolate: [
+        210 / 255,
+        105 / 255,
+        30 / 255
+    ],
+    coral: [
+        1,
+        127 / 255,
+        80 / 255
+    ],
+    cornflowerblue: [
+        100 / 255,
+        149 / 255,
+        237 / 255
+    ],
+    cornsilk: [
+        1,
+        248 / 255,
+        220 / 255
+    ],
+    crimson: [
+        220 / 255,
+        20 / 255,
+        60 / 255
+    ],
+    cyan: [
+        0,
+        1,
+        1
+    ],
+    darkblue: [
+        0,
+        0,
+        139 / 255
+    ],
+    darkcyan: [
+        0,
+        139 / 255,
+        139 / 255
+    ],
+    darkgoldenrod: [
+        184 / 255,
+        134 / 255,
+        11 / 255
+    ],
+    darkgray: [
+        169 / 255,
+        169 / 255,
+        169 / 255
+    ],
+    darkgreen: [
+        0,
+        100 / 255,
+        0
+    ],
+    darkgrey: [
+        169 / 255,
+        169 / 255,
+        169 / 255
+    ],
+    darkkhaki: [
+        189 / 255,
+        183 / 255,
+        107 / 255
+    ],
+    darkmagenta: [
+        139 / 255,
+        0,
+        139 / 255
+    ],
+    darkolivegreen: [
+        85 / 255,
+        107 / 255,
+        47 / 255
+    ],
+    darkorange: [
+        1,
+        140 / 255,
+        0
+    ],
+    darkorchid: [
+        0.6,
+        50 / 255,
+        0.8
+    ],
+    darkred: [
+        139 / 255,
+        0,
+        0
+    ],
+    darksalmon: [
+        233 / 255,
+        150 / 255,
+        122 / 255
+    ],
+    darkseagreen: [
+        143 / 255,
+        188 / 255,
+        143 / 255
+    ],
+    darkslateblue: [
+        72 / 255,
+        61 / 255,
+        139 / 255
+    ],
+    darkslategray: [
+        47 / 255,
+        79 / 255,
+        79 / 255
+    ],
+    darkslategrey: [
+        47 / 255,
+        79 / 255,
+        79 / 255
+    ],
+    darkturquoise: [
+        0,
+        206 / 255,
+        209 / 255
+    ],
+    darkviolet: [
+        148 / 255,
+        0,
+        211 / 255
+    ],
+    deeppink: [
+        1,
+        20 / 255,
+        147 / 255
+    ],
+    deepskyblue: [
+        0,
+        191 / 255,
+        1
+    ],
+    dimgray: [
+        105 / 255,
+        105 / 255,
+        105 / 255
+    ],
+    dimgrey: [
+        105 / 255,
+        105 / 255,
+        105 / 255
+    ],
+    dodgerblue: [
+        30 / 255,
+        144 / 255,
+        1
+    ],
+    firebrick: [
+        178 / 255,
+        34 / 255,
+        34 / 255
+    ],
+    floralwhite: [
+        1,
+        250 / 255,
+        240 / 255
+    ],
+    forestgreen: [
+        34 / 255,
+        139 / 255,
+        34 / 255
+    ],
+    fuchsia: [
+        1,
+        0,
+        1
+    ],
+    gainsboro: [
+        220 / 255,
+        220 / 255,
+        220 / 255
+    ],
+    ghostwhite: [
+        248 / 255,
+        248 / 255,
+        1
+    ],
+    gold: [
+        1,
+        215 / 255,
+        0
+    ],
+    goldenrod: [
+        218 / 255,
+        165 / 255,
+        32 / 255
+    ],
+    gray: [
+        128 / 255,
+        128 / 255,
+        128 / 255
+    ],
+    green: [
+        0,
+        128 / 255,
+        0
+    ],
+    greenyellow: [
+        173 / 255,
+        1,
+        47 / 255
+    ],
+    grey: [
+        128 / 255,
+        128 / 255,
+        128 / 255
+    ],
+    honeydew: [
+        240 / 255,
+        1,
+        240 / 255
+    ],
+    hotpink: [
+        1,
+        105 / 255,
+        180 / 255
+    ],
+    indianred: [
+        205 / 255,
+        92 / 255,
+        92 / 255
+    ],
+    indigo: [
+        75 / 255,
+        0,
+        130 / 255
+    ],
+    ivory: [
+        1,
+        1,
+        240 / 255
+    ],
+    khaki: [
+        240 / 255,
+        230 / 255,
+        140 / 255
+    ],
+    lavender: [
+        230 / 255,
+        230 / 255,
+        250 / 255
+    ],
+    lavenderblush: [
+        1,
+        240 / 255,
+        245 / 255
+    ],
+    lawngreen: [
+        124 / 255,
+        252 / 255,
+        0
+    ],
+    lemonchiffon: [
+        1,
+        250 / 255,
+        205 / 255
+    ],
+    lightblue: [
+        173 / 255,
+        216 / 255,
+        230 / 255
+    ],
+    lightcoral: [
+        240 / 255,
+        128 / 255,
+        128 / 255
+    ],
+    lightcyan: [
+        224 / 255,
+        1,
+        1
+    ],
+    lightgoldenrodyellow: [
+        250 / 255,
+        250 / 255,
+        210 / 255
+    ],
+    lightgray: [
+        211 / 255,
+        211 / 255,
+        211 / 255
+    ],
+    lightgreen: [
+        144 / 255,
+        238 / 255,
+        144 / 255
+    ],
+    lightgrey: [
+        211 / 255,
+        211 / 255,
+        211 / 255
+    ],
+    lightpink: [
+        1,
+        182 / 255,
+        193 / 255
+    ],
+    lightsalmon: [
+        1,
+        160 / 255,
+        122 / 255
+    ],
+    lightseagreen: [
+        32 / 255,
+        178 / 255,
+        170 / 255
+    ],
+    lightskyblue: [
+        135 / 255,
+        206 / 255,
+        250 / 255
+    ],
+    lightslategray: [
+        119 / 255,
+        136 / 255,
+        0.6
+    ],
+    lightslategrey: [
+        119 / 255,
+        136 / 255,
+        0.6
+    ],
+    lightsteelblue: [
+        176 / 255,
+        196 / 255,
+        222 / 255
+    ],
+    lightyellow: [
+        1,
+        1,
+        224 / 255
+    ],
+    lime: [
+        0,
+        1,
+        0
+    ],
+    limegreen: [
+        50 / 255,
+        205 / 255,
+        50 / 255
+    ],
+    linen: [
+        250 / 255,
+        240 / 255,
+        230 / 255
+    ],
+    magenta: [
+        1,
+        0,
+        1
+    ],
+    maroon: [
+        128 / 255,
+        0,
+        0
+    ],
+    mediumaquamarine: [
+        0.4,
+        205 / 255,
+        170 / 255
+    ],
+    mediumblue: [
+        0,
+        0,
+        205 / 255
+    ],
+    mediumorchid: [
+        186 / 255,
+        85 / 255,
+        211 / 255
+    ],
+    mediumpurple: [
+        147 / 255,
+        112 / 255,
+        219 / 255
+    ],
+    mediumseagreen: [
+        60 / 255,
+        179 / 255,
+        113 / 255
+    ],
+    mediumslateblue: [
+        123 / 255,
+        104 / 255,
+        238 / 255
+    ],
+    mediumspringgreen: [
+        0,
+        250 / 255,
+        154 / 255
+    ],
+    mediumturquoise: [
+        72 / 255,
+        209 / 255,
+        0.8
+    ],
+    mediumvioletred: [
+        199 / 255,
+        21 / 255,
+        133 / 255
+    ],
+    midnightblue: [
+        25 / 255,
+        25 / 255,
+        112 / 255
+    ],
+    mintcream: [
+        245 / 255,
+        1,
+        250 / 255
+    ],
+    mistyrose: [
+        1,
+        228 / 255,
+        225 / 255
+    ],
+    moccasin: [
+        1,
+        228 / 255,
+        181 / 255
+    ],
+    navajowhite: [
+        1,
+        222 / 255,
+        173 / 255
+    ],
+    navy: [
+        0,
+        0,
+        128 / 255
+    ],
+    oldlace: [
+        253 / 255,
+        245 / 255,
+        230 / 255
+    ],
+    olive: [
+        128 / 255,
+        128 / 255,
+        0
+    ],
+    olivedrab: [
+        107 / 255,
+        142 / 255,
+        35 / 255
+    ],
+    orange: [
+        1,
+        165 / 255,
+        0
+    ],
+    orangered: [
+        1,
+        69 / 255,
+        0
+    ],
+    orchid: [
+        218 / 255,
+        112 / 255,
+        214 / 255
+    ],
+    palegoldenrod: [
+        238 / 255,
+        232 / 255,
+        170 / 255
+    ],
+    palegreen: [
+        152 / 255,
+        251 / 255,
+        152 / 255
+    ],
+    paleturquoise: [
+        175 / 255,
+        238 / 255,
+        238 / 255
+    ],
+    palevioletred: [
+        219 / 255,
+        112 / 255,
+        147 / 255
+    ],
+    papayawhip: [
+        1,
+        239 / 255,
+        213 / 255
+    ],
+    peachpuff: [
+        1,
+        218 / 255,
+        185 / 255
+    ],
+    peru: [
+        205 / 255,
+        133 / 255,
+        63 / 255
+    ],
+    pink: [
+        1,
+        192 / 255,
+        203 / 255
+    ],
+    plum: [
+        221 / 255,
+        160 / 255,
+        221 / 255
+    ],
+    powderblue: [
+        176 / 255,
+        224 / 255,
+        230 / 255
+    ],
+    purple: [
+        128 / 255,
+        0,
+        128 / 255
+    ],
+    rebeccapurple: [
+        0.4,
+        0.2,
+        0.6
+    ],
+    red: [
+        1,
+        0,
+        0
+    ],
+    rosybrown: [
+        188 / 255,
+        143 / 255,
+        143 / 255
+    ],
+    royalblue: [
+        65 / 255,
+        105 / 255,
+        225 / 255
+    ],
+    saddlebrown: [
+        139 / 255,
+        69 / 255,
+        19 / 255
+    ],
+    salmon: [
+        250 / 255,
+        128 / 255,
+        114 / 255
+    ],
+    sandybrown: [
+        244 / 255,
+        164 / 255,
+        96 / 255
+    ],
+    seagreen: [
+        46 / 255,
+        139 / 255,
+        87 / 255
+    ],
+    seashell: [
+        1,
+        245 / 255,
+        238 / 255
+    ],
+    sienna: [
+        160 / 255,
+        82 / 255,
+        45 / 255
+    ],
+    silver: [
+        192 / 255,
+        192 / 255,
+        192 / 255
+    ],
+    skyblue: [
+        135 / 255,
+        206 / 255,
+        235 / 255
+    ],
+    slateblue: [
+        106 / 255,
+        90 / 255,
+        205 / 255
+    ],
+    slategray: [
+        112 / 255,
+        128 / 255,
+        144 / 255
+    ],
+    slategrey: [
+        112 / 255,
+        128 / 255,
+        144 / 255
+    ],
+    snow: [
+        1,
+        250 / 255,
+        250 / 255
+    ],
+    springgreen: [
+        0,
+        1,
+        127 / 255
+    ],
+    steelblue: [
+        70 / 255,
+        130 / 255,
+        180 / 255
+    ],
+    tan: [
+        210 / 255,
+        180 / 255,
+        140 / 255
+    ],
+    teal: [
+        0,
+        128 / 255,
+        128 / 255
+    ],
+    thistle: [
+        216 / 255,
+        191 / 255,
+        216 / 255
+    ],
+    tomato: [
+        1,
+        99 / 255,
+        71 / 255
+    ],
+    turquoise: [
+        64 / 255,
+        224 / 255,
+        208 / 255
+    ],
+    violet: [
+        238 / 255,
+        130 / 255,
+        238 / 255
+    ],
+    wheat: [
+        245 / 255,
+        222 / 255,
+        179 / 255
+    ],
+    white: [
+        1,
+        1,
+        1
+    ],
+    whitesmoke: [
+        245 / 255,
+        245 / 255,
+        245 / 255
+    ],
+    yellow: [
+        1,
+        1,
+        0
+    ],
+    yellowgreen: [
+        154 / 255,
+        205 / 255,
+        50 / 255
+    ]
+};
+let $2dca407f99b477df$var$coordGrammar = Array(3).fill("<percentage> | <number>[0, 255]");
+var $2dca407f99b477df$var$sRGB = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "srgb",
+    name: "sRGB",
+    base: $2dca407f99b477df$var$sRGBLinear,
+    fromBase: (rgb)=>{
+        // convert an array of linear-light sRGB values in the range 0.0-1.0
+        // to gamma corrected form
+        // https://en.wikipedia.org/wiki/SRGB
+        return rgb.map((val)=>{
+            let sign = val < 0 ? -1 : 1;
+            let abs = val * sign;
+            if (abs > 0.0031308) return sign * (1.055 * abs ** (1 / 2.4) - 0.055);
+            return 12.92 * val;
+        });
+    },
+    toBase: (rgb)=>{
+        // convert an array of sRGB values in the range 0.0 - 1.0
+        // to linear light (un-companded) form.
+        // https://en.wikipedia.org/wiki/SRGB
+        return rgb.map((val)=>{
+            let sign = val < 0 ? -1 : 1;
+            let abs = val * sign;
+            if (abs < 0.04045) return val / 12.92;
+            return sign * ((abs + 0.055) / 1.055) ** 2.4;
+        });
+    },
+    formats: {
+        rgb: {
+            coords: $2dca407f99b477df$var$coordGrammar
+        },
+        color: {
+        },
+        rgba: {
+            coords: $2dca407f99b477df$var$coordGrammar,
+            commas: true,
+            lastAlpha: true
+        },
+        hex: {
+            type: "custom",
+            toGamut: true,
+            test: (str)=>/^#([a-f0-9]{3,4}){1,2}$/i.test(str),
+            parse (str) {
+                if (str.length <= 5) // #rgb or #rgba, duplicate digits
+                str = str.replace(/[a-f0-9]/gi, "$&$&");
+                let rgba = [];
+                str.replace(/[a-f0-9]{2}/gi, (component)=>{
+                    rgba.push(parseInt(component, 16) / 255);
+                });
+                return {
+                    spaceId: "srgb",
+                    coords: rgba.slice(0, 3),
+                    alpha: rgba.slice(3)[0]
+                };
+            },
+            serialize: (coords, alpha, { collapse: collapse = true } = {})=>{
+                if (alpha < 1) coords.push(alpha);
+                coords = coords.map((c)=>Math.round(c * 255));
+                let collapsible = collapse && coords.every((c)=>c % 17 === 0);
+                let hex = coords.map((c)=>{
+                    if (collapsible) return (c / 17).toString(16);
+                    return c.toString(16).padStart(2, "0");
+                }).join("");
+                return "#" + hex;
+            }
+        },
+        keyword: {
+            type: "custom",
+            test: (str)=>/^[a-z]+$/i.test(str),
+            parse (str) {
+                str = str.toLowerCase();
+                let ret = {
+                    spaceId: "srgb",
+                    coords: null,
+                    alpha: 1
+                };
+                if (str === "transparent") {
+                    ret.coords = $2dca407f99b477df$var$KEYWORDS.black;
+                    ret.alpha = 0;
+                } else ret.coords = $2dca407f99b477df$var$KEYWORDS[str];
+                if (ret.coords) return ret;
+            }
+        }
+    }
+});
+var $2dca407f99b477df$var$P3 = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "p3",
+    name: "P3",
+    base: $2dca407f99b477df$var$P3Linear,
+    // Gamma encoding/decoding is the same as sRGB
+    fromBase: $2dca407f99b477df$var$sRGB.fromBase,
+    toBase: $2dca407f99b477df$var$sRGB.toBase,
+    formats: {
+        color: {
+            id: "display-p3"
+        }
+    }
+});
+// Default space for CSS output. Code in Color.js makes this wider if there's a DOM available
+$2dca407f99b477df$var$defaults.display_space = $2dca407f99b477df$var$sRGB;
+if (typeof CSS !== "undefined" && CSS.supports) // Find widest supported color space for CSS
+for (let space of [
+    $2dca407f99b477df$var$lab,
+    $2dca407f99b477df$var$REC2020,
+    $2dca407f99b477df$var$P3
+]){
+    let coords = space.getMinCoords();
+    let color = {
+        space: space,
+        coords: coords,
+        alpha: 1
+    };
+    let str = $2dca407f99b477df$var$serialize(color);
+    if (CSS.supports("color", str)) {
+        $2dca407f99b477df$var$defaults.display_space = space;
+        break;
+    }
+}
+/**
+ * Returns a serialization of the color that can actually be displayed in the browser.
+ * If the default serialization can be displayed, it is returned.
+ * Otherwise, the color is converted to Lab, REC2020, or P3, whichever is the widest supported.
+ * In Node.js, this is basically equivalent to `serialize()` but returns a `String` object instead.
+ *
+ * @export
+ * @param {{space, coords} | Color | string} color
+ * @param {*} [options={}] Options to be passed to serialize()
+ * @param {ColorSpace | string} [options.space = defaults.display_space] Color space to use for serialization if default is not supported
+ * @returns {String} String object containing the serialized color with a color property containing the converted color (or the original, if no conversion was necessary)
+ */ function $2dca407f99b477df$var$display(color, { space: space = $2dca407f99b477df$var$defaults.display_space, ...options } = {}) {
+    let ret = $2dca407f99b477df$var$serialize(color, options);
+    if (typeof CSS === "undefined" || CSS.supports("color", ret) || !$2dca407f99b477df$var$defaults.display_space) {
+        ret = new String(ret);
+        ret.color = color;
+    } else {
+        // If we're here, what we were about to output is not supported
+        // Fall back to fallback space
+        let fallbackColor = $2dca407f99b477df$var$to(color, space);
+        ret = new String($2dca407f99b477df$var$serialize(fallbackColor, options));
+        ret.color = fallbackColor;
+    }
+    return ret;
+}
+/**
+ * Euclidean distance of colors in an arbitrary color space
+ */ function $2dca407f99b477df$var$distance(color1, color2, space = "lab") {
+    space = $2dca407f99b477df$var$ColorSpace.get(space);
+    let coords1 = space.from(color1);
+    let coords2 = space.from(color2);
+    return Math.sqrt(coords1.reduce((acc, c1, i)=>{
+        let c2 = coords2[i];
+        if (isNaN(c1) || isNaN(c2)) return acc;
+        return acc + (c2 - c1) ** 2;
+    }, 0));
+}
+function $2dca407f99b477df$var$equals(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    return color1.space === color2.space && color1.alpha === color2.alpha && color1.coords.every((c, i)=>c === color2.coords[i]);
+}
+/**
+ * Relative luminance
+ */ function $2dca407f99b477df$var$getLuminance(color) {
+    return $2dca407f99b477df$var$get(color, [
+        $2dca407f99b477df$var$XYZ_D65,
+        "y"
+    ]);
+}
+function $2dca407f99b477df$var$setLuminance(color) {
+    set(color, [
+        $2dca407f99b477df$var$XYZ_D65,
+        "y"
+    ], value);
+}
+function $2dca407f99b477df$var$register$2(Color) {
+    Object.defineProperty(Color.prototype, "luminance", {
+        get () {
+            return $2dca407f99b477df$var$getLuminance(this);
+        },
+        set (value1) {
+            $2dca407f99b477df$var$setLuminance(this);
+        }
+    });
+}
+var $2dca407f99b477df$var$luminance = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    getLuminance: $2dca407f99b477df$var$getLuminance,
+    setLuminance: $2dca407f99b477df$var$setLuminance,
+    register: $2dca407f99b477df$var$register$2
+});
+// WCAG 2.0 contrast https://www.w3.org/TR/WCAG20-TECHS/G18.html
+function $2dca407f99b477df$var$contrastWCAG21(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
+    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
+    if (Y2 > Y1) [Y1, Y2] = [
+        Y2,
+        Y1
+    ];
+    return (Y1 + 0.05) / (Y2 + 0.05);
+}
+// APCA 0.0.98G
+// exponents
+const $2dca407f99b477df$var$normBG = 0.56;
+const $2dca407f99b477df$var$normTXT = 0.57;
+const $2dca407f99b477df$var$revTXT = 0.62;
+const $2dca407f99b477df$var$revBG = 0.65;
+// clamps
+const $2dca407f99b477df$var$blkThrs = 0.022;
+const $2dca407f99b477df$var$blkClmp = 1.414;
+const $2dca407f99b477df$var$loClip = 0.1;
+const $2dca407f99b477df$var$deltaYmin = 0.0005;
+// scalers
+// see https://github.com/w3c/silver/issues/645
+const $2dca407f99b477df$var$scaleBoW = 1.14;
+const $2dca407f99b477df$var$loBoWoffset = 0.027;
+const $2dca407f99b477df$var$scaleWoB = 1.14;
+function $2dca407f99b477df$var$fclamp(Y) {
+    if (Y >= $2dca407f99b477df$var$blkThrs) return Y;
+    return Y + ($2dca407f99b477df$var$blkThrs - Y) ** $2dca407f99b477df$var$blkClmp;
+}
+function $2dca407f99b477df$var$linearize(val) {
+    let sign = val < 0 ? -1 : 1;
+    let abs = Math.abs(val);
+    return sign * Math.pow(abs, 2.4);
+}
+// Not symmetric, requires a foreground (text) color, and a background color
+function $2dca407f99b477df$var$contrastAPCA(background, foreground) {
+    foreground = $2dca407f99b477df$var$getColor(foreground);
+    background = $2dca407f99b477df$var$getColor(background);
+    let S;
+    let C;
+    let Sapc;
+    // Myndex as-published, assumes sRGB inputs
+    let R, G, B;
+    foreground = $2dca407f99b477df$var$to(foreground, "srgb");
+    // Should these be clamped to in-gamut values?
+    // Calculates "screen luminance" with non-standard simple gamma EOTF
+    // weights should be from CSS Color 4, not the ones here which are via Myndex and copied from Lindbloom
+    [R, G, B] = foreground.coords;
+    let lumTxt = $2dca407f99b477df$var$linearize(R) * 0.2126729 + $2dca407f99b477df$var$linearize(G) * 0.7151522 + $2dca407f99b477df$var$linearize(B) * 0.072175;
+    background = $2dca407f99b477df$var$to(background, "srgb");
+    [R, G, B] = background.coords;
+    let lumBg = $2dca407f99b477df$var$linearize(R) * 0.2126729 + $2dca407f99b477df$var$linearize(G) * 0.7151522 + $2dca407f99b477df$var$linearize(B) * 0.072175;
+    // toe clamping of very dark values to account for flare
+    let Ytxt = $2dca407f99b477df$var$fclamp(lumTxt);
+    let Ybg = $2dca407f99b477df$var$fclamp(lumBg);
+    // are we "Black on White" (dark on light), or light on dark?
+    let BoW = Ybg > Ytxt;
+    // why is this a delta, when Y is not perceptually uniform?
+    // Answer: it is a noise gate, see
+    // https://github.com/LeaVerou/color.js/issues/208
+    if (Math.abs(Ybg - Ytxt) < $2dca407f99b477df$var$deltaYmin) C = 0;
+    else if (BoW) {
+        // dark text on light background
+        S = Ybg ** $2dca407f99b477df$var$normBG - Ytxt ** $2dca407f99b477df$var$normTXT;
+        C = S * $2dca407f99b477df$var$scaleBoW;
+    } else {
+        // light text on dark background
+        S = Ybg ** $2dca407f99b477df$var$revBG - Ytxt ** $2dca407f99b477df$var$revTXT;
+        C = S * $2dca407f99b477df$var$scaleWoB;
+    }
+    if (Math.abs(C) < $2dca407f99b477df$var$loClip) Sapc = 0;
+    else if (C > 0) // not clear whether Woffset is loBoWoffset or loWoBoffset
+    // but they have the same value
+    Sapc = C - $2dca407f99b477df$var$loBoWoffset;
+    else Sapc = C + $2dca407f99b477df$var$loBoWoffset;
+    return Sapc * 100;
+}
+// Michelson  luminance contrast
+function $2dca407f99b477df$var$contrastMichelson(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
+    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
+    if (Y2 > Y1) [Y1, Y2] = [
+        Y2,
+        Y1
+    ];
+    let denom = Y1 + Y2;
+    return denom === 0 ? 0 : (Y1 - Y2) / denom;
+}
+// Weber luminance contrast
+// the darkest sRGB color above black is #000001 and this produces
+// a plain Weber contrast of ~45647.
+// So, setting the divide-by-zero result at 50000 is a reasonable
+// max clamp for the plain Weber
+const $2dca407f99b477df$var$max = 50000;
+function $2dca407f99b477df$var$contrastWeber(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
+    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
+    if (Y2 > Y1) [Y1, Y2] = [
+        Y2,
+        Y1
+    ];
+    return Y2 === 0 ? $2dca407f99b477df$var$max : (Y1 - Y2) / Y2;
+}
+// CIE Lightness difference, as used by Google Material Design
+function $2dca407f99b477df$var$contrastLstar(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    let L1 = $2dca407f99b477df$var$get(color1, [
+        $2dca407f99b477df$var$lab,
+        "l"
+    ]);
+    let L2 = $2dca407f99b477df$var$get(color2, [
+        $2dca407f99b477df$var$lab,
+        "l"
+    ]);
+    return Math.abs(L1 - L2);
+}
+// κ * ε  = 2^3 = 8
+const $2dca407f99b477df$var$ε$1 = 216 / 24389; // 6^3/29^3 == (24/116)^3
+const $2dca407f99b477df$var$ε3 = 24 / 116;
+const $2dca407f99b477df$var$κ = 24389 / 27; // 29^3/3^3
+let $2dca407f99b477df$var$white = $2dca407f99b477df$var$WHITES.D65;
+var $2dca407f99b477df$var$lab_d65 = new $2dca407f99b477df$var$ColorSpace({
+    id: "lab-d65",
+    name: "Lab D65",
+    coords: {
+        l: {
+            refRange: [
+                0,
+                100
+            ],
+            name: "L"
+        },
+        a: {
+            refRange: [
+                -125,
+                125
+            ]
+        },
+        b: {
+            refRange: [
+                -125,
+                125
+            ]
+        }
+    },
+    white: // Assuming XYZ is relative to D65, convert to CIE Lab
+    // from CIE standard, which now defines these as a rational fraction
+    $2dca407f99b477df$var$white,
+    base: $2dca407f99b477df$var$XYZ_D65,
+    // Convert D65-adapted XYZ to Lab
+    //  CIE 15.3:2004 section 8.2.1.1
+    fromBase (XYZ) {
+        // compute xyz, which is XYZ scaled relative to reference white
+        let xyz = XYZ.map((value1, i)=>value1 / $2dca407f99b477df$var$white[i]);
+        // now compute f
+        let f = xyz.map((value1)=>value1 > $2dca407f99b477df$var$ε$1 ? Math.cbrt(value1) : ($2dca407f99b477df$var$κ * value1 + 16) / 116);
+        return [
+            116 * f[1] - 16,
+            500 * (f[0] - f[1]),
+            200 * (f[1] - f[2])
+        ];
+    },
+    // Convert Lab to D65-adapted XYZ
+    // Same result as CIE 15.3:2004 Appendix D although the derivation is different
+    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+    toBase (Lab) {
+        // compute f, starting with the luminance-related term
+        let f = [];
+        f[1] = (Lab[0] + 16) / 116;
+        f[0] = Lab[1] / 500 + f[1];
+        f[2] = f[1] - Lab[2] / 200;
+        // compute xyz
+        let xyz = [
+            f[0] > $2dca407f99b477df$var$ε3 ? Math.pow(f[0], 3) : (116 * f[0] - 16) / $2dca407f99b477df$var$κ,
+            Lab[0] > 8 ? Math.pow((Lab[0] + 16) / 116, 3) : Lab[0] / $2dca407f99b477df$var$κ,
+            f[2] > $2dca407f99b477df$var$ε3 ? Math.pow(f[2], 3) : (116 * f[2] - 16) / $2dca407f99b477df$var$κ
+        ];
+        // Compute XYZ by scaling xyz by reference white
+        return xyz.map((value1, i)=>value1 * $2dca407f99b477df$var$white[i]);
+    },
+    formats: {
+        "lab-d65": {
+            coords: [
+                "<percentage> | <number>",
+                "<number>",
+                "<number>"
+            ]
+        }
+    }
+});
+// Delta Phi Star perceptual lightness contrast
+const $2dca407f99b477df$var$phi = Math.pow(5, 0.5) * 0.5 + 0.5; // Math.phi can be used if Math.js
+function $2dca407f99b477df$var$contrastDeltaPhi(color1, color2) {
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    let Lstr1 = $2dca407f99b477df$var$get(color1, [
+        $2dca407f99b477df$var$lab_d65,
+        "l"
+    ]);
+    let Lstr2 = $2dca407f99b477df$var$get(color2, [
+        $2dca407f99b477df$var$lab_d65,
+        "l"
+    ]);
+    let deltaPhiStar = Math.abs(Math.pow(Lstr1, $2dca407f99b477df$var$phi) - Math.pow(Lstr2, $2dca407f99b477df$var$phi));
+    let contrast = Math.pow(deltaPhiStar, 1 / $2dca407f99b477df$var$phi) * Math.SQRT2 - 40;
+    return contrast < 7.5 ? 0.0 : contrast;
+}
+var $2dca407f99b477df$var$contrastMethods = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    contrastWCAG21: $2dca407f99b477df$var$contrastWCAG21,
+    contrastAPCA: $2dca407f99b477df$var$contrastAPCA,
+    contrastMichelson: $2dca407f99b477df$var$contrastMichelson,
+    contrastWeber: $2dca407f99b477df$var$contrastWeber,
+    contrastLstar: $2dca407f99b477df$var$contrastLstar,
+    contrastDeltaPhi: $2dca407f99b477df$var$contrastDeltaPhi
+});
+function $2dca407f99b477df$var$contrast(background, foreground, o = {}) {
+    if ($2dca407f99b477df$var$isString(o)) o = {
+        algorithm: o
+    };
+    let { algorithm: algorithm, ...rest } = o;
+    if (!algorithm) {
+        let algorithms = Object.keys($2dca407f99b477df$var$contrastMethods).map((a)=>a.replace(/^contrast/, "")).join(", ");
+        throw new TypeError(`contrast() function needs a contrast algorithm. Please specify one of: ${algorithms}`);
+    }
+    background = $2dca407f99b477df$var$getColor(background);
+    foreground = $2dca407f99b477df$var$getColor(foreground);
+    for(let a in $2dca407f99b477df$var$contrastMethods){
+        if ("contrast" + algorithm.toLowerCase() === a.toLowerCase()) return $2dca407f99b477df$var$contrastMethods[a](background, foreground, rest);
+    }
+    throw new TypeError(`Unknown contrast algorithm: ${algorithm}`);
+}
+// Chromaticity coordinates
+function $2dca407f99b477df$var$uv(color) {
+    let [X, Y, Z] = $2dca407f99b477df$var$getAll(color, $2dca407f99b477df$var$XYZ_D65);
+    let denom = X + 15 * Y + 3 * Z;
+    return [
+        4 * X / denom,
+        9 * Y / denom
+    ];
+}
+function $2dca407f99b477df$var$xy(color) {
+    let [X, Y, Z] = $2dca407f99b477df$var$getAll(color, $2dca407f99b477df$var$XYZ_D65);
+    let sum = X + Y + Z;
+    return [
+        X / sum,
+        Y / sum
+    ];
+}
+function $2dca407f99b477df$var$register$1(Color) {
+    // no setters, as lightness information is lost
+    // when converting color to chromaticity
+    Object.defineProperty(Color.prototype, "uv", {
+        get () {
+            return $2dca407f99b477df$var$uv(this);
+        }
+    });
+    Object.defineProperty(Color.prototype, "xy", {
+        get () {
+            return $2dca407f99b477df$var$xy(this);
+        }
+    });
+}
+var $2dca407f99b477df$var$chromaticity = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    uv: $2dca407f99b477df$var$uv,
+    xy: $2dca407f99b477df$var$xy,
+    register: $2dca407f99b477df$var$register$1
+});
+function $2dca407f99b477df$var$deltaE76(color, sample) {
+    return $2dca407f99b477df$var$distance(color, sample, "lab");
+}
+// More accurate color-difference formulae
+// than the simple 1976 Euclidean distance in Lab
+// CMC by the Color Measurement Committee of the
+// Bradford Society of Dyeists and Colorsts, 1994.
+// Uses LCH rather than Lab,
+// with different weights for L, C and H differences
+// A nice increase in accuracy for modest increase in complexity
+const $2dca407f99b477df$var$π = Math.PI;
+const $2dca407f99b477df$var$d2r = $2dca407f99b477df$var$π / 180;
+function $2dca407f99b477df$var$deltaECMC(color, sample, { l: l = 2, c: c = 1 } = {}) {
+    // Given this color as the reference
+    // and a sample,
+    // calculate deltaE CMC.
+    // This implementation assumes the parametric
+    // weighting factors l:c are 2:1
+    // which is typical for non-textile uses.
+    let [L1, a1, b1] = $2dca407f99b477df$var$lab.from(color);
+    let [, C1, H1] = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
+        L1,
+        a1,
+        b1
+    ]);
+    let [L2, a2, b2] = $2dca407f99b477df$var$lab.from(sample);
+    let C2 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
+        L2,
+        a2,
+        b2
+    ])[1];
+    // let [L1, a1, b1] = color.getAll(lab);
+    // let C1 = color.get("lch.c");
+    // let H1 = color.get("lch.h");
+    // let [L2, a2, b2] = sample.getAll(lab);
+    // let C2 = sample.get("lch.c");
+    // Check for negative Chroma,
+    // which might happen through
+    // direct user input of LCH values
+    if (C1 < 0) C1 = 0;
+    if (C2 < 0) C2 = 0;
+    // we don't need H2 as ΔH is calculated from Δa, Δb and ΔC
+    // Lightness and Chroma differences
+    // These are (color - sample), unlike deltaE2000
+    let ΔL = L1 - L2;
+    let ΔC = C1 - C2;
+    let Δa = a1 - a2;
+    let Δb = b1 - b2;
+    // weighted Hue difference, less for larger Chroma difference
+    let H2 = Δa ** 2 + Δb ** 2 - ΔC ** 2;
+    // due to roundoff error it is possible that, for zero a and b,
+    // ΔC > Δa + Δb is 0, resulting in attempting
+    // to take the square root of a negative number
+    // trying instead the equation from Industrial Color Physics
+    // By Georg A. Klein
+    // let ΔH = ((a1 * b2) - (a2 * b1)) / Math.sqrt(0.5 * ((C2 * C1) + (a2 * a1) + (b2 * b1)));
+    // This gives the same result to 12 decimal places
+    // except it sometimes NaNs when trying to root a negative number
+    // let ΔH = Math.sqrt(H2); we never actually use the root, it gets squared again!!
+    // positional corrections to the lack of uniformity of CIELAB
+    // These are all trying to make JND ellipsoids more like spheres
+    // SL Lightness crispening factor, depends entirely on L1 not L2
+    let SL = 0.511; // linear portion of the Y to L transfer function
+    if (L1 >= 16) // cubic portion
+    SL = 0.040975 * L1 / (1 + 0.01765 * L1);
+    // SC Chroma factor
+    let SC = 0.0638 * C1 / (1 + 0.0131 * C1) + 0.638;
+    // Cross term T for blue non-linearity
+    let T;
+    if (Number.isNaN(H1)) H1 = 0;
+    if (H1 >= 164 && H1 <= 345) T = 0.56 + Math.abs(0.2 * Math.cos((H1 + 168) * $2dca407f99b477df$var$d2r));
+    else T = 0.36 + Math.abs(0.4 * Math.cos((H1 + 35) * $2dca407f99b477df$var$d2r));
+    // SH Hue factor also depends on C1,
+    let C4 = Math.pow(C1, 4);
+    let F = Math.sqrt(C4 / (C4 + 1900));
+    let SH = SC * (F * T + 1 - F);
+    // Finally calculate the deltaE, term by term as root sume of squares
+    let dE = (ΔL / (l * SL)) ** 2;
+    dE += (ΔC / (c * SC)) ** 2;
+    dE += H2 / SH ** 2;
+    // dE += (ΔH / SH)  ** 2;
+    return Math.sqrt(dE);
+// Yay!!!
+}
+const $2dca407f99b477df$var$Yw$1 = 203; // absolute luminance of media white
+var $2dca407f99b477df$var$XYZ_Abs_D65 = new $2dca407f99b477df$var$ColorSpace({
+    // Absolute CIE XYZ, with a D65 whitepoint,
+    // as used in most HDR colorspaces as a starting point.
+    // SDR spaces are converted per BT.2048
+    // so that diffuse, media white is 203 cd/m²
+    id: "xyz-abs-d65",
+    name: "Absolute XYZ D65",
+    coords: {
+        x: {
+            refRange: [
+                0,
+                9504.7
+            ],
+            name: "Xa"
+        },
+        y: {
+            refRange: [
+                0,
+                10000
+            ],
+            name: "Ya"
+        },
+        z: {
+            refRange: [
+                0,
+                10888.3
+            ],
+            name: "Za"
+        }
+    },
+    base: $2dca407f99b477df$var$XYZ_D65,
+    fromBase (XYZ) {
+        // Make XYZ absolute, not relative to media white
+        // Maximum luminance in PQ is 10,000 cd/m²
+        // Relative XYZ has Y=1 for media white
+        return XYZ.map((v)=>Math.max(v * $2dca407f99b477df$var$Yw$1, 0));
+    },
+    toBase (AbsXYZ) {
+        // Convert to media-white relative XYZ
+        return AbsXYZ.map((v)=>Math.max(v / $2dca407f99b477df$var$Yw$1, 0));
+    }
+});
+const $2dca407f99b477df$var$b$1 = 1.15;
+const $2dca407f99b477df$var$g = 0.66;
+const $2dca407f99b477df$var$n$1 = 2610 / 2 ** 14;
+const $2dca407f99b477df$var$ninv$1 = 2 ** 14 / 2610;
+const $2dca407f99b477df$var$c1$2 = 0.8359375;
+const $2dca407f99b477df$var$c2$2 = 18.8515625;
+const $2dca407f99b477df$var$c3$2 = 18.6875;
+const $2dca407f99b477df$var$p = 1.7 * 2523 / 32;
+const $2dca407f99b477df$var$pinv = 32 / (1.7 * 2523);
+const $2dca407f99b477df$var$d = -0.56;
+const $2dca407f99b477df$var$d0 = 1.6295499532821566e-11;
+const $2dca407f99b477df$var$XYZtoCone_M = [
+    [
+        0.41478972,
+        0.579999,
+        0.014648
+    ],
+    [
+        -0.20151,
+        1.120649,
+        0.0531008
+    ],
+    [
+        -0.0166008,
+        0.2648,
+        0.6684799
+    ]
+];
+// XYZtoCone_M inverted
+const $2dca407f99b477df$var$ConetoXYZ_M = [
+    [
+        1.9242264357876067,
+        -1.0047923125953657,
+        0.037651404030618
+    ],
+    [
+        0.35031676209499907,
+        0.7264811939316552,
+        -0.06538442294808501
+    ],
+    [
+        -0.09098281098284752,
+        -0.3127282905230739,
+        1.5227665613052603
+    ]
+];
+const $2dca407f99b477df$var$ConetoIab_M = [
+    [
+        0.5,
+        0.5,
+        0
+    ],
+    [
+        3.524,
+        -4.066708,
+        0.542708
+    ],
+    [
+        0.199076,
+        1.096799,
+        -1.295875
+    ]
+];
+// ConetoIab_M inverted
+const $2dca407f99b477df$var$IabtoCone_M = [
+    [
+        1,
+        0.1386050432715393,
+        0.05804731615611886
+    ],
+    [
+        0.9999999999999999,
+        -0.1386050432715393,
+        -0.05804731615611886
+    ],
+    [
+        0.9999999999999998,
+        -0.09601924202631895,
+        -0.8118918960560388
+    ]
+];
+var $2dca407f99b477df$var$Jzazbz = new $2dca407f99b477df$var$ColorSpace({
+    id: "jzazbz",
+    name: "Jzazbz",
+    coords: {
+        jz: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "Jz"
+        },
+        az: {
+            refRange: [
+                -0.5,
+                0.5
+            ]
+        },
+        bz: {
+            refRange: [
+                -0.5,
+                0.5
+            ]
+        }
+    },
+    base: $2dca407f99b477df$var$XYZ_Abs_D65,
+    fromBase (XYZ) {
+        // First make XYZ absolute, not relative to media white
+        // Maximum luminance in PQ is 10,000 cd/m²
+        // Relative XYZ has Y=1 for media white
+        // BT.2048 says media white Y=203 at PQ 58
+        let [Xa, Ya, Za] = XYZ;
+        // modify X and Y
+        let Xm = $2dca407f99b477df$var$b$1 * Xa - ($2dca407f99b477df$var$b$1 - 1) * Za;
+        let Ym = $2dca407f99b477df$var$g * Ya - ($2dca407f99b477df$var$g - 1) * Xa;
+        // move to LMS cone domain
+        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoCone_M, [
+            Xm,
+            Ym,
+            Za
+        ]);
+        // PQ-encode LMS
+        let PQLMS = LMS.map(function(val) {
+            let num = $2dca407f99b477df$var$c1$2 + $2dca407f99b477df$var$c2$2 * (val / 10000) ** $2dca407f99b477df$var$n$1;
+            let denom = 1 + $2dca407f99b477df$var$c3$2 * (val / 10000) ** $2dca407f99b477df$var$n$1;
+            return (num / denom) ** $2dca407f99b477df$var$p;
+        });
+        // almost there, calculate Iz az bz
+        let [Iz, az, bz] = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$ConetoIab_M, PQLMS);
+        let Jz = (1 + $2dca407f99b477df$var$d) * Iz / (1 + $2dca407f99b477df$var$d * Iz) - $2dca407f99b477df$var$d0;
+        return [
+            Jz,
+            az,
+            bz
+        ];
+    },
+    toBase (Jzazbz) {
+        let [Jz, az, bz] = Jzazbz;
+        let Iz = (Jz + $2dca407f99b477df$var$d0) / (1 + $2dca407f99b477df$var$d - $2dca407f99b477df$var$d * (Jz + $2dca407f99b477df$var$d0));
+        // bring into LMS cone domain
+        let PQLMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$IabtoCone_M, [
+            Iz,
+            az,
+            bz
+        ]);
+        // convert from PQ-coded to linear-light
+        let LMS = PQLMS.map(function(val) {
+            let num = $2dca407f99b477df$var$c1$2 - val ** $2dca407f99b477df$var$pinv;
+            let denom = $2dca407f99b477df$var$c3$2 * val ** $2dca407f99b477df$var$pinv - $2dca407f99b477df$var$c2$2;
+            let x = 10000 * (num / denom) ** $2dca407f99b477df$var$ninv$1;
+            return x; // luminance relative to diffuse white, [0, 70 or so].
+        });
+        // modified abs XYZ
+        let [Xm, Ym, Za] = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$ConetoXYZ_M, LMS);
+        // restore standard D50 relative XYZ, relative to media white
+        let Xa = (Xm + ($2dca407f99b477df$var$b$1 - 1) * Za) / $2dca407f99b477df$var$b$1;
+        let Ya = (Ym + ($2dca407f99b477df$var$g - 1) * Xa) / $2dca407f99b477df$var$g;
+        return [
+            Xa,
+            Ya,
+            Za
+        ];
+    },
+    formats: {
+        // https://drafts.csswg.org/css-color-hdr/#Jzazbz
+        color: {}
+    }
+});
+var $2dca407f99b477df$var$jzczhz = new $2dca407f99b477df$var$ColorSpace({
+    id: "jzczhz",
+    name: "JzCzHz",
+    coords: {
+        jz: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "Jz"
+        },
+        cz: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "Chroma"
+        },
+        hz: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        }
+    },
+    base: $2dca407f99b477df$var$Jzazbz,
+    fromBase (jzazbz) {
+        // Convert to polar form
+        let [Jz, az, bz] = jzazbz;
+        let hue;
+        const ε = 0.0002; // chromatic components much smaller than a,b
+        if (Math.abs(az) < ε && Math.abs(bz) < ε) hue = NaN;
+        else hue = Math.atan2(bz, az) * 180 / Math.PI;
+        return [
+            Jz,
+            Math.sqrt(az ** 2 + bz ** 2),
+            $2dca407f99b477df$var$constrain(hue)
+        ];
+    },
+    toBase (jzczhz) {
+        // Convert from polar form
+        // debugger;
+        return [
+            jzczhz[0],
+            jzczhz[1] * Math.cos(jzczhz[2] * Math.PI / 180),
+            jzczhz[1] * Math.sin(jzczhz[2] * Math.PI / 180)
+        ];
+    },
+    formats: {
+        color: {}
+    }
+});
+// More accurate color-difference formulae
+// than the simple 1976 Euclidean distance in Lab
+// Uses JzCzHz, which has improved perceptual uniformity
+// and thus a simple Euclidean root-sum of ΔL² ΔC² ΔH²
+// gives good results.
+function $2dca407f99b477df$var$deltaEJz(color, sample) {
+    // Given this color as the reference
+    // and a sample,
+    // calculate deltaE in JzCzHz.
+    let [Jz1, Cz1, Hz1] = $2dca407f99b477df$var$jzczhz.from(color);
+    let [Jz2, Cz2, Hz2] = $2dca407f99b477df$var$jzczhz.from(sample);
+    // Lightness and Chroma differences
+    // sign does not matter as they are squared.
+    let ΔJ = Jz1 - Jz2;
+    let ΔC = Cz1 - Cz2;
+    // length of chord for ΔH
+    if (Number.isNaN(Hz1) && Number.isNaN(Hz2)) {
+        // both undefined hues
+        Hz1 = 0;
+        Hz2 = 0;
+    } else if (Number.isNaN(Hz1)) // one undefined, set to the defined hue
+    Hz1 = Hz2;
+    else if (Number.isNaN(Hz2)) Hz2 = Hz1;
+    let Δh = Hz1 - Hz2;
+    let ΔH = 2 * Math.sqrt(Cz1 * Cz2) * Math.sin(Δh / 2 * (Math.PI / 180));
+    return Math.sqrt(ΔJ ** 2 + ΔC ** 2 + ΔH ** 2);
+}
+const $2dca407f99b477df$var$c1$1 = 0.8359375;
+const $2dca407f99b477df$var$c2$1 = 2413 / 128;
+const $2dca407f99b477df$var$c3$1 = 18.6875;
+const $2dca407f99b477df$var$m1 = 2610 / 16384;
+const $2dca407f99b477df$var$m2 = 2523 / 32;
+const $2dca407f99b477df$var$im1 = 16384 / 2610;
+const $2dca407f99b477df$var$im2 = 32 / 2523;
+// The matrix below includes the 4% crosstalk components
+// and is from the Dolby "What is ICtCp" paper"
+const $2dca407f99b477df$var$XYZtoLMS_M$1 = [
+    [
+        0.3592,
+        0.6976,
+        -0.0358
+    ],
+    [
+        -0.1922,
+        1.1004,
+        0.0755
+    ],
+    [
+        0.007,
+        0.0749,
+        0.8434
+    ]
+];
+// linear-light Rec.2020 to LMS, again with crosstalk
+// rational terms from Jan Fröhlich,
+// Encoding High Dynamic Range andWide Color Gamut Imagery, p.97
+// and ITU-R BT.2124-0 p.2
+/*
+const Rec2020toLMS_M = [
+	[ 1688 / 4096,  2146 / 4096,   262 / 4096 ],
+	[  683 / 4096,  2951 / 4096,   462 / 4096 ],
+	[   99 / 4096,   309 / 4096,  3688 / 4096 ]
+];
+*/ // this includes the Ebner LMS coefficients,
+// the rotation, and the scaling to [-0.5,0.5] range
+// rational terms from Fröhlich p.97
+// and ITU-R BT.2124-0 pp.2-3
+const $2dca407f99b477df$var$LMStoIPT_M = [
+    [
+        0.5,
+        0.5,
+        0
+    ],
+    [
+        6610 / 4096,
+        -13613 / 4096,
+        7003 / 4096
+    ],
+    [
+        17933 / 4096,
+        -17390 / 4096,
+        -543 / 4096
+    ]
+];
+// inverted matrices, calculated from the above
+const $2dca407f99b477df$var$IPTtoLMS_M = [
+    [
+        0.99998889656284013833,
+        0.00860505014728705821,
+        0.1110343715986164786
+    ],
+    [
+        1.0000111034371598616,
+        -0.008605050147287059,
+        -0.11103437159861648
+    ],
+    [
+        1.000032063391005412,
+        0.56004913547279000113,
+        -0.3206339100541203
+    ]
+];
+/*
+const LMStoRec2020_M = [
+	[ 3.4375568932814012112,   -2.5072112125095058195,   0.069654319228104608382],
+	[-0.79142868665644156125,   1.9838372198740089874,  -0.19240853321756742626 ],
+	[-0.025646662911506476363, -0.099240248643945566751, 1.1248869115554520431  ]
+];
+*/ const $2dca407f99b477df$var$LMStoXYZ_M$1 = [
+    [
+        2.0701800566956135096,
+        -1.326456876103021,
+        0.20661600684785517081
+    ],
+    [
+        0.36498825003265747974,
+        0.68046736285223514102,
+        -0.04542175307585323
+    ],
+    [
+        -0.04959554223893211,
+        -0.04942116118675749,
+        1.1879959417328034394
+    ]
+];
+// Only the PQ form of ICtCp is implemented here. There is also an HLG form.
+// from Dolby, "WHAT IS ICTCP?"
+// https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
+// and
+// Dolby, "Perceptual Color Volume
+// Measuring the Distinguishable Colors of HDR and WCG Displays"
+// https://professional.dolby.com/siteassets/pdfs/dolby-vision-measuring-perceptual-color-volume-v7.1.pdf
+var $2dca407f99b477df$var$ictcp = new $2dca407f99b477df$var$ColorSpace({
+    id: "ictcp",
+    name: "ICTCP",
+    // From BT.2100-2 page 7:
+    // During production, signal values are expected to exceed the
+    // range E′ = [0.0 : 1.0]. This provides processing headroom and avoids
+    // signal degradation during cascaded processing. Such values of E′,
+    // below 0.0 or exceeding 1.0, should not be clipped during production
+    // and exchange.
+    // Values below 0.0 should not be clipped in reference displays (even
+    // though they represent “negative” light) to allow the black level of
+    // the signal (LB) to be properly set using test signals known as “PLUGE”
+    coords: {
+        i: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "I"
+        },
+        ct: {
+            refRange: [
+                -0.5,
+                0.5
+            ],
+            name: "CT"
+        },
+        cp: {
+            refRange: [
+                -0.5,
+                0.5
+            ],
+            name: "CP"
+        }
+    },
+    base: $2dca407f99b477df$var$XYZ_Abs_D65,
+    fromBase (XYZ) {
+        // move to LMS cone domain
+        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoLMS_M$1, XYZ);
+        return $2dca407f99b477df$var$LMStoICtCp(LMS);
+    },
+    toBase (ICtCp) {
+        let LMS = $2dca407f99b477df$var$ICtCptoLMS(ICtCp);
+        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoXYZ_M$1, LMS);
+    },
+    formats: {
+        color: {}
+    }
+});
+function $2dca407f99b477df$var$LMStoICtCp(LMS) {
+    // apply the PQ EOTF
+    // we can't ever be dividing by zero because of the "1 +" in the denominator
+    let PQLMS = LMS.map(function(val) {
+        let num = $2dca407f99b477df$var$c1$1 + $2dca407f99b477df$var$c2$1 * (val / 10000) ** $2dca407f99b477df$var$m1;
+        let denom = 1 + $2dca407f99b477df$var$c3$1 * (val / 10000) ** $2dca407f99b477df$var$m1;
+        return (num / denom) ** $2dca407f99b477df$var$m2;
+    });
+    // LMS to IPT, with rotation for Y'C'bC'r compatibility
+    return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoIPT_M, PQLMS);
+}
+function $2dca407f99b477df$var$ICtCptoLMS(ICtCp) {
+    let PQLMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$IPTtoLMS_M, ICtCp);
+    // From BT.2124-0 Annex 2 Conversion 3
+    let LMS = PQLMS.map(function(val) {
+        let num = Math.max(val ** $2dca407f99b477df$var$im2 - $2dca407f99b477df$var$c1$1, 0);
+        let denom = $2dca407f99b477df$var$c2$1 - $2dca407f99b477df$var$c3$1 * val ** $2dca407f99b477df$var$im2;
+        return 10000 * (num / denom) ** $2dca407f99b477df$var$im1;
+    });
+    return LMS;
+}
+// Delta E in ICtCp space,
+// which the ITU calls Delta E ITP, which is shorter
+// formulae from ITU Rec. ITU-R BT.2124-0
+function $2dca407f99b477df$var$deltaEITP(color, sample) {
+    // Given this color as the reference
+    // and a sample,
+    // calculate deltaE in ICtCp
+    // which is simply the Euclidean distance
+    let [I1, T1, P1] = $2dca407f99b477df$var$ictcp.from(color);
+    let [I2, T2, P2] = $2dca407f99b477df$var$ictcp.from(sample);
+    // the 0.25 factor is to undo the encoding scaling in Ct
+    // the 720 is so that 1 deltaE = 1 JND
+    // per  ITU-R BT.2124-0 p.3
+    return 720 * Math.sqrt((I1 - I2) ** 2 + 0.25 * (T1 - T2) ** 2 + (P1 - P2) ** 2);
+}
+// Recalculated for consistent reference white
+// see https://github.com/w3c/csswg-drafts/issues/6642#issuecomment-943521484
+const $2dca407f99b477df$var$XYZtoLMS_M = [
+    [
+        0.8190224432164319,
+        0.3619062562801221,
+        -0.12887378261216414
+    ],
+    [
+        0.0329836671980271,
+        0.9292868468965546,
+        0.03614466816999844
+    ],
+    [
+        0.048177199566046255,
+        0.26423952494422764,
+        0.6335478258136937
+    ]
+];
+// inverse of XYZtoLMS_M
+const $2dca407f99b477df$var$LMStoXYZ_M = [
+    [
+        1.2268798733741557,
+        -0.5578149965554813,
+        0.28139105017721583
+    ],
+    [
+        -0.04057576262431372,
+        1.1122868293970594,
+        -0.07171106666151701
+    ],
+    [
+        -0.07637294974672142,
+        -0.4214933239627914,
+        1.5869240244272418
+    ]
+];
+const $2dca407f99b477df$var$LMStoLab_M = [
+    [
+        0.2104542553,
+        0.793617785,
+        -0.0040720468
+    ],
+    [
+        1.9779984951,
+        -2.428592205,
+        0.4505937099
+    ],
+    [
+        0.0259040371,
+        0.7827717662,
+        -0.808675766
+    ]
+];
+// LMStoIab_M inverted
+const $2dca407f99b477df$var$LabtoLMS_M = [
+    [
+        0.99999999845051981432,
+        0.39633779217376785678,
+        0.21580375806075880339
+    ],
+    [
+        1.0000000088817607767,
+        -0.10556134232365635,
+        -0.06385417477170591
+    ],
+    [
+        1.0000000546724109177,
+        -0.08948418209496575,
+        -1.2914855378640917
+    ]
+];
+var $2dca407f99b477df$var$OKLab = new $2dca407f99b477df$var$ColorSpace({
+    id: "oklab",
+    name: "OKLab",
+    coords: {
+        l: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "L"
+        },
+        a: {
+            refRange: [
+                -0.4,
+                0.4
+            ]
+        },
+        b: {
+            refRange: [
+                -0.4,
+                0.4
+            ]
+        }
+    },
+    // Note that XYZ is relative to D65
+    white: "D65",
+    base: $2dca407f99b477df$var$XYZ_D65,
+    fromBase (XYZ) {
+        // move to LMS cone domain
+        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoLMS_M, XYZ);
+        // non-linearity
+        let LMSg = LMS.map((val)=>Math.cbrt(val));
+        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoLab_M, LMSg);
+    },
+    toBase (OKLab) {
+        // move to LMS cone domain
+        let LMSg = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LabtoLMS_M, OKLab);
+        // restore linearity
+        let LMS = LMSg.map((val)=>val ** 3);
+        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoXYZ_M, LMS);
+    },
+    formats: {
+        oklab: {
+            coords: [
+                "<percentage>",
+                "<number>",
+                "<number>"
+            ]
+        }
+    }
+});
+// More accurate color-difference formulae
+function $2dca407f99b477df$var$deltaEOK(color, sample) {
+    // Given this color as the reference
+    // and a sample,
+    // calculate deltaEOK, term by term as root sum of squares
+    let [L1, a1, b1] = $2dca407f99b477df$var$OKLab.from(color);
+    let [L2, a2, b2] = $2dca407f99b477df$var$OKLab.from(sample);
+    let ΔL = L1 - L2;
+    let Δa = a1 - a2;
+    let Δb = b1 - b2;
+    return Math.sqrt(ΔL ** 2 + Δa ** 2 + Δb ** 2);
+}
+var $2dca407f99b477df$var$deltaEMethods = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    deltaE76: $2dca407f99b477df$var$deltaE76,
+    deltaECMC: $2dca407f99b477df$var$deltaECMC,
+    deltaE2000: $2dca407f99b477df$var$deltaE2000,
+    deltaEJz: $2dca407f99b477df$var$deltaEJz,
+    deltaEITP: $2dca407f99b477df$var$deltaEITP,
+    deltaEOK: $2dca407f99b477df$var$deltaEOK
+});
+function $2dca407f99b477df$var$deltaE(c1, c2, o = {}) {
+    if ($2dca407f99b477df$var$isString(o)) o = {
+        method: o
+    };
+    let { method: method = $2dca407f99b477df$var$defaults.deltaE, ...rest } = o;
+    c1 = $2dca407f99b477df$var$getColor(c1);
+    c2 = $2dca407f99b477df$var$getColor(c2);
+    for(let m in $2dca407f99b477df$var$deltaEMethods){
+        if ("deltae" + method.toLowerCase() === m.toLowerCase()) return $2dca407f99b477df$var$deltaEMethods[m](c1, c2, rest);
+    }
+    throw new TypeError(`Unknown deltaE method: ${method}`);
+}
+var $2dca407f99b477df$var$deltaE$1 = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    default: $2dca407f99b477df$var$deltaE
+});
+function $2dca407f99b477df$var$lighten(color, amount = 0.25) {
+    let space = $2dca407f99b477df$var$ColorSpace.get("oklch", "lch");
+    let lightness = [
+        space,
+        "l"
+    ];
+    return $2dca407f99b477df$var$set$1(color, lightness, (l)=>l * (1 + amount));
+}
+function $2dca407f99b477df$var$darken(color, amount = 0.25) {
+    let space = $2dca407f99b477df$var$ColorSpace.get("oklch", "lch");
+    let lightness = [
+        space,
+        "l"
+    ];
+    return $2dca407f99b477df$var$set$1(color, lightness, (l)=>l * (1 - amount));
+}
+var $2dca407f99b477df$var$variations = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    lighten: $2dca407f99b477df$var$lighten,
+    darken: $2dca407f99b477df$var$darken
+});
+/**
+ * Functions related to color interpolation
+ */ /**
+ * Return an intermediate color between two colors
+ * Signatures: mix(c1, c2, p, options)
+ *             mix(c1, c2, options)
+ *             mix(color)
+ * @param {Color | string} c1 The first color
+ * @param {Color | string} [c2] The second color
+ * @param {number} [p=.5] A 0-1 percentage where 0 is c1 and 1 is c2
+ * @param {Object} [o={}]
+ * @return {Color}
+ */ function $2dca407f99b477df$var$mix(c1, c2, p = 0.5, o = {}) {
+    [c1, c2] = [
+        $2dca407f99b477df$var$getColor(c1),
+        $2dca407f99b477df$var$getColor(c2)
+    ];
+    if ($2dca407f99b477df$var$type(p) === "object") [p, o] = [
+        0.5,
+        p
+    ];
+    let { space: space, outputSpace: outputSpace } = o;
+    let r = $2dca407f99b477df$var$range(c1, c2, {
+        space: space,
+        outputSpace: outputSpace
+    });
+    return r(p);
+}
+/**
+ *
+ * @param {Color | string | Function} c1 The first color or a range
+ * @param {Color | string} [c2] The second color if c1 is not a range
+ * @param {Object} [options={}]
+ * @return {Color[]}
+ */ function $2dca407f99b477df$var$steps(c1, c2, options = {}) {
+    let colorRange;
+    if ($2dca407f99b477df$var$isRange(c1)) {
+        // Tweaking existing range
+        [colorRange, options] = [
+            c1,
+            c2
+        ];
+        [c1, c2] = colorRange.rangeArgs.colors;
+    }
+    let { maxDeltaE: maxDeltaE, deltaEMethod: deltaEMethod, steps: steps = 2, maxSteps: maxSteps = 1000, ...rangeOptions } = options;
+    if (!colorRange) {
+        [c1, c2] = [
+            $2dca407f99b477df$var$getColor(c1),
+            $2dca407f99b477df$var$getColor(c2)
+        ];
+        colorRange = $2dca407f99b477df$var$range(c1, c2, rangeOptions);
+    }
+    let totalDelta = $2dca407f99b477df$var$deltaE(c1, c2);
+    let actualSteps = maxDeltaE > 0 ? Math.max(steps, Math.ceil(totalDelta / maxDeltaE) + 1) : steps;
+    let ret = [];
+    if (maxSteps !== undefined) actualSteps = Math.min(actualSteps, maxSteps);
+    if (actualSteps === 1) ret = [
+        {
+            p: 0.5,
+            color: colorRange(0.5)
+        }
+    ];
+    else {
+        let step = 1 / (actualSteps - 1);
+        ret = Array.from({
+            length: actualSteps
+        }, (_, i)=>{
+            let p = i * step;
+            return {
+                p: p,
+                color: colorRange(p)
+            };
+        });
+    }
+    if (maxDeltaE > 0) {
+        // Iterate over all stops and find max deltaE
+        let maxDelta = ret.reduce((acc, cur, i)=>{
+            if (i === 0) return 0;
+            let ΔΕ = $2dca407f99b477df$var$deltaE(cur.color, ret[i - 1].color, deltaEMethod);
+            return Math.max(acc, ΔΕ);
+        }, 0);
+        while(maxDelta > maxDeltaE){
+            // Insert intermediate stops and measure maxDelta again
+            // We need to do this for all pairs, otherwise the midpoint shifts
+            maxDelta = 0;
+            for(let i = 1; i < ret.length && ret.length < maxSteps; i++){
+                let prev = ret[i - 1];
+                let cur = ret[i];
+                let p = (cur.p + prev.p) / 2;
+                let color = colorRange(p);
+                maxDelta = Math.max(maxDelta, $2dca407f99b477df$var$deltaE(color, prev.color), $2dca407f99b477df$var$deltaE(color, cur.color));
+                ret.splice(i, 0, {
+                    p: p,
+                    color: colorRange(p)
+                });
+                i++;
+            }
+        }
+    }
+    ret = ret.map((a)=>a.color);
+    return ret;
+}
+/**
+ * Interpolate to color2 and return a function that takes a 0-1 percentage
+ * @param {Color | string | Function} color1 The first color or an existing range
+ * @param {Color | string} [color2] If color1 is a color, this is the second color
+ * @param {Object} [options={}]
+ * @returns {Function} A function that takes a 0-1 percentage and returns a color
+ */ function $2dca407f99b477df$var$range(color1, color2, options = {}) {
+    if ($2dca407f99b477df$var$isRange(color1)) {
+        // Tweaking existing range
+        let [r, options] = [
+            color1,
+            color2
+        ];
+        return $2dca407f99b477df$var$range(...r.rangeArgs.colors, {
+            ...r.rangeArgs.options,
+            ...options
+        });
+    }
+    let { space: space, outputSpace: outputSpace, progression: progression, premultiplied: premultiplied } = options;
+    color1 = $2dca407f99b477df$var$getColor(color1);
+    color2 = $2dca407f99b477df$var$getColor(color2);
+    // Make sure we're working on copies of these colors
+    color1 = $2dca407f99b477df$var$clone(color1);
+    color2 = $2dca407f99b477df$var$clone(color2);
+    let rangeArgs = {
+        colors: [
+            color1,
+            color2
+        ],
+        options: options
+    };
+    if (space) space = $2dca407f99b477df$var$ColorSpace.get(space);
+    else space = $2dca407f99b477df$var$ColorSpace.registry[$2dca407f99b477df$var$defaults.interpolationSpace] || color1.space;
+    outputSpace = outputSpace ? $2dca407f99b477df$var$ColorSpace.get(outputSpace) : space;
+    color1 = $2dca407f99b477df$var$to(color1, space);
+    color2 = $2dca407f99b477df$var$to(color2, space);
+    // Gamut map to avoid areas of flat color
+    color1 = $2dca407f99b477df$var$toGamut(color1);
+    color2 = $2dca407f99b477df$var$toGamut(color2);
+    // Handle hue interpolation
+    // See https://github.com/w3c/csswg-drafts/issues/4735#issuecomment-635741840
+    if (space.coords.h && space.coords.h.type === "angle") {
+        let arc = options.hue = options.hue || "shorter";
+        let hue = [
+            space,
+            "h"
+        ];
+        let [θ1, θ2] = [
+            $2dca407f99b477df$var$get(color1, hue),
+            $2dca407f99b477df$var$get(color2, hue)
+        ];
+        [θ1, θ2] = $2dca407f99b477df$var$adjust(arc, [
+            θ1,
+            θ2
+        ]);
+        $2dca407f99b477df$var$set$1(color1, hue, θ1);
+        $2dca407f99b477df$var$set$1(color2, hue, θ2);
+    }
+    if (premultiplied) {
+        // not coping with polar spaces yet
+        color1.coords = color1.coords.map((c)=>c * color1.alpha);
+        color2.coords = color2.coords.map((c)=>c * color2.alpha);
+    }
+    return Object.assign((p)=>{
+        p = progression ? progression(p) : p;
+        let coords = color1.coords.map((start, i)=>{
+            let end = color2.coords[i];
+            return $2dca407f99b477df$var$interpolate(start, end, p);
+        });
+        let alpha = $2dca407f99b477df$var$interpolate(color1.alpha, color2.alpha, p);
+        let ret = {
+            space: space,
+            coords: coords,
+            alpha: alpha
+        };
+        if (premultiplied) // undo premultiplication
+        ret.coords = ret.coords.map((c)=>c / alpha);
+        if (outputSpace !== space) ret = $2dca407f99b477df$var$to(ret, outputSpace);
+        return ret;
+    }, {
+        rangeArgs: rangeArgs
+    });
+}
+function $2dca407f99b477df$var$isRange(val) {
+    return $2dca407f99b477df$var$type(val) === "function" && !!val.rangeArgs;
+}
+$2dca407f99b477df$var$defaults.interpolationSpace = "lab";
+function $2dca407f99b477df$var$register(Color) {
+    Color.defineFunction("mix", $2dca407f99b477df$var$mix, {
+        returns: "color"
+    });
+    Color.defineFunction("range", $2dca407f99b477df$var$range, {
+        returns: "function<color>"
+    });
+    Color.defineFunction("steps", $2dca407f99b477df$var$steps, {
+        returns: "array<color>"
+    });
+}
+var $2dca407f99b477df$var$interpolation = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    mix: $2dca407f99b477df$var$mix,
+    steps: $2dca407f99b477df$var$steps,
+    range: $2dca407f99b477df$var$range,
+    isRange: $2dca407f99b477df$var$isRange,
+    register: $2dca407f99b477df$var$register
+});
+var $2dca407f99b477df$var$HSL = new $2dca407f99b477df$var$ColorSpace({
+    id: "hsl",
+    name: "HSL",
+    coords: {
+        h: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        },
+        s: {
+            range: [
+                0,
+                100
+            ],
+            name: "Saturation"
+        },
+        l: {
+            range: [
+                0,
+                100
+            ],
+            name: "Lightness"
+        }
+    },
+    base: $2dca407f99b477df$var$sRGB,
+    // Adapted from https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
+    fromBase: (rgb)=>{
+        let max = Math.max(...rgb);
+        let min = Math.min(...rgb);
+        let [r, g, b] = rgb;
+        let [h, s, l] = [
+            NaN,
+            0,
+            (min + max) / 2
+        ];
+        let d = max - min;
+        if (d !== 0) {
+            s = l === 0 || l === 1 ? 0 : (max - l) / Math.min(l, 1 - l);
+            switch(max){
+                case r:
+                    h = (g - b) / d + (g < b ? 6 : 0);
+                    break;
+                case g:
+                    h = (b - r) / d + 2;
+                    break;
+                case b:
+                    h = (r - g) / d + 4;
+            }
+            h = h * 60;
+        }
+        return [
+            h,
+            s * 100,
+            l * 100
+        ];
+    },
+    // Adapted from https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
+    toBase: (hsl)=>{
+        let [h, s, l] = hsl;
+        h = h % 360;
+        if (h < 0) h += 360;
+        s /= 100;
+        l /= 100;
+        function f(n) {
+            let k = (n + h / 30) % 12;
+            let a = s * Math.min(l, 1 - l);
+            return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+        }
+        return [
+            f(0),
+            f(8),
+            f(4)
+        ];
+    },
+    formats: {
+        hsl: {
+            toGamut: true,
+            coords: [
+                "<number> | <angle>",
+                "<percentage>",
+                "<percentage>"
+            ]
+        },
+        hsla: {
+            coords: [
+                "<number> | <angle>",
+                "<percentage>",
+                "<percentage>"
+            ],
+            commas: true,
+            lastAlpha: true
+        }
+    }
+});
+// The Hue, Whiteness Blackness (HWB) colorspace
+// See https://drafts.csswg.org/css-color-4/#the-hwb-notation
+// Note that, like HSL, calculations are done directly on
+// gamma-corrected sRGB values rather than linearising them first.
+var $2dca407f99b477df$var$HSV = new $2dca407f99b477df$var$ColorSpace({
+    id: "hsv",
+    name: "HSV",
+    coords: {
+        h: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        },
+        s: {
+            range: [
+                0,
+                100
+            ],
+            name: "Saturation"
+        },
+        v: {
+            range: [
+                0,
+                100
+            ],
+            name: "Value"
+        }
+    },
+    base: $2dca407f99b477df$var$HSL,
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#Interconversion
+    fromBase (hsl) {
+        let [h, s, l] = hsl;
+        s /= 100;
+        l /= 100;
+        let v = l + s * Math.min(l, 1 - l);
+        return [
+            h,
+            v === 0 ? 0 : 200 * (1 - l / v),
+            100 * v
+        ];
+    },
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#Interconversion
+    toBase (hsv) {
+        let [h, s, v] = hsv;
+        s /= 100;
+        v /= 100;
+        let l = v * (1 - s / 2);
+        return [
+            h,
+            l === 0 || l === 1 ? 0 : (v - l) / Math.min(l, 1 - l) * 100,
+            l * 100
+        ];
+    },
+    formats: {
+        color: {
+            toGamut: true
+        }
+    }
+});
+// The Hue, Whiteness Blackness (HWB) colorspace
+// See https://drafts.csswg.org/css-color-4/#the-hwb-notation
+// Note that, like HSL, calculations are done directly on
+// gamma-corrected sRGB values rather than linearising them first.
+var $2dca407f99b477df$var$hwb = new $2dca407f99b477df$var$ColorSpace({
+    id: "hwb",
+    name: "HWB",
+    coords: {
+        h: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        },
+        w: {
+            range: [
+                0,
+                100
+            ],
+            name: "Whiteness"
+        },
+        b: {
+            range: [
+                0,
+                100
+            ],
+            name: "Blackness"
+        }
+    },
+    base: $2dca407f99b477df$var$HSV,
+    fromBase (hsv) {
+        let [h, s, v] = hsv;
+        return [
+            h,
+            v * (100 - s) / 100,
+            100 - v
+        ];
+    },
+    toBase (hwb) {
+        let [h, w, b] = hwb;
+        // Now convert percentages to [0..1]
+        w /= 100;
+        b /= 100;
+        // Achromatic check (white plus black >= 1)
+        let sum = w + b;
+        if (sum >= 1) {
+            let gray = w / sum;
+            return [
+                h,
+                0,
+                gray * 100
+            ];
+        }
+        let v = 1 - b;
+        let s = v === 0 ? 0 : 1 - w / v;
+        return [
+            h,
+            s * 100,
+            v * 100
+        ];
+    },
+    formats: {
+        hwb: {
+            toGamut: true,
+            coords: [
+                "<number> | <angle>",
+                "<percentage>",
+                "<percentage>"
+            ]
+        }
+    }
+});
+// convert an array of linear-light a98-rgb values to CIE XYZ
+// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+// has greater numerical precision than section 4.3.5.3 of
+// https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf
+// but the values below were calculated from first principles
+// from the chromaticity coordinates of R G B W
+const $2dca407f99b477df$var$toXYZ_M$2 = [
+    [
+        0.5766690429101305,
+        0.1855582379065463,
+        0.1882286462349947
+    ],
+    [
+        0.29734497525053605,
+        0.6273635662554661,
+        0.07529145849399788
+    ],
+    [
+        0.02703136138641234,
+        0.07068885253582723,
+        0.9913375368376388
+    ]
+];
+const $2dca407f99b477df$var$fromXYZ_M$2 = [
+    [
+        2.0415879038107465,
+        -0.5650069742788596,
+        -0.34473135077832956
+    ],
+    [
+        -0.9692436362808795,
+        1.8759675015077202,
+        0.04155505740717557
+    ],
+    [
+        0.013444280632031142,
+        -0.11836239223101838,
+        1.0151749943912054
+    ]
+];
+var $2dca407f99b477df$var$A98Linear = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "a98rgb-linear",
+    name: "Linear Adobe\xae 98 RGB compatible",
+    white: "D65",
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$2,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$2
+});
+var $2dca407f99b477df$var$a98rgb = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "a98rgb",
+    name: "Adobe\xae 98 RGB compatible",
+    base: $2dca407f99b477df$var$A98Linear,
+    toBase: (RGB)=>RGB.map((val)=>Math.pow(Math.abs(val), 563 / 256) * Math.sign(val)),
+    fromBase: (RGB)=>RGB.map((val)=>Math.pow(Math.abs(val), 256 / 563) * Math.sign(val)),
+    formats: {
+        color: {
+            id: "a98-rgb"
+        }
+    }
+});
+// convert an array of  prophoto-rgb values to CIE XYZ
+// using  D50 (so no chromatic adaptation needed afterwards)
+// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+const $2dca407f99b477df$var$toXYZ_M$1 = [
+    [
+        0.7977604896723027,
+        0.13518583717574031,
+        0.0313493495815248
+    ],
+    [
+        0.2880711282292934,
+        0.7118432178101014,
+        0.00008565396060525902
+    ],
+    [
+        0.0,
+        0.0,
+        0.8251046025104601
+    ]
+];
+const $2dca407f99b477df$var$fromXYZ_M$1 = [
+    [
+        1.3457989731028281,
+        -0.25558010007997534,
+        -0.05110628506753401
+    ],
+    [
+        -0.5446224939028347,
+        1.5082327413132781,
+        0.02053603239147973
+    ],
+    [
+        0.0,
+        0.0,
+        1.2119675456389454
+    ]
+];
+var $2dca407f99b477df$var$ProPhotoLinear = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "prophoto-linear",
+    name: "Linear ProPhoto",
+    white: "D50",
+    base: $2dca407f99b477df$var$XYZ_D50,
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$1,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$1
+});
+const $2dca407f99b477df$var$Et = 1 / 512;
+const $2dca407f99b477df$var$Et2 = 16 / 512;
+var $2dca407f99b477df$var$prophoto = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "prophoto",
+    name: "ProPhoto",
+    base: $2dca407f99b477df$var$ProPhotoLinear,
+    toBase (RGB) {
+        // Transfer curve is gamma 1.8 with a small linear portion
+        return RGB.map((v)=>v < $2dca407f99b477df$var$Et2 ? v / 16 : v ** 1.8);
+    },
+    fromBase (RGB) {
+        return RGB.map((v)=>v >= $2dca407f99b477df$var$Et ? v ** (1 / 1.8) : 16 * v);
+    },
+    formats: {
+        color: {
+            id: "prophoto-rgb"
+        }
+    }
+});
+var $2dca407f99b477df$var$oklch = new $2dca407f99b477df$var$ColorSpace({
+    id: "oklch",
+    name: "OKLCh",
+    coords: {
+        l: {
+            refRange: [
+                0,
+                1
+            ],
+            name: "Lightness"
+        },
+        c: {
+            refRange: [
+                0,
+                0.4
+            ],
+            name: "Chroma"
+        },
+        h: {
+            refRange: [
+                0,
+                360
+            ],
+            type: "angle",
+            name: "Hue"
+        }
+    },
+    white: "D65",
+    base: $2dca407f99b477df$var$OKLab,
+    fromBase (oklab) {
+        // Convert to polar form
+        let [L, a, b] = oklab;
+        let h;
+        const ε = 0.0002; // chromatic components much smaller than a,b
+        if (Math.abs(a) < ε && Math.abs(b) < ε) h = NaN;
+        else h = Math.atan2(b, a) * 180 / Math.PI;
+        return [
+            L,
+            Math.sqrt(a ** 2 + b ** 2),
+            $2dca407f99b477df$var$constrain(h)
+        ];
+    },
+    // Convert from polar form
+    toBase (oklch) {
+        let [L, C, h] = oklch;
+        let a, b;
+        // check for NaN hue
+        if (isNaN(h)) {
+            a = 0;
+            b = 0;
+        } else {
+            a = C * Math.cos(h * Math.PI / 180);
+            b = C * Math.sin(h * Math.PI / 180);
+        }
+        return [
+            L,
+            a,
+            b
+        ];
+    },
+    formats: {
+        oklch: {
+            coords: [
+                "<percentage>",
+                "<number>",
+                "<number> | <angle>"
+            ]
+        }
+    }
+});
+const $2dca407f99b477df$var$Yw = 203; // absolute luminance of media white, cd/m²
+const $2dca407f99b477df$var$n = 2610 / 2 ** 14;
+const $2dca407f99b477df$var$ninv = 2 ** 14 / 2610;
+const $2dca407f99b477df$var$m = 78.84375;
+const $2dca407f99b477df$var$minv = 32 / 2523;
+const $2dca407f99b477df$var$c1 = 0.8359375;
+const $2dca407f99b477df$var$c2 = 18.8515625;
+const $2dca407f99b477df$var$c3 = 18.6875;
+var $2dca407f99b477df$var$rec2100Pq = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "rec2100pq",
+    name: "REC.2100-PQ",
+    base: $2dca407f99b477df$var$REC2020Linear,
+    toBase (RGB) {
+        // given PQ encoded component in range [0, 1]
+        // return media-white relative linear-light
+        return RGB.map(function(val) {
+            let x = (Math.max(val ** $2dca407f99b477df$var$minv - $2dca407f99b477df$var$c1, 0) / ($2dca407f99b477df$var$c2 - $2dca407f99b477df$var$c3 * val ** $2dca407f99b477df$var$minv)) ** $2dca407f99b477df$var$ninv;
+            return x * 10000 / $2dca407f99b477df$var$Yw; // luminance relative to diffuse white, [0, 70 or so].
+        });
+    },
+    fromBase (RGB) {
+        // given media-white relative linear-light
+        // returnPQ encoded component in range [0, 1]
+        return RGB.map(function(val) {
+            let x = Math.max(val * $2dca407f99b477df$var$Yw / 10000, 0); // absolute luminance of peak white is 10,000 cd/m².
+            let num = $2dca407f99b477df$var$c1 + $2dca407f99b477df$var$c2 * x ** $2dca407f99b477df$var$n;
+            let denom = 1 + $2dca407f99b477df$var$c3 * x ** $2dca407f99b477df$var$n;
+            return (num / denom) ** $2dca407f99b477df$var$m;
+        });
+    },
+    formats: {
+        color: {
+            id: "rec2100-pq"
+        }
+    }
+});
+// FIXME see https://github.com/LeaVerou/color.js/issues/190
+const $2dca407f99b477df$var$a = 0.17883277;
+const $2dca407f99b477df$var$b = 0.28466892; // 1 - (4 * a)
+const $2dca407f99b477df$var$c = 0.55991073; // 0.5 - a * Math.log(4 *a)
+var $2dca407f99b477df$var$rec2100Hlg = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "rec2100hlg",
+    cssid: "rec2100-hlg",
+    name: "REC.2100-HLG",
+    referred: "scene",
+    base: $2dca407f99b477df$var$REC2020Linear,
+    toBase (RGB) {
+        // given HLG encoded component in range [0, 1]
+        // return media-white relative linear-light
+        return RGB.map(function(val) {
+            if (val <= 1 / 12) return Math.sqrt(3 * val);
+            return $2dca407f99b477df$var$a * Math.log(12 * val - $2dca407f99b477df$var$b) + $2dca407f99b477df$var$c;
+        });
+    },
+    fromBase (RGB) {
+        // given media-white relative linear-light
+        // return HLG encoded component in range [0, 1]
+        // per ITU Rec BT.2390
+        return RGB.map(function(val) {
+            if (val <= 0.5) return val ** 2 / 3;
+            return Math.exp((val - $2dca407f99b477df$var$c) / $2dca407f99b477df$var$a + $2dca407f99b477df$var$b) / 12;
+        });
+    },
+    formats: {
+        color: {
+            id: "rec2100-hlg"
+        }
+    }
+});
+const $2dca407f99b477df$var$CATs = {};
+$2dca407f99b477df$var$hooks.add("chromatic-adaptation-start", (env)=>{
+    if (env.options.method) env.M = $2dca407f99b477df$var$adapt(env.W1, env.W2, env.options.method);
+});
+$2dca407f99b477df$var$hooks.add("chromatic-adaptation-end", (env)=>{
+    if (!env.M) env.M = $2dca407f99b477df$var$adapt(env.W1, env.W2, env.options.method);
+});
+function $2dca407f99b477df$var$defineCAT({ id: id, toCone_M: toCone_M, fromCone_M: fromCone_M }) {
+    // Use id, toCone_M, fromCone_M like variables
+    $2dca407f99b477df$var$CATs[id] = arguments[0];
+}
+function $2dca407f99b477df$var$adapt(W1, W2, id = "Bradford") {
+    // adapt from a source whitepoint or illuminant W1
+    // to a destination whitepoint or illuminant W2,
+    // using the given chromatic adaptation transform (CAT)
+    // debugger;
+    let method = $2dca407f99b477df$var$CATs[id];
+    let [ρs, γs, βs] = $2dca407f99b477df$var$multiplyMatrices(method.toCone_M, W1);
+    let [ρd, γd, βd] = $2dca407f99b477df$var$multiplyMatrices(method.toCone_M, W2);
+    // all practical illuminants have non-zero XYZ so no division by zero can occur below
+    let scale = [
+        [
+            ρd / ρs,
+            0,
+            0
+        ],
+        [
+            0,
+            γd / γs,
+            0
+        ],
+        [
+            0,
+            0,
+            βd / βs
+        ]
+    ];
+    let scaled_cone_M = $2dca407f99b477df$var$multiplyMatrices(scale, method.toCone_M);
+    let adapt_M = $2dca407f99b477df$var$multiplyMatrices(method.fromCone_M, scaled_cone_M);
+    return adapt_M;
+}
+$2dca407f99b477df$var$defineCAT({
+    id: "von Kries",
+    toCone_M: [
+        [
+            0.40024,
+            0.7076,
+            -0.08081
+        ],
+        [
+            -0.2263,
+            1.16532,
+            0.0457
+        ],
+        [
+            0.0,
+            0.0,
+            0.91822
+        ]
+    ],
+    fromCone_M: [
+        [
+            1.8599364,
+            -1.1293816,
+            0.2198974
+        ],
+        [
+            0.3611914,
+            0.6388125,
+            -0.0000064
+        ],
+        [
+            0.0,
+            0.0,
+            1.0890636
+        ]
+    ]
+});
+$2dca407f99b477df$var$defineCAT({
+    id: "Bradford",
+    // Convert an array of XYZ values in the range 0.0 - 1.0
+    // to cone fundamentals
+    toCone_M: [
+        [
+            0.8951,
+            0.2664,
+            -0.1614
+        ],
+        [
+            -0.7502,
+            1.7135,
+            0.0367
+        ],
+        [
+            0.0389,
+            -0.0685,
+            1.0296
+        ]
+    ],
+    // and back
+    fromCone_M: [
+        [
+            0.9869929,
+            -0.1470543,
+            0.1599627
+        ],
+        [
+            0.4323053,
+            0.5183603,
+            0.0492912
+        ],
+        [
+            -0.0085287,
+            0.0400428,
+            0.9684867
+        ]
+    ]
+});
+$2dca407f99b477df$var$defineCAT({
+    id: "CAT02",
+    // with complete chromatic adaptation to W2, so D = 1.0
+    toCone_M: [
+        [
+            0.7328,
+            0.4296,
+            -0.1624
+        ],
+        [
+            -0.7036,
+            1.6975,
+            0.0061
+        ],
+        [
+            0.003,
+            0.0136,
+            0.9834
+        ]
+    ],
+    fromCone_M: [
+        [
+            1.0961238,
+            -0.278869,
+            0.1827452
+        ],
+        [
+            0.454369,
+            0.4735332,
+            0.0720978
+        ],
+        [
+            -0.0096276,
+            -0.005698,
+            1.0153256
+        ]
+    ]
+});
+$2dca407f99b477df$var$defineCAT({
+    id: "CAT16",
+    toCone_M: [
+        [
+            0.401288,
+            0.650173,
+            -0.051461
+        ],
+        [
+            -0.250268,
+            1.204414,
+            0.045854
+        ],
+        [
+            -0.002079,
+            0.048952,
+            0.953127
+        ]
+    ],
+    // the extra precision is needed to avoid roundtripping errors
+    fromCone_M: [
+        [
+            1.862067855087233,
+            -1.011254630531685,
+            1.491867754444518e-1
+        ],
+        [
+            3.875265432361372e-1,
+            6.214474419314753e-1,
+            -0.008973985167612518
+        ],
+        [
+            -0.01584149884933386,
+            -0.03412293802851557,
+            1.04996443687785
+        ]
+    ]
+});
+Object.assign($2dca407f99b477df$var$WHITES, {
+    // whitepoint values from ASTM E308-01 with 10nm spacing, 1931 2 degree observer
+    // all normalized to Y (luminance) = 1.00000
+    // Illuminant A is a tungsten electric light, giving a very warm, orange light.
+    A: [
+        1.0985,
+        1.0,
+        0.35585
+    ],
+    // Illuminant C was an early approximation to daylight: illuminant A with a blue filter.
+    C: [
+        0.98074,
+        1.0,
+        1.18232
+    ],
+    // The daylight series of illuminants simulate natural daylight.
+    // The color temperature (in degrees Kelvin/100) ranges from
+    // cool, overcast daylight (D50) to bright, direct sunlight (D65).
+    D55: [
+        0.95682,
+        1.0,
+        0.92149
+    ],
+    D75: [
+        0.94972,
+        1.0,
+        1.22638
+    ],
+    // Equal-energy illuminant, used in two-stage CAT16
+    E: [
+        1.0,
+        1.0,
+        1.0
+    ],
+    // The F series of illuminants represent fluorescent lights
+    F2: [
+        0.99186,
+        1.0,
+        0.67393
+    ],
+    F7: [
+        0.95041,
+        1.0,
+        1.08747
+    ],
+    F11: [
+        1.00962,
+        1.0,
+        0.6435
+    ]
+});
+// The ACES whitepoint
+// see TB-2018-001 Derivation of the ACES White Point CIE Chromaticity Coordinates
+// also https://github.com/ampas/aces-dev/blob/master/documents/python/TB-2018-001/aces_wp.py
+// Similar to D60
+$2dca407f99b477df$var$WHITES.ACES = [
+    0.32168 / 0.33767,
+    1.0,
+    1.0088251843515859
+];
+// convert an array of linear-light ACEScc values to CIE XYZ
+const $2dca407f99b477df$var$toXYZ_M = [
+    [
+        0.6624541811085053,
+        0.13400420645643313,
+        0.1561876870049078
+    ],
+    [
+        0.27222871678091454,
+        0.6740817658111484,
+        0.05368951740793705
+    ],
+    [
+        -0.005574649490394108,
+        0.004060733528982826,
+        1.0103391003129971
+    ]
+];
+const $2dca407f99b477df$var$fromXYZ_M = [
+    [
+        1.6410233796943257,
+        -0.32480329418479,
+        -0.23642469523761225
+    ],
+    [
+        -0.6636628587229829,
+        1.6153315916573379,
+        0.016756347685530137
+    ],
+    [
+        0.011721894328375376,
+        -0.008284441996237409,
+        0.9883948585390215
+    ]
+];
+var $2dca407f99b477df$var$ACEScg = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "acescg",
+    name: "ACEScg",
+    // ACEScg – A scene-referred, linear-light encoding of ACES Data
+    // https://docs.acescentral.com/specifications/acescg/
+    // uses the AP1 primaries, see section 4.3.1 Color primaries
+    coords: {
+        r: {
+            range: [
+                0,
+                65504
+            ],
+            name: "Red"
+        },
+        g: {
+            range: [
+                0,
+                65504
+            ],
+            name: "Green"
+        },
+        b: {
+            range: [
+                0,
+                65504
+            ],
+            name: "Blue"
+        }
+    },
+    referred: "scene",
+    white: $2dca407f99b477df$var$WHITES.ACES,
+    toXYZ_M: $2dca407f99b477df$var$toXYZ_M,
+    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M,
+    formats: {
+        color: {}
+    }
+});
+// export default Color;
+const $2dca407f99b477df$var$ε = 2 ** -16;
+// the smallest value which, in the 32bit IEEE 754 float encoding,
+// decodes as a non-negative value
+const $2dca407f99b477df$var$ACES_min_nonzero = -0.35828683;
+// brightest encoded value, decodes to 65504
+const $2dca407f99b477df$var$ACES_cc_max = (Math.log2(65504) + 9.72) / 17.52; // 1.468
+var $2dca407f99b477df$var$acescc = new $2dca407f99b477df$var$RGBColorSpace({
+    id: "acescc",
+    name: "ACEScc",
+    // see S-2014-003 ACEScc – A Logarithmic Encoding of ACES Data
+    // https://docs.acescentral.com/specifications/acescc/
+    // uses the AP1 primaries, see section 4.3.1 Color primaries
+    // Appendix A: "Very small ACES scene referred values below 7 1/4 stops
+    // below 18% middle gray are encoded as negative ACEScc values.
+    // These values should be preserved per the encoding in Section 4.4
+    // so that all positive ACES values are maintained."
+    coords: {
+        r: {
+            range: [
+                $2dca407f99b477df$var$ACES_min_nonzero,
+                $2dca407f99b477df$var$ACES_cc_max
+            ],
+            name: "Red"
+        },
+        g: {
+            range: [
+                $2dca407f99b477df$var$ACES_min_nonzero,
+                $2dca407f99b477df$var$ACES_cc_max
+            ],
+            name: "Green"
+        },
+        b: {
+            range: [
+                $2dca407f99b477df$var$ACES_min_nonzero,
+                $2dca407f99b477df$var$ACES_cc_max
+            ],
+            name: "Blue"
+        }
+    },
+    referred: "scene",
+    base: $2dca407f99b477df$var$ACEScg,
+    // from section 4.4.2 Decoding Function
+    toBase (RGB) {
+        const low = (9.72 - 15) / 17.52; // -0.3014
+        return RGB.map(function(val) {
+            if (val <= low) return (2 ** (val * 17.52 - 9.72) - $2dca407f99b477df$var$ε) * 2; // very low values, below -0.3014
+            else if (val < $2dca407f99b477df$var$ACES_cc_max) return 2 ** (val * 17.52 - 9.72);
+            else // val >= ACES_cc_max
+            return 65504;
+        });
+    },
+    // Non-linear encoding function from S-2014-003, section 4.4.1 Encoding Function
+    fromBase (RGB) {
+        return RGB.map(function(val) {
+            if (val <= 0) return (Math.log2($2dca407f99b477df$var$ε) + 9.72) / 17.52; // -0.3584
+            else if (val < $2dca407f99b477df$var$ε) return (Math.log2($2dca407f99b477df$var$ε + val * 0.5) + 9.72) / 17.52;
+            else // val >= ε
+            return (Math.log2(val) + 9.72) / 17.52;
+        });
+    },
+    // encoded media white (rgb 1,1,1) => linear  [ 222.861, 222.861, 222.861 ]
+    // encoded media black (rgb 0,0,0) => linear [ 0.0011857, 0.0011857, 0.0011857]
+    formats: {
+        color: {}
+    }
+});
+var $2dca407f99b477df$var$spaces = /*#__PURE__*/ Object.freeze({
+    __proto__: null,
+    XYZ_D65: $2dca407f99b477df$var$XYZ_D65,
+    XYZ_D50: $2dca407f99b477df$var$XYZ_D50,
+    XYZ_ABS_D65: $2dca407f99b477df$var$XYZ_Abs_D65,
+    Lab_D65: $2dca407f99b477df$var$lab_d65,
+    Lab: $2dca407f99b477df$var$lab,
+    LCH: $2dca407f99b477df$var$lch,
+    sRGB_Linear: $2dca407f99b477df$var$sRGBLinear,
+    sRGB: $2dca407f99b477df$var$sRGB,
+    HSL: $2dca407f99b477df$var$HSL,
+    HWB: $2dca407f99b477df$var$hwb,
+    HSV: $2dca407f99b477df$var$HSV,
+    P3_Linear: $2dca407f99b477df$var$P3Linear,
+    P3: $2dca407f99b477df$var$P3,
+    A98RGB_Linear: $2dca407f99b477df$var$A98Linear,
+    A98RGB: $2dca407f99b477df$var$a98rgb,
+    ProPhoto_Linear: $2dca407f99b477df$var$ProPhotoLinear,
+    ProPhoto: $2dca407f99b477df$var$prophoto,
+    REC_2020_Linear: $2dca407f99b477df$var$REC2020Linear,
+    REC_2020: $2dca407f99b477df$var$REC2020,
+    OKLab: $2dca407f99b477df$var$OKLab,
+    OKLCH: $2dca407f99b477df$var$oklch,
+    Jzazbz: $2dca407f99b477df$var$Jzazbz,
+    JzCzHz: $2dca407f99b477df$var$jzczhz,
+    ICTCP: $2dca407f99b477df$var$ictcp,
+    REC_2100_PQ: $2dca407f99b477df$var$rec2100Pq,
+    REC_2100_HLG: $2dca407f99b477df$var$rec2100Hlg,
+    ACEScg: $2dca407f99b477df$var$ACEScg,
+    ACEScc: $2dca407f99b477df$var$acescc
+});
+/**
+ * Class that represents a color
+ */ class $2dca407f99b477df$export$2e2bcd8739ae039 {
+    /**
+   * Creates an instance of Color.
+   * Signatures:
+   * - `new Color(stringToParse)`
+   * - `new Color(otherColor)`
+   * - `new Color({space, coords, alpha})`
+   * - `new Color(space, coords, alpha)`
+   * - `new Color(spaceId, coords, alpha)`
+   */ constructor(...args){
+        let color;
+        if (args.length === 1) color = $2dca407f99b477df$var$getColor(args[0]);
+        let space, coords, alpha;
+        if (color) {
+            space = color.space || color.spaceId;
+            coords = color.coords;
+            alpha = color.alpha;
+        } else // default signature new Color(ColorSpace, array [, alpha])
+        [space, coords, alpha] = args;
+        this.#space = $2dca407f99b477df$var$ColorSpace.get(space);
+        this.coords = coords ? coords.slice() : [
+            0,
+            0,
+            0
+        ];
+        this.alpha = alpha < 1 ? alpha : 1; // this also deals with NaN etc
+        // Convert "NaN" to NaN
+        for(let i = 0; i < this.coords.length; i++)if (this.coords[i] === "NaN") this.coords[i] = NaN;
+        // Define getters and setters for each coordinate
+        for(let id in this.#space.coords)Object.defineProperty(this, id, {
+            get: ()=>this.get(id),
+            set: (value1)=>this.set(id, value1)
+        });
+    }
+    #space;
+    get space() {
+        return this.#space;
+    }
+    get spaceId() {
+        return this.#space.id;
+    }
+    clone() {
+        return new $2dca407f99b477df$export$2e2bcd8739ae039(this.space, this.coords, this.alpha);
+    }
+    toJSON() {
+        return {
+            spaceId: this.spaceId,
+            coords: this.coords,
+            alpha: this.alpha
+        };
+    }
+    display(...args) {
+        let ret = $2dca407f99b477df$var$display(this, ...args);
+        // Convert color object to Color instance
+        ret.color = new $2dca407f99b477df$export$2e2bcd8739ae039(ret.color);
+        return ret;
+    }
+    /**
+   * Get a color from the argument passed
+   * Basically gets us the same result as new Color(color) but doesn't clone an existing color object
+   */ static get(color, ...args) {
+        if (color instanceof $2dca407f99b477df$export$2e2bcd8739ae039) return color;
+        return new $2dca407f99b477df$export$2e2bcd8739ae039(color, ...args);
+    }
+    static defineFunction(name, code, o = code) {
+        if (arguments.length === 1) [name, code, o] = [
+            arguments[0].name,
+            arguments[0],
+            arguments[0]
+        ];
+        let { instance: instance = true, returns: returns } = o;
+        let func = function(...args) {
+            let ret = code(...args);
+            if (returns === "color") ret = $2dca407f99b477df$export$2e2bcd8739ae039.get(ret);
+            else if (returns === "function<color>") {
+                let f = ret;
+                ret = function(...args) {
+                    let ret = f(...args);
+                    return $2dca407f99b477df$export$2e2bcd8739ae039.get(ret);
+                };
+                // Copy any function metadata
+                Object.assign(ret, f);
+            } else if (returns === "array<color>") ret = ret.map((c)=>$2dca407f99b477df$export$2e2bcd8739ae039.get(c));
+            return ret;
+        };
+        if (!(name in $2dca407f99b477df$export$2e2bcd8739ae039)) $2dca407f99b477df$export$2e2bcd8739ae039[name] = func;
+        if (instance) $2dca407f99b477df$export$2e2bcd8739ae039.prototype[name] = function(...args) {
+            return func(this, ...args);
+        };
+    }
+    static defineFunctions(o) {
+        for(let name in o)$2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(name, o[name], o[name]);
+    }
+    static extend(exports) {
+        if (exports.register) exports.register($2dca407f99b477df$export$2e2bcd8739ae039);
+        else if (exports.default) $2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(exports.default.name, exports.default);
+        else if (typeof exports === "function") $2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(exports);
+        else // No register method, just add the module's functions
+        for(let name in exports)$2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(name, exports[name]);
+    }
+}
+$2dca407f99b477df$export$2e2bcd8739ae039.defineFunctions({
+    get: $2dca407f99b477df$var$get,
+    getAll: $2dca407f99b477df$var$getAll,
+    set: $2dca407f99b477df$var$set$1,
+    setAll: $2dca407f99b477df$var$setAll,
+    to: $2dca407f99b477df$var$to,
+    equals: $2dca407f99b477df$var$equals,
+    inGamut: $2dca407f99b477df$var$inGamut,
+    toGamut: $2dca407f99b477df$var$toGamut,
+    distance: $2dca407f99b477df$var$distance,
+    toString: $2dca407f99b477df$var$serialize
+});
+Object.assign($2dca407f99b477df$export$2e2bcd8739ae039, {
+    util: $2dca407f99b477df$var$util,
+    hooks: $2dca407f99b477df$var$hooks,
+    WHITES: $2dca407f99b477df$var$WHITES,
+    Space: $2dca407f99b477df$var$ColorSpace,
+    spaces: $2dca407f99b477df$var$ColorSpace.registry,
+    parse: $2dca407f99b477df$var$parse,
+    defaults: // Global defaults one may want to configure
+    $2dca407f99b477df$var$defaults
+});
+for (let key of Object.keys($2dca407f99b477df$var$spaces))$2dca407f99b477df$var$ColorSpace.register($2dca407f99b477df$var$spaces[key]);
+/**
+ * This plugin defines getters and setters for color[spaceId]
+ * e.g. color.lch on *any* color gives us the lch coords
+ */ // Add space accessors to existing color spaces
+for(let id in $2dca407f99b477df$var$ColorSpace.registry)$2dca407f99b477df$var$addSpaceAccessors(id, $2dca407f99b477df$var$ColorSpace.registry[id]);
+// Add space accessors to color spaces not yet created
+$2dca407f99b477df$var$hooks.add("colorspace-init-end", $2dca407f99b477df$var$addSpaceAccessors);
+function $2dca407f99b477df$var$addSpaceAccessors(id, space) {
+    // Coordinates can be looked up by both id and name
+    Object.keys(space.coords);
+    Object.values(space.coords).map((c)=>c.name);
+    let propId = id.replace(/-/g, "_");
+    Object.defineProperty($2dca407f99b477df$export$2e2bcd8739ae039.prototype, propId, {
+        // Convert coords to coords in another colorspace and return them
+        // Source colorspace: this.spaceId
+        // Target colorspace: id
+        get () {
+            let ret = this.getAll(id);
+            if (typeof Proxy === "undefined") // If proxies are not supported, just return a static array
+            return ret;
+            // Enable color.spaceId.coordName syntax
+            return new Proxy(ret, {
+                has: (obj, property)=>{
+                    try {
+                        $2dca407f99b477df$var$ColorSpace.resolveCoord([
+                            space,
+                            property
+                        ]);
+                        return true;
+                    } catch (e) {}
+                    return Reflect.has(obj, property);
+                },
+                get: (obj, property, receiver)=>{
+                    if (property && typeof property !== "symbol" && !(property in obj)) {
+                        let { index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord([
+                            space,
+                            property
+                        ]);
+                        if (index >= 0) return obj[index];
+                    }
+                    return Reflect.get(obj, property, receiver);
+                },
+                set: (obj, property, value1, receiver)=>{
+                    if (property && typeof property !== "symbol" && !(property in obj) || property >= 0) {
+                        let { index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord([
+                            space,
+                            property
+                        ]);
+                        if (index >= 0) {
+                            obj[index] = value1;
+                            // Update color.coords
+                            this.setAll(id, obj);
+                            return true;
+                        }
+                    }
+                    return Reflect.set(obj, property, value1, receiver);
+                }
+            });
+        },
+        // Convert coords in another colorspace to internal coords and set them
+        // Target colorspace: this.spaceId
+        // Source colorspace: id
+        set (coords) {
+            this.setAll(id, coords);
+        },
+        configurable: true,
+        enumerable: true
+    });
+}
+// Import all modules of Color.js
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$deltaEMethods);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$deltaE$1);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$variations);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$contrast);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$chromaticity);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$luminance);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$interpolation);
+$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$contrastMethods);
+
+
+
+function $3180f13c9e24a345$export$a33d8ee3eb2c1a9b(control) {
+    const formGroup = control.closest(".form-group");
+    formGroup.find(".mass-edit-checkbox input").prop("checked", true).trigger("change");
+    formGroup.find(".mass-edit-randomize").addClass("active");
+}
+function $3180f13c9e24a345$export$6d9a46257e99a3f6(control, configApp) {
+    const formGroup = control.closest(".form-group");
+    let allRandomizedRemoved = true;
+    if (configApp) formGroup.find("[name]").each(function() {
+        if (allRandomizedRemoved) allRandomizedRemoved = !Boolean(configApp.randomizeFields[this.name]);
+    });
+    if (allRandomizedRemoved) {
+        formGroup.find(".mass-edit-checkbox input").prop("checked", false).trigger("change");
+        formGroup.find(".mass-edit-randomize").removeClass("active");
+    }
+}
+function $3180f13c9e24a345$export$2ee69c6850ef1bab(form, fields) {
+    if (!fields) return;
+    for (const key of Object.keys(fields))$3180f13c9e24a345$export$a33d8ee3eb2c1a9b(form.find(`[name="${key}"]`));
+}
+async function $3180f13c9e24a345$export$4bafa436c0fa0cbb(updates, objects, randomizeFields) {
+    // See if any field is to be randomized
+    if (!randomizeFields || foundry.utils.isEmpty(randomizeFields)) return;
+    let requiresCoordRandomization = false;
+    for(let i = 0; i < updates.length; i++){
+        const update = updates[i];
+        for (const field of Object.keys(update))if (field in randomizeFields) {
+            const obj = randomizeFields[field];
+            if (obj.type === "select") update[field] = obj.selection[Math.floor(Math.random() * obj.selection.length)];
+            else if (obj.type === "number") {
+                if (obj.step === "any") obj.step = 1; // default to integer 1 just to avoid very large decimals
+                else obj.step = Number(obj.step);
+                if (obj.method === "interpolate") {
+                    const stepsInRange = (obj.max - obj.min) / obj.step + 1;
+                    update[field] = i % stepsInRange * obj.step + obj.min;
+                } else if (obj.method === "interpolateReverse") {
+                    const stepsInRange = (obj.max - obj.min) / obj.step;
+                    update[field] = (stepsInRange - i % (stepsInRange + 1)) * obj.step + obj.min;
+                } else {
+                    const stepsInRange = (obj.max - obj.min + (Number.isInteger(obj.step) ? 1 : 0)) / obj.step;
+                    update[field] = Math.floor(Math.random() * stepsInRange) * obj.step + obj.min;
+                }
+            } else if (obj.type === "boolean") update[field] = Math.random() < 0.5;
+            else if (obj.type === "color") {
+                // Convert to new format if needed
+                if (obj.color1) obj.colors = [
+                    {
+                        hex: obj.color1,
+                        offset: 0
+                    },
+                    {
+                        hex: obj.color2,
+                        offset: 100
+                    }
+                ];
+                // If space is discrete we simple choose a color, no blending required
+                if (obj.space === "discrete") {
+                    if (obj.method === "interpolate") update[field] = obj.colors[i % obj.colors.length].hex;
+                    else if (obj.method === "interpolateReverse") update[field] = obj.colors[obj.colors.length - 1 - i % obj.colors.length].hex;
+                    else update[field] = obj.colors[Math.floor(Math.random() * obj.colors.length)].hex;
+                    continue;
+                }
+                let colors = obj.colors.map((c)=>c);
+                if (colors[0].offset > 0) colors.unshift({
+                    hex: colors[0].hex,
+                    offset: 0
+                });
+                if (colors[colors.length - 1].offset < 100) colors.push({
+                    hex: colors[colors.length - 1].hex,
+                    offset: 100
+                });
+                // Calculate random offset
+                let rOffset;
+                if (obj.method === "interpolate") rOffset = 1 - (i + 1) / updates.length;
+                else if (obj.method === "interpolateReverse") rOffset = (i + 1) / updates.length;
+                else rOffset = Math.random();
+                rOffset *= 100;
+                // Find the two colors the random offset falls between
+                let j = 0;
+                while(j < colors.length - 1 && colors[j + 1].offset < rOffset)j++;
+                let color1, color2;
+                if (j === colors.length - 1) {
+                    color1 = colors[j - 1];
+                    color2 = colors[j];
+                } else {
+                    color1 = colors[j];
+                    color2 = colors[j + 1];
+                }
+                // Normalize the random offset
+                let rnOffset = rOffset - color1.offset;
+                rnOffset = rnOffset / (color2.offset - color1.offset);
+                // Create a Color.js range
+                color1 = new (0, $2dca407f99b477df$export$2e2bcd8739ae039)(color1.hex);
+                color2 = new (0, $2dca407f99b477df$export$2e2bcd8739ae039)(color2.hex);
+                const space = obj.space || "srgb";
+                const hue = obj.hue || "shorter";
+                let range = color1.range(color2, {
+                    space: space,
+                    hue: hue,
+                    outputSpace: "srgb"
+                });
+                // Pick a color from range using normalized random offset
+                let rgb3 = range(rnOffset);
+                let hexColor = rgb3.toString({
+                    format: "hex"
+                });
+                if (hexColor.length < 7) // 3 char hex, duplicate chars
+                hexColor = "#" + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2] + hexColor[3] + hexColor[3];
+                update[field] = hexColor;
+            } else if (obj.type === "image") {
+                if (obj.method === "sequential") update[field] = obj.images[i % obj.images.length];
+                else update[field] = obj.images[Math.floor(Math.random() * obj.images.length)];
+                if (obj.maintainAspect) {
+                    const width = objects?.[i]?.width ?? update.width;
+                    const height = objects?.[i]?.height ?? update.height;
+                    if (height != null && width != null) try {
+                        const tex = await loadTexture(update[field]);
+                        if (tex) {
+                            const tileRatio = width / height;
+                            const texRatio = tex.width / tex.height;
+                            if (texRatio !== tileRatio) {
+                                if (texRatio > tileRatio) {
+                                    update["texture.scaleX"] = 1;
+                                    update["texture.scaleY"] = tileRatio;
+                                } else {
+                                    update["texture.scaleX"] = height / width;
+                                    update["texture.scaleY"] = 1;
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
+            } else if (obj.type === "text") {
+                if (obj.method === "findAndReplace" || obj.method === "findAndReplaceRegex") {
+                    if (objects) {
+                        const data = foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(objects[i]).toObject());
+                        if (!data[field] && !obj.find) update[field] = obj.replace;
+                        else if (data[field]) {
+                            // special handling for Tagger tags
+                            if (field === "flags.tagger.tags") data[field] = data[field].join(",");
+                            if (obj.method === "findAndReplaceRegex") update[field] = (0, $32e43d7a62aba58c$export$aef0873d63458016)(obj.find, obj.replace, data[field]);
+                            else update[field] = (0, $32e43d7a62aba58c$export$79d744e95e10dc09)(obj.find, obj.replace, data[field]);
+                        }
+                    }
+                } else if (obj.method === "unique") {
+                    if (!obj.shuffled) {
+                        $3180f13c9e24a345$var$shuffleArray(obj.strings);
+                        obj.shuffled = true;
+                        obj.i = -1;
+                    }
+                    obj.i++;
+                    update[field] = obj.strings[obj.i % obj.strings.length];
+                } else update[field] = obj.strings[Math.floor(Math.random() * obj.strings.length)];
+            } else if (obj.type === "coordinate") requiresCoordRandomization = true;
+        }
+    }
+    if (requiresCoordRandomization) {
+        let coordCtrl;
+        // Sort placeables based on size
+        let pUpdates = [];
+        for(let i = 0; i < objects.length; i++)pUpdates.push({
+            p: objects[i],
+            update: updates[i]
+        });
+        pUpdates.sort((a, b)=>(b.p.w ?? b.p.width ?? 0) + (b.p.h ?? b.p.height ?? 0) - (a.p.w ?? a.p.width ?? 0) - (a.p.h ?? a.p.height ?? 0));
+        for (const pUpdate of pUpdates){
+            const obj = randomizeFields.x ?? randomizeFields.y;
+            if (obj.method === "noOverlap") {
+                if (!coordCtrl) coordCtrl = {
+                    freeId: 0,
+                    boundingBox: obj.boundingBox,
+                    freeRectangles: {
+                        0: obj.boundingBox
+                    },
+                    stepX: obj.stepX,
+                    stepY: obj.stepY
+                };
+                const [x, y] = $3180f13c9e24a345$var$randomPlace(pUpdate.p, coordCtrl);
+                pUpdate.update.x = x;
+                pUpdate.update.y = y;
+            }
+        }
+    }
+}
+function $3180f13c9e24a345$export$527c3bc4477c9048(num, step) {
+    if (num % step <= step / 2) return num - num % step;
+    return num - num % step + step;
+}
+/**
+ * Generates a random number within the given range and step increment
+ * @param {*} min
+ * @param {*} max
+ * @param {*} step
+ * @returns
+ */ function $3180f13c9e24a345$var$randomNum(min, max, step) {
+    if (step === "any") step = 1; // default to integer 1 just to avoid very large decimals
+    else step = Number(step);
+    const stepsInRange = (max - min) / step;
+    return Math.floor(Math.random() * (stepsInRange + (Number.isInteger(step) ? 1 : 0))) * step + min;
+}
+/**
+ * In-place random shuffle of an array
+ * @param {*} array
+ * @returns
+ */ function $3180f13c9e24a345$var$shuffleArray(array) {
+    var i = array.length, j = 0, temp;
+    while(i--){
+        j = Math.floor(Math.random() * (i + 1));
+        // swap randomly chosen element with current element
+        temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
+/* ================================
+ * === Coordinate Randomization ==
+ * =============================== */ function $3180f13c9e24a345$var$randomPlace(placeable, ctrl) {
+    const width = $3180f13c9e24a345$export$527c3bc4477c9048(placeable.w ?? placeable.width, ctrl.stepX);
+    const height = $3180f13c9e24a345$export$527c3bc4477c9048(placeable.h ?? placeable.height, ctrl.stepY);
+    const rec = {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height
+    };
+    const freeRectangles = ctrl.freeRectangles;
+    // get all free rectangles that can contain rec
+    let fittingRecs = Object.keys(freeRectangles).filter((id)=>$3180f13c9e24a345$var$_canFit(freeRectangles[id], rec));
+    // if there are no fitting places left, then place it randomly anywhere within the bounding box
+    if (fittingRecs.length) {
+        // Pick a random free rectangle and choose a random location within so that it fits rec
+        const i = fittingRecs[Math.floor(Math.random() * fittingRecs.length)];
+        rec.x = $3180f13c9e24a345$var$randomNum(freeRectangles[i].x, Math.max(freeRectangles[i].x + freeRectangles[i].width - rec.width, 0), ctrl.stepX);
+        rec.y = $3180f13c9e24a345$var$randomNum(freeRectangles[i].y, Math.max(freeRectangles[i].y + freeRectangles[i].height - rec.height, 0), ctrl.stepY);
+    } else {
+        // if there are no fitting places left, then place it randomly anywhere within the bounding box
+        rec.x = $3180f13c9e24a345$var$randomNum(ctrl.boundingBox.x, Math.max(ctrl.boundingBox.x + ctrl.boundingBox.width - rec.width, ctrl.boundingBox.x), ctrl.stepX);
+        rec.y = $3180f13c9e24a345$var$randomNum(ctrl.boundingBox.y, Math.max(ctrl.boundingBox.y + ctrl.boundingBox.height - rec.height, ctrl.boundingBox.y), ctrl.stepY);
+    }
+    // Find all free rectangles that this spot overlaps
+    let overlaps = Object.keys(freeRectangles).filter((id)=>$3180f13c9e24a345$var$_intersectRec(freeRectangles[id], rec));
+    for (const id of overlaps){
+        const overlap = freeRectangles[id];
+        // remove original rectangle
+        delete freeRectangles[id];
+        // left split
+        if (overlap.x < rec.x) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
+            x: overlap.x,
+            y: overlap.y,
+            width: rec.x - overlap.x,
+            height: overlap.height
+        }, ctrl);
+        // right split
+        if (overlap.x + overlap.width > rec.x + rec.width) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
+            x: rec.x + rec.width,
+            y: overlap.y,
+            width: overlap.x + overlap.width - (rec.x + rec.width),
+            height: overlap.height
+        }, ctrl);
+        // top split
+        if (overlap.y < rec.y) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
+            x: overlap.x,
+            y: overlap.y,
+            width: overlap.width,
+            height: rec.y - overlap.y
+        }, ctrl);
+        // bottom split
+        if (overlap.y + overlap.height > rec.y + rec.height) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
+            x: overlap.x,
+            y: rec.y + rec.height,
+            width: overlap.width,
+            height: overlap.y + overlap.height - (rec.y + rec.height)
+        }, ctrl);
+    }
+    return [
+        rec.x,
+        rec.y
+    ];
+}
+/**
+ * Checks if rectangle rec2 can fit within rectangle rec1
+ * @param {*} rec1
+ * @param {*} rec2
+ * @returns
+ */ function $3180f13c9e24a345$var$_canFit(rec1, rec2) {
+    return rec2.width <= rec1.width && rec2.height <= rec1.height;
+}
+/**
+ * Checks whether rectangle rec1 and rectangle rec2 intersect
+ * @param {*} rec1
+ * @param {*} rec2
+ * @returns
+ */ function $3180f13c9e24a345$var$_intersectRec(rec1, rec2) {
+    if (rec1.x < rec2.x + rec2.width && rec2.x < rec1.x + rec1.width && rec1.y < rec2.y + rec2.height) return rec2.y < rec1.y + rec1.height;
+    else return false;
+}
+/**
+ * Check if rectangle rec1 fully contains rectangle rec2
+ * @param {*} rec1
+ * @param {*} rec
+ * @returns
+ */ function $3180f13c9e24a345$var$_fullyContains(rec1, rec2) {
+    return rec1.x <= rec2.x && rec1.x + rec1.width >= rec2.x + rec2.width && rec1.y <= rec2.y && rec1.y + rec1.height >= rec2.y + rec2.height;
+}
+/**
+ *
+ * @param {*} freeRectangles
+ * @param {*} rec
+ * @param {*} ctrl
+ * @returns
+ */ function $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, rec, ctrl) {
+    const keys = Object.keys(freeRectangles);
+    for (const key of keys){
+        if ($3180f13c9e24a345$var$_fullyContains(freeRectangles[key], rec)) return;
+    }
+    ctrl.freeId++;
+    freeRectangles[ctrl.freeId] = rec;
+}
+
+
+
+
+
+
+
+
+class $2693f7af118c914b$export$44fd664bcca5b6fb {
+    constructor(html, colors){
+        this.slider = html.find(".slide");
+        this.colors = colors;
+        this.min = 0;
+        this.max = 100;
+        this._init();
+        this._activateListeners(html);
+    }
+    _activateListeners(html) {
+        this.hue = html.find('[name="hue"]');
+        this.space = html.find('[name="space"]');
+        const method = html.find('[name="method"]');
+        this.hue.on("input", this.update.bind(this));
+        this.space.on("input", this.update.bind(this));
+        method.on("input", this.update.bind(this));
+    }
+    _init() {
+        (parcelRequire("kn5Qf")).then((imp)=>{
+            this._createSlider();
+        // // Respond better to DF Architect Color Picker
+        // html.on('focusout', '.df-arch-colourpicker', (e) => {
+        //   clearTimeout(inputTimer);
+        //   inputTimer = setTimeout(() => this.update(), 500);
+        // });
+        });
+    }
+    update() {
+        clearTimeout(this.inputTimer);
+        this.inputTimer = setTimeout(()=>this._updateSlider(), 500);
+    }
+    _updateSlider(event, ui) {
+        if (ui) this.colors[ui.handleIndex].offset = ui.value;
+        this.slider.find(".slide-back").remove();
+        let lVal = this.max + 1;
+        let lHandle;
+        let lIndex;
+        let handles = this.slider.find("span").toArray();
+        for(let i = 0; i < handles.length; i++){
+            let sliderVal = this.slider.slider("values", i);
+            this.colors[i].offset = sliderVal;
+            if (sliderVal < lVal) {
+                lHandle = $(this);
+                lVal = sliderVal;
+                lIndex = i;
+            }
+            $(handles[i]).css("background", this.colors[i].hex);
+            if (sliderVal !== this.max) {
+                let [stripColor, stripColorVal] = this._getNextColor(this.colors[i].hex, sliderVal);
+                this._appendStrip(this._genGradient(stripColor, this.colors[i].hex), `${stripColorVal - sliderVal}%`, `${sliderVal}%`);
+            }
+        }
+        if (lVal !== this.min) this._appendStrip(this._genGradient(this.colors[lIndex].hex, this.colors[lIndex].hex), `${this.slider.slider("values", lIndex)}%`, "0%");
+    }
+    _genGradient(color1, color2) {
+        const space = this.space?.val() || "lch";
+        if (space === "discrete") return "rgba(0, 0, 0, 0)";
+        const hue = this.hue?.val() || "shorter";
+        let r = (0, $2dca407f99b477df$export$2e2bcd8739ae039).range(color2, color1, {
+            space: space,
+            hue: hue
+        });
+        let stops = (0, $2dca407f99b477df$export$2e2bcd8739ae039).steps(r, {
+            steps: 5,
+            maxDeltaE: 3
+        });
+        return `linear-gradient(to right, ${stops.map((c)=>c.display()).join(", ")})`;
+    }
+    _appendStrip(color, width, offset) {
+        this.slider.append($("<div></div>").addClass("slide-back").width(width).css("background", color).css("left", offset));
+    }
+    _getNextColor(currColor, val) {
+        let nextColor = currColor;
+        let nextColorVal = this.max + 1;
+        for(let i = 0; i < this.colors.length; i++){
+            let cVal = this.slider.slider("values", i);
+            if (cVal > val && cVal < nextColorVal) {
+                nextColor = this.colors[i].hex;
+                nextColorVal = cVal;
+            }
+        }
+        return [
+            nextColor,
+            Math.min(nextColorVal, this.max)
+        ];
+    }
+    _onCreateSlider() {
+        let handles = this.slider.find("span").toArray();
+        for(let i = 0; i < handles.length; i++){
+            let cPicker = $(`<input type="color" value="${this.colors[i].hex}" style='opacity:0;width:100%;height:100%;position:absolute;pointer-events:none;'>`);
+            const handle = $(handles[i]);
+            handle.attr("handleindex", i);
+            handle.append(cPicker);
+            handle.on("click", (event)=>{
+                if (event.detail === 2) {
+                    event.preventDefault();
+                    cPicker.trigger("click");
+                }
+            });
+            cPicker.on("input", (event)=>{
+                this.colors[i].hex = cPicker.val();
+                this.update();
+            });
+            handle.on("contextmenu", (event)=>{
+                event.preventDefault();
+                event.stopPropagation();
+                if (this.colors.length > 2) {
+                    let index = event.target.getAttribute("handleindex");
+                    if (index) {
+                        this.colors.splice(index, 1);
+                        this._createSlider();
+                    }
+                }
+            });
+        }
+        this.slider.on("contextmenu", (event)=>{
+            let offset = this.slider.offset();
+            var x = event.clientX - offset.left; //x position within the element.
+            let percentOffset = Math.round(x / this.slider.width() * 100);
+            if (!this._percentExists(percentOffset)) {
+                let [col, _] = this._getNextColor(null, percentOffset);
+                if (!col) col = "#ff0000";
+                this.colors.push({
+                    hex: col,
+                    offset: percentOffset
+                });
+                this._createSlider();
+            }
+        });
+        this.update();
+    }
+    _percentExists(percent) {
+        return this.colors.some((c)=>c.offset === percent);
+    }
+    getColors() {
+        return foundry.utils.deepClone(this.colors).sort((a, b)=>a.offset - b.offset);
+    }
+    _createSlider = ()=>{
+        if (this.slider.slider("instance")) this.slider.slider("destroy");
+        this.slider.slider({
+            change: (event, ui)=>this.update(event, ui),
+            create: ()=>this._onCreateSlider(),
+            min: this.min,
+            max: this.max,
+            values: this.colors.map((c)=>c.offset)
+        });
+    };
+}
+
+
+
+
+class $f36f870d870fb1df$export$511ed1dd332818c6 {
+    static expanded(uuid) {
+        return game.folders._expanded[uuid];
+    }
+    static setExpanded(uuid, state) {
+        game.folders._expanded[uuid] = state;
+    }
+}
+function $f36f870d870fb1df$export$39440f0fa5867812(placeable) {
+    const data = placeable.document.toCompendium();
+    // Check if `Token Attacher` has attached elements to this token
+    if (placeable.document.documentName === "Token" && game.modules.get("token-attacher")?.active && tokenAttacher?.generatePrototypeAttached) {
+        const attached = data.flags?.["token-attacher"]?.attached || {};
+        if (!foundry.utils.isEmpty(attached)) {
+            const prototypeAttached = tokenAttacher.generatePrototypeAttached(data, attached);
+            setProperty(data, "flags.token-attacher.attached", null);
+            setProperty(data, "flags.token-attacher.prototypeAttached", prototypeAttached);
+            setProperty(data, "flags.token-attacher.grid", {
+                size: canvas.grid.size,
+                w: canvas.grid.w,
+                h: canvas.grid.h
+            });
+        }
+    }
+    return data;
+}
+function $f36f870d870fb1df$export$863d6b2526003b94(data, documentName, gridSize) {
+    if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(documentName)) return;
+    if (!gridSize) gridSize = 100;
+    const ratio = canvas.grid.size / gridSize;
+    for (const d of data){
+        if ("x" in d) d.x *= ratio;
+        if ("y" in d) d.y *= ratio;
+        switch(documentName){
+            case "Tile":
+                if ("width" in d) d.width *= ratio;
+                if ("height" in d) d.height *= ratio;
+                break;
+            case "Drawing":
+                if (d.shape?.width != null) d.shape.width *= ratio;
+                if (d.shape?.height != null) d.shape.height *= ratio;
+                break;
+            case "Wall":
+                if ("c" in d) for(let i = 0; i < d.c.length; i++)d.c[i] *= ratio;
+                break;
+        }
+    }
+}
+async function $f36f870d870fb1df$export$80e78b185c7d67a(data, toModify) {
+    const fields = {};
+    const flatData = foundry.utils.flattenObject(data);
+    for (const field of toModify)if (field in flatData) {
+        if (flatData[field] == null) fields[field] = "";
+        else fields[field] = flatData[field];
+    }
+    if (!foundry.utils.isEmpty(fields)) await new Promise((resolve)=>{
+        (0, $f3b8698a65c76e19$export$609bf259f643e4ef)(fields, "PresetFieldModify", {
+            callback: (modified)=>{
+                if (foundry.utils.isEmpty(modified)) {
+                    if (modified == null) data = null;
+                    resolve();
+                    return;
+                }
+                for (const [k, v] of Object.entries(modified))flatData[k] = v;
+                const tmpData = foundry.utils.expandObject(flatData);
+                const reorganizedData = [];
+                for(let i = 0; i < data.length; i++)reorganizedData.push(tmpData[i]);
+                data = reorganizedData;
+                resolve();
+            },
+            simplified: true,
+            noTabs: true
+        });
+    });
+    return data;
+}
+function $f36f870d870fb1df$export$60f3b7de93628ca3(preset, presetData) {
+    let data;
+    // Set default values if needed
+    switch(preset.documentName){
+        case "Token":
+            data = {
+                name: preset.name
+            };
+            break;
+        case "Tile":
+            data = {
+                width: canvas.grid.w,
+                height: canvas.grid.h
+            };
+            break;
+        case "AmbientSound":
+            data = {
+                radius: 20
+            };
+            break;
+        case "Drawing":
+            data = {
+                shape: {
+                    width: canvas.grid.w * 2,
+                    height: canvas.grid.h * 2,
+                    strokeWidth: 8,
+                    strokeAlpha: 1.0
+                }
+            };
+            break;
+        case "MeasuredTemplate":
+            data = {
+                distance: 10
+            };
+            break;
+        case "AmbientLight":
+            if (presetData.config?.dim == null && presetData.config?.bright == null) {
+                data = {
+                    config: {
+                        dim: 20,
+                        bright: 20
+                    }
+                };
+                break;
+            }
+        case "Scene":
+            data = {
+                name: preset.name
+            };
+            break;
+        default:
+            data = {};
+    }
+    return foundry.utils.mergeObject(data, presetData);
+}
+async function $f36f870d870fb1df$export$80e31902d66ad249(uuid, tree, callback) {
+    const folder = tree.allFolders.get(uuid);
+    const children = folder.children;
+    if (!children.length) return;
+    const colorTemp = await renderTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/randomizer/color.html`, {
+        method: "interpolateReverse",
+        space: "srgb",
+        hue: "longer"
+    });
+    let colorSlider;
+    const applyColors = async function(method, space, hue) {
+        const updates = children.map((c)=>{
+            return {
+                color: "#000000"
+            };
+        });
+        const randObj = {
+            color: {
+                type: "color",
+                method: method,
+                space: space,
+                hue: hue,
+                colors: colorSlider.getColors()
+            }
+        };
+        await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(updates, children, randObj);
+        for(let i = 0; i < children.length; i++)await children[i].update(updates[i]);
+        callback?.();
+    };
+    let dialog = new Dialog({
+        title: `Pick Range`,
+        content: `<form>${colorTemp}</form>`,
+        buttons: {
+            save: {
+                label: "Apply",
+                callback: async (html)=>{
+                    applyColors(html.find('[name="method"]').val(), html.find('[name="space"]').val(), html.find('[name="hue"]').val());
+                }
+            }
+        },
+        render: (html)=>{
+            colorSlider = new (0, $2693f7af118c914b$export$44fd664bcca5b6fb)(html, [
+                {
+                    hex: "#663600",
+                    offset: 0
+                },
+                {
+                    hex: "#944f00",
+                    offset: 100
+                }
+            ]);
+            setTimeout(()=>dialog.setPosition({
+                    height: "auto"
+                }), 100);
+        }
+    });
+    dialog.render(true);
+}
+
+
+const $74329e11c6ef615c$export$2a34b6e4e19d9a25 = "world.mass-edit-presets-main";
+const $74329e11c6ef615c$export$345e1d531777323a = "MassEditMetaData";
+const $74329e11c6ef615c$export$806804144eb785a1 = [
+    "id",
+    "img",
+    "documentName",
+    "tags"
+];
+class $74329e11c6ef615c$export$9cea25aeb7365a59 {
+    static presets;
+    static workingPack;
+    static async getTree(type, mainOnly = false) {
+        let pack;
+        let mainTree;
+        try {
+            pack = await this._initCompendium(this.workingPack);
+            mainTree = await this.packToTree(pack, type);
+        } catch (e) {
+            // Fail-safe. Return back to DEFAULT_PACK
+            console.log(e);
+            console.log(`FAILED TO LOAD WORKING COMPENDIUM {${this.workingPack}}`);
+            console.log("RETURNING TO DEFAULT");
+            await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", $74329e11c6ef615c$export$2a34b6e4e19d9a25);
+            this.workingPack = $74329e11c6ef615c$export$2a34b6e4e19d9a25;
+            pack = await this._initCompendium(this.workingPack);
+            mainTree = await this.packToTree(pack, type);
+        }
+        const extFolders = [];
+        if (!mainOnly) {
+            for (const p of game.packs)if (p.collection !== this.workingPack && p.index.get($74329e11c6ef615c$export$345e1d531777323a)) {
+                const tree = await this.packToTree(p, type);
+                if (!tree.hasVisible) continue;
+                const topFolder = new $74329e11c6ef615c$export$78bfafae49dc346b({
+                    pack: p,
+                    tree: tree
+                });
+                extFolders.push(topFolder);
+                // Collate all folders with the main tree
+                mainTree.allFolders.set(topFolder.uuid, topFolder);
+                for (const [uuid, folder] of tree.allFolders)mainTree.allFolders.set(uuid, folder);
+            }
+        }
+        mainTree.extFolders = this._groupExtFolders(extFolders, mainTree.allFolders);
+        return mainTree;
+    }
+    static async packToTree(pack, type) {
+        if (!pack) return null;
+        // Setup folders ready for parent/children processing
+        const folders = new Map();
+        const topLevelFolders = new Map();
+        const folderContents = pack.folders.contents;
+        for (const f of folderContents){
+            const folder = new $74329e11c6ef615c$var$PresetFolder({
+                id: f._id,
+                uuid: f.uuid,
+                name: f.name,
+                sorting: f.sorting,
+                color: f.color,
+                sort: f.sort,
+                draggable: f.pack === this.workingPack,
+                folder: f.folder?.uuid,
+                visible: type ? (f.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types || [
+                    "ALL"
+                ]).includes(type) : true
+            });
+            folders.set(folder.uuid, folder);
+            topLevelFolders.set(f.uuid, folder);
+        }
+        // If folders have parent folders add them as children and remove them as a top level folder
+        for (const f of folderContents)if (f.folder) {
+            const parent = folders.get(f.folder.uuid);
+            parent.children.push(folders.get(f.uuid));
+            topLevelFolders.delete(f.uuid);
+        }
+        // Process presets
+        const allPresets = [];
+        const topLevelPresets = [];
+        let hasVisible = false; // tracks whether there exists at least one visible preset within this tree
+        const metaDoc = await pack.getDocument($74329e11c6ef615c$export$345e1d531777323a);
+        let metaIndex = metaDoc?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
+        const index = pack.index.contents;
+        // TEMP - 06/03/2024
+        // Due to poor implementation of Folder+Folder Content delete, there are likely to be some indexes which were not removed
+        // Lets clean them up here for now
+        $74329e11c6ef615c$export$9cea25aeb7365a59._cleanIndex(pack, metaDoc, metaIndex);
+        // Remove after sufficient enough time has passed to have reasonable confidence that All/Most users have executed this ^
+        for (const idx of index){
+            if (idx._id === $74329e11c6ef615c$export$345e1d531777323a) continue;
+            const mIndex = metaIndex[idx._id];
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
+                ...idx,
+                ...mIndex,
+                pack: pack.collection
+            });
+            // If no document name is available (missing metadata) attempt to load the preset to retrieve it
+            // If still no name is found, skip it
+            if (!preset.documentName) {
+                console.log(`Missing MetaData. Attempting document load: ${preset.id} | ${preset.name}`);
+                await preset.load();
+                if (!preset.documentName) continue;
+                if (!pack.locked) preset._updateIndex(preset); // Insert missing preset into metadata index
+            }
+            if (preset.folder) {
+                let matched = false;
+                for (const [uuid, folder] of folders)if (folder.id === preset.folder) {
+                    folder.presets.push(preset);
+                    matched = true;
+                    break;
+                }
+                if (!matched) topLevelPresets.push(preset);
+            } else topLevelPresets.push(preset);
+            if (type) {
+                if (type === "ALL") {
+                    if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(preset.documentName)) preset._visible = false;
+                } else if (preset.documentName !== type) preset._visible = false;
+            }
+            allPresets.push(preset);
+            hasVisible |= preset._visible;
+        }
+        // Sort folders
+        const sorting = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode") === "manual" ? "m" : "a";
+        const sortedFolders = this._sortFolders(Array.from(topLevelFolders.values()), sorting);
+        const sortedPresets = this._sortPresets(topLevelPresets, sorting);
+        return {
+            folders: sortedFolders,
+            presets: sortedPresets,
+            allPresets: allPresets,
+            allFolders: folders,
+            hasVisible: hasVisible,
+            metaDoc: metaDoc
+        };
+    }
+    static _groupExtFolders(folders, allFolders) {
+        folders = folders.sort((f1, f2)=>f1.name.localeCompare(f2.name));
+        const groups = {};
+        const groupless = [];
+        folders.forEach((f)=>{
+            if (f.group) {
+                if (!(f.group in groups)) groups[f.group] = [];
+                groups[f.group].push(f);
+            } else groupless.push(f);
+        });
+        const newExtFolders = [];
+        for (const [group, folders] of Object.entries(groups)){
+            const id = (0, $32e43d7a62aba58c$export$ee99f0ca2b3ce17b).randomID(group); // For export operation a real ID is needed. Lets keep it consistent by seeding
+            const uuid = "virtual." + group; // faux uuid
+            const groupFolder = new $74329e11c6ef615c$export$48071842e07c8882({
+                id: id,
+                uuid: uuid,
+                name: group,
+                children: folders,
+                draggable: false
+            });
+            allFolders.set(uuid, groupFolder);
+            newExtFolders.push(groupFolder);
+        }
+        return newExtFolders.concat(groupless).sort((f1, f2)=>f1.name.localeCompare(f2.name));
+    }
+    // Fixing meta index by removing loose indexes
+    // 06/03/2024
+    static async _cleanIndex(pack, metaDoc, metaIndex) {
+        if (pack.locked || !metaDoc || foundry.utils.isEmpty(metaIndex)) return;
+        const index = pack.index;
+        const update = {};
+        for (const idx of Object.keys(metaIndex))if (!index.has(idx)) update["-=" + idx] = null;
+        if (!foundry.utils.isEmpty(update)) metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", update);
+    }
+    static _sortFolders(folders, sorting = "a") {
+        for (const folder of folders){
+            folder.children = this._sortFolders(folder.children, folder.sorting);
+            folder.presets = this._sortPresets(folder.presets, folder.sorting);
+        }
+        if (sorting === "a") return folders.sort((f1, f2)=>f1.name.localeCompare(f2.name, "en", {
+                numeric: true
+            }));
+        else return folders.sort((f1, f2)=>f1.sort - f2.sort);
+    }
+    static _sortPresets(presets, sorting = "a") {
+        if (sorting === "a") return presets.sort((p1, p2)=>p1.name.localeCompare(p2.name, "en", {
+                numeric: true
+            }));
+        else return presets.sort((p1, p2)=>p1.sort - p2.sort);
+    }
+    static async packToPresets(pack) {
+        if (!pack) return [];
+        const presets = [];
+        let metaIndex = (await pack.getDocument($74329e11c6ef615c$export$345e1d531777323a))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
+        const index = pack.index.contents;
+        for (const idx of index){
+            if (idx._id === $74329e11c6ef615c$export$345e1d531777323a) continue;
+            const mIndex = metaIndex[idx._id];
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
+                ...idx,
+                ...mIndex,
+                pack: pack.collection
+            });
+            presets.push(preset);
+        }
+        return presets;
+    }
+    static async update(preset) {
+        const compendium = await this._initCompendium(this.workingPack);
+        const doc = await compendium.getDocument(preset.id);
+        const updateDoc = {
+            name: preset.name,
+            flags: {
+                [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
+                    preset: preset.toJSON()
+                }
+            }
+        };
+        const pages = preset.pages;
+        if (pages) updateDoc.pages = pages;
+        await doc.update(updateDoc);
+        const metaDoc = await this._initMetaDocument(this.workingPack);
+        const update = {};
+        $74329e11c6ef615c$export$806804144eb785a1.forEach((f)=>{
+            update[f] = preset[f];
+        });
+        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", {
+            [preset.id]: update
+        });
+    }
+    /**
+   * Update multiple presets at the same time
+   * @param {*} updates
+   */ static async updatePresets(updates) {
+        // TODO update meta and preset itself
+        await JournalEntry.updateDocuments(updates, {
+            pack: this.workingPack
+        });
+    }
+    /**
+   * @param {Preset|Array[Preset]} preset
+   */ static async set(preset, pack) {
+        if (!pack) pack = this.workingPack;
+        if (preset instanceof Array) {
+            for (const p of preset)await $74329e11c6ef615c$export$9cea25aeb7365a59.set(p, pack);
+            return;
+        }
+        const compendium = await this._initCompendium(pack);
+        if (compendium.index.get(preset.id)) {
+            await this.update(preset);
+            return;
+        }
+        const documents1 = await JournalEntry.createDocuments([
+            {
+                _id: preset.id,
+                name: preset.name,
+                pages: preset.pages ?? [],
+                folder: preset.folder,
+                flags: {
+                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
+                        preset: preset.toJSON()
+                    }
+                }
+            }
+        ], {
+            pack: pack,
+            keepId: true
+        });
+        preset.uuid = documents1[0].uuid;
+        preset.document = documents1[0];
+        const metaDoc = await this._initMetaDocument(pack);
+        const update = {};
+        $74329e11c6ef615c$export$806804144eb785a1.forEach((f)=>{
+            update[f] = preset[f];
+        });
+        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", {
+            [preset.id]: update
+        });
+    }
+    static async get(uuid, { full: full = true } = {}) {
+        let { collection: collection, documentId: documentId, documentType: documentType, embedded: embedded, doc: doc } = foundry.utils.parseUuid(uuid);
+        const index = collection.index.get(documentId);
+        if (index) {
+            const metaIndex = (await collection.getDocument($74329e11c6ef615c$export$345e1d531777323a))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
+            const mIndex = metaIndex[index._id];
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
+                ...index,
+                ...mIndex,
+                pack: collection.collection
+            });
+            if (full) await preset.load();
+            return preset;
+        }
+        return null;
+    }
+    /**
+   * @param {Preset|Array[Preset]} preset
+   */ static async delete(presets) {
+        if (!presets) return;
+        if (!(presets instanceof Array)) presets = [
+            presets
+        ];
+        // Sort by compendium
+        const sorted = {};
+        for (const preset of presets){
+            let { collection: collection } = foundry.utils.parseUuid(preset.uuid);
+            collection = collection.collection;
+            if (!sorted[collection]) sorted[collection] = [
+                preset
+            ];
+            else sorted[collection].push(preset);
+        }
+        for (const pack of Object.keys(sorted)){
+            const compendium = await game.packs.get(pack);
+            if (!compendium) continue;
+            const metaDoc = await this._initMetaDocument(pack);
+            const metaUpdate = {};
+            const deleteIds = [];
+            for (const preset of sorted[pack]){
+                deleteIds.push(preset.id);
+                metaUpdate["-=" + preset.id] = null;
+            }
+            await JournalEntry.deleteDocuments(deleteIds, {
+                pack: pack
+            });
+            metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", metaUpdate);
+        }
+    }
+    static async _initCompendium(pack) {
+        let compendium = game.packs.get(pack);
+        if (!compendium && pack === $74329e11c6ef615c$export$2a34b6e4e19d9a25) {
+            compendium = await CompendiumCollection.createCompendium({
+                label: "Mass Edit: Presets (MAIN)",
+                type: "JournalEntry",
+                ownership: {
+                    GAMEMASTER: "NONE",
+                    PLAYER: "NONE",
+                    ASSISTANT: "NONE"
+                },
+                packageType: "world"
+            });
+            await this._initMetaDocument(pack);
+        }
+        return compendium;
+    }
+    static async _initMetaDocument(pack) {
+        const compendium = game.packs.get(pack);
+        const metaDoc = await compendium.getDocument($74329e11c6ef615c$export$345e1d531777323a);
+        if (metaDoc) return metaDoc;
+        const documents1 = await JournalEntry.createDocuments([
+            {
+                _id: $74329e11c6ef615c$export$345e1d531777323a,
+                name: "!!! METADATA: DO NOT DELETE !!!",
+                flags: {
+                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
+                        index: {}
+                    }
+                }
+            }
+        ], {
+            pack: pack,
+            keepId: true
+        });
+        return documents1[0];
+    }
+    static async deleteFolder(uuid, deleteAll = false) {
+        const folderDoc = await fromUuid(uuid);
+        if (folderDoc.compendium.locked) return;
+        if (deleteAll) {
+            const metaDoc = folderDoc.compendium.get($74329e11c6ef615c$export$345e1d531777323a);
+            if (!metaDoc) return;
+            const metaUpdate = {};
+            const traverseFolder = function(folder) {
+                folder.contents.forEach((j)=>metaUpdate["-=" + j._id] = null);
+                folder.children.forEach((c)=>traverseFolder(c.folder));
+            };
+            traverseFolder(folderDoc);
+            metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", metaUpdate);
+        }
+        return await folderDoc.delete({
+            deleteSubfolders: deleteAll,
+            deleteContents: deleteAll
+        });
+    }
+    static _searchPresetTree(tree, options) {
+        const presets = [];
+        if (!options.folder) this._searchPresetList(tree.allPresets, presets, options);
+        tree.allFolders.forEach((folder)=>this._searchPresetFolder(folder, presets, options));
+        return presets;
+    }
+    static _searchPresetFolder(folder, presets, options) {
+        if (options.folder && folder.name !== options.folder) return;
+        this._searchPresetList(folder.presets, presets, options, folder.name);
+    }
+    static _searchPresetList(toSearch, presets, { name: name, type: type, tags: tags } = {}, folderName) {
+        for (const preset of toSearch){
+            let match = true;
+            if (name && name !== preset.name) match = false;
+            if (type && type !== preset.documentName) match = false;
+            if (match && tags) {
+                if (tags.matchAny) match = tags.tags.some((t)=>preset.tags.includes(t));
+                else match = tags.tags.every((t)=>preset.tags.includes(t));
+            }
+            if (match) presets.push(preset);
+        }
+    }
+    /**
+   * Build preset index for 'Spotlight Omnisearch' module
+   * @param {Array[CONFIG.SpotlightOmniseach.SearchTerm]} soIndex
+   */ static async buildSpotlightOmnisearchIndex(soIndex) {
+        const tree = await $74329e11c6ef615c$export$9cea25aeb7365a59.getTree();
+        const SearchTerm = CONFIG.SpotlightOmniseach.SearchTerm;
+        const onClick = async function() {
+            if ((0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.data.documentName)) {
+                ui.spotlightOmnisearch?.setDraggingState(true);
+                await $74329e11c6ef615c$export$619760a5720f8054.spawnPreset({
+                    preset: this.data,
+                    coordPicker: true,
+                    taPreview: "ALL",
+                    scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
+                });
+                ui.spotlightOmnisearch?.setDraggingState(false);
+            }
+        };
+        const onDragEnd = function(event) {
+            if ((0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.data.documentName)) {
+                const { x: x, y: y } = canvas.canvasCoordinatesFromClient({
+                    x: event.clientX,
+                    y: event.clientY
+                });
+                $74329e11c6ef615c$export$619760a5720f8054.spawnPreset({
+                    preset: this.data,
+                    x: x,
+                    y: y,
+                    scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
+                });
+            } else if (this.data.documentName === "Scene") (0, $32e43d7a62aba58c$export$767e4c91777ecf4c)(this.data);
+        };
+        const deactivateCallback = function() {
+            ui.spotlightOmnisearch?.setDraggingState(false);
+        };
+        const getActions = function() {
+            const actions = [
+                {
+                    name: "MassEdit.presets.open-journal",
+                    icon: '<i class="fas fa-book-open fa-fw"></i>',
+                    callback: ()=>{
+                        this.data.openJournal();
+                    }
+                }
+            ];
+            if ((0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.data.documentName)) actions.push({
+                name: `MassEdit.presets.controls.activate-brush`,
+                icon: '<i class="fas fa-paint-brush"></i>',
+                callback: async ()=>{
+                    canvas.getLayerByEmbeddedName(this.data.documentName)?.activate();
+                    if ((0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).activate({
+                        preset: await this.data.load(),
+                        deactivateCallback: deactivateCallback
+                    })) ui.spotlightOmnisearch.setDraggingState(true);
+                }
+            });
+            return actions;
+        };
+        const buildTerm = function(preset) {
+            soIndex.push(new SearchTerm({
+                name: preset.name,
+                description: "Mass Edit: Preset",
+                type: preset.documentName + " preset",
+                img: preset.img,
+                icon: [
+                    "fa-solid fa-books",
+                    preset.icon
+                ],
+                keywords: preset.tags,
+                onClick: onClick,
+                onDragEnd: onDragEnd,
+                data: preset,
+                actions: getActions
+            }));
+        };
+        tree.presets.forEach(buildTerm);
+        tree.allFolders.forEach((f)=>f.presets.forEach(buildTerm));
+    }
+}
+class $74329e11c6ef615c$export$619760a5720f8054 {
+    static name = "PresetAPI";
+    /**
+   * Retrieve preset
+   * @param {object} [options={}]
+   * @param {String} [options.uuid]                      Preset UUID
+   * @param {String} [options.name]                      Preset name
+   * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {String|Array[String]|Object} [options.tags] Tags to match a preset against. Can be provided as an object containing 'tags' array and 'match' any flag.
+   *                                                     Comma separated string, or a list of strings. In the latter 2 case 'matchAny' is assumed true
+   * @param {String} [options.folder]  Folder name
+   * @returns {Preset}
+   */ static async getPreset({ uuid: uuid, name: name, type: type, folder: folder, tags: tags } = {}) {
+        if (uuid) return await $74329e11c6ef615c$export$9cea25aeb7365a59.get(uuid);
+        else if (!name && !type && !folder && !tags) throw Error("UUID, Name, Type, and/or Folder required to retrieve a Preset.");
+        if (tags) {
+            if (Array.isArray(tags)) tags = {
+                tags: tags,
+                matchAny: true
+            };
+            else if (typeof tags === "string") tags = {
+                tags: tags.split(","),
+                matchAny: true
+            };
+        }
+        const presets = $74329e11c6ef615c$export$9cea25aeb7365a59._searchPresetTree(await $74329e11c6ef615c$export$9cea25aeb7365a59.getTree(), {
+            name: name,
+            type: type,
+            folder: folder,
+            tags: tags
+        });
+        const preset = presets[Math.floor(Math.random() * presets.length)];
+        return preset?.clone().load();
+    }
+    /**
+   * Retrieve presets
+   * @param {object} [options={}]
+   * @param {String} [options.uuid]                      Preset UUID
+   * @param {String} [options.name]                      Preset name
+   * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {String} [options.folder]                    Folder name
+   * @param {String|Array[String]|Object} [options.tags] See PresetAPI.getPreset
+   * @param {String} [options.format]                    The form to return placeables in ('preset', 'name', 'nameAndFolder')
+   * @returns {Array[Preset]|Array[String]|Array[Object]}
+   */ static async getPresets({ uuid: uuid, name: name, type: type, folder: folder, format: format = "preset", tags: tags } = {}) {
+        if (uuid) return await $74329e11c6ef615c$export$9cea25aeb7365a59.get(uuid);
+        else if (!name && !type && !folder && !tags) throw Error("UUID, Name, Type, Folder and/or Tags required to retrieve a Preset.");
+        if (tags) {
+            if (Array.isArray(tags)) tags = {
+                tags: tags,
+                matchAny: true
+            };
+            else if (typeof tags === "string") tags = {
+                tags: tags.split(","),
+                matchAny: true
+            };
+        }
+        const presets = $74329e11c6ef615c$export$9cea25aeb7365a59._searchPresetTree(await $74329e11c6ef615c$export$9cea25aeb7365a59.getTree(), {
+            name: name,
+            type: type,
+            folder: folder,
+            tags: tags
+        });
+        if (format === "name") return presets.map((p)=>p.name);
+        else if (format === "nameAndFolder") return presets.map((p)=>{
+            return {
+                name: p.name,
+                folder: p._folderName
+            };
+        });
+        return presets;
+    }
+    /**
+   * Create a Token preset from the provided Actor
+   */ static async createPresetFromActor(actor, { keepId: keepId = false, folder: folder } = {}) {
+        if (!actor || actor.documentName !== "Actor") return;
+        const presetData = {
+            id: keepId ? actor.id : null,
+            name: actor.name,
+            documentName: "Token",
+            img: actor.img,
+            data: [
+                actor.prototypeToken.toJSON()
+            ],
+            folder: folder
+        };
+        presetData.gridSize = canvas.scene.grid.size;
+        const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)(presetData);
+        await $74329e11c6ef615c$export$9cea25aeb7365a59.set(preset);
+        return preset;
+    }
+    static async createPresetFromActorUuid(uuid, options = {}) {
+        const actor = await fromUuid(uuid);
+        actor.documentName;
+        return await this.createPresetFromActor(actor, options);
+    }
+    /**
+   * Create Presets from passed in placeables
+   * @param {PlaceableObject|Array[PlaceableObject]} placeables Placeable/s to create the presets from.
+   * @param {object} [options={}]                               Optional Preset information
+   * @param {String} [options.name]                             Preset name
+   * @param {String} [options.img]                              Preset thumbnail image
+   * @returns {Preset|Array[Preset]}
+   */ static async createPreset(placeables, options = {}) {
+        if (!placeables) return;
+        if (!(placeables instanceof Array)) placeables = [
+            placeables
+        ];
+        // Alike placeables will be made into single presets. Lets batch them up together.
+        const groups = {};
+        for (const placeable of placeables){
+            const docName = placeable.document.documentName;
+            if (!groups.hasOwnProperty(docName)) groups[docName] = [];
+            groups[docName].push(placeable);
+        }
+        const presets = [];
+        for (const [docName, placeables] of Object.entries(groups)){
+            const data = [];
+            for (const placeable of placeables)data.push((0, $f36f870d870fb1df$export$39440f0fa5867812)(placeable));
+            // Preset data before merging with user provided
+            const defPreset = {
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.default-name"),
+                documentName: docName,
+                data: data
+            };
+            // Assign preset image
+            switch(defPreset.documentName){
+                case "Token":
+                case "Tile":
+                case "Note":
+                    defPreset.img = data[0].texture.src;
+                    break;
+                case "AmbientSound":
+                    defPreset.img = "icons/svg/sound.svg";
+                    break;
+                case "AmbientLight":
+                    defPreset.img = "icons/svg/light.svg";
+                    break;
+                case "Drawing":
+                    defPreset.img = "icons/svg/acid.svg";
+                    break;
+                case "MeasuredTemplate":
+                    defPreset.img = "icons/svg/circle.svg";
+                    break;
+            }
+            //  Assign preset name
+            switch(defPreset.documentName){
+                case "Token":
+                    defPreset.name = data[0].name;
+                    break;
+                default:
+                    const taggerTag = data[0].flags?.tagger?.tags?.[0];
+                    if (taggerTag) defPreset.name = taggerTag;
+                    break;
+            }
+            defPreset.gridSize = placeables[0].document.parent.grid.size;
+            foundry.utils.mergeObject(defPreset, options, {
+                inplace: true
+            });
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)(defPreset);
+            await $74329e11c6ef615c$export$9cea25aeb7365a59.set(preset);
+            presets.push(preset);
+        }
+        return presets;
+    }
+    /**
+   * Spawn a preset on the scene (uuid, name or preset itself are required).
+   * By default the current mouse position is used.
+   * @param {object} [options={}]
+   * @param {Preset} [options.preset]                    Preset
+   * @param {String} [options.uuid]                      Preset UUID
+   * @param {String} [options.name]                      Preset name
+   * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {String|Array[String]|Object} [options.tags] Preset tags, See PresetAPI.getPreset
+   * @param {Number} [options.x]                         Spawn canvas x coordinate (mouse position used if x or y are null)
+   * @param {Number} [options.y]                         Spawn canvas y coordinate (mouse position used if x or y are null)
+   * @param {Number} [options.z]                         Spawn canvas z coordinate (3D Canvas)
+   * @param {Boolean} [options.snapToGrid]               If 'true' snaps spawn position to the grid.
+   * @param {Boolean} [options.hidden]                   If 'true' preset will be spawned hidden.
+   * @param {Boolean} [options.layerSwitch]              If 'true' the layer of the spawned preset will be activated.
+   * @param {Boolean} [options.scaleToGrid]              If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
+   * @param {Boolean} [options.modifyPrompt]             If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
+   * @param {Boolean} [options.coordPicker]              If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
+   * @param {String} [options.pickerLabel]               Label displayed above crosshair when `coordPicker` is enabled
+   * @param {String} [options.taPreview]                 Designates the preview placeable when spawning a `Token Attacher` prefab.
+   *                                                      Accepted values are "ALL" (for all elements) and document name optionally followed by an index number
+   *                                                      e.g. "ALL", "Tile", "AmbientLight.1"
+   * @returns {Array[Document]}
+   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, tags: tags, x: x, y: y, z: z, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false, modifyPrompt: modifyPrompt = true } = {}) {
+        if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
+        if (!(uuid || preset || name || type || folder || tags)) throw Error("ID, Name, Folder, Tags, or Preset is needed to spawn it.");
+        if (!coordPicker && (x == null && y != null || x != null && y == null)) throw Error("Need both X and Y coordinates to spawn a preset.");
+        if (preset) await preset.load();
+        preset = preset ?? await $74329e11c6ef615c$export$619760a5720f8054.getPreset({
+            uuid: uuid,
+            name: name,
+            type: type,
+            folder: folder,
+            tags: tags
+        });
+        if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
+        let presetData = deepClone(preset.data);
+        // Instead of using the entire data group use only one random one
+        if (preset.spawnRandom && presetData.length) presetData = [
+            presetData[Math.floor(Math.random() * presetData.length)]
+        ];
+        // Display prompt to modify data if needed
+        if (modifyPrompt && preset.modifyOnSpawn?.length) {
+            presetData = await (0, $f36f870d870fb1df$export$80e78b185c7d67a)(presetData, preset.modifyOnSpawn);
+            // presetData being returned as null means that the modify field form has been canceled
+            // in which case we should cancel spawning as well
+            if (presetData == null) return;
+        }
+        // Populate preset data with default placeable data
+        presetData = presetData.map((data)=>{
+            return (0, $f36f870d870fb1df$export$60f3b7de93628ca3)(preset, data);
+        });
+        // Randomize data if needed
+        const randomizer = preset.randomize;
+        if (!foundry.utils.isEmpty(randomizer)) {
+            // Flat data required for randomizer
+            presetData = presetData.map((d)=>foundry.utils.flattenObject(d));
+            await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(presetData, null, randomizer);
+            presetData = presetData.map((d)=>foundry.utils.expandObject(d));
+        }
+        // Scale dimensions relative to grid size
+        if (scaleToGrid) (0, $f36f870d870fb1df$export$863d6b2526003b94)(presetData, preset.documentName, preset.gridSize);
+        if (preset.preSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.preSpawnScript, {
+            data: presetData
+        });
+        // Lets sort the preset data as well as any attached placeable data into document groups
+        // documentName -> data array
+        const docToData = new Map();
+        docToData.set(preset.documentName, presetData);
+        if (preset.attached) for (const attached of preset.attached){
+            if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
+            const data = deepClone(attached.data);
+            if (scaleToGrid) (0, $f36f870d870fb1df$export$863d6b2526003b94)([
+                data
+            ], attached.documentName, preset.gridSize);
+            docToData.get(attached.documentName).push(data);
+        }
+        // ==================
+        // Determine spawn position
+        if (coordPicker) {
+            const coords = await new Promise(async (resolve)=>{
+                (0, $2620a6fdb001d88f$export$ba25329847403e11).activate(resolve, {
+                    documentName: preset.documentName,
+                    previewData: docToData,
+                    snap: snapToGrid,
+                    label: pickerLabel,
+                    taPreview: taPreview
+                });
+            });
+            if (coords == null) return [];
+            x = coords.end.x;
+            y = coords.end.y;
+        } else if (x == null || y == null) {
+            if (game.Levels3DPreview?._active) {
+                const pos3d = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
+                x = pos3d.x;
+                y = pos3d.y;
+                z = pos3d.z;
+            } else {
+                x = canvas.mousePosition.x;
+                y = canvas.mousePosition.y;
+                if (preset.documentName === "Token" || preset.documentName === "Tile") {
+                    x -= canvas.dimensions.size / 2;
+                    y -= canvas.dimensions.size / 2;
+                }
+            }
+        }
+        let pos = {
+            x: x,
+            y: y
+        };
+        if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision);
+        // ==================
+        // ==================
+        // Set positions taking into account relative distances between each object
+        let diffX, diffY, diffZ;
+        docToData.forEach((dataArr, documentName)=>{
+            for (const data of dataArr){
+                // We need to establish the first found coordinate as the reference point
+                if (diffX == null || diffY == null) {
+                    if (documentName === "Wall") {
+                        if (data.c) {
+                            diffX = pos.x - data.c[0];
+                            diffY = pos.y - data.c[1];
+                        }
+                    } else if (data.x != null && data.y != null) {
+                        diffX = pos.x - data.x;
+                        diffY = pos.y - data.y;
+                    }
+                    // 3D Canvas
+                    if (z != null) {
+                        const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
+                        if (getProperty(data, property) != null) diffZ = z - getProperty(data, property);
+                    }
+                }
+                // Assign relative position
+                if (documentName === "Wall") {
+                    if (!data.c || diffX == null) data.c = [
+                        pos.x,
+                        pos.y,
+                        pos.x + canvas.grid.w * 2,
+                        pos.y
+                    ];
+                    else {
+                        data.c[0] += diffX;
+                        data.c[1] += diffY;
+                        data.c[2] += diffX;
+                        data.c[3] += diffY;
+                    }
+                } else {
+                    data.x = data.x == null || diffX == null ? pos.x : data.x + diffX;
+                    data.y = data.y == null || diffY == null ? pos.y : data.y + diffY;
+                }
+                // 3D Canvas
+                if (z != null) {
+                    delete data.z;
+                    let elevation;
+                    const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
+                    if (diffZ !== null && getProperty(data, property) != null) elevation = getProperty(data, property) + diffZ;
+                    else elevation = z;
+                    setProperty(data, property, elevation);
+                    if (documentName !== "Token") setProperty(data, "flags.levels.rangeTop", elevation);
+                }
+                // Assign ownership for Drawings and MeasuredTemplates
+                if ([
+                    "Drawing",
+                    "MeasuredTemplate"
+                ].includes(documentName)) {
+                    if (documentName === "Drawing") data.author = game.user.id;
+                    else if (documentName === "MeasuredTemplate") data.user = game.user.id;
+                }
+                // Hide
+                if (hidden || game.keyboard.downKeys.has("AltLeft")) data.hidden = true;
+            }
+        });
+        // ==================
+        if (layerSwitch) {
+            if (game.user.isGM || [
+                "Token",
+                "MeasuredTemplate",
+                "Note"
+            ].includes(preset.documentName)) canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
+        }
+        // Create Documents
+        const allDocuments = [];
+        for (const [documentName, dataArr] of docToData.entries()){
+            const documents1 = await (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(documentName, dataArr, canvas.scene.id);
+            documents1.forEach((d)=>allDocuments.push(d));
+        }
+        // Execute post spawn scripts
+        if (preset.postSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.postSpawnScript, {
+            documents: allDocuments,
+            objects: documents.map((d)=>d.object).filter(Boolean)
+        });
+        return allDocuments;
+    }
+}
+class $74329e11c6ef615c$var$PresetFolder {
+    constructor({ id: id, uuid: uuid, name: name, sorting: sorting = "m", color: color = "#000000", sort: sort = 0, children: children = [], presets: presets = [], draggable: draggable = true, folder: folder = null, visible: visible = true, render: render = true } = {}){
+        this.id = id;
+        this.uuid = uuid;
+        this.name = name;
+        this.sorting = sorting;
+        this.color = color;
+        this.sort = sort;
+        this.children = children;
+        this.children.forEach((c)=>{
+            c.folder = this.id;
+        });
+        this.presets = presets;
+        this.draggable = draggable;
+        this.folder = folder;
+        this.visible = visible;
+        this.render = render;
+        this.expanded = (0, $f36f870d870fb1df$export$511ed1dd332818c6).expanded(this.uuid);
+    }
+    async update(data) {
+        const doc = await fromUuid(this.uuid);
+        if (doc) await doc.update(data);
+    }
+}
+class $74329e11c6ef615c$export$48071842e07c8882 extends $74329e11c6ef615c$var$PresetFolder {
+    constructor(options){
+        super(options);
+        this.virtual = true;
+    }
+    async update(data) {}
+}
+class $74329e11c6ef615c$export$78bfafae49dc346b extends $74329e11c6ef615c$export$48071842e07c8882 {
+    constructor(options){
+        const tree = options.tree;
+        const pack = options.pack;
+        const packFolderData = tree.metaDoc.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "folder") ?? {};
+        const uuid = pack.collection;
+        super({
+            uuid: uuid,
+            id: (0, $32e43d7a62aba58c$export$ee99f0ca2b3ce17b).randomID(uuid),
+            name: packFolderData.name ?? pack.title,
+            children: tree.folders,
+            presets: tree.presets,
+            draggable: false,
+            color: packFolderData.color ?? "#000000"
+        });
+        this.group = packFolderData.group;
+    }
+    get pack() {
+        return this.uuid;
+    }
+    async update(data = {}) {
+        const pack = game.packs.get(this.pack);
+        if (pack.locked) return;
+        if (data.hasOwnProperty("name") && data.name === pack.title) delete data.name;
+        if (foundry.utils.isEmpty(data)) return;
+        const metaDoc = await $74329e11c6ef615c$export$9cea25aeb7365a59._initMetaDocument(this.pack);
+        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "folder", data);
+    }
+}
+
+
+
+const $449b4d80a1c5126b$var$DOCUMENT_FIELDS = [
+    "id",
+    "name",
+    "sort",
+    "folder"
+];
+const $449b4d80a1c5126b$var$PRESET_FIELDS = [
+    "id",
+    "name",
+    "data",
+    "sort",
+    "folder",
+    "uuid",
+    "documentName",
+    "addSubtract",
+    "randomize",
+    "img",
+    "gridSize",
+    "modifyOnSpawn",
+    "preSpawnScript",
+    "postSpawnScript",
+    "spawnRandom",
+    "attached",
+    "tags"
+];
+const $449b4d80a1c5126b$export$34595c972f489ae2 = {
+    ALL: "fas fa-globe",
+    Token: "fas fa-user-circle",
+    MeasuredTemplate: "fas fa-ruler-combined",
+    Tile: "fa-solid fa-cubes",
+    Drawing: "fa-solid fa-pencil-alt",
+    Wall: "fa-solid fa-block-brick",
+    AmbientLight: "fa-regular fa-lightbulb",
+    AmbientSound: "fa-solid fa-music",
+    Note: "fa-solid fa-bookmark",
+    Actor: "fas fa-user-alt",
+    Scene: "fas fa-map",
+    DEFAULT: "fa-solid fa-question"
+};
+class $449b4d80a1c5126b$export$3463c369d5cc977f {
+    static name = "Preset";
+    document;
+    constructor(data){
+        this.id = data.id ?? data._id ?? foundry.utils.randomID();
+        this.name = data.name ?? "Mass Edit Preset";
+        this.documentName = data.documentName;
+        this.sort = data.sort ?? 0;
+        this.tags = data.tags ?? [];
+        this.addSubtract = data.addSubtract instanceof Array ? Object.fromEntries(data.addSubtract) : foundry.utils.deepClone(data.addSubtract ?? {});
+        this.randomize = data.randomize instanceof Array ? Object.fromEntries(data.randomize) : foundry.utils.deepClone(data.randomize ?? {});
+        this.data = foundry.utils.deepClone(data.data);
+        this.img = data.img;
+        this.folder = data.folder;
+        this.uuid = data.uuid;
+        this.gridSize = data.gridSize;
+        this.modifyOnSpawn = data.modifyOnSpawn;
+        this.preSpawnScript = data.preSpawnScript;
+        this.postSpawnScript = data.postSpawnScript;
+        this.attached = data.attached;
+        this.spawnRandom = data.spawnRandom;
+        this._visible = true;
+        this._render = true;
+    }
+    get visible() {
+        return this._visible && this._render;
+    }
+    get icon() {
+        return $449b4d80a1c5126b$export$34595c972f489ae2[this.documentName] ?? $449b4d80a1c5126b$export$34595c972f489ae2.DEFAULT;
+    }
+    get thumbnail() {
+        return this.img || CONST.DEFAULT_TOKEN;
+    }
+    get pages() {
+        if (this.document?.pages.size) return this.document.toJSON().pages;
+        else if (this._pages) return this._pages;
+        return null;
+    }
+    set data(data) {
+        if (data instanceof Array) this._data = data;
+        else if (data == null) this._data = null;
+        else this._data = [
+            data
+        ];
+    }
+    get isPlaceable() {
+        return (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.documentName);
+    }
+    get data() {
+        return this._data;
+    }
+    /**
+   * Loads underlying JournalEntry document from the compendium
+   * @returns this
+   */ async load() {
+        if (!this.document && this.uuid) {
+            this.document = await fromUuid(this.uuid);
+            if (this.document) {
+                const preset = this.document.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "preset") ?? {};
+                this.documentName = preset.documentName;
+                this.img = preset.img;
+                this.data = preset.data;
+                this.randomize = foundry.utils.getType(preset.randomize) === "Object" ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
+                this.addSubtract = foundry.utils.getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
+                this.gridSize = preset.gridSize;
+                this.modifyOnSpawn = preset.modifyOnSpawn;
+                this.preSpawnScript = preset.preSpawnScript;
+                this.postSpawnScript = preset.postSpawnScript;
+                this.attached = preset.attached;
+                this.spawnRandom = preset.spawnRandom;
+                this.tags = preset.tags ?? [];
+            }
+        }
+        return this;
+    }
+    async openJournal() {
+        if (!this.document) await this.load();
+        if (this.document) this.document.sheet.render(true);
+    }
+    /**
+   * Attach placeables
+   * @param {Placeable|Array[Placeable]} placeables
+   * @returns
+   */ async attach(placeables) {
+        if (!placeables) return;
+        if (!(placeables instanceof Array)) placeables = [
+            placeables
+        ];
+        if (!this.attached) this.attached = [];
+        for (const placeable of placeables)this.attached.push({
+            documentName: placeable.document.documentName,
+            data: (0, $f36f870d870fb1df$export$39440f0fa5867812)(placeable)
+        });
+        await this.update({
+            attached: this.attached
+        });
+    }
+    /**
+   * Update preset with the provided data
+   * @param {Object} update
+   */ async update(update) {
+        if (this.document) {
+            const flagUpdate = {};
+            Object.keys(update).forEach((k)=>{
+                if (k === "randomize" || k === "addSubtract") {
+                    flagUpdate[k] = Object.entries(update[k]);
+                    this[k] = update[k];
+                } else if (k === "data" && !(update.data instanceof Array)) {
+                    flagUpdate.data = this.data.map((d)=>{
+                        return foundry.utils.mergeObject(d, update.data);
+                    });
+                    this.data = flagUpdate.data;
+                } else if ($449b4d80a1c5126b$var$PRESET_FIELDS.includes(k) && update[k] !== this[k]) {
+                    flagUpdate[k] = update[k];
+                    this[k] = update[k];
+                }
+            });
+            if (!foundry.utils.isEmpty(flagUpdate)) {
+                const docUpdate = {
+                    flags: {
+                        [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
+                            preset: flagUpdate
+                        }
+                    }
+                };
+                $449b4d80a1c5126b$var$DOCUMENT_FIELDS.forEach((field)=>{
+                    if (field in flagUpdate && this.document[field] !== flagUpdate[field]) docUpdate[field] = flagUpdate[field];
+                });
+                await this.document.update(docUpdate);
+            }
+            await this._updateIndex(flagUpdate);
+        } else console.warn("Updating preset without document", this.id, this.uuid, this.name);
+    }
+    async _updateIndex(data) {
+        const update = {};
+        (0, $74329e11c6ef615c$export$806804144eb785a1).forEach((field)=>{
+            if (field in data) update[field] = data[field];
+        });
+        if (!foundry.utils.isEmpty(update)) {
+            const pack = game.packs.get(this.document.pack);
+            const metaDoc = await pack.getDocument((0, $74329e11c6ef615c$export$345e1d531777323a));
+            if (metaDoc) {
+                let tmp = {};
+                tmp[this.id] = update;
+                await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", tmp);
+            } else {
+                console.warn(`META INDEX missing in ${this.document.pack}`);
+                return;
+            }
+        }
+    }
+    toJSON() {
+        let json = {};
+        $449b4d80a1c5126b$var$PRESET_FIELDS.forEach((field)=>{
+            json[field] = this[field];
+        });
+        json.randomize = Object.entries(json.randomize ?? {});
+        json.addSubtract = Object.entries(json.addSubtract ?? []);
+        const pages = this.pages;
+        if (pages) json.pages = pages;
+        return json;
+    }
+    clone() {
+        const clone = new $449b4d80a1c5126b$export$3463c369d5cc977f(this.toJSON());
+        clone.document = this.document;
+        return clone;
+    }
+}
+
+
+
+class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
+    static app;
+    static deactivateCallback;
+    // @type {Preset}
+    static preset;
+    static brushOverlay;
+    static updatedPlaceables = new Map();
+    static hoveredPlaceables = new Set();
+    static hoveredPlaceable;
+    static documentName;
+    static active = false;
+    static hitTest;
+    static registered3dListener = false;
+    static #_ = (()=>{
+        this._boundOn3DBrushClick = this._on3DBrushClick.bind(this);
+        this._boundOn3dMouseMove = this._on3dMouseMove.bind(this);
+    })();
+    static _performBrushDocumentUpdate(pos, placeable) {
+        if (pos) this._animateCrossTranslate(pos.x, pos.y);
+        (0, $8d51a9873394e4eb$export$85a626beb2f6e17a)([
+            placeable
+        ], this.preset, true, true);
+        this.updatedPlaceables.set(placeable.id, placeable);
+    }
+    static _hitTestWall(point, wall) {
+        return wall.line.hitArea.contains(point.x, point.y);
+    }
+    static _hitTestControlIcon(point, placeable) {
+        return Number.between(point.x, placeable.x - placeable.controlIcon.width / 2, placeable.x + placeable.controlIcon.width / 2) && Number.between(point.y, placeable.y - placeable.controlIcon.height / 2, placeable.y + placeable.controlIcon.height / 2);
+    }
+    static _hitTestTile(point, placeable) {
+        const foreground = ui.controls.control.foreground ?? false;
+        if (placeable.document.overhead !== foreground) return false;
+        return this._hitTestArea(point, placeable);
+    }
+    static _hoverTestArea(placeable) {
+        return this.hoveredPlaceable && this.hoveredPlaceable.hitArea.width * this.hoveredPlaceable.hitArea.height > placeable.hitArea.width * placeable.hitArea.height;
+    }
+    static _hitTestArea(point, placeable) {
+        return Number.between(point.x, placeable.x, placeable.x + placeable.hitArea.width) && Number.between(point.y, placeable.y, placeable.y + placeable.hitArea.height);
+    }
+    static _onBrushMove(event) {
+        const pos = event.data.getLocalPosition(this.brushOverlay);
+        const layer = canvas.getLayerByEmbeddedName(this.documentName);
+        this._clearHover(event, pos);
+        for (const p of layer.placeables)if (p.visible && this.hitTest(pos, p) && !this.updatedPlaceables.has(p.id) && this.hoveredPlaceable !== p) {
+            if (this.hoverTest?.(p)) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = p;
+            } else if (!this.hoverTest && this.hoveredPlaceable && this.hoveredPlaceable !== p) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = p;
+            } else if (!this.hoveredPlaceable) this.hoveredPlaceable = p;
+            this.hoveredPlaceable._onHoverIn(event);
+        }
+    }
+    static _clearHover(event, pos, force = false) {
+        if (this.hoveredPlaceable) {
+            if (force || !this.hoveredPlaceable.visible || !this.hitTest(pos, this.hoveredPlaceable)) {
+                this.hoveredPlaceable._onHoverOut(event);
+                this.hoveredPlaceable = null;
+            }
+        }
+    }
+    static _onBrushClickMove(event) {
+        if (this.hoveredPlaceable && this.hoveredPlaceable.visible && !this.updatedPlaceables.has(this.hoveredPlaceable.id)) this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
+    }
+    static _on3DBrushClick(event) {
+        if (this.brush3d) {
+            const p = game.Levels3DPreview.interactionManager.currentHover?.placeable;
+            if (p && p.document.documentName === this.documentName) {
+                game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
+                this._performBrushDocumentUpdate(null, p);
+            }
+            this.updatedPlaceables.clear();
+        }
+    }
+    static refreshPreset() {
+        if (this.active && this.app) this.preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
+            documentName: this.documentName,
+            data: this.app.getSelectedFields(),
+            randomize: this.app.randomizeFields,
+            addSubtract: this.app.addSubtractFields
+        });
+    }
+    /**
+   * @param {Object} options
+   * @param {MassEditForm} options.app
+   * @param {Preset} options.preset
+   * @returns
+   */ static activate({ app: app = null, preset: preset = null, deactivateCallback: deactivateCallback = null } = {}) {
+        if (this.deactivate() || !canvas.ready) return false;
+        if (!app && !preset) return false;
+        if (this.brushOverlay) this.brushOverlay.destroy(true);
+        // Setup fields to be used for updates
+        this.app = app;
+        this.preset = preset;
+        this.deactivateCallback = deactivateCallback;
+        if (this.app) this.documentName = this.app.documentName;
+        else this.documentName = this.preset.documentName;
+        this.updatedPlaceables.clear();
+        const interaction = canvas.app.renderer.events;
+        if (!interaction.cursorStyles["brush"]) interaction.cursorStyles["brush"] = `url('modules/${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}/images/brush_icon.png'), auto`;
+        this.active = true;
+        this.refreshPreset();
+        if (game.Levels3DPreview?._active) return this._activate3d();
+        // Determine hit test test function to be used for pointer hover detection
+        switch(this.documentName){
+            case "Wall":
+                this.hitTest = this._hitTestWall;
+                break;
+            case "AmbientLight":
+            case "MeasuredTemplate":
+            case "AmbientSound":
+            case "Note":
+                this.hitTest = this._hitTestControlIcon;
+                break;
+            case "Tile":
+                this.hitTest = this._hitTestTile;
+                this.hoverTest = this._hoverTestArea;
+                break;
+            default:
+                this.hitTest = this._hitTestArea;
+                this.hoverTest = this._hoverTestArea;
+        }
+        // Create the brush overlay
+        this.brushOverlay = new PIXI.Container();
+        this.brushOverlay.hitArea = canvas.dimensions.rect;
+        this.brushOverlay.cursor = "brush";
+        this.brushOverlay.interactive = true;
+        this.brushOverlay.zIndex = Infinity;
+        this.brushOverlay.on("mousemove", (event)=>{
+            this._onBrushMove(event);
+            if (event.buttons === 1) this._onBrushClickMove(event);
+        });
+        this.brushOverlay.on("mouseup", (event)=>{
+            if (event.nativeEvent.which !== 2) this._onBrushClickMove(event);
+            this.updatedPlaceables.clear();
+        });
+        this.brushOverlay.on("click", (event)=>{
+            if (event.nativeEvent.which == 2) this.deactivate();
+        });
+        canvas.stage.addChild(this.brushOverlay);
+        // Disable canvas events to prevent selects and object placements on click
+        canvas.mouseInteractionManager.permissions.clickLeft = false;
+        // canvas.mouseInteractionManager.permissions.longPress = false;
+        return true;
+    }
+    static brush3dDelayMoveTimer;
+    static _on3dMouseMove() {
+        if (!this.brush3d || this.brush3dDelayMoveTimer) return;
+        const brush = this;
+        this.brush3dDelayMoveTimer = setTimeout(function() {
+            const mPos = game.Levels3DPreview.interactionManager.canvas3dMousePosition;
+            const cPos = game.Levels3DPreview.interactionManager.camera.position;
+            const intersects = game.Levels3DPreview.interactionManager.computeSightCollisionFrom3DPositions(cPos, mPos, "collision", false, false, false, true);
+            if (intersects[0]) {
+                const intersect = intersects[0];
+                brush.brush3d.position.set(intersect.point.x, intersect.point.y, intersect.point.z);
+            }
+            brush.brush3dDelayMoveTimer = null;
+        }, 100); // Will do the ajax stuff after 1000 ms, or 1 s
+    }
+    static deactivate3DListeners() {
+        game.Levels3DPreview.renderer.domElement.removeEventListener("click", this._boundOn3DBrushClick, false);
+        game.Levels3DPreview.renderer.domElement.removeEventListener("mousemove", this._boundOn3dMouseMove, false);
+    }
+    static _activate3DListeners() {
+        // Remove listeners if they are already set
+        this.deactivate3DListeners();
+        game.Levels3DPreview.renderer.domElement.addEventListener("click", this._boundOn3DBrushClick, false);
+        game.Levels3DPreview.renderer.domElement.addEventListener("mousemove", this._boundOn3dMouseMove, false);
+    }
+    static _activate3d() {
+        const THREE = game.Levels3DPreview.THREE;
+        if (!this.brush3d) {
+            this.brush3d = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), new THREE.MeshBasicMaterial({
+                opacity: 0.5,
+                transparent: true,
+                color: 0x00ff00,
+                wireframe: true
+            }));
+            this.brush3d.userData.interactive = false;
+            this.brush3d.userData.ignoreHover = true;
+            const mPos = game.Levels3DPreview.interactionManager.canvas3dMousePosition;
+            this.brush3d.position.set(mPos.x, mPos.y, mPos.z);
+            game.Levels3DPreview.scene.add(this.brush3d);
+        }
+        // Activate listeners
+        this._activate3DListeners();
+        return true;
+    }
+    static deactivate() {
+        if (this.active) {
+            canvas.mouseInteractionManager.permissions.clickLeft = true;
+            //canvas.mouseInteractionManager.permissions.longPress = true;
+            if (this.brushOverlay) this.brushOverlay.parent?.removeChild(this.brushOverlay);
+            if (this.brush3d && game.Levels3DPreview?._active) {
+                game.Levels3DPreview.scene.remove(this.brush3d);
+                this.brush3d = null;
+                this.deactivate3DListeners();
+            }
+            this.active = false;
+            this.updatedPlaceables.clear();
+            this._clearHover(null, null, true);
+            this.hoverTest = null;
+            this.deactivateCallback?.();
+            this.deactivateCallback = null;
+            this.app = null;
+            this.preset = null;
+            return true;
+        }
+    }
+    static async _animateCrossTranslate(x, y) {
+        let cross = new PIXI.Text("+", {
+            fontFamily: "Arial",
+            fontSize: 11,
+            fill: 0x00ff11,
+            align: "center"
+        });
+        cross = this.brushOverlay.addChild(cross);
+        cross.x = x + Math.random() * 16 - 8;
+        cross.y = y;
+        const translate = [
+            {
+                parent: cross,
+                attribute: "y",
+                to: y - 50
+            }
+        ];
+        const completed = await CanvasAnimation.animate(translate, {
+            duration: 700,
+            name: foundry.utils.randomID(5)
+        });
+        if (completed) this.brushOverlay.removeChild(cross).destroy();
+    }
+}
+
+
+
 function $2d0c7cad90c7ba3c$export$6171357ef4337306(allData, documentName, customControls, pins = true) {
     const nav = {
         dataGroup: "main",
@@ -484,6 +7396,8 @@ async function $58452d6efd8a00ed$export$6c8d0b561bdc4d96(app) {
     // Disable for now, until duplicate value fix is found
     return;
 }
+
+
 
 
 /*global app*/ function $526640c45cded75e$var$isVowel(c) {
@@ -13351,5108 +20265,10 @@ const $6279a85e34ff46c6$export$2cb59683800e8ab7 = {
 
 
 
-// A is m x n. B is n x p. product is m x p.
-function $2dca407f99b477df$var$multiplyMatrices(A, B) {
-    let m = A.length;
-    if (!Array.isArray(A[0])) // A is vector, convert to [[a, b, c, ...]]
-    A = [
-        A
-    ];
-    if (!Array.isArray(B[0])) // B is vector, convert to [[a], [b], [c], ...]]
-    B = B.map((x)=>[
-            x
-        ]);
-    let p = B[0].length;
-    let B_cols = B[0].map((_, i)=>B.map((x)=>x[i])); // transpose B
-    let product = A.map((row)=>B_cols.map((col)=>{
-            let ret = 0;
-            if (!Array.isArray(row)) {
-                for (let c of col)ret += row * c;
-                return ret;
-            }
-            for(let i = 0; i < row.length; i++)ret += row[i] * (col[i] || 0);
-            return ret;
-        }));
-    if (m === 1) product = product[0]; // Avoid [[a, b, c, ...]]
-    if (p === 1) return product.map((x)=>x[0]); // Avoid [[a], [b], [c], ...]]
-    return product;
-}
-/**
- * Various utility functions
- */ /**
- * Check if a value is a string (including a String object)
- * @param {*} str - Value to check
- * @returns {boolean}
- */ function $2dca407f99b477df$var$isString(str) {
-    return $2dca407f99b477df$var$type(str) === "string";
-}
-/**
- * Determine the internal JavaScript [[Class]] of an object.
- * @param {*} o - Value to check
- * @returns {string}
- */ function $2dca407f99b477df$var$type(o) {
-    let str = Object.prototype.toString.call(o);
-    return (str.match(/^\[object\s+(.*?)\]$/)[1] || "").toLowerCase();
-}
-/**
- * Round a number to a certain number of significant digits
- * @param {number} n - The number to round
- * @param {number} precision - Number of significant digits
- */ function $2dca407f99b477df$var$toPrecision(n, precision) {
-    n = +n;
-    precision = +precision;
-    let integerLength = (Math.floor(n) + "").length;
-    if (precision > integerLength) return +n.toFixed(precision - integerLength);
-    else {
-        let p10 = 10 ** (integerLength - precision);
-        return Math.round(n / p10) * p10;
-    }
-}
-/**
- * Parse a CSS function, regardless of its name and arguments
- * @param String str String to parse
- * @return {{name, args, rawArgs}}
- */ function $2dca407f99b477df$var$parseFunction(str) {
-    if (!str) return;
-    str = str.trim();
-    const isFunctionRegex = /^([a-z]+)\((.+?)\)$/i;
-    const isNumberRegex = /^-?[\d.]+$/;
-    let parts = str.match(isFunctionRegex);
-    if (parts) {
-        // It is a function, parse args
-        let args = [];
-        parts[2].replace(/\/?\s*([-\w.]+(?:%|deg)?)/g, ($0, arg)=>{
-            if (/%$/.test(arg)) {
-                // Convert percentages to 0-1 numbers
-                arg = new Number(arg.slice(0, -1) / 100);
-                arg.type = "<percentage>";
-            } else if (/deg$/.test(arg)) {
-                // Drop deg from degrees and convert to number
-                // TODO handle other units too
-                arg = new Number(+arg.slice(0, -3));
-                arg.type = "<angle>";
-                arg.unit = "deg";
-            } else if (isNumberRegex.test(arg)) {
-                // Convert numerical args to numbers
-                arg = new Number(arg);
-                arg.type = "<number>";
-            }
-            if ($0.startsWith("/")) {
-                // It's alpha
-                arg = arg instanceof Number ? arg : new Number(arg);
-                arg.alpha = true;
-            }
-            args.push(arg);
-        });
-        return {
-            name: parts[1].toLowerCase(),
-            rawName: parts[1],
-            rawArgs: parts[2],
-            args: // An argument could be (as of css-color-4):
-            // a number, percentage, degrees (hue), ident (in color())
-            args
-        };
-    }
-}
-function $2dca407f99b477df$var$last(arr) {
-    return arr[arr.length - 1];
-}
-function $2dca407f99b477df$var$interpolate(start, end, p) {
-    if (isNaN(start)) return end;
-    if (isNaN(end)) return start;
-    return start + (end - start) * p;
-}
-function $2dca407f99b477df$var$interpolateInv(start, end, value1) {
-    return (value1 - start) / (end - start);
-}
-function $2dca407f99b477df$var$mapRange(from, to, value1) {
-    return $2dca407f99b477df$var$interpolate(to[0], to[1], $2dca407f99b477df$var$interpolateInv(from[0], from[1], value1));
-}
-function $2dca407f99b477df$var$parseCoordGrammar(coordGrammars) {
-    return coordGrammars.map((coordGrammar)=>{
-        return coordGrammar.split("|").map((type)=>{
-            type = type.trim();
-            let range = type.match(/^(<[a-z]+>)\[(-?[.\d]+),\s*(-?[.\d]+)\]?$/);
-            if (range) {
-                let ret = new String(range[1]);
-                ret.range = [
-                    +range[2],
-                    +range[3]
-                ];
-                return ret;
-            }
-            return type;
-        });
-    });
-}
-var $2dca407f99b477df$var$util = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    isString: $2dca407f99b477df$var$isString,
-    type: $2dca407f99b477df$var$type,
-    toPrecision: $2dca407f99b477df$var$toPrecision,
-    parseFunction: $2dca407f99b477df$var$parseFunction,
-    last: $2dca407f99b477df$var$last,
-    interpolate: $2dca407f99b477df$var$interpolate,
-    interpolateInv: $2dca407f99b477df$var$interpolateInv,
-    mapRange: $2dca407f99b477df$var$mapRange,
-    parseCoordGrammar: $2dca407f99b477df$var$parseCoordGrammar,
-    multiplyMatrices: $2dca407f99b477df$var$multiplyMatrices
-});
-/**
- * A class for adding deep extensibility to any piece of JS code
- */ class $2dca407f99b477df$var$Hooks {
-    add(name, callback, first) {
-        if (typeof arguments[0] != "string") {
-            // Multiple hooks
-            for(var name in arguments[0])this.add(name, arguments[0][name], arguments[1]);
-            return;
-        }
-        (Array.isArray(name) ? name : [
-            name
-        ]).forEach(function(name) {
-            this[name] = this[name] || [];
-            if (callback) this[name][first ? "unshift" : "push"](callback);
-        }, this);
-    }
-    run(name, env) {
-        this[name] = this[name] || [];
-        this[name].forEach(function(callback) {
-            callback.call(env && env.context ? env.context : env, env);
-        });
-    }
-}
-/**
- * The instance of {@link Hooks} used throughout Color.js
- */ const $2dca407f99b477df$var$hooks = new $2dca407f99b477df$var$Hooks();
-// Global defaults one may want to configure
-var $2dca407f99b477df$var$defaults = {
-    gamut_mapping: "lch.c",
-    precision: 5,
-    deltaE: "76"
-};
-const $2dca407f99b477df$var$WHITES = {
-    // for compatibility, the four-digit chromaticity-derived ones everyone else uses
-    D50: [
-        0.3457 / 0.3585,
-        1.0,
-        0.8251046025104602
-    ],
-    D65: [
-        0.3127 / 0.329,
-        1.0,
-        1.0890577507598784
-    ]
-};
-function $2dca407f99b477df$var$getWhite(name) {
-    if (Array.isArray(name)) return name;
-    return $2dca407f99b477df$var$WHITES[name];
-}
-// Adapt XYZ from white point W1 to W2
-function $2dca407f99b477df$var$adapt$1(W1, W2, XYZ, options = {}) {
-    W1 = $2dca407f99b477df$var$getWhite(W1);
-    W2 = $2dca407f99b477df$var$getWhite(W2);
-    if (!W1 || !W2) throw new TypeError(`Missing white point to convert ${!W1 ? "from" : ""}${!W1 && !W2 ? "/" : ""}${!W2 ? "to" : ""}`);
-    if (W1 === W2) // Same whitepoints, no conversion needed
-    return XYZ;
-    let env = {
-        W1: W1,
-        W2: W2,
-        XYZ: XYZ,
-        options: options
-    };
-    $2dca407f99b477df$var$hooks.run("chromatic-adaptation-start", env);
-    if (!env.M) {
-        if (env.W1 === $2dca407f99b477df$var$WHITES.D65 && env.W2 === $2dca407f99b477df$var$WHITES.D50) env.M = [
-            [
-                1.0479298208405488,
-                0.022946793341019088,
-                -0.05019222954313557
-            ],
-            [
-                0.029627815688159344,
-                0.990434484573249,
-                -0.01707382502938514
-            ],
-            [
-                -0.009243058152591178,
-                0.015055144896577895,
-                0.7518742899580008
-            ]
-        ];
-        else if (env.W1 === $2dca407f99b477df$var$WHITES.D50 && env.W2 === $2dca407f99b477df$var$WHITES.D65) env.M = [
-            [
-                0.9554734527042182,
-                -0.023098536874261423,
-                0.0632593086610217
-            ],
-            [
-                -0.028369706963208136,
-                1.0099954580058226,
-                0.021041398966943008
-            ],
-            [
-                0.012314001688319899,
-                -0.020507696433477912,
-                1.3303659366080753
-            ]
-        ];
-    }
-    $2dca407f99b477df$var$hooks.run("chromatic-adaptation-end", env);
-    if (env.M) return $2dca407f99b477df$var$multiplyMatrices(env.M, env.XYZ);
-    else throw new TypeError("Only Bradford CAT with white points D50 and D65 supported for now.");
-}
-const $2dca407f99b477df$var$ε$4 = 0.000075;
-/**
- * Class to represent a color space
- */ class $2dca407f99b477df$var$ColorSpace {
-    constructor(options){
-        this.id = options.id;
-        this.name = options.name;
-        this.base = options.base ? $2dca407f99b477df$var$ColorSpace.get(options.base) : null;
-        this.aliases = options.aliases;
-        if (this.base) {
-            this.fromBase = options.fromBase;
-            this.toBase = options.toBase;
-        }
-        // Coordinate metadata
-        let coords = options.coords ?? this.base.coords;
-        this.coords = coords;
-        // White point
-        let white = options.white ?? this.base.white ?? "D65";
-        this.white = $2dca407f99b477df$var$getWhite(white);
-        // Sort out formats
-        this.formats = options.formats ?? {};
-        for(let name in this.formats){
-            let format = this.formats[name];
-            format.type ||= "function";
-            format.name ||= name;
-        }
-        if (options.cssId && !this.formats.functions?.color) {
-            this.formats.color = {
-                id: options.cssId
-            };
-            Object.defineProperty(this, "cssId", {
-                value: options.cssId
-            });
-        } else if (this.formats?.color && !this.formats?.color.id) this.formats.color.id = this.id;
-        // Other stuff
-        this.referred = options.referred;
-        // Compute ancestors and store them, since they will never change
-        this.#path = this.#getPath().reverse();
-        $2dca407f99b477df$var$hooks.run("colorspace-init-end", this);
-    }
-    inGamut(coords, { epsilon: epsilon = $2dca407f99b477df$var$ε$4 } = {}) {
-        if (this.isPolar) {
-            // Do not check gamut through polar coordinates
-            coords = this.toBase(coords);
-            return this.base.inGamut(coords, {
-                epsilon: epsilon
-            });
-        }
-        let coordMeta = Object.values(this.coords);
-        return coords.every((c, i)=>{
-            let meta = coordMeta[i];
-            if (meta.type !== "angle" && meta.range) {
-                if (Number.isNaN(c)) // NaN is always in gamut
-                return true;
-                let [min, max] = meta.range;
-                return (min === undefined || c >= min - epsilon) && (max === undefined || c <= max + epsilon);
-            }
-            return true;
-        });
-    }
-    get cssId() {
-        return this.formats.functions?.color?.id || this.id;
-    }
-    get isPolar() {
-        for(let id in this.coords){
-            if (this.coords[id].type === "angle") return true;
-        }
-        return false;
-    }
-    #processFormat(format) {
-        if (format.coords && !format.coordGrammar) {
-            format.type ||= "function";
-            format.name ||= "color";
-            // Format has not been processed
-            format.coordGrammar = $2dca407f99b477df$var$parseCoordGrammar(format.coords);
-            let coordFormats = Object.entries(this.coords).map(([id, coordMeta], i)=>{
-                // Preferred format for each coord is the first one
-                let outputType = format.coordGrammar[i][0];
-                let fromRange = coordMeta.range || coordMeta.refRange;
-                let toRange = outputType.range, suffix = "";
-                // Non-strict equals intentional since outputType could be a string object
-                if (outputType == "<percentage>") {
-                    toRange = [
-                        0,
-                        100
-                    ];
-                    suffix = "%";
-                } else if (outputType == "<angle>") suffix = "deg";
-                return {
-                    fromRange: fromRange,
-                    toRange: toRange,
-                    suffix: suffix
-                };
-            });
-            format.serializeCoords = (coords, precision)=>{
-                return coords.map((c, i)=>{
-                    let { fromRange: fromRange, toRange: toRange, suffix: suffix } = coordFormats[i];
-                    if (fromRange && toRange) c = $2dca407f99b477df$var$mapRange(fromRange, toRange, c);
-                    c = $2dca407f99b477df$var$toPrecision(c, precision);
-                    if (suffix) c += suffix;
-                    return c;
-                });
-            };
-        }
-        return format;
-    }
-    getFormat(format) {
-        if (typeof format === "object") {
-            format = this.#processFormat(format);
-            return format;
-        }
-        let ret;
-        if (format === "default") // Get first format
-        ret = Object.values(this.formats)[0];
-        else ret = this.formats[format];
-        if (ret) {
-            ret = this.#processFormat(ret);
-            return ret;
-        }
-        return null;
-    }
-    #path;
-    #getPath() {
-        let ret = [
-            this
-        ];
-        for(let space = this; space = space.base;)ret.push(space);
-        return ret;
-    }
-    to(space, coords) {
-        if (arguments.length === 1) [space, coords] = [
-            space.space,
-            space.coords
-        ];
-        space = $2dca407f99b477df$var$ColorSpace.get(space);
-        if (this === space) // Same space, no change needed
-        return coords;
-        // Convert NaN to 0, which seems to be valid in every coordinate of every color space
-        coords = coords.map((c)=>Number.isNaN(c) ? 0 : c);
-        // Find connection space = lowest common ancestor in the base tree
-        let myPath = this.#path;
-        let otherPath = space.#path;
-        let connectionSpace, connectionSpaceIndex;
-        for(let i = 0; i < myPath.length; i++){
-            if (myPath[i] === otherPath[i]) {
-                connectionSpace = myPath[i];
-                connectionSpaceIndex = i;
-            } else break;
-        }
-        if (!connectionSpace) // This should never happen
-        throw new Error(`Cannot convert between color spaces ${this} and ${space}: no connection space was found`);
-        // Go up from current space to connection space
-        for(let i = myPath.length - 1; i > connectionSpaceIndex; i--)coords = myPath[i].toBase(coords);
-        // Go down from connection space to target space
-        for(let i = connectionSpaceIndex + 1; i < otherPath.length; i++)coords = otherPath[i].fromBase(coords);
-        return coords;
-    }
-    from(space, coords) {
-        if (arguments.length === 1) [space, coords] = [
-            space.space,
-            space.coords
-        ];
-        space = $2dca407f99b477df$var$ColorSpace.get(space);
-        return space.to(this, coords);
-    }
-    toString() {
-        return `${this.name} (${this.id})`;
-    }
-    getMinCoords() {
-        let ret = [];
-        for(let id in this.coords){
-            let meta = this.coords[id];
-            let range = meta.range || meta.refRange;
-            ret.push(range?.min ?? 0);
-        }
-        return ret;
-    }
-    static registry = {};
-    // Returns array of unique color spaces
-    static get all() {
-        return [
-            ...new Set(Object.values($2dca407f99b477df$var$ColorSpace.registry))
-        ];
-    }
-    static register(id, space) {
-        if (arguments.length === 1) {
-            space = arguments[0];
-            id = space.id;
-        }
-        space = this.get(space);
-        if (this.registry[id] && this.registry[id] !== space) throw new Error(`Duplicate color space registration: '${id}'`);
-        this.registry[id] = space;
-        // Register aliases when called without an explicit ID.
-        if (arguments.length === 1 && space.aliases) for (let alias of space.aliases)this.register(alias, space);
-        return space;
-    }
-    /**
-   * Lookup ColorSpace object by name
-   * @param {ColorSpace | string} name
-   */ static get(space, ...alternatives) {
-        if (!space || space instanceof $2dca407f99b477df$var$ColorSpace) return space;
-        let argType = $2dca407f99b477df$var$type(space);
-        if (argType === "string") {
-            // It's a color space id
-            let ret = $2dca407f99b477df$var$ColorSpace.registry[space.toLowerCase()];
-            if (!ret) throw new TypeError(`No color space found with id = "${space}"`);
-            return ret;
-        }
-        if (alternatives.length) return $2dca407f99b477df$var$ColorSpace.get(...alternatives);
-        throw new TypeError(`${space} is not a valid color space`);
-    }
-    /**
-   * Get metadata about a coordinate of a color space
-   *
-   * @static
-   * @param {Array | string} ref
-   * @param {ColorSpace | string} [workingSpace]
-   * @return {Object}
-   */ static resolveCoord(ref, workingSpace) {
-        let coordType = $2dca407f99b477df$var$type(ref);
-        let space, coord;
-        if (coordType === "string") {
-            if (ref.includes(".")) // Absolute coordinate
-            [space, coord] = ref.split(".");
-            else // Relative coordinate
-            [space, coord] = [
-                ,
-                ref
-            ];
-        } else if (Array.isArray(ref)) [space, coord] = ref;
-        else {
-            // Object
-            space = ref.space;
-            coord = ref.coordId;
-        }
-        space = $2dca407f99b477df$var$ColorSpace.get(space);
-        if (!space) space = workingSpace;
-        if (!space) throw new TypeError(`Cannot resolve coordinate reference ${ref}: No color space specified and relative references are not allowed here`);
-        coordType = $2dca407f99b477df$var$type(coord);
-        if (coordType === "number" || coordType === "string" && coord >= 0) {
-            // Resolve numerical coord
-            let meta = Object.entries(space.coords)[coord];
-            if (meta) return {
-                space: space,
-                id: meta[0],
-                index: coord,
-                ...meta[1]
-            };
-        }
-        space = $2dca407f99b477df$var$ColorSpace.get(space);
-        let normalizedCoord = coord.toLowerCase();
-        let i = 0;
-        for(let id in space.coords){
-            let meta = space.coords[id];
-            if (id.toLowerCase() === normalizedCoord || meta.name?.toLowerCase() === normalizedCoord) return {
-                space: space,
-                id: id,
-                index: i,
-                ...meta
-            };
-            i++;
-        }
-        throw new TypeError(`No "${coord}" coordinate found in ${space.name}. Its coordinates are: ${Object.keys(space.coords).join(", ")}`);
-    }
-    static DEFAULT_FORMAT = {
-        type: "functions",
-        name: "color"
-    };
-}
-var $2dca407f99b477df$var$XYZ_D65 = new $2dca407f99b477df$var$ColorSpace({
-    id: "xyz-d65",
-    name: "XYZ D65",
-    coords: {
-        x: {
-            name: "X"
-        },
-        y: {
-            name: "Y"
-        },
-        z: {
-            name: "Z"
-        }
-    },
-    white: "D65",
-    formats: {
-        color: {
-            ids: [
-                "xyz-d65",
-                "xyz"
-            ]
-        }
-    },
-    aliases: [
-        "xyz"
-    ]
-});
-/**
- * Convenience class for RGB color spaces
- * @extends {ColorSpace}
- */ class $2dca407f99b477df$var$RGBColorSpace extends $2dca407f99b477df$var$ColorSpace {
-    /**
-   * Creates a new RGB ColorSpace.
-   * If coords are not specified, they will use the default RGB coords.
-   * Instead of `fromBase()` and `toBase()` functions,
-   * you can specify to/from XYZ matrices and have `toBase()` and `fromBase()` automatically generated.
-   * @param {*} options - Same options as {@link ColorSpace} plus:
-   * @param {number[][]} options.toXYZ_M - Matrix to convert to XYZ
-   * @param {number[][]} options.fromXYZ_M - Matrix to convert from XYZ
-   */ constructor(options){
-        if (!options.coords) options.coords = {
-            r: {
-                range: [
-                    0,
-                    1
-                ],
-                name: "Red"
-            },
-            g: {
-                range: [
-                    0,
-                    1
-                ],
-                name: "Green"
-            },
-            b: {
-                range: [
-                    0,
-                    1
-                ],
-                name: "Blue"
-            }
-        };
-        if (!options.base) options.base = $2dca407f99b477df$var$XYZ_D65;
-        if (options.toXYZ_M && options.fromXYZ_M) {
-            options.toBase ??= (rgb)=>{
-                let xyz = $2dca407f99b477df$var$multiplyMatrices(options.toXYZ_M, rgb);
-                if (this.white !== this.base.white) // Perform chromatic adaptation
-                xyz = $2dca407f99b477df$var$adapt$1(this.white, this.base.white, xyz);
-                return xyz;
-            };
-            options.fromBase ??= (xyz)=>{
-                xyz = $2dca407f99b477df$var$adapt$1(this.base.white, this.white, xyz);
-                return $2dca407f99b477df$var$multiplyMatrices(options.fromXYZ_M, xyz);
-            };
-        }
-        options.referred ??= "display";
-        super(options);
-    }
-}
-// CSS color to Color object
-function $2dca407f99b477df$var$parse(str) {
-    let env = {
-        str: String(str)?.trim()
-    };
-    $2dca407f99b477df$var$hooks.run("parse-start", env);
-    if (env.color) return env.color;
-    env.parsed = $2dca407f99b477df$var$parseFunction(env.str);
-    if (env.parsed) {
-        // Is a functional syntax
-        let name = env.parsed.name;
-        if (name === "color") {
-            // color() function
-            let id = env.parsed.args.shift();
-            let alpha = env.parsed.rawArgs.indexOf("/") > 0 ? env.parsed.args.pop() : 1;
-            for (let space of $2dca407f99b477df$var$ColorSpace.all){
-                let colorSpec = space.getFormat("color");
-                if (colorSpec) {
-                    if (id === colorSpec.id || colorSpec.ids?.includes(id)) {
-                        // From https://drafts.csswg.org/css-color-4/#color-function
-                        // If more <number>s or <percentage>s are provided than parameters that the colorspace takes, the excess <number>s at the end are ignored.
-                        // If less <number>s or <percentage>s are provided than parameters that the colorspace takes, the missing parameters default to 0. (This is particularly convenient for multichannel printers where the additional inks are spot colors or varnishes that most colors on the page won’t use.)
-                        let argCount = Object.keys(space.coords).length;
-                        let coords = Array(argCount).fill(0);
-                        coords.forEach((_, i)=>coords[i] = env.parsed.args[i] || 0);
-                        return {
-                            spaceId: space.id,
-                            coords: coords,
-                            alpha: alpha
-                        };
-                    }
-                }
-            }
-            // Not found
-            let didYouMean = "";
-            if (id in $2dca407f99b477df$var$ColorSpace.registry) {
-                // Used color space id instead of color() id, these are often different
-                let cssId = $2dca407f99b477df$var$ColorSpace.registry[id].formats?.functions?.color?.id;
-                if (cssId) didYouMean = `Did you mean color(${cssId})?`;
-            }
-            throw new TypeError(`Cannot parse color(${id}). ` + (didYouMean || "Missing a plugin?"));
-        } else for (let space of $2dca407f99b477df$var$ColorSpace.all){
-            // color space specific function
-            let format = space.getFormat(name);
-            if (format && format.type === "function") {
-                let alpha = 1;
-                if (format.lastAlpha || $2dca407f99b477df$var$last(env.parsed.args).alpha) alpha = env.parsed.args.pop();
-                let coords = env.parsed.args;
-                if (format.coordGrammar) Object.entries(space.coords).forEach(([id, coordMeta], i)=>{
-                    let coordGrammar = format.coordGrammar[i];
-                    let providedType = coords[i]?.type;
-                    // Find grammar alternative that matches the provided type
-                    // Non-strict equals is intentional because we are comparing w/ string objects
-                    coordGrammar = coordGrammar.find((c)=>c == providedType);
-                    // Check that each coord conforms to its grammar
-                    if (!coordGrammar) {
-                        // Type does not exist in the grammar, throw
-                        let coordName = coordMeta.name || id;
-                        throw new TypeError(`${providedType} not allowed for ${coordName} in ${name}()`);
-                    }
-                    let fromRange = coordGrammar.range;
-                    if (providedType === "<percentage>") fromRange ||= [
-                        0,
-                        1
-                    ];
-                    let toRange = coordMeta.range || coordMeta.refRange;
-                    if (fromRange && toRange) coords[i] = $2dca407f99b477df$var$mapRange(fromRange, toRange, coords[i]);
-                });
-                return {
-                    spaceId: space.id,
-                    coords: coords,
-                    alpha: alpha
-                };
-            }
-        }
-    } else {
-        // Custom, colorspace-specific format
-        for (let space of $2dca407f99b477df$var$ColorSpace.all)for(let formatId in space.formats){
-            let format = space.formats[formatId];
-            if (format.type !== "custom") continue;
-            if (format.test && !format.test(env.str)) continue;
-            let color = format.parse(env.str);
-            if (color) {
-                color.alpha ??= 1;
-                return color;
-            }
-        }
-    }
-    // If we're here, we couldn't parse
-    throw new TypeError(`Could not parse ${str} as a color. Missing a plugin?`);
-}
-/**
- * Resolves a color reference (object or string) to a plain color object
- * @param {Color | {space, coords, alpha} | string} color
- * @returns {{space, coords, alpha}}
- */ function $2dca407f99b477df$var$getColor(color) {
-    if (!color) throw new TypeError("Empty color reference");
-    if ($2dca407f99b477df$var$isString(color)) color = $2dca407f99b477df$var$parse(color);
-    // Object fixup
-    let space = color.space || color.spaceId;
-    if (!(space instanceof $2dca407f99b477df$var$ColorSpace)) // Convert string id to color space object
-    color.space = $2dca407f99b477df$var$ColorSpace.get(space);
-    if (color.alpha === undefined) color.alpha = 1;
-    return color;
-}
-/**
- * Get the coordinates of a color in another color space
- *
- * @param {string | ColorSpace} space
- * @returns {number[]}
- */ function $2dca407f99b477df$var$getAll(color, space) {
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    return space.from(color);
-}
-function $2dca407f99b477df$var$get(color, prop) {
-    let { space: space, index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord(prop, color.space);
-    let coords = $2dca407f99b477df$var$getAll(color, space);
-    return coords[index];
-}
-function $2dca407f99b477df$var$setAll(color, space, coords) {
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    color.coords = space.to(color.space, coords);
-    return color;
-}
-// Set properties and return current instance
-function $2dca407f99b477df$var$set$1(color, prop, value1) {
-    color = $2dca407f99b477df$var$getColor(color);
-    if (arguments.length === 2 && $2dca407f99b477df$var$type(arguments[1]) === "object") {
-        // Argument is an object literal
-        let object = arguments[1];
-        for(let p in object)$2dca407f99b477df$var$set$1(color, p, object[p]);
-    } else {
-        if (typeof value1 === "function") value1 = value1($2dca407f99b477df$var$get(color, prop));
-        let { space: space, index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord(prop, color.space);
-        let coords = $2dca407f99b477df$var$getAll(color, space);
-        coords[index] = value1;
-        $2dca407f99b477df$var$setAll(color, space, coords);
-    }
-    return color;
-}
-var $2dca407f99b477df$var$XYZ_D50 = new $2dca407f99b477df$var$ColorSpace({
-    id: "xyz-d50",
-    name: "XYZ D50",
-    white: "D50",
-    base: $2dca407f99b477df$var$XYZ_D65,
-    fromBase: (coords)=>$2dca407f99b477df$var$adapt$1($2dca407f99b477df$var$XYZ_D65.white, "D50", coords),
-    toBase: (coords)=>$2dca407f99b477df$var$adapt$1("D50", $2dca407f99b477df$var$XYZ_D65.white, coords),
-    formats: {
-        color: {}
-    }
-});
-// κ * ε  = 2^3 = 8
-const $2dca407f99b477df$var$ε$3 = 216 / 24389; // 6^3/29^3 == (24/116)^3
-const $2dca407f99b477df$var$ε3$1 = 24 / 116;
-const $2dca407f99b477df$var$κ$1 = 24389 / 27; // 29^3/3^3
-let $2dca407f99b477df$var$white$1 = $2dca407f99b477df$var$WHITES.D50;
-var $2dca407f99b477df$var$lab = new $2dca407f99b477df$var$ColorSpace({
-    id: "lab",
-    name: "Lab",
-    coords: {
-        l: {
-            refRange: [
-                0,
-                100
-            ],
-            name: "L"
-        },
-        a: {
-            refRange: [
-                -125,
-                125
-            ]
-        },
-        b: {
-            refRange: [
-                -125,
-                125
-            ]
-        }
-    },
-    // Assuming XYZ is relative to D50, convert to CIE Lab
-    // from CIE standard, which now defines these as a rational fraction
-    white: $2dca407f99b477df$var$white$1,
-    base: $2dca407f99b477df$var$XYZ_D50,
-    // Convert D50-adapted XYX to Lab
-    //  CIE 15.3:2004 section 8.2.1.1
-    fromBase (XYZ) {
-        // compute xyz, which is XYZ scaled relative to reference white
-        let xyz = XYZ.map((value1, i)=>value1 / $2dca407f99b477df$var$white$1[i]);
-        // now compute f
-        let f = xyz.map((value1)=>value1 > $2dca407f99b477df$var$ε$3 ? Math.cbrt(value1) : ($2dca407f99b477df$var$κ$1 * value1 + 16) / 116);
-        return [
-            116 * f[1] - 16,
-            500 * (f[0] - f[1]),
-            200 * (f[1] - f[2])
-        ];
-    },
-    // Convert Lab to D50-adapted XYZ
-    // Same result as CIE 15.3:2004 Appendix D although the derivation is different
-    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-    toBase (Lab) {
-        // compute f, starting with the luminance-related term
-        let f = [];
-        f[1] = (Lab[0] + 16) / 116;
-        f[0] = Lab[1] / 500 + f[1];
-        f[2] = f[1] - Lab[2] / 200;
-        // compute xyz
-        let xyz = [
-            f[0] > $2dca407f99b477df$var$ε3$1 ? Math.pow(f[0], 3) : (116 * f[0] - 16) / $2dca407f99b477df$var$κ$1,
-            Lab[0] > 8 ? Math.pow((Lab[0] + 16) / 116, 3) : Lab[0] / $2dca407f99b477df$var$κ$1,
-            f[2] > $2dca407f99b477df$var$ε3$1 ? Math.pow(f[2], 3) : (116 * f[2] - 16) / $2dca407f99b477df$var$κ$1
-        ];
-        // Compute XYZ by scaling xyz by reference white
-        return xyz.map((value1, i)=>value1 * $2dca407f99b477df$var$white$1[i]);
-    },
-    formats: {
-        lab: {
-            coords: [
-                "<percentage> | <number>",
-                "<number>",
-                "<number>"
-            ]
-        }
-    }
-});
-function $2dca407f99b477df$var$constrain(angle) {
-    return (angle % 360 + 360) % 360;
-}
-function $2dca407f99b477df$var$adjust(arc, angles) {
-    if (arc === "raw") return angles;
-    let [a1, a2] = angles.map($2dca407f99b477df$var$constrain);
-    let angleDiff = a2 - a1;
-    if (arc === "increasing") {
-        if (angleDiff < 0) a2 += 360;
-    } else if (arc === "decreasing") {
-        if (angleDiff > 0) a1 += 360;
-    } else if (arc === "longer") {
-        if (-180 < angleDiff && angleDiff < 180) {
-            if (angleDiff > 0) a2 += 360;
-            else a1 += 360;
-        }
-    } else if (arc === "shorter") {
-        if (angleDiff > 180) a1 += 360;
-        else if (angleDiff < -180) a2 += 360;
-    }
-    return [
-        a1,
-        a2
-    ];
-}
-var $2dca407f99b477df$var$lch = new $2dca407f99b477df$var$ColorSpace({
-    id: "lch",
-    name: "LCH",
-    coords: {
-        l: {
-            refRange: [
-                0,
-                100
-            ],
-            name: "Lightness"
-        },
-        c: {
-            refRange: [
-                0,
-                150
-            ],
-            name: "Chroma"
-        },
-        h: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        }
-    },
-    base: $2dca407f99b477df$var$lab,
-    fromBase (Lab) {
-        // Convert to polar form
-        let [L, a, b] = Lab;
-        let hue;
-        const ε = 0.02;
-        if (Math.abs(a) < ε && Math.abs(b) < ε) hue = NaN;
-        else hue = Math.atan2(b, a) * 180 / Math.PI;
-        return [
-            L,
-            Math.sqrt(a ** 2 + b ** 2),
-            $2dca407f99b477df$var$constrain(hue)
-        ];
-    },
-    toBase (LCH) {
-        // Convert from polar form
-        let [Lightness, Chroma, Hue] = LCH;
-        // Clamp any negative Chroma
-        if (Chroma < 0) Chroma = 0;
-         // Deal with NaN Hue
-        if (isNaN(Hue)) Hue = 0;
-        return [
-            Lightness,
-            Chroma * Math.cos(Hue * Math.PI / 180),
-            Chroma * Math.sin(Hue * Math.PI / 180)
-        ];
-    },
-    formats: {
-        lch: {
-            coords: [
-                "<percentage> | <number>",
-                "<number>",
-                "<number> | <angle>"
-            ]
-        }
-    }
-});
-// deltaE2000 is a statistically significant improvement
-// and is recommended by the CIE and Idealliance
-// especially for color differences less than 10 deltaE76
-// but is wicked complicated
-// and many implementations have small errors!
-// DeltaE2000 is also discontinuous; in case this
-// matters to you, use deltaECMC instead.
-const $2dca407f99b477df$var$Gfactor = 25 ** 7;
-const $2dca407f99b477df$var$π$1 = Math.PI;
-const $2dca407f99b477df$var$r2d = 180 / $2dca407f99b477df$var$π$1;
-const $2dca407f99b477df$var$d2r$1 = $2dca407f99b477df$var$π$1 / 180;
-function $2dca407f99b477df$var$deltaE2000(color, sample, { kL: kL = 1, kC: kC = 1, kH: kH = 1 } = {}) {
-    // Given this color as the reference
-    // and the function parameter as the sample,
-    // calculate deltaE 2000.
-    // This implementation assumes the parametric
-    // weighting factors kL, kC and kH
-    // for the influence of viewing conditions
-    // are all 1, as sadly seems typical.
-    // kL should be increased for lightness texture or noise
-    // and kC increased for chroma noise
-    let [L1, a1, b1] = $2dca407f99b477df$var$lab.from(color);
-    let C1 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
-        L1,
-        a1,
-        b1
-    ])[1];
-    let [L2, a2, b2] = $2dca407f99b477df$var$lab.from(sample);
-    let C2 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
-        L2,
-        a2,
-        b2
-    ])[1];
-    // Check for negative Chroma,
-    // which might happen through
-    // direct user input of LCH values
-    if (C1 < 0) C1 = 0;
-    if (C2 < 0) C2 = 0;
-    let Cbar = (C1 + C2) / 2; // mean Chroma
-    // calculate a-axis asymmetry factor from mean Chroma
-    // this turns JND ellipses for near-neutral colors back into circles
-    let C7 = Cbar ** 7;
-    let G = 0.5 * (1 - Math.sqrt(C7 / (C7 + $2dca407f99b477df$var$Gfactor)));
-    // scale a axes by asymmetry factor
-    // this by the way is why there is no Lab2000 colorspace
-    let adash1 = (1 + G) * a1;
-    let adash2 = (1 + G) * a2;
-    // calculate new Chroma from scaled a and original b axes
-    let Cdash1 = Math.sqrt(adash1 ** 2 + b1 ** 2);
-    let Cdash2 = Math.sqrt(adash2 ** 2 + b2 ** 2);
-    // calculate new hues, with zero hue for true neutrals
-    // and in degrees, not radians
-    let h1 = adash1 === 0 && b1 === 0 ? 0 : Math.atan2(b1, adash1);
-    let h2 = adash2 === 0 && b2 === 0 ? 0 : Math.atan2(b2, adash2);
-    if (h1 < 0) h1 += 2 * $2dca407f99b477df$var$π$1;
-    if (h2 < 0) h2 += 2 * $2dca407f99b477df$var$π$1;
-    h1 *= $2dca407f99b477df$var$r2d;
-    h2 *= $2dca407f99b477df$var$r2d;
-    // Lightness and Chroma differences; sign matters
-    let ΔL = L2 - L1;
-    let ΔC = Cdash2 - Cdash1;
-    // Hue difference, getting the sign correct
-    let hdiff = h2 - h1;
-    let hsum = h1 + h2;
-    let habs = Math.abs(hdiff);
-    let Δh;
-    if (Cdash1 * Cdash2 === 0) Δh = 0;
-    else if (habs <= 180) Δh = hdiff;
-    else if (hdiff > 180) Δh = hdiff - 360;
-    else if (hdiff < -180) Δh = hdiff + 360;
-    else console.log("the unthinkable has happened");
-    // weighted Hue difference, more for larger Chroma
-    let ΔH = 2 * Math.sqrt(Cdash2 * Cdash1) * Math.sin(Δh * $2dca407f99b477df$var$d2r$1 / 2);
-    // calculate mean Lightness and Chroma
-    let Ldash = (L1 + L2) / 2;
-    let Cdash = (Cdash1 + Cdash2) / 2;
-    let Cdash7 = Math.pow(Cdash, 7);
-    // Compensate for non-linearity in the blue region of Lab.
-    // Four possibilities for hue weighting factor,
-    // depending on the angles, to get the correct sign
-    let hdash;
-    if (Cdash1 * Cdash2 === 0) hdash = hsum; // which should be zero
-    else if (habs <= 180) hdash = hsum / 2;
-    else if (hsum < 360) hdash = (hsum + 360) / 2;
-    else hdash = (hsum - 360) / 2;
-    // positional corrections to the lack of uniformity of CIELAB
-    // These are all trying to make JND ellipsoids more like spheres
-    // SL Lightness crispening factor
-    // a background with L=50 is assumed
-    let lsq = (Ldash - 50) ** 2;
-    let SL = 1 + 0.015 * lsq / Math.sqrt(20 + lsq);
-    // SC Chroma factor, similar to those in CMC and deltaE 94 formulae
-    let SC = 1 + 0.045 * Cdash;
-    // Cross term T for blue non-linearity
-    let T = 1;
-    T -= 0.17 * Math.cos((hdash - 30) * $2dca407f99b477df$var$d2r$1);
-    T += 0.24 * Math.cos(2 * hdash * $2dca407f99b477df$var$d2r$1);
-    T += 0.32 * Math.cos((3 * hdash + 6) * $2dca407f99b477df$var$d2r$1);
-    T -= 0.2 * Math.cos((4 * hdash - 63) * $2dca407f99b477df$var$d2r$1);
-    // SH Hue factor depends on Chroma,
-    // as well as adjusted hue angle like deltaE94.
-    let SH = 1 + 0.015 * Cdash * T;
-    // RT Hue rotation term compensates for rotation of JND ellipses
-    // and Munsell constant hue lines
-    // in the medium-high Chroma blue region
-    // (Hue 225 to 315)
-    let Δθ = 30 * Math.exp(-1 * ((hdash - 275) / 25) ** 2);
-    let RC = 2 * Math.sqrt(Cdash7 / (Cdash7 + $2dca407f99b477df$var$Gfactor));
-    let RT = -1 * Math.sin(2 * Δθ * $2dca407f99b477df$var$d2r$1) * RC;
-    // Finally calculate the deltaE, term by term as root sume of squares
-    let dE = (ΔL / (kL * SL)) ** 2;
-    dE += (ΔC / (kC * SC)) ** 2;
-    dE += (ΔH / (kH * SH)) ** 2;
-    dE += RT * (ΔC / (kC * SC)) * (ΔH / (kH * SH));
-    return Math.sqrt(dE);
-// Yay!!!
-}
-const $2dca407f99b477df$var$ε$2 = 0.000075;
-/**
- * Check if a color is in gamut of either its own or another color space
- * @return {Boolean} Is the color in gamut?
- */ function $2dca407f99b477df$var$inGamut(color, space = color.space, { epsilon: epsilon = $2dca407f99b477df$var$ε$2 } = {}) {
-    color = $2dca407f99b477df$var$getColor(color);
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    let coords = color.coords;
-    if (space !== color.space) coords = space.from(color);
-    return space.inGamut(coords, {
-        epsilon: epsilon
-    });
-}
-function $2dca407f99b477df$var$clone(color) {
-    return {
-        space: color.space,
-        coords: color.coords.slice(),
-        alpha: color.alpha
-    };
-}
-/**
- * Force coordinates to be in gamut of a certain color space.
- * Mutates the color it is passed.
- * @param {Object} options
- * @param {string} options.method - How to force into gamut.
- *        If "clip", coordinates are just clipped to their reference range.
- *        If in the form [colorSpaceId].[coordName], that coordinate is reduced
- *        until the color is in gamut. Please note that this may produce nonsensical
- *        results for certain coordinates (e.g. hue) or infinite loops if reducing the coordinate never brings the color in gamut.
- * @param {ColorSpace|string} options.space - The space whose gamut we want to map to
- */ function $2dca407f99b477df$var$toGamut(color, { method: method = $2dca407f99b477df$var$defaults.gamut_mapping, space: space = color.space } = {}) {
-    if ($2dca407f99b477df$var$isString(arguments[1])) space = arguments[1];
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    if ($2dca407f99b477df$var$inGamut(color, space, {
-        epsilon: 0
-    })) return color;
-    // 3 spaces:
-    // color.space: current color space
-    // space: space whose gamut we are mapping to
-    // mapSpace: space with the coord we're reducing
-    let spaceColor = $2dca407f99b477df$var$to(color, space);
-    if (method !== "clip" && !$2dca407f99b477df$var$inGamut(color, space)) {
-        let clipped = $2dca407f99b477df$var$toGamut($2dca407f99b477df$var$clone(spaceColor), {
-            method: "clip",
-            space: space
-        });
-        if ($2dca407f99b477df$var$deltaE2000(color, clipped) > 2) {
-            // Reduce a coordinate of a certain color space until the color is in gamut
-            let coordMeta = $2dca407f99b477df$var$ColorSpace.resolveCoord(method);
-            let mapSpace = coordMeta.space;
-            let coordId = coordMeta.id;
-            let mappedColor = $2dca407f99b477df$var$to(spaceColor, mapSpace);
-            let bounds = coordMeta.range || coordMeta.refRange;
-            let min = bounds[0];
-            let ε = 0.01; // for deltaE
-            let low = min;
-            let high = $2dca407f99b477df$var$get(mappedColor, coordId);
-            while(high - low > ε){
-                let clipped = $2dca407f99b477df$var$clone(mappedColor);
-                clipped = $2dca407f99b477df$var$toGamut(clipped, {
-                    space: space,
-                    method: "clip"
-                });
-                let deltaE = $2dca407f99b477df$var$deltaE2000(mappedColor, clipped);
-                if (deltaE - 2 < ε) low = $2dca407f99b477df$var$get(mappedColor, coordId);
-                else high = $2dca407f99b477df$var$get(mappedColor, coordId);
-                $2dca407f99b477df$var$set$1(mappedColor, coordId, (low + high) / 2);
-            }
-            spaceColor = $2dca407f99b477df$var$to(mappedColor, space);
-        } else spaceColor = clipped;
-    }
-    if (method === "clip" || // Dumb coord clipping
-    // finish off smarter gamut mapping with clip to get rid of ε, see #17
-    !$2dca407f99b477df$var$inGamut(spaceColor, space, {
-        epsilon: 0
-    })) {
-        let bounds = Object.values(space.coords).map((c)=>c.range || []);
-        spaceColor.coords = spaceColor.coords.map((c, i)=>{
-            let [min, max] = bounds[i];
-            if (min !== undefined) c = Math.max(min, c);
-            if (max !== undefined) c = Math.min(c, max);
-            return c;
-        });
-    }
-    if (space !== color.space) spaceColor = $2dca407f99b477df$var$to(spaceColor, color.space);
-    color.coords = spaceColor.coords;
-    return color;
-}
-$2dca407f99b477df$var$toGamut.returns = "color";
-/**
- * Convert to color space and return a new color
- * @param {Object|string} space - Color space object or id
- * @param {Object} options
- * @param {boolean} options.inGamut - Whether to force resulting color in gamut
- * @returns {Color}
- */ function $2dca407f99b477df$var$to(color, space, { inGamut: inGamut } = {}) {
-    color = $2dca407f99b477df$var$getColor(color);
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    let coords = space.from(color);
-    let ret = {
-        space: space,
-        coords: coords,
-        alpha: color.alpha
-    };
-    if (inGamut) ret = $2dca407f99b477df$var$toGamut(ret);
-    return ret;
-}
-$2dca407f99b477df$var$to.returns = "color";
-/**
- * Generic toString() method, outputs a color(spaceId ...coords) function, a functional syntax, or custom formats defined by the color space
- * @param {Object} options
- * @param {number} options.precision - Significant digits
- * @param {boolean} options.inGamut - Adjust coordinates to fit in gamut first? [default: false]
- */ function $2dca407f99b477df$var$serialize(color, { precision: precision = $2dca407f99b477df$var$defaults.precision, format: format = "default", inGamut: inGamut$1 = true, ...customOptions } = {}) {
-    let ret;
-    color = $2dca407f99b477df$var$getColor(color);
-    let formatId = format;
-    format = color.space.getFormat(format) ?? color.space.getFormat("default") ?? $2dca407f99b477df$var$ColorSpace.DEFAULT_FORMAT;
-    inGamut$1 ||= format.toGamut;
-    let coords = color.coords;
-    // Convert NaN to zeros to have a chance at a valid CSS color
-    // Also convert -0 to 0
-    // This also clones it so we can manipulate it
-    coords = coords.map((c)=>c ? c : 0);
-    if (inGamut$1 && !$2dca407f99b477df$var$inGamut(color)) coords = $2dca407f99b477df$var$toGamut($2dca407f99b477df$var$clone(color), inGamut$1 === true ? undefined : inGamut$1).coords;
-    if (format.type === "custom") {
-        customOptions.precision = precision;
-        if (format.serialize) ret = format.serialize(coords, color.alpha, customOptions);
-        else throw new TypeError(`format ${formatId} can only be used to parse colors, not for serialization`);
-    } else {
-        // Functional syntax
-        let name = format.name || "color";
-        if (format.serializeCoords) coords = format.serializeCoords(coords, precision);
-        else if (precision !== null) coords = coords.map((c)=>$2dca407f99b477df$var$toPrecision(c, precision));
-        let args = [
-            ...coords
-        ];
-        if (name === "color") {
-            // If output is a color() function, add colorspace id as first argument
-            let cssId = format.id || format.ids?.[0] || color.space.id;
-            args.unshift(cssId);
-        }
-        let alpha = color.alpha;
-        if (precision !== null) alpha = $2dca407f99b477df$var$toPrecision(alpha, precision);
-        let strAlpha = color.alpha < 1 ? ` ${format.commas ? "," : "/"} ${alpha}` : "";
-        ret = `${name}(${args.join(format.commas ? ", " : " ")}${strAlpha})`;
-    }
-    return ret;
-}
-// convert an array of linear-light rec2020 values to CIE XYZ
-// using  D65 (no chromatic adaptation)
-// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-// 0 is actually calculated as  4.994106574466076e-17
-const $2dca407f99b477df$var$toXYZ_M$5 = [
-    [
-        0.6369580483012914,
-        0.14461690358620832,
-        0.1688809751641721
-    ],
-    [
-        0.2627002120112671,
-        0.6779980715188708,
-        0.05930171646986196
-    ],
-    [
-        0.0,
-        0.028072693049087428,
-        1.060985057710791
-    ]
-];
-// from ITU-R BT.2124-0 Annex 2 p.3
-const $2dca407f99b477df$var$fromXYZ_M$5 = [
-    [
-        1.716651187971268,
-        -0.355670783776392,
-        -0.25336628137366
-    ],
-    [
-        -0.666684351832489,
-        1.616481236634939,
-        0.0157685458139111
-    ],
-    [
-        0.017639857445311,
-        -0.042770613257809,
-        0.942103121235474
-    ]
-];
-var $2dca407f99b477df$var$REC2020Linear = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "rec2020-linear",
-    name: "Linear REC.2020",
-    white: "D65",
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$5,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$5
-});
-// import sRGB from "./srgb.js";
-const $2dca407f99b477df$var$α = 1.09929682680944;
-const $2dca407f99b477df$var$β = 0.018053968510807;
-var $2dca407f99b477df$var$REC2020 = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "rec2020",
-    name: "REC.2020",
-    base: $2dca407f99b477df$var$REC2020Linear,
-    // Non-linear transfer function from Rec. ITU-R BT.2020-2 table 4
-    toBase (RGB) {
-        return RGB.map(function(val) {
-            if (val < $2dca407f99b477df$var$β * 4.5) return val / 4.5;
-            return Math.pow((val + $2dca407f99b477df$var$α - 1) / $2dca407f99b477df$var$α, 1 / 0.45);
-        });
-    },
-    fromBase (RGB) {
-        return RGB.map(function(val) {
-            if (val >= $2dca407f99b477df$var$β) return $2dca407f99b477df$var$α * Math.pow(val, 0.45) - ($2dca407f99b477df$var$α - 1);
-            return 4.5 * val;
-        });
-    },
-    formats: {
-        color: {}
-    }
-});
-const $2dca407f99b477df$var$toXYZ_M$4 = [
-    [
-        0.4865709486482162,
-        0.26566769316909306,
-        0.1982172852343625
-    ],
-    [
-        0.2289745640697488,
-        0.6917385218365064,
-        0.079286914093745
-    ],
-    [
-        0.0,
-        0.04511338185890264,
-        1.043944368900976
-    ]
-];
-const $2dca407f99b477df$var$fromXYZ_M$4 = [
-    [
-        2.493496911941425,
-        -0.9313836179191239,
-        -0.40271078445071684
-    ],
-    [
-        -0.8294889695615747,
-        1.7626640603183463,
-        0.023624685841943577
-    ],
-    [
-        0.03584583024378447,
-        -0.07617238926804182,
-        0.9568845240076872
-    ]
-];
-var $2dca407f99b477df$var$P3Linear = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "p3-linear",
-    name: "Linear P3",
-    white: "D65",
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$4,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$4
-});
-// This is the linear-light version of sRGB
-// as used for example in SVG filters
-// or in Canvas
-// This matrix was calculated directly from the RGB and white chromaticities
-// when rounded to 8 decimal places, it agrees completely with the official matrix
-// see https://github.com/w3c/csswg-drafts/issues/5922
-const $2dca407f99b477df$var$toXYZ_M$3 = [
-    [
-        0.41239079926595934,
-        0.357584339383878,
-        0.1804807884018343
-    ],
-    [
-        0.21263900587151027,
-        0.715168678767756,
-        0.07219231536073371
-    ],
-    [
-        0.01933081871559182,
-        0.11919477979462598,
-        0.9505321522496607
-    ]
-];
-// This matrix is the inverse of the above;
-// again it agrees with the official definition when rounded to 8 decimal places
-const $2dca407f99b477df$var$fromXYZ_M$3 = [
-    [
-        3.2409699419045226,
-        -1.537383177570094,
-        -0.4986107602930034
-    ],
-    [
-        -0.9692436362808796,
-        1.8759675015077202,
-        0.04155505740717559
-    ],
-    [
-        0.05563007969699366,
-        -0.20397695888897652,
-        1.0569715142428786
-    ]
-];
-var $2dca407f99b477df$var$sRGBLinear = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "srgb-linear",
-    name: "Linear sRGB",
-    white: "D65",
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$3,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$3,
-    formats: {
-        color: {}
-    }
-});
-/* List of CSS color keywords
- * Note that this does not include currentColor, transparent,
- * or system colors
- */ // To produce: Visit https://www.w3.org/TR/css-color-4/#named-colors
-// and run in the console:
-// copy($$("tr", $(".named-color-table tbody")).map(tr => `"${tr.cells[2].textContent.trim()}": [${tr.cells[4].textContent.trim().split(/\s+/).map(c => c === "0"? "0" : c === "255"? "1" : c + " / 255").join(", ")}]`).join(",\n"))
-var $2dca407f99b477df$var$KEYWORDS = {
-    aliceblue: [
-        240 / 255,
-        248 / 255,
-        1
-    ],
-    antiquewhite: [
-        250 / 255,
-        235 / 255,
-        215 / 255
-    ],
-    aqua: [
-        0,
-        1,
-        1
-    ],
-    aquamarine: [
-        127 / 255,
-        1,
-        212 / 255
-    ],
-    azure: [
-        240 / 255,
-        1,
-        1
-    ],
-    beige: [
-        245 / 255,
-        245 / 255,
-        220 / 255
-    ],
-    bisque: [
-        1,
-        228 / 255,
-        196 / 255
-    ],
-    black: [
-        0,
-        0,
-        0
-    ],
-    blanchedalmond: [
-        1,
-        235 / 255,
-        205 / 255
-    ],
-    blue: [
-        0,
-        0,
-        1
-    ],
-    blueviolet: [
-        138 / 255,
-        43 / 255,
-        226 / 255
-    ],
-    brown: [
-        165 / 255,
-        42 / 255,
-        42 / 255
-    ],
-    burlywood: [
-        222 / 255,
-        184 / 255,
-        135 / 255
-    ],
-    cadetblue: [
-        95 / 255,
-        158 / 255,
-        160 / 255
-    ],
-    chartreuse: [
-        127 / 255,
-        1,
-        0
-    ],
-    chocolate: [
-        210 / 255,
-        105 / 255,
-        30 / 255
-    ],
-    coral: [
-        1,
-        127 / 255,
-        80 / 255
-    ],
-    cornflowerblue: [
-        100 / 255,
-        149 / 255,
-        237 / 255
-    ],
-    cornsilk: [
-        1,
-        248 / 255,
-        220 / 255
-    ],
-    crimson: [
-        220 / 255,
-        20 / 255,
-        60 / 255
-    ],
-    cyan: [
-        0,
-        1,
-        1
-    ],
-    darkblue: [
-        0,
-        0,
-        139 / 255
-    ],
-    darkcyan: [
-        0,
-        139 / 255,
-        139 / 255
-    ],
-    darkgoldenrod: [
-        184 / 255,
-        134 / 255,
-        11 / 255
-    ],
-    darkgray: [
-        169 / 255,
-        169 / 255,
-        169 / 255
-    ],
-    darkgreen: [
-        0,
-        100 / 255,
-        0
-    ],
-    darkgrey: [
-        169 / 255,
-        169 / 255,
-        169 / 255
-    ],
-    darkkhaki: [
-        189 / 255,
-        183 / 255,
-        107 / 255
-    ],
-    darkmagenta: [
-        139 / 255,
-        0,
-        139 / 255
-    ],
-    darkolivegreen: [
-        85 / 255,
-        107 / 255,
-        47 / 255
-    ],
-    darkorange: [
-        1,
-        140 / 255,
-        0
-    ],
-    darkorchid: [
-        0.6,
-        50 / 255,
-        0.8
-    ],
-    darkred: [
-        139 / 255,
-        0,
-        0
-    ],
-    darksalmon: [
-        233 / 255,
-        150 / 255,
-        122 / 255
-    ],
-    darkseagreen: [
-        143 / 255,
-        188 / 255,
-        143 / 255
-    ],
-    darkslateblue: [
-        72 / 255,
-        61 / 255,
-        139 / 255
-    ],
-    darkslategray: [
-        47 / 255,
-        79 / 255,
-        79 / 255
-    ],
-    darkslategrey: [
-        47 / 255,
-        79 / 255,
-        79 / 255
-    ],
-    darkturquoise: [
-        0,
-        206 / 255,
-        209 / 255
-    ],
-    darkviolet: [
-        148 / 255,
-        0,
-        211 / 255
-    ],
-    deeppink: [
-        1,
-        20 / 255,
-        147 / 255
-    ],
-    deepskyblue: [
-        0,
-        191 / 255,
-        1
-    ],
-    dimgray: [
-        105 / 255,
-        105 / 255,
-        105 / 255
-    ],
-    dimgrey: [
-        105 / 255,
-        105 / 255,
-        105 / 255
-    ],
-    dodgerblue: [
-        30 / 255,
-        144 / 255,
-        1
-    ],
-    firebrick: [
-        178 / 255,
-        34 / 255,
-        34 / 255
-    ],
-    floralwhite: [
-        1,
-        250 / 255,
-        240 / 255
-    ],
-    forestgreen: [
-        34 / 255,
-        139 / 255,
-        34 / 255
-    ],
-    fuchsia: [
-        1,
-        0,
-        1
-    ],
-    gainsboro: [
-        220 / 255,
-        220 / 255,
-        220 / 255
-    ],
-    ghostwhite: [
-        248 / 255,
-        248 / 255,
-        1
-    ],
-    gold: [
-        1,
-        215 / 255,
-        0
-    ],
-    goldenrod: [
-        218 / 255,
-        165 / 255,
-        32 / 255
-    ],
-    gray: [
-        128 / 255,
-        128 / 255,
-        128 / 255
-    ],
-    green: [
-        0,
-        128 / 255,
-        0
-    ],
-    greenyellow: [
-        173 / 255,
-        1,
-        47 / 255
-    ],
-    grey: [
-        128 / 255,
-        128 / 255,
-        128 / 255
-    ],
-    honeydew: [
-        240 / 255,
-        1,
-        240 / 255
-    ],
-    hotpink: [
-        1,
-        105 / 255,
-        180 / 255
-    ],
-    indianred: [
-        205 / 255,
-        92 / 255,
-        92 / 255
-    ],
-    indigo: [
-        75 / 255,
-        0,
-        130 / 255
-    ],
-    ivory: [
-        1,
-        1,
-        240 / 255
-    ],
-    khaki: [
-        240 / 255,
-        230 / 255,
-        140 / 255
-    ],
-    lavender: [
-        230 / 255,
-        230 / 255,
-        250 / 255
-    ],
-    lavenderblush: [
-        1,
-        240 / 255,
-        245 / 255
-    ],
-    lawngreen: [
-        124 / 255,
-        252 / 255,
-        0
-    ],
-    lemonchiffon: [
-        1,
-        250 / 255,
-        205 / 255
-    ],
-    lightblue: [
-        173 / 255,
-        216 / 255,
-        230 / 255
-    ],
-    lightcoral: [
-        240 / 255,
-        128 / 255,
-        128 / 255
-    ],
-    lightcyan: [
-        224 / 255,
-        1,
-        1
-    ],
-    lightgoldenrodyellow: [
-        250 / 255,
-        250 / 255,
-        210 / 255
-    ],
-    lightgray: [
-        211 / 255,
-        211 / 255,
-        211 / 255
-    ],
-    lightgreen: [
-        144 / 255,
-        238 / 255,
-        144 / 255
-    ],
-    lightgrey: [
-        211 / 255,
-        211 / 255,
-        211 / 255
-    ],
-    lightpink: [
-        1,
-        182 / 255,
-        193 / 255
-    ],
-    lightsalmon: [
-        1,
-        160 / 255,
-        122 / 255
-    ],
-    lightseagreen: [
-        32 / 255,
-        178 / 255,
-        170 / 255
-    ],
-    lightskyblue: [
-        135 / 255,
-        206 / 255,
-        250 / 255
-    ],
-    lightslategray: [
-        119 / 255,
-        136 / 255,
-        0.6
-    ],
-    lightslategrey: [
-        119 / 255,
-        136 / 255,
-        0.6
-    ],
-    lightsteelblue: [
-        176 / 255,
-        196 / 255,
-        222 / 255
-    ],
-    lightyellow: [
-        1,
-        1,
-        224 / 255
-    ],
-    lime: [
-        0,
-        1,
-        0
-    ],
-    limegreen: [
-        50 / 255,
-        205 / 255,
-        50 / 255
-    ],
-    linen: [
-        250 / 255,
-        240 / 255,
-        230 / 255
-    ],
-    magenta: [
-        1,
-        0,
-        1
-    ],
-    maroon: [
-        128 / 255,
-        0,
-        0
-    ],
-    mediumaquamarine: [
-        0.4,
-        205 / 255,
-        170 / 255
-    ],
-    mediumblue: [
-        0,
-        0,
-        205 / 255
-    ],
-    mediumorchid: [
-        186 / 255,
-        85 / 255,
-        211 / 255
-    ],
-    mediumpurple: [
-        147 / 255,
-        112 / 255,
-        219 / 255
-    ],
-    mediumseagreen: [
-        60 / 255,
-        179 / 255,
-        113 / 255
-    ],
-    mediumslateblue: [
-        123 / 255,
-        104 / 255,
-        238 / 255
-    ],
-    mediumspringgreen: [
-        0,
-        250 / 255,
-        154 / 255
-    ],
-    mediumturquoise: [
-        72 / 255,
-        209 / 255,
-        0.8
-    ],
-    mediumvioletred: [
-        199 / 255,
-        21 / 255,
-        133 / 255
-    ],
-    midnightblue: [
-        25 / 255,
-        25 / 255,
-        112 / 255
-    ],
-    mintcream: [
-        245 / 255,
-        1,
-        250 / 255
-    ],
-    mistyrose: [
-        1,
-        228 / 255,
-        225 / 255
-    ],
-    moccasin: [
-        1,
-        228 / 255,
-        181 / 255
-    ],
-    navajowhite: [
-        1,
-        222 / 255,
-        173 / 255
-    ],
-    navy: [
-        0,
-        0,
-        128 / 255
-    ],
-    oldlace: [
-        253 / 255,
-        245 / 255,
-        230 / 255
-    ],
-    olive: [
-        128 / 255,
-        128 / 255,
-        0
-    ],
-    olivedrab: [
-        107 / 255,
-        142 / 255,
-        35 / 255
-    ],
-    orange: [
-        1,
-        165 / 255,
-        0
-    ],
-    orangered: [
-        1,
-        69 / 255,
-        0
-    ],
-    orchid: [
-        218 / 255,
-        112 / 255,
-        214 / 255
-    ],
-    palegoldenrod: [
-        238 / 255,
-        232 / 255,
-        170 / 255
-    ],
-    palegreen: [
-        152 / 255,
-        251 / 255,
-        152 / 255
-    ],
-    paleturquoise: [
-        175 / 255,
-        238 / 255,
-        238 / 255
-    ],
-    palevioletred: [
-        219 / 255,
-        112 / 255,
-        147 / 255
-    ],
-    papayawhip: [
-        1,
-        239 / 255,
-        213 / 255
-    ],
-    peachpuff: [
-        1,
-        218 / 255,
-        185 / 255
-    ],
-    peru: [
-        205 / 255,
-        133 / 255,
-        63 / 255
-    ],
-    pink: [
-        1,
-        192 / 255,
-        203 / 255
-    ],
-    plum: [
-        221 / 255,
-        160 / 255,
-        221 / 255
-    ],
-    powderblue: [
-        176 / 255,
-        224 / 255,
-        230 / 255
-    ],
-    purple: [
-        128 / 255,
-        0,
-        128 / 255
-    ],
-    rebeccapurple: [
-        0.4,
-        0.2,
-        0.6
-    ],
-    red: [
-        1,
-        0,
-        0
-    ],
-    rosybrown: [
-        188 / 255,
-        143 / 255,
-        143 / 255
-    ],
-    royalblue: [
-        65 / 255,
-        105 / 255,
-        225 / 255
-    ],
-    saddlebrown: [
-        139 / 255,
-        69 / 255,
-        19 / 255
-    ],
-    salmon: [
-        250 / 255,
-        128 / 255,
-        114 / 255
-    ],
-    sandybrown: [
-        244 / 255,
-        164 / 255,
-        96 / 255
-    ],
-    seagreen: [
-        46 / 255,
-        139 / 255,
-        87 / 255
-    ],
-    seashell: [
-        1,
-        245 / 255,
-        238 / 255
-    ],
-    sienna: [
-        160 / 255,
-        82 / 255,
-        45 / 255
-    ],
-    silver: [
-        192 / 255,
-        192 / 255,
-        192 / 255
-    ],
-    skyblue: [
-        135 / 255,
-        206 / 255,
-        235 / 255
-    ],
-    slateblue: [
-        106 / 255,
-        90 / 255,
-        205 / 255
-    ],
-    slategray: [
-        112 / 255,
-        128 / 255,
-        144 / 255
-    ],
-    slategrey: [
-        112 / 255,
-        128 / 255,
-        144 / 255
-    ],
-    snow: [
-        1,
-        250 / 255,
-        250 / 255
-    ],
-    springgreen: [
-        0,
-        1,
-        127 / 255
-    ],
-    steelblue: [
-        70 / 255,
-        130 / 255,
-        180 / 255
-    ],
-    tan: [
-        210 / 255,
-        180 / 255,
-        140 / 255
-    ],
-    teal: [
-        0,
-        128 / 255,
-        128 / 255
-    ],
-    thistle: [
-        216 / 255,
-        191 / 255,
-        216 / 255
-    ],
-    tomato: [
-        1,
-        99 / 255,
-        71 / 255
-    ],
-    turquoise: [
-        64 / 255,
-        224 / 255,
-        208 / 255
-    ],
-    violet: [
-        238 / 255,
-        130 / 255,
-        238 / 255
-    ],
-    wheat: [
-        245 / 255,
-        222 / 255,
-        179 / 255
-    ],
-    white: [
-        1,
-        1,
-        1
-    ],
-    whitesmoke: [
-        245 / 255,
-        245 / 255,
-        245 / 255
-    ],
-    yellow: [
-        1,
-        1,
-        0
-    ],
-    yellowgreen: [
-        154 / 255,
-        205 / 255,
-        50 / 255
-    ]
-};
-let $2dca407f99b477df$var$coordGrammar = Array(3).fill("<percentage> | <number>[0, 255]");
-var $2dca407f99b477df$var$sRGB = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "srgb",
-    name: "sRGB",
-    base: $2dca407f99b477df$var$sRGBLinear,
-    fromBase: (rgb)=>{
-        // convert an array of linear-light sRGB values in the range 0.0-1.0
-        // to gamma corrected form
-        // https://en.wikipedia.org/wiki/SRGB
-        return rgb.map((val)=>{
-            let sign = val < 0 ? -1 : 1;
-            let abs = val * sign;
-            if (abs > 0.0031308) return sign * (1.055 * abs ** (1 / 2.4) - 0.055);
-            return 12.92 * val;
-        });
-    },
-    toBase: (rgb)=>{
-        // convert an array of sRGB values in the range 0.0 - 1.0
-        // to linear light (un-companded) form.
-        // https://en.wikipedia.org/wiki/SRGB
-        return rgb.map((val)=>{
-            let sign = val < 0 ? -1 : 1;
-            let abs = val * sign;
-            if (abs < 0.04045) return val / 12.92;
-            return sign * ((abs + 0.055) / 1.055) ** 2.4;
-        });
-    },
-    formats: {
-        rgb: {
-            coords: $2dca407f99b477df$var$coordGrammar
-        },
-        color: {
-        },
-        rgba: {
-            coords: $2dca407f99b477df$var$coordGrammar,
-            commas: true,
-            lastAlpha: true
-        },
-        hex: {
-            type: "custom",
-            toGamut: true,
-            test: (str)=>/^#([a-f0-9]{3,4}){1,2}$/i.test(str),
-            parse (str) {
-                if (str.length <= 5) // #rgb or #rgba, duplicate digits
-                str = str.replace(/[a-f0-9]/gi, "$&$&");
-                let rgba = [];
-                str.replace(/[a-f0-9]{2}/gi, (component)=>{
-                    rgba.push(parseInt(component, 16) / 255);
-                });
-                return {
-                    spaceId: "srgb",
-                    coords: rgba.slice(0, 3),
-                    alpha: rgba.slice(3)[0]
-                };
-            },
-            serialize: (coords, alpha, { collapse: collapse = true } = {})=>{
-                if (alpha < 1) coords.push(alpha);
-                coords = coords.map((c)=>Math.round(c * 255));
-                let collapsible = collapse && coords.every((c)=>c % 17 === 0);
-                let hex = coords.map((c)=>{
-                    if (collapsible) return (c / 17).toString(16);
-                    return c.toString(16).padStart(2, "0");
-                }).join("");
-                return "#" + hex;
-            }
-        },
-        keyword: {
-            type: "custom",
-            test: (str)=>/^[a-z]+$/i.test(str),
-            parse (str) {
-                str = str.toLowerCase();
-                let ret = {
-                    spaceId: "srgb",
-                    coords: null,
-                    alpha: 1
-                };
-                if (str === "transparent") {
-                    ret.coords = $2dca407f99b477df$var$KEYWORDS.black;
-                    ret.alpha = 0;
-                } else ret.coords = $2dca407f99b477df$var$KEYWORDS[str];
-                if (ret.coords) return ret;
-            }
-        }
-    }
-});
-var $2dca407f99b477df$var$P3 = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "p3",
-    name: "P3",
-    base: $2dca407f99b477df$var$P3Linear,
-    // Gamma encoding/decoding is the same as sRGB
-    fromBase: $2dca407f99b477df$var$sRGB.fromBase,
-    toBase: $2dca407f99b477df$var$sRGB.toBase,
-    formats: {
-        color: {
-            id: "display-p3"
-        }
-    }
-});
-// Default space for CSS output. Code in Color.js makes this wider if there's a DOM available
-$2dca407f99b477df$var$defaults.display_space = $2dca407f99b477df$var$sRGB;
-if (typeof CSS !== "undefined" && CSS.supports) // Find widest supported color space for CSS
-for (let space of [
-    $2dca407f99b477df$var$lab,
-    $2dca407f99b477df$var$REC2020,
-    $2dca407f99b477df$var$P3
-]){
-    let coords = space.getMinCoords();
-    let color = {
-        space: space,
-        coords: coords,
-        alpha: 1
-    };
-    let str = $2dca407f99b477df$var$serialize(color);
-    if (CSS.supports("color", str)) {
-        $2dca407f99b477df$var$defaults.display_space = space;
-        break;
-    }
-}
-/**
- * Returns a serialization of the color that can actually be displayed in the browser.
- * If the default serialization can be displayed, it is returned.
- * Otherwise, the color is converted to Lab, REC2020, or P3, whichever is the widest supported.
- * In Node.js, this is basically equivalent to `serialize()` but returns a `String` object instead.
- *
- * @export
- * @param {{space, coords} | Color | string} color
- * @param {*} [options={}] Options to be passed to serialize()
- * @param {ColorSpace | string} [options.space = defaults.display_space] Color space to use for serialization if default is not supported
- * @returns {String} String object containing the serialized color with a color property containing the converted color (or the original, if no conversion was necessary)
- */ function $2dca407f99b477df$var$display(color, { space: space = $2dca407f99b477df$var$defaults.display_space, ...options } = {}) {
-    let ret = $2dca407f99b477df$var$serialize(color, options);
-    if (typeof CSS === "undefined" || CSS.supports("color", ret) || !$2dca407f99b477df$var$defaults.display_space) {
-        ret = new String(ret);
-        ret.color = color;
-    } else {
-        // If we're here, what we were about to output is not supported
-        // Fall back to fallback space
-        let fallbackColor = $2dca407f99b477df$var$to(color, space);
-        ret = new String($2dca407f99b477df$var$serialize(fallbackColor, options));
-        ret.color = fallbackColor;
-    }
-    return ret;
-}
-/**
- * Euclidean distance of colors in an arbitrary color space
- */ function $2dca407f99b477df$var$distance(color1, color2, space = "lab") {
-    space = $2dca407f99b477df$var$ColorSpace.get(space);
-    let coords1 = space.from(color1);
-    let coords2 = space.from(color2);
-    return Math.sqrt(coords1.reduce((acc, c1, i)=>{
-        let c2 = coords2[i];
-        if (isNaN(c1) || isNaN(c2)) return acc;
-        return acc + (c2 - c1) ** 2;
-    }, 0));
-}
-function $2dca407f99b477df$var$equals(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    return color1.space === color2.space && color1.alpha === color2.alpha && color1.coords.every((c, i)=>c === color2.coords[i]);
-}
-/**
- * Relative luminance
- */ function $2dca407f99b477df$var$getLuminance(color) {
-    return $2dca407f99b477df$var$get(color, [
-        $2dca407f99b477df$var$XYZ_D65,
-        "y"
-    ]);
-}
-function $2dca407f99b477df$var$setLuminance(color) {
-    set(color, [
-        $2dca407f99b477df$var$XYZ_D65,
-        "y"
-    ], value);
-}
-function $2dca407f99b477df$var$register$2(Color) {
-    Object.defineProperty(Color.prototype, "luminance", {
-        get () {
-            return $2dca407f99b477df$var$getLuminance(this);
-        },
-        set (value1) {
-            $2dca407f99b477df$var$setLuminance(this);
-        }
-    });
-}
-var $2dca407f99b477df$var$luminance = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    getLuminance: $2dca407f99b477df$var$getLuminance,
-    setLuminance: $2dca407f99b477df$var$setLuminance,
-    register: $2dca407f99b477df$var$register$2
-});
-// WCAG 2.0 contrast https://www.w3.org/TR/WCAG20-TECHS/G18.html
-function $2dca407f99b477df$var$contrastWCAG21(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
-    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
-    if (Y2 > Y1) [Y1, Y2] = [
-        Y2,
-        Y1
-    ];
-    return (Y1 + 0.05) / (Y2 + 0.05);
-}
-// APCA 0.0.98G
-// exponents
-const $2dca407f99b477df$var$normBG = 0.56;
-const $2dca407f99b477df$var$normTXT = 0.57;
-const $2dca407f99b477df$var$revTXT = 0.62;
-const $2dca407f99b477df$var$revBG = 0.65;
-// clamps
-const $2dca407f99b477df$var$blkThrs = 0.022;
-const $2dca407f99b477df$var$blkClmp = 1.414;
-const $2dca407f99b477df$var$loClip = 0.1;
-const $2dca407f99b477df$var$deltaYmin = 0.0005;
-// scalers
-// see https://github.com/w3c/silver/issues/645
-const $2dca407f99b477df$var$scaleBoW = 1.14;
-const $2dca407f99b477df$var$loBoWoffset = 0.027;
-const $2dca407f99b477df$var$scaleWoB = 1.14;
-function $2dca407f99b477df$var$fclamp(Y) {
-    if (Y >= $2dca407f99b477df$var$blkThrs) return Y;
-    return Y + ($2dca407f99b477df$var$blkThrs - Y) ** $2dca407f99b477df$var$blkClmp;
-}
-function $2dca407f99b477df$var$linearize(val) {
-    let sign = val < 0 ? -1 : 1;
-    let abs = Math.abs(val);
-    return sign * Math.pow(abs, 2.4);
-}
-// Not symmetric, requires a foreground (text) color, and a background color
-function $2dca407f99b477df$var$contrastAPCA(background, foreground) {
-    foreground = $2dca407f99b477df$var$getColor(foreground);
-    background = $2dca407f99b477df$var$getColor(background);
-    let S;
-    let C;
-    let Sapc;
-    // Myndex as-published, assumes sRGB inputs
-    let R, G, B;
-    foreground = $2dca407f99b477df$var$to(foreground, "srgb");
-    // Should these be clamped to in-gamut values?
-    // Calculates "screen luminance" with non-standard simple gamma EOTF
-    // weights should be from CSS Color 4, not the ones here which are via Myndex and copied from Lindbloom
-    [R, G, B] = foreground.coords;
-    let lumTxt = $2dca407f99b477df$var$linearize(R) * 0.2126729 + $2dca407f99b477df$var$linearize(G) * 0.7151522 + $2dca407f99b477df$var$linearize(B) * 0.072175;
-    background = $2dca407f99b477df$var$to(background, "srgb");
-    [R, G, B] = background.coords;
-    let lumBg = $2dca407f99b477df$var$linearize(R) * 0.2126729 + $2dca407f99b477df$var$linearize(G) * 0.7151522 + $2dca407f99b477df$var$linearize(B) * 0.072175;
-    // toe clamping of very dark values to account for flare
-    let Ytxt = $2dca407f99b477df$var$fclamp(lumTxt);
-    let Ybg = $2dca407f99b477df$var$fclamp(lumBg);
-    // are we "Black on White" (dark on light), or light on dark?
-    let BoW = Ybg > Ytxt;
-    // why is this a delta, when Y is not perceptually uniform?
-    // Answer: it is a noise gate, see
-    // https://github.com/LeaVerou/color.js/issues/208
-    if (Math.abs(Ybg - Ytxt) < $2dca407f99b477df$var$deltaYmin) C = 0;
-    else if (BoW) {
-        // dark text on light background
-        S = Ybg ** $2dca407f99b477df$var$normBG - Ytxt ** $2dca407f99b477df$var$normTXT;
-        C = S * $2dca407f99b477df$var$scaleBoW;
-    } else {
-        // light text on dark background
-        S = Ybg ** $2dca407f99b477df$var$revBG - Ytxt ** $2dca407f99b477df$var$revTXT;
-        C = S * $2dca407f99b477df$var$scaleWoB;
-    }
-    if (Math.abs(C) < $2dca407f99b477df$var$loClip) Sapc = 0;
-    else if (C > 0) // not clear whether Woffset is loBoWoffset or loWoBoffset
-    // but they have the same value
-    Sapc = C - $2dca407f99b477df$var$loBoWoffset;
-    else Sapc = C + $2dca407f99b477df$var$loBoWoffset;
-    return Sapc * 100;
-}
-// Michelson  luminance contrast
-function $2dca407f99b477df$var$contrastMichelson(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
-    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
-    if (Y2 > Y1) [Y1, Y2] = [
-        Y2,
-        Y1
-    ];
-    let denom = Y1 + Y2;
-    return denom === 0 ? 0 : (Y1 - Y2) / denom;
-}
-// Weber luminance contrast
-// the darkest sRGB color above black is #000001 and this produces
-// a plain Weber contrast of ~45647.
-// So, setting the divide-by-zero result at 50000 is a reasonable
-// max clamp for the plain Weber
-const $2dca407f99b477df$var$max = 50000;
-function $2dca407f99b477df$var$contrastWeber(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    let Y1 = Math.max($2dca407f99b477df$var$getLuminance(color1), 0);
-    let Y2 = Math.max($2dca407f99b477df$var$getLuminance(color2), 0);
-    if (Y2 > Y1) [Y1, Y2] = [
-        Y2,
-        Y1
-    ];
-    return Y2 === 0 ? $2dca407f99b477df$var$max : (Y1 - Y2) / Y2;
-}
-// CIE Lightness difference, as used by Google Material Design
-function $2dca407f99b477df$var$contrastLstar(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    let L1 = $2dca407f99b477df$var$get(color1, [
-        $2dca407f99b477df$var$lab,
-        "l"
-    ]);
-    let L2 = $2dca407f99b477df$var$get(color2, [
-        $2dca407f99b477df$var$lab,
-        "l"
-    ]);
-    return Math.abs(L1 - L2);
-}
-// κ * ε  = 2^3 = 8
-const $2dca407f99b477df$var$ε$1 = 216 / 24389; // 6^3/29^3 == (24/116)^3
-const $2dca407f99b477df$var$ε3 = 24 / 116;
-const $2dca407f99b477df$var$κ = 24389 / 27; // 29^3/3^3
-let $2dca407f99b477df$var$white = $2dca407f99b477df$var$WHITES.D65;
-var $2dca407f99b477df$var$lab_d65 = new $2dca407f99b477df$var$ColorSpace({
-    id: "lab-d65",
-    name: "Lab D65",
-    coords: {
-        l: {
-            refRange: [
-                0,
-                100
-            ],
-            name: "L"
-        },
-        a: {
-            refRange: [
-                -125,
-                125
-            ]
-        },
-        b: {
-            refRange: [
-                -125,
-                125
-            ]
-        }
-    },
-    white: // Assuming XYZ is relative to D65, convert to CIE Lab
-    // from CIE standard, which now defines these as a rational fraction
-    $2dca407f99b477df$var$white,
-    base: $2dca407f99b477df$var$XYZ_D65,
-    // Convert D65-adapted XYZ to Lab
-    //  CIE 15.3:2004 section 8.2.1.1
-    fromBase (XYZ) {
-        // compute xyz, which is XYZ scaled relative to reference white
-        let xyz = XYZ.map((value1, i)=>value1 / $2dca407f99b477df$var$white[i]);
-        // now compute f
-        let f = xyz.map((value1)=>value1 > $2dca407f99b477df$var$ε$1 ? Math.cbrt(value1) : ($2dca407f99b477df$var$κ * value1 + 16) / 116);
-        return [
-            116 * f[1] - 16,
-            500 * (f[0] - f[1]),
-            200 * (f[1] - f[2])
-        ];
-    },
-    // Convert Lab to D65-adapted XYZ
-    // Same result as CIE 15.3:2004 Appendix D although the derivation is different
-    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-    toBase (Lab) {
-        // compute f, starting with the luminance-related term
-        let f = [];
-        f[1] = (Lab[0] + 16) / 116;
-        f[0] = Lab[1] / 500 + f[1];
-        f[2] = f[1] - Lab[2] / 200;
-        // compute xyz
-        let xyz = [
-            f[0] > $2dca407f99b477df$var$ε3 ? Math.pow(f[0], 3) : (116 * f[0] - 16) / $2dca407f99b477df$var$κ,
-            Lab[0] > 8 ? Math.pow((Lab[0] + 16) / 116, 3) : Lab[0] / $2dca407f99b477df$var$κ,
-            f[2] > $2dca407f99b477df$var$ε3 ? Math.pow(f[2], 3) : (116 * f[2] - 16) / $2dca407f99b477df$var$κ
-        ];
-        // Compute XYZ by scaling xyz by reference white
-        return xyz.map((value1, i)=>value1 * $2dca407f99b477df$var$white[i]);
-    },
-    formats: {
-        "lab-d65": {
-            coords: [
-                "<percentage> | <number>",
-                "<number>",
-                "<number>"
-            ]
-        }
-    }
-});
-// Delta Phi Star perceptual lightness contrast
-const $2dca407f99b477df$var$phi = Math.pow(5, 0.5) * 0.5 + 0.5; // Math.phi can be used if Math.js
-function $2dca407f99b477df$var$contrastDeltaPhi(color1, color2) {
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    let Lstr1 = $2dca407f99b477df$var$get(color1, [
-        $2dca407f99b477df$var$lab_d65,
-        "l"
-    ]);
-    let Lstr2 = $2dca407f99b477df$var$get(color2, [
-        $2dca407f99b477df$var$lab_d65,
-        "l"
-    ]);
-    let deltaPhiStar = Math.abs(Math.pow(Lstr1, $2dca407f99b477df$var$phi) - Math.pow(Lstr2, $2dca407f99b477df$var$phi));
-    let contrast = Math.pow(deltaPhiStar, 1 / $2dca407f99b477df$var$phi) * Math.SQRT2 - 40;
-    return contrast < 7.5 ? 0.0 : contrast;
-}
-var $2dca407f99b477df$var$contrastMethods = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    contrastWCAG21: $2dca407f99b477df$var$contrastWCAG21,
-    contrastAPCA: $2dca407f99b477df$var$contrastAPCA,
-    contrastMichelson: $2dca407f99b477df$var$contrastMichelson,
-    contrastWeber: $2dca407f99b477df$var$contrastWeber,
-    contrastLstar: $2dca407f99b477df$var$contrastLstar,
-    contrastDeltaPhi: $2dca407f99b477df$var$contrastDeltaPhi
-});
-function $2dca407f99b477df$var$contrast(background, foreground, o = {}) {
-    if ($2dca407f99b477df$var$isString(o)) o = {
-        algorithm: o
-    };
-    let { algorithm: algorithm, ...rest } = o;
-    if (!algorithm) {
-        let algorithms = Object.keys($2dca407f99b477df$var$contrastMethods).map((a)=>a.replace(/^contrast/, "")).join(", ");
-        throw new TypeError(`contrast() function needs a contrast algorithm. Please specify one of: ${algorithms}`);
-    }
-    background = $2dca407f99b477df$var$getColor(background);
-    foreground = $2dca407f99b477df$var$getColor(foreground);
-    for(let a in $2dca407f99b477df$var$contrastMethods){
-        if ("contrast" + algorithm.toLowerCase() === a.toLowerCase()) return $2dca407f99b477df$var$contrastMethods[a](background, foreground, rest);
-    }
-    throw new TypeError(`Unknown contrast algorithm: ${algorithm}`);
-}
-// Chromaticity coordinates
-function $2dca407f99b477df$var$uv(color) {
-    let [X, Y, Z] = $2dca407f99b477df$var$getAll(color, $2dca407f99b477df$var$XYZ_D65);
-    let denom = X + 15 * Y + 3 * Z;
-    return [
-        4 * X / denom,
-        9 * Y / denom
-    ];
-}
-function $2dca407f99b477df$var$xy(color) {
-    let [X, Y, Z] = $2dca407f99b477df$var$getAll(color, $2dca407f99b477df$var$XYZ_D65);
-    let sum = X + Y + Z;
-    return [
-        X / sum,
-        Y / sum
-    ];
-}
-function $2dca407f99b477df$var$register$1(Color) {
-    // no setters, as lightness information is lost
-    // when converting color to chromaticity
-    Object.defineProperty(Color.prototype, "uv", {
-        get () {
-            return $2dca407f99b477df$var$uv(this);
-        }
-    });
-    Object.defineProperty(Color.prototype, "xy", {
-        get () {
-            return $2dca407f99b477df$var$xy(this);
-        }
-    });
-}
-var $2dca407f99b477df$var$chromaticity = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    uv: $2dca407f99b477df$var$uv,
-    xy: $2dca407f99b477df$var$xy,
-    register: $2dca407f99b477df$var$register$1
-});
-function $2dca407f99b477df$var$deltaE76(color, sample) {
-    return $2dca407f99b477df$var$distance(color, sample, "lab");
-}
-// More accurate color-difference formulae
-// than the simple 1976 Euclidean distance in Lab
-// CMC by the Color Measurement Committee of the
-// Bradford Society of Dyeists and Colorsts, 1994.
-// Uses LCH rather than Lab,
-// with different weights for L, C and H differences
-// A nice increase in accuracy for modest increase in complexity
-const $2dca407f99b477df$var$π = Math.PI;
-const $2dca407f99b477df$var$d2r = $2dca407f99b477df$var$π / 180;
-function $2dca407f99b477df$var$deltaECMC(color, sample, { l: l = 2, c: c = 1 } = {}) {
-    // Given this color as the reference
-    // and a sample,
-    // calculate deltaE CMC.
-    // This implementation assumes the parametric
-    // weighting factors l:c are 2:1
-    // which is typical for non-textile uses.
-    let [L1, a1, b1] = $2dca407f99b477df$var$lab.from(color);
-    let [, C1, H1] = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
-        L1,
-        a1,
-        b1
-    ]);
-    let [L2, a2, b2] = $2dca407f99b477df$var$lab.from(sample);
-    let C2 = $2dca407f99b477df$var$lch.from($2dca407f99b477df$var$lab, [
-        L2,
-        a2,
-        b2
-    ])[1];
-    // let [L1, a1, b1] = color.getAll(lab);
-    // let C1 = color.get("lch.c");
-    // let H1 = color.get("lch.h");
-    // let [L2, a2, b2] = sample.getAll(lab);
-    // let C2 = sample.get("lch.c");
-    // Check for negative Chroma,
-    // which might happen through
-    // direct user input of LCH values
-    if (C1 < 0) C1 = 0;
-    if (C2 < 0) C2 = 0;
-    // we don't need H2 as ΔH is calculated from Δa, Δb and ΔC
-    // Lightness and Chroma differences
-    // These are (color - sample), unlike deltaE2000
-    let ΔL = L1 - L2;
-    let ΔC = C1 - C2;
-    let Δa = a1 - a2;
-    let Δb = b1 - b2;
-    // weighted Hue difference, less for larger Chroma difference
-    let H2 = Δa ** 2 + Δb ** 2 - ΔC ** 2;
-    // due to roundoff error it is possible that, for zero a and b,
-    // ΔC > Δa + Δb is 0, resulting in attempting
-    // to take the square root of a negative number
-    // trying instead the equation from Industrial Color Physics
-    // By Georg A. Klein
-    // let ΔH = ((a1 * b2) - (a2 * b1)) / Math.sqrt(0.5 * ((C2 * C1) + (a2 * a1) + (b2 * b1)));
-    // This gives the same result to 12 decimal places
-    // except it sometimes NaNs when trying to root a negative number
-    // let ΔH = Math.sqrt(H2); we never actually use the root, it gets squared again!!
-    // positional corrections to the lack of uniformity of CIELAB
-    // These are all trying to make JND ellipsoids more like spheres
-    // SL Lightness crispening factor, depends entirely on L1 not L2
-    let SL = 0.511; // linear portion of the Y to L transfer function
-    if (L1 >= 16) // cubic portion
-    SL = 0.040975 * L1 / (1 + 0.01765 * L1);
-    // SC Chroma factor
-    let SC = 0.0638 * C1 / (1 + 0.0131 * C1) + 0.638;
-    // Cross term T for blue non-linearity
-    let T;
-    if (Number.isNaN(H1)) H1 = 0;
-    if (H1 >= 164 && H1 <= 345) T = 0.56 + Math.abs(0.2 * Math.cos((H1 + 168) * $2dca407f99b477df$var$d2r));
-    else T = 0.36 + Math.abs(0.4 * Math.cos((H1 + 35) * $2dca407f99b477df$var$d2r));
-    // SH Hue factor also depends on C1,
-    let C4 = Math.pow(C1, 4);
-    let F = Math.sqrt(C4 / (C4 + 1900));
-    let SH = SC * (F * T + 1 - F);
-    // Finally calculate the deltaE, term by term as root sume of squares
-    let dE = (ΔL / (l * SL)) ** 2;
-    dE += (ΔC / (c * SC)) ** 2;
-    dE += H2 / SH ** 2;
-    // dE += (ΔH / SH)  ** 2;
-    return Math.sqrt(dE);
-// Yay!!!
-}
-const $2dca407f99b477df$var$Yw$1 = 203; // absolute luminance of media white
-var $2dca407f99b477df$var$XYZ_Abs_D65 = new $2dca407f99b477df$var$ColorSpace({
-    // Absolute CIE XYZ, with a D65 whitepoint,
-    // as used in most HDR colorspaces as a starting point.
-    // SDR spaces are converted per BT.2048
-    // so that diffuse, media white is 203 cd/m²
-    id: "xyz-abs-d65",
-    name: "Absolute XYZ D65",
-    coords: {
-        x: {
-            refRange: [
-                0,
-                9504.7
-            ],
-            name: "Xa"
-        },
-        y: {
-            refRange: [
-                0,
-                10000
-            ],
-            name: "Ya"
-        },
-        z: {
-            refRange: [
-                0,
-                10888.3
-            ],
-            name: "Za"
-        }
-    },
-    base: $2dca407f99b477df$var$XYZ_D65,
-    fromBase (XYZ) {
-        // Make XYZ absolute, not relative to media white
-        // Maximum luminance in PQ is 10,000 cd/m²
-        // Relative XYZ has Y=1 for media white
-        return XYZ.map((v)=>Math.max(v * $2dca407f99b477df$var$Yw$1, 0));
-    },
-    toBase (AbsXYZ) {
-        // Convert to media-white relative XYZ
-        return AbsXYZ.map((v)=>Math.max(v / $2dca407f99b477df$var$Yw$1, 0));
-    }
-});
-const $2dca407f99b477df$var$b$1 = 1.15;
-const $2dca407f99b477df$var$g = 0.66;
-const $2dca407f99b477df$var$n$1 = 2610 / 2 ** 14;
-const $2dca407f99b477df$var$ninv$1 = 2 ** 14 / 2610;
-const $2dca407f99b477df$var$c1$2 = 0.8359375;
-const $2dca407f99b477df$var$c2$2 = 18.8515625;
-const $2dca407f99b477df$var$c3$2 = 18.6875;
-const $2dca407f99b477df$var$p = 1.7 * 2523 / 32;
-const $2dca407f99b477df$var$pinv = 32 / (1.7 * 2523);
-const $2dca407f99b477df$var$d = -0.56;
-const $2dca407f99b477df$var$d0 = 1.6295499532821566e-11;
-const $2dca407f99b477df$var$XYZtoCone_M = [
-    [
-        0.41478972,
-        0.579999,
-        0.014648
-    ],
-    [
-        -0.20151,
-        1.120649,
-        0.0531008
-    ],
-    [
-        -0.0166008,
-        0.2648,
-        0.6684799
-    ]
-];
-// XYZtoCone_M inverted
-const $2dca407f99b477df$var$ConetoXYZ_M = [
-    [
-        1.9242264357876067,
-        -1.0047923125953657,
-        0.037651404030618
-    ],
-    [
-        0.35031676209499907,
-        0.7264811939316552,
-        -0.06538442294808501
-    ],
-    [
-        -0.09098281098284752,
-        -0.3127282905230739,
-        1.5227665613052603
-    ]
-];
-const $2dca407f99b477df$var$ConetoIab_M = [
-    [
-        0.5,
-        0.5,
-        0
-    ],
-    [
-        3.524,
-        -4.066708,
-        0.542708
-    ],
-    [
-        0.199076,
-        1.096799,
-        -1.295875
-    ]
-];
-// ConetoIab_M inverted
-const $2dca407f99b477df$var$IabtoCone_M = [
-    [
-        1,
-        0.1386050432715393,
-        0.05804731615611886
-    ],
-    [
-        0.9999999999999999,
-        -0.1386050432715393,
-        -0.05804731615611886
-    ],
-    [
-        0.9999999999999998,
-        -0.09601924202631895,
-        -0.8118918960560388
-    ]
-];
-var $2dca407f99b477df$var$Jzazbz = new $2dca407f99b477df$var$ColorSpace({
-    id: "jzazbz",
-    name: "Jzazbz",
-    coords: {
-        jz: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "Jz"
-        },
-        az: {
-            refRange: [
-                -0.5,
-                0.5
-            ]
-        },
-        bz: {
-            refRange: [
-                -0.5,
-                0.5
-            ]
-        }
-    },
-    base: $2dca407f99b477df$var$XYZ_Abs_D65,
-    fromBase (XYZ) {
-        // First make XYZ absolute, not relative to media white
-        // Maximum luminance in PQ is 10,000 cd/m²
-        // Relative XYZ has Y=1 for media white
-        // BT.2048 says media white Y=203 at PQ 58
-        let [Xa, Ya, Za] = XYZ;
-        // modify X and Y
-        let Xm = $2dca407f99b477df$var$b$1 * Xa - ($2dca407f99b477df$var$b$1 - 1) * Za;
-        let Ym = $2dca407f99b477df$var$g * Ya - ($2dca407f99b477df$var$g - 1) * Xa;
-        // move to LMS cone domain
-        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoCone_M, [
-            Xm,
-            Ym,
-            Za
-        ]);
-        // PQ-encode LMS
-        let PQLMS = LMS.map(function(val) {
-            let num = $2dca407f99b477df$var$c1$2 + $2dca407f99b477df$var$c2$2 * (val / 10000) ** $2dca407f99b477df$var$n$1;
-            let denom = 1 + $2dca407f99b477df$var$c3$2 * (val / 10000) ** $2dca407f99b477df$var$n$1;
-            return (num / denom) ** $2dca407f99b477df$var$p;
-        });
-        // almost there, calculate Iz az bz
-        let [Iz, az, bz] = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$ConetoIab_M, PQLMS);
-        let Jz = (1 + $2dca407f99b477df$var$d) * Iz / (1 + $2dca407f99b477df$var$d * Iz) - $2dca407f99b477df$var$d0;
-        return [
-            Jz,
-            az,
-            bz
-        ];
-    },
-    toBase (Jzazbz) {
-        let [Jz, az, bz] = Jzazbz;
-        let Iz = (Jz + $2dca407f99b477df$var$d0) / (1 + $2dca407f99b477df$var$d - $2dca407f99b477df$var$d * (Jz + $2dca407f99b477df$var$d0));
-        // bring into LMS cone domain
-        let PQLMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$IabtoCone_M, [
-            Iz,
-            az,
-            bz
-        ]);
-        // convert from PQ-coded to linear-light
-        let LMS = PQLMS.map(function(val) {
-            let num = $2dca407f99b477df$var$c1$2 - val ** $2dca407f99b477df$var$pinv;
-            let denom = $2dca407f99b477df$var$c3$2 * val ** $2dca407f99b477df$var$pinv - $2dca407f99b477df$var$c2$2;
-            let x = 10000 * (num / denom) ** $2dca407f99b477df$var$ninv$1;
-            return x; // luminance relative to diffuse white, [0, 70 or so].
-        });
-        // modified abs XYZ
-        let [Xm, Ym, Za] = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$ConetoXYZ_M, LMS);
-        // restore standard D50 relative XYZ, relative to media white
-        let Xa = (Xm + ($2dca407f99b477df$var$b$1 - 1) * Za) / $2dca407f99b477df$var$b$1;
-        let Ya = (Ym + ($2dca407f99b477df$var$g - 1) * Xa) / $2dca407f99b477df$var$g;
-        return [
-            Xa,
-            Ya,
-            Za
-        ];
-    },
-    formats: {
-        // https://drafts.csswg.org/css-color-hdr/#Jzazbz
-        color: {}
-    }
-});
-var $2dca407f99b477df$var$jzczhz = new $2dca407f99b477df$var$ColorSpace({
-    id: "jzczhz",
-    name: "JzCzHz",
-    coords: {
-        jz: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "Jz"
-        },
-        cz: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "Chroma"
-        },
-        hz: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        }
-    },
-    base: $2dca407f99b477df$var$Jzazbz,
-    fromBase (jzazbz) {
-        // Convert to polar form
-        let [Jz, az, bz] = jzazbz;
-        let hue;
-        const ε = 0.0002; // chromatic components much smaller than a,b
-        if (Math.abs(az) < ε && Math.abs(bz) < ε) hue = NaN;
-        else hue = Math.atan2(bz, az) * 180 / Math.PI;
-        return [
-            Jz,
-            Math.sqrt(az ** 2 + bz ** 2),
-            $2dca407f99b477df$var$constrain(hue)
-        ];
-    },
-    toBase (jzczhz) {
-        // Convert from polar form
-        // debugger;
-        return [
-            jzczhz[0],
-            jzczhz[1] * Math.cos(jzczhz[2] * Math.PI / 180),
-            jzczhz[1] * Math.sin(jzczhz[2] * Math.PI / 180)
-        ];
-    },
-    formats: {
-        color: {}
-    }
-});
-// More accurate color-difference formulae
-// than the simple 1976 Euclidean distance in Lab
-// Uses JzCzHz, which has improved perceptual uniformity
-// and thus a simple Euclidean root-sum of ΔL² ΔC² ΔH²
-// gives good results.
-function $2dca407f99b477df$var$deltaEJz(color, sample) {
-    // Given this color as the reference
-    // and a sample,
-    // calculate deltaE in JzCzHz.
-    let [Jz1, Cz1, Hz1] = $2dca407f99b477df$var$jzczhz.from(color);
-    let [Jz2, Cz2, Hz2] = $2dca407f99b477df$var$jzczhz.from(sample);
-    // Lightness and Chroma differences
-    // sign does not matter as they are squared.
-    let ΔJ = Jz1 - Jz2;
-    let ΔC = Cz1 - Cz2;
-    // length of chord for ΔH
-    if (Number.isNaN(Hz1) && Number.isNaN(Hz2)) {
-        // both undefined hues
-        Hz1 = 0;
-        Hz2 = 0;
-    } else if (Number.isNaN(Hz1)) // one undefined, set to the defined hue
-    Hz1 = Hz2;
-    else if (Number.isNaN(Hz2)) Hz2 = Hz1;
-    let Δh = Hz1 - Hz2;
-    let ΔH = 2 * Math.sqrt(Cz1 * Cz2) * Math.sin(Δh / 2 * (Math.PI / 180));
-    return Math.sqrt(ΔJ ** 2 + ΔC ** 2 + ΔH ** 2);
-}
-const $2dca407f99b477df$var$c1$1 = 0.8359375;
-const $2dca407f99b477df$var$c2$1 = 2413 / 128;
-const $2dca407f99b477df$var$c3$1 = 18.6875;
-const $2dca407f99b477df$var$m1 = 2610 / 16384;
-const $2dca407f99b477df$var$m2 = 2523 / 32;
-const $2dca407f99b477df$var$im1 = 16384 / 2610;
-const $2dca407f99b477df$var$im2 = 32 / 2523;
-// The matrix below includes the 4% crosstalk components
-// and is from the Dolby "What is ICtCp" paper"
-const $2dca407f99b477df$var$XYZtoLMS_M$1 = [
-    [
-        0.3592,
-        0.6976,
-        -0.0358
-    ],
-    [
-        -0.1922,
-        1.1004,
-        0.0755
-    ],
-    [
-        0.007,
-        0.0749,
-        0.8434
-    ]
-];
-// linear-light Rec.2020 to LMS, again with crosstalk
-// rational terms from Jan Fröhlich,
-// Encoding High Dynamic Range andWide Color Gamut Imagery, p.97
-// and ITU-R BT.2124-0 p.2
-/*
-const Rec2020toLMS_M = [
-	[ 1688 / 4096,  2146 / 4096,   262 / 4096 ],
-	[  683 / 4096,  2951 / 4096,   462 / 4096 ],
-	[   99 / 4096,   309 / 4096,  3688 / 4096 ]
-];
-*/ // this includes the Ebner LMS coefficients,
-// the rotation, and the scaling to [-0.5,0.5] range
-// rational terms from Fröhlich p.97
-// and ITU-R BT.2124-0 pp.2-3
-const $2dca407f99b477df$var$LMStoIPT_M = [
-    [
-        0.5,
-        0.5,
-        0
-    ],
-    [
-        6610 / 4096,
-        -13613 / 4096,
-        7003 / 4096
-    ],
-    [
-        17933 / 4096,
-        -17390 / 4096,
-        -543 / 4096
-    ]
-];
-// inverted matrices, calculated from the above
-const $2dca407f99b477df$var$IPTtoLMS_M = [
-    [
-        0.99998889656284013833,
-        0.00860505014728705821,
-        0.1110343715986164786
-    ],
-    [
-        1.0000111034371598616,
-        -0.008605050147287059,
-        -0.11103437159861648
-    ],
-    [
-        1.000032063391005412,
-        0.56004913547279000113,
-        -0.3206339100541203
-    ]
-];
-/*
-const LMStoRec2020_M = [
-	[ 3.4375568932814012112,   -2.5072112125095058195,   0.069654319228104608382],
-	[-0.79142868665644156125,   1.9838372198740089874,  -0.19240853321756742626 ],
-	[-0.025646662911506476363, -0.099240248643945566751, 1.1248869115554520431  ]
-];
-*/ const $2dca407f99b477df$var$LMStoXYZ_M$1 = [
-    [
-        2.0701800566956135096,
-        -1.326456876103021,
-        0.20661600684785517081
-    ],
-    [
-        0.36498825003265747974,
-        0.68046736285223514102,
-        -0.04542175307585323
-    ],
-    [
-        -0.04959554223893211,
-        -0.04942116118675749,
-        1.1879959417328034394
-    ]
-];
-// Only the PQ form of ICtCp is implemented here. There is also an HLG form.
-// from Dolby, "WHAT IS ICTCP?"
-// https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
-// and
-// Dolby, "Perceptual Color Volume
-// Measuring the Distinguishable Colors of HDR and WCG Displays"
-// https://professional.dolby.com/siteassets/pdfs/dolby-vision-measuring-perceptual-color-volume-v7.1.pdf
-var $2dca407f99b477df$var$ictcp = new $2dca407f99b477df$var$ColorSpace({
-    id: "ictcp",
-    name: "ICTCP",
-    // From BT.2100-2 page 7:
-    // During production, signal values are expected to exceed the
-    // range E′ = [0.0 : 1.0]. This provides processing headroom and avoids
-    // signal degradation during cascaded processing. Such values of E′,
-    // below 0.0 or exceeding 1.0, should not be clipped during production
-    // and exchange.
-    // Values below 0.0 should not be clipped in reference displays (even
-    // though they represent “negative” light) to allow the black level of
-    // the signal (LB) to be properly set using test signals known as “PLUGE”
-    coords: {
-        i: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "I"
-        },
-        ct: {
-            refRange: [
-                -0.5,
-                0.5
-            ],
-            name: "CT"
-        },
-        cp: {
-            refRange: [
-                -0.5,
-                0.5
-            ],
-            name: "CP"
-        }
-    },
-    base: $2dca407f99b477df$var$XYZ_Abs_D65,
-    fromBase (XYZ) {
-        // move to LMS cone domain
-        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoLMS_M$1, XYZ);
-        return $2dca407f99b477df$var$LMStoICtCp(LMS);
-    },
-    toBase (ICtCp) {
-        let LMS = $2dca407f99b477df$var$ICtCptoLMS(ICtCp);
-        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoXYZ_M$1, LMS);
-    },
-    formats: {
-        color: {}
-    }
-});
-function $2dca407f99b477df$var$LMStoICtCp(LMS) {
-    // apply the PQ EOTF
-    // we can't ever be dividing by zero because of the "1 +" in the denominator
-    let PQLMS = LMS.map(function(val) {
-        let num = $2dca407f99b477df$var$c1$1 + $2dca407f99b477df$var$c2$1 * (val / 10000) ** $2dca407f99b477df$var$m1;
-        let denom = 1 + $2dca407f99b477df$var$c3$1 * (val / 10000) ** $2dca407f99b477df$var$m1;
-        return (num / denom) ** $2dca407f99b477df$var$m2;
-    });
-    // LMS to IPT, with rotation for Y'C'bC'r compatibility
-    return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoIPT_M, PQLMS);
-}
-function $2dca407f99b477df$var$ICtCptoLMS(ICtCp) {
-    let PQLMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$IPTtoLMS_M, ICtCp);
-    // From BT.2124-0 Annex 2 Conversion 3
-    let LMS = PQLMS.map(function(val) {
-        let num = Math.max(val ** $2dca407f99b477df$var$im2 - $2dca407f99b477df$var$c1$1, 0);
-        let denom = $2dca407f99b477df$var$c2$1 - $2dca407f99b477df$var$c3$1 * val ** $2dca407f99b477df$var$im2;
-        return 10000 * (num / denom) ** $2dca407f99b477df$var$im1;
-    });
-    return LMS;
-}
-// Delta E in ICtCp space,
-// which the ITU calls Delta E ITP, which is shorter
-// formulae from ITU Rec. ITU-R BT.2124-0
-function $2dca407f99b477df$var$deltaEITP(color, sample) {
-    // Given this color as the reference
-    // and a sample,
-    // calculate deltaE in ICtCp
-    // which is simply the Euclidean distance
-    let [I1, T1, P1] = $2dca407f99b477df$var$ictcp.from(color);
-    let [I2, T2, P2] = $2dca407f99b477df$var$ictcp.from(sample);
-    // the 0.25 factor is to undo the encoding scaling in Ct
-    // the 720 is so that 1 deltaE = 1 JND
-    // per  ITU-R BT.2124-0 p.3
-    return 720 * Math.sqrt((I1 - I2) ** 2 + 0.25 * (T1 - T2) ** 2 + (P1 - P2) ** 2);
-}
-// Recalculated for consistent reference white
-// see https://github.com/w3c/csswg-drafts/issues/6642#issuecomment-943521484
-const $2dca407f99b477df$var$XYZtoLMS_M = [
-    [
-        0.8190224432164319,
-        0.3619062562801221,
-        -0.12887378261216414
-    ],
-    [
-        0.0329836671980271,
-        0.9292868468965546,
-        0.03614466816999844
-    ],
-    [
-        0.048177199566046255,
-        0.26423952494422764,
-        0.6335478258136937
-    ]
-];
-// inverse of XYZtoLMS_M
-const $2dca407f99b477df$var$LMStoXYZ_M = [
-    [
-        1.2268798733741557,
-        -0.5578149965554813,
-        0.28139105017721583
-    ],
-    [
-        -0.04057576262431372,
-        1.1122868293970594,
-        -0.07171106666151701
-    ],
-    [
-        -0.07637294974672142,
-        -0.4214933239627914,
-        1.5869240244272418
-    ]
-];
-const $2dca407f99b477df$var$LMStoLab_M = [
-    [
-        0.2104542553,
-        0.793617785,
-        -0.0040720468
-    ],
-    [
-        1.9779984951,
-        -2.428592205,
-        0.4505937099
-    ],
-    [
-        0.0259040371,
-        0.7827717662,
-        -0.808675766
-    ]
-];
-// LMStoIab_M inverted
-const $2dca407f99b477df$var$LabtoLMS_M = [
-    [
-        0.99999999845051981432,
-        0.39633779217376785678,
-        0.21580375806075880339
-    ],
-    [
-        1.0000000088817607767,
-        -0.10556134232365635,
-        -0.06385417477170591
-    ],
-    [
-        1.0000000546724109177,
-        -0.08948418209496575,
-        -1.2914855378640917
-    ]
-];
-var $2dca407f99b477df$var$OKLab = new $2dca407f99b477df$var$ColorSpace({
-    id: "oklab",
-    name: "OKLab",
-    coords: {
-        l: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "L"
-        },
-        a: {
-            refRange: [
-                -0.4,
-                0.4
-            ]
-        },
-        b: {
-            refRange: [
-                -0.4,
-                0.4
-            ]
-        }
-    },
-    // Note that XYZ is relative to D65
-    white: "D65",
-    base: $2dca407f99b477df$var$XYZ_D65,
-    fromBase (XYZ) {
-        // move to LMS cone domain
-        let LMS = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$XYZtoLMS_M, XYZ);
-        // non-linearity
-        let LMSg = LMS.map((val)=>Math.cbrt(val));
-        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoLab_M, LMSg);
-    },
-    toBase (OKLab) {
-        // move to LMS cone domain
-        let LMSg = $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LabtoLMS_M, OKLab);
-        // restore linearity
-        let LMS = LMSg.map((val)=>val ** 3);
-        return $2dca407f99b477df$var$multiplyMatrices($2dca407f99b477df$var$LMStoXYZ_M, LMS);
-    },
-    formats: {
-        oklab: {
-            coords: [
-                "<percentage>",
-                "<number>",
-                "<number>"
-            ]
-        }
-    }
-});
-// More accurate color-difference formulae
-function $2dca407f99b477df$var$deltaEOK(color, sample) {
-    // Given this color as the reference
-    // and a sample,
-    // calculate deltaEOK, term by term as root sum of squares
-    let [L1, a1, b1] = $2dca407f99b477df$var$OKLab.from(color);
-    let [L2, a2, b2] = $2dca407f99b477df$var$OKLab.from(sample);
-    let ΔL = L1 - L2;
-    let Δa = a1 - a2;
-    let Δb = b1 - b2;
-    return Math.sqrt(ΔL ** 2 + Δa ** 2 + Δb ** 2);
-}
-var $2dca407f99b477df$var$deltaEMethods = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    deltaE76: $2dca407f99b477df$var$deltaE76,
-    deltaECMC: $2dca407f99b477df$var$deltaECMC,
-    deltaE2000: $2dca407f99b477df$var$deltaE2000,
-    deltaEJz: $2dca407f99b477df$var$deltaEJz,
-    deltaEITP: $2dca407f99b477df$var$deltaEITP,
-    deltaEOK: $2dca407f99b477df$var$deltaEOK
-});
-function $2dca407f99b477df$var$deltaE(c1, c2, o = {}) {
-    if ($2dca407f99b477df$var$isString(o)) o = {
-        method: o
-    };
-    let { method: method = $2dca407f99b477df$var$defaults.deltaE, ...rest } = o;
-    c1 = $2dca407f99b477df$var$getColor(c1);
-    c2 = $2dca407f99b477df$var$getColor(c2);
-    for(let m in $2dca407f99b477df$var$deltaEMethods){
-        if ("deltae" + method.toLowerCase() === m.toLowerCase()) return $2dca407f99b477df$var$deltaEMethods[m](c1, c2, rest);
-    }
-    throw new TypeError(`Unknown deltaE method: ${method}`);
-}
-var $2dca407f99b477df$var$deltaE$1 = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    default: $2dca407f99b477df$var$deltaE
-});
-function $2dca407f99b477df$var$lighten(color, amount = 0.25) {
-    let space = $2dca407f99b477df$var$ColorSpace.get("oklch", "lch");
-    let lightness = [
-        space,
-        "l"
-    ];
-    return $2dca407f99b477df$var$set$1(color, lightness, (l)=>l * (1 + amount));
-}
-function $2dca407f99b477df$var$darken(color, amount = 0.25) {
-    let space = $2dca407f99b477df$var$ColorSpace.get("oklch", "lch");
-    let lightness = [
-        space,
-        "l"
-    ];
-    return $2dca407f99b477df$var$set$1(color, lightness, (l)=>l * (1 - amount));
-}
-var $2dca407f99b477df$var$variations = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    lighten: $2dca407f99b477df$var$lighten,
-    darken: $2dca407f99b477df$var$darken
-});
-/**
- * Functions related to color interpolation
- */ /**
- * Return an intermediate color between two colors
- * Signatures: mix(c1, c2, p, options)
- *             mix(c1, c2, options)
- *             mix(color)
- * @param {Color | string} c1 The first color
- * @param {Color | string} [c2] The second color
- * @param {number} [p=.5] A 0-1 percentage where 0 is c1 and 1 is c2
- * @param {Object} [o={}]
- * @return {Color}
- */ function $2dca407f99b477df$var$mix(c1, c2, p = 0.5, o = {}) {
-    [c1, c2] = [
-        $2dca407f99b477df$var$getColor(c1),
-        $2dca407f99b477df$var$getColor(c2)
-    ];
-    if ($2dca407f99b477df$var$type(p) === "object") [p, o] = [
-        0.5,
-        p
-    ];
-    let { space: space, outputSpace: outputSpace } = o;
-    let r = $2dca407f99b477df$var$range(c1, c2, {
-        space: space,
-        outputSpace: outputSpace
-    });
-    return r(p);
-}
-/**
- *
- * @param {Color | string | Function} c1 The first color or a range
- * @param {Color | string} [c2] The second color if c1 is not a range
- * @param {Object} [options={}]
- * @return {Color[]}
- */ function $2dca407f99b477df$var$steps(c1, c2, options = {}) {
-    let colorRange;
-    if ($2dca407f99b477df$var$isRange(c1)) {
-        // Tweaking existing range
-        [colorRange, options] = [
-            c1,
-            c2
-        ];
-        [c1, c2] = colorRange.rangeArgs.colors;
-    }
-    let { maxDeltaE: maxDeltaE, deltaEMethod: deltaEMethod, steps: steps = 2, maxSteps: maxSteps = 1000, ...rangeOptions } = options;
-    if (!colorRange) {
-        [c1, c2] = [
-            $2dca407f99b477df$var$getColor(c1),
-            $2dca407f99b477df$var$getColor(c2)
-        ];
-        colorRange = $2dca407f99b477df$var$range(c1, c2, rangeOptions);
-    }
-    let totalDelta = $2dca407f99b477df$var$deltaE(c1, c2);
-    let actualSteps = maxDeltaE > 0 ? Math.max(steps, Math.ceil(totalDelta / maxDeltaE) + 1) : steps;
-    let ret = [];
-    if (maxSteps !== undefined) actualSteps = Math.min(actualSteps, maxSteps);
-    if (actualSteps === 1) ret = [
-        {
-            p: 0.5,
-            color: colorRange(0.5)
-        }
-    ];
-    else {
-        let step = 1 / (actualSteps - 1);
-        ret = Array.from({
-            length: actualSteps
-        }, (_, i)=>{
-            let p = i * step;
-            return {
-                p: p,
-                color: colorRange(p)
-            };
-        });
-    }
-    if (maxDeltaE > 0) {
-        // Iterate over all stops and find max deltaE
-        let maxDelta = ret.reduce((acc, cur, i)=>{
-            if (i === 0) return 0;
-            let ΔΕ = $2dca407f99b477df$var$deltaE(cur.color, ret[i - 1].color, deltaEMethod);
-            return Math.max(acc, ΔΕ);
-        }, 0);
-        while(maxDelta > maxDeltaE){
-            // Insert intermediate stops and measure maxDelta again
-            // We need to do this for all pairs, otherwise the midpoint shifts
-            maxDelta = 0;
-            for(let i = 1; i < ret.length && ret.length < maxSteps; i++){
-                let prev = ret[i - 1];
-                let cur = ret[i];
-                let p = (cur.p + prev.p) / 2;
-                let color = colorRange(p);
-                maxDelta = Math.max(maxDelta, $2dca407f99b477df$var$deltaE(color, prev.color), $2dca407f99b477df$var$deltaE(color, cur.color));
-                ret.splice(i, 0, {
-                    p: p,
-                    color: colorRange(p)
-                });
-                i++;
-            }
-        }
-    }
-    ret = ret.map((a)=>a.color);
-    return ret;
-}
-/**
- * Interpolate to color2 and return a function that takes a 0-1 percentage
- * @param {Color | string | Function} color1 The first color or an existing range
- * @param {Color | string} [color2] If color1 is a color, this is the second color
- * @param {Object} [options={}]
- * @returns {Function} A function that takes a 0-1 percentage and returns a color
- */ function $2dca407f99b477df$var$range(color1, color2, options = {}) {
-    if ($2dca407f99b477df$var$isRange(color1)) {
-        // Tweaking existing range
-        let [r, options] = [
-            color1,
-            color2
-        ];
-        return $2dca407f99b477df$var$range(...r.rangeArgs.colors, {
-            ...r.rangeArgs.options,
-            ...options
-        });
-    }
-    let { space: space, outputSpace: outputSpace, progression: progression, premultiplied: premultiplied } = options;
-    color1 = $2dca407f99b477df$var$getColor(color1);
-    color2 = $2dca407f99b477df$var$getColor(color2);
-    // Make sure we're working on copies of these colors
-    color1 = $2dca407f99b477df$var$clone(color1);
-    color2 = $2dca407f99b477df$var$clone(color2);
-    let rangeArgs = {
-        colors: [
-            color1,
-            color2
-        ],
-        options: options
-    };
-    if (space) space = $2dca407f99b477df$var$ColorSpace.get(space);
-    else space = $2dca407f99b477df$var$ColorSpace.registry[$2dca407f99b477df$var$defaults.interpolationSpace] || color1.space;
-    outputSpace = outputSpace ? $2dca407f99b477df$var$ColorSpace.get(outputSpace) : space;
-    color1 = $2dca407f99b477df$var$to(color1, space);
-    color2 = $2dca407f99b477df$var$to(color2, space);
-    // Gamut map to avoid areas of flat color
-    color1 = $2dca407f99b477df$var$toGamut(color1);
-    color2 = $2dca407f99b477df$var$toGamut(color2);
-    // Handle hue interpolation
-    // See https://github.com/w3c/csswg-drafts/issues/4735#issuecomment-635741840
-    if (space.coords.h && space.coords.h.type === "angle") {
-        let arc = options.hue = options.hue || "shorter";
-        let hue = [
-            space,
-            "h"
-        ];
-        let [θ1, θ2] = [
-            $2dca407f99b477df$var$get(color1, hue),
-            $2dca407f99b477df$var$get(color2, hue)
-        ];
-        [θ1, θ2] = $2dca407f99b477df$var$adjust(arc, [
-            θ1,
-            θ2
-        ]);
-        $2dca407f99b477df$var$set$1(color1, hue, θ1);
-        $2dca407f99b477df$var$set$1(color2, hue, θ2);
-    }
-    if (premultiplied) {
-        // not coping with polar spaces yet
-        color1.coords = color1.coords.map((c)=>c * color1.alpha);
-        color2.coords = color2.coords.map((c)=>c * color2.alpha);
-    }
-    return Object.assign((p)=>{
-        p = progression ? progression(p) : p;
-        let coords = color1.coords.map((start, i)=>{
-            let end = color2.coords[i];
-            return $2dca407f99b477df$var$interpolate(start, end, p);
-        });
-        let alpha = $2dca407f99b477df$var$interpolate(color1.alpha, color2.alpha, p);
-        let ret = {
-            space: space,
-            coords: coords,
-            alpha: alpha
-        };
-        if (premultiplied) // undo premultiplication
-        ret.coords = ret.coords.map((c)=>c / alpha);
-        if (outputSpace !== space) ret = $2dca407f99b477df$var$to(ret, outputSpace);
-        return ret;
-    }, {
-        rangeArgs: rangeArgs
-    });
-}
-function $2dca407f99b477df$var$isRange(val) {
-    return $2dca407f99b477df$var$type(val) === "function" && !!val.rangeArgs;
-}
-$2dca407f99b477df$var$defaults.interpolationSpace = "lab";
-function $2dca407f99b477df$var$register(Color) {
-    Color.defineFunction("mix", $2dca407f99b477df$var$mix, {
-        returns: "color"
-    });
-    Color.defineFunction("range", $2dca407f99b477df$var$range, {
-        returns: "function<color>"
-    });
-    Color.defineFunction("steps", $2dca407f99b477df$var$steps, {
-        returns: "array<color>"
-    });
-}
-var $2dca407f99b477df$var$interpolation = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    mix: $2dca407f99b477df$var$mix,
-    steps: $2dca407f99b477df$var$steps,
-    range: $2dca407f99b477df$var$range,
-    isRange: $2dca407f99b477df$var$isRange,
-    register: $2dca407f99b477df$var$register
-});
-var $2dca407f99b477df$var$HSL = new $2dca407f99b477df$var$ColorSpace({
-    id: "hsl",
-    name: "HSL",
-    coords: {
-        h: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        },
-        s: {
-            range: [
-                0,
-                100
-            ],
-            name: "Saturation"
-        },
-        l: {
-            range: [
-                0,
-                100
-            ],
-            name: "Lightness"
-        }
-    },
-    base: $2dca407f99b477df$var$sRGB,
-    // Adapted from https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
-    fromBase: (rgb)=>{
-        let max = Math.max(...rgb);
-        let min = Math.min(...rgb);
-        let [r, g, b] = rgb;
-        let [h, s, l] = [
-            NaN,
-            0,
-            (min + max) / 2
-        ];
-        let d = max - min;
-        if (d !== 0) {
-            s = l === 0 || l === 1 ? 0 : (max - l) / Math.min(l, 1 - l);
-            switch(max){
-                case r:
-                    h = (g - b) / d + (g < b ? 6 : 0);
-                    break;
-                case g:
-                    h = (b - r) / d + 2;
-                    break;
-                case b:
-                    h = (r - g) / d + 4;
-            }
-            h = h * 60;
-        }
-        return [
-            h,
-            s * 100,
-            l * 100
-        ];
-    },
-    // Adapted from https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
-    toBase: (hsl)=>{
-        let [h, s, l] = hsl;
-        h = h % 360;
-        if (h < 0) h += 360;
-        s /= 100;
-        l /= 100;
-        function f(n) {
-            let k = (n + h / 30) % 12;
-            let a = s * Math.min(l, 1 - l);
-            return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-        }
-        return [
-            f(0),
-            f(8),
-            f(4)
-        ];
-    },
-    formats: {
-        hsl: {
-            toGamut: true,
-            coords: [
-                "<number> | <angle>",
-                "<percentage>",
-                "<percentage>"
-            ]
-        },
-        hsla: {
-            coords: [
-                "<number> | <angle>",
-                "<percentage>",
-                "<percentage>"
-            ],
-            commas: true,
-            lastAlpha: true
-        }
-    }
-});
-// The Hue, Whiteness Blackness (HWB) colorspace
-// See https://drafts.csswg.org/css-color-4/#the-hwb-notation
-// Note that, like HSL, calculations are done directly on
-// gamma-corrected sRGB values rather than linearising them first.
-var $2dca407f99b477df$var$HSV = new $2dca407f99b477df$var$ColorSpace({
-    id: "hsv",
-    name: "HSV",
-    coords: {
-        h: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        },
-        s: {
-            range: [
-                0,
-                100
-            ],
-            name: "Saturation"
-        },
-        v: {
-            range: [
-                0,
-                100
-            ],
-            name: "Value"
-        }
-    },
-    base: $2dca407f99b477df$var$HSL,
-    // https://en.wikipedia.org/wiki/HSL_and_HSV#Interconversion
-    fromBase (hsl) {
-        let [h, s, l] = hsl;
-        s /= 100;
-        l /= 100;
-        let v = l + s * Math.min(l, 1 - l);
-        return [
-            h,
-            v === 0 ? 0 : 200 * (1 - l / v),
-            100 * v
-        ];
-    },
-    // https://en.wikipedia.org/wiki/HSL_and_HSV#Interconversion
-    toBase (hsv) {
-        let [h, s, v] = hsv;
-        s /= 100;
-        v /= 100;
-        let l = v * (1 - s / 2);
-        return [
-            h,
-            l === 0 || l === 1 ? 0 : (v - l) / Math.min(l, 1 - l) * 100,
-            l * 100
-        ];
-    },
-    formats: {
-        color: {
-            toGamut: true
-        }
-    }
-});
-// The Hue, Whiteness Blackness (HWB) colorspace
-// See https://drafts.csswg.org/css-color-4/#the-hwb-notation
-// Note that, like HSL, calculations are done directly on
-// gamma-corrected sRGB values rather than linearising them first.
-var $2dca407f99b477df$var$hwb = new $2dca407f99b477df$var$ColorSpace({
-    id: "hwb",
-    name: "HWB",
-    coords: {
-        h: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        },
-        w: {
-            range: [
-                0,
-                100
-            ],
-            name: "Whiteness"
-        },
-        b: {
-            range: [
-                0,
-                100
-            ],
-            name: "Blackness"
-        }
-    },
-    base: $2dca407f99b477df$var$HSV,
-    fromBase (hsv) {
-        let [h, s, v] = hsv;
-        return [
-            h,
-            v * (100 - s) / 100,
-            100 - v
-        ];
-    },
-    toBase (hwb) {
-        let [h, w, b] = hwb;
-        // Now convert percentages to [0..1]
-        w /= 100;
-        b /= 100;
-        // Achromatic check (white plus black >= 1)
-        let sum = w + b;
-        if (sum >= 1) {
-            let gray = w / sum;
-            return [
-                h,
-                0,
-                gray * 100
-            ];
-        }
-        let v = 1 - b;
-        let s = v === 0 ? 0 : 1 - w / v;
-        return [
-            h,
-            s * 100,
-            v * 100
-        ];
-    },
-    formats: {
-        hwb: {
-            toGamut: true,
-            coords: [
-                "<number> | <angle>",
-                "<percentage>",
-                "<percentage>"
-            ]
-        }
-    }
-});
-// convert an array of linear-light a98-rgb values to CIE XYZ
-// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-// has greater numerical precision than section 4.3.5.3 of
-// https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf
-// but the values below were calculated from first principles
-// from the chromaticity coordinates of R G B W
-const $2dca407f99b477df$var$toXYZ_M$2 = [
-    [
-        0.5766690429101305,
-        0.1855582379065463,
-        0.1882286462349947
-    ],
-    [
-        0.29734497525053605,
-        0.6273635662554661,
-        0.07529145849399788
-    ],
-    [
-        0.02703136138641234,
-        0.07068885253582723,
-        0.9913375368376388
-    ]
-];
-const $2dca407f99b477df$var$fromXYZ_M$2 = [
-    [
-        2.0415879038107465,
-        -0.5650069742788596,
-        -0.34473135077832956
-    ],
-    [
-        -0.9692436362808795,
-        1.8759675015077202,
-        0.04155505740717557
-    ],
-    [
-        0.013444280632031142,
-        -0.11836239223101838,
-        1.0151749943912054
-    ]
-];
-var $2dca407f99b477df$var$A98Linear = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "a98rgb-linear",
-    name: "Linear Adobe\xae 98 RGB compatible",
-    white: "D65",
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$2,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$2
-});
-var $2dca407f99b477df$var$a98rgb = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "a98rgb",
-    name: "Adobe\xae 98 RGB compatible",
-    base: $2dca407f99b477df$var$A98Linear,
-    toBase: (RGB)=>RGB.map((val)=>Math.pow(Math.abs(val), 563 / 256) * Math.sign(val)),
-    fromBase: (RGB)=>RGB.map((val)=>Math.pow(Math.abs(val), 256 / 563) * Math.sign(val)),
-    formats: {
-        color: {
-            id: "a98-rgb"
-        }
-    }
-});
-// convert an array of  prophoto-rgb values to CIE XYZ
-// using  D50 (so no chromatic adaptation needed afterwards)
-// http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-const $2dca407f99b477df$var$toXYZ_M$1 = [
-    [
-        0.7977604896723027,
-        0.13518583717574031,
-        0.0313493495815248
-    ],
-    [
-        0.2880711282292934,
-        0.7118432178101014,
-        0.00008565396060525902
-    ],
-    [
-        0.0,
-        0.0,
-        0.8251046025104601
-    ]
-];
-const $2dca407f99b477df$var$fromXYZ_M$1 = [
-    [
-        1.3457989731028281,
-        -0.25558010007997534,
-        -0.05110628506753401
-    ],
-    [
-        -0.5446224939028347,
-        1.5082327413132781,
-        0.02053603239147973
-    ],
-    [
-        0.0,
-        0.0,
-        1.2119675456389454
-    ]
-];
-var $2dca407f99b477df$var$ProPhotoLinear = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "prophoto-linear",
-    name: "Linear ProPhoto",
-    white: "D50",
-    base: $2dca407f99b477df$var$XYZ_D50,
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M$1,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M$1
-});
-const $2dca407f99b477df$var$Et = 1 / 512;
-const $2dca407f99b477df$var$Et2 = 16 / 512;
-var $2dca407f99b477df$var$prophoto = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "prophoto",
-    name: "ProPhoto",
-    base: $2dca407f99b477df$var$ProPhotoLinear,
-    toBase (RGB) {
-        // Transfer curve is gamma 1.8 with a small linear portion
-        return RGB.map((v)=>v < $2dca407f99b477df$var$Et2 ? v / 16 : v ** 1.8);
-    },
-    fromBase (RGB) {
-        return RGB.map((v)=>v >= $2dca407f99b477df$var$Et ? v ** (1 / 1.8) : 16 * v);
-    },
-    formats: {
-        color: {
-            id: "prophoto-rgb"
-        }
-    }
-});
-var $2dca407f99b477df$var$oklch = new $2dca407f99b477df$var$ColorSpace({
-    id: "oklch",
-    name: "OKLCh",
-    coords: {
-        l: {
-            refRange: [
-                0,
-                1
-            ],
-            name: "Lightness"
-        },
-        c: {
-            refRange: [
-                0,
-                0.4
-            ],
-            name: "Chroma"
-        },
-        h: {
-            refRange: [
-                0,
-                360
-            ],
-            type: "angle",
-            name: "Hue"
-        }
-    },
-    white: "D65",
-    base: $2dca407f99b477df$var$OKLab,
-    fromBase (oklab) {
-        // Convert to polar form
-        let [L, a, b] = oklab;
-        let h;
-        const ε = 0.0002; // chromatic components much smaller than a,b
-        if (Math.abs(a) < ε && Math.abs(b) < ε) h = NaN;
-        else h = Math.atan2(b, a) * 180 / Math.PI;
-        return [
-            L,
-            Math.sqrt(a ** 2 + b ** 2),
-            $2dca407f99b477df$var$constrain(h)
-        ];
-    },
-    // Convert from polar form
-    toBase (oklch) {
-        let [L, C, h] = oklch;
-        let a, b;
-        // check for NaN hue
-        if (isNaN(h)) {
-            a = 0;
-            b = 0;
-        } else {
-            a = C * Math.cos(h * Math.PI / 180);
-            b = C * Math.sin(h * Math.PI / 180);
-        }
-        return [
-            L,
-            a,
-            b
-        ];
-    },
-    formats: {
-        oklch: {
-            coords: [
-                "<percentage>",
-                "<number>",
-                "<number> | <angle>"
-            ]
-        }
-    }
-});
-const $2dca407f99b477df$var$Yw = 203; // absolute luminance of media white, cd/m²
-const $2dca407f99b477df$var$n = 2610 / 2 ** 14;
-const $2dca407f99b477df$var$ninv = 2 ** 14 / 2610;
-const $2dca407f99b477df$var$m = 78.84375;
-const $2dca407f99b477df$var$minv = 32 / 2523;
-const $2dca407f99b477df$var$c1 = 0.8359375;
-const $2dca407f99b477df$var$c2 = 18.8515625;
-const $2dca407f99b477df$var$c3 = 18.6875;
-var $2dca407f99b477df$var$rec2100Pq = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "rec2100pq",
-    name: "REC.2100-PQ",
-    base: $2dca407f99b477df$var$REC2020Linear,
-    toBase (RGB) {
-        // given PQ encoded component in range [0, 1]
-        // return media-white relative linear-light
-        return RGB.map(function(val) {
-            let x = (Math.max(val ** $2dca407f99b477df$var$minv - $2dca407f99b477df$var$c1, 0) / ($2dca407f99b477df$var$c2 - $2dca407f99b477df$var$c3 * val ** $2dca407f99b477df$var$minv)) ** $2dca407f99b477df$var$ninv;
-            return x * 10000 / $2dca407f99b477df$var$Yw; // luminance relative to diffuse white, [0, 70 or so].
-        });
-    },
-    fromBase (RGB) {
-        // given media-white relative linear-light
-        // returnPQ encoded component in range [0, 1]
-        return RGB.map(function(val) {
-            let x = Math.max(val * $2dca407f99b477df$var$Yw / 10000, 0); // absolute luminance of peak white is 10,000 cd/m².
-            let num = $2dca407f99b477df$var$c1 + $2dca407f99b477df$var$c2 * x ** $2dca407f99b477df$var$n;
-            let denom = 1 + $2dca407f99b477df$var$c3 * x ** $2dca407f99b477df$var$n;
-            return (num / denom) ** $2dca407f99b477df$var$m;
-        });
-    },
-    formats: {
-        color: {
-            id: "rec2100-pq"
-        }
-    }
-});
-// FIXME see https://github.com/LeaVerou/color.js/issues/190
-const $2dca407f99b477df$var$a = 0.17883277;
-const $2dca407f99b477df$var$b = 0.28466892; // 1 - (4 * a)
-const $2dca407f99b477df$var$c = 0.55991073; // 0.5 - a * Math.log(4 *a)
-var $2dca407f99b477df$var$rec2100Hlg = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "rec2100hlg",
-    cssid: "rec2100-hlg",
-    name: "REC.2100-HLG",
-    referred: "scene",
-    base: $2dca407f99b477df$var$REC2020Linear,
-    toBase (RGB) {
-        // given HLG encoded component in range [0, 1]
-        // return media-white relative linear-light
-        return RGB.map(function(val) {
-            if (val <= 1 / 12) return Math.sqrt(3 * val);
-            return $2dca407f99b477df$var$a * Math.log(12 * val - $2dca407f99b477df$var$b) + $2dca407f99b477df$var$c;
-        });
-    },
-    fromBase (RGB) {
-        // given media-white relative linear-light
-        // return HLG encoded component in range [0, 1]
-        // per ITU Rec BT.2390
-        return RGB.map(function(val) {
-            if (val <= 0.5) return val ** 2 / 3;
-            return Math.exp((val - $2dca407f99b477df$var$c) / $2dca407f99b477df$var$a + $2dca407f99b477df$var$b) / 12;
-        });
-    },
-    formats: {
-        color: {
-            id: "rec2100-hlg"
-        }
-    }
-});
-const $2dca407f99b477df$var$CATs = {};
-$2dca407f99b477df$var$hooks.add("chromatic-adaptation-start", (env)=>{
-    if (env.options.method) env.M = $2dca407f99b477df$var$adapt(env.W1, env.W2, env.options.method);
-});
-$2dca407f99b477df$var$hooks.add("chromatic-adaptation-end", (env)=>{
-    if (!env.M) env.M = $2dca407f99b477df$var$adapt(env.W1, env.W2, env.options.method);
-});
-function $2dca407f99b477df$var$defineCAT({ id: id, toCone_M: toCone_M, fromCone_M: fromCone_M }) {
-    // Use id, toCone_M, fromCone_M like variables
-    $2dca407f99b477df$var$CATs[id] = arguments[0];
-}
-function $2dca407f99b477df$var$adapt(W1, W2, id = "Bradford") {
-    // adapt from a source whitepoint or illuminant W1
-    // to a destination whitepoint or illuminant W2,
-    // using the given chromatic adaptation transform (CAT)
-    // debugger;
-    let method = $2dca407f99b477df$var$CATs[id];
-    let [ρs, γs, βs] = $2dca407f99b477df$var$multiplyMatrices(method.toCone_M, W1);
-    let [ρd, γd, βd] = $2dca407f99b477df$var$multiplyMatrices(method.toCone_M, W2);
-    // all practical illuminants have non-zero XYZ so no division by zero can occur below
-    let scale = [
-        [
-            ρd / ρs,
-            0,
-            0
-        ],
-        [
-            0,
-            γd / γs,
-            0
-        ],
-        [
-            0,
-            0,
-            βd / βs
-        ]
-    ];
-    let scaled_cone_M = $2dca407f99b477df$var$multiplyMatrices(scale, method.toCone_M);
-    let adapt_M = $2dca407f99b477df$var$multiplyMatrices(method.fromCone_M, scaled_cone_M);
-    return adapt_M;
-}
-$2dca407f99b477df$var$defineCAT({
-    id: "von Kries",
-    toCone_M: [
-        [
-            0.40024,
-            0.7076,
-            -0.08081
-        ],
-        [
-            -0.2263,
-            1.16532,
-            0.0457
-        ],
-        [
-            0.0,
-            0.0,
-            0.91822
-        ]
-    ],
-    fromCone_M: [
-        [
-            1.8599364,
-            -1.1293816,
-            0.2198974
-        ],
-        [
-            0.3611914,
-            0.6388125,
-            -0.0000064
-        ],
-        [
-            0.0,
-            0.0,
-            1.0890636
-        ]
-    ]
-});
-$2dca407f99b477df$var$defineCAT({
-    id: "Bradford",
-    // Convert an array of XYZ values in the range 0.0 - 1.0
-    // to cone fundamentals
-    toCone_M: [
-        [
-            0.8951,
-            0.2664,
-            -0.1614
-        ],
-        [
-            -0.7502,
-            1.7135,
-            0.0367
-        ],
-        [
-            0.0389,
-            -0.0685,
-            1.0296
-        ]
-    ],
-    // and back
-    fromCone_M: [
-        [
-            0.9869929,
-            -0.1470543,
-            0.1599627
-        ],
-        [
-            0.4323053,
-            0.5183603,
-            0.0492912
-        ],
-        [
-            -0.0085287,
-            0.0400428,
-            0.9684867
-        ]
-    ]
-});
-$2dca407f99b477df$var$defineCAT({
-    id: "CAT02",
-    // with complete chromatic adaptation to W2, so D = 1.0
-    toCone_M: [
-        [
-            0.7328,
-            0.4296,
-            -0.1624
-        ],
-        [
-            -0.7036,
-            1.6975,
-            0.0061
-        ],
-        [
-            0.003,
-            0.0136,
-            0.9834
-        ]
-    ],
-    fromCone_M: [
-        [
-            1.0961238,
-            -0.278869,
-            0.1827452
-        ],
-        [
-            0.454369,
-            0.4735332,
-            0.0720978
-        ],
-        [
-            -0.0096276,
-            -0.005698,
-            1.0153256
-        ]
-    ]
-});
-$2dca407f99b477df$var$defineCAT({
-    id: "CAT16",
-    toCone_M: [
-        [
-            0.401288,
-            0.650173,
-            -0.051461
-        ],
-        [
-            -0.250268,
-            1.204414,
-            0.045854
-        ],
-        [
-            -0.002079,
-            0.048952,
-            0.953127
-        ]
-    ],
-    // the extra precision is needed to avoid roundtripping errors
-    fromCone_M: [
-        [
-            1.862067855087233,
-            -1.011254630531685,
-            1.491867754444518e-1
-        ],
-        [
-            3.875265432361372e-1,
-            6.214474419314753e-1,
-            -0.008973985167612518
-        ],
-        [
-            -0.01584149884933386,
-            -0.03412293802851557,
-            1.04996443687785
-        ]
-    ]
-});
-Object.assign($2dca407f99b477df$var$WHITES, {
-    // whitepoint values from ASTM E308-01 with 10nm spacing, 1931 2 degree observer
-    // all normalized to Y (luminance) = 1.00000
-    // Illuminant A is a tungsten electric light, giving a very warm, orange light.
-    A: [
-        1.0985,
-        1.0,
-        0.35585
-    ],
-    // Illuminant C was an early approximation to daylight: illuminant A with a blue filter.
-    C: [
-        0.98074,
-        1.0,
-        1.18232
-    ],
-    // The daylight series of illuminants simulate natural daylight.
-    // The color temperature (in degrees Kelvin/100) ranges from
-    // cool, overcast daylight (D50) to bright, direct sunlight (D65).
-    D55: [
-        0.95682,
-        1.0,
-        0.92149
-    ],
-    D75: [
-        0.94972,
-        1.0,
-        1.22638
-    ],
-    // Equal-energy illuminant, used in two-stage CAT16
-    E: [
-        1.0,
-        1.0,
-        1.0
-    ],
-    // The F series of illuminants represent fluorescent lights
-    F2: [
-        0.99186,
-        1.0,
-        0.67393
-    ],
-    F7: [
-        0.95041,
-        1.0,
-        1.08747
-    ],
-    F11: [
-        1.00962,
-        1.0,
-        0.6435
-    ]
-});
-// The ACES whitepoint
-// see TB-2018-001 Derivation of the ACES White Point CIE Chromaticity Coordinates
-// also https://github.com/ampas/aces-dev/blob/master/documents/python/TB-2018-001/aces_wp.py
-// Similar to D60
-$2dca407f99b477df$var$WHITES.ACES = [
-    0.32168 / 0.33767,
-    1.0,
-    1.0088251843515859
-];
-// convert an array of linear-light ACEScc values to CIE XYZ
-const $2dca407f99b477df$var$toXYZ_M = [
-    [
-        0.6624541811085053,
-        0.13400420645643313,
-        0.1561876870049078
-    ],
-    [
-        0.27222871678091454,
-        0.6740817658111484,
-        0.05368951740793705
-    ],
-    [
-        -0.005574649490394108,
-        0.004060733528982826,
-        1.0103391003129971
-    ]
-];
-const $2dca407f99b477df$var$fromXYZ_M = [
-    [
-        1.6410233796943257,
-        -0.32480329418479,
-        -0.23642469523761225
-    ],
-    [
-        -0.6636628587229829,
-        1.6153315916573379,
-        0.016756347685530137
-    ],
-    [
-        0.011721894328375376,
-        -0.008284441996237409,
-        0.9883948585390215
-    ]
-];
-var $2dca407f99b477df$var$ACEScg = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "acescg",
-    name: "ACEScg",
-    // ACEScg – A scene-referred, linear-light encoding of ACES Data
-    // https://docs.acescentral.com/specifications/acescg/
-    // uses the AP1 primaries, see section 4.3.1 Color primaries
-    coords: {
-        r: {
-            range: [
-                0,
-                65504
-            ],
-            name: "Red"
-        },
-        g: {
-            range: [
-                0,
-                65504
-            ],
-            name: "Green"
-        },
-        b: {
-            range: [
-                0,
-                65504
-            ],
-            name: "Blue"
-        }
-    },
-    referred: "scene",
-    white: $2dca407f99b477df$var$WHITES.ACES,
-    toXYZ_M: $2dca407f99b477df$var$toXYZ_M,
-    fromXYZ_M: $2dca407f99b477df$var$fromXYZ_M,
-    formats: {
-        color: {}
-    }
-});
-// export default Color;
-const $2dca407f99b477df$var$ε = 2 ** -16;
-// the smallest value which, in the 32bit IEEE 754 float encoding,
-// decodes as a non-negative value
-const $2dca407f99b477df$var$ACES_min_nonzero = -0.35828683;
-// brightest encoded value, decodes to 65504
-const $2dca407f99b477df$var$ACES_cc_max = (Math.log2(65504) + 9.72) / 17.52; // 1.468
-var $2dca407f99b477df$var$acescc = new $2dca407f99b477df$var$RGBColorSpace({
-    id: "acescc",
-    name: "ACEScc",
-    // see S-2014-003 ACEScc – A Logarithmic Encoding of ACES Data
-    // https://docs.acescentral.com/specifications/acescc/
-    // uses the AP1 primaries, see section 4.3.1 Color primaries
-    // Appendix A: "Very small ACES scene referred values below 7 1/4 stops
-    // below 18% middle gray are encoded as negative ACEScc values.
-    // These values should be preserved per the encoding in Section 4.4
-    // so that all positive ACES values are maintained."
-    coords: {
-        r: {
-            range: [
-                $2dca407f99b477df$var$ACES_min_nonzero,
-                $2dca407f99b477df$var$ACES_cc_max
-            ],
-            name: "Red"
-        },
-        g: {
-            range: [
-                $2dca407f99b477df$var$ACES_min_nonzero,
-                $2dca407f99b477df$var$ACES_cc_max
-            ],
-            name: "Green"
-        },
-        b: {
-            range: [
-                $2dca407f99b477df$var$ACES_min_nonzero,
-                $2dca407f99b477df$var$ACES_cc_max
-            ],
-            name: "Blue"
-        }
-    },
-    referred: "scene",
-    base: $2dca407f99b477df$var$ACEScg,
-    // from section 4.4.2 Decoding Function
-    toBase (RGB) {
-        const low = (9.72 - 15) / 17.52; // -0.3014
-        return RGB.map(function(val) {
-            if (val <= low) return (2 ** (val * 17.52 - 9.72) - $2dca407f99b477df$var$ε) * 2; // very low values, below -0.3014
-            else if (val < $2dca407f99b477df$var$ACES_cc_max) return 2 ** (val * 17.52 - 9.72);
-            else // val >= ACES_cc_max
-            return 65504;
-        });
-    },
-    // Non-linear encoding function from S-2014-003, section 4.4.1 Encoding Function
-    fromBase (RGB) {
-        return RGB.map(function(val) {
-            if (val <= 0) return (Math.log2($2dca407f99b477df$var$ε) + 9.72) / 17.52; // -0.3584
-            else if (val < $2dca407f99b477df$var$ε) return (Math.log2($2dca407f99b477df$var$ε + val * 0.5) + 9.72) / 17.52;
-            else // val >= ε
-            return (Math.log2(val) + 9.72) / 17.52;
-        });
-    },
-    // encoded media white (rgb 1,1,1) => linear  [ 222.861, 222.861, 222.861 ]
-    // encoded media black (rgb 0,0,0) => linear [ 0.0011857, 0.0011857, 0.0011857]
-    formats: {
-        color: {}
-    }
-});
-var $2dca407f99b477df$var$spaces = /*#__PURE__*/ Object.freeze({
-    __proto__: null,
-    XYZ_D65: $2dca407f99b477df$var$XYZ_D65,
-    XYZ_D50: $2dca407f99b477df$var$XYZ_D50,
-    XYZ_ABS_D65: $2dca407f99b477df$var$XYZ_Abs_D65,
-    Lab_D65: $2dca407f99b477df$var$lab_d65,
-    Lab: $2dca407f99b477df$var$lab,
-    LCH: $2dca407f99b477df$var$lch,
-    sRGB_Linear: $2dca407f99b477df$var$sRGBLinear,
-    sRGB: $2dca407f99b477df$var$sRGB,
-    HSL: $2dca407f99b477df$var$HSL,
-    HWB: $2dca407f99b477df$var$hwb,
-    HSV: $2dca407f99b477df$var$HSV,
-    P3_Linear: $2dca407f99b477df$var$P3Linear,
-    P3: $2dca407f99b477df$var$P3,
-    A98RGB_Linear: $2dca407f99b477df$var$A98Linear,
-    A98RGB: $2dca407f99b477df$var$a98rgb,
-    ProPhoto_Linear: $2dca407f99b477df$var$ProPhotoLinear,
-    ProPhoto: $2dca407f99b477df$var$prophoto,
-    REC_2020_Linear: $2dca407f99b477df$var$REC2020Linear,
-    REC_2020: $2dca407f99b477df$var$REC2020,
-    OKLab: $2dca407f99b477df$var$OKLab,
-    OKLCH: $2dca407f99b477df$var$oklch,
-    Jzazbz: $2dca407f99b477df$var$Jzazbz,
-    JzCzHz: $2dca407f99b477df$var$jzczhz,
-    ICTCP: $2dca407f99b477df$var$ictcp,
-    REC_2100_PQ: $2dca407f99b477df$var$rec2100Pq,
-    REC_2100_HLG: $2dca407f99b477df$var$rec2100Hlg,
-    ACEScg: $2dca407f99b477df$var$ACEScg,
-    ACEScc: $2dca407f99b477df$var$acescc
-});
-/**
- * Class that represents a color
- */ class $2dca407f99b477df$export$2e2bcd8739ae039 {
-    /**
-   * Creates an instance of Color.
-   * Signatures:
-   * - `new Color(stringToParse)`
-   * - `new Color(otherColor)`
-   * - `new Color({space, coords, alpha})`
-   * - `new Color(space, coords, alpha)`
-   * - `new Color(spaceId, coords, alpha)`
-   */ constructor(...args){
-        let color;
-        if (args.length === 1) color = $2dca407f99b477df$var$getColor(args[0]);
-        let space, coords, alpha;
-        if (color) {
-            space = color.space || color.spaceId;
-            coords = color.coords;
-            alpha = color.alpha;
-        } else // default signature new Color(ColorSpace, array [, alpha])
-        [space, coords, alpha] = args;
-        this.#space = $2dca407f99b477df$var$ColorSpace.get(space);
-        this.coords = coords ? coords.slice() : [
-            0,
-            0,
-            0
-        ];
-        this.alpha = alpha < 1 ? alpha : 1; // this also deals with NaN etc
-        // Convert "NaN" to NaN
-        for(let i = 0; i < this.coords.length; i++)if (this.coords[i] === "NaN") this.coords[i] = NaN;
-        // Define getters and setters for each coordinate
-        for(let id in this.#space.coords)Object.defineProperty(this, id, {
-            get: ()=>this.get(id),
-            set: (value1)=>this.set(id, value1)
-        });
-    }
-    #space;
-    get space() {
-        return this.#space;
-    }
-    get spaceId() {
-        return this.#space.id;
-    }
-    clone() {
-        return new $2dca407f99b477df$export$2e2bcd8739ae039(this.space, this.coords, this.alpha);
-    }
-    toJSON() {
-        return {
-            spaceId: this.spaceId,
-            coords: this.coords,
-            alpha: this.alpha
-        };
-    }
-    display(...args) {
-        let ret = $2dca407f99b477df$var$display(this, ...args);
-        // Convert color object to Color instance
-        ret.color = new $2dca407f99b477df$export$2e2bcd8739ae039(ret.color);
-        return ret;
-    }
-    /**
-   * Get a color from the argument passed
-   * Basically gets us the same result as new Color(color) but doesn't clone an existing color object
-   */ static get(color, ...args) {
-        if (color instanceof $2dca407f99b477df$export$2e2bcd8739ae039) return color;
-        return new $2dca407f99b477df$export$2e2bcd8739ae039(color, ...args);
-    }
-    static defineFunction(name, code, o = code) {
-        if (arguments.length === 1) [name, code, o] = [
-            arguments[0].name,
-            arguments[0],
-            arguments[0]
-        ];
-        let { instance: instance = true, returns: returns } = o;
-        let func = function(...args) {
-            let ret = code(...args);
-            if (returns === "color") ret = $2dca407f99b477df$export$2e2bcd8739ae039.get(ret);
-            else if (returns === "function<color>") {
-                let f = ret;
-                ret = function(...args) {
-                    let ret = f(...args);
-                    return $2dca407f99b477df$export$2e2bcd8739ae039.get(ret);
-                };
-                // Copy any function metadata
-                Object.assign(ret, f);
-            } else if (returns === "array<color>") ret = ret.map((c)=>$2dca407f99b477df$export$2e2bcd8739ae039.get(c));
-            return ret;
-        };
-        if (!(name in $2dca407f99b477df$export$2e2bcd8739ae039)) $2dca407f99b477df$export$2e2bcd8739ae039[name] = func;
-        if (instance) $2dca407f99b477df$export$2e2bcd8739ae039.prototype[name] = function(...args) {
-            return func(this, ...args);
-        };
-    }
-    static defineFunctions(o) {
-        for(let name in o)$2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(name, o[name], o[name]);
-    }
-    static extend(exports) {
-        if (exports.register) exports.register($2dca407f99b477df$export$2e2bcd8739ae039);
-        else if (exports.default) $2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(exports.default.name, exports.default);
-        else if (typeof exports === "function") $2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(exports);
-        else // No register method, just add the module's functions
-        for(let name in exports)$2dca407f99b477df$export$2e2bcd8739ae039.defineFunction(name, exports[name]);
-    }
-}
-$2dca407f99b477df$export$2e2bcd8739ae039.defineFunctions({
-    get: $2dca407f99b477df$var$get,
-    getAll: $2dca407f99b477df$var$getAll,
-    set: $2dca407f99b477df$var$set$1,
-    setAll: $2dca407f99b477df$var$setAll,
-    to: $2dca407f99b477df$var$to,
-    equals: $2dca407f99b477df$var$equals,
-    inGamut: $2dca407f99b477df$var$inGamut,
-    toGamut: $2dca407f99b477df$var$toGamut,
-    distance: $2dca407f99b477df$var$distance,
-    toString: $2dca407f99b477df$var$serialize
-});
-Object.assign($2dca407f99b477df$export$2e2bcd8739ae039, {
-    util: $2dca407f99b477df$var$util,
-    hooks: $2dca407f99b477df$var$hooks,
-    WHITES: $2dca407f99b477df$var$WHITES,
-    Space: $2dca407f99b477df$var$ColorSpace,
-    spaces: $2dca407f99b477df$var$ColorSpace.registry,
-    parse: $2dca407f99b477df$var$parse,
-    defaults: // Global defaults one may want to configure
-    $2dca407f99b477df$var$defaults
-});
-for (let key of Object.keys($2dca407f99b477df$var$spaces))$2dca407f99b477df$var$ColorSpace.register($2dca407f99b477df$var$spaces[key]);
-/**
- * This plugin defines getters and setters for color[spaceId]
- * e.g. color.lch on *any* color gives us the lch coords
- */ // Add space accessors to existing color spaces
-for(let id in $2dca407f99b477df$var$ColorSpace.registry)$2dca407f99b477df$var$addSpaceAccessors(id, $2dca407f99b477df$var$ColorSpace.registry[id]);
-// Add space accessors to color spaces not yet created
-$2dca407f99b477df$var$hooks.add("colorspace-init-end", $2dca407f99b477df$var$addSpaceAccessors);
-function $2dca407f99b477df$var$addSpaceAccessors(id, space) {
-    // Coordinates can be looked up by both id and name
-    Object.keys(space.coords);
-    Object.values(space.coords).map((c)=>c.name);
-    let propId = id.replace(/-/g, "_");
-    Object.defineProperty($2dca407f99b477df$export$2e2bcd8739ae039.prototype, propId, {
-        // Convert coords to coords in another colorspace and return them
-        // Source colorspace: this.spaceId
-        // Target colorspace: id
-        get () {
-            let ret = this.getAll(id);
-            if (typeof Proxy === "undefined") // If proxies are not supported, just return a static array
-            return ret;
-            // Enable color.spaceId.coordName syntax
-            return new Proxy(ret, {
-                has: (obj, property)=>{
-                    try {
-                        $2dca407f99b477df$var$ColorSpace.resolveCoord([
-                            space,
-                            property
-                        ]);
-                        return true;
-                    } catch (e) {}
-                    return Reflect.has(obj, property);
-                },
-                get: (obj, property, receiver)=>{
-                    if (property && typeof property !== "symbol" && !(property in obj)) {
-                        let { index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord([
-                            space,
-                            property
-                        ]);
-                        if (index >= 0) return obj[index];
-                    }
-                    return Reflect.get(obj, property, receiver);
-                },
-                set: (obj, property, value1, receiver)=>{
-                    if (property && typeof property !== "symbol" && !(property in obj) || property >= 0) {
-                        let { index: index } = $2dca407f99b477df$var$ColorSpace.resolveCoord([
-                            space,
-                            property
-                        ]);
-                        if (index >= 0) {
-                            obj[index] = value1;
-                            // Update color.coords
-                            this.setAll(id, obj);
-                            return true;
-                        }
-                    }
-                    return Reflect.set(obj, property, value1, receiver);
-                }
-            });
-        },
-        // Convert coords in another colorspace to internal coords and set them
-        // Target colorspace: this.spaceId
-        // Source colorspace: id
-        set (coords) {
-            this.setAll(id, coords);
-        },
-        configurable: true,
-        enumerable: true
-    });
-}
-// Import all modules of Color.js
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$deltaEMethods);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$deltaE$1);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$variations);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$contrast);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$chromaticity);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$luminance);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$interpolation);
-$2dca407f99b477df$export$2e2bcd8739ae039.extend($2dca407f99b477df$var$contrastMethods);
 
 
 
-function $3180f13c9e24a345$export$a33d8ee3eb2c1a9b(control) {
-    const formGroup = control.closest(".form-group");
-    formGroup.find(".mass-edit-checkbox input").prop("checked", true).trigger("change");
-    formGroup.find(".mass-edit-randomize").addClass("active");
-}
-function $3180f13c9e24a345$export$6d9a46257e99a3f6(control, configApp) {
-    const formGroup = control.closest(".form-group");
-    let allRandomizedRemoved = true;
-    if (configApp) formGroup.find("[name]").each(function() {
-        if (allRandomizedRemoved) allRandomizedRemoved = !Boolean(configApp.randomizeFields[this.name]);
-    });
-    if (allRandomizedRemoved) {
-        formGroup.find(".mass-edit-checkbox input").prop("checked", false).trigger("change");
-        formGroup.find(".mass-edit-randomize").removeClass("active");
-    }
-}
-function $3180f13c9e24a345$export$2ee69c6850ef1bab(form, fields) {
-    if (!fields) return;
-    for (const key of Object.keys(fields))$3180f13c9e24a345$export$a33d8ee3eb2c1a9b(form.find(`[name="${key}"]`));
-}
-async function $3180f13c9e24a345$export$4bafa436c0fa0cbb(updates, objects, randomizeFields) {
-    // See if any field is to be randomized
-    if (!randomizeFields || foundry.utils.isEmpty(randomizeFields)) return;
-    let requiresCoordRandomization = false;
-    for(let i = 0; i < updates.length; i++){
-        const update = updates[i];
-        for (const field of Object.keys(update))if (field in randomizeFields) {
-            const obj = randomizeFields[field];
-            if (obj.type === "select") update[field] = obj.selection[Math.floor(Math.random() * obj.selection.length)];
-            else if (obj.type === "number") {
-                if (obj.step === "any") obj.step = 1; // default to integer 1 just to avoid very large decimals
-                else obj.step = Number(obj.step);
-                if (obj.method === "interpolate") {
-                    const stepsInRange = (obj.max - obj.min) / obj.step + 1;
-                    update[field] = i % stepsInRange * obj.step + obj.min;
-                } else if (obj.method === "interpolateReverse") {
-                    const stepsInRange = (obj.max - obj.min) / obj.step;
-                    update[field] = (stepsInRange - i % (stepsInRange + 1)) * obj.step + obj.min;
-                } else {
-                    const stepsInRange = (obj.max - obj.min + (Number.isInteger(obj.step) ? 1 : 0)) / obj.step;
-                    update[field] = Math.floor(Math.random() * stepsInRange) * obj.step + obj.min;
-                }
-            } else if (obj.type === "boolean") update[field] = Math.random() < 0.5;
-            else if (obj.type === "color") {
-                // Convert to new format if needed
-                if (obj.color1) obj.colors = [
-                    {
-                        hex: obj.color1,
-                        offset: 0
-                    },
-                    {
-                        hex: obj.color2,
-                        offset: 100
-                    }
-                ];
-                // If space is discrete we simple choose a color, no blending required
-                if (obj.space === "discrete") {
-                    if (obj.method === "interpolate") update[field] = obj.colors[i % obj.colors.length].hex;
-                    else if (obj.method === "interpolateReverse") update[field] = obj.colors[obj.colors.length - 1 - i % obj.colors.length].hex;
-                    else update[field] = obj.colors[Math.floor(Math.random() * obj.colors.length)].hex;
-                    continue;
-                }
-                let colors = obj.colors.map((c)=>c);
-                if (colors[0].offset > 0) colors.unshift({
-                    hex: colors[0].hex,
-                    offset: 0
-                });
-                if (colors[colors.length - 1].offset < 100) colors.push({
-                    hex: colors[colors.length - 1].hex,
-                    offset: 100
-                });
-                // Calculate random offset
-                let rOffset;
-                if (obj.method === "interpolate") rOffset = 1 - (i + 1) / updates.length;
-                else if (obj.method === "interpolateReverse") rOffset = (i + 1) / updates.length;
-                else rOffset = Math.random();
-                rOffset *= 100;
-                // Find the two colors the random offset falls between
-                let j = 0;
-                while(j < colors.length - 1 && colors[j + 1].offset < rOffset)j++;
-                let color1, color2;
-                if (j === colors.length - 1) {
-                    color1 = colors[j - 1];
-                    color2 = colors[j];
-                } else {
-                    color1 = colors[j];
-                    color2 = colors[j + 1];
-                }
-                // Normalize the random offset
-                let rnOffset = rOffset - color1.offset;
-                rnOffset = rnOffset / (color2.offset - color1.offset);
-                // Create a Color.js range
-                color1 = new (0, $2dca407f99b477df$export$2e2bcd8739ae039)(color1.hex);
-                color2 = new (0, $2dca407f99b477df$export$2e2bcd8739ae039)(color2.hex);
-                const space = obj.space || "srgb";
-                const hue = obj.hue || "shorter";
-                let range = color1.range(color2, {
-                    space: space,
-                    hue: hue,
-                    outputSpace: "srgb"
-                });
-                // Pick a color from range using normalized random offset
-                let rgb3 = range(rnOffset);
-                let hexColor = rgb3.toString({
-                    format: "hex"
-                });
-                if (hexColor.length < 7) // 3 char hex, duplicate chars
-                hexColor = "#" + hexColor[1] + hexColor[1] + hexColor[2] + hexColor[2] + hexColor[3] + hexColor[3];
-                update[field] = hexColor;
-            } else if (obj.type === "image") {
-                if (obj.method === "sequential") update[field] = obj.images[i % obj.images.length];
-                else update[field] = obj.images[Math.floor(Math.random() * obj.images.length)];
-                if (obj.maintainAspect) {
-                    const width = objects?.[i]?.width ?? update.width;
-                    const height = objects?.[i]?.height ?? update.height;
-                    if (height != null && width != null) try {
-                        const tex = await loadTexture(update[field]);
-                        if (tex) {
-                            const tileRatio = width / height;
-                            const texRatio = tex.width / tex.height;
-                            if (texRatio !== tileRatio) {
-                                if (texRatio > tileRatio) {
-                                    update["texture.scaleX"] = 1;
-                                    update["texture.scaleY"] = tileRatio;
-                                } else {
-                                    update["texture.scaleX"] = height / width;
-                                    update["texture.scaleY"] = 1;
-                                }
-                            }
-                        }
-                    } catch (e) {}
-                }
-            } else if (obj.type === "text") {
-                if (obj.method === "findAndReplace" || obj.method === "findAndReplaceRegex") {
-                    if (objects) {
-                        const data = foundry.utils.flattenObject((0, $32e43d7a62aba58c$export$7a171f172be0782e)(objects[i]).toObject());
-                        if (!data[field] && !obj.find) update[field] = obj.replace;
-                        else if (data[field]) {
-                            // special handling for Tagger tags
-                            if (field === "flags.tagger.tags") data[field] = data[field].join(",");
-                            if (obj.method === "findAndReplaceRegex") update[field] = (0, $32e43d7a62aba58c$export$aef0873d63458016)(obj.find, obj.replace, data[field]);
-                            else update[field] = (0, $32e43d7a62aba58c$export$79d744e95e10dc09)(obj.find, obj.replace, data[field]);
-                        }
-                    }
-                } else if (obj.method === "unique") {
-                    if (!obj.shuffled) {
-                        $3180f13c9e24a345$var$shuffleArray(obj.strings);
-                        obj.shuffled = true;
-                        obj.i = -1;
-                    }
-                    obj.i++;
-                    update[field] = obj.strings[obj.i % obj.strings.length];
-                } else update[field] = obj.strings[Math.floor(Math.random() * obj.strings.length)];
-            } else if (obj.type === "coordinate") requiresCoordRandomization = true;
-        }
-    }
-    if (requiresCoordRandomization) {
-        let coordCtrl;
-        // Sort placeables based on size
-        let pUpdates = [];
-        for(let i = 0; i < objects.length; i++)pUpdates.push({
-            p: objects[i],
-            update: updates[i]
-        });
-        pUpdates.sort((a, b)=>(b.p.w ?? b.p.width ?? 0) + (b.p.h ?? b.p.height ?? 0) - (a.p.w ?? a.p.width ?? 0) - (a.p.h ?? a.p.height ?? 0));
-        for (const pUpdate of pUpdates){
-            const obj = randomizeFields.x ?? randomizeFields.y;
-            if (obj.method === "noOverlap") {
-                if (!coordCtrl) coordCtrl = {
-                    freeId: 0,
-                    boundingBox: obj.boundingBox,
-                    freeRectangles: {
-                        0: obj.boundingBox
-                    },
-                    stepX: obj.stepX,
-                    stepY: obj.stepY
-                };
-                const [x, y] = $3180f13c9e24a345$var$randomPlace(pUpdate.p, coordCtrl);
-                pUpdate.update.x = x;
-                pUpdate.update.y = y;
-            }
-        }
-    }
-}
-function $3180f13c9e24a345$export$527c3bc4477c9048(num, step) {
-    if (num % step <= step / 2) return num - num % step;
-    return num - num % step + step;
-}
-/**
- * Generates a random number within the given range and step increment
- * @param {*} min
- * @param {*} max
- * @param {*} step
- * @returns
- */ function $3180f13c9e24a345$var$randomNum(min, max, step) {
-    if (step === "any") step = 1; // default to integer 1 just to avoid very large decimals
-    else step = Number(step);
-    const stepsInRange = (max - min) / step;
-    return Math.floor(Math.random() * (stepsInRange + (Number.isInteger(step) ? 1 : 0))) * step + min;
-}
-/**
- * In-place random shuffle of an array
- * @param {*} array
- * @returns
- */ function $3180f13c9e24a345$var$shuffleArray(array) {
-    var i = array.length, j = 0, temp;
-    while(i--){
-        j = Math.floor(Math.random() * (i + 1));
-        // swap randomly chosen element with current element
-        temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-}
-/* ================================
- * === Coordinate Randomization ==
- * =============================== */ function $3180f13c9e24a345$var$randomPlace(placeable, ctrl) {
-    const width = $3180f13c9e24a345$export$527c3bc4477c9048(placeable.w ?? placeable.width, ctrl.stepX);
-    const height = $3180f13c9e24a345$export$527c3bc4477c9048(placeable.h ?? placeable.height, ctrl.stepY);
-    const rec = {
-        x: 0,
-        y: 0,
-        width: width,
-        height: height
-    };
-    const freeRectangles = ctrl.freeRectangles;
-    // get all free rectangles that can contain rec
-    let fittingRecs = Object.keys(freeRectangles).filter((id)=>$3180f13c9e24a345$var$_canFit(freeRectangles[id], rec));
-    // if there are no fitting places left, then place it randomly anywhere within the bounding box
-    if (fittingRecs.length) {
-        // Pick a random free rectangle and choose a random location within so that it fits rec
-        const i = fittingRecs[Math.floor(Math.random() * fittingRecs.length)];
-        rec.x = $3180f13c9e24a345$var$randomNum(freeRectangles[i].x, Math.max(freeRectangles[i].x + freeRectangles[i].width - rec.width, 0), ctrl.stepX);
-        rec.y = $3180f13c9e24a345$var$randomNum(freeRectangles[i].y, Math.max(freeRectangles[i].y + freeRectangles[i].height - rec.height, 0), ctrl.stepY);
-    } else {
-        // if there are no fitting places left, then place it randomly anywhere within the bounding box
-        rec.x = $3180f13c9e24a345$var$randomNum(ctrl.boundingBox.x, Math.max(ctrl.boundingBox.x + ctrl.boundingBox.width - rec.width, ctrl.boundingBox.x), ctrl.stepX);
-        rec.y = $3180f13c9e24a345$var$randomNum(ctrl.boundingBox.y, Math.max(ctrl.boundingBox.y + ctrl.boundingBox.height - rec.height, ctrl.boundingBox.y), ctrl.stepY);
-    }
-    // Find all free rectangles that this spot overlaps
-    let overlaps = Object.keys(freeRectangles).filter((id)=>$3180f13c9e24a345$var$_intersectRec(freeRectangles[id], rec));
-    for (const id of overlaps){
-        const overlap = freeRectangles[id];
-        // remove original rectangle
-        delete freeRectangles[id];
-        // left split
-        if (overlap.x < rec.x) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
-            x: overlap.x,
-            y: overlap.y,
-            width: rec.x - overlap.x,
-            height: overlap.height
-        }, ctrl);
-        // right split
-        if (overlap.x + overlap.width > rec.x + rec.width) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
-            x: rec.x + rec.width,
-            y: overlap.y,
-            width: overlap.x + overlap.width - (rec.x + rec.width),
-            height: overlap.height
-        }, ctrl);
-        // top split
-        if (overlap.y < rec.y) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
-            x: overlap.x,
-            y: overlap.y,
-            width: overlap.width,
-            height: rec.y - overlap.y
-        }, ctrl);
-        // bottom split
-        if (overlap.y + overlap.height > rec.y + rec.height) $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, {
-            x: overlap.x,
-            y: rec.y + rec.height,
-            width: overlap.width,
-            height: overlap.y + overlap.height - (rec.y + rec.height)
-        }, ctrl);
-    }
-    return [
-        rec.x,
-        rec.y
-    ];
-}
-/**
- * Checks if rectangle rec2 can fit within rectangle rec1
- * @param {*} rec1
- * @param {*} rec2
- * @returns
- */ function $3180f13c9e24a345$var$_canFit(rec1, rec2) {
-    return rec2.width <= rec1.width && rec2.height <= rec1.height;
-}
-/**
- * Checks whether rectangle rec1 and rectangle rec2 intersect
- * @param {*} rec1
- * @param {*} rec2
- * @returns
- */ function $3180f13c9e24a345$var$_intersectRec(rec1, rec2) {
-    if (rec1.x < rec2.x + rec2.width && rec2.x < rec1.x + rec1.width && rec1.y < rec2.y + rec2.height) return rec2.y < rec1.y + rec1.height;
-    else return false;
-}
-/**
- * Check if rectangle rec1 fully contains rectangle rec2
- * @param {*} rec1
- * @param {*} rec
- * @returns
- */ function $3180f13c9e24a345$var$_fullyContains(rec1, rec2) {
-    return rec1.x <= rec2.x && rec1.x + rec1.width >= rec2.x + rec2.width && rec1.y <= rec2.y && rec1.y + rec1.height >= rec2.y + rec2.height;
-}
-/**
- *
- * @param {*} freeRectangles
- * @param {*} rec
- * @param {*} ctrl
- * @returns
- */ function $3180f13c9e24a345$var$_addAndMergeFreeRectangle(freeRectangles, rec, ctrl) {
-    const keys = Object.keys(freeRectangles);
-    for (const key of keys){
-        if ($3180f13c9e24a345$var$_fullyContains(freeRectangles[key], rec)) return;
-    }
-    ctrl.freeId++;
-    freeRectangles[ctrl.freeId] = rec;
-}
-
-
-
-
-class $2693f7af118c914b$export$44fd664bcca5b6fb {
-    constructor(slider, colors, { space: space = null, hue: hue = null } = {}){
-        this.slider = slider;
-        this.colors = colors;
-        this.space = space;
-        this.hue = hue;
-        this.min = 0;
-        this.max = 100;
-        this._init();
-    }
-    _init() {
-        (parcelRequire("kn5Qf")).then((imp)=>{
-            this._createSlider();
-        // // Respond better to DF Architect Color Picker
-        // html.on('focusout', '.df-arch-colourpicker', (e) => {
-        //   clearTimeout(inputTimer);
-        //   inputTimer = setTimeout(() => this.update(), 500);
-        // });
-        });
-    }
-    update() {
-        clearTimeout(this.inputTimer);
-        this.inputTimer = setTimeout(()=>this._updateSlider(), 500);
-    }
-    _updateSlider(event, ui) {
-        if (ui) this.colors[ui.handleIndex].offset = ui.value;
-        this.slider.find(".slide-back").remove();
-        let lVal = this.max + 1;
-        let lHandle;
-        let lIndex;
-        let handles = this.slider.find("span").toArray();
-        for(let i = 0; i < handles.length; i++){
-            let sliderVal = this.slider.slider("values", i);
-            this.colors[i].offset = sliderVal;
-            if (sliderVal < lVal) {
-                lHandle = $(this);
-                lVal = sliderVal;
-                lIndex = i;
-            }
-            $(handles[i]).css("background", this.colors[i].hex);
-            if (sliderVal !== this.max) {
-                let [stripColor, stripColorVal] = this._getNextColor(this.colors[i].hex, sliderVal);
-                this._appendStrip(this._genGradient(stripColor, this.colors[i].hex), `${stripColorVal - sliderVal}%`, `${sliderVal}%`);
-            }
-        }
-        if (lVal !== this.min) this._appendStrip(this._genGradient(this.colors[lIndex].hex, this.colors[lIndex].hex), `${this.slider.slider("values", lIndex)}%`, "0%");
-    }
-    _genGradient(color1, color2) {
-        const space = this.space?.val() || "lch";
-        if (space === "discrete") return "rgba(0, 0, 0, 0)";
-        const hue = this.hue?.val() || "shorter";
-        let r = (0, $2dca407f99b477df$export$2e2bcd8739ae039).range(color2, color1, {
-            space: space,
-            hue: hue
-        });
-        let stops = (0, $2dca407f99b477df$export$2e2bcd8739ae039).steps(r, {
-            steps: 5,
-            maxDeltaE: 3
-        });
-        return `linear-gradient(to right, ${stops.map((c)=>c.display()).join(", ")})`;
-    }
-    _appendStrip(color, width, offset) {
-        this.slider.append($("<div></div>").addClass("slide-back").width(width).css("background", color).css("left", offset));
-    }
-    _getNextColor(currColor, val) {
-        let nextColor = currColor;
-        let nextColorVal = this.max + 1;
-        for(let i = 0; i < this.colors.length; i++){
-            let cVal = this.slider.slider("values", i);
-            if (cVal > val && cVal < nextColorVal) {
-                nextColor = this.colors[i].hex;
-                nextColorVal = cVal;
-            }
-        }
-        return [
-            nextColor,
-            Math.min(nextColorVal, this.max)
-        ];
-    }
-    _onCreateSlider() {
-        let handles = this.slider.find("span").toArray();
-        for(let i = 0; i < handles.length; i++){
-            let cPicker = $(`<input type="color" value="${this.colors[i].hex}" style='opacity:0;width:100%;height:100%;position:absolute;pointer-events:none;'>`);
-            const handle = $(handles[i]);
-            handle.attr("handleindex", i);
-            handle.append(cPicker);
-            handle.on("click", (event)=>{
-                if (event.detail === 2) {
-                    event.preventDefault();
-                    cPicker.trigger("click");
-                }
-            });
-            cPicker.on("input", (event)=>{
-                this.colors[i].hex = cPicker.val();
-                this.update();
-            });
-            handle.on("contextmenu", (event)=>{
-                event.preventDefault();
-                event.stopPropagation();
-                if (this.colors.length > 2) {
-                    let index = event.target.getAttribute("handleindex");
-                    if (index) {
-                        this.colors.splice(index, 1);
-                        this._createSlider();
-                    }
-                }
-            });
-        }
-        this.slider.on("contextmenu", (event)=>{
-            let offset = this.slider.offset();
-            var x = event.clientX - offset.left; //x position within the element.
-            let percentOffset = Math.round(x / this.slider.width() * 100);
-            if (!this._percentExists(percentOffset)) {
-                let [col, _] = this._getNextColor(null, percentOffset);
-                if (!col) col = "#ff0000";
-                this.colors.push({
-                    hex: col,
-                    offset: percentOffset
-                });
-                this._createSlider();
-            }
-        });
-        this.update();
-    }
-    _percentExists(percent) {
-        return this.colors.some((c)=>c.offset === percent);
-    }
-    _createSlider = ()=>{
-        if (this.slider.slider("instance")) this.slider.slider("destroy");
-        this.slider.slider({
-            change: (event, ui)=>this.update(event, ui),
-            create: ()=>this._onCreateSlider(),
-            min: this.min,
-            max: this.max,
-            values: this.colors.map((c)=>c.offset)
-        });
-    };
-}
-
-
-const $9d9c8b96086115aa$export$37e829338e648c57 = false;
+const $9d9c8b96086115aa$export$37e829338e648c57 = true;
 class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
     constructor(title, control, configApp, options){
         let height = undefined;
@@ -18508,7 +20324,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             classes: [
                 "sheet"
             ],
-            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/randomizerForm.html`,
+            template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/randomizer/inputForm.html`,
             resizable: true,
             minimizable: false
         });
@@ -18519,6 +20335,8 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
     async getData(options) {
         const data = super.getData(options);
         foundry.utils.mergeObject(data, this.configuration);
+        // Cache partials
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/randomizer/color.html`, "me-color");
         if (data.step != null) {
             if (data.step === "any" || data.step === "") data.step = 0.1;
         }
@@ -18678,19 +20496,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             });
             $(html).find('[name="method"]').trigger("input");
         }
-        if (this.configuration.colorForm) {
-            const hue = html.find('[name="hue"]');
-            const space = html.find('[name="space"]');
-            const method = html.find('[name="method"]');
-            const colorSlider = new (0, $2693f7af118c914b$export$44fd664bcca5b6fb)(html.find(".slide"), this.configuration.colors, {
-                hue: hue,
-                space: space
-            });
-            hue.on("input", colorSlider.update.bind(colorSlider));
-            space.on("input", colorSlider.update.bind(colorSlider));
-            method.on("input", colorSlider.update.bind(colorSlider));
-            this.colorSlider = colorSlider;
-        }
+        if (this.configuration.colorForm) this.colorSlider = new (0, $2693f7af118c914b$export$44fd664bcca5b6fb)(html, this.configuration.colors);
     }
     async _onPickBounds(event) {
         event.preventDefault();
@@ -18698,7 +20504,7 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
         this.minimize();
         this.configApp.minimize();
         const t = this;
-        (0, $32e43d7a62aba58c$export$ba25329847403e11).activate((position)=>{
+        (0, $2620a6fdb001d88f$export$ba25329847403e11).activate((position)=>{
             if (position == null) return;
             const form = $(event.target).closest("form");
             const minX = Math.min(position.start.x, position.end.x);
@@ -18753,16 +20559,14 @@ class $9d9c8b96086115aa$export$2e2bcd8739ae039 extends FormApplication {
             type: "boolean",
             method: "random"
         };
-        else if (this.configuration.colorForm) {
-            let colors = foundry.utils.deepClone(this.colorSlider.colors).sort((a, b)=>a.offset - b.offset);
-            this.configApp.randomizeFields[fieldName] = {
-                type: "color",
-                method: formData.method,
-                space: formData.space,
-                hue: formData.hue,
-                colors: colors
-            };
-        } else if (this.configuration.imageForm) {
+        else if (this.configuration.colorForm) this.configApp.randomizeFields[fieldName] = {
+            type: "color",
+            method: formData.method,
+            space: formData.space,
+            hue: formData.hue,
+            colors: this.colorSlider.getColors()
+        };
+        else if (this.configuration.imageForm) {
             if (formData.method === "findAndReplace" || formData.method === "findAndReplaceRegex") this.configApp.randomizeFields[fieldName] = {
                 type: "text",
                 method: formData.method,
@@ -19343,7 +21147,7 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
             const docHistory = history[docName] ?? [];
             const historyItem = docHistory[index];
             if (historyItem) {
-                const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
+                const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
                     documentName: docName,
                     data: foundry.utils.deepClone(historyItem[type]),
                     randomize: historyItem.ctrl["mass-edit-randomize"],
@@ -19369,7 +21173,7 @@ class $f3c44e8dfe7ab826$export$2e2bcd8739ae039 extends FormApplication {
         if (historyItem) {
             const update = foundry.utils.deepClone(historyItem[event.submitter.name]);
             (0, $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f).updateToForm(this.docName, update);
-            const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
                 documentName: this.docName,
                 data: update,
                 randomize: historyItem.ctrl["mass-edit-randomize"],
@@ -19986,7 +21790,6 @@ function $0893cc7e7e2c4c85$var$getData(obj) {
 
 
 
-
 const $8d51a9873394e4eb$export$69134d6aac39cf4e = (cls)=>{
     class MassEditForm extends cls {
         constructor(doc, docs, options){
@@ -20509,7 +22312,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 if (this.documentName === "Token") (0, $59fc6fe4c07de9fd$export$7fe60b94e2075390).correctDetectionModeOrder(selectedFields, this.randomizeFields);
             }
             if (foundry.utils.isEmpty(selectedFields)) return false;
-            const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
                 documentName: this.documentName,
                 data: selectedFields,
                 randomize: this.randomizeFields,
@@ -20577,7 +22380,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                 class: "mass-edit-presets",
                 icon: "fas fa-box",
                 onclick: ()=>{
-                    this.linkedPresetForm = new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(this, null, this.docName, {
+                    this.linkedPresetForm = new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(this, null, this.docName, {
                         left: this.position.left - 370,
                         top: this.position.top,
                         preventPositionOverride: true
@@ -20607,7 +22410,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
                                         json = JSON.parse(html.find(".json").val());
                                     } catch (e) {}
                                     if (!foundry.utils.isEmpty(json)) {
-                                        const preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
+                                        const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
                                             documentName: this.docName,
                                             data: foundry.utils.flattenObject(json)
                                         });
@@ -20677,7 +22480,7 @@ const $8d51a9873394e4eb$export$ef937e3799bf3b88 = (docName = "NONE")=>{
             // Timeout require for this module including others to apply their
             // modifications to the configuration window
             setTimeout(()=>{
-                if (this.form) this._applyPreset(new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
+                if (this.form) this._applyPreset(new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
                     data: selectedFields,
                     randomize: randomize,
                     addSubtract: addSubtract
@@ -21113,244 +22916,65 @@ function $8d51a9873394e4eb$export$33e5d9c131e68cf2(docName) {
 
 
 
-
-class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
-    static app;
-    static deactivateCallback;
-    // @type {Preset}
-    static preset;
-    static brushOverlay;
-    static updatedPlaceables = new Map();
-    static hoveredPlaceables = new Set();
-    static hoveredPlaceable;
-    static documentName;
-    static active = false;
-    static hitTest;
-    static registered3dListener = false;
-    static #_ = (()=>{
-        this._boundOn3DBrushClick = this._on3DBrushClick.bind(this);
-        this._boundOn3dMouseMove = this._on3dMouseMove.bind(this);
-    })();
-    static _performBrushDocumentUpdate(pos, placeable) {
-        if (pos) this._animateCrossTranslate(pos.x, pos.y);
-        (0, $8d51a9873394e4eb$export$85a626beb2f6e17a)([
-            placeable
-        ], this.preset, true, true);
-        this.updatedPlaceables.set(placeable.id, placeable);
-    }
-    static _hitTestWall(point, wall) {
-        return wall.line.hitArea.contains(point.x, point.y);
-    }
-    static _hitTestControlIcon(point, placeable) {
-        return Number.between(point.x, placeable.x - placeable.controlIcon.width / 2, placeable.x + placeable.controlIcon.width / 2) && Number.between(point.y, placeable.y - placeable.controlIcon.height / 2, placeable.y + placeable.controlIcon.height / 2);
-    }
-    static _hitTestTile(point, placeable) {
-        const foreground = ui.controls.control.foreground ?? false;
-        if (placeable.document.overhead !== foreground) return false;
-        return this._hitTestArea(point, placeable);
-    }
-    static _hoverTestArea(placeable) {
-        return this.hoveredPlaceable && this.hoveredPlaceable.hitArea.width * this.hoveredPlaceable.hitArea.height > placeable.hitArea.width * placeable.hitArea.height;
-    }
-    static _hitTestArea(point, placeable) {
-        return Number.between(point.x, placeable.x, placeable.x + placeable.hitArea.width) && Number.between(point.y, placeable.y, placeable.y + placeable.hitArea.height);
-    }
-    static _onBrushMove(event) {
-        const pos = event.data.getLocalPosition(this.brushOverlay);
-        const layer = canvas.getLayerByEmbeddedName(this.documentName);
-        this._clearHover(event, pos);
-        for (const p of layer.placeables)if (p.visible && this.hitTest(pos, p) && !this.updatedPlaceables.has(p.id) && this.hoveredPlaceable !== p) {
-            if (this.hoverTest?.(p)) {
-                this.hoveredPlaceable._onHoverOut(event);
-                this.hoveredPlaceable = p;
-            } else if (!this.hoverTest && this.hoveredPlaceable && this.hoveredPlaceable !== p) {
-                this.hoveredPlaceable._onHoverOut(event);
-                this.hoveredPlaceable = p;
-            } else if (!this.hoveredPlaceable) this.hoveredPlaceable = p;
-            this.hoveredPlaceable._onHoverIn(event);
-        }
-    }
-    static _clearHover(event, pos, force = false) {
-        if (this.hoveredPlaceable) {
-            if (force || !this.hoveredPlaceable.visible || !this.hitTest(pos, this.hoveredPlaceable)) {
-                this.hoveredPlaceable._onHoverOut(event);
-                this.hoveredPlaceable = null;
-            }
-        }
-    }
-    static _onBrushClickMove(event) {
-        if (this.hoveredPlaceable && this.hoveredPlaceable.visible && !this.updatedPlaceables.has(this.hoveredPlaceable.id)) this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
-    }
-    static _on3DBrushClick(event) {
-        if (this.brush3d) {
-            const p = game.Levels3DPreview.interactionManager.currentHover?.placeable;
-            if (p && p.document.documentName === this.documentName) {
-                game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
-                this._performBrushDocumentUpdate(null, p);
-            }
-            this.updatedPlaceables.clear();
-        }
-    }
-    static refreshPreset() {
-        if (this.active && this.app) this.preset = new (0, $d0a1f06830d69799$export$3463c369d5cc977f)({
-            documentName: this.documentName,
-            data: this.app.getSelectedFields(),
-            randomize: this.app.randomizeFields,
-            addSubtract: this.app.addSubtractFields
+class $abc4dddfd0d20118$var$TrackerDialog extends Dialog {
+    constructor(options, { total: total, cancelCallback: cancelCallback, left: left, top: top }){
+        super(options, {
+            left: left,
+            top: top
         });
+        this.count = 0;
+        this.total = total;
+        this.cancelCallback = cancelCallback;
     }
-    /**
-   * @param {Object} options
-   * @param {MassEditForm} options.app
-   * @param {Preset} options.preset
-   * @returns
-   */ static activate({ app: app = null, preset: preset = null, deactivateCallback: deactivateCallback = null } = {}) {
-        if (this.deactivate() || !canvas.ready) return false;
-        if (!app && !preset) return false;
-        if (this.brushOverlay) this.brushOverlay.destroy(true);
-        // Setup fields to be used for updates
-        this.app = app;
-        this.preset = preset;
-        this.deactivateCallback = deactivateCallback;
-        if (this.app) this.documentName = this.app.documentName;
-        else this.documentName = this.preset.documentName;
-        this.updatedPlaceables.clear();
-        const interaction = canvas.app.renderer.events;
-        if (!interaction.cursorStyles["brush"]) interaction.cursorStyles["brush"] = `url('modules/${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}/images/brush_icon.png'), auto`;
-        this.active = true;
-        this.refreshPreset();
-        if (game.Levels3DPreview?._active) return this._activate3d();
-        // Determine hit test test function to be used for pointer hover detection
-        switch(this.documentName){
-            case "Wall":
-                this.hitTest = this._hitTestWall;
-                break;
-            case "AmbientLight":
-            case "MeasuredTemplate":
-            case "AmbientSound":
-            case "Note":
-                this.hitTest = this._hitTestControlIcon;
-                break;
-            case "Tile":
-                this.hitTest = this._hitTestTile;
-                this.hoverTest = this._hoverTestArea;
-                break;
-            default:
-                this.hitTest = this._hitTestArea;
-                this.hoverTest = this._hoverTestArea;
-        }
-        // Create the brush overlay
-        this.brushOverlay = new PIXI.Container();
-        this.brushOverlay.hitArea = canvas.dimensions.rect;
-        this.brushOverlay.cursor = "brush";
-        this.brushOverlay.interactive = true;
-        this.brushOverlay.zIndex = Infinity;
-        this.brushOverlay.on("mousemove", (event)=>{
-            this._onBrushMove(event);
-            if (event.buttons === 1) this._onBrushClickMove(event);
-        });
-        this.brushOverlay.on("mouseup", (event)=>{
-            if (event.nativeEvent.which !== 2) this._onBrushClickMove(event);
-            this.updatedPlaceables.clear();
-        });
-        this.brushOverlay.on("click", (event)=>{
-            if (event.nativeEvent.which == 2) this.deactivate();
-        });
-        canvas.stage.addChild(this.brushOverlay);
-        // Disable canvas events to prevent selects and object placements on click
-        canvas.mouseInteractionManager.permissions.clickLeft = false;
-        // canvas.mouseInteractionManager.permissions.longPress = false;
-        return true;
+    incrementCount() {
+        this.count++;
+        this.element?.find(".count").html(this.count);
     }
-    static brush3dDelayMoveTimer;
-    static _on3dMouseMove() {
-        if (!this.brush3d || this.brush3dDelayMoveTimer) return;
-        const brush = this;
-        this.brush3dDelayMoveTimer = setTimeout(function() {
-            const mPos = game.Levels3DPreview.interactionManager.canvas3dMousePosition;
-            const cPos = game.Levels3DPreview.interactionManager.camera.position;
-            const intersects = game.Levels3DPreview.interactionManager.computeSightCollisionFrom3DPositions(cPos, mPos, "collision", false, false, false, true);
-            if (intersects[0]) {
-                const intersect = intersects[0];
-                brush.brush3d.position.set(intersect.point.x, intersect.point.y, intersect.point.z);
-            }
-            brush.brush3dDelayMoveTimer = null;
-        }, 100); // Will do the ajax stuff after 1000 ms, or 1 s
+    stop() {
+        this.close(true);
     }
-    static deactivate3DListeners() {
-        game.Levels3DPreview.renderer.domElement.removeEventListener("click", this._boundOn3DBrushClick, false);
-        game.Levels3DPreview.renderer.domElement.removeEventListener("mousemove", this._boundOn3dMouseMove, false);
-    }
-    static _activate3DListeners() {
-        // Remove listeners if they are already set
-        this.deactivate3DListeners();
-        game.Levels3DPreview.renderer.domElement.addEventListener("click", this._boundOn3DBrushClick, false);
-        game.Levels3DPreview.renderer.domElement.addEventListener("mousemove", this._boundOn3dMouseMove, false);
-    }
-    static _activate3d() {
-        const THREE = game.Levels3DPreview.THREE;
-        if (!this.brush3d) {
-            this.brush3d = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), new THREE.MeshBasicMaterial({
-                opacity: 0.5,
-                transparent: true,
-                color: 0x00ff00,
-                wireframe: true
-            }));
-            this.brush3d.userData.interactive = false;
-            this.brush3d.userData.ignoreHover = true;
-            const mPos = game.Levels3DPreview.interactionManager.canvas3dMousePosition;
-            this.brush3d.position.set(mPos.x, mPos.y, mPos.z);
-            game.Levels3DPreview.scene.add(this.brush3d);
-        }
-        // Activate listeners
-        this._activate3DListeners();
-        return true;
-    }
-    static deactivate() {
-        if (this.active) {
-            canvas.mouseInteractionManager.permissions.clickLeft = true;
-            //canvas.mouseInteractionManager.permissions.longPress = true;
-            if (this.brushOverlay) this.brushOverlay.parent?.removeChild(this.brushOverlay);
-            if (this.brush3d && game.Levels3DPreview?._active) {
-                game.Levels3DPreview.scene.remove(this.brush3d);
-                this.brush3d = null;
-                this.deactivate3DListeners();
-            }
-            this.active = false;
-            this.updatedPlaceables.clear();
-            this._clearHover(null, null, true);
-            this.hoverTest = null;
-            this.deactivateCallback?.();
-            this.deactivateCallback = null;
-            this.app = null;
-            this.preset = null;
-            return true;
-        }
-    }
-    static async _animateCrossTranslate(x, y) {
-        let cross = new PIXI.Text("+", {
-            fontFamily: "Arial",
-            fontSize: 11,
-            fill: 0x00ff11,
-            align: "center"
-        });
-        cross = this.brushOverlay.addChild(cross);
-        cross.x = x + Math.random() * 16 - 8;
-        cross.y = y;
-        const translate = [
-            {
-                parent: cross,
-                attribute: "y",
-                to: y - 50
-            }
-        ];
-        const completed = await CanvasAnimation.animate(translate, {
-            duration: 700,
-            name: foundry.utils.randomID(5)
-        });
-        if (completed) this.brushOverlay.removeChild(cross).destroy();
+    get active() {
+        return this._state === Application.RENDER_STATES.RENDERED || this._state === Application.RENDER_STATES.RENDERING;
     }
 }
+async function $abc4dddfd0d20118$export$5cfd1b1c4290658d({ title: title = "Progress", cancelCallback: cancelCallback, total: total } = {}) {
+    if (!total) return;
+    let content = `
+<div>
+<div  style="display: block; text-align: center; padding: 5px;"><i class="fas fa-circle-notch fa-spin fa-3x"></i></div>
+    <p style="text-align: center;"><span class="count">count</span>/${total}</p>
+</div>`;
+    const dialog = new $abc4dddfd0d20118$var$TrackerDialog({
+        title: title,
+        content: content,
+        buttons: {
+            cancel: {
+                icon: '<i class="fas fa-stop"></i>',
+                label: "Stop/Cancel",
+                callback: ()=>{
+                    cancelCallback?.();
+                }
+            }
+        },
+        default: "cancel"
+    }, {
+        total: total,
+        cancelCallback: cancelCallback,
+        left: 50,
+        top: 50
+    });
+    await dialog._render(true);
+    return dialog;
+}
+function $abc4dddfd0d20118$export$bb2f3c779e9bc5d8(folder) {
+    if (folder.presets) return folder.presets.length + folder.children.reduce(function(sum, c) {
+        return sum + $abc4dddfd0d20118$export$bb2f3c779e9bc5d8(c);
+    }, 0);
+    else return folder.contents.length + folder.children.reduce(function(sum, c) {
+        return sum + $abc4dddfd0d20118$export$bb2f3c779e9bc5d8(c.folder);
+    }, 0);
+}
+
 
 
 
@@ -21525,882 +23149,14 @@ class $9246b9d7680c2c9c$export$59bc2e3533b384a0 {
 
 
 
-
-const $d0a1f06830d69799$var$META_INDEX_FIELDS = [
-    "id",
-    "img",
-    "documentName"
-];
-const $d0a1f06830d69799$var$META_INDEX_ID = "MassEditMetaData";
-const $d0a1f06830d69799$export$2a34b6e4e19d9a25 = "world.mass-edit-presets-main";
-const $d0a1f06830d69799$var$DOCUMENT_FIELDS = [
-    "id",
-    "name",
-    "sort",
-    "folder"
-];
+const $6e4e38012e8d2014$var$SEARCH_MIN_CHAR = 2;
 // const FLAG_DATA = {
 //   documentName: null,
 //   data: null,
 //   addSubtract: null,
 //   randomize: null,
 // };
-const $d0a1f06830d69799$var$PRESET_FIELDS = [
-    "id",
-    "name",
-    "data",
-    "sort",
-    "folder",
-    "uuid",
-    "documentName",
-    "addSubtract",
-    "randomize",
-    "img",
-    "gridSize",
-    "modifyOnSpawn",
-    "preSpawnScript",
-    "postSpawnScript",
-    "spawnRandom",
-    "attached"
-];
-class $d0a1f06830d69799$export$3463c369d5cc977f {
-    static name = "Preset";
-    document;
-    constructor(data){
-        this.id = data.id ?? data._id ?? foundry.utils.randomID();
-        this.name = data.name ?? "Mass Edit Preset";
-        this.documentName = data.documentName;
-        this.sort = data.sort ?? 0;
-        this.addSubtract = data.addSubtract instanceof Array ? Object.fromEntries(data.addSubtract) : foundry.utils.deepClone(data.addSubtract ?? {});
-        this.randomize = data.randomize instanceof Array ? Object.fromEntries(data.randomize) : foundry.utils.deepClone(data.randomize ?? {});
-        this.data = foundry.utils.deepClone(data.data);
-        this.img = data.img;
-        this.folder = data.folder;
-        this.uuid = data.uuid;
-        this.gridSize = data.gridSize;
-        this.modifyOnSpawn = data.modifyOnSpawn;
-        this.preSpawnScript = data.preSpawnScript;
-        this.postSpawnScript = data.postSpawnScript;
-        this.attached = data.attached;
-        this.spawnRandom = data.spawnRandom;
-        this._visible = true;
-    }
-    get icon() {
-        return $d0a1f06830d69799$var$DOC_ICONS[this.documentName] ?? $d0a1f06830d69799$var$DOC_ICONS.DEFAULT;
-    }
-    get thumbnail() {
-        return this.img || CONST.DEFAULT_TOKEN;
-    }
-    get pages() {
-        if (this.document?.pages.size) return this.document.toJSON().pages;
-        else if (this._pages) return this._pages;
-        return null;
-    }
-    set data(data) {
-        if (data instanceof Array) this._data = data;
-        else if (data == null) this._data = null;
-        else this._data = [
-            data
-        ];
-    }
-    get isPlaceable() {
-        return (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.documentName);
-    }
-    get data() {
-        return this._data;
-    }
-    /**
-   * Loads underlying JournalEntry document from the compendium
-   * @returns this
-   */ async load() {
-        if (!this.document && this.uuid) {
-            this.document = await fromUuid(this.uuid);
-            if (this.document) {
-                const preset = this.document.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "preset") ?? {};
-                this.documentName = preset.documentName;
-                this.img = preset.img;
-                this.data = preset.data;
-                this.randomize = foundry.utils.getType(preset.randomize) === "Object" ? preset.randomize : Object.fromEntries(preset.randomize ?? []);
-                this.addSubtract = foundry.utils.getType(preset.addSubtract) === "Object" ? preset.addSubtract : Object.fromEntries(preset.addSubtract ?? []);
-                this.gridSize = preset.gridSize;
-                this.modifyOnSpawn = preset.modifyOnSpawn;
-                this.preSpawnScript = preset.preSpawnScript;
-                this.postSpawnScript = preset.postSpawnScript;
-                this.attached = preset.attached;
-                this.spawnRandom = preset.spawnRandom;
-            }
-        }
-        return this;
-    }
-    async openJournal() {
-        if (!this.document) await this.load();
-        if (this.document) this.document.sheet.render(true);
-    }
-    /**
-   * Attach placeables
-   * @param {Placeable|Array[Placeable]} placeables
-   * @returns
-   */ async attach(placeables) {
-        if (!placeables) return;
-        if (!(placeables instanceof Array)) placeables = [
-            placeables
-        ];
-        if (!this.attached) this.attached = [];
-        for (const placeable of placeables)this.attached.push({
-            documentName: placeable.document.documentName,
-            data: $d0a1f06830d69799$var$placeableToData(placeable)
-        });
-        await this.update({
-            attached: this.attached
-        });
-    }
-    /**
-   * Update preset with the provided data
-   * @param {Object} update
-   */ async update(update) {
-        if (this.document) {
-            const flagUpdate = {};
-            Object.keys(update).forEach((k)=>{
-                if (k === "randomize" || k === "addSubtract") {
-                    flagUpdate[k] = Object.entries(update[k]);
-                    this[k] = update[k];
-                } else if (k === "data" && !(update.data instanceof Array)) {
-                    flagUpdate.data = this.data.map((d)=>{
-                        return foundry.utils.mergeObject(d, update.data);
-                    });
-                    this.data = flagUpdate.data;
-                } else if ($d0a1f06830d69799$var$PRESET_FIELDS.includes(k) && update[k] !== this[k]) {
-                    flagUpdate[k] = update[k];
-                    this[k] = update[k];
-                }
-            });
-            if (!foundry.utils.isEmpty(flagUpdate)) {
-                const docUpdate = {
-                    flags: {
-                        [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
-                            preset: flagUpdate
-                        }
-                    }
-                };
-                $d0a1f06830d69799$var$DOCUMENT_FIELDS.forEach((field)=>{
-                    if (field in flagUpdate && this.document[field] !== flagUpdate[field]) docUpdate[field] = flagUpdate[field];
-                });
-                await this.document.update(docUpdate);
-            }
-            await this._updateIndex(flagUpdate);
-        } else console.warn("Updating preset without document", this.id, this.uuid, this.name);
-    }
-    async _updateIndex(data) {
-        const update = {};
-        $d0a1f06830d69799$var$META_INDEX_FIELDS.forEach((field)=>{
-            if (field in data) update[field] = data[field];
-        });
-        if (!foundry.utils.isEmpty(update)) {
-            const pack = game.packs.get(this.document.pack);
-            const metaDoc = await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID);
-            if (metaDoc) {
-                let tmp = {};
-                tmp[this.id] = update;
-                await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", tmp);
-            } else {
-                console.warn(`META INDEX missing in ${this.document.pack}`);
-                return;
-            }
-        }
-    }
-    toJSON() {
-        let json = {};
-        $d0a1f06830d69799$var$PRESET_FIELDS.forEach((field)=>{
-            json[field] = this[field];
-        });
-        json.randomize = Object.entries(json.randomize ?? {});
-        json.addSubtract = Object.entries(json.addSubtract ?? []);
-        const pages = this.pages;
-        if (pages) json.pages = pages;
-        return json;
-    }
-    clone() {
-        const clone = new $d0a1f06830d69799$export$3463c369d5cc977f(this.toJSON());
-        clone.document = this.document;
-        return clone;
-    }
-}
-class $d0a1f06830d69799$export$9cea25aeb7365a59 {
-    static presets;
-    static workingPack;
-    static async getTree(type, mainOnly = false) {
-        const pack = await this._initCompendium(this.workingPack);
-        const mainTree = await this.packToTree(pack, type);
-        const staticFolders = [];
-        if (!mainOnly) {
-            let sort = 0;
-            for (const p of game.packs)if (p.collection !== this.workingPack && p.index.get($d0a1f06830d69799$var$META_INDEX_ID)) {
-                const tree = await this.packToTree(p, type);
-                if (!tree.hasVisible) continue;
-                const topFolder = {
-                    id: p.collection,
-                    uuid: p.collection,
-                    name: p.title,
-                    sorting: "m",
-                    color: "#000000",
-                    sort: sort++,
-                    children: tree.folders.map((f)=>{
-                        f.folder = p.collection;
-                        return f;
-                    }),
-                    presets: tree.presets,
-                    draggable: false,
-                    expanded: $d0a1f06830d69799$export$511ed1dd332818c6.expanded(p.collection),
-                    folder: null,
-                    visible: true
-                };
-                staticFolders.push(topFolder);
-                // Collate all folders with the main tree
-                mainTree.allFolders.set(topFolder.uuid, topFolder);
-                for (const [uuid, folder] of tree.allFolders)mainTree.allFolders.set(uuid, folder);
-            }
-        }
-        mainTree.staticFolders = staticFolders;
-        return mainTree;
-    }
-    static async packToTree(pack, type) {
-        if (!pack) return null;
-        // Setup folders ready for parent/children processing
-        const folders = new Map();
-        const topLevelFolders = new Map();
-        const folderContents = pack.folders.contents;
-        for (const f of folderContents){
-            folders.set(f.uuid, {
-                id: f._id,
-                uuid: f.uuid,
-                name: f.name,
-                sorting: f.sorting,
-                color: f.color,
-                sort: f.sort,
-                children: [],
-                presets: [],
-                draggable: f.pack === this.workingPack,
-                expanded: $d0a1f06830d69799$export$511ed1dd332818c6.expanded(f.uuid),
-                folder: f.folder?.uuid,
-                visible: type ? (f.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.types || [
-                    "ALL"
-                ]).includes(type) : true
-            });
-            topLevelFolders.set(f.uuid, folders.get(f.uuid));
-        }
-        // If folders have parent folders add them as children and remove them as a top level folder
-        for (const f of folderContents)if (f.folder) {
-            const parent = folders.get(f.folder.uuid);
-            parent.children.push(folders.get(f.uuid));
-            topLevelFolders.delete(f.uuid);
-        }
-        // Process presets
-        const allPresets = [];
-        const topLevelPresets = [];
-        let hasVisible = false; // tracks whether there exists at least one visible preset within this tree
-        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
-        const index = pack.index.contents;
-        for (const idx of index){
-            if (idx._id === $d0a1f06830d69799$var$META_INDEX_ID) continue;
-            const mIndex = metaIndex[idx._id];
-            const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
-                ...idx,
-                ...mIndex,
-                pack: pack.collection
-            });
-            // If no document name is available (missing metadata) attempt to load the preset to retrieve it
-            // If still no name is found, skip it
-            if (!preset.documentName) {
-                console.log(`Missing MetaData. Attempting document load: ${preset.id} | ${preset.name}`);
-                await preset.load();
-                if (!preset.documentName) continue;
-            }
-            if (preset.folder) {
-                let matched = false;
-                for (const [uuid, folder] of folders)if (folder.id === preset.folder) {
-                    folder.presets.push(preset);
-                    matched = true;
-                    break;
-                }
-                if (!matched) topLevelPresets.push(preset);
-            } else topLevelPresets.push(preset);
-            if (type) {
-                if (type === "ALL") {
-                    if (!(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(preset.documentName)) preset._visible = false;
-                } else if (preset.documentName !== type) preset._visible = false;
-            }
-            allPresets.push(preset);
-            hasVisible |= preset._visible;
-        }
-        // Sort folders
-        const sorting = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode") === "manual" ? "m" : "a";
-        const sortedFolders = this._sortFolders(Array.from(topLevelFolders.values()), sorting);
-        const sortedPresets = this._sortPresets(topLevelPresets, sorting);
-        return {
-            folders: sortedFolders,
-            presets: sortedPresets,
-            allPresets: allPresets,
-            allFolders: folders,
-            hasVisible: hasVisible
-        };
-    }
-    static _sortFolders(folders, sorting = "a") {
-        for (const folder of folders){
-            folder.children = this._sortFolders(folder.children, folder.sorting);
-            folder.presets = this._sortPresets(folder.presets, folder.sorting);
-        }
-        if (sorting === "a") return folders.sort((f1, f2)=>f1.name.localeCompare(f2.name, "en", {
-                numeric: true
-            }));
-        else return folders.sort((f1, f2)=>f1.sort - f2.sort);
-    }
-    static _sortPresets(presets, sorting = "a") {
-        if (sorting === "a") return presets.sort((p1, p2)=>p1.name.localeCompare(p2.name, "en", {
-                numeric: true
-            }));
-        else return presets.sort((p1, p2)=>p1.sort - p2.sort);
-    }
-    static async packToPresets(pack) {
-        if (!pack) return [];
-        const presets = [];
-        let metaIndex = (await pack.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
-        const index = pack.index.contents;
-        for (const idx of index){
-            if (idx._id === $d0a1f06830d69799$var$META_INDEX_ID) continue;
-            const mIndex = metaIndex[idx._id];
-            const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
-                ...idx,
-                ...mIndex,
-                pack: pack.collection
-            });
-            presets.push(preset);
-        }
-        return presets;
-    }
-    static async update(preset) {
-        const compendium = await this._initCompendium(this.workingPack);
-        const doc = await compendium.getDocument(preset.id);
-        const updateDoc = {
-            name: preset.name,
-            flags: {
-                [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
-                    preset: preset.toJSON()
-                }
-            }
-        };
-        const pages = preset.pages;
-        if (pages) updateDoc.pages = pages;
-        await doc.update(updateDoc);
-        const metaDoc = await this._initMetaDocument(this.workingPack);
-        const update = {};
-        update[preset.id] = {
-            id: preset.id,
-            img: preset.img,
-            documentName: preset.documentName
-        };
-        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", update);
-    }
-    /**
-   * Update multiple presets at the same time
-   * @param {*} updates
-   */ static async updatePresets(updates) {
-        // TODO update meta and preset itself
-        await JournalEntry.updateDocuments(updates, {
-            pack: this.workingPack
-        });
-    }
-    /**
-   * @param {Preset|Array[Preset]} preset
-   */ static async set(preset, pack) {
-        if (!pack) pack = this.workingPack;
-        if (preset instanceof Array) {
-            for (const p of preset)await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
-            return;
-        }
-        const compendium = await this._initCompendium(pack);
-        if (compendium.index.get(preset.id)) {
-            await this.update(preset);
-            return;
-        }
-        const documents1 = await JournalEntry.createDocuments([
-            {
-                _id: preset.id,
-                name: preset.name,
-                pages: preset.pages ?? [],
-                folder: preset.folder,
-                flags: {
-                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
-                        preset: preset.toJSON()
-                    }
-                }
-            }
-        ], {
-            pack: pack,
-            keepId: true
-        });
-        preset.uuid = documents1[0].uuid;
-        preset.document = documents1[0];
-        const metaDoc = await this._initMetaDocument(pack);
-        const update = {};
-        update[preset.id] = {
-            id: preset.id,
-            img: preset.img,
-            documentName: preset.documentName
-        };
-        await metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", update);
-    }
-    static async get(uuid, { full: full = true } = {}) {
-        let { collection: collection, documentId: documentId, documentType: documentType, embedded: embedded, doc: doc } = foundry.utils.parseUuid(uuid);
-        const index = collection.index.get(documentId);
-        if (index) {
-            const metaIndex = (await collection.getDocument($d0a1f06830d69799$var$META_INDEX_ID))?.getFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index");
-            const mIndex = metaIndex[index._id];
-            const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
-                ...index,
-                ...mIndex,
-                pack: collection.collection
-            });
-            if (full) await preset.load();
-            return preset;
-        }
-        return null;
-    }
-    /**
-   * @param {Preset|Array[Preset]} preset
-   */ static async delete(presets) {
-        if (!presets) return;
-        if (!(presets instanceof Array)) presets = [
-            presets
-        ];
-        // Sort by compendium
-        const sorted = {};
-        for (const preset of presets){
-            let { collection: collection } = foundry.utils.parseUuid(preset.uuid);
-            collection = collection.collection;
-            if (!sorted[collection]) sorted[collection] = [
-                preset
-            ];
-            else sorted[collection].push(preset);
-        }
-        for (const pack of Object.keys(sorted)){
-            const compendium = await game.packs.get(pack);
-            if (!compendium) continue;
-            const metaDoc = await this._initMetaDocument(pack);
-            const metaUpdate = {};
-            for (const preset of sorted[pack]){
-                if (compendium.index.get(preset.id)) {
-                    const document = await compendium.getDocument(preset.id);
-                    await document.delete();
-                }
-                metaUpdate["-=" + preset.id] = null;
-            }
-            metaDoc.setFlag((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "index", metaUpdate);
-        }
-    }
-    static async _initCompendium(pack) {
-        let compendium = game.packs.get(pack);
-        if (!compendium && pack === $d0a1f06830d69799$export$2a34b6e4e19d9a25) {
-            compendium = await CompendiumCollection.createCompendium({
-                label: "Mass Edit: Presets (MAIN)",
-                type: "JournalEntry",
-                ownership: {
-                    GAMEMASTER: "NONE",
-                    PLAYER: "NONE",
-                    ASSISTANT: "NONE"
-                },
-                packageType: "world"
-            });
-            await this._initMetaDocument($d0a1f06830d69799$export$2a34b6e4e19d9a25);
-        }
-        return compendium;
-    }
-    static async _initMetaDocument(pack) {
-        const compendium = game.packs.get(pack);
-        const metaDoc = await compendium.getDocument($d0a1f06830d69799$var$META_INDEX_ID);
-        if (metaDoc) return metaDoc;
-        const documents1 = await JournalEntry.createDocuments([
-            {
-                _id: $d0a1f06830d69799$var$META_INDEX_ID,
-                name: "!!! METADATA: DO NOT DELETE !!!",
-                flags: {
-                    [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
-                        index: {}
-                    }
-                }
-            }
-        ], {
-            pack: pack,
-            keepId: true
-        });
-        return documents1[0];
-    }
-    static _searchPresetTree(tree, options) {
-        const presets = [];
-        if (!options.folder) this._searchPresetList(tree.allPresets, presets, options);
-        tree.allFolders.forEach((folder)=>this._searchPresetFolder(folder, presets, options));
-        return presets;
-    }
-    static _searchPresetFolder(folder, presets, options) {
-        if (options.folder && folder.name !== options.folder) return;
-        this._searchPresetList(folder.presets, presets, options, folder.name);
-    }
-    static _searchPresetList(toSearch, presets, { name: name = null, type: type = null } = {}, folderName) {
-        for (const preset of toSearch){
-            preset._folderName = folderName;
-            if (name && type) {
-                if (name === preset.name && type === preset.documentName) presets.push(preset);
-            } else if (name) {
-                if (name === preset.name) presets.push(preset);
-            } else if (type) {
-                if (type === preset.documentName) presets.push(preset);
-            } else presets.push(preset);
-        }
-    }
-}
-class $d0a1f06830d69799$export$619760a5720f8054 {
-    static name = "PresetAPI";
-    /**
-   * Retrieve preset
-   * @param {object} [options={}]
-   * @param {String} [options.uuid]    Preset UUID
-   * @param {String} [options.name]    Preset name
-   * @param {String} [options.type]    Preset type ("Token", "Tile", etc)
-   * @param {String} [options.folder]  Folder name
-   * @returns {Preset}
-   */ static async getPreset({ uuid: uuid, name: name, type: type, folder: folder } = {}) {
-        if (uuid) return await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
-        else if (!name && !type && !folder) throw Error("UUID, Name, Type, and/or Folder required to retrieve a Preset.");
-        const presets = $d0a1f06830d69799$export$9cea25aeb7365a59._searchPresetTree(await $d0a1f06830d69799$export$9cea25aeb7365a59.getTree(), {
-            name: name,
-            type: type,
-            folder: folder
-        });
-        const preset = presets[Math.floor(Math.random() * presets.length)];
-        return preset?.clone().load();
-    }
-    /**
-   * Retrieve presets
-   * @param {object} [options={}]
-   * @param {String} [options.uuid]    Preset UUID
-   * @param {String} [options.name]    Preset name
-   * @param {String} [options.type]    Preset type ("Token", "Tile", etc)
-   * @param {String} [options.folder]  Folder name
-   * @param {String} [options.format]  The form to return placeables in ('preset', 'name', 'nameAndFolder')
-   * @returns {Array[Preset]|Array[String]|Array[Object]}
-   */ static async getPresets({ uuid: uuid, name: name, type: type, folder: folder, format: format = "preset" } = {}) {
-        if (uuid) return await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
-        else if (!name && !type && !folder) throw Error("UUID, Name, Type, and/or Folder required to retrieve a Preset.");
-        const presets = $d0a1f06830d69799$export$9cea25aeb7365a59._searchPresetTree(await $d0a1f06830d69799$export$9cea25aeb7365a59.getTree(), {
-            name: name,
-            type: type,
-            folder: folder
-        });
-        if (format === "name") return presets.map((p)=>p.name);
-        else if (format === "nameAndFolder") return presets.map((p)=>{
-            return {
-                name: p.name,
-                folder: p._folderName
-            };
-        });
-        return presets;
-    }
-    /**
-   * Create Presets from passed in placeables
-   * @param {PlaceableObject|Array[PlaceableObject]} placeables Placeable/s to create the presets from.
-   * @param {object} [options={}]                               Optional Preset information
-   * @param {String} [options.name]                             Preset name
-   * @param {String} [options.img]                              Preset thumbnail image
-   * @returns {Preset|Array[Preset]}
-   */ static async createPreset(placeables, options = {}) {
-        if (!placeables) return;
-        if (!(placeables instanceof Array)) placeables = [
-            placeables
-        ];
-        // Alike placeables will be made into single presets. Lets batch them up together.
-        const groups = {};
-        for (const placeable of placeables){
-            const docName = placeable.document.documentName;
-            if (!groups.hasOwnProperty(docName)) groups[docName] = [];
-            groups[docName].push(placeable);
-        }
-        const presets = [];
-        for (const [docName, placeables] of Object.entries(groups)){
-            const data = [];
-            for (const placeable of placeables)data.push($d0a1f06830d69799$var$placeableToData(placeable));
-            // Preset data before merging with user provided
-            const defPreset = {
-                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.default-name"),
-                documentName: docName,
-                data: data
-            };
-            // Assign preset image
-            switch(defPreset.documentName){
-                case "Token":
-                case "Tile":
-                case "Note":
-                    defPreset.img = data[0].texture.src;
-                    break;
-                case "AmbientSound":
-                    defPreset.img = "icons/svg/sound.svg";
-                    break;
-                case "AmbientLight":
-                    defPreset.img = "icons/svg/light.svg";
-                    break;
-                case "Drawing":
-                    defPreset.img = "icons/svg/acid.svg";
-                    break;
-                case "MeasuredTemplate":
-                    defPreset.img = "icons/svg/circle.svg";
-                    break;
-            }
-            //  Assign preset name
-            switch(defPreset.documentName){
-                case "Token":
-                    defPreset.name = data[0].name;
-                    break;
-                default:
-                    const taggerTag = data[0].flags?.tagger?.tags?.[0];
-                    if (taggerTag) defPreset.name = taggerTag;
-                    break;
-            }
-            defPreset.gridSize = placeables[0].document.parent.grid.size;
-            foundry.utils.mergeObject(defPreset, options, {
-                inplace: true
-            });
-            const preset = new $d0a1f06830d69799$export$3463c369d5cc977f(defPreset);
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.set(preset);
-            presets.push(preset);
-        }
-        return presets;
-    }
-    /**
-   * Spawn a preset on the scene (uuid, name or preset itself are required).
-   * By default the current mouse position is used.
-   * @param {object} [options={}]
-   * @param {Preset} [options.preset]             Preset
-   * @param {String} [options.uuid]               Preset UUID
-   * @param {String} [options.name]               Preset name
-   * @param {String} [options.type]               Preset type ("Token", "Tile", etc)
-   * @param {Number} [options.x]                  Spawn canvas x coordinate (mouse position used if x or y are null)
-   * @param {Number} [options.y]                  Spawn canvas y coordinate (mouse position used if x or y are null)
-   * @param {Number} [options.z]                  Spawn canvas z coordinate (3D Canvas)
-   * @param {Boolean} [options.snapToGrid]        If 'true' snaps spawn position to the grid.
-   * @param {Boolean} [options.hidden]            If 'true' preset will be spawned hidden.
-   * @param {Boolean} [options.layerSwitch]       If 'true' the layer of the spawned preset will be activated.
-   * @param {Boolean} [options.scaleToGrid]       If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
-   * @param {Boolean} [options.modifyPrompt]      If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
-   * @param {Boolean} [options.coordPicker]       If 'true' a crosshair and preview will be enabled allowing spawn position to be picked
-   * @param {String} [options.pickerLabel]          Label displayed above crosshair when `coordPicker` is enabled
-   * @param {String} [options.taPreview]            Designates the preview placeable when spawning a `Token Attacher` prefab.
-   *                                                Accepted values are "ALL" (for all elements) and document name optionally followed by an index number
-   *                                                 e.g. "ALL", "Tile", "AmbientLight.1"
-   * @returns {Array[Document]}
-   */ static async spawnPreset({ uuid: uuid, preset: preset, name: name, type: type, folder: folder, x: x, y: y, z: z, coordPicker: coordPicker = false, pickerLabel: pickerLabel, taPreview: taPreview, snapToGrid: snapToGrid = true, hidden: hidden = false, layerSwitch: layerSwitch = false, scaleToGrid: scaleToGrid = false, modifyPrompt: modifyPrompt = true } = {}) {
-        if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
-        if (!(uuid || preset || name || type || folder)) throw Error("ID, Name, Folder, or Preset is needed to spawn it.");
-        if (!coordPicker && (x == null && y != null || x != null && y == null)) throw Error("Need both X and Y coordinates to spawn a preset.");
-        if (preset) await preset.load();
-        preset = preset ?? await $d0a1f06830d69799$export$619760a5720f8054.getPreset({
-            uuid: uuid,
-            name: name,
-            type: type,
-            folder: folder
-        });
-        if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
-        let presetData = deepClone(preset.data);
-        // Instead of using the entire data group use only one random one
-        if (preset.spawnRandom && presetData.length) presetData = [
-            presetData[Math.floor(Math.random() * presetData.length)]
-        ];
-        // Display prompt to modify data if needed
-        if (modifyPrompt && preset.modifyOnSpawn?.length) {
-            presetData = await $d0a1f06830d69799$var$modifySpawnData(presetData, preset.modifyOnSpawn);
-            // presetData being returned as null means that the modify field form has been canceled
-            // in which case we should cancel spawning as well
-            if (presetData == null) return;
-        }
-        // Populate preset data with default placeable data
-        presetData = presetData.map((data)=>{
-            return $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, data);
-        });
-        // Randomize data if needed
-        const randomizer = preset.randomize;
-        if (!foundry.utils.isEmpty(randomizer)) {
-            // Flat data required for randomizer
-            presetData = presetData.map((d)=>foundry.utils.flattenObject(d));
-            await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(presetData, null, randomizer);
-            presetData = presetData.map((d)=>foundry.utils.expandObject(d));
-        }
-        // Scale dimensions relative to grid size
-        if (scaleToGrid) $d0a1f06830d69799$var$scaleDataToGrid(presetData, preset.documentName, preset.gridSize);
-        if (preset.preSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.preSpawnScript, {
-            data: presetData
-        });
-        // Lets sort the preset data as well as any attached placeable data into document groups
-        // documentName -> data array
-        const docToData = new Map();
-        docToData.set(preset.documentName, presetData);
-        if (preset.attached) for (const attached of preset.attached){
-            if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
-            docToData.get(attached.documentName).push(deepClone(attached.data));
-        }
-        // ==================
-        // Determine spawn position
-        if (coordPicker) {
-            const coords = await new Promise(async (resolve)=>{
-                (0, $32e43d7a62aba58c$export$ba25329847403e11).activate(resolve, {
-                    documentName: preset.documentName,
-                    previewData: docToData,
-                    snap: snapToGrid,
-                    label: pickerLabel,
-                    taPreview: taPreview
-                });
-            });
-            if (coords == null) return [];
-            x = coords.end.x;
-            y = coords.end.y;
-        } else if (x == null || y == null) {
-            if (game.Levels3DPreview?._active) {
-                const pos3d = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
-                x = pos3d.x;
-                y = pos3d.y;
-                z = pos3d.z;
-            } else {
-                x = canvas.mousePosition.x;
-                y = canvas.mousePosition.y;
-                if (preset.documentName === "Token" || preset.documentName === "Tile") {
-                    x -= canvas.dimensions.size / 2;
-                    y -= canvas.dimensions.size / 2;
-                }
-            }
-        }
-        let pos = {
-            x: x,
-            y: y
-        };
-        if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision);
-        // ==================
-        // ==================
-        // Set positions taking into account relative distances between each object
-        let diffX, diffY, diffZ;
-        docToData.forEach((dataArr, documentName)=>{
-            for (const data of dataArr){
-                // We need to establish the first found coordinate as the reference point
-                if (diffX == null || diffY == null) {
-                    if (documentName === "Wall") {
-                        if (data.c) {
-                            diffX = pos.x - data.c[0];
-                            diffY = pos.y - data.c[1];
-                        }
-                    } else if (data.x != null && data.y != null) {
-                        diffX = pos.x - data.x;
-                        diffY = pos.y - data.y;
-                    }
-                    // 3D Canvas
-                    if (z != null) {
-                        const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
-                        if (getProperty(data, property) != null) diffZ = z - getProperty(data, property);
-                    }
-                }
-                // Assign relative position
-                if (documentName === "Wall") {
-                    if (!data.c || diffX == null) data.c = [
-                        pos.x,
-                        pos.y,
-                        pos.x + canvas.grid.w * 2,
-                        pos.y
-                    ];
-                    else {
-                        data.c[0] += diffX;
-                        data.c[1] += diffY;
-                        data.c[2] += diffX;
-                        data.c[3] += diffY;
-                    }
-                } else {
-                    data.x = data.x == null || diffX == null ? pos.x : data.x + diffX;
-                    data.y = data.y == null || diffY == null ? pos.y : data.y + diffY;
-                }
-                // 3D Canvas
-                if (z != null) {
-                    delete data.z;
-                    let elevation;
-                    const property = documentName === "Token" ? "elevation" : "flags.levels.rangeBottom";
-                    if (diffZ !== null && getProperty(data, property) != null) elevation = getProperty(data, property) + diffZ;
-                    else elevation = z;
-                    setProperty(data, property, elevation);
-                    if (documentName !== "Token") setProperty(data, "flags.levels.rangeTop", elevation);
-                }
-                // Assign ownership for Drawings and MeasuredTemplates
-                if ([
-                    "Drawing",
-                    "MeasuredTemplate"
-                ].includes(documentName)) {
-                    if (documentName === "Drawing") data.author = game.user.id;
-                    else if (documentName === "MeasuredTemplate") data.user = game.user.id;
-                }
-                // Hide
-                if (hidden || game.keyboard.downKeys.has("AltLeft")) data.hidden = true;
-            }
-        });
-        // ==================
-        if (layerSwitch) {
-            if (game.user.isGM || [
-                "Token",
-                "MeasuredTemplate",
-                "Note"
-            ].includes(preset.documentName)) canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
-        }
-        // Create Documents
-        const allDocuments = [];
-        for (const [documentName, dataArr] of docToData.entries()){
-            const documents1 = await (0, $32e43d7a62aba58c$export$24b03028f6f659d0)(documentName, dataArr, canvas.scene.id);
-            documents1.forEach((d)=>allDocuments.push(d));
-        }
-        // Execute post spawn scripts
-        if (preset.postSpawnScript) await (0, $32e43d7a62aba58c$export$9087f1a05b437404)(preset.postSpawnScript, {
-            documents: allDocuments,
-            objects: documents.map((d)=>d.object).filter(Boolean)
-        });
-        return allDocuments;
-    }
-}
-class $d0a1f06830d69799$export$511ed1dd332818c6 {
-    static scope = "world";
-    static setting = "expandedFolders";
-    static init() {
-        game.settings.register(this.scope, this.setting, {
-            scope: "world",
-            config: false,
-            type: Object,
-            default: {}
-        });
-        this.states = game.settings.get(this.scope, this.setting) ?? {};
-    }
-    static expanded(uuid) {
-        return this.states[uuid];
-    }
-    static setExpanded(uuid, state) {
-        if (Boolean(this.states[uuid]) !== state) {
-            this.states[uuid] = state;
-            game.settings.set(this.scope, this.setting, this.states);
-        }
-    }
-}
-const $d0a1f06830d69799$var$DOC_ICONS = {
-    ALL: "fas fa-globe",
-    Token: "fas fa-user-circle",
-    MeasuredTemplate: "fas fa-ruler-combined",
-    Tile: "fa-solid fa-cubes",
-    Drawing: "fa-solid fa-pencil-alt",
-    Wall: "fa-solid fa-block-brick",
-    AmbientLight: "fa-regular fa-lightbulb",
-    AmbientSound: "fa-solid fa-music",
-    Note: "fa-solid fa-bookmark",
-    Actor: "fas fa-user-alt",
-    Scene: "fas fa-map",
-    DEFAULT: "fa-solid fa-question"
-};
-const $d0a1f06830d69799$var$SORT_MODES = {
+const $6e4e38012e8d2014$var$SORT_MODES = {
     manual: {
         get tooltip () {
             return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("SIDEBAR.SortModeManual", false);
@@ -22414,7 +23170,7 @@ const $d0a1f06830d69799$var$SORT_MODES = {
         icon: '<i class="fa-solid fa-arrow-down-a-z"></i>'
     }
 };
-const $d0a1f06830d69799$var$SEARCH_MODES = {
+const $6e4e38012e8d2014$var$SEARCH_MODES = {
     p: {
         get tooltip () {
             return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.search-presets");
@@ -22428,14 +23184,15 @@ const $d0a1f06830d69799$var$SEARCH_MODES = {
         icon: '<i class="fa-solid fa-folder-magnifying-glass"></i>'
     }
 };
-class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
+class $6e4e38012e8d2014$export$7a966e8b4abecc03 extends FormApplication {
     static objectHover = false;
     static lastSearch;
     constructor(configApp, callback, docName, options = {}){
-        if (!options.preventPositionOverride && $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft) {
-            options.left = $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft;
-            options.top = $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionTop;
-        }
+        // Restore position and dimensions the previously closed window
+        if (!options.preventPositionOverride && $6e4e38012e8d2014$export$7a966e8b4abecc03.previousPosition) options = {
+            ...options,
+            ...$6e4e38012e8d2014$export$7a966e8b4abecc03.previousPosition
+        };
         super({}, options);
         this.callback = callback;
         // Drag/Drop tracking
@@ -22459,7 +23216,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             ],
             template: `modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presets.html`,
             resizable: true,
-            minimizable: false,
+            minimizable: true,
             width: 350,
             height: 900,
             scrollY: [
@@ -22478,13 +23235,14 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         // If we're re-rendering deactivate the brush
         if (this._activeBrush) (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
         // Cache partials
-        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/preset.html`);
-        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolder.html`);
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/preset.html`, "me-preset");
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolder.html`, "me-preset-folder");
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetsContent.html`, "me-presets-content");
         const displayExtCompendiums = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetExtComp");
-        this.tree = await $d0a1f06830d69799$export$9cea25aeb7365a59.getTree(this.docName, !displayExtCompendiums);
+        this.tree = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).getTree(this.docName, !displayExtCompendiums);
         data.presets = this.tree.presets;
         data.folders = this.tree.folders;
-        data.staticFolders = this.tree.staticFolders.length ? this.tree.staticFolders : null;
+        data.extFolders = this.tree.extFolders.length ? this.tree.extFolders : null;
         data.createEnabled = Boolean(this.configApp);
         data.isPlaceable = (0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(this.docName) || this.docName === "ALL";
         data.allowDocumentSwap = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(this.docName) && !this.configApp;
@@ -22492,15 +23250,15 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         data.layerSwitchActive = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch");
         data.scaling = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling");
         data.extCompActive = displayExtCompendiums;
-        data.sortMode = $d0a1f06830d69799$var$SORT_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode")];
-        data.searchMode = $d0a1f06830d69799$var$SEARCH_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode")];
+        data.sortMode = $6e4e38012e8d2014$var$SORT_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode")];
+        data.searchMode = $6e4e38012e8d2014$var$SEARCH_MODES[game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode")];
         data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
         data.canvas3dActive = this.canvas3dActive;
-        data.lastSearch = $d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch;
+        data.lastSearch = $6e4e38012e8d2014$export$7a966e8b4abecc03.lastSearch;
         data.docs = (0, $32e43d7a62aba58c$export$6ba969594e8d224d).reduce((obj, key)=>{
             return {
                 ...obj,
-                [key]: $d0a1f06830d69799$var$DOC_ICONS[key]
+                [key]: (0, $449b4d80a1c5126b$export$34595c972f489ae2)[key]
             };
         }, {});
         data.documents = (0, $32e43d7a62aba58c$export$6ba969594e8d224d);
@@ -22516,14 +23274,14 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         html.closest(".window-content").on("mouseover", (event)=>{
             if (canvas.activeLayer?.preview?.children.some((c)=>c._original?.mouseInteractionManager?.isDragging)) {
                 hoverOverlay.show();
-                $d0a1f06830d69799$export$7a966e8b4abecc03.objectHover = true;
+                $6e4e38012e8d2014$export$7a966e8b4abecc03.objectHover = true;
             } else {
                 hoverOverlay.hide();
-                $d0a1f06830d69799$export$7a966e8b4abecc03.objectHover = false;
+                $6e4e38012e8d2014$export$7a966e8b4abecc03.objectHover = false;
             }
         }).on("mouseout", ()=>{
             hoverOverlay.hide();
-            $d0a1f06830d69799$export$7a966e8b4abecc03.objectHover = false;
+            $6e4e38012e8d2014$export$7a966e8b4abecc03.objectHover = false;
         });
         // Create Preset from Selected
         html.find(".create-preset").on("click", ()=>{
@@ -22535,8 +23293,15 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const itemList = html.find(".item-list");
         // Multi-select
         html.on("click", ".item", (event)=>{
-            $d0a1f06830d69799$var$itemSelect(event, itemList);
+            $6e4e38012e8d2014$var$itemSelect(event, itemList);
             if (this._activeBrush) this._toggleBrush(event);
+        });
+        // Hide/Show preset tags
+        html.on("mouseenter", ".item", (event)=>{
+            $(event.currentTarget).find(".tags").addClass("show");
+        });
+        html.on("mouseleave", ".item", (event)=>{
+            $(event.currentTarget).find(".tags").removeClass("show");
         });
         html.on("dragstart", ".item", (event)=>{
             this.dragType = "item";
@@ -22597,24 +23362,11 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             this.draggedElements = null;
         });
         html.on("dragend", ".item", (event)=>{
-            if (!$d0a1f06830d69799$var$checkMouseInWindow(event)) this._onPresetDragOut(event);
+            if (!$6e4e38012e8d2014$var$checkMouseInWindow(event)) this._onPresetDragOut(event);
         });
         // ================
         // Folder Listeners
-        html.on("click", ".folder > header", (event)=>{
-            const folder = $(event.target).closest(".folder");
-            const uuid = folder.data("uuid");
-            const icon = folder.find("header h3 i").first();
-            if (!$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) {
-                $d0a1f06830d69799$export$511ed1dd332818c6.setExpanded(uuid, true);
-                folder.removeClass("collapsed");
-                icon.removeClass("fa-folder-closed").addClass("fa-folder-open");
-            } else {
-                $d0a1f06830d69799$export$511ed1dd332818c6.setExpanded(uuid, false);
-                folder.addClass("collapsed");
-                icon.removeClass("fa-folder-open").addClass("fa-folder-closed");
-            }
-        });
+        html.on("click", ".folder > header", (event)=>this._folderToggle($(event.target).closest(".folder")));
         html.on("dragstart", ".folder.editable", (event)=>{
             if (this.dragType == "item") return;
             this.dragType = "folder";
@@ -22643,6 +23395,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             } else if (this.dragType === "item" && this.draggedElements.hasClass("editable")) targetFolder.addClass("drag-mid");
         });
         html.on("drop", ".folder.editable header", (event)=>{
+            if (this._foundryDrop(event)) return;
             const targetFolder = $(event.target).closest(".folder");
             if (this.dragType === "folder") {
                 const top = targetFolder.hasClass("drag-top");
@@ -22684,6 +23437,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             this.draggedElements = null;
         });
         html.on("drop", ".top-level-preset-items", (event)=>{
+            if (this._foundryDrop(event)) return;
             if (this.dragType === "folder") {
                 // Move HTML Elements
                 const target = html.find(".top-level-folder-items");
@@ -22706,33 +23460,129 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         });
         // End of Folder Listeners
         // ================
-        html.find(".toggle-sort").on("click", this._onToggleSort.bind(this));
-        html.find(".toggle-search-mode").on("click", this._onToggleSearch.bind(this));
-        html.find(".toggle-doc-lock").on("click", this._onToggleLock.bind(this));
-        html.find(".toggle-ext-comp").on("click", this._onToggleExtComp.bind(this));
-        html.find(".toggle-scaling").on("click", this._onToggleScaling.bind(this));
-        html.find(".toggle-layer-switch").on("click", this._onToggleLayerSwitch.bind(this));
-        html.find(".document-select").on("click", this._onDocumentChange.bind(this));
-        html.find(".item").on("contextmenu", this._onRightClickPreset.bind(this));
-        html.find(".item").on("dblclick", this._onDoubleClickPreset.bind(this));
-        html.find(".create-folder").on("click", this._onCreateFolder.bind(this));
+        html.on("click", ".toggle-sort", this._onToggleSort.bind(this));
+        html.on("click", ".toggle-search-mode", this._onToggleSearch.bind(this));
+        html.on("click", ".toggle-doc-lock", this._onToggleLock.bind(this));
+        html.on("click", ".toggle-ext-comp", this._onToggleExtComp.bind(this));
+        html.on("click", ".toggle-scaling", this._onToggleScaling.bind(this));
+        html.on("click", ".toggle-layer-switch", this._onToggleLayerSwitch.bind(this));
+        html.on("click", ".document-select", this._onDocumentChange.bind(this));
+        html.on("dblclick", ".item", this._onDoubleClickPreset.bind(this));
+        html.on("click", ".create-folder", this._onCreateFolder.bind(this));
         html.on("click", ".preset-create", this._onPresetCreate.bind(this));
         html.on("click", ".preset-update a", this._onPresetUpdate.bind(this));
         html.on("click", ".preset-brush", this._toggleBrush.bind(this));
         html.on("click", ".preset-callback", this._onApplyPreset.bind(this));
         const headerSearch = html.find(".header-search input");
-        const items = html.find(".item");
-        const folders = html.find(".folder");
-        headerSearch.on("input", (event)=>this._onSearchInput(event, items, folders));
-        if ($d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch) headerSearch.trigger("input");
+        headerSearch.on("input", (event)=>this._onSearchInput(event));
+        if (($6e4e38012e8d2014$export$7a966e8b4abecc03.lastSearch?.length ?? 0) >= $6e4e38012e8d2014$var$SEARCH_MIN_CHAR) headerSearch.trigger("input");
         // Activate context menu
         this._contextMenu(html.find(".item-list"));
+    }
+    _folderToggle(folderElement) {
+        const uuid = folderElement.data("uuid");
+        const folder = this.tree.allFolders.get(uuid);
+        if (folder.expanded) this._folderCollapse(folderElement, folder);
+        else this._folderExpand(folderElement, folder);
+    }
+    async _folderExpand(folderElement, folder) {
+        (0, $f36f870d870fb1df$export$511ed1dd332818c6).setExpanded(folder.uuid, true);
+        folder.expanded = true;
+        if (folderElement.find(".folder-items").length) {
+            folderElement.removeClass("collapsed");
+            folderElement.find("header h3 i").first().removeClass("fa-folder-closed").addClass("fa-folder-open");
+        } else {
+            let content = await renderTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetFolder.html`, {
+                folder: folder,
+                createEnabled: Boolean(this.configApp),
+                callback: Boolean(this.callback),
+                editable: fromUuidSync(folder.uuid)?.pack === (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack
+            });
+            folderElement.replaceWith(content);
+        }
+    }
+    _folderCollapse(folderElement, folder) {
+        folderElement.addClass("collapsed");
+        folderElement.find("header h3 i").first().removeClass("fa-folder-open").addClass("fa-folder-closed");
+        (0, $f36f870d870fb1df$export$511ed1dd332818c6).setExpanded(folder.uuid, false);
+        folder.expanded = false;
+    }
+    /**
+   * Process drag and drop of an Actor or Folder of actors
+   * @param {*} event
+   * @returns
+   */ _foundryDrop(event) {
+        const data = TextEditor.getDragEventData(event.originalEvent);
+        if (!isEmpty(data)) {
+            if (data.type === "Folder") {
+                const folder = fromUuidSync(data.uuid);
+                if (folder.type !== "Actor") return false;
+                if (this._importTracker?.active) return false;
+                (0, $abc4dddfd0d20118$export$5cfd1b1c4290658d)({
+                    title: "Converting Actors",
+                    total: (0, $abc4dddfd0d20118$export$bb2f3c779e9bc5d8)(folder)
+                }).then(async (tracker)=>{
+                    this._importTracker = tracker;
+                    await this._importActorFolder(folder, null, {
+                        keepId: true
+                    });
+                    this._importTracker?.stop();
+                });
+                return true;
+            } else if (data.type === "Actor") {
+                (0, $74329e11c6ef615c$export$619760a5720f8054).createPresetFromActorUuid(data.uuid, {
+                    keepId: true
+                }).then((preset)=>{
+                    if (preset) this.render(true);
+                });
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    async _importActorFolder(folder, parentFolder = null, options = {}) {
+        let nFolder = new Folder.implementation({
+            _id: options.keepId ? folder.id : null,
+            name: folder.name,
+            type: "JournalEntry",
+            sorting: folder.sorting,
+            folder: parentFolder,
+            color: folder.color ?? "#000000",
+            flags: {
+                [(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)]: {
+                    types: [
+                        "ALL",
+                        "Token"
+                    ]
+                }
+            }
+        }, {
+            pack: (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack
+        });
+        nFolder = await Folder.create(nFolder, {
+            pack: nFolder.pack,
+            keepId: options.keepId
+        });
+        for (const child of folder.children){
+            if (!this._importTracker?.active) break;
+            await this._importActorFolder(child.folder, nFolder.id, options);
+        }
+        for (const actor of folder.contents){
+            if (!this._importTracker?.active) break;
+            await (0, $74329e11c6ef615c$export$619760a5720f8054).createPresetFromActorUuid(actor.uuid, {
+                folder: nFolder.id,
+                keepId: options.keepId
+            });
+            this._importTracker.incrementCount();
+        }
+        this.render(true);
     }
     async _onDoubleClickPreset(event) {
         if (this.canvas3dActive) return;
         const uuid = $(event.target).closest(".item").data("uuid");
         if (!uuid) return;
-        const preset = await $d0a1f06830d69799$export$619760a5720f8054.getPreset({
+        const preset = await (0, $74329e11c6ef615c$export$619760a5720f8054).getPreset({
             uuid: uuid
         });
         if (!preset) return;
@@ -22742,17 +23592,27 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }
         if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(preset.documentName)) return;
         ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.spawning")} [${preset.name}]`);
-        $d0a1f06830d69799$export$619760a5720f8054.spawnPreset({
+        this._setInteractivityState(false);
+        await (0, $74329e11c6ef615c$export$619760a5720f8054).spawnPreset({
             preset: preset,
             coordPicker: true,
             taPreview: "ALL",
             layerSwitch: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetLayerSwitch"),
             scaleToGrid: game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetScaling")
         });
+        this._setInteractivityState(true);
+    }
+    /**
+   * Sets the window app as translucent and inactive to mouse pointer events
+   * @param {Boolean} state true = active, false = inactive
+   */ _setInteractivityState(state) {
+        if (state) this.element.removeClass("inactive");
+        else this.element.addClass("inactive");
     }
     _contextMenu(html) {
-        if (html.find(".item").length) ContextMenu.create(this, html, ".item", this._getItemContextOptions(), {
-            hookName: "MassEditPresetContext"
+        ContextMenu.create(this, html, ".item", this._getItemContextOptions(), {
+            hookName: "MassEditPresetContext",
+            onOpen: this._onRightClickPreset.bind(this)
         });
         ContextMenu.create(this, html, ".folder header", this._getFolderContextOptions(), {
             hookName: "MassEditFolderContext"
@@ -22815,7 +23675,10 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             {
                 name: "Edit",
                 icon: '<i class="fas fa-edit"></i>',
-                condition: (header)=>header.closest(".folder").hasClass("editable"),
+                condition: (header)=>{
+                    const folder = this.tree.allFolders.get(header.closest(".folder").data("uuid"));
+                    return !(folder instanceof (0, $74329e11c6ef615c$export$48071842e07c8882)) || folder instanceof (0, $74329e11c6ef615c$export$78bfafae49dc346b);
+                },
                 callback: (header)=>this._onFolderEdit(header)
             },
             {
@@ -22824,22 +23687,46 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 callback: (header)=>this._onExportFolder(header.closest(".folder").data("uuid"))
             },
             {
-                name: "Delete",
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.Remove", false),
                 icon: '<i class="fas fa-trash fa-fw"></i>',
                 condition: (header)=>header.closest(".folder").hasClass("editable"),
                 callback: (header)=>this._onFolderDelete(header.closest(".folder").data("uuid"))
+            },
+            {
+                name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.Delete", false),
+                icon: '<i class="fas fa-dumpster"></i>',
+                condition: (header)=>header.closest(".folder").hasClass("editable"),
+                callback: (header)=>this._onFolderDelete(header.closest(".folder").data("uuid"), {
+                        deleteAll: true
+                    })
+            },
+            {
+                name: "Randomize Child Folder Colors",
+                icon: '<i class="fas fa-dice"></i>',
+                condition: ()=>CONFIG.debug.MassEdit,
+                callback: (header)=>(0, $f36f870d870fb1df$export$80e31902d66ad249)(header.closest(".folder").data("uuid"), this.tree, ()=>this.render(true))
             }
         ];
     }
     async _onExportFolder(uuid) {
-        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
+        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$6e4e38012e8d2014$var$getCompendiumDialog(resolve, {
                 exportTo: true,
                 keepIdSelect: true
             }));
-        if (pack) this._onCopyFolder(uuid, null, pack, true, keepId);
+        if (pack && !this._importTracker?.active) {
+            const folder = this.tree.allFolders.get(uuid);
+            if (folder) {
+                this._importTracker = await (0, $abc4dddfd0d20118$export$5cfd1b1c4290658d)({
+                    title: "Exporting Folder",
+                    total: (0, $abc4dddfd0d20118$export$bb2f3c779e9bc5d8)(this.tree.allFolders.get(uuid))
+                });
+                await this._onCopyFolder(uuid, null, pack, true, keepId);
+                this._importTracker?.stop();
+            }
+        }
     }
     async _onCopyFolder(uuid, parentId = null, pack, render = true, keepId = true) {
-        if (!pack) pack = $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack;
+        if (!pack) pack = (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack;
         const folder = this.tree.allFolders.get(uuid);
         const folderDoc = await fromUuid(uuid);
         if (folder) {
@@ -22851,6 +23738,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 "ALL"
             ];
             const data = {
+                _id: keepId ? folder.id : null,
                 name: folder.name,
                 color: folder.color,
                 sorting: folder.sorting,
@@ -22863,20 +23751,26 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 type: "JournalEntry"
             };
             const nFolder = await Folder.create(data, {
-                pack: pack
+                pack: pack,
+                keepId: keepId
             });
             for (const preset of folder.presets){
+                if (!this._importTracker?.active) break;
                 const p = (await preset.load()).clone();
                 p.folder = nFolder.id;
                 if (!keepId) p.id = foundry.utils.randomID();
-                await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
+                await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).set(p, pack);
+                this._importTracker?.incrementCount();
             }
-            for (const child of folder.children)await this._onCopyFolder(child.uuid, nFolder.id, pack, false, keepId);
+            for (const child of folder.children){
+                if (!this._importTracker?.active) break;
+                await this._onCopyFolder(child.uuid, nFolder.id, pack, false, keepId);
+            }
             if (render) this.render(true);
         }
     }
     async _onExportSelectedPresetsToComp() {
-        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {
+        let { pack: pack, keepId: keepId } = await new Promise((resolve)=>$6e4e38012e8d2014$var$getCompendiumDialog(resolve, {
                 exportTo: true,
                 keepIdSelect: true
             }));
@@ -22890,7 +23784,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             const p = preset.clone();
             if (!keepFolder) p.folder = null;
             if (!keepId) p.id = foundry.utils.randomID();
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.set(p, pack);
+            await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).set(p, pack);
         }
         if (selected.length) this.render(true);
     }
@@ -22898,16 +23792,18 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const [selected, _] = await this._getSelectedPresets();
         if (selected.length) (0, $8d51a9873394e4eb$export$2cdf1b96a9f86d16)(selected[0]);
     }
-    async _getSelectedPresets({ editableOnly: editableOnly = false } = {}) {
+    async _getSelectedPresets({ editableOnly: editableOnly = false, full: full = true } = {}) {
         const uuids = [];
-        const items = $(this.form).find(".item-list").find(".item.selected" + (editableOnly ? ".editable" : ""));
+        const items = this.element.find(".item-list").find(".item.selected" + (editableOnly ? ".editable" : ""));
         items.each(function() {
             const uuid = $(this).data("uuid");
             uuids.push(uuid);
         });
         const selected = [];
         for (const uuid of uuids){
-            const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
+            const preset = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get(uuid, {
+                full: full
+            });
             if (preset) selected.push(preset);
         }
         return [
@@ -22917,7 +23813,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     async _onExportSelectedPresets() {
         const [selected, _] = await this._getSelectedPresets();
-        $d0a1f06830d69799$var$exportPresets(selected);
+        $6e4e38012e8d2014$var$exportPresets(selected);
     }
     async _onEditSelectedPresets(item) {
         const [selected, _] = await this._getSelectedPresets({
@@ -22932,17 +23828,18 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     }
     async _onDeleteSelectedPresets(item) {
         const [selected, items] = await this._getSelectedPresets({
-            editableOnly: true
+            editableOnly: true,
+            full: false
         });
         if (selected.length) {
-            const confirm = selected.length < 3 ? true : await Dialog.confirm({
+            const confirm = selected.length === 0 ? true : await Dialog.confirm({
                 title: `${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("common.delete")} [ ${selected.length} ]`,
                 content: `<p>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("AreYouSure", false)}</p><p>${(0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("presets.delete-presets-warn", {
                     count: selected.length
                 })}</p>`
             });
             if (confirm) {
-                await $d0a1f06830d69799$export$9cea25aeb7365a59.delete(selected);
+                await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).delete(selected);
                 items.remove();
             }
         }
@@ -22986,94 +23883,124 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 }
             }
         }, {
-            pack: $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack
+            pack: (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack
         });
         await new Promise((resolve)=>{
-            new $d0a1f06830d69799$var$PresetFolderConfig(folder, {
+            new $6e4e38012e8d2014$var$PresetFolderConfig(folder, {
                 resolve: resolve
             }).render(true);
         });
         this.render(true);
     }
     async _onFolderEdit(header) {
-        const folder = await fromUuid($(header).closest(".folder").data("uuid"));
+        const uuid = $(header).closest(".folder").data("uuid");
+        const pFolder = this.tree.allFolders.get(uuid);
+        let folder;
+        if (pFolder instanceof (0, $74329e11c6ef615c$export$78bfafae49dc346b)) // This is a virtual pack folder
+        folder = new Folder.implementation({
+            _id: pFolder.id,
+            name: pFolder.name,
+            type: "JournalEntry",
+            color: pFolder.color,
+            sorting: pFolder.sorting
+        }, {
+            pack: pFolder.uuid
+        });
+        else folder = await fromUuid($(header).closest(".folder").data("uuid"));
         new Promise((resolve)=>{
             const options = {
                 resolve: resolve,
-                ...header.offset()
+                ...header.offset(),
+                folder: pFolder
             };
             options.top += header.height();
-            new $d0a1f06830d69799$var$PresetFolderConfig(folder, options).render(true);
+            new $6e4e38012e8d2014$var$PresetFolderConfig(folder, options).render(true);
         }).then(()=>this.render(true));
     }
-    async _onFolderDelete(uuid, render = true) {
+    async _onFolderDelete(uuid, { render: render = true, deleteAll: deleteAll = false } = {}) {
         const folder = this.tree.allFolders.get(uuid);
         if (folder) {
-            const confirm = await Dialog.confirm({
+            let confirm;
+            if (deleteAll) confirm = await Dialog.confirm({
+                title: `${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.Delete", false)}: ${folder.name}`,
+                content: `<div style="color:red;"><h4>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("AreYouSure", false)}</h4><p>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.DeleteWarning", false)}</p></div>`
+            });
+            else confirm = await Dialog.confirm({
                 title: `${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.Remove", false)}: ${folder.name}`,
                 content: `<h4>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("AreYouSure", false)}</h4><p>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("FOLDER.RemoveWarning", false)}</p>`
             });
             if (confirm) {
-                const folderDoc = await fromUuid(uuid);
-                await folderDoc.delete({
-                    deleteSubfolders: false,
-                    deleteContents: false
-                });
+                await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).deleteFolder(uuid, deleteAll);
                 if (render) this.render(true);
             }
         }
     }
-    _onSearchInput(event, items, folder) {
-        $d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch = event.target.value;
-        if (!$d0a1f06830d69799$export$7a966e8b4abecc03.lastSearch) {
-            this.render(true);
+    // Throttle input and perform preset search
+    _onSearchInput(event) {
+        clearTimeout(this._searchTimer);
+        this._searchTimer = setTimeout(()=>this._onSearch(event), 250);
+    }
+    async _onSearch(event) {
+        let newSearch = event.target.value;
+        let previousSearch = $6e4e38012e8d2014$export$7a966e8b4abecc03.lastSearch || "";
+        $6e4e38012e8d2014$export$7a966e8b4abecc03.lastSearch = newSearch;
+        if (previousSearch.length >= $6e4e38012e8d2014$var$SEARCH_MIN_CHAR && newSearch.length < $6e4e38012e8d2014$var$SEARCH_MIN_CHAR) {
+            $(event.target).removeClass("active");
+            this._resetSearchState();
+            this._renderContent();
             return;
         }
-        const matchedFolderUuids = new Set();
+        if (newSearch.length < $6e4e38012e8d2014$var$SEARCH_MIN_CHAR) return;
         const filter = event.target.value.trim().toLowerCase();
         $(event.target).addClass("active");
-        // First hide/show items
-        const app = this;
-        items.each(function() {
-            const item = $(this);
-            if (item.attr("name").toLowerCase().includes(filter)) {
-                item.show();
-                let folderUuid = item.closest(".folder").data("uuid");
-                while(folderUuid){
-                    matchedFolderUuids.add(folderUuid);
-                    const folder = app.tree.allFolders.get(folderUuid);
-                    if (folder.folder) folderUuid = folder.folder;
-                    else folderUuid = null;
-                }
-            } else item.hide();
+        this.tree.folders.forEach((f)=>this._searchFolder(filter, f));
+        this.tree.extFolders.forEach((f)=>this._searchFolder(filter, f));
+        this.tree.presets.forEach((p)=>this._searchPreset(filter, p));
+        this._renderContent();
+    }
+    _searchFolder(filter, folder, forceRender = false) {
+        let match = folder.name.toLowerCase().includes(filter);
+        let childFolderMatch = false;
+        for (const f of folder.children)if (this._searchFolder(filter, f, match || forceRender)) childFolderMatch = true;
+        let presetMatch = false;
+        for (const p of folder.presets)if (this._searchPreset(filter, p, match || forceRender)) presetMatch = true;
+        const containsMatch = match || childFolderMatch || presetMatch;
+        folder.expanded = childFolderMatch || presetMatch;
+        folder.render = containsMatch || forceRender;
+        return containsMatch;
+    }
+    _searchPreset(filter, preset, forceRender = false) {
+        if (preset.name.toLowerCase().includes(filter) || preset.tags.includes(filter)) {
+            preset._render = true;
+            return true;
+        } else {
+            preset._render = forceRender;
+            return false;
+        }
+    }
+    _resetSearchState() {
+        this.tree.folders.forEach((f)=>this._resetSearchStateFolder(f));
+        this.tree.extFolders.forEach((f)=>this._resetSearchStateFolder(f));
+        this.tree.presets.forEach((p)=>this._resetSearchStatePreset(p));
+    }
+    _resetSearchStateFolder(folder) {
+        folder.expanded = (0, $f36f870d870fb1df$export$511ed1dd332818c6).expanded(folder.uuid);
+        folder.render = true;
+        folder.children.forEach((f)=>this._resetSearchStateFolder(f));
+        folder.presets.forEach((p)=>this._resetSearchStatePreset(p));
+    }
+    _resetSearchStatePreset(preset) {
+        preset._render = true;
+    }
+    async _renderContent() {
+        const content = await renderTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/preset/presetsContent.html`, {
+            callback: Boolean(this.callback),
+            presets: this.tree.presets,
+            folders: this.tree.folders,
+            createEnabled: Boolean(this.configApp),
+            extFolders: this.tree.extFolders.length ? this.tree.extFolders : null
         });
-        const parentMatchedFolderUuids = new Set();
-        // Next hide/show folders depending on whether they contained matched items
-        folder.each(function() {
-            const folder = $(this);
-            const uuid = folder.data("uuid");
-            if (matchedFolderUuids.has(uuid)) {
-                folder.removeClass("collapsed");
-                folder.show();
-            } else if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode") === "pf" && folder.data("name").toLowerCase().includes(filter)) {
-                folder.show();
-                if (!$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) folder.addClass("collapsed");
-                folder.find(".item").show();
-                folder.find(".folder").each(function() {
-                    const folder = $(this);
-                    const uuid = folder.data("uuid");
-                    parentMatchedFolderUuids.add(uuid);
-                    folder.show();
-                    if (!matchedFolderUuids.has(uuid) && !$d0a1f06830d69799$export$511ed1dd332818c6.expanded(uuid)) folder.addClass("collapsed");
-                });
-                let parent = folder.parent().closest(".folder");
-                while(parent.length){
-                    parent.show();
-                    parent.removeClass("collapsed");
-                    parent = parent.parent().closest(".folder");
-                }
-            } else if (!parentMatchedFolderUuids.has(uuid)) folder.hide();
-        });
+        this.element.find(".item-list").html(content);
     }
     async _onFolderSort(sourceUuid, targetUuid, { inside: inside = true, folderUuid: folderUuid = null } = {}) {
         let source = this.tree.allFolders.get(sourceUuid);
@@ -23098,9 +24025,10 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 ctrl.target.sort = update.sort;
             });
             await Folder.updateDocuments(updates, {
-                pack: $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack
+                pack: (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack
             });
         }
+        this.render(true);
     }
     async _onItemSort(sourceUuids, targetUuid, { before: before = true, folderUuid: folderUuid = null } = {}) {
         const sourceUuidsSet = new Set(sourceUuids);
@@ -23126,9 +24054,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 updates.push(update);
                 ctrl.target.sort = update.sort;
             });
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.updatePresets(updates);
+            await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).updatePresets(updates);
         }
-    // this.render(true);
+        this.render(true);
     }
     async _onToggleSort(event) {
         const currentSort = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSortMode");
@@ -23141,7 +24069,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         const currentMode = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode");
         const newMode = currentMode === "p" ? "pf" : "p";
         await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetSearchMode", newMode);
-        const mode = $d0a1f06830d69799$var$SEARCH_MODES[newMode];
+        const mode = $6e4e38012e8d2014$var$SEARCH_MODES[newMode];
         searchControl.attr("data-tooltip", mode.tooltip).html(mode.icon);
         $(this.form).find(".header-search input").trigger("input");
     }
@@ -23188,8 +24116,8 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             this.render(true);
         }
     }
-    async _onRightClickPreset(event) {
-        const item = $(event.target).closest(".item");
+    async _onRightClickPreset(eventTarget) {
+        const item = $(eventTarget).closest(".item");
         // If right-clicked item is not selected, de-select the others and select it
         if (!item.hasClass("selected")) {
             item.closest(".item-list").find(".item.selected").removeClass("selected").removeClass("last-selected");
@@ -23199,23 +24127,23 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
     _editPresets(presets, options = {}, event) {
         options.callback = ()=>this.render(true);
         if (!("left" in options) && event) {
-            options.left = event.originalEvent.x - $d0a1f06830d69799$export$c7d846246fcba8fd.defaultOptions.width / 2;
+            options.left = event.originalEvent.x - $6e4e38012e8d2014$export$c7d846246fcba8fd.defaultOptions.width / 2;
             options.top = event.originalEvent.y;
         }
-        new $d0a1f06830d69799$export$c7d846246fcba8fd(presets, options).render(true);
+        new $6e4e38012e8d2014$export$c7d846246fcba8fd(presets, options).render(true);
     }
     async _onApplyPreset(event) {
         if (this.callback) {
             const uuid = $(event.target).closest(".item").data("uuid");
-            this.callback(await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid));
+            this.callback(await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get(uuid));
         }
     }
     async _onPresetDragOut(event) {
         const uuid = $(event.originalEvent.target).closest(".item").data("uuid");
-        const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
+        const preset = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get(uuid);
         if (!preset) return;
         // If released on top of a Mass Edit form, apply the preset to it instead of spawning it
-        const form = $d0a1f06830d69799$var$hoverMassEditForm(event.pageX, event.pageY, preset.documentName);
+        const form = $6e4e38012e8d2014$var$hoverMassEditForm(event.pageX, event.pageY, preset.documentName);
         if (form) {
             form._applyPreset(preset);
             return;
@@ -23250,7 +24178,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
                 mouseY -= canvas.dimensions.size / 2;
             }
         }
-        $d0a1f06830d69799$export$619760a5720f8054.spawnPreset({
+        (0, $74329e11c6ef615c$export$619760a5720f8054).spawnPreset({
             preset: preset,
             x: mouseX,
             y: mouseY,
@@ -23268,7 +24196,7 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             this._onPresetBrushDeactivate();
         } else {
             const uuid = item.data("uuid");
-            const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get(uuid);
+            const preset = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get(uuid);
             if (!preset) {
                 (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
                 this._onPresetBrushDeactivate();
@@ -23289,20 +24217,92 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         $(this.form).find(".preset-brush").removeClass("active").removeClass("fa-bounce");
         this._activeBrush = false;
     }
-    setPosition(options) {
-        super.setPosition(options);
-        if (!this.options.preventPositionOverride) {
-            $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionLeft = this.position.left;
-            $d0a1f06830d69799$export$7a966e8b4abecc03.lastPositionTop = this.position.top;
+    /**
+   * @override
+   * Application.setPosition(...) has been modified to use css transform for window translation across the screen
+   * instead of top/left css properties which force full-window style recomputation
+   */ setPosition({ left: left, top: top, width: width, height: height, scale: scale } = {}) {
+        if (!this.popOut && !this.options.resizable) return; // Only configure position for popout or resizable apps.
+        const el = this.element[0];
+        const currentPosition = this.position;
+        const pop = this.popOut;
+        const styles = window.getComputedStyle(el);
+        if (scale === null) scale = 1;
+        scale = scale ?? currentPosition.scale ?? 1;
+        // If Height is "auto" unset current preference
+        if (height === "auto" || this.options.height === "auto") {
+            el.style.height = "";
+            height = null;
         }
+        // Update width if an explicit value is passed, or if no width value is set on the element
+        if (!el.style.width || width) {
+            const tarW = width || el.offsetWidth;
+            const minW = parseInt(styles.minWidth) || (pop ? MIN_WINDOW_WIDTH : 0);
+            const maxW = el.style.maxWidth || window.innerWidth / scale;
+            currentPosition.width = width = Math.clamped(tarW, minW, maxW);
+            el.style.width = `${width}px`;
+            if (width * scale + currentPosition.left > window.innerWidth) left = currentPosition.left;
+        }
+        width = el.offsetWidth;
+        // Update height if an explicit value is passed, or if no height value is set on the element
+        if (!el.style.height || height) {
+            const tarH = height || el.offsetHeight + 1;
+            const minH = parseInt(styles.minHeight) || (pop ? MIN_WINDOW_HEIGHT : 0);
+            const maxH = el.style.maxHeight || window.innerHeight / scale;
+            currentPosition.height = height = Math.clamped(tarH, minH, maxH);
+            el.style.height = `${height}px`;
+            if (height * scale + currentPosition.top > window.innerHeight + 1) top = currentPosition.top - 1;
+        }
+        height = el.offsetHeight;
+        let leftT, topT;
+        // Update Left
+        if (pop && !this.posSet || Number.isFinite(left)) {
+            const scaledWidth = width * scale;
+            const tarL = Number.isFinite(left) ? left : (window.innerWidth - scaledWidth) / 2;
+            const maxL = Math.max(window.innerWidth - scaledWidth, 0);
+            currentPosition.left = left = Math.clamped(tarL, 0, maxL);
+            leftT = left;
+        }
+        // Update Top
+        if (pop && !this.posSet || Number.isFinite(top)) {
+            const scaledHeight = height * scale;
+            const tarT = Number.isFinite(top) ? top : (window.innerHeight - scaledHeight) / 2;
+            const maxT = Math.max(window.innerHeight - scaledHeight, 0);
+            currentPosition.top = Math.clamped(tarT, 0, maxT);
+            topT = currentPosition.top;
+        }
+        let transform = "";
+        // Update Scale
+        if (scale) {
+            currentPosition.scale = Math.max(scale, 0);
+            if (scale === 1) transform += ``;
+            else transform += `scale(${scale})`;
+        }
+        if (leftT || topT) {
+            this.posSet = true;
+            transform += "translate(" + leftT + "px," + topT + "px)";
+        }
+        if (transform) el.style.transform = transform;
+        // Track position post window close
+        if (!this.options.preventPositionOverride) {
+            const { left: left, top: top, width: width, height: height } = this.position;
+            $6e4e38012e8d2014$export$7a966e8b4abecc03.previousPosition = {
+                left: left,
+                top: top,
+                width: width,
+                height: height
+            };
+        }
+        // Return the updated position object
+        return currentPosition;
     }
     async close(options = {}) {
         if (!Boolean(this.configApp)) (0, $9246b9d7680c2c9c$export$59bc2e3533b384a0).deactivate();
-        $d0a1f06830d69799$export$7a966e8b4abecc03.objectHover = false;
+        $6e4e38012e8d2014$export$7a966e8b4abecc03.objectHover = false;
         return super.close(options);
     }
     async _onPresetUpdate(event) {
-        const preset = await $d0a1f06830d69799$export$9cea25aeb7365a59.get($(event.target).closest(".item").data("uuid"));
+        const preset = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get($(event.target).closest(".item").data("uuid"));
         if (!preset) return;
         const selectedFields = this.configApp instanceof ActiveEffectConfig ? this._getActiveEffectFields() : this.configApp.getSelectedFields();
         if (!selectedFields || foundry.utils.isEmpty(selectedFields)) {
@@ -23328,14 +24328,14 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             ui.notifications.warn((0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.warn-no-fields"));
             return;
         }
-        const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
+        const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
             name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.default-name"),
             documentName: this.docName,
             data: selectedFields,
             addSubtract: this.configApp.addSubtractFields,
             randomize: this.configApp.randomizeFields
         });
-        await $d0a1f06830d69799$export$9cea25aeb7365a59.set(preset);
+        await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).set(preset);
         this.render(true);
         this._editPresets([
             preset
@@ -23344,13 +24344,13 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         }, event);
     }
     /**
-   * Create a preset from placeables dragged and dropped ont he form
+   * Create a preset from placeables dragged and dropped on the form
    * @param {Array[Placeable]} placeables
    * @param {Event} event
-   */ async dropPlaceable(placeables, event) {
-        const presets = await $d0a1f06830d69799$export$619760a5720f8054.createPreset(placeables);
+   */ async dropPlaceable(placeables1, event) {
+        const presets = await (0, $74329e11c6ef615c$export$619760a5720f8054).createPreset(placeables1);
         // Switch to just created preset's category before rendering if not set to 'ALL'
-        const documentName = placeables[0].document.documentName;
+        const documentName = placeables1[0].document.documentName;
         if (this.docName !== "ALL" && this.docName !== documentName) this.docName = documentName;
         const options = {
             isCreate: true
@@ -23359,6 +24359,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         options.top = this.position.top;
         this._editPresets(presets, options, event);
         this.render(true);
+    }
+    async actorToPreset(actor) {
+        const presets = await (0, $74329e11c6ef615c$export$619760a5720f8054).createPreset(placeables);
     }
     _getActiveEffectFields() {
         return {
@@ -23385,18 +24388,29 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
             icon: "fas fa-file-import",
             onclick: (ev)=>this._onImport(ev)
         });
+        if (CONFIG.debug.MassEdit) buttons.unshift({
+            label: "Debug",
+            class: "mass-edit-debug",
+            icon: "fas fa-bug",
+            onclick: (ev)=>{
+                console.log({
+                    index: game.packs.get((0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack).get((0, $74329e11c6ef615c$export$345e1d531777323a))?.flags[0, $32e43d7a62aba58c$export$59dbefa3c1eecdf]?.index,
+                    tree: this.tree
+                });
+            }
+        });
         return buttons;
     }
     async _onWorkingPackChange() {
-        let pack = await new Promise((resolve)=>$d0a1f06830d69799$var$getCompendiumDialog(resolve, {}));
-        if (pack && pack !== $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack) {
+        let pack = await new Promise((resolve)=>$6e4e38012e8d2014$var$getCompendiumDialog(resolve, {}));
+        if (pack && pack !== (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack) {
             await game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", pack);
             this.render(true);
         }
     }
     async _onExport() {
-        const tree = await $d0a1f06830d69799$export$9cea25aeb7365a59.getTree(null, true);
-        $d0a1f06830d69799$var$exportPresets(tree.allPresets);
+        const tree = await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).getTree(null, true);
+        $6e4e38012e8d2014$var$exportPresets(tree.allPresets);
     }
     async _onImport() {
         const json = await (0, $159f597adada9fb6$export$54355b03ee60ee6e)();
@@ -23405,9 +24419,9 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
         if (foundry.utils.getType(json) === "Array") for (const p of json){
             if (!("documentName" in p)) continue;
             if (!("data" in p) || foundry.utils.isEmpty(p.data)) continue;
-            const preset = new $d0a1f06830d69799$export$3463c369d5cc977f(p);
+            const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)(p);
             preset._pages = p.pages;
-            await $d0a1f06830d69799$export$9cea25aeb7365a59.set(preset);
+            await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).set(preset);
             importCount++;
         }
         ui.notifications.info(`Mass Edit: ${(0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("presets.imported", {
@@ -23419,10 +24433,10 @@ class $d0a1f06830d69799$export$7a966e8b4abecc03 extends FormApplication {
    * @param {Event} event
    * @param {Object} formData
    */ async _updateObject(event, formData) {
-        if (this.callback) this.callback(await $d0a1f06830d69799$export$9cea25aeb7365a59.get(event.submitter.data.id));
+        if (this.callback) this.callback(await (0, $74329e11c6ef615c$export$9cea25aeb7365a59).get(event.submitter.data.id));
     }
 }
-async function $d0a1f06830d69799$var$exportPresets(presets, fileName) {
+async function $6e4e38012e8d2014$var$exportPresets(presets, fileName) {
     if (!presets.length) return;
     for (const preset of presets)await preset.load();
     presets = presets.map((p)=>{
@@ -23433,11 +24447,11 @@ async function $d0a1f06830d69799$var$exportPresets(presets, fileName) {
     });
     saveDataToFile(JSON.stringify(presets, null, 2), "text/json", (fileName ?? "mass-edit-presets") + ".json");
 }
-class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
+class $6e4e38012e8d2014$export$c7d846246fcba8fd extends FormApplication {
     static name = "PresetConfig";
     /**
    * @param {Array[Preset]} presets
-   */ constructor(presets, options){
+   */ constructor(presets, options = {}){
         super({}, options);
         this.presets = presets;
         this.callback = options.callback;
@@ -23457,7 +24471,7 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
     }
     /* -------------------------------------------- */ /** @override */ get title() {
         if (this.presets.length > 1) return `Presets [${this.presets.length}]`;
-        else return `Preset: ${this.presets[0].name}`;
+        else return `Preset: ${this.presets[0].name.substring(0, 20)}${this.presets[0].name.length > 20 ? "..." : ""}`;
     }
     _getHeaderButtons() {
         const buttons = super._getHeaderButtons();
@@ -23472,7 +24486,7 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
     _onExport() {
         let fileName;
         if (this.presets.length === 1) fileName = "mass-edit-preset-" + this.presets[0].name.replace(" ", "_").replace(/\W/g, "");
-        $d0a1f06830d69799$var$exportPresets(this.presets, fileName);
+        $6e4e38012e8d2014$var$exportPresets(this.presets, fileName);
     }
     /* -------------------------------------------- */ /** @inheritdoc */ async close(options = {}) {
         if (!this.options.submitOnClose) this.options.resolve?.(null);
@@ -23491,11 +24505,11 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
                 let tooltip = at.documentName;
                 if (at.documentName === "Token" && at.data.name) tooltip += ": " + at.data.name;
                 return {
-                    icon: $d0a1f06830d69799$var$DOC_ICONS[at.documentName] ?? $d0a1f06830d69799$var$DOC_ICONS.DEFAULT,
+                    icon: (0, $449b4d80a1c5126b$export$34595c972f489ae2)[at.documentName] ?? (0, $449b4d80a1c5126b$export$34595c972f489ae2).DEFAULT,
                     tooltip: tooltip
                 };
             });
-        }
+        } else data.multiEdit = true;
         data.minlength = this.presets.length > 1 ? 0 : 1;
         data.tva = game.modules.get("token-variants")?.active;
         if (this.data && !(this.data instanceof Array)) {
@@ -23546,27 +24560,31 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
             if (this.presets.length !== 1) return;
             if (canvas.activeLayer?.preview?.children.some((c)=>c._original?.mouseInteractionManager?.isDragging)) {
                 hoverOverlay.show();
-                $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = true;
+                $6e4e38012e8d2014$export$c7d846246fcba8fd.objectHover = true;
             } else {
                 hoverOverlay.hide();
-                $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = false;
+                $6e4e38012e8d2014$export$c7d846246fcba8fd.objectHover = false;
             }
         }).on("mouseout", ()=>{
             if (this.presets.length !== 1) return;
             hoverOverlay.hide();
-            $d0a1f06830d69799$export$c7d846246fcba8fd.objectHover = false;
+            $6e4e38012e8d2014$export$c7d846246fcba8fd.objectHover = false;
         });
+        //Tags
+        (0, $32e43d7a62aba58c$export$39299b56cfd4e361).activateListeners(html, ()=>this.setPosition({
+                height: "auto"
+            }));
     }
     /**
    * Create a preset from placeables dragged and dropped ont he form
    * @param {Array[Placeable]} placeables
    * @param {Event} event
-   */ async dropPlaceable(placeables, event) {
+   */ async dropPlaceable(placeables1, event) {
         this.advancedOpen = true;
         if (!this.attached) this.attached = deepClone(this.presets[0].attached ?? []);
-        placeables.forEach((p)=>this.attached.push({
+        placeables1.forEach((p)=>this.attached.push({
                 documentName: p.document.documentName,
-                data: $d0a1f06830d69799$var$placeableToData(p)
+                data: (0, $f36f870d870fb1df$export$39440f0fa5867812)(p)
             }));
         await this.render(true);
         setTimeout(()=>this.setPosition({
@@ -23583,19 +24601,19 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
             }), 30);
     }
     async _onSpawnFields() {
-        new $d0a1f06830d69799$var$PresetFieldModify(this.data ?? this.presets[0].data, (modifyOnSpawn)=>{
+        new $6e4e38012e8d2014$var$PresetFieldModify(this.data ?? this.presets[0].data, (modifyOnSpawn)=>{
             this.modifyOnSpawn = modifyOnSpawn;
         }, this.modifyOnSpawn ?? this.presets[0].modifyOnSpawn).render(true);
     }
     async _onDeleteFields() {
-        new $d0a1f06830d69799$var$PresetFieldDelete(this.data ?? this.presets[0].data, (data)=>{
+        new $6e4e38012e8d2014$var$PresetFieldDelete(this.data ?? this.presets[0].data, (data)=>{
             this.data = data;
         }).render(true);
     }
     async _onAssignDocument() {
         const layer = canvas.getLayerByEmbeddedName(this.presets[0].documentName);
         if (!layer) return;
-        const data = layer.controlled.map((p)=>$d0a1f06830d69799$var$placeableToData(p));
+        const data = layer.controlled.map((p)=>(0, $f36f870d870fb1df$export$39440f0fa5867812)(p));
         if (data.length) {
             this.data = data;
             ui.notifications.info((0, $32e43d7a62aba58c$export$6ea486f4767e8a74)("presets.assign", {
@@ -23608,10 +24626,10 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
         }
     }
     async _onEditDocument() {
-        const documents1 = [];
+        const documents = [];
         const cls = CONFIG[this.presets[0].documentName].documentClass;
-        for (const p of this.presets)p.data.forEach((d)=>documents1.push(new cls($d0a1f06830d69799$var$mergePresetDataToDefaultDoc(p, d))));
-        const app = await (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(documents1, null, {
+        for (const p of this.presets)p.data.forEach((d)=>documents.push(new cls((0, $f36f870d870fb1df$export$60f3b7de93628ca3)(p, d))));
+        const app = await (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)(documents, null, {
             presetEdit: true,
             callback: (obj)=>{
                 this.addSubtract = {};
@@ -23627,7 +24645,7 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
         });
         // For randomize and addSubtract only take into account the first preset
         // and apply them to the form
-        const preset = new $d0a1f06830d69799$export$3463c369d5cc977f({
+        const preset = new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)({
             data: {},
             randomize: this.presets[0].randomize,
             addSubtract: this.presets[0].addSubtract
@@ -23641,6 +24659,9 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
         formData.img = formData.img.trim() || null;
         formData.preSpawnScript = formData.preSpawnScript?.trim();
         formData.postSpawnScript = formData.postSpawnScript?.trim();
+        formData.tags = formData.tags ? formData.tags.split(",") : [];
+        formData.addTags = formData.addTags ? formData.addTags.split(",") : [];
+        formData.removeTags = formData.removeTags ? formData.removeTags.split(",") : [];
         for (const preset of this.presets){
             let update;
             if (this.isCreate) update = {
@@ -23660,6 +24681,15 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
             if (formData.preSpawnScript != null) update.preSpawnScript = formData.preSpawnScript;
             if (formData.postSpawnScript != null) update.postSpawnScript = formData.postSpawnScript;
             if (formData.spawnRandom != null) update.spawnRandom = formData.spawnRandom;
+            // If this is a single preset config, we override all tags
+            // If not we merge
+            if (this.presets.length === 1) update.tags = formData.tags;
+            else if (formData.addTags.length || formData.removeTags.length) {
+                let tags = preset.tags ?? [];
+                if (formData.addTags.length) tags = Array.from(new Set(tags.concat(formData.addTags)));
+                if (formData.removeTags.length) tags = tags.filter((t)=>!formData.removeTags.includes(t));
+                update.tags = tags;
+            }
             await preset.update(update);
         }
     }
@@ -23668,8 +24698,46 @@ class $d0a1f06830d69799$export$c7d846246fcba8fd extends FormApplication {
         if (this.callback) this.callback(this.presets);
         return this.presets;
     }
+    /** @inheritDoc */ async _renderOuter() {
+        const html = await super._renderOuter();
+        this._createDocumentIdLink(html);
+        return html;
+    }
+    /* -------------------------------------------- */ /**
+   * Create an ID link button in the header which displays the JournalEntry ID and copies it to clipboard
+   * @param {jQuery} html
+   * @protected
+   */ _createDocumentIdLink(html) {
+        const title = html.find(".window-title");
+        const label = (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("DOCUMENT.JournalEntry", false);
+        const idLink = document.createElement("a");
+        idLink.classList.add("document-id-link");
+        idLink.setAttribute("alt", "Copy document id");
+        idLink.dataset.tooltip = `${label}: ${this.presets.map((p)=>p.id).join(", ")}`;
+        idLink.dataset.tooltipDirection = "UP";
+        idLink.innerHTML = '<i class="fa-solid fa-passport"></i>';
+        idLink.addEventListener("click", (event)=>{
+            event.preventDefault();
+            game.clipboard.copyPlainText(this.presets.map((p)=>p.id).join(", "));
+            ui.notifications.info(game.i18n.format("DOCUMENT.IdCopiedClipboard", {
+                label: label,
+                type: "id",
+                id: this.presets.map((p)=>p.id).join(", ")
+            }));
+        });
+        idLink.addEventListener("contextmenu", (event)=>{
+            event.preventDefault();
+            game.clipboard.copyPlainText(this.presets.map((p)=>p.uuid).join(", "));
+            ui.notifications.info(game.i18n.format("DOCUMENT.IdCopiedClipboard", {
+                label: label,
+                type: "uuid",
+                id: this.presets.map((p)=>p.uuid).join(", ")
+            }));
+        });
+        title.append(idLink);
+    }
 }
-class $d0a1f06830d69799$var$PresetFieldSelect extends FormApplication {
+class $6e4e38012e8d2014$var$PresetFieldSelect extends FormApplication {
     static name = "PresetFieldSelect";
     constructor(data, callback){
         super();
@@ -23693,7 +24761,7 @@ class $d0a1f06830d69799$var$PresetFieldSelect extends FormApplication {
         html.find(".item").on("click", this._onFieldClick);
     }
     _onFieldClick(e) {
-        $d0a1f06830d69799$var$itemSelect(e, $(e.target).closest(".preset-field-list"));
+        $6e4e38012e8d2014$var$itemSelect(e, $(e.target).closest(".preset-field-list"));
     }
     /** @override */ async getData(options = {}) {
         let data = foundry.utils.flattenObject(this.presetData);
@@ -23731,7 +24799,7 @@ class $d0a1f06830d69799$var$PresetFieldSelect extends FormApplication {
         };
     }
 }
-class $d0a1f06830d69799$var$PresetFieldDelete extends $d0a1f06830d69799$var$PresetFieldSelect {
+class $6e4e38012e8d2014$var$PresetFieldDelete extends $6e4e38012e8d2014$var$PresetFieldSelect {
     static name = "PresetFieldDelete";
     /* -------------------------------------------- */ /** @override */ get title() {
         return (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-delete");
@@ -23763,7 +24831,7 @@ class $d0a1f06830d69799$var$PresetFieldDelete extends $d0a1f06830d69799$var$Pres
         this.callback(data);
     }
 }
-class $d0a1f06830d69799$var$PresetFieldModify extends $d0a1f06830d69799$var$PresetFieldSelect {
+class $6e4e38012e8d2014$var$PresetFieldModify extends $6e4e38012e8d2014$var$PresetFieldSelect {
     static name = "PresetFieldModify";
     constructor(data, callback, modifyOnSpawn){
         super(data, callback);
@@ -23791,7 +24859,7 @@ class $d0a1f06830d69799$var$PresetFieldModify extends $d0a1f06830d69799$var$Pres
         this.callback(modifyOnSpawn);
     }
 }
-class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
+class $6e4e38012e8d2014$var$PresetFolderConfig extends FolderConfig {
     static name = "PresetFolderConfig";
     /** @inheritdoc */ static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
@@ -23829,13 +24897,14 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
         ];
         let docs;
         // This is a non-placeable folder type, so we will not display controls to change types
-        if (folderDocs.length === 1 && !(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(folderDocs[0])) this.nonPlaceable = true;
+        if (this.options?.folder instanceof (0, $74329e11c6ef615c$export$78bfafae49dc346b) || folderDocs.length === 1 && !(0, $32e43d7a62aba58c$export$6ba969594e8d224d).includes(folderDocs[0])) this.displayTypes = false;
         else {
+            this.displayTypes = true;
             docs = [];
             (0, $32e43d7a62aba58c$export$6ba969594e8d224d).forEach((type)=>{
                 docs.push({
                     name: type,
-                    icon: $d0a1f06830d69799$var$DOC_ICONS[type],
+                    icon: (0, $449b4d80a1c5126b$export$34595c972f489ae2)[type],
                     active: folderDocs.includes(type)
                 });
             });
@@ -23852,11 +24921,13 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
                 m: "FOLDER.SortManual"
             },
             submitText: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)(folder._id ? "FOLDER.Update" : "FOLDER.Create", false),
-            docs: docs
+            docs: docs,
+            virtualPackFolder: this.options.folder instanceof (0, $74329e11c6ef615c$export$78bfafae49dc346b),
+            group: this.options.folder?.group
         };
     }
     /* -------------------------------------------- */ /** @override */ async _updateObject(event, formData) {
-        if (!this.nonPlaceable) {
+        if (this.displayTypes) {
             let visibleTypes = [];
             $(this.form).find(".document-select.active").each(function() {
                 visibleTypes.push($(this).data("name"));
@@ -23864,20 +24935,36 @@ class $d0a1f06830d69799$var$PresetFolderConfig extends FolderConfig {
             if (!visibleTypes.length) visibleTypes.push("ALL");
             formData[`flags.${0, $32e43d7a62aba58c$export$59dbefa3c1eecdf}.types`] = visibleTypes;
         }
-        let doc = this.object;
-        if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
-        if (this.object.id) await this.object.update(formData);
-        else {
-            this.object.updateSource(formData);
-            doc = await Folder.create(this.object, {
-                pack: this.object.pack
+        let document1 = this.object;
+        if (this.options.folder instanceof (0, $74329e11c6ef615c$export$78bfafae49dc346b)) {
+            // This is a virtual folder used to store Compendium contents within
+            // Update using the provided interface
+            let update = {};
+            [
+                "name",
+                "color",
+                "group"
+            ].forEach((k)=>{
+                if (!formData[k]?.trim()) update["-=" + k] = null;
+                else update[k] = formData[k].trim();
             });
+            await this.options.folder.update(update);
+        } else {
+            // This is a real folder, update/create it
+            if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
+            if (this.object.id) await this.object.update(formData);
+            else {
+                this.object.updateSource(formData);
+                document1 = await Folder.create(this.object, {
+                    pack: this.object.pack
+                });
+            }
         }
-        this.options.resolve?.(doc);
-        return doc;
+        this.options.resolve?.(document1);
+        return document1;
     }
 }
-function $d0a1f06830d69799$var$checkMouseInWindow(event) {
+function $6e4e38012e8d2014$var$checkMouseInWindow(event) {
     let app = $(event.target).closest(".window-app");
     var offset = app.offset();
     let appX = offset.left;
@@ -23889,7 +24976,7 @@ function $d0a1f06830d69799$var$checkMouseInWindow(event) {
     if (mouseX > appX && mouseX < appX + appW && mouseY > appY && mouseY < appY + appH) return true;
     return false;
 }
-function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: excludePack, exportTo: exportTo = false, keepIdSelect: keepIdSelect = false } = {}) {
+function $6e4e38012e8d2014$var$getCompendiumDialog(resolve, { excludePack: excludePack, exportTo: exportTo = false, keepIdSelect: keepIdSelect = false } = {}) {
     let config;
     if (exportTo) config = {
         title: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.select-compendium"),
@@ -23904,7 +24991,7 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: exclu
     let options = "";
     for (const p of game.packs)if (!p.locked && p.documentName === "JournalEntry") {
         if (p.collection === excludePack) continue;
-        const workingPack = p.collection === $d0a1f06830d69799$export$9cea25aeb7365a59.workingPack;
+        const workingPack = p.collection === (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack;
         options += `<option value="${p.collection}" ${workingPack ? 'selected="selected"' : ""}>${p.title}</option>`;
     }
     let content = `
@@ -23917,9 +25004,9 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: exclu
   </div>`;
     if (keepIdSelect) content += `
 <div class="form-group">
-    <label>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-preset-ids")}</label>
-    <input type="checkbox" name="keepId">
-    <p style="font-size: smaller;">${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-preset-ids-hint")}</p>
+    <label>${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-ids")}</label>
+    <input type="checkbox" name="keepId" checked>
+    <p style="font-size: smaller;">${(0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("presets.keep-ids-hint")}</p>
 </div>`;
     new Dialog({
         title: config.title,
@@ -23945,84 +25032,11 @@ function $d0a1f06830d69799$var$getCompendiumDialog(resolve, { excludePack: exclu
         default: "cancel"
     }).render(true);
 }
-function $d0a1f06830d69799$var$mergePresetDataToDefaultDoc(preset, presetData) {
-    let data;
-    // Set default values if needed
-    switch(preset.documentName){
-        case "Token":
-            data = {
-                name: preset.name
-            };
-            break;
-        case "Tile":
-            data = {
-                width: canvas.grid.w,
-                height: canvas.grid.h
-            };
-            break;
-        case "AmbientSound":
-            data = {
-                radius: 20
-            };
-            break;
-        case "Drawing":
-            data = {
-                shape: {
-                    width: canvas.grid.w * 2,
-                    height: canvas.grid.h * 2,
-                    strokeWidth: 8,
-                    strokeAlpha: 1.0
-                }
-            };
-            break;
-        case "MeasuredTemplate":
-            data = {
-                distance: 10
-            };
-            break;
-        case "AmbientLight":
-            if (presetData.config?.dim == null && presetData.config?.bright == null) {
-                data = {
-                    config: {
-                        dim: 20,
-                        bright: 20
-                    }
-                };
-                break;
-            }
-        case "Scene":
-            data = {
-                name: preset.name
-            };
-            break;
-        default:
-            data = {};
-    }
-    return foundry.utils.mergeObject(data, presetData);
-}
-function $d0a1f06830d69799$var$placeableToData(placeable) {
-    const data = placeable.document.toCompendium();
-    // Check if `Token Attacher` has attached elements to this token
-    if (placeable.document.documentName === "Token" && game.modules.get("token-attacher")?.active && tokenAttacher?.generatePrototypeAttached) {
-        const attached = data.flags?.["token-attacher"]?.attached || {};
-        if (!foundry.utils.isEmpty(attached)) {
-            const prototypeAttached = tokenAttacher.generatePrototypeAttached(data, attached);
-            setProperty(data, "flags.token-attacher.attached", null);
-            setProperty(data, "flags.token-attacher.prototypeAttached", prototypeAttached);
-            setProperty(data, "flags.token-attacher.grid", {
-                size: canvas.grid.size,
-                w: canvas.grid.w,
-                h: canvas.grid.h
-            });
-        }
-    }
-    return data;
-}
 /**
  * Controls select/multi-select flow for item lists
  * @param {*} e item click event
  * @param {*} itemList list of items that this item exists within
- */ function $d0a1f06830d69799$var$itemSelect(e, itemList) {
+ */ function $6e4e38012e8d2014$var$itemSelect(e, itemList) {
     const item = $(e.target).closest(".item");
     const items = itemList.find(".item");
     const lastSelected = items.filter(".last-selected");
@@ -24056,68 +25070,13 @@ function $d0a1f06830d69799$var$placeableToData(placeable) {
         }
     }
 }
-function $d0a1f06830d69799$var$scaleDataToGrid(data, documentName, gridSize) {
-    if (![
-        "Tile",
-        "Drawing",
-        "Wall"
-    ].includes(documentName)) return;
-    if (!gridSize) gridSize = 100;
-    const ratio = canvas.grid.size / gridSize;
-    for (const d of data)switch(documentName){
-        case "Tile":
-            if ("width" in d) d.width *= ratio;
-            if ("height" in d) d.height *= ratio;
-            break;
-        case "Drawing":
-            if (d.shape?.width != null) d.shape.width *= ratio;
-            if (d.shape?.height != null) d.shape.height *= ratio;
-            break;
-        case "Wall":
-            if ("c" in d) for(let i = 0; i < d.c.length; i++)d.c[i] *= ratio;
-            break;
-    }
-}
-/**
- * Opens a GenericMassEdit form to modify specific fields within the provided data
- * @param {Object} data            data to be modified
- * @param {Array[String]} toModify fields within data to be modified
- * @returns modified data or null if form was canceled
- */ async function $d0a1f06830d69799$var$modifySpawnData(data, toModify) {
-    const fields = {};
-    const flatData = foundry.utils.flattenObject(data);
-    for (const field of toModify)if (field in flatData) {
-        if (flatData[field] == null) fields[field] = "";
-        else fields[field] = flatData[field];
-    }
-    if (!foundry.utils.isEmpty(fields)) await new Promise((resolve)=>{
-        (0, $f3b8698a65c76e19$export$609bf259f643e4ef)(fields, "PresetFieldModify", {
-            callback: (modified)=>{
-                if (foundry.utils.isEmpty(modified)) {
-                    if (modified == null) data = null;
-                    resolve();
-                    return;
-                }
-                for (const [k, v] of Object.entries(modified))flatData[k] = v;
-                const tmpData = foundry.utils.expandObject(flatData);
-                const reorganizedData = [];
-                for(let i = 0; i < data.length; i++)reorganizedData.push(tmpData[i]);
-                data = reorganizedData;
-                resolve();
-            },
-            simplified: true,
-            noTabs: true
-        });
-    });
-    return data;
-}
 /**
  * Return Mass Edit form that the mouse is over if any
  * @param {Number} mouseX
  * @param {Number} mouseY
  * @param {String} documentName
  * @returns {Application|null} MassEdit form
- */ function $d0a1f06830d69799$var$hoverMassEditForm(mouseX, mouseY, documentName) {
+ */ function $6e4e38012e8d2014$var$hoverMassEditForm(mouseX, mouseY, documentName) {
     const hitTest = function(app) {
         const position = app.position;
         const appX = position.left;
@@ -24387,7 +25346,7 @@ function $32e43d7a62aba58c$export$8aed4ff85b767892(obj, d = 0) {
 }
 function $32e43d7a62aba58c$export$1eeaf2f7f77dcac8(aeConfig) {
     const showPresetGeneric = function(docName) {
-        new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(aeConfig, async (preset)=>{
+        new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(aeConfig, async (preset)=>{
             if (!foundry.utils.isEmpty(preset.randomize)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)(preset.data, null, preset.randomize);
             const changes = aeConfig.object.changes ?? [];
             let nChanges = [];
@@ -24409,7 +25368,7 @@ function $32e43d7a62aba58c$export$1eeaf2f7f77dcac8(aeConfig) {
         }, docName).render(true);
     };
     const showPresetActiveEffect = function() {
-        new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(aeConfig, (preset)=>{
+        new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(aeConfig, (preset)=>{
             const changes = aeConfig.object.changes ?? [];
             let nChanges = [];
             preset.data[0].changes?.forEach((change)=>{
@@ -24478,224 +25437,6 @@ function $32e43d7a62aba58c$export$c36e29304d06f075({ requestID: requestID, scene
     $32e43d7a62aba58c$export$3bb8c85ed320ac91[requestID](documents);
     delete $32e43d7a62aba58c$export$3bb8c85ed320ac91[requestID];
 }
-class $32e43d7a62aba58c$export$ba25329847403e11 {
-    static pickerOverlay;
-    static boundStart;
-    static boundEnd;
-    static callback;
-    /**
-   * Activates the picker overlay.
-   * @param {Function} callback callback function with coordinates returned as starting and ending bounds of a rectangles
-   *                            { start: {x1, y1}, end: {x2, y2} }
-   * @param {Object}  preview
-   * @param {String}  preview.documentName (optional) preview placeables document name
-   * @param {Map[String,Array]}  preview.previewData    (req) preview placeables data
-   * @param {String}  preview.taPreview            (optional) Designates the preview placeable when spawning a `Token Attacher` prefab.
-   *                                                e.g. "Tile", "Tile.1", "MeasuredTemplate.3"
-   * @param {Boolean} preview.snap                  (optional) if true returned coordinates will be snapped to grid
-   * @param {String}  preview.label                  (optional) preview placeables document name
-   */ static async activate(callback, preview) {
-        if (this.pickerOverlay) {
-            canvas.stage.removeChild(this.pickerOverlay);
-            this.pickerOverlay.destroy(true);
-            this.pickerOverlay.children?.forEach((c)=>c.destroy(true));
-            this.callback?.(null);
-        }
-        const pickerOverlay = new PIXI.Container();
-        this.callback = callback;
-        if (preview) {
-            let label;
-            if (preview.label) {
-                label = new PreciseText(preview.label, {
-                    ...CONFIG.canvasTextStyle,
-                    _fontSize: 24
-                });
-                label.anchor.set(0.5, 1);
-                pickerOverlay.addChild(label);
-            }
-            const { previews: previews, layer: layer, previewDocuments: previewDocuments } = await this._genPreviews(preview);
-            const setPositions = function(pos) {
-                if (!pos) return;
-                if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
-                for (const preview of previews){
-                    if (preview.document.documentName === "Wall") {
-                        const c = preview.document.c;
-                        c[0] = pos.x + preview._previewOffset[0];
-                        c[1] = pos.y + preview._previewOffset[1];
-                        c[2] = pos.x + preview._previewOffset[2];
-                        c[3] = pos.y + preview._previewOffset[3];
-                        preview.document.c = c;
-                    } else {
-                        preview.document.x = pos.x + preview._previewOffset.x;
-                        preview.document.y = pos.y + preview._previewOffset.y;
-                    }
-                    preview.document.alpha = 0.4;
-                    preview.renderFlags.set({
-                        refresh: true
-                    });
-                    preview.visible = true;
-                    if (preview.controlIcon && !preview.controlIcon._meVInsert) {
-                        preview.controlIcon.alpha = 0.4;
-                        // ControlIcon visibility is difficult to set and keep as true
-                        // Lets hack it by defining a getter that always returns true
-                        Object.defineProperty(preview.controlIcon, "visible", {
-                            get: function() {
-                                return true;
-                            },
-                            set: function() {}
-                        });
-                        preview.controlIcon._meVInsert = true;
-                    }
-                }
-                if (label) {
-                    label.x = pos.x;
-                    label.y = pos.y - 38;
-                }
-                pickerOverlay.previewDocuments = previewDocuments;
-            };
-            pickerOverlay.on("pointermove", (event)=>{
-                setPositions(event.data.getLocalPosition(pickerOverlay));
-            });
-            setPositions(canvas.mousePosition);
-        }
-        pickerOverlay.hitArea = canvas.dimensions.rect;
-        pickerOverlay.cursor = "crosshair";
-        pickerOverlay.interactive = true;
-        pickerOverlay.zIndex = Infinity;
-        pickerOverlay.on("remove", ()=>pickerOverlay.off("pick"));
-        pickerOverlay.on("mousedown", (event)=>{
-            $32e43d7a62aba58c$export$ba25329847403e11.boundStart = event.data.getLocalPosition(pickerOverlay);
-        });
-        pickerOverlay.on("mouseup", (event)=>$32e43d7a62aba58c$export$ba25329847403e11.boundEnd = event.data.getLocalPosition(pickerOverlay));
-        pickerOverlay.on("click", (event)=>{
-            if (event.nativeEvent.which == 2) this.callback?.(null);
-            else this.callback?.({
-                start: this.boundStart,
-                end: this.boundEnd
-            });
-            pickerOverlay.parent.removeChild(pickerOverlay);
-            if (pickerOverlay.previewDocuments) pickerOverlay.previewDocuments.forEach((name)=>canvas.getLayerByEmbeddedName(name)?.clearPreviewContainer());
-        });
-        this.pickerOverlay = pickerOverlay;
-        canvas.stage.addChild(this.pickerOverlay);
-    }
-    // Modified Foundry _createPreview
-    // Does not throw warning if user lacks document create permissions
-    static async _createPreview(createData) {
-        const documentName = this.constructor.documentName;
-        const cls = getDocumentClass(documentName);
-        createData._id = foundry.utils.randomID(); // Needed to allow rendering of multiple previews at the same time
-        const document = new cls(createData, {
-            parent: canvas.scene
-        });
-        const object = new CONFIG[documentName].objectClass(document);
-        this.preview.addChild(object);
-        await object.draw();
-        return object;
-    }
-    static async _genPreviews(preview) {
-        if (!preview.previewData) return {
-            previews: []
-        };
-        const previewDocuments = new Set();
-        const previews = [];
-        let mainPreviewX;
-        let mainPreviewY;
-        for (const [documentName, dataArr] of preview.previewData.entries()){
-            const layer = canvas.getLayerByEmbeddedName(documentName);
-            for (const data of dataArr){
-                // Create Preview
-                const previewObject = await this._createPreview.call(layer, deepClone(data));
-                previews.push(previewObject);
-                previewDocuments.add(documentName);
-                // Determine point around which other previews are to be placed
-                if (mainPreviewX == null) {
-                    if (documentName === "Wall") {
-                        if (data.c != null) {
-                            mainPreviewX = previewObject.document.c[0];
-                            mainPreviewY = previewObject.document.c[1];
-                        }
-                    } else if (data.x != null && data.y != null) {
-                        mainPreviewX = previewObject.document.x;
-                        mainPreviewY = previewObject.document.y;
-                    }
-                }
-                // Calculate offset from first preview
-                if (documentName === "Wall") {
-                    const off = [
-                        previewObject.document.c[0] - (mainPreviewX ?? 0),
-                        previewObject.document.c[1] - (mainPreviewY ?? 0),
-                        previewObject.document.c[2] - (mainPreviewX ?? 0),
-                        previewObject.document.c[3] - (mainPreviewY ?? 0)
-                    ];
-                    previewObject._previewOffset = off;
-                } else previewObject._previewOffset = {
-                    x: previewObject.document.x - (mainPreviewX ?? 0),
-                    y: previewObject.document.y - (mainPreviewY ?? 0)
-                };
-                if (preview.taPreview && documentName === "Token") {
-                    const documentNames = await this._genTAPreviews(data, preview.taPreview, previewObject, previews);
-                    documentNames.forEach((dName)=>previewDocuments.add(dName));
-                }
-            }
-        }
-        return {
-            previews: previews,
-            layer: canvas.getLayerByEmbeddedName(preview.documentName),
-            previewDocuments: previewDocuments
-        };
-    }
-    static _parseTAPreview(taPreview, attached) {
-        if (taPreview === "ALL") return attached;
-        const attachedData = {};
-        taPreview = taPreview.split(",");
-        for (const taIndex of taPreview){
-            let [name, index] = taIndex.trim().split(".");
-            if (!attached[name]) continue;
-            if (index == null) attachedData[name] = attached[name];
-            else if (attached[name][index]) {
-                if (!attachedData[name]) attachedData[name] = [];
-                attachedData[name].push(attached[name][index]);
-            }
-        }
-        return attachedData;
-    }
-    static async _genTAPreviews(data, taPreview, parent, previews) {
-        if (!game.modules.get("token-attacher")?.active) return [];
-        const attached = getProperty(data, "flags.token-attacher.prototypeAttached");
-        const pos = getProperty(data, "flags.token-attacher.pos");
-        const grid = getProperty(data, "flags.token-attacher.grid");
-        if (!(attached && pos && grid)) return [];
-        const documentNames = new Set();
-        const ratio = canvas.grid.size / grid.size;
-        const attachedData = this._parseTAPreview(taPreview, attached);
-        for (const [name, dataList] of Object.entries(attachedData))for (const data of dataList){
-            if ([
-                "Token",
-                "Tile",
-                "Drawing"
-            ].includes(name)) {
-                data.width *= ratio;
-                data.height *= ratio;
-            }
-            const taPreviewObject = await this._createPreview.call(canvas.getLayerByEmbeddedName(name), data);
-            documentNames.add(name);
-            previews.push(taPreviewObject);
-            // Calculate offset from parent preview
-            if (name === "Wall") taPreviewObject._previewOffset = [
-                (data.c[0] - pos.xy.x) * ratio + parent._previewOffset.x,
-                (data.c[1] - pos.xy.y) * ratio + parent._previewOffset.y,
-                (data.c[2] - pos.xy.x) * ratio + parent._previewOffset.x,
-                (data.c[3] - pos.xy.y) * ratio + parent._previewOffset.y
-            ];
-            else taPreviewObject._previewOffset = {
-                x: (data.x - pos.xy.x) * ratio + parent._previewOffset.x,
-                y: (data.y - pos.xy.y) * ratio + parent._previewOffset.y
-            };
-        }
-        return documentNames;
-    }
-}
 function $32e43d7a62aba58c$export$b3bd0bc58e36cd63(path, moduleLocalization = true) {
     if (moduleLocalization) return game.i18n.localize(`MassEdit.${path}`);
     return game.i18n.localize(path);
@@ -24706,6 +25447,7 @@ function $32e43d7a62aba58c$export$6ea486f4767e8a74(path, insert, moduleLocalizat
 }
 async function $32e43d7a62aba58c$export$767e4c91777ecf4c(preset) {
     if (preset && canvas.scene) {
+        await preset.load();
         const data = foundry.utils.flattenObject(preset.data[0]);
         const randomizer = preset.randomize;
         if (!foundry.utils.isEmpty(randomizer)) await (0, $3180f13c9e24a345$export$4bafa436c0fa0cbb)([
@@ -24742,6 +25484,123 @@ async function $32e43d7a62aba58c$export$9087f1a05b437404(command, { actor: actor
     } catch (err) {
         ui.notifications.error("MACRO.Error", {
             localize: true
+        });
+    }
+}
+class $32e43d7a62aba58c$export$ee99f0ca2b3ce17b {
+    /**
+   * Seeded variation of the Foundry's randomID(...) function.
+   * Generate a random string ID of a given requested length.
+   * @param {String} seed      Seed to be fed into random number generator
+   * @param {number} length    The length of the random ID to generate
+   * @return {string}          Return a string containing random letters and numbers
+   */ static randomID(seed, length = 16) {
+        seed = this.cyrb128(seed);
+        const random = this.sfc32(seed[0], seed[1], seed[2], seed[3]);
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const r = Array.from({
+            length: length
+        }, ()=>random() * chars.length >> 0);
+        return r.map((i)=>chars[i]).join("");
+    }
+    // Courtesy of bryc
+    // github.com/bryc
+    static cyrb128(str) {
+        let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+        for(let i = 0, k; i < str.length; i++){
+            k = str.charCodeAt(i);
+            h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+            h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+            h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+            h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+        }
+        h1 = Math.imul(h3 ^ h1 >>> 18, 597399067);
+        h2 = Math.imul(h4 ^ h2 >>> 22, 2869860233);
+        h3 = Math.imul(h1 ^ h3 >>> 17, 951274213);
+        h4 = Math.imul(h2 ^ h4 >>> 19, 2716044179);
+        h1 ^= h2 ^ h3 ^ h4, h2 ^= h1, h3 ^= h1, h4 ^= h1;
+        return [
+            h1 >>> 0,
+            h2 >>> 0,
+            h3 >>> 0,
+            h4 >>> 0
+        ];
+    }
+    // Courtesy of Chris Doty-Humphrey
+    // https://pracrand.sourceforge.net/
+    static sfc32(a, b, c, d) {
+        return function() {
+            a |= 0;
+            b |= 0;
+            c |= 0;
+            d |= 0;
+            var t = (a + b | 0) + d | 0;
+            d = d + 1 | 0;
+            a = b ^ b >>> 9;
+            b = c + (c << 3) | 0;
+            c = c << 21 | c >>> 11;
+            c = c + t | 0;
+            return (t >>> 0) / 4294967296;
+        };
+    }
+}
+class $32e43d7a62aba58c$export$39299b56cfd4e361 {
+    static registerHandlebarsHelper() {
+        Handlebars.registerHelper("tagInput", (options)=>{
+            const name = options.hash.name;
+            const label = options.hash.label ?? "Tags";
+            let tags = options.hash.tags;
+            if (!Handlebars.Utils.isArray(tags)) tags = [];
+            // Construct the HTML
+            let tagHtml = "";
+            tags.forEach((tag)=>{
+                tagHtml += this._tagField(tag);
+            });
+            return new Handlebars.SafeString(`
+      <fieldset>
+        <legend>${label}</legend>
+        <div class="form-group me-tags">
+            <input type="text" class="tag-input">  
+            <input type="text" class="tag-hidden-input" name="${name}" value="${tags.join(",")}" hidden>
+            <button type="button" class="add-tag"><i class="fas fa-save"></i></button>
+            <div class="tag-container">${tagHtml}</div>
+        </div>
+      </fieldset>
+    `);
+        });
+    }
+    static _tagField(tag) {
+        return `<div class="tag"><span>${tag}</span> <a class="delete-tag"><i class="fa-solid fa-x fa-xs"></i></a></div>`;
+    }
+    static activateListeners(html, resize) {
+        html.find(".me-tags .add-tag").on("click", (event)=>{
+            const meTags = $(event.target).closest(".me-tags");
+            const input = meTags.find(".tag-input");
+            const tag = input.val().trim().replace(/[^0-9a-zA-Z_\- ]/gi, "").toLowerCase();
+            if (tag) {
+                input.val("");
+                const hiddenInput = meTags.find(".tag-hidden-input");
+                const currentTags = hiddenInput.val().split(",").filter(Boolean);
+                if (!currentTags.includes(tag)) {
+                    hiddenInput.attr("value", [
+                        ...currentTags,
+                        tag
+                    ].join(","));
+                    meTags.find(".tag-container").append(this._tagField(tag));
+                    if (resize) resize();
+                }
+            }
+        });
+        html.find(".me-tags").on("click", ".delete-tag", (event)=>{
+            const tag = $(event.target).closest(".tag");
+            // Remove tag from hidden input
+            const tagValue = tag.find("span").text();
+            const hiddenInput = tag.closest(".me-tags").find(".tag-hidden-input");
+            const newTags = hiddenInput.val().split(",").filter((t)=>t !== tagValue).join(",");
+            hiddenInput.attr("value", newTags);
+            // Remove the tag element itself
+            tag.remove();
+            if (resize) resize();
         });
     }
 }
@@ -24813,6 +25672,7 @@ async function $159f597adada9fb6$export$54355b03ee60ee6e() {
     });
     return await dialog;
 }
+
 
 
 
@@ -25368,8 +26228,8 @@ class $581145b22b1135a9$export$4f38aa0fdb126771 extends $581145b22b1135a9$var$WM
     async getData(options) {
         const data = await super.getData(options);
         // Cache partials
-        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/navHeaderPartial.html`);
-        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/form-group.html`);
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/navHeaderPartial.html`, "me-navHeaderPartial");
+        await getTemplate(`modules/${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}/templates/generic/form-group.html`, "me-form-group");
         data.nav = this.nav;
         return data;
     }
@@ -25519,7 +26379,6 @@ function $581145b22b1135a9$var$unsetCustomControl(name, docName) {
     setProperty(docControls, name, null);
     game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "customControls", allControls);
 }
-
 
 
 const $f3b8698a65c76e19$export$82c7bfc790fc617 = {
@@ -25717,7 +26576,7 @@ function $f3b8698a65c76e19$export$c5485820df61364() {
         let docName = canvas.activeLayer.constructor.documentName;
         const preset = (0, $8d51a9873394e4eb$export$33e5d9c131e68cf2)(docName);
         if (preset) {
-            (0, $d0a1f06830d69799$export$619760a5720f8054).spawnPreset({
+            (0, $74329e11c6ef615c$export$619760a5720f8054).spawnPreset({
                 preset: preset
             });
             return true;
@@ -25736,9 +26595,6 @@ function $f3b8698a65c76e19$export$609bf259f643e4ef(data, name = "GenericData", o
         }).render(true);
     });
 }
-
-
-
 
 
 
@@ -25826,11 +26682,72 @@ Hooks.once("init", ()=>{
 });
 
 
-const $15e9db69c2322773$export$149eb684a26496a2 = {};
-// Initialize module
-Hooks.once("init", ()=>{
+
+function $742731c418ba0e76$export$fbd003bdaed21966() {
+    if (game.modules.get("select-tool-everywhere")?.active) return;
+    const missingLayers = [
+        "AmbientLight",
+        "AmbientSound",
+        "MeasuredTemplate",
+        "Note"
+    ];
+    missingLayers.forEach((layer)=>{
+        Hooks.on(`refresh${layer}`, $742731c418ba0e76$var$_placeableRefresh);
+    });
+    Hooks.on("canvasReady", ()=>missingLayers.forEach((layer)=>canvas.getLayerByEmbeddedName(layer).options.controllableObjects = true));
+    Hooks.on("getSceneControlButtons", (controls)=>$742731c418ba0e76$var$_getControlButtons(controls));
+    // :: Fixes ::
+    // For notes the refresh hook is called while ControlIcon is still loading its texture (see ControlIcon.draw())
+    // Once the texture is loaded border visibility will be reset to false undoing our change in _placeableRefresh
+    // Instead delay and set visibility after draw to account for this
+    Hooks.on("drawNote", (note)=>{
+        setTimeout(()=>$742731c418ba0e76$var$_placeableRefresh(note), 10);
+    });
+    // To avoid race conditions between multiple AmbientLight _onDragLeftCancel calls we'll defer the
+    // canvas.perception update within 'updateSource' via a 'defer' argument
+    libWrapper.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "AmbientLight.prototype._onDragLeftCancel", function(...args) {
+        Object.getPrototypeOf(AmbientLight).prototype._onDragLeftCancel.apply(this, args);
+        this.updateSource({
+            defer: true
+        });
+    }, "OVERRIDE");
+}
+/**
+ * Insert select tool if missing
+ */ function $742731c418ba0e76$var$_getControlButtons(controls) {
+    for (const control of controls){
+        if ([
+            "lighting",
+            "sounds",
+            "measure"
+        ].includes(control.name)) {
+            if (!control.tools.find((t)=>t.name === "select")) {
+                control.tools.unshift({
+                    name: "select",
+                    title: "CONTROLS.CommonSelect",
+                    icon: "fas fa-expand"
+                });
+                control.activeTool = "select";
+            }
+        }
+    }
+}
+function $742731c418ba0e76$var$_placeableRefresh(placeable) {
+    if (placeable.controlled) placeable.controlIcon.border.visible = true;
+}
+
+
+
+
+
+
+
+
+
+
+
+function $2984a92442390294$export$6628c94500a3bf7b() {
     // Register Settings
-    (0, $d0a1f06830d69799$export$511ed1dd332818c6).init();
     game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "cssStyle", {
         scope: "world",
         config: false,
@@ -25883,10 +26800,10 @@ Hooks.once("init", ()=>{
         type: String,
         default: "world.mass-edit-presets-main",
         onChange: (val)=>{
-            (0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack = val;
+            (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack = val;
         }
     });
-    (0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack");
+    (0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack");
     game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets", {
         scope: "world",
         config: false,
@@ -25994,7 +26911,7 @@ Hooks.once("init", ()=>{
         type: Number,
         default: 10
     });
-    if (0, $9d9c8b96086115aa$export$37e829338e648c57) game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "autoSnap", {
+    game.settings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "autoSnap", {
         name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.autoSnap.name"),
         hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("settings.autoSnap.hint"),
         scope: "world",
@@ -26018,12 +26935,8 @@ Hooks.once("init", ()=>{
         type: Boolean,
         default: true
     });
-    // Register history related hooks
-    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) (0, $32e43d7a62aba58c$export$de10d55d23082cf5).forEach((docName)=>{
-        Hooks.on(`preUpdate${docName}`, (doc, update, options, userId)=>{
-            $15e9db69c2322773$var$updateHistory(doc, update, options, userId);
-        });
-    });
+}
+function $2984a92442390294$export$2e69de36ed96343() {
     game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "editKey", {
         name: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.editKey.name"),
         hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.editKey.hint"),
@@ -26042,6 +26955,41 @@ Hooks.once("init", ()=>{
                 return;
             }
             (0, $f3b8698a65c76e19$export$7ac7726310ec4fa4)();
+        },
+        restricted: true,
+        precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    });
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "copyKey", {
+        name: "Copy",
+        hint: "",
+        editable: [
+            {
+                key: "KeyC",
+                modifiers: [
+                    "Shift"
+                ]
+            }
+        ],
+        onDown: ()=>{
+            // Check if a Mass Config form is open and if so copy data from there
+            if (window.getSelection().toString() === "") Object.values(ui.windows).find((app)=>app.meObjects != null)?.performMassCopy();
+        },
+        restricted: true,
+        precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    });
+    game.keybindings.register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "pasteKey", {
+        name: "Paste",
+        hint: "",
+        editable: [
+            {
+                key: "KeyV",
+                modifiers: [
+                    "Shift"
+                ]
+            }
+        ],
+        onDown: ()=>{
+            (0, $f3b8698a65c76e19$export$c5485820df61364)();
         },
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
@@ -26075,7 +27023,7 @@ Hooks.once("init", ()=>{
             }
         ],
         onDown: ()=>{
-            const app = Object.values(ui.windows).find((w)=>w instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
+            const app = Object.values(ui.windows).find((w)=>w instanceof (0, $6e4e38012e8d2014$export$7a966e8b4abecc03));
             if (app) {
                 app.close(true);
                 return;
@@ -26088,7 +27036,7 @@ Hooks.once("init", ()=>{
             }
             const docName = canvas.activeLayer.constructor.documentName;
             if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(docName)) return;
-            new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, null, docName).render(true);
+            new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(null, null, docName).render(true);
         },
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
@@ -26098,12 +27046,12 @@ Hooks.once("init", ()=>{
         hint: (0, $32e43d7a62aba58c$export$b3bd0bc58e36cd63)("keybindings.presetApplyScene.hint"),
         editable: [],
         onDown: ()=>{
-            const app = Object.values(ui.windows).find((w)=>w instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
+            const app = Object.values(ui.windows).find((w)=>w instanceof (0, $6e4e38012e8d2014$export$7a966e8b4abecc03));
             if (app) {
                 app.close(true);
                 return;
             }
-            new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, null, "Scene").render(true);
+            new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(null, null, "Scene").render(true);
         },
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
@@ -26138,6 +27086,22 @@ Hooks.once("init", ()=>{
         restricted: true,
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
     });
+}
+
+
+const $15e9db69c2322773$export$149eb684a26496a2 = {};
+// Initialize module
+Hooks.once("init", ()=>{
+    (0, $32e43d7a62aba58c$export$39299b56cfd4e361).registerHandlebarsHelper();
+    (0, $2984a92442390294$export$6628c94500a3bf7b)();
+    (0, $2984a92442390294$export$2e69de36ed96343)();
+    (0, $742731c418ba0e76$export$fbd003bdaed21966)(); // Enable select tool for all layers
+    // Register history related hooks
+    if (game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "enableHistory")) (0, $32e43d7a62aba58c$export$de10d55d23082cf5).forEach((docName)=>{
+        Hooks.on(`preUpdate${docName}`, (doc, update, options, userId)=>{
+            $15e9db69c2322773$var$updateHistory(doc, update, options, userId);
+        });
+    });
     // Register copy-paste wrappers
     (0, $82712238b276cf54$export$a5fe556005dcec2e).register((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "ClientKeybindings._onCopy", function(wrapped, ...args) {
         if (window.getSelection().toString() === "") {
@@ -26171,9 +27135,9 @@ Hooks.once("init", ()=>{
     // Intercept and prevent certain placeable drag and drop if they are hovering over the MassEditPresets form
     // passing on the placeable to it to perform preset creation.
     const dragDropHandler = function(wrapped, ...args) {
-        if ((0, $d0a1f06830d69799$export$7a966e8b4abecc03).objectHover || (0, $d0a1f06830d69799$export$c7d846246fcba8fd).objectHover) {
+        if ((0, $6e4e38012e8d2014$export$7a966e8b4abecc03).objectHover || (0, $6e4e38012e8d2014$export$c7d846246fcba8fd).objectHover) {
             this.mouseInteractionManager.cancel(...args);
-            const app = Object.values(ui.windows).find((x)=>(0, $d0a1f06830d69799$export$7a966e8b4abecc03).objectHover && x instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03) || (0, $d0a1f06830d69799$export$c7d846246fcba8fd).objectHover && x instanceof (0, $d0a1f06830d69799$export$c7d846246fcba8fd));
+            const app = Object.values(ui.windows).find((x)=>(0, $6e4e38012e8d2014$export$7a966e8b4abecc03).objectHover && x instanceof (0, $6e4e38012e8d2014$export$7a966e8b4abecc03) || (0, $6e4e38012e8d2014$export$c7d846246fcba8fd).objectHover && x instanceof (0, $6e4e38012e8d2014$export$c7d846246fcba8fd));
             if (app) {
                 const placeables = canvas.activeLayer.controlled.length ? [
                     ...canvas.activeLayer.controlled
@@ -26211,6 +27175,16 @@ Hooks.once("init", ()=>{
             game.socket.emit(`module.${(0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)}`, message);
         } else if (message.handlerName === "document" && message.type === "RESOLVE") (0, $32e43d7a62aba58c$export$c36e29304d06f075)(args);
     });
+    // 'Spotlight Omnisearch' support
+    Hooks.on("spotlightOmnisearch.indexBuilt", (INDEX, promises)=>{
+        // First turn-off preset compendium from being included in omnisearch indexing
+        const old = game.settings.get("spotlight-omnisearch", "compendiumConfig");
+        game.packs.filter((p)=>p.documentName === "JournalEntry" && p.index.get((0, $74329e11c6ef615c$export$345e1d531777323a))).forEach((p)=>old[p.collection] = false);
+        game.settings.set("spotlight-omnisearch", "compendiumConfig", old);
+        // Insert preset index
+        const promise = (0, $74329e11c6ef615c$export$9cea25aeb7365a59).buildSpotlightOmnisearchIndex(INDEX);
+        promises.push(promise);
+    });
     globalThis.MassEdit = {
         GeneralDataAdapter: $59fc6fe4c07de9fd$export$d5bbc12fef4eed7f,
         MassEditGenericForm: $581145b22b1135a9$export$4f38aa0fdb126771,
@@ -26218,10 +27192,10 @@ Hooks.once("init", ()=>{
         performMassUpdate: $8d51a9873394e4eb$export$f13f6f89b098ca30,
         performMassSearch: $8d51a9873394e4eb$export$3a950926bf0f8193,
         showMassEdit: $f3b8698a65c76e19$export$7ac7726310ec4fa4,
-        getPreset: (0, $d0a1f06830d69799$export$619760a5720f8054).getPreset,
-        getPresets: (0, $d0a1f06830d69799$export$619760a5720f8054).getPresets,
-        createPreset: (0, $d0a1f06830d69799$export$619760a5720f8054).createPreset,
-        spawnPreset: (0, $d0a1f06830d69799$export$619760a5720f8054).spawnPreset
+        getPreset: (0, $74329e11c6ef615c$export$619760a5720f8054).getPreset,
+        getPresets: (0, $74329e11c6ef615c$export$619760a5720f8054).getPresets,
+        createPreset: (0, $74329e11c6ef615c$export$619760a5720f8054).createPreset,
+        spawnPreset: (0, $74329e11c6ef615c$export$619760a5720f8054).spawnPreset
     };
     game.modules.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf)).api = {
         ...globalThis.MassEdit,
@@ -26242,12 +27216,12 @@ Hooks.on("renderSceneControls", (sceneControls, html, options)=>{
     presetControl.on("click", ()=>{
         let docName = canvas.activeLayer.constructor.documentName;
         if (!(0, $32e43d7a62aba58c$export$b4bbd936310fc9b9).includes(docName)) docName = "ALL";
-        const presetForm = Object.values(ui.windows).find((app)=>app instanceof (0, $d0a1f06830d69799$export$7a966e8b4abecc03));
+        const presetForm = Object.values(ui.windows).find((app)=>app instanceof (0, $6e4e38012e8d2014$export$7a966e8b4abecc03));
         if (presetForm) {
             presetForm.close();
             return;
         }
-        new (0, $d0a1f06830d69799$export$7a966e8b4abecc03)(null, null, docName, {
+        new (0, $6e4e38012e8d2014$export$7a966e8b4abecc03)(null, null, docName, {
             left: presetControl.position().left + presetControl.width() + 40
         }).render(true);
     });
@@ -26255,7 +27229,7 @@ Hooks.on("renderSceneControls", (sceneControls, html, options)=>{
 });
 // Migrate Presets (02/11/2023)
 Hooks.on("ready", async ()=>{
-    if (!game.packs.get((0, $d0a1f06830d69799$export$9cea25aeb7365a59).workingPack)) game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", (0, $d0a1f06830d69799$export$2a34b6e4e19d9a25));
+    if (!game.packs.get((0, $74329e11c6ef615c$export$9cea25aeb7365a59).workingPack)) game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "workingPack", (0, $74329e11c6ef615c$export$2a34b6e4e19d9a25));
     if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsMigrated")) {
         const presets = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presets");
         if (foundry.utils.getType(presets) === "Object" && !foundry.utils.isEmpty(presets)) {
@@ -26287,8 +27261,8 @@ Hooks.on("ready", async ()=>{
     }
     if (!game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsCompMigrated")) {
         const docPresets = game.settings.get((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "docPresets");
-        const presets = docPresets.map((p)=>new (0, $d0a1f06830d69799$export$3463c369d5cc977f)(p));
-        if (presets.length) (0, $d0a1f06830d69799$export$9cea25aeb7365a59).set(presets);
+        const presets = docPresets.map((p)=>new (0, $449b4d80a1c5126b$export$3463c369d5cc977f)(p));
+        if (presets.length) (0, $74329e11c6ef615c$export$9cea25aeb7365a59).set(presets);
         game.settings.set((0, $32e43d7a62aba58c$export$59dbefa3c1eecdf), "presetsCompMigrated", true);
     }
 });

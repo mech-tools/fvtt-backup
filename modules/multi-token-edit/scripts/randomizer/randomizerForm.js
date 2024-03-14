@@ -2,11 +2,12 @@ import { SPECIES_GENERATORS } from '../generator/fantasticSpeciesGenerator.js';
 import { GROUP_GENERATORS } from '../generator/groupNamesGenerator.js';
 import { NAME_GENERATOR } from '../generator/nameGenerator.js';
 import { TAVERN_GENERATOR } from '../generator/tavernGenerator.js';
-import { MODULE_ID, Picker, isImage, isVideo, recursiveTraverse } from '../utils.js';
+import { Picker } from '../picker.js';
+import { MODULE_ID, isImage, isVideo, recursiveTraverse } from '../utils.js';
 import { deselectField, nearestStep, selectField } from './randomizerUtils.js';
 import { ColorSlider } from './slider.js';
 
-export const IS_PRIVATE = false;
+export const IS_PRIVATE = true;
 
 export default class RandomizerForm extends FormApplication {
   constructor(title, control, configApp, options) {
@@ -69,7 +70,7 @@ export default class RandomizerForm extends FormApplication {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'mass-edit-randomizer-form',
       classes: ['sheet'],
-      template: `modules/${MODULE_ID}/templates/randomizerForm.html`,
+      template: `modules/${MODULE_ID}/templates/randomizer/inputForm.html`,
       resizable: true,
       minimizable: false,
     });
@@ -82,6 +83,9 @@ export default class RandomizerForm extends FormApplication {
   async getData(options) {
     const data = super.getData(options);
     foundry.utils.mergeObject(data, this.configuration);
+
+    // Cache partials
+    await getTemplate(`modules/${MODULE_ID}/templates/randomizer/color.html`, 'me-color');
 
     if (data.step != null) {
       if (data.step === 'any' || data.step === '') {
@@ -276,19 +280,7 @@ export default class RandomizerForm extends FormApplication {
     }
 
     if (this.configuration.colorForm) {
-      const hue = html.find('[name="hue"]');
-      const space = html.find('[name="space"]');
-      const method = html.find('[name="method"]');
-      const colorSlider = new ColorSlider(html.find('.slide'), this.configuration.colors, {
-        hue,
-        space,
-      });
-
-      hue.on('input', colorSlider.update.bind(colorSlider));
-      space.on('input', colorSlider.update.bind(colorSlider));
-      method.on('input', colorSlider.update.bind(colorSlider));
-
-      this.colorSlider = colorSlider;
+      this.colorSlider = new ColorSlider(html, this.configuration.colors);
     }
   }
 
@@ -375,13 +367,12 @@ export default class RandomizerForm extends FormApplication {
         method: 'random',
       };
     } else if (this.configuration.colorForm) {
-      let colors = foundry.utils.deepClone(this.colorSlider.colors).sort((a, b) => a.offset - b.offset);
       this.configApp.randomizeFields[fieldName] = {
         type: 'color',
         method: formData.method,
         space: formData.space,
         hue: formData.hue,
-        colors,
+        colors: this.colorSlider.getColors(),
       };
     } else if (this.configuration.imageForm) {
       if (formData.method === 'findAndReplace' || formData.method === 'findAndReplaceRegex') {

@@ -123,6 +123,11 @@
   padding-right: 1px;
 }
 
+#mass-edit-presets.inactive {
+  opacity: 10%;
+  pointer-events: none;
+}
+
 .mass-edit-preset-form .item-list {
   flex: 1;
   list-style: none;
@@ -334,13 +339,43 @@
 
 .mass-edit-preset-form .item .item-name {
   margin: 0 0 0 8px;
+  display: flex;
+  align-items: center;
 }
 
 .mass-edit-preset-form .item .item-name label {
+  flex: 0 0 100%;
   line-height: 1.5;
-  display: flex;
-  align-items: center;
   line-break: anywhere;
+}
+
+.mass-edit-preset-form .item .item-name .tags {
+  line-height: 18px;
+  margin-bottom: 2px;
+  margin-top: 7px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  width: 50px;
+  overflow: hidden;
+  text-overflow: clip;
+  transition: flex 1s ease;
+  flex: 0;
+}
+
+.mass-edit-preset-form .item .item-name .tags.show {
+  transition: all 1s ease;
+  transition-delay: 1.5s;
+  flex: 0 0 100%;
+}
+
+.mass-edit-preset-form .item .item-name .tags.show {
+}
+
+.mass-edit-preset-form .item .item-name .tags span {
+  color: gold;
+  border: 1px gold solid;
+  border-radius: 3px;
+  padding: 0px 2px 0px 4px;
 }
 
 .mass-edit-preset-form .item .item-controls {
@@ -350,11 +385,15 @@
 }
 
 .mass-edit-preset-form .item.item-s.selected {
-  background: linear-gradient(#f005, #f005), linear-gradient(#01bb0155, #0f05);
+  background: linear-gradient(#ffa50055, #ffa50055), linear-gradient(#bb5f0155, #ffb10055);
 }
 
 .mass-edit-preset-form .folder.item-s.selected {
   border-color: orange;
+}
+
+.mass-edit-preset-form .fa-folder-open {
+  color: orange;
 }
 
 .drag-drop-overlay {
@@ -487,4 +526,27 @@ nav > a[data-tab='me-pinned'] {
 .mass-edit-generic-form .tva-jsonArray {
   height: 100px;
   white-space: pre-wrap;
+}
+
+/* ================= 
+   === Tag Input ===
+   ================= */
+
+.me-tags .tag-container {
+  flex: 0 0 100%;
+  margin-top: 8px;
+}
+
+.me-tags .tag-container .tag {
+  border: 1px gray solid;
+  border-radius: 5px;
+  padding: 3px;
+  margin: 2px;
+  background: floralwhite;
+  display: inline-block;
+}
+
+.me-tags .add-tag {
+  flex: 0;
+  margin-left: 0.5em;
 }
