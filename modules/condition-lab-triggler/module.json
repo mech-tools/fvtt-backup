@@ -3,7 +3,7 @@
     "name": "condition-lab-triggler",
     "title": "Condition Lab & Triggler",
     "description": "Adds various combat-focused features",
-    "version": "1.5.4",
+    "version": "1.5.7",
     "authors": [
         {
             "name": "Matheus Clemente",
@@ -15,7 +15,7 @@
     "bugs": "https://github.com/mclemente/fvtt-condition-lab-triggler/issues",
     "readme": "https://github.com/mclemente/fvtt-condition-lab-triggler/wiki",
     "manifest": "https://github.com/mclemente/fvtt-condition-lab-triggler/releases/latest/download/module.json",
-    "download": "https://github.com/mclemente/fvtt-condition-lab-triggler/releases/download/1.5.4/module.zip",
+    "download": "https://github.com/mclemente/fvtt-condition-lab-triggler/releases/download/1.5.7/module.zip",
     "esmodules": [
         "module/condition-lab-triggler.js"
     ],

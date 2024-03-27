@@ -1,5 +1,6 @@
+import { checkApplySpecialFields } from '../../applications/forms.js';
 import { Brush } from '../brush.js';
-import { Picker } from '../picker.js';
+import { DataTransform, Picker } from '../picker.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
 import {
   MODULE_ID,
@@ -14,10 +15,11 @@ import {
 import { Preset } from './preset.js';
 import {
   FolderState,
+  getPresetDataCenterOffset,
+  getTransformToOrigin,
   mergePresetDataToDefaultDoc,
   modifySpawnData,
   placeableToData,
-  scaleDataToGrid,
 } from './utils.js';
 
 export const DEFAULT_PACK = 'world.mass-edit-presets-main';
@@ -469,12 +471,12 @@ export class PresetCollection {
 
   /**
    * Build preset index for 'Spotlight Omnisearch' module
-   * @param {Array[CONFIG.SpotlightOmniseach.SearchTerm]} soIndex
+   * @param {Array[CONFIG.SpotlightOmnisearch.SearchTerm]} soIndex
    */
   static async buildSpotlightOmnisearchIndex(soIndex) {
     const tree = await PresetCollection.getTree();
 
-    const SearchTerm = CONFIG.SpotlightOmniseach.SearchTerm;
+    const SearchTerm = CONFIG.SpotlightOmnisearch.SearchTerm;
 
     const onClick = async function () {
       if (SUPPORTED_PLACEABLES.includes(this.data.documentName)) {
@@ -565,10 +567,11 @@ export class PresetAPI {
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
    * @param {String|Array[String]|Object} [options.tags] Tags to match a preset against. Can be provided as an object containing 'tags' array and 'match' any flag.
    *                                                     Comma separated string, or a list of strings. In the latter 2 case 'matchAny' is assumed true
-   * @param {String} [options.folder]  Folder name
+   * @param {String} [options.folder]                    Folder name
+   * @param {Boolean} [options.random]                   If multiple presets are found a random one will be chosen
    * @returns {Preset}
    */
-  static async getPreset({ uuid, name, type, folder, tags } = {}) {
+  static async getPreset({ uuid, name, type, folder, tags, random = false } = {}) {
     if (uuid) return await PresetCollection.get(uuid);
     else if (!name && !type && !folder && !tags)
       throw Error('UUID, Name, Type, and/or Folder required to retrieve a Preset.');
@@ -585,7 +588,7 @@ export class PresetAPI {
       tags,
     });
 
-    const preset = presets[Math.floor(Math.random() * presets.length)];
+    const preset = random ? presets[Math.floor(Math.random() * presets.length)] : presets[0];
     return preset?.clone().load();
   }
 
@@ -742,6 +745,7 @@ export class PresetAPI {
    * @param {String} [options.name]                      Preset name
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
    * @param {String|Array[String]|Object} [options.tags] Preset tags, See PresetAPI.getPreset
+   * @param {Boolean} [options.random]                   If a unique preset could not be found, a random one will be chosen from the matched list
    * @param {Number} [options.x]                         Spawn canvas x coordinate (mouse position used if x or y are null)
    * @param {Number} [options.y]                         Spawn canvas y coordinate (mouse position used if x or y are null)
    * @param {Number} [options.z]                         Spawn canvas z coordinate (3D Canvas)
@@ -764,6 +768,7 @@ export class PresetAPI {
     type,
     folder,
     tags,
+    random = false,
     x,
     y,
     z,
@@ -775,6 +780,8 @@ export class PresetAPI {
     layerSwitch = false,
     scaleToGrid = false,
     modifyPrompt = true,
+    center = false,
+    sceneId,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
     if (!(uuid || preset || name || type || folder || tags))
@@ -783,7 +790,7 @@ export class PresetAPI {
       throw Error('Need both X and Y coordinates to spawn a preset.');
 
     if (preset) await preset.load();
-    preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type, folder, tags }));
+    preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type, folder, tags, random }));
     if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
 
     let presetData = deepClone(preset.data);
@@ -804,20 +811,10 @@ export class PresetAPI {
     presetData = presetData.map((data) => {
       return mergePresetDataToDefaultDoc(preset, data);
     });
-
-    // Randomize data if needed
-    const randomizer = preset.randomize;
-    if (!foundry.utils.isEmpty(randomizer)) {
-      // Flat data required for randomizer
-      presetData = presetData.map((d) => foundry.utils.flattenObject(d));
-      await applyRandomization(presetData, null, randomizer);
-      presetData = presetData.map((d) => foundry.utils.expandObject(d));
-    }
-
-    // Scale dimensions relative to grid size
-    if (scaleToGrid) {
-      scaleDataToGrid(presetData, preset.documentName, preset.gridSize);
-    }
+    presetData = presetData.map((d) => foundry.utils.flattenObject(d));
+    if (!foundry.utils.isEmpty(preset.randomize)) await applyRandomization(presetData, null, preset.randomize); // Randomize data if needed
+    await checkApplySpecialFields(preset.documentName, presetData, presetData); // Apply Special fields (TMFX)
+    presetData = presetData.map((d) => foundry.utils.expandObject(d));
 
     if (preset.preSpawnScript) {
       await executeScript(preset.preSpawnScript, { data: presetData });
@@ -831,9 +828,16 @@ export class PresetAPI {
       for (const attached of preset.attached) {
         if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
         const data = deepClone(attached.data);
-        if (scaleToGrid) scaleDataToGrid([data], attached.documentName, preset.gridSize);
         docToData.get(attached.documentName).push(data);
       }
+    }
+
+    // Scale data relative to grid size
+    if (scaleToGrid) {
+      const scale = canvas.grid.size / (preset.gridSize || 100);
+      docToData.forEach((dataArr, documentName) => {
+        dataArr.forEach((data) => DataTransform.apply(documentName, data, { x: 0, y: 0 }, { scale }));
+      });
     }
 
     // ==================
@@ -846,6 +850,7 @@ export class PresetAPI {
           snap: snapToGrid,
           label: pickerLabel,
           taPreview: taPreview,
+          center,
         });
       });
       if (coords == null) return [];
@@ -868,6 +873,12 @@ export class PresetAPI {
       }
     }
 
+    if (center) {
+      const offset = getPresetDataCenterOffset(docToData);
+      x -= offset.x;
+      y -= offset.y;
+    }
+
     let pos = { x, y };
 
     if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
@@ -877,66 +888,23 @@ export class PresetAPI {
         canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
       );
     }
+    pos.z = z;
     // ==================
 
     // ==================
     // Set positions taking into account relative distances between each object
-    let diffX, diffY, diffZ;
+
+    const transform = getTransformToOrigin(docToData);
+    transform.x += pos.x;
+    transform.y += pos.y;
+
+    // 3D Support
+    if (pos.z == null) transform.z = 0;
+    else transform.z += pos.z;
+
     docToData.forEach((dataArr, documentName) => {
-      for (const data of dataArr) {
-        // We need to establish the first found coordinate as the reference point
-        if (diffX == null || diffY == null) {
-          if (documentName === 'Wall') {
-            if (data.c) {
-              diffX = pos.x - data.c[0];
-              diffY = pos.y - data.c[1];
-            }
-          } else {
-            if (data.x != null && data.y != null) {
-              diffX = pos.x - data.x;
-              diffY = pos.y - data.y;
-            }
-          }
-
-          // 3D Canvas
-          if (z != null) {
-            const property = documentName === 'Token' ? 'elevation' : 'flags.levels.rangeBottom';
-            if (getProperty(data, property) != null) {
-              diffZ = z - getProperty(data, property);
-            }
-          }
-        }
-
-        // Assign relative position
-        if (documentName === 'Wall') {
-          if (!data.c || diffX == null) data.c = [pos.x, pos.y, pos.x + canvas.grid.w * 2, pos.y];
-          else {
-            data.c[0] += diffX;
-            data.c[1] += diffY;
-            data.c[2] += diffX;
-            data.c[3] += diffY;
-          }
-        } else {
-          data.x = data.x == null || diffX == null ? pos.x : data.x + diffX;
-          data.y = data.y == null || diffY == null ? pos.y : data.y + diffY;
-        }
-
-        // 3D Canvas
-        if (z != null) {
-          delete data.z;
-          let elevation;
-
-          const property = documentName === 'Token' ? 'elevation' : 'flags.levels.rangeBottom';
-
-          if (diffZ !== null && getProperty(data, property) != null) elevation = getProperty(data, property) + diffZ;
-          else elevation = z;
-
-          setProperty(data, property, elevation);
-
-          if (documentName !== 'Token') {
-            setProperty(data, 'flags.levels.rangeTop', elevation);
-          }
-        }
+      dataArr.forEach((data) => {
+        DataTransform.apply(documentName, data, { x: 0, y: 0 }, transform);
 
         // Assign ownership for Drawings and MeasuredTemplates
         if (['Drawing', 'MeasuredTemplate'].includes(documentName)) {
@@ -946,7 +914,7 @@ export class PresetAPI {
 
         // Hide
         if (hidden || game.keyboard.downKeys.has('AltLeft')) data.hidden = true;
-      }
+      });
     });
 
     // ==================
@@ -960,7 +928,7 @@ export class PresetAPI {
     const allDocuments = [];
 
     for (const [documentName, dataArr] of docToData.entries()) {
-      const documents = await createDocuments(documentName, dataArr, canvas.scene.id);
+      const documents = await createDocuments(documentName, dataArr, sceneId ?? canvas.scene.id);
       documents.forEach((d) => allDocuments.push(d));
     }
 
@@ -968,7 +936,7 @@ export class PresetAPI {
     if (preset.postSpawnScript) {
       await executeScript(preset.postSpawnScript, {
         documents: allDocuments,
-        objects: documents.map((d) => d.object).filter(Boolean),
+        objects: allDocuments.map((d) => d.object).filter(Boolean),
       });
     }
 

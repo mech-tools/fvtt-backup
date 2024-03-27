@@ -27,6 +27,8 @@ import { Preset } from './scripts/presets/preset.js';
 import { DEFAULT_PACK, META_INDEX_ID, PresetAPI, PresetCollection } from './scripts/presets/collection.js';
 import { MassEditPresets, PresetConfig } from './scripts/presets/forms.js';
 import { registerKeybinds, registerSettings } from './scripts/settings.js';
+import { Picker } from './scripts/picker.js';
+import { activateBrush, deactivateBush } from './scripts/brush.js';
 
 export const HISTORY = {};
 
@@ -70,6 +72,35 @@ Hooks.once('init', () => {
     function (wrapped, ...args) {
       if (pasteData()) return true;
       return wrapped(...args);
+    },
+    'MIXED'
+  );
+
+  // Register mouse wheel wrapper to scale/rotate preset previews
+  libWrapper.register(
+    MODULE_ID,
+    'MouseManager.prototype._onWheel',
+    function (wrapped, ...args) {
+      const event = args[0];
+
+      if (Picker.isActive() && (event.ctrlKey || event.shiftKey || event.metaKey || event.altKey)) {
+        // Prevent zooming the entire browser window
+        if (event.ctrlKey) event.preventDefault();
+
+        let dy = (event.delta = event.deltaY);
+        if (event.shiftKey && dy === 0) {
+          dy = event.delta = event.deltaX;
+        }
+        if (dy === 0) return;
+
+        if (event.altKey) Picker.addScaling(event.delta < 0 ? 0.05 : -0.05);
+        else if (event.ctrlKey || event.metaKey) Picker.addRotation(event.delta < 0 ? 2.5 : -2.5);
+        else if (event.shiftKey) Picker.addRotation(event.delta < 0 ? 15 : -15);
+        return;
+      }
+
+      const result = wrapped(...args);
+      return result;
     },
     'MIXED'
   );
@@ -153,6 +184,7 @@ Hooks.once('init', () => {
 
   // 'Spotlight Omnisearch' support
   Hooks.on('spotlightOmnisearch.indexBuilt', (INDEX, promises) => {
+    if (!game.user.isGM) return;
     // First turn-off preset compendium from being included in omnisearch indexing
     const old = game.settings.get('spotlight-omnisearch', 'compendiumConfig');
     game.packs
@@ -176,6 +208,8 @@ Hooks.once('init', () => {
     getPresets: PresetAPI.getPresets,
     createPreset: PresetAPI.createPreset,
     spawnPreset: PresetAPI.spawnPreset,
+    activateBrush: activateBrush,
+    deactivateBrush: deactivateBush,
   };
 
   game.modules.get(MODULE_ID).api = {

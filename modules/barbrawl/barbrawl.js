@@ -7,7 +7,7 @@ import { extendBarRenderer } from "./module/rendering.js";
 import { extendDefaultTokenConfig, extendTokenConfig } from "./module/config.js";
 import { extendTokenHud } from "./module/hud.js";
 import { getDefaultResources, registerSettings } from "./module/settings.js";
-import { prepareUpdate } from "./module/synchronization.js";
+import { prepareCreation, prepareUpdate } from "./module/synchronization.js";
 import * as api from "./module/api.js";
 
 /** Hook to register settings. */
@@ -62,6 +62,8 @@ Hooks.on("preCreateActor", function (doc) {
 
     const barConfig = getDefaultResources(doc.type);
     if (barConfig) doc.updateSource({ "prototypeToken.flags.barbrawl.resourceBars": barConfig }, { recursive: false });
+
+    prepareCreation(doc.prototypeToken);
 });
 
 /** Hook to update bar visibility. */

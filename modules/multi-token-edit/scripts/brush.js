@@ -1,10 +1,13 @@
 import { pasteDataUpdate } from '../applications/forms.js';
+import { PresetAPI } from './presets/collection.js';
 import { Preset } from './presets/preset.js';
 import { MODULE_ID } from './utils.js';
 
 export class Brush {
   static app;
   static deactivateCallback;
+  static spawner;
+  static lastSpawnTime;
   // @type {Preset}
   static preset;
   static brushOverlay;
@@ -16,7 +19,7 @@ export class Brush {
   static hitTest;
 
   static registered3dListener = false;
-  // Truck to keep consistent signatures for bound 3d brush callbacks
+  // Trick to keep consistent signatures for bound 3d brush callbacks
   // Required to be able to remove these function once the 3d brush is deactivated
   static {
     this._boundOn3DBrushClick = this._on3DBrushClick.bind(this);
@@ -27,6 +30,14 @@ export class Brush {
     if (pos) this._animateCrossTranslate(pos.x, pos.y);
     pasteDataUpdate([placeable], this.preset, true, true);
     this.updatedPlaceables.set(placeable.id, placeable);
+  }
+
+  static _performBrushDocumentCreate(pos) {
+    const now = new Date().getTime();
+    if (!this.lastSpawnTime || now - this.lastSpawnTime > 100) {
+      this.lastSpawnTime = now;
+      PresetAPI.spawnPreset({ preset: this.preset, ...pos, center: true });
+    }
   }
 
   static _hitTestWall(point, wall) {
@@ -101,7 +112,9 @@ export class Brush {
   }
 
   static _onBrushClickMove(event) {
-    if (
+    if (this.spawner) {
+      this._performBrushDocumentCreate(event.data.getLocalPosition(this.brushOverlay));
+    } else if (
       this.hoveredPlaceable &&
       this.hoveredPlaceable.visible &&
       !this.updatedPlaceables.has(this.hoveredPlaceable.id)
@@ -112,12 +125,19 @@ export class Brush {
 
   static _on3DBrushClick(event) {
     if (this.brush3d) {
-      const p = game.Levels3DPreview.interactionManager.currentHover?.placeable;
-      if (p && p.document.documentName === this.documentName) {
-        game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
-        this._performBrushDocumentUpdate(null, p);
+      if (this.spawner) {
+        if (this.brush3d?.position) {
+          const posVec = game.Levels3DPreview.ruler.constructor.pos3DToCanvas(this.brush3d.position);
+          this._performBrushDocumentCreate({ x: posVec.x, y: posVec.y, z: posVec.z });
+        }
+      } else {
+        const p = game.Levels3DPreview.interactionManager.currentHover?.placeable;
+        if (p && p.document.documentName === this.documentName) {
+          game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
+          this._performBrushDocumentUpdate(null, p);
+        }
+        this.updatedPlaceables.clear();
       }
-      this.updatedPlaceables.clear();
     }
   }
 
@@ -138,7 +158,7 @@ export class Brush {
    * @param {Preset} options.preset
    * @returns
    */
-  static activate({ app = null, preset = null, deactivateCallback = null } = {}) {
+  static activate({ app = null, preset = null, deactivateCallback = null, spawner = false } = {}) {
     if (this.deactivate() || !canvas.ready) return false;
     if (!app && !preset) return false;
 
@@ -150,6 +170,7 @@ export class Brush {
     this.app = app;
     this.preset = preset;
     this.deactivateCallback = deactivateCallback;
+    this.spawner = spawner;
     if (this.app) {
       this.documentName = this.app.documentName;
     } else {
@@ -160,6 +181,7 @@ export class Brush {
     const interaction = canvas.app.renderer.events;
     if (!interaction.cursorStyles['brush']) {
       interaction.cursorStyles['brush'] = `url('modules/${MODULE_ID}/images/brush_icon.png'), auto`;
+      interaction.cursorStyles['brush_spawn'] = `url('modules/${MODULE_ID}/images/brush_icon_spawn.png'), auto`;
     }
 
     this.active = true;
@@ -170,29 +192,33 @@ export class Brush {
     }
 
     // Determine hit test test function to be used for pointer hover detection
-    switch (this.documentName) {
-      case 'Wall':
-        this.hitTest = this._hitTestWall;
-        break;
-      case 'AmbientLight':
-      case 'MeasuredTemplate':
-      case 'AmbientSound':
-      case 'Note':
-        this.hitTest = this._hitTestControlIcon;
-        break;
-      case 'Tile':
-        this.hitTest = this._hitTestTile;
-        this.hoverTest = this._hoverTestArea;
-        break;
-      default:
-        this.hitTest = this._hitTestArea;
-        this.hoverTest = this._hoverTestArea;
+    if (this.spawner) {
+      this.hitTest = () => false;
+    } else {
+      switch (this.documentName) {
+        case 'Wall':
+          this.hitTest = this._hitTestWall;
+          break;
+        case 'AmbientLight':
+        case 'MeasuredTemplate':
+        case 'AmbientSound':
+        case 'Note':
+          this.hitTest = this._hitTestControlIcon;
+          break;
+        case 'Tile':
+          this.hitTest = this._hitTestTile;
+          this.hoverTest = this._hoverTestArea;
+          break;
+        default:
+          this.hitTest = this._hitTestArea;
+          this.hoverTest = this._hoverTestArea;
+      }
     }
 
     // Create the brush overlay
     this.brushOverlay = new PIXI.Container();
     this.brushOverlay.hitArea = canvas.dimensions.rect;
-    this.brushOverlay.cursor = 'brush';
+    this.brushOverlay.cursor = spawner ? 'brush_spawn' : 'brush';
     this.brushOverlay.interactive = true;
     this.brushOverlay.zIndex = Infinity;
 
@@ -307,6 +333,7 @@ export class Brush {
       this._clearHover(null, null, true);
       this.hoverTest = null;
       this.deactivateCallback?.();
+      this.spawner = false;
       this.deactivateCallback = null;
       this.app = null;
       this.preset = null;
@@ -334,4 +361,23 @@ export class Brush {
       this.brushOverlay.removeChild(cross).destroy();
     }
   }
+}
+
+/**
+ * API method to activate the brush.
+ * @param {Object} options See MassEdit.getPreset(...)
+ * @param {String} mode update|spawn
+ */
+export async function activateBrush(options, mode = 'spawn') {
+  const preset = await PresetAPI.getPreset(options);
+  if (preset) {
+    Brush.activate({ preset, spawner: mode === 'spawner' });
+  }
+}
+
+/**
+ * API method to de-activate the brush.
+ */
+export function deactivateBush() {
+  Brush.deactivate();
 }

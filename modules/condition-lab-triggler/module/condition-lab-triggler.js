@@ -4,8 +4,9 @@
 class Sidekick {
 	/**
 	 * Use FilePicker to browse then Fetch one or more JSONs and return them
-	 * @param {*} source
-	 * @param {*} path
+	 * @param {string} source
+	 * @param {string} path
+	 * @returns {Promise<JSON[]>}
 	 */
 	static async fetchJsons(source, path) {
 		const extensions = [".json"];
@@ -19,7 +20,7 @@ class Sidekick {
 	/**
 	 * Fetch a JSON from a given file
 	 * @param {File} file
-	 * @returns JSON | null
+	 * @returns {Promise<JSON> | null}
 	 */
 	static async fetchJson(file) {
 		try {
@@ -35,10 +36,9 @@ class Sidekick {
 
 	/**
 	 * Attempts to coerce a target value into the exemplar's type
-	 * @param {*} target
-	 * @param value
-	 * @param {*} type
-	 * @returns {*} coercedValue
+	 * @param {string} value
+	 * @param {string} type
+	 * @returns {number | string | boolean} coercedValue
 	 */
 	static coerceType(value, type) {
 		switch (type) {
@@ -62,10 +62,11 @@ class Sidekick {
 
 	/**
 	 * Get a random unique Id, checking an optional supplied array of ids for a match
-	 * @param {*} existingIds
-	 * @param root0
-	 * @param root0.iterations
-	 * @param root0.length
+	 * @param {string[]} existingIds
+	 * @param {object} root0
+	 * @param {number} root0.iterations
+	 * @param {number} root0.length
+	 * @returns {string}
 	 */
 	static createId(existingIds = [], { iterations = 10000, length = 16 } = {}) {
 		for (let attempt = 0; attempt < iterations; attempt++) {
@@ -82,8 +83,9 @@ class Sidekick {
 
 	/**
 	 * For a given string generate a slug, optionally checking a list of existing Ids for uniqueness
-	 * @param {*} string
-	 * @param {*} idList
+	 * @param {string} string
+	 * @param {string[]} idList
+	 * @returns {string}
 	 */
 	static generateUniqueSlugId(string, idList = []) {
 		let slug = string.slugify();
@@ -136,7 +138,7 @@ class Sidekick {
 	 * Converts the given string to camelCase using the provided delimiter to break up words
 	 * @param {string} string
 	 * @param {string} delimiter
-	 * @returns the converted string
+	 * @returns {string} the converted string
 	 * @example Sidekick.toCamelCase("my-cool-string", "-") // returns "myCoolString"
 	 */
 	static toCamelCase(string, delimiter) {
@@ -219,9 +221,7 @@ class EnhancedConditions {
 			EnhancedConditions._backupCoreEffects();
 			EnhancedConditions._backupCoreSpecialStatusEffects();
 		}
-		const specialStatusEffectMap = game.settings.get("condition-lab-triggler",
-			"specialStatusEffectMapping"
-		);
+		const specialStatusEffectMap = game.settings.get("condition-lab-triggler", "specialStatusEffectMapping");
 		if (conditionMap.length) EnhancedConditions._updateStatusEffects(conditionMap);
 		if (specialStatusEffectMap) foundry.utils.mergeObject(CONFIG.specialStatusEffects, specialStatusEffectMap);
 		setInterval(EnhancedConditions.updateConditionTimestamps, 15000);
@@ -406,11 +406,6 @@ class EnhancedConditions {
 		const removeConditionAnchor = html.find("a[name='remove-row']");
 		const undoRemoveAnchor = html.find("a[name='undo-remove']");
 
-		if (!game.user.isGM) {
-			removeConditionAnchor.parent().hide();
-			undoRemoveAnchor.parent().hide();
-		}
-
 		/**
 		 * @todo #284 move to chatlog listener instead
 		 */
@@ -423,9 +418,13 @@ class EnhancedConditions {
 
 			if (!message) return;
 
-			const actor = ChatMessage.getSpeakerActor(message.speaker);
+			const token = canvas.tokens.get(speaker.token);
+			const actor = game.actors.get(speaker.actor);
+			const entity = token ?? actor;
 
-			EnhancedConditions.removeCondition(conditionName, actor, { warn: false });
+			if (!entity) return;
+
+			EnhancedConditions.removeCondition(conditionName, entity, { warn: false });
 		});
 
 		undoRemoveAnchor.on("click", (event) => {
@@ -479,24 +478,31 @@ class EnhancedConditions {
 	/**
 	 * Process the addition/removal of an Active Effect
 	 * @param {ActiveEffect} effect  the effect
-	 * @param {string} type  the type of change to process
+	 * @param {string} type  the type of change to process. "create" or "delete"
 	 */
 	static _processActiveEffectChange(effect, type = "create") {
 		if (!(effect instanceof ActiveEffect)) return;
 
-		const effectId = effect.getFlag("condition-lab-triggler", "conditionId");
-		if (!effectId) return;
+		const conditionId = effect.getFlag("condition-lab-triggler", "conditionId");
+		const isDefault = !conditionId;
+		const effectIds = conditionId ? [conditionId] : Array.from(effect.statuses);
 
-		const condition = EnhancedConditions.lookupEntryMapping(effectId);
+		const conditions = effectIds.map((effectId) => ({
+			...EnhancedConditions.lookupEntryMapping(effectId),
+			effectId
+		}));
 
-		if (!condition) return;
-
-		const shouldOutput =
-			game.settings.get("condition-lab-triggler", "conditionsOutputToChat") && condition.options.outputChat;
-		const outputType = type === "delete" ? "removed" : "added";
+		const toOutput = conditions.filter((condition) => (isDefault && game.settings.get("condition-lab-triggler", "defaultConditionsOutputToChat"))
+			|| (game.settings.get("condition-lab-triggler", "conditionsOutputToChat") && condition?.options?.outputChat));
 		const actor = effect.parent;
 
-		if (shouldOutput) EnhancedConditions.outputChatMessage(actor, condition, { type: outputType });
+		if (toOutput.length) {
+			EnhancedConditions.outputChatMessage(actor, toOutput, { type: type === "delete" ? "removed" : "added" });
+		}
+
+		if (isDefault) return;
+		// If not default we only have one condition.
+		const condition = conditions[0];
 		let macros = [];
 
 		switch (type) {
@@ -520,20 +526,15 @@ class EnhancedConditions {
 
 	/**
 	 * Checks statusEffect icons against map and returns matching condition mappings
-	 * @param {Array | string} effectIds  A list of effectIds, or a single effectId to check
-	 * @param {Array} [map=[]]  the condition map to look in
+	 * @param {string[] | string} effectIds  A list of effectIds, or a single effectId to check
+	 * @returns {string[] | string | undefined}
 	 */
-	static lookupEntryMapping(effectIds, map = []) {
+	static lookupEntryMapping(effectIds) {
 		if (!(effectIds instanceof Array)) {
 			effectIds = [effectIds];
 		}
 
-		if (!map.length) {
-			map = game.settings.get("condition-lab-triggler", "activeConditionMap");
-			if (!map.length) return null;
-		}
-
-		const conditionEntries = map.filter((row) =>
+		const conditionEntries = EnhancedConditions.getConditionsMap().filter((row) =>
 			effectIds.includes(row.id ?? Sidekick.generateUniqueSlugId(row.name))
 		);
 
@@ -544,9 +545,10 @@ class EnhancedConditions {
 
 	/**
 	 * Output one or more condition entries to chat
-	 * @param entity
-	 * @param entries
-	 * @param options
+	 * @param {Actor|Token} entity
+	 * @param {Array<Condition>} entries
+	 * @param {object} options
+	 * @param {string} options.type	"added", "removed", or "active"
 	 * @todo refactor to use actor or token
 	 */
 	static async outputChatMessage(entity, entries, options = { type: "active" }) {
@@ -584,30 +586,24 @@ class EnhancedConditions {
 			: ChatMessage.getSpeaker({ token: entity });
 		const timestamp = type.active ? null : Date.now();
 
-		// iterate over the entries and mark any with references for use in the template
-		entries.forEach((v, i, a) => {
-			if (v.referenceId) {
-				if (!v.referenceId.match(/\{.+\}/)) {
-					v.referenceId += `{${v.name}}`;
-				}
-
-				a[i].hasReference = true;
+		// iterate over the entries and mark any with references and flags for use in the template
+		const conditions = entries.map(({ reference, referenceId: rId, ...e }) => {
+			let referenceId = rId;
+			if (!rId && reference) {
+				referenceId = `@UUID[${reference}]`;
 			}
+			if (referenceId && !referenceId.match(/\{.+\}/)) {
+				referenceId = `${referenceId}{${e.name}}`;
+			}
+			const isDefault = !e.options;
+			return ({
+				...e,
+				referenceId,
+				hasReference: !!referenceId,
+				hasButtons: !isDefault
+					&& game.user.isGM
+			});
 		});
-
-		const chatCardHeading = game.i18n.localize(
-			type.active ? "CLT.ENHANCED_CONDITIONS.ChatCard.HeadingActive" : "CLT.ENHANCED_CONDITIONS.ChatCard.Heading"
-		);
-
-		const templateData = {
-			chatCardHeading,
-			type,
-			timestamp,
-			entityId: entity.id,
-			alias: speaker.alias,
-			conditions: entries,
-			isOwner: entity.isOwner || game.user.isGM
-		};
 
 		// if the last message Enhanced conditions, append instead of making a new one
 		const lastMessage = game.messages.contents[game.messages.contents.length - 1];
@@ -622,7 +618,7 @@ class EnhancedConditions {
 
 		if (!type.active && enhancedConditionsDiv && sameSpeaker && recentTimestamp) {
 			let newContent = "";
-			for (const condition of entries) {
+			for (const condition of conditions) {
 				const newRow = await renderTemplate(
 					"modules/condition-lab-triggler/templates/partials/chat-card-condition-list.hbs",
 					{ condition, type, timestamp }
@@ -637,6 +633,20 @@ class EnhancedConditions {
 			EnhancedConditions.updateConditionTimestamps();
 			ui.chat.scrollBottom();
 		} else {
+			const chatCardHeading = game.i18n.localize(
+				type.active ? "CLT.ENHANCED_CONDITIONS.ChatCard.HeadingActive" : "CLT.ENHANCED_CONDITIONS.ChatCard.Heading"
+			);
+
+			const templateData = {
+				chatCardHeading,
+				type,
+				timestamp,
+				entityId: entity.id,
+				alias: speaker.alias,
+				conditions,
+				isOwner: entity.isOwner || game.user.isGM
+			};
+
 			const content = await renderTemplate(
 				"modules/condition-lab-triggler/templates/chat-conditions.hbs",
 				templateData
@@ -654,6 +664,7 @@ class EnhancedConditions {
 	/**
 	 * Marks a Combatants for a particular entity as defeated
 	 * @param {Actor | Token} entities  the entity to mark defeated
+	 * @param {object} options
 	 * @param {boolean} options.markDefeated  an optional state flag (default=true)
 	 */
 	static _toggleDefeated(entities, { markDefeated = true } = {}) {
@@ -748,14 +759,17 @@ class EnhancedConditions {
 	 * @param {*} entity
 	 */
 	static async _processMacros(macroIds, entity = null) {
-		const isToken = entity instanceof Token || entity instanceof TokenDocument;
-		const isActor = entity instanceof Actor;
+		const scope = {};
+		if (entity instanceof Token || entity instanceof TokenDocument) {
+			scope.token = entity;
+		} else if (entity instanceof Actor) {
+			scope.actor = entity;
+		}
 
 		for (const macroId of macroIds) {
 			const macro = game.macros.get(macroId);
 			if (!macro) continue;
 
-			const scope = isToken ? { token: entity } : isActor ? { actor: entity } : null;
 			await macro.execute(scope);
 		}
 	}
@@ -804,30 +818,9 @@ class EnhancedConditions {
 	/* -------------------------------------------- */
 
 	/**
-	 * Determines whether to display the combat utility belt div in the settings sidebar
-	 * @param {boolean} display
-	 * @todo: extract to helper in sidekick class?
-	 */
-	static _toggleLabButtonVisibility(display) {
-		if (!game.user.isGM) {
-			return;
-		}
-
-		let labButton = document.getElementById("condition-lab");
-
-		if (display && labButton && labButton.style.display !== "block") {
-			return (labButton.style.display = "block");
-		}
-
-		if (labButton && !display && labButton.style.display !== "none") {
-			return (labButton.style.display = "none");
-		}
-	}
-
-	/**
 	 * Returns the default maps supplied with the module
-	 *
 	 * @todo: map to entryId and then rebuild on import
+	 * @returns {object[]}
 	 */
 	static async _loadDefaultMaps() {
 		const path = "modules/condition-lab-triggler/condition-maps";
@@ -846,7 +839,7 @@ class EnhancedConditions {
 	/**
 	 * Parse the provided Condition Map and prepare it for storage, validating and correcting bad or missing data where possible
 	 * @param {*} conditionMap
-	 * @returns {Array}
+	 * @returns {object[]}
 	 */
 	static _prepareMap(conditionMap) {
 		const preparedMap = [];
@@ -911,15 +904,13 @@ class EnhancedConditions {
 		if (!Object.isFrozen(CONFIG.defaultSpecialStatusEffects)) {
 			Object.freeze(CONFIG.defaultSpecialStatusEffects);
 		}
-		game.settings.set("condition-lab-triggler",
-			"defaultSpecialStatusEffects",
-			CONFIG.defaultSpecialStatusEffects
-		);
+		game.settings.set("condition-lab-triggler", "defaultSpecialStatusEffects", CONFIG.defaultSpecialStatusEffects);
 	}
 
 	/**
 	 * Creates journal entries for any conditions that don't have one
 	 * @param {string} condition the condition being evaluated
+	 * @returns {*}
 	 */
 	static async _createJournalEntry(condition) {
 		return await JournalEntry.create(
@@ -935,21 +926,26 @@ class EnhancedConditions {
 		);
 	}
 
+	static getConditionsMap() {
+		let conditions = game.settings.get("condition-lab-triggler", "activeConditionMap");
+		if (!game.settings.get("condition-lab-triggler", "removeDefaultEffects")) {
+			conditions = conditions.concat(game.settings.get("condition-lab-triggler", "coreStatusEffects"));
+		}
+		return conditions;
+	}
+
 	/**
 	 * Gets one or more conditions from the map by their name
 	 * @param {string} conditionName  the condition to get
+	 * @returns {string[] | string | undefined}
 	 */
 	static _lookupConditionByName(conditionName) {
 		if (!conditionName) return;
 
 		conditionName = conditionName instanceof Array ? conditionName : [conditionName];
 
-		let conditions = game.settings.get("condition-lab-triggler", "activeConditionMap");
-		if (!game.settings.get("condition-lab-triggler", "removeDefaultEffects")) {
-			conditions = conditions.concat(game.settings.get("condition-lab-triggler", "coreStatusEffects"));
-		}
-		conditions = conditions.filter((c) => conditionName.includes(c.name)) ?? [];
-		if (!conditions.length) return null;
+		const conditions = EnhancedConditions.getConditionsMap().filter((c) => conditionName.includes(c.name)) ?? [];
+		if (!conditions.length) return;
 
 		return conditions.length > 1 ? conditions : conditions.shift();
 	}
@@ -976,28 +972,25 @@ class EnhancedConditions {
 		const activeConditionEffects = EnhancedConditions._prepareStatusEffects(activeConditionMap);
 
 		if (removeDefaultEffects) {
-			return (CONFIG.statusEffects = activeConditionEffects ?? []);
-		}
-
-		if (activeConditionMap instanceof Array) {
+			CONFIG.statusEffects = activeConditionEffects ?? [];
+		} else if (activeConditionMap instanceof Array) {
 			// add the icons from the condition map to the status effects array
 			const coreEffects =
 				CONFIG.defaultStatusEffects || game.settings.get("condition-lab-triggler", "coreStatusEffects");
 
 			// Create a Set based on the core status effects and the Enhanced Condition effects. Using a Set ensures unique icons only
-			return (CONFIG.statusEffects = coreEffects.concat(activeConditionEffects));
+			CONFIG.statusEffects = coreEffects.concat(activeConditionEffects);
 		}
 	}
 
 	/**
 	 * Converts the given Condition Map (one or more Conditions) into a Status Effects array or object
-	 * @param {Array | object} conditionMap
-	 * @returns {Array} statusEffects
+	 * @param {object[] | object} conditionMap
+	 * @returns {object[]} statusEffects
 	 */
 	static _prepareStatusEffects(conditionMap) {
 		conditionMap = conditionMap instanceof Array ? conditionMap : [conditionMap];
-
-		if (!conditionMap.length) return;
+		if (!conditionMap.length) return [];
 
 		const existingIds = conditionMap.filter((c) => c.id).map((c) => c.id);
 
@@ -1035,10 +1028,12 @@ class EnhancedConditions {
 
 	/**
 	 * Prepares one or more ActiveEffects from Conditions for placement on an actor
-	 * @param {object | Array} effects  a single ActiveEffect data object or an array of ActiveEffect data objects
+	 * @param {object[] | object} effects  a single ActiveEffect data object or an array of ActiveEffect data objects
+	 * @returns {object[]}
 	 */
 	static _prepareActiveEffects(effects) {
-		if (!effects) return;
+		effects = effects instanceof Array ? effects : [effects];
+		if (!effects) return [];
 
 		for (const effect of effects) {
 			const overlay = getProperty(effect, "flags.condition-lab-triggler.core.overlay");
@@ -1052,82 +1047,32 @@ class EnhancedConditions {
 	}
 
 	/**
-	 * Returns just the icon side of the map
-	 * @param conditionMap
+	 * Retrieves a condition name by its mapped icon
+	 * @param {*} icon
+	 * @returns {string[]}
 	 */
-	static getConditionIcons(conditionMap = {}) {
-		if (!conditionMap) {
-			// maybe log an error?
-			return;
+	static getConditionsByIcon(icon) {
+		const conditionMap = game.settings.get("condition-lab-triggler", "activeConditionMap");
+
+		if (!conditionMap || !icon) {
+			return [];
 		}
 
-		if (Object.keys(conditionMap).length === 0) {
-			conditionMap = game.settings.get("condition-lab-triggler", "activeConditionMap");
-
-			if (!conditionMap || Object.keys(conditionMap).length === 0) {
+		if (conditionMap instanceof Array && conditionMap.length) {
+			const filteredIcons = conditionMap.filter((c) => c.icon === icon).map((c) => c.name);
+			if (!filteredIcons.length) {
 				return [];
 			}
-		}
-
-		if (conditionMap instanceof Array) {
-			return conditionMap.map((mapEntry) => mapEntry.icon);
+			return filteredIcons;
 		}
 
 		return [];
 	}
 
 	/**
-	 * Retrieves a condition icon by its mapped name
-	 * @param {*} condition
-	 * @param root0
-	 * @param root0.firstOnly
-	 */
-	static getIconsByCondition(condition, { firstOnly = false } = {}) {
-		const conditionMap = game.settings.get("condition-lab-triggler", "activeConditionMap");
-
-		if (!conditionMap || !condition) {
-			return;
-		}
-
-		if (conditionMap instanceof Array) {
-			const filteredConditions = conditionMap.filter((c) => c.name === condition).map((c) => c.icon);
-			if (!filteredConditions.length) {
-				return;
-			}
-
-			return firstOnly ? filteredConditions[0] : filteredConditions;
-		}
-
-		return null;
-	}
-
-	/**
-	 * Retrieves a condition name by its mapped icon
-	 * @param {*} icon
-	 * @param root0
-	 * @param root0.firstOnly
-	 */
-	static getConditionsByIcon(icon, { firstOnly = false } = {}) {
-		const conditionMap = game.settings.get("condition-lab-triggler", "activeConditionMap");
-
-		if (!conditionMap || !icon) {
-			return;
-		}
-
-		if (conditionMap instanceof Array && conditionMap.length) {
-			const filteredIcons = conditionMap.filter((c) => c.icon === icon).map((c) => c.name);
-			if (!filteredIcons.length) {
-				return null;
-			}
-			return firstOnly ? filteredIcons[0] : filteredIcons;
-		}
-
-		return null;
-	}
-
-	/**
 	 * Parses a condition map JSON and returns a map
 	 * @param {*} json
+	 * @returns {object[]}
 	 */
 	static mapFromJson(json) {
 		if (json.system !== game.system.id) {
@@ -1141,8 +1086,8 @@ class EnhancedConditions {
 
 	/**
 	 * Returns the default condition map for a given system
-	 * @param defaultMaps
-	 * @returns {{Object}}
+	 * @param {object} defaultMaps
+	 * @returns {object}}
 	 */
 	static getDefaultMap(defaultMaps = null) {
 		const system = game.system.id;
@@ -1162,6 +1107,7 @@ class EnhancedConditions {
 	/**
 	 * Builds a default map for a given system
 	 * @todo #281 update for active effects
+	 * @returns {object[]}
 	 */
 	static buildDefaultMap() {
 		const coreEffectsSetting = game.settings.get("condition-lab-triggler", "coreStatusEffects");
@@ -1177,16 +1123,18 @@ class EnhancedConditions {
 	 * Apply the named condition to the provided entities (Actors or Tokens)
 	 * @deprecated
 	 * @param  {...any} params
+	 * @returns {*}
 	 * @see EnhancedConditions#addCondition
 	 */
 	static async applyCondition(...params) {
-		return EnhancedConditions.addCondition(...params);
+		return await EnhancedConditions.addCondition(...params);
 	}
 
 	/**
 	 * Applies the named condition to the provided entities (Actors or Tokens)
 	 * @param {string[] | string} conditionName  the name of the condition to add
 	 * @param {(Actor[] | Token[] | Actor | Token)} [entities=null] one or more Actors or Tokens to apply the Condition to
+	 * @param {object} options
 	 * @param {boolean} [options.allowDuplicates=false]  if one or more of the Conditions specified is already active on the Entity, this will still add the Condition. Use in conjunction with `replaceExisting` to determine how duplicates are handled
 	 * @param {boolean} [options.replaceExisting=false]  whether or not to replace existing Conditions with any duplicates in the `conditionName` parameter. If `allowDuplicates` is true and `replaceExisting` is false then a duplicate condition is created. Has no effect is `keepDuplicates` is `false`
 	 * @example
@@ -1238,7 +1186,7 @@ class EnhancedConditions {
 		conditions = conditions instanceof Array ? conditions : [conditions];
 		const conditionNames = conditions.map((c) => c.name);
 
-		let effects = EnhancedConditions.getActiveEffect(conditions);
+		let effects = EnhancedConditions.getActiveEffects(conditions);
 
 		if (!effects) {
 			ui.notifications.error(
@@ -1253,10 +1201,7 @@ class EnhancedConditions {
 			return;
 		}
 
-		effects =
-			effects instanceof Array
-				? EnhancedConditions._prepareActiveEffects(effects)
-				: EnhancedConditions._prepareActiveEffects([effects]);
+		effects = EnhancedConditions._prepareActiveEffects(effects);
 
 		if (entities && !(entities instanceof Array)) {
 			entities = [entities];
@@ -1280,11 +1225,11 @@ class EnhancedConditions {
 			if (hasDuplicates) {
 				// @todo #348 determine the best way to raise warnings in this scenario
 				/*
-                if (warn) {
-                    ui.notifications.warn(`${entity.name}: ${conditionName} ${game.i18n.localize("CLT.ENHANCED_CONDITIONS.ApplyCondition.Failed.AlreadyActive")}`);
-                    console.log(`Combat Utility Belt - Enhanced Conditions | ${entity.name}: ${conditionName} ${game.i18n.localize("CLT.ENHANCED_CONDITIONS.ApplyCondition.Failed.AlreadyActive")}`);
-                }
-                */
+				if (warn) {
+					ui.notifications.warn(`${entity.name}: ${conditionName} ${game.i18n.localize("CLT.ENHANCED_CONDITIONS.ApplyCondition.Failed.AlreadyActive")}`);
+					console.log(`Combat Utility Belt - Enhanced Conditions | ${entity.name}: ${conditionName} ${game.i18n.localize("CLT.ENHANCED_CONDITIONS.ApplyCondition.Failed.AlreadyActive")}`);
+				}
+				*/
 
 				// Get the existing conditions on the actor
 				let existingConditionEffects = EnhancedConditions.getConditionEffects(actor, { warn: false });
@@ -1299,10 +1244,7 @@ class EnhancedConditions {
 						continue;
 					}
 
-					const conditionId = getProperty(
-						effect,
-						`flags.condition-lab-triggler.${"conditionId"}`
-					);
+					const conditionId = getProperty(effect, `flags.condition-lab-triggler.${"conditionId"}`);
 					const matchedConditionEffects = existingConditionEffects.filter(
 						(e) => e.getFlag("condition-lab-triggler", "conditionId") === conditionId
 					);
@@ -1339,7 +1281,10 @@ class EnhancedConditions {
 	/**
 	 * Gets a condition by name from the Condition Map
 	 * @param {*} conditionName
+	 * @param {*} map
+	 * @param {object} options
 	 * @param {*} options.warn
+	 * @returns {string[] | string | undefined}
 	 */
 	static getCondition(conditionName, map = null, { warn = false } = {}) {
 		if (!conditionName) {
@@ -1352,8 +1297,9 @@ class EnhancedConditions {
 	/**
 	 * Retrieves all active conditions for one or more given entities (Actors or Tokens)
 	 * @param {Actor | Token} entities  one or more Actors or Tokens to get Conditions from
+	 * @param {object} options
 	 * @param {boolean} options.warn  output notifications
-	 * @returns {Array|undefined} entityConditionMap  a mapping of conditions for each provided entity
+	 * @returns {string[] | string | undefined}
 	 * @example
 	 * // Get conditions for an Actor named "Bob"
 	 * game.clt.getConditions(game.actors.getName("Bob"));
@@ -1438,11 +1384,12 @@ class EnhancedConditions {
 	}
 
 	/**
-	 * Gets the Active Effect data (if any) for the given condition
-	 * @param {*} condition
+	 * Gets the Active Effect data (if any) for the given conditions
+	 * @param {Array} conditions
+	 * @returns {Array} statusEffects
 	 */
-	static getActiveEffect(condition) {
-		return EnhancedConditions._prepareStatusEffects(condition);
+	static getActiveEffects(conditions) {
+		return EnhancedConditions._prepareStatusEffects(conditions);
 	}
 
 	/**
@@ -1450,7 +1397,7 @@ class EnhancedConditions {
 	 * @param {string} entities  the entities to check
 	 * @param {Array} map  the Condition map to check (optional)
 	 * @param {boolean} warn  output notifications
-	 * @returns {Map | object} A Map containing the Actor Id and the Condition Active Effect instances if any
+	 * @returns {Map | object | undefined} A Map containing the Actor Id and the Condition Active Effect instances if any
 	 */
 	static getConditionEffects(entities, map = null, { warn = true } = {}) {
 		if (!entities) {
@@ -1488,9 +1435,7 @@ class EnhancedConditions {
 
 			if (!activeEffects.length) continue;
 
-			const conditionEffects = activeEffects.filter((ae) =>
-				ae.getFlag("condition-lab-triggler", "conditionId")
-			);
+			const conditionEffects = activeEffects.filter((ae) => ae.getFlag("condition-lab-triggler", "conditionId"));
 
 			if (!conditionEffects.length) continue;
 
@@ -1587,8 +1532,8 @@ class EnhancedConditions {
 
 	/**
 	 * Removes one or more named conditions from an Entity (Actor/Token)
-	 * @param {Actor | Token} entities  One or more Actors or Tokens
 	 * @param {string} conditionName  the name of the Condition to remove
+	 * @param {Actor | Token} entities  One or more Actors or Tokens
 	 * @param {object} options  options for removal
 	 * @param {boolean} options.warn  whether or not to raise warnings on errors
 	 * @example
@@ -1635,7 +1580,7 @@ class EnhancedConditions {
 			return;
 		}
 
-		let effects = EnhancedConditions.getActiveEffect(conditions);
+		let effects = EnhancedConditions.getActiveEffects(conditions);
 
 		if (!effects) {
 			if (warn) ui.notifications.error(game.i18n.localize("ENHANCED_CONDTIONS.RemoveCondition.Failed.NoEffect"));
@@ -1659,13 +1604,9 @@ class EnhancedConditions {
 					: entity instanceof Token || entity instanceof TokenDocument
 						? entity.actor
 						: null;
-			const activeEffects = actor.effects.contents.filter((e) =>
-				effects
-					.map((e) => e.flags["condition-lab-triggler"].conditionId)
-					.includes(e.getFlag("condition-lab-triggler", "conditionId"))
-			);
+			const toRemove = actor.appliedEffects?.filter((e) => effects.find((r) => e.statuses.has(r.id)));
 
-			if (!activeEffects || (activeEffects && !activeEffects.length)) {
+			if (!toRemove || (toRemove && !toRemove.length)) {
 				if (warn) ui.notifications.warn(
 					`${conditionName} ${game.i18n.localize(
 						"CLT.ENHANCED_CONDITIONS.RemoveCondition.Failed.NotActive"
@@ -1679,15 +1620,14 @@ class EnhancedConditions {
 				return;
 			}
 
-			const effectIds = activeEffects.map((e) => e.id);
-
-			await actor.deleteEmbeddedDocuments("ActiveEffect", effectIds);
+			await actor.deleteEmbeddedDocuments("ActiveEffect", toRemove.map((e) => e.id));
 		}
 	}
 
 	/**
 	 * Removes all conditions from the provided entities
 	 * @param {Actors | Tokens} entities  One or more Actors or Tokens to remove Conditions from
+	 * @param {object} options
 	 * @param {boolean} options.warn  output notifications
 	 * @example
 	 * // Remove all Conditions on an Actor named Bob
@@ -1737,7 +1677,10 @@ class EnhancedConditions {
 	}
 
 	static async _migrationHelper(cubVersion) {
-		const conditionMigrationVersion = game.settings.get("condition-lab-triggler", "enhancedConditionsMigrationVersion");
+		const conditionMigrationVersion = game.settings.get(
+			"condition-lab-triggler",
+			"enhancedConditionsMigrationVersion"
+		);
 
 		if (foundry.utils.isNewerVersion(cubVersion, conditionMigrationVersion)) {
 			console.log("CLT | Performing Enhanced Condition migration...");
@@ -1896,6 +1839,7 @@ class Triggler {
 	/**
 	 * Parse the provided Condition Map and prepare it for storage, validating and correcting bad or missing data where possible
 	 * @param {*} trigger
+	 * @returns {boolean | object}
 	 */
 	static _prepareTrigger(trigger) {
 		const { triggerType = "simple", id = null } = trigger;
@@ -1929,6 +1873,7 @@ class Triggler {
 	/**
 	 * Construct a string based on trigger parts
 	 * @param {*} parts
+	 * @returns {string}
 	 */
 	static _constructString(parts) {
 		const triggerType = parts.triggerType;
@@ -1945,7 +1890,7 @@ class Triggler {
 			const advancedProperty2 = parts.advancedProperty2 ? ` ${parts.advancedProperty2}` : "";
 			return `${parts.advancedProperty} ${advancedOperatorText} ${parts.advancedValue}${advancedProperty2}${pcOnly}${npcOnly}${notZero}`;
 		}
-		return null;
+		return "";
 	}
 
 	/**
@@ -2228,7 +2173,7 @@ class Triggler {
 	}
 
 	/**
-	 *
+	 * Adds a select to the Macro Config window.
 	 * @param {*} app
 	 * @param {*} html
 	 * @param {*} data
@@ -2612,6 +2557,7 @@ class TrigglerForm extends FormApplication {
 	/**
 	 * Process a Condition Map Import
 	 * @param {*} html
+	 * @returns {*}
 	 */
 	async _processImport(html) {
 		const form = html.find("form")[0];
@@ -2633,9 +2579,7 @@ class TrigglerForm extends FormApplication {
 		this.render();
 	}
 
-	/**
-	 * Override the header buttons method
-	 */
+	/** @override */
 	_getHeaderButtons() {
 		let buttons = super._getHeaderButtons();
 
@@ -2763,7 +2707,7 @@ class EnhancedConditionOptionConfig extends FormApplication {
 	/**
 	 * Checkbox change event handler
 	 * @param {*} event
-	 * @returns {}
+	 * @returns {*}
 	 */
 	_onCheckboxChange(event) {
 		if (!event.target?.checked) return;
@@ -2788,6 +2732,7 @@ class EnhancedConditionOptionConfig extends FormApplication {
 	/**
 	 * Special Status Effect toggle handler
 	 * @param {*} event
+	 * @returns {*}
 	 */
 	static async _onSpecialStatusEffectToggle(event) {
 		// is another condition already using this special status effect?
@@ -2809,7 +2754,7 @@ class EnhancedConditionOptionConfig extends FormApplication {
 					statusEffect: event.detail.statusLabel ?? event.detail.statusName
 				}
 			);
-			const yes = () => {};
+			const yes = () => { };
 			const no = () => {
 				return (event.target.checked = false);
 			};
@@ -2863,8 +2808,8 @@ class EnhancedConditionOptionConfig extends FormApplication {
 
 	/**
 	 * Get the enum for a special status effect based on the field name
-	 * @param {*} field
-	 * @returns {string} enum for the special status effect
+	 * @param {string} field
+	 * @returns {string | undefined} BLIND, INVISIBLE, or DEFEATED
 	 */
 	getSpecialStatusEffectByField(field) {
 		switch (field) {
@@ -2878,8 +2823,8 @@ class EnhancedConditionOptionConfig extends FormApplication {
 
 	/**
 	 * Sets the special status effect to the provided condition Id
-	 * @param {*} effect
-	 * @param {*} conditionId
+	 * @param {string} effect	Either BLIND, INVISIBLE, or DEFEATED
+	 * @param {string} conditionId
 	 */
 	setSpecialStatusEffectMapping(effect, conditionId = null) {
 		if (!Object.prototype.hasOwnProperty.call(CONFIG.specialStatusEffects, effect)) return;
@@ -2985,6 +2930,7 @@ class EnhancedEffectConfig extends ActiveEffectConfig {
 
 	/**
 	 * Override default update object behaviour
+	 * @param {*} event
 	 * @param {*} formData
 	 * @override
 	 */
@@ -3055,6 +3001,7 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Get updated map by combining existing in-memory map with current formdata
+	 * @returns {object[]}
 	 */
 	get updatedMap() {
 		const submitData = this._buildSubmitData();
@@ -3065,6 +3012,7 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Gets data for the template render
+	 * @returns {object}
 	 */
 	async getData() {
 		const sortDirection = this.sortDirection;
@@ -3160,6 +3108,7 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Enriches submit data with existing map to ensure continuity
+	 * @returns {object}
 	 */
 	_buildSubmitData() {
 		const map = this.sortDirection ? this._sortMapByName(this.map) : this.map;
@@ -3173,7 +3122,8 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Processes the Form Data and builds a usable Condition Map
-	 * @param {*} formData
+	 * @param {object} formData
+	 * @returns {object}
 	 */
 	_processFormData(formData) {
 		let ids = [];
@@ -3248,8 +3198,8 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Restore defaults for a mapping
-	 * @param root0
-	 * @param root0.clearCache
+	 * @param {object} options
+	 * @param {boolean} options.clearCache
 	 */
 	async _restoreDefaults({ clearCache = false } = {}) {
 		const system = this.system;
@@ -3379,6 +3329,7 @@ class ConditionLab extends FormApplication {
 	/**
 	 * Process a Condition Map Import
 	 * @param {*} html
+	 * @returns {*}
 	 */
 	async _processImport(html) {
 		const form = html.find("form")[0];
@@ -3400,9 +3351,7 @@ class ConditionLab extends FormApplication {
 		this.render();
 	}
 
-	/**
-	 * Override the header buttons method
-	 */
+	/** @override */
 	_getHeaderButtons() {
 		let buttons = super._getHeaderButtons();
 
@@ -3479,10 +3428,7 @@ class ConditionLab extends FormApplication {
 	/*                Event Handlers                */
 	/* -------------------------------------------- */
 
-	/**
-	 * Activate app listeners
-	 * @param {*} html
-	 */
+	/** @override */
 	activateListeners(html) {
 		const inputs = html.find("input");
 		const mapTypeSelector = html.find("select[class='map-type']");
@@ -3519,6 +3465,7 @@ class ConditionLab extends FormApplication {
 		super.activateListeners(html);
 	}
 
+	/** @override */
 	_activateCoreListeners(html) {
 		super._activateCoreListeners(html);
 		if (this.isEditable) html.find("img[data-edit]").on("click", this._onEditImage.bind(this));
@@ -3539,7 +3486,7 @@ class ConditionLab extends FormApplication {
 
 	/**
 	 * Filter input change handler
-	 * @param event
+	 * @param {*} event
 	 */
 	_onChangeFilter(event) {
 		const input = event.target;
@@ -3564,7 +3511,7 @@ class ConditionLab extends FormApplication {
 	 * Filter the given map by the name property using the supplied filter value, marking filtered entries as "hidden"
 	 * @param {Array} map
 	 * @param {string} filter
-	 * @returns filteredMap
+	 * @returns {object[]} filteredMap
 	 */
 	_filterMapByName(map, filter) {
 		return map.map((c) => ({ ...c, hidden: !c.label.toLowerCase().includes(filter.toLowerCase()) }));
@@ -3626,14 +3573,14 @@ class ConditionLab extends FormApplication {
 
 		if (!condition) return;
 
-		const conditionEffect = condition.activeEffect ?? EnhancedConditions.getActiveEffect(condition)[0];
+		const conditionEffect = condition.activeEffect ?? EnhancedConditions.getActiveEffects(condition)[0];
 
 		if (!conditionEffect) return;
 
-		if (!hasProperty(conditionEffect, `flags.condition-lab-triggler.conditionId`)) {
+		if (!hasProperty(conditionEffect, "flags.condition-lab-triggler.conditionId")) {
 			setProperty(
 				conditionEffect,
-				`flags.condition-lab-triggler.conditionId`,
+				"flags.condition-lab-triggler.conditionId",
 				conditionId
 			);
 		}
@@ -3806,6 +3753,7 @@ class ConditionLab extends FormApplication {
 	/**
 	 * Sort button handler
 	 * @param {*} event
+	 * @returns {Application}                 The rendered Application instance
 	 */
 	_onClickSortButton(event) {
 		const sortDirection = this.sortDirection;
@@ -3841,7 +3789,7 @@ class ConditionLab extends FormApplication {
 	}
 
 	/**
-	 *
+	 * Opens dialog to reset to default values.
 	 * @param {*} event
 	 */
 	_onRestoreDefaults(event) {
@@ -4058,7 +4006,7 @@ class ConditionLab extends FormApplication {
 }
 
 /**
- *
+ * Registers the module's settings.
  */
 function registerSettings() {
 	/* -------------------------------------------- */
@@ -4083,7 +4031,7 @@ function registerSettings() {
 						newMap.forEach((c) => (c.options.outputChat = true));
 						game.settings.set("condition-lab-triggler", "activeConditionMap", newMap);
 					},
-					no: () => {}
+					no: () => { }
 				});
 			}
 		}
@@ -4108,6 +4056,15 @@ function registerSettings() {
 		onChange: () => {
 			EnhancedConditions._updateStatusEffects();
 		}
+	});
+
+	game.settings.register("condition-lab-triggler", "defaultConditionsOutputToChat", {
+		name: "CLT.SETTINGS.EnhancedConditions.DefaultOutputChatN",
+		hint: "CLT.SETTINGS.EnhancedConditions.DefaultOutputChatH",
+		scope: "world",
+		type: Boolean,
+		config: true,
+		default: false
 	});
 
 	game.settings.register("condition-lab-triggler", "enhancedConditionsMigrationVersion", {
@@ -4185,9 +4142,9 @@ function registerSettings() {
 		type: String,
 		default: "",
 		choices: {
-			default: game.i18n.localize("CLT.SETTINGS.EnhancedConditions.MapType.Choices.default"),
-			custom: game.i18n.localize("CLT.SETTINGS.EnhancedConditions.MapType.Choices.custom"),
-			other: game.i18n.localize("CLT.SETTINGS.EnhancedConditions.MapType.Choices.other")
+			default: "CLT.SETTINGS.EnhancedConditions.MapType.Choices.default",
+			custom: "CLT.SETTINGS.EnhancedConditions.MapType.Choices.custom",
+			other: "CLT.SETTINGS.EnhancedConditions.MapType.Choices.other"
 		},
 		config: false,
 		apiOnly: true
@@ -4229,10 +4186,10 @@ function registerSettings() {
 			scope: "client",
 			type: String,
 			choices: {
-				small: game.i18n.localize("CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.small"),
-				medium: game.i18n.localize("CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.medium"),
-				large: game.i18n.localize("CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.large"),
-				xLarge: game.i18n.localize("CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.xLarge")
+				small: "CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.small",
+				medium: "CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.medium",
+				large: "CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.large",
+				xLarge: "CLT.SETTINGS.TokenUtility.TokenEffectSize.choices.xLarge"
 			},
 			config: true,
 			onChange: () => {
@@ -4260,7 +4217,7 @@ function registerSettings() {
 		scope: "world",
 		type: Object,
 		default: [],
-		onChange: () => {}
+		onChange: () => { }
 	});
 
 	game.settings.register("condition-lab-triggler", "hasRunMigration", {
@@ -4397,9 +4354,7 @@ Hooks.on("init", () => {
 		restricted: true,
 		precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
 	});
-});
 
-Hooks.on("i18nInit", () => {
 	registerSettings();
 
 	// Wrappers
