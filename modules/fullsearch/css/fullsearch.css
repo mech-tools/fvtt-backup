@@ -1,0 +1,68 @@
+.search_chat {
+  font-family: "garamondpro";
+  font-size: 1.2em;
+}
+.search_chat h3 {
+  margin: 10px;
+  font: 1.5em "garamondpro";
+  font-weight: bold;
+  text-align: center;
+}
+.search_chat h4 {
+  margin: 10px;
+  font: 1.3em "garamondpro";
+  font-weight: bold;
+  text-align: center;
+}
+.search_chat .motif {
+  margin: 10px;
+}
+.search_chat .content-link {
+  background: none;
+  border: 0px;
+}
+.search_chat .btn-search button {
+  padding: 5px;
+  margin: 5px;
+  line-height: 18px;
+}
+.search_chat .journal {
+  margin: 5px 0px;
+}
+.search_chat .journal .journal_name {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+.search_dialog {
+  font: 1.2em "garamondpro";
+}
+.search_dialog h3 {
+  margin: 10px;
+  font: 1.5em "garamondpro";
+  font-weight: bold;
+  text-align: center;
+}
+.search_dialog .dialog-buttons {
+  padding-top: 15px;
+}
+.chatsearchbox {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex: 0 0 28px;
+  margin: 0 6px;
+  align-content: center;
+}
+.chatsearchbox .startsearch {
+  flex: 0;
+}
+.chatsearchbox .startsearch i.fas {
+  font-size: var(--font-size-20);
+  line-height: 28px;
+}
+.chatsearchbox input {
+  width: 250px;
+  margin: 3px;
+  background: rgba(255, 255, 245, 0.8);
+}

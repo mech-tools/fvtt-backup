@@ -1,0 +1,44 @@
+<div class="search_chat {{cssClass}}">
+  <h3>{{localize "FULLSEARCH.chat_intro"}}</h3>
+  <div class="motif">{{localize "FULLSEARCH.chat_text"}}{{searchPattern}}</div>
+  {{#if hasresults}}
+    {{#if tooMuchResults}}
+      {{localize "FULLSEARCH.too_many_results"}}
+    {{else}}
+      <div class="btn-highlight">
+        <button id="highlight" data-tooltip="FULLSEARCH.{{#if highlighted}}highlighted_tooltip{{else}}unhighlighted_tooltip{{/if}}">{{#if highlighted}}{{localize "FULLSEARCH.highlighted_button"}}{{else}}{{localize "FULLSEARCH.unhighlighted_button"}}{{/if}}</button>
+      </div>
+      {{#if pageresults}}
+        <h4>{{localize "DOCUMENT.JournalEntryPages"}}</h4>
+        <div>
+          {{#each pageResultCollection as |journal|}}
+            <div class="journal">
+              <div class="journal_name">{{journal.journalName}}</div>
+              {{#each journal.pages as |page|}}
+                <div class="journal_page">@UUID[JournalEntry.{{journal.journalId}}.JournalEntryPage.{{page.pageId}}]</div>
+              {{/each}}
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+      {{#if actorresults}}
+        <h4>{{localize "DOCUMENT.Actors"}}</h4>
+        <div>
+          {{#each actorResultCollection as |id|}}
+            @UUID[Actor.{{id}}]<br />
+          {{/each}}
+        </div>
+      {{/if}}
+      {{#if itemresults}}
+        <h4>{{localize "DOCUMENT.Items"}}</h4>
+        <div>
+          {{#each itemResultCollection as |id|}}
+            @UUID[Item.{{id}}]<br />
+          {{/each}}
+        </div>
+      {{/if}}
+    {{/if}}
+  {{else}}
+    {{localize "FULLSEARCH.no_results"}}
+  {{/if}}
+</div>

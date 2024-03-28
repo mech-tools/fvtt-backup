@@ -1,17 +1,7 @@
-2024/03/15-15:24:58.793277 7fbbd67fc700 Recovering log #492
-2024/03/15-15:24:58.793652 7fbbd67fc700 Level-0 table #494: started
-2024/03/15-15:24:58.795823 7fbbd67fc700 Level-0 table #494: 141072 bytes OK
-2024/03/15-15:24:58.798479 7fbbd67fc700 Delete type=0 #492
-2024/03/15-15:24:58.798548 7fbbd67fc700 Delete type=3 #491
-2024/03/15-15:28:30.958605 7fb955fef700 Level-0 table #497: started
-2024/03/15-15:28:30.958629 7fb955fef700 Level-0 table #497: 0 bytes OK
-2024/03/15-15:28:30.959479 7fb955fef700 Delete type=0 #495
-2024/03/15-15:28:30.969909 7fb955fef700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 344 : 1
-2024/03/15-15:28:30.969918 7fb955fef700 Compacting 2@0 + 1@1 files
-2024/03/15-15:28:30.971646 7fb955fef700 Generated table #498@0: 13 keys, 141414 bytes
-2024/03/15-15:28:30.971660 7fb955fef700 Compacted 2@0 + 1@1 files => 141414 bytes
-2024/03/15-15:28:30.972363 7fb955fef700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2024/03/15-15:28:30.972422 7fb955fef700 Delete type=2 #483
-2024/03/15-15:28:30.972484 7fb955fef700 Delete type=2 #494
-2024/03/15-15:28:30.972564 7fb955fef700 Delete type=2 #489
-2024/03/15-15:28:30.974610 7fb955fef700 Manual compaction at level-0 from '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 344 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2024/03/27-09:18:25.732164 7fbbd6ffd700 Recovering log #501
+2024/03/27-09:18:25.734693 7fbbd6ffd700 Delete type=0 #501
+2024/03/27-09:18:25.734719 7fbbd6ffd700 Delete type=3 #499
+2024/03/27-11:01:33.199524 7fb955fef700 Level-0 table #506: started
+2024/03/27-11:01:33.199546 7fb955fef700 Level-0 table #506: 0 bytes OK
+2024/03/27-11:01:33.200650 7fb955fef700 Delete type=0 #504
+2024/03/27-11:01:33.202274 7fb955fef700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)

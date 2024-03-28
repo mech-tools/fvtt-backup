@@ -1,0 +1,24 @@
+{
+  "FULLSEARCH": {
+    "button_search": "Rechercher",
+    "button_cancel": "Annuler",
+    "chat_intro": "Résultat de la recherche",
+    "chat_text": "Texte recherché : ",
+    "dialog_title": "Recherche de Texte dans les Journaux, Personnages, Objets...",
+    "dialog_input": "Entrez ici le texte à rechercher :",
+    "highlighted_button": "Surligner Off",
+    "highlighted_tooltip": "Ne plus surligner le texte recherché dans les documents",
+    "unhighlighted_button": "Surligner On",
+    "unhighlighted_tooltip": "Surligner le texte recherché dans les documents",
+    "too_many_results": "Plus de 20 résultats, affinez votre recherche.",
+    "no_results": "Aucun résultat.",
+    "window_title": "Rechercher",
+    "settings" :
+    {
+      "entryMethodName" : "Méthode d'entrée",
+      "entryMethodHint" : "Définit le moyen de lancer une recherche",
+      "chatBar" : "Barre en bas de la fenêtre de Tchat",
+      "controlButton": "Icone dans la colonne de gauche"
+    }
+  }
+}
