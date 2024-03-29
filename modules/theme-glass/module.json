@@ -1,0 +1,75 @@
+{
+    "id": "theme-glass",
+    "title": "Theme: Glass",
+    "description": "Theme: Glass for FoundryVTT.",
+    "version": "1.6.2",
+    "library": "false",
+    "compatibility": {
+        "minimum": 11,
+        "verified": "11.314"
+    },
+    "authors": [
+        {
+            "name": "DarKDinDoN",
+            "url": "https://github.com/DarKDinDoN",
+            "discord": "Maxime#1562"
+        }
+    ],
+    "relationships": {},
+    "conflicts": [],
+    "socket": true,
+    "scripts": [],
+    "esmodules": [
+        "./build/theme-glass.js"
+    ],
+    "styles": [
+        "./build/theme-glass.css"
+    ],
+    "flags": {
+        "hotReload": {
+            "extensions": [
+                "css",
+                "hbs",
+                "json"
+            ],
+            "paths": [
+                "build/theme-glass.css",
+                "templates/*.hbs",
+                "languages/*.json"
+            ]
+        }
+    },
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "languages/en.json"
+        },
+        {
+            "lang": "fr",
+            "name": "Français",
+            "path": "languages/fr.json"
+        }
+    ],
+    "url": "https://github.com/DarKDinDoN/theme-glass",
+    "bugs": "https://github.com/DarKDinDoN/theme-glass/issues",
+    "changelog": "https://github.com/DarKDinDoN/theme-glass/releases",
+    "manifest": "https://github.com/DarKDinDoN/theme-glass/releases/latest/download/module.json",
+    "download": "https://github.com/DarKDinDoN/theme-glass/releases/download/1.6.2/module.zip",
+    "license": "https://github.com/DarKDinDoN/theme-glass/raw/main/LICENSE",
+    "readme": "https://github.com/DarKDinDoN/theme-glass/raw/main/README.md",
+    "media": [
+        {
+            "type": "cover",
+            "url": "https://raw.githubusercontent.com/DarKDinDoN/theme-glass/main/screenshot-1.jpg"
+        },
+        {
+            "type": "screenshot",
+            "url": "https://raw.githubusercontent.com/DarKDinDoN/theme-glass/main/screenshot-1.jpg"
+        },
+        {
+            "type": "screenshot",
+            "url": "https://raw.githubusercontent.com/DarKDinDoN/theme-glass/main/screenshot-2.jpg"
+        }
+    ]
+}
