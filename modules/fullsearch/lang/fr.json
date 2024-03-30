@@ -10,7 +10,7 @@
     "highlighted_tooltip": "Ne plus surligner le texte recherché dans les documents",
     "unhighlighted_button": "Surligner On",
     "unhighlighted_tooltip": "Surligner le texte recherché dans les documents",
-    "too_many_results": "Plus de 20 résultats, affinez votre recherche.",
+    "too_many_results": "Plus de {maxResults} résultats, affinez votre recherche.",
     "no_results": "Aucun résultat.",
     "window_title": "Rechercher",
     "settings" :
@@ -18,7 +18,9 @@
       "entryMethodName" : "Méthode d'entrée",
       "entryMethodHint" : "Définit le moyen de lancer une recherche",
       "chatBar" : "Barre en bas de la fenêtre de Tchat",
-      "controlButton": "Icone dans la colonne de gauche"
+      "controlButton": "Icone dans la colonne de gauche",
+      "maxResultsName" : "Résultats Max",
+      "maxResultsHint" : "Nombre maximum de résultats"
     }
   }
 }

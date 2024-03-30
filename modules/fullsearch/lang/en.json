@@ -10,7 +10,7 @@
     "highlighted_tooltip": "Toggle off highlighting of pattern in documents",
     "unhighlighted_button": "Highlight On",
     "unhighlighted_tooltip": "Toggle on highlighting of pattern in documents",
-    "too_many_results": "More than 20 results, please refine your search terms.",
+    "too_many_results": "More than {maxResults} results, please refine your search terms.",
     "no_results": "No results found.",
     "pagetooltip": "See page",
     "window_title": "Search",
@@ -19,7 +19,9 @@
       "entryMethodName" : "Entry Method",
       "entryMethodHint" : "Set the entry method to start a full search",
       "chatBar" : "Bar at the bottom of chat",
-      "controlButton": "Icon in the left icon column"
+      "controlButton": "Icon in the left icon column",
+      "maxResultsName" : "Max results",
+      "maxResultsHint" : "Maximum number of results"
     }
   }
 }

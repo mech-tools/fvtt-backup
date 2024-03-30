@@ -11,7 +11,7 @@ export class SearchChat {
     this.data = {
       pageResultCollection: [],
       itemResultCollection: [],
-      actorResultCollection: [],
+      actorResultCollection: []
     };
     this.template = "modules/fullsearch/templates/chat/search-result.hbs";
   }
@@ -88,6 +88,8 @@ export class SearchChat {
       return acc;
     }, {});
 
+    const maxResults = parseInt(game.settings.get("fullsearch", "maxResults"));
+
     this.data.pageResultCollection = groupedByJournal;
     this.data.pageresults = pages.length;
 
@@ -100,7 +102,8 @@ export class SearchChat {
     this.data.actorresults = this.data.actorResultCollection.length;
 
     this.data.hasresults = this.data.pageresults + this.data.itemresults + this.data.actorresults;
-    this.data.tooMuchResults = this.data.hasresults > 20;
+    this.data.tooMuchResults = this.data.hasresults > maxResults ? game.i18n.format("FULLSEARCH.too_many_results", {maxResults : maxResults}) : false;
+    
     return this;
   }
 

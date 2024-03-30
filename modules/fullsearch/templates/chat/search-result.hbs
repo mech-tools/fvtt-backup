@@ -3,7 +3,7 @@
   <div class="motif">{{localize "FULLSEARCH.chat_text"}}{{searchPattern}}</div>
   {{#if hasresults}}
     {{#if tooMuchResults}}
-      {{localize "FULLSEARCH.too_many_results"}}
+      {{tooMuchResults}}
     {{else}}
       <div class="btn-highlight">
         <button id="highlight" data-tooltip="FULLSEARCH.{{#if highlighted}}highlighted_tooltip{{else}}unhighlighted_tooltip{{/if}}">{{#if highlighted}}{{localize "FULLSEARCH.highlighted_button"}}{{else}}{{localize "FULLSEARCH.unhighlighted_button"}}{{/if}}</button>
