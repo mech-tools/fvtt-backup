@@ -1,8 +1,8 @@
-2024/03/13-11:43:37.876222 7fb8e8ff9700 Recovering log #153
-2024/03/13-11:43:37.879173 7fb8e8ff9700 Delete type=0 #153
-2024/03/13-11:43:37.879200 7fb8e8ff9700 Delete type=3 #151
-2024/03/26-13:54:47.913078 7fb64bfe3700 Level-0 table #159: started
-2024/03/26-13:54:47.913353 7fb64bfe3700 Level-0 table #159: 0 bytes OK
-2024/03/26-13:54:47.914478 7fb64bfe3700 Delete type=0 #157
-2024/03/26-13:54:47.916103 7fb64bfe3700 Manual compaction at level-0 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!WUTZyOEwKUECPoc2.rHfQeVuP72el0dqb' @ 0 : 0; will stop at (end)
-2024/03/26-13:54:47.916242 7fb64bfe3700 Manual compaction at level-1 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!WUTZyOEwKUECPoc2.rHfQeVuP72el0dqb' @ 0 : 0; will stop at (end)
+2024/03/26-13:56:14.345681 7fb8e97fa700 Recovering log #158
+2024/03/26-13:56:14.348085 7fb8e97fa700 Delete type=3 #156
+2024/03/26-13:56:14.348121 7fb8e97fa700 Delete type=0 #158
+2024/03/30-10:43:09.761615 7fb64bfe3700 Level-0 table #163: started
+2024/03/30-10:43:09.761991 7fb64bfe3700 Level-0 table #163: 0 bytes OK
+2024/03/30-10:43:09.763817 7fb64bfe3700 Delete type=0 #161
+2024/03/30-10:43:09.764236 7fb64bfe3700 Manual compaction at level-0 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!WUTZyOEwKUECPoc2.rHfQeVuP72el0dqb' @ 0 : 0; will stop at (end)
+2024/03/30-10:43:09.768219 7fb64bfe3700 Manual compaction at level-1 from '!combats!JUmeL0JkfJgmTuXq' @ 72057594037927935 : 1 .. '!combats.combatants!WUTZyOEwKUECPoc2.rHfQeVuP72el0dqb' @ 0 : 0; will stop at (end)
