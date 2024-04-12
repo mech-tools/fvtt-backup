@@ -1,12 +1,13 @@
 {
-  "title": "CoC7 Compendiums en français Toc",
+  "title": "CoC7 Compendiums FR Toc",
   "description": "<p>Une collection de compendiums pour l'Appel de Cthulhu en français.</p>",
   "authors": [
     {
       "name": "Toc",
       "email": "vonv@tentacules.net",
       "url": "https://tentacules.net",
-      "discord": "@vonv"
+      "discord": "@vonv",
+      "flags": {}
     }
   ],
   "url": "https://gitlab.com/trouverobjetcache/coc7-module-fr-toc/",
@@ -48,7 +49,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-item",
@@ -59,7 +61,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-item-crea",
@@ -70,7 +73,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-journalentry",
@@ -81,7 +85,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-rolltable",
@@ -92,7 +97,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-scene",
@@ -103,7 +109,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-compendiums-sono",
@@ -114,7 +121,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-aventures",
@@ -125,7 +133,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     },
     {
       "name": "fr-macros",
@@ -136,7 +145,8 @@
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      }
+      },
+      "flags": {}
     }
   ]
 }
