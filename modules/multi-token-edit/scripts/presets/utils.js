@@ -131,10 +131,8 @@ export function mergePresetDataToDefaultDoc(preset, presetData) {
       data = { distance: 10, x: 0, y: 0 };
       break;
     case 'AmbientLight':
-      if (presetData.config?.dim == null && presetData.config?.bright == null) {
-        data = { config: { dim: 20, bright: 20 }, x: 0, y: 0 };
-        break;
-      }
+      data = { config: { dim: 20, bright: 20 }, x: 0, y: 0 };
+      break;
     case 'Scene':
       data = { name: preset.name };
       break;
@@ -233,8 +231,10 @@ export function getTransformToOrigin(docToData) {
   } else {
     transform.x = -data[0].x;
     transform.y = -data[0].y;
-    const height = data[0].elevation ?? data[0].flags?.levels?.rangeBottom ?? 0;
-    transform.z = -height;
+    if (game.Levels3DPreview?._active) {
+      const height = data[0].elevation ?? data[0].flags?.levels?.rangeBottom ?? 0;
+      transform.z = -height;
+    }
   }
   return transform;
 }

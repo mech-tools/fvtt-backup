@@ -76,6 +76,8 @@ export class PresetCollection {
   static async packToTree(pack, type) {
     if (!pack) return null;
 
+    if (CONFIG.debug.MassEdit) console.time(pack.title);
+
     // Setup folders ready for parent/children processing
     const folders = new Map();
     const topLevelFolders = new Map();
@@ -118,7 +120,6 @@ export class PresetCollection {
     // Due to poor implementation of Folder+Folder Content delete, there are likely to be some indexes which were not removed
     // Lets clean them up here for now
     PresetCollection._cleanIndex(pack, metaDoc, metaIndex);
-
     // Remove after sufficient enough time has passed to have reasonable confidence that All/Most users have executed this ^
 
     for (const idx of index) {
@@ -135,23 +136,26 @@ export class PresetCollection {
         if (!pack.locked) preset._updateIndex(preset); // Insert missing preset into metadata index
       }
 
+      if (type) {
+        if (type === 'ALL') {
+          if (!UI_DOCS.includes(preset.documentName)) preset._visible = false;
+        } else if (type === 'FAVORITES') {
+          if (!preset.isFavorite) preset._visible = false;
+        } else if (preset.documentName !== type) preset._visible = false;
+      }
+
       if (preset.folder) {
         let matched = false;
         for (const [uuid, folder] of folders) {
           if (folder.id === preset.folder) {
             folder.presets.push(preset);
             matched = true;
+            if (type === 'FAVORITES' && preset.isFavorite) this._setChildAndParentFoldersVisible(folder, folders);
             break;
           }
         }
         if (!matched) topLevelPresets.push(preset);
       } else topLevelPresets.push(preset);
-
-      if (type) {
-        if (type === 'ALL') {
-          if (!UI_DOCS.includes(preset.documentName)) preset._visible = false;
-        } else if (preset.documentName !== type) preset._visible = false;
-      }
 
       allPresets.push(preset);
       hasVisible |= preset._visible;
@@ -162,6 +166,8 @@ export class PresetCollection {
     const sortedFolders = this._sortFolders(Array.from(topLevelFolders.values()), sorting);
     const sortedPresets = this._sortPresets(topLevelPresets, sorting);
 
+    if (CONFIG.debug.MassEdit) console.timeEnd(pack.title);
+
     return {
       folders: sortedFolders,
       presets: sortedPresets,
@@ -170,6 +176,11 @@ export class PresetCollection {
       hasVisible,
       metaDoc,
     };
+  }
+
+  static _setChildAndParentFoldersVisible(folder, folders) {
+    folder.visible = true;
+    if (folder.folder) this._setChildAndParentFoldersVisible(folders.get(folder.folder), folders);
   }
 
   static _groupExtFolders(folders, allFolders) {
@@ -595,7 +606,7 @@ export class PresetAPI {
   /**
    * Retrieve presets
    * @param {object} [options={}]
-   * @param {String} [options.uuid]                      Preset UUID
+   * @param {String|Array[String]} [options.uuid]        Preset UUID/s
    * @param {String} [options.name]                      Preset name
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
    * @param {String} [options.folder]                    Folder name
@@ -604,21 +615,29 @@ export class PresetAPI {
    * @returns {Array[Preset]|Array[String]|Array[Object]}
    */
   static async getPresets({ uuid, name, type, folder, format = 'preset', tags } = {}) {
-    if (uuid) return await PresetCollection.get(uuid);
-    else if (!name && !type && !folder && !tags)
+    let presets;
+    if (uuid) {
+      presets = [];
+      const uuids = Array.isArray(uuid) ? uuid : [uuid];
+      for (const uuid of uuids) {
+        const preset = await PresetCollection.get(uuid);
+        if (preset) presets.push(preset);
+      }
+    } else if (!name && !type && !folder && !tags) {
       throw Error('UUID, Name, Type, Folder and/or Tags required to retrieve a Preset.');
+    } else {
+      if (tags) {
+        if (Array.isArray(tags)) tags = { tags, matchAny: true };
+        else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
+      }
 
-    if (tags) {
-      if (Array.isArray(tags)) tags = { tags, matchAny: true };
-      else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
+      presets = PresetCollection._searchPresetTree(await PresetCollection.getTree(), {
+        name,
+        type,
+        folder,
+        tags,
+      });
     }
-
-    const presets = PresetCollection._searchPresetTree(await PresetCollection.getTree(), {
-      name,
-      type,
-      folder,
-      tags,
-    });
 
     if (format === 'name') return presets.map((p) => p.name);
     else if (format === 'nameAndFolder')
@@ -781,6 +800,8 @@ export class PresetAPI {
     scaleToGrid = false,
     modifyPrompt = true,
     center = false,
+    transform = {},
+    previewOnly = false,
     sceneId,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
@@ -851,11 +872,14 @@ export class PresetAPI {
           label: pickerLabel,
           taPreview: taPreview,
           center,
+          previewOnly,
+          ...transform,
         });
       });
       if (coords == null) return [];
       x = coords.end.x;
       y = coords.end.y;
+      if (coords.end.z != null) z = coords.end.z;
     } else if (x == null || y == null) {
       if (game.Levels3DPreview?._active) {
         const pos3d = game.Levels3DPreview.interactionManager.canvas2dMousePosition;
@@ -894,17 +918,20 @@ export class PresetAPI {
     // ==================
     // Set positions taking into account relative distances between each object
 
-    const transform = getTransformToOrigin(docToData);
-    transform.x += pos.x;
-    transform.y += pos.y;
+    const posTransform = getTransformToOrigin(docToData);
+    posTransform.x += pos.x;
+    posTransform.y += pos.y;
 
     // 3D Support
-    if (pos.z == null) transform.z = 0;
-    else transform.z += pos.z;
+
+    if (game.Levels3DPreview?._active) {
+      if (pos.z == null) posTransform.z = 0;
+      else posTransform.z += pos.z;
+    }
 
     docToData.forEach((dataArr, documentName) => {
       dataArr.forEach((data) => {
-        DataTransform.apply(documentName, data, { x: 0, y: 0 }, transform);
+        DataTransform.apply(documentName, data, { x: 0, y: 0 }, posTransform);
 
         // Assign ownership for Drawings and MeasuredTemplates
         if (['Drawing', 'MeasuredTemplate'].includes(documentName)) {

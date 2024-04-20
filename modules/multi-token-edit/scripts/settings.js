@@ -163,6 +163,13 @@ export function registerSettings() {
     },
   });
 
+  game.settings.register(MODULE_ID, 'presetFavorites', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   // end of Preset Settings
   // ======================
 
@@ -236,6 +243,22 @@ export function registerSettings() {
       default: true,
     });
   }
+
+  game.settings.register(MODULE_ID, 'brush', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {
+      scale: [1, 1],
+      rotation: [0, 0],
+      random: true,
+      group: false,
+      spawner: true,
+      eraser: false,
+      lock: false,
+      snap: false,
+    },
+  });
 }
 
 export function registerKeybinds() {

@@ -1,8 +1,15 @@
-2024/04/05-15:17:13.274837 7fb8ea7fc700 Recovering log #182
-2024/04/05-15:17:13.278806 7fb8ea7fc700 Delete type=0 #182
-2024/04/05-15:17:13.278831 7fb8ea7fc700 Delete type=3 #180
-2024/04/05-15:18:42.214212 7fb64bfe3700 Level-0 table #187: started
-2024/04/05-15:18:42.214255 7fb64bfe3700 Level-0 table #187: 0 bytes OK
-2024/04/05-15:18:42.215218 7fb64bfe3700 Delete type=0 #185
-2024/04/05-15:18:42.218161 7fb64bfe3700 Manual compaction at level-0 from '!actors!0cfF2K4NikISTyZw' @ 72057594037927935 : 1 .. '!actors.items!zxqyicqhCpduE9Yq.fe0f8c201ef1fb3c' @ 0 : 0; will stop at (end)
-2024/04/05-15:18:42.218373 7fb64bfe3700 Manual compaction at level-1 from '!actors!0cfF2K4NikISTyZw' @ 72057594037927935 : 1 .. '!actors.items!zxqyicqhCpduE9Yq.fe0f8c201ef1fb3c' @ 0 : 0; will stop at (end)
+2024/04/05-15:19:48.301073 7fb8e9ffb700 Recovering log #186
+2024/04/05-15:19:48.304206 7fb8e9ffb700 Delete type=3 #184
+2024/04/05-15:19:48.304236 7fb8e9ffb700 Delete type=0 #186
+2024/04/19-10:14:44.414287 7fb64bfe3700 Level-0 table #191: started
+2024/04/19-10:14:44.418112 7fb64bfe3700 Level-0 table #191: 101564 bytes OK
+2024/04/19-10:14:44.419469 7fb64bfe3700 Delete type=0 #189
+2024/04/19-10:14:44.420664 7fb64bfe3700 Manual compaction at level-0 from '!actors!0cfF2K4NikISTyZw' @ 72057594037927935 : 1 .. '!actors.items!zxqyicqhCpduE9Yq.fe0f8c201ef1fb3c' @ 0 : 0; will stop at (end)
+2024/04/19-10:14:44.424553 7fb64bfe3700 Manual compaction at level-1 from '!actors!0cfF2K4NikISTyZw' @ 72057594037927935 : 1 .. '!actors.items!zxqyicqhCpduE9Yq.fe0f8c201ef1fb3c' @ 0 : 0; will stop at '!actors.items!py8mURBdzGABbk2r.zA9fHBYcw4N5ytr2' @ 11538 : 1
+2024/04/19-10:14:44.424568 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2024/04/19-10:14:44.462191 7fb64bfe3700 Generated table #192@1: 3052 keys, 1462406 bytes
+2024/04/19-10:14:44.462232 7fb64bfe3700 Compacted 1@1 + 1@2 files => 1462406 bytes
+2024/04/19-10:14:44.463248 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/04/19-10:14:44.463350 7fb64bfe3700 Delete type=2 #191
+2024/04/19-10:14:44.463470 7fb64bfe3700 Delete type=2 #179
+2024/04/19-10:14:44.470304 7fb64bfe3700 Manual compaction at level-1 from '!actors.items!py8mURBdzGABbk2r.zA9fHBYcw4N5ytr2' @ 11538 : 1 .. '!actors.items!zxqyicqhCpduE9Yq.fe0f8c201ef1fb3c' @ 0 : 0; will stop at (end)

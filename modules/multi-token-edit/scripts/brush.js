@@ -1,12 +1,15 @@
 import { pasteDataUpdate } from '../applications/forms.js';
-import { PresetAPI } from './presets/collection.js';
+import { Picker } from './picker.js';
+import { PresetAPI, PresetCollection } from './presets/collection.js';
 import { Preset } from './presets/preset.js';
+import { applyRandomization } from './randomizer/randomizerUtils.js';
 import { MODULE_ID } from './utils.js';
 
 export class Brush {
   static app;
   static deactivateCallback;
   static spawner;
+  static eraser;
   static lastSpawnTime;
   // @type {Preset}
   static preset;
@@ -28,16 +31,24 @@ export class Brush {
 
   static _performBrushDocumentUpdate(pos, placeable) {
     if (pos) this._animateCrossTranslate(pos.x, pos.y);
-    pasteDataUpdate([placeable], this.preset, true, true);
+    pasteDataUpdate([placeable], this.preset, true, true, this.transform);
     this.updatedPlaceables.set(placeable.id, placeable);
+    BrushMenu.iterate();
   }
 
   static _performBrushDocumentCreate(pos) {
     const now = new Date().getTime();
     if (!this.lastSpawnTime || now - this.lastSpawnTime > 100) {
       this.lastSpawnTime = now;
-      PresetAPI.spawnPreset({ preset: this.preset, ...pos, center: true });
+      if (pos.z == null) Picker.resolve(pos);
+      else PresetAPI.spawnPreset({ preset: this.preset, ...pos, center: true, snapToGrid: this.snap });
+      BrushMenu.iterate();
     }
+  }
+
+  static _performBrushDocumentDelete(placeable) {
+    this.hoveredPlaceable = null;
+    placeable.document?.delete();
   }
 
   static _hitTestWall(point, wall) {
@@ -119,7 +130,8 @@ export class Brush {
       this.hoveredPlaceable.visible &&
       !this.updatedPlaceables.has(this.hoveredPlaceable.id)
     ) {
-      this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
+      if (this.eraser) this._performBrushDocumentDelete(this.hoveredPlaceable);
+      else this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
     }
   }
 
@@ -134,7 +146,8 @@ export class Brush {
         const p = game.Levels3DPreview.interactionManager.currentHover?.placeable;
         if (p && p.document.documentName === this.documentName) {
           game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
-          this._performBrushDocumentUpdate(null, p);
+          if (this.eraser) this._performBrushDocumentDelete(p);
+          else this._performBrushDocumentUpdate(null, p);
         }
         this.updatedPlaceables.clear();
       }
@@ -152,14 +165,37 @@ export class Brush {
     }
   }
 
+  static async genPreview() {
+    if (!game.Levels3DPreview?._active)
+      PresetAPI.spawnPreset({
+        preset: this.preset,
+        coordPicker: true,
+        previewOnly: true,
+        center: true,
+        taPreview: 'ALL',
+        transform: this.transform,
+        snapToGrid: this.snap,
+      });
+  }
+
   /**
    * @param {Object} options
    * @param {MassEditForm} options.app
    * @param {Preset} options.preset
    * @returns
    */
-  static activate({ app = null, preset = null, deactivateCallback = null, spawner = false } = {}) {
-    if (this.deactivate() || !canvas.ready) return false;
+  static activate({
+    app = null,
+    preset = null,
+    deactivateCallback = null,
+    spawner = false,
+    eraser = false,
+    refresh = false,
+    transform = {},
+    snap = true,
+  } = {}) {
+    this.deactivate(refresh);
+    if (!canvas.ready) return false;
     if (!app && !preset) return false;
 
     if (this.brushOverlay) {
@@ -169,19 +205,23 @@ export class Brush {
     // Setup fields to be used for updates
     this.app = app;
     this.preset = preset;
+    this.transform = transform;
     this.deactivateCallback = deactivateCallback;
     this.spawner = spawner;
+    this.eraser = eraser;
+    this.snap = snap;
     if (this.app) {
       this.documentName = this.app.documentName;
     } else {
       this.documentName = this.preset.documentName;
     }
-    this.updatedPlaceables.clear();
+    if (!refresh) this.updatedPlaceables.clear();
 
     const interaction = canvas.app.renderer.events;
     if (!interaction.cursorStyles['brush']) {
       interaction.cursorStyles['brush'] = `url('modules/${MODULE_ID}/images/brush_icon.png'), auto`;
       interaction.cursorStyles['brush_spawn'] = `url('modules/${MODULE_ID}/images/brush_icon_spawn.png'), auto`;
+      interaction.cursorStyles['eraser'] = `url('modules/${MODULE_ID}/images/brush_icon_eraser.png'), auto`;
     }
 
     this.active = true;
@@ -194,6 +234,7 @@ export class Brush {
     // Determine hit test test function to be used for pointer hover detection
     if (this.spawner) {
       this.hitTest = () => false;
+      this.genPreview();
     } else {
       switch (this.documentName) {
         case 'Wall':
@@ -218,19 +259,31 @@ export class Brush {
     // Create the brush overlay
     this.brushOverlay = new PIXI.Container();
     this.brushOverlay.hitArea = canvas.dimensions.rect;
-    this.brushOverlay.cursor = spawner ? 'brush_spawn' : 'brush';
+
+    let cursor = 'brush';
+    if (spawner) cursor = 'brush_spawn';
+    else if (eraser) cursor = 'eraser';
+    this.brushOverlay.cursor = cursor;
+
     this.brushOverlay.interactive = true;
     this.brushOverlay.zIndex = Infinity;
 
     this.brushOverlay.on('mousemove', (event) => {
+      Picker.feedPos(event.data.getLocalPosition(this.brushOverlay));
       this._onBrushMove(event);
+      if (!this.mDownWithinCanvas) return; // Fix to prevent mouse interaction within apps
       if (event.buttons === 1) this._onBrushClickMove(event);
     });
     this.brushOverlay.on('mouseup', (event) => {
+      this.mDownWithinCanvas = false; // Fix to prevent mouse interaction within apps
       if (event.nativeEvent.which !== 2) {
         this._onBrushClickMove(event);
       }
       this.updatedPlaceables.clear();
+    });
+
+    this.brushOverlay.on('mousedown', (event) => {
+      this.mDownWithinCanvas = true; // Fix to prevent mouse interaction within apps
     });
 
     this.brushOverlay.on('click', (event) => {
@@ -318,7 +371,7 @@ export class Brush {
     return true;
   }
 
-  static deactivate() {
+  static deactivate(refresh = false) {
     if (this.active) {
       canvas.mouseInteractionManager.permissions.clickLeft = true;
       //canvas.mouseInteractionManager.permissions.longPress = true;
@@ -329,14 +382,20 @@ export class Brush {
         this.deactivate3DListeners();
       }
       this.active = false;
-      this.updatedPlaceables.clear();
-      this._clearHover(null, null, true);
+
+      if (!refresh) {
+        this.updatedPlaceables.clear();
+        this._clearHover(null, null, true);
+      }
       this.hoverTest = null;
-      this.deactivateCallback?.();
+      if (!refresh) this.deactivateCallback?.();
+      if (this.spawner) Picker.destroy();
       this.spawner = false;
+      this.eraser = false;
       this.deactivateCallback = null;
       this.app = null;
       this.preset = null;
+      this.transform = null;
       return true;
     }
   }
@@ -363,12 +422,438 @@ export class Brush {
   }
 }
 
+// =================================================
+
+export class BrushMenu extends FormApplication {
+  static addPresets(presets = []) {
+    if (!this._instance) return this.render(presets);
+    else this._instance.addPresets(presets);
+  }
+
+  static isActive() {
+    return Boolean(this._instance);
+  }
+
+  static removePreset(id) {
+    if (!this._instance) return;
+    this._instance.removePreset(id);
+  }
+
+  static iterate(forward = true) {
+    if (!this._instance) return;
+    this._instance.iterate(forward);
+  }
+
+  static render(presets, settings = {}) {
+    if (this._instance) this.addPresets(presets);
+    else {
+      this._instance = new BrushMenu(presets, settings);
+      this._instance.render(true);
+    }
+  }
+
+  static async close() {
+    return this._instance?.close(true);
+  }
+
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      id: 'mass-edit-brush-menu',
+      template: `modules/${MODULE_ID}/templates/preset/brush.html`,
+      classes: ['mass-edit-dark-window'],
+      resizable: false,
+      minimizable: false,
+      width: 200,
+      height: 'auto',
+      scrollY: ['.presets'],
+    });
+  }
+
+  constructor(presets, settings = {}) {
+    super({}, { left: 10, top: window.innerHeight / 2 });
+    this.presets = presets ?? [];
+    this.preset = this.presets[0].clone();
+    this.preset.data = this.preset.data[0];
+    this._settings = foundry.utils.mergeObject(game.settings.get(MODULE_ID, 'brush'), settings);
+    this._it = -1;
+    this._createIndex();
+    this.iterate();
+  }
+
+  _createIndex() {
+    const index = [];
+
+    if (this._settings.group) {
+      for (let pI = 0; pI < this.presets.length; pI++) {
+        index.push({ pI });
+      }
+    } else {
+      for (let pI = 0; pI < this.presets.length; pI++) {
+        const preset = this.presets[pI];
+        for (let dI = 0; dI < preset.data.length; dI++) {
+          index.push({ pI, dI });
+        }
+      }
+    }
+    this._index = index;
+    if (this._it >= this._index.length) this._it = this._index.length - 1;
+  }
+
+  async _activateBrush(refresh = true) {
+    const index = this._index[this._it];
+    const p = this.presets[index.pI];
+    this.preset = p.clone();
+    if (index.hasOwnProperty('dI')) this.preset.data = [this.preset.data[index.dI]];
+
+    // Apply Color
+    await this._applyColor();
+
+    Brush.activate({
+      preset: this.preset,
+      deactivateCallback: this._deactivateCallback.bind(this),
+      spawner: this._settings.spawner,
+      eraser: this._settings.eraser,
+      transform: this._getTransform(),
+      refresh,
+      snap: this._settings.snap,
+    });
+  }
+
+  async _applyColor() {
+    if (this._settings.randomColor || this._settings.color) {
+      let pPath;
+      const docName = this.preset.documentName;
+      if (docName === 'Token' || docName === 'Tile') pPath = 'texture.tint';
+      else if (docName === 'AmbientLight') pPath = 'config.color';
+
+      if (pPath) {
+        if (this._settings.randomColor) {
+          const updates = this.preset.data.map(() => {
+            return { color: '' };
+          });
+          await applyRandomization(updates, null, { color: { type: 'color', ...this._settings.randomColor } });
+
+          this.preset.data.forEach((d, i) => {
+            if (this._settings.ddTint) this._applyDDTint(d, updates[i].color);
+            else foundry.utils.setProperty(d, pPath, updates[i].color);
+          });
+        } else {
+          this.preset.data.forEach((d) => {
+            if (this._settings.ddTint) this._applyDDTint(d, this._settings.color);
+            else foundry.utils.setProperty(d, pPath, this._settings.color);
+          });
+        }
+      }
+    }
+  }
+
+  _applyDDTint(data, color) {
+    let filters = foundry.utils.getProperty(data, 'flags.tokenmagic.filters');
+
+    if (!color) {
+      if (filters) {
+        foundry.utils.setProperty(
+          data,
+          'flags.tokenmagic.filters',
+          filters.filter((f) => f.tmFilters.filterId !== 'DDTint')
+        );
+      }
+    } else {
+      filters = (filters ?? []).filter((f) => f.tmFilters.filterId !== 'DDTint');
+      filters.push({
+        tmFilters: {
+          tmFilterId: 'DDTint',
+          tmFilterInternalId: randomID(),
+          tmFilterType: 'ddTint',
+          filterOwner: game.data.userId,
+          tmParams: {
+            tmFilterType: 'ddTint',
+            filterId: 'DDTint',
+            tint: PIXI.utils.hex2rgb(color),
+            updateId: randomID(),
+            rank: 10000,
+            enabled: true,
+            filterOwner: game.data.userId,
+          },
+        },
+      });
+      foundry.utils.setProperty(data, 'flags.tokenmagic.filters', filters);
+    }
+  }
+
+  get title() {
+    return 'Brush';
+  }
+
+  async getData(options = {}) {
+    return {
+      presets: this.presets,
+      activePreset: this.preset,
+      ...this._settings,
+      tmfx: game.modules.get('tokenmagic')?.active,
+    };
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+
+    const settings = this._settings;
+    const app = this;
+
+    import('./jquery-ui/jquery-ui.js').then((module) => {
+      const rotationRangeLabel = html.find('.rotation-range-label');
+      html.find('.rotation-slider').slider({
+        range: true,
+        min: -180,
+        max: 180,
+        values: settings.rotation,
+        slide: function (event, ui) {
+          rotationRangeLabel.text(`${ui.values[0]}° - ${ui.values[1]}°`);
+        },
+        change: function (event, ui) {
+          app._updateBrushSettings({ rotation: ui.values });
+        },
+      });
+
+      const scaleRangeLabel = html.find('.scale-range-label');
+      html.find('.scale-slider').slider({
+        range: true,
+        min: 0.1,
+        max: 4,
+        step: 0.01,
+        values: settings.scale,
+        slide: function (event, ui) {
+          scaleRangeLabel.text(`${ui.values[0]} - ${ui.values[1]}`);
+        },
+        change: function (event, ui) {
+          app._updateBrushSettings({ scale: ui.values });
+        },
+      });
+
+      this.setPosition({ height: 'auto' });
+    });
+
+    html.find('.toggle-button').on('click', this._toggleSetting.bind(this));
+    html.find('.reset').on('click', this._resetToDefaults.bind(this));
+    html.on('click', '.preset', this._onClickPreset.bind(this));
+    html.on('contextmenu', '.preset', this._onRightClickPreset.bind(this));
+    html.find('.randomize-color').on('click', this._onRandomizeColor.bind(this));
+    html.find('input[type="color"]').on('change', this._onColorChange.bind(this));
+    html.find('.color').on('input paste', this._onColorChange.bind(this));
+  }
+
+  async _onColorChange(event) {
+    let cString = $(event.currentTarget).val();
+    if (!cString) this._updateBrushSettings({ color: '' });
+    else {
+      let color = Color.fromString(cString);
+      if (!Number.isNaN(color.valueOf())) this._updateBrushSettings({ color: cString });
+    }
+  }
+
+  async _onClickPreset(event) {
+    const presetIndex = $(event.currentTarget).data('index');
+    if (presetIndex != null) {
+      this._it = this._index.findIndex((i) => i.pI === presetIndex);
+      await this._activateBrush();
+      this.render(true);
+    }
+  }
+
+  async _onRandomizeColor() {
+    const randomColor = this._settings.randomColor ?? {};
+    const colorTemp = await renderTemplate(`modules/${MODULE_ID}/templates/randomizer/color.html`, {
+      method: 'random',
+      lockMethod: true,
+      space: randomColor.space,
+      hue: randomColor.hue,
+    });
+
+    let colorSlider;
+    let dialog = new Dialog({
+      title: `Pick Range`,
+      content: `<form>${colorTemp}</form>`,
+      buttons: {
+        save: {
+          label: 'Apply',
+          callback: async (html) => {
+            await this._updateBrushSettings({
+              randomColor: {
+                method: 'random',
+                space: html.find('[name="space"]').val(),
+                hue: html.find('[name="hue"]').val(),
+                colors: colorSlider.getColors(),
+              },
+            });
+            this.render(true);
+          },
+        },
+        remove: {
+          label: 'Remove',
+          callback: async (html) => {
+            await this._updateBrushSettings({
+              randomColor: null,
+            });
+            this.render(true);
+          },
+        },
+      },
+      render: (html) => {
+        import('./randomizer/slider.js').then((module) => {
+          colorSlider = new module.ColorSlider(
+            html,
+            randomColor.colors ?? [
+              { hex: '#ff0000', offset: 0 },
+              { hex: '#ff0000', offset: 100 },
+            ]
+          );
+          setTimeout(() => dialog.setPosition({ height: 'auto' }), 100);
+        });
+      },
+    });
+
+    dialog.render(true);
+  }
+
+  async _onRightClickPreset(event) {
+    const presetIndex = $(event.currentTarget).data('index');
+    const preset = this.presets[presetIndex];
+    if (preset) this.removePreset(preset.id);
+  }
+
+  async _resetToDefaults() {
+    await this._updateBrushSettings({ scale: [1, 1], rotation: [0, 0] });
+    this.render(true);
+  }
+
+  async _toggleSetting(event) {
+    const control = $(event.target).closest('.toggle-button');
+    const update = { [control.data('name')]: !control.hasClass('active') };
+
+    if (update.spawner) update.eraser = false;
+    if (update.eraser) update.spawner = false;
+
+    await this._updateBrushSettings(update);
+
+    if (update.random) await this.iterate();
+    else this.render(true);
+  }
+
+  async _updateBrushSettings(update) {
+    foundry.utils.mergeObject(this._settings, update);
+    await game.settings.set(MODULE_ID, 'brush', this._settings);
+
+    if (update.hasOwnProperty('group')) this._createIndex();
+    await this._activateBrush();
+  }
+
+  addPresets(presets = []) {
+    for (const preset of presets) {
+      if (!this.presets.find((p) => p.id === preset.id)) this.presets.push(preset);
+    }
+    this._createIndex();
+    this.render(true);
+  }
+
+  removePreset(id) {
+    const presetIndex = this.presets.findIndex((p) => p.id === id);
+    if (presetIndex === -1) return;
+
+    const wasActivePreset = this._index[this._it]?.pI === presetIndex;
+
+    this.presets = this.presets.filter((p) => p.id !== id);
+    if (this.presets.length === 0) return this.close(true);
+
+    this._createIndex();
+
+    if (wasActivePreset) this.iterate();
+    else this.render(true);
+  }
+
+  async iterate(forward = true) {
+    if (!this._settings.lock) {
+      if (this._settings.random) this._it = Math.floor(Math.random() * this._index.length);
+      else {
+        this._it += forward ? 1 : -1;
+        if (this._it < 0) this._it = this._index.length - 1;
+        else this._it %= this._index.length;
+      }
+    } else {
+      if (this._it === -1) this._it = 0;
+    }
+
+    await this._activateBrush();
+    this.render(true);
+  }
+
+  _getTransform() {
+    const settings = this._settings;
+    const transform = {};
+    if (settings.scale[0] === settings.scale[1]) transform.scale = settings.scale[0];
+    else {
+      const stepsInRange = (settings.scale[1] - settings.scale[0]) / 0.01;
+      transform.scale = Math.floor(Math.random() * stepsInRange) * 0.01 + settings.scale[0];
+    }
+
+    if (settings.rotation[0] === settings.rotation[1]) transform.rotation = settings.rotation[0];
+    else {
+      const stepsInRange = (settings.rotation[1] - settings.rotation[0] + 1) / 1;
+      transform.rotation = Math.floor(Math.random() * stepsInRange) * 1 + settings.rotation[0];
+    }
+    return transform;
+  }
+
+  _deactivateCallback() {
+    this.close(true);
+  }
+
+  _getHeaderButtons() {
+    const buttons = super._getHeaderButtons();
+
+    buttons.unshift({
+      label: '',
+      class: 'mass-edit-brush-macro',
+      icon: 'fa-solid fa-code',
+      onclick: this._generateBrushMacro.bind(this),
+    });
+
+    return buttons;
+  }
+
+  async _generateBrushMacro() {
+    const uuids = this.presets.map((p) => p.uuid).filter(Boolean);
+    if (!uuids.length) return;
+
+    const command = `MassEdit.openBrushMenu({ 
+  uuid: ${JSON.stringify(uuids, null, 4)}
+},
+${JSON.stringify(this._settings, null, 2)}
+);`;
+
+    const macro = await Macro.create({
+      name: 'Brush Macro',
+      type: 'script',
+      scope: 'global',
+      command,
+      img: `modules/${MODULE_ID}/images/brush_icon.png`,
+    });
+    macro.sheet.render(true);
+  }
+
+  async close(options = {}) {
+    Brush.deactivate();
+    BrushMenu._instance = null;
+    Picker.destroy();
+    return super.close(options);
+  }
+}
+
 /**
  * API method to activate the brush.
  * @param {Object} options See MassEdit.getPreset(...)
  * @param {String} mode update|spawn
  */
-export async function activateBrush(options, mode = 'spawn') {
+export async function activateBrush(options, mode = 'spawner') {
   const preset = await PresetAPI.getPreset(options);
   if (preset) {
     Brush.activate({ preset, spawner: mode === 'spawner' });
@@ -380,4 +865,17 @@ export async function activateBrush(options, mode = 'spawn') {
  */
 export function deactivateBush() {
   Brush.deactivate();
+}
+
+/**
+ * Open Brush Menu using the provided presets
+ * @param {Object} options See MassEdit.getPresets(...)
+ * @param {Object} settings Brush Menu control settings
+ */
+export async function openBrushMenu(options, settings = {}) {
+  const presets = await PresetAPI.getPresets(options);
+  if (!presets?.length) return;
+  for (const preset of presets) await preset.load();
+  await BrushMenu.close();
+  BrushMenu.render(presets, settings);
 }
