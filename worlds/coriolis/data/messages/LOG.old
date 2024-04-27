@@ -1,15 +1,8 @@
-2024/04/19-10:15:51.652223 7fb8e97fa700 Recovering log #185
-2024/04/19-10:15:51.654796 7fb8e97fa700 Delete type=3 #183
-2024/04/19-10:15:51.654834 7fb8e97fa700 Delete type=0 #185
-2024/04/25-13:06:05.297072 7fb64bfe3700 Level-0 table #192: started
-2024/04/25-13:06:05.303621 7fb64bfe3700 Level-0 table #192: 245638 bytes OK
-2024/04/25-13:06:05.304839 7fb64bfe3700 Delete type=0 #190
-2024/04/25-13:06:05.306159 7fb64bfe3700 Manual compaction at level-0 from '!messages!0QiGcvIun2mK699r' @ 72057594037927935 : 1 .. '!messages!zDQOW1Ro26CJGx8X' @ 0 : 0; will stop at (end)
-2024/04/25-13:06:05.311999 7fb64bfe3700 Manual compaction at level-1 from '!messages!0QiGcvIun2mK699r' @ 72057594037927935 : 1 .. '!messages!zDQOW1Ro26CJGx8X' @ 0 : 0; will stop at '!messages!zEgjVi1rIPybBJRn' @ 3269 : 0
-2024/04/25-13:06:05.312013 7fb64bfe3700 Compacting 1@1 + 1@2 files
-2024/04/25-13:06:05.317317 7fb64bfe3700 Generated table #193@1: 94 keys, 122432 bytes
-2024/04/25-13:06:05.317336 7fb64bfe3700 Compacted 1@1 + 1@2 files => 122432 bytes
-2024/04/25-13:06:05.318217 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/04/25-13:06:05.318298 7fb64bfe3700 Delete type=2 #188
-2024/04/25-13:06:05.318384 7fb64bfe3700 Delete type=2 #192
-2024/04/25-13:06:05.320425 7fb64bfe3700 Manual compaction at level-1 from '!messages!zEgjVi1rIPybBJRn' @ 3269 : 0 .. '!messages!zDQOW1Ro26CJGx8X' @ 0 : 0; will stop at (end)
+2024/04/25-13:07:16.633169 7fb8e9ffb700 Recovering log #191
+2024/04/25-13:07:16.636283 7fb8e9ffb700 Delete type=3 #189
+2024/04/25-13:07:16.636326 7fb8e9ffb700 Delete type=0 #191
+2024/04/26-19:54:30.319013 7fb64bfe3700 Level-0 table #197: started
+2024/04/26-19:54:30.319264 7fb64bfe3700 Level-0 table #197: 0 bytes OK
+2024/04/26-19:54:30.320108 7fb64bfe3700 Delete type=0 #195
+2024/04/26-19:54:30.357506 7fb64bfe3700 Manual compaction at level-0 from '!messages!0QiGcvIun2mK699r' @ 72057594037927935 : 1 .. '!messages!zDQOW1Ro26CJGx8X' @ 0 : 0; will stop at (end)
+2024/04/26-19:54:30.361014 7fb64bfe3700 Manual compaction at level-1 from '!messages!0QiGcvIun2mK699r' @ 72057594037927935 : 1 .. '!messages!zDQOW1Ro26CJGx8X' @ 0 : 0; will stop at (end)
