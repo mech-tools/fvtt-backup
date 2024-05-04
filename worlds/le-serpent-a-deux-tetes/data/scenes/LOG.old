@@ -1,15 +1,12 @@
-2024/04/24-19:27:57.877829 7f3239ffb700 Recovering log #353
-2024/04/24-19:27:57.880576 7f3239ffb700 Delete type=3 #343
-2024/04/24-19:27:57.880663 7f3239ffb700 Delete type=0 #353
-2024/04/30-21:01:02.648321 7f2f9b651700 Level-0 table #360: started
-2024/04/30-21:01:02.663555 7f2f9b651700 Level-0 table #360: 1496939 bytes OK
-2024/04/30-21:01:02.665503 7f2f9b651700 Delete type=0 #358
-2024/04/30-21:01:02.670912 7f2f9b651700 Manual compaction at level-0 from '!scenes!1p5Sv4A5MmUk1eqz' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
-2024/04/30-21:01:02.672112 7f2f9b651700 Manual compaction at level-1 from '!scenes!1p5Sv4A5MmUk1eqz' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at '!scenes.walls!Kx38o7MAxN8TDyiH.hV8qgKhenm1KnIRA' @ 135567 : 1
-2024/04/30-21:01:02.672118 7f2f9b651700 Compacting 1@1 + 1@2 files
-2024/04/30-21:01:02.699303 7f2f9b651700 Generated table #361@1: 10947 keys, 1264070 bytes
-2024/04/30-21:01:02.699329 7f2f9b651700 Compacted 1@1 + 1@2 files => 1264070 bytes
-2024/04/30-21:01:02.700191 7f2f9b651700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/04/30-21:01:02.700275 7f2f9b651700 Delete type=2 #356
-2024/04/30-21:01:02.700450 7f2f9b651700 Delete type=2 #360
-2024/04/30-21:01:02.701216 7f2f9b651700 Manual compaction at level-1 from '!scenes.walls!Kx38o7MAxN8TDyiH.hV8qgKhenm1KnIRA' @ 135567 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2024/05/03-11:12:41.496381 7f99ba7fc700 Recovering log #363
+2024/05/03-11:12:41.507600 7f99ba7fc700 Level-0 table #365: started
+2024/05/03-11:12:41.533501 7f99ba7fc700 Level-0 table #365: 2229701 bytes OK
+2024/05/03-11:12:41.536406 7f99ba7fc700 Delete type=0 #363
+2024/05/03-11:12:41.537109 7f99ba7fc700 Delete type=3 #362
+2024/05/03-11:12:48.434638 7f971b386700 Moved #365 to level-1 2229701 bytes OK: files[ 0 1 1 0 0 0 0 ]
+2024/05/03-11:12:48.516082 7f971b386700 Compacting 1@1 + 1@2 files
+2024/05/03-11:12:48.598921 7f971b386700 Generated table #367@1: 11034 keys, 1285520 bytes
+2024/05/03-11:12:48.598945 7f971b386700 Compacted 1@1 + 1@2 files => 1285520 bytes
+2024/05/03-11:12:48.599690 7f971b386700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/05/03-11:12:48.599883 7f971b386700 Delete type=2 #365
+2024/05/03-11:12:48.600433 7f971b386700 Delete type=2 #361

@@ -1,15 +1,12 @@
-2024/04/24-19:27:57.824599 7f32397fa700 Recovering log #202
-2024/04/24-19:27:57.827499 7f32397fa700 Delete type=3 #200
-2024/04/24-19:27:57.827545 7f32397fa700 Delete type=0 #202
-2024/04/30-21:01:02.551198 7f2f9b651700 Level-0 table #208: started
-2024/04/30-21:01:02.557325 7f2f9b651700 Level-0 table #208: 269440 bytes OK
-2024/04/30-21:01:02.558450 7f2f9b651700 Delete type=0 #206
-2024/04/30-21:01:02.563270 7f2f9b651700 Manual compaction at level-0 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
-2024/04/30-21:01:02.563466 7f2f9b651700 Manual compaction at level-1 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at '!journal.pages!zfERjIW1HzxDDbwf.rCkrITcH2GVscm1v' @ 2239 : 1
-2024/04/30-21:01:02.563481 7f2f9b651700 Compacting 1@1 + 1@2 files
-2024/04/30-21:01:02.576432 7f2f9b651700 Generated table #209@1: 433 keys, 819810 bytes
-2024/04/30-21:01:02.576457 7f2f9b651700 Compacted 1@1 + 1@2 files => 819810 bytes
-2024/04/30-21:01:02.577716 7f2f9b651700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/04/30-21:01:02.577784 7f2f9b651700 Delete type=2 #208
-2024/04/30-21:01:02.577871 7f2f9b651700 Delete type=2 #204
-2024/04/30-21:01:02.582028 7f2f9b651700 Manual compaction at level-1 from '!journal.pages!zfERjIW1HzxDDbwf.rCkrITcH2GVscm1v' @ 2239 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
+2024/05/03-11:12:41.424975 7f99b97fa700 Recovering log #211
+2024/05/03-11:12:41.426617 7f99b97fa700 Level-0 table #213: started
+2024/05/03-11:12:41.429629 7f99b97fa700 Level-0 table #213: 93654 bytes OK
+2024/05/03-11:12:41.432222 7f99b97fa700 Delete type=3 #210
+2024/05/03-11:12:41.432254 7f99b97fa700 Delete type=0 #211
+2024/05/03-11:12:48.338601 7f971b386700 Moved #213 to level-1 93654 bytes OK: files[ 0 1 1 0 0 0 0 ]
+2024/05/03-11:12:48.345150 7f971b386700 Compacting 1@1 + 1@2 files
+2024/05/03-11:12:48.366493 7f971b386700 Generated table #215@1: 433 keys, 820954 bytes
+2024/05/03-11:12:48.366522 7f971b386700 Compacted 1@1 + 1@2 files => 820954 bytes
+2024/05/03-11:12:48.368021 7f971b386700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/05/03-11:12:48.368133 7f971b386700 Delete type=2 #213
+2024/05/03-11:12:48.368252 7f971b386700 Delete type=2 #209
