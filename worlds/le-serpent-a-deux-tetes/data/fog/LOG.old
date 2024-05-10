@@ -1,5 +1,23 @@
-2024/05/03-11:12:41.372591 7f99ba7fc700 Recovering log #249
-2024/05/03-11:12:41.379320 7f99ba7fc700 Level-0 table #251: started
-2024/05/03-11:12:41.385857 7f99ba7fc700 Level-0 table #251: 1037787 bytes OK
-2024/05/03-11:12:41.387983 7f99ba7fc700 Delete type=3 #248
-2024/05/03-11:12:41.388016 7f99ba7fc700 Delete type=0 #249
+2024/05/03-11:17:38.865592 7f4110dd5700 Recovering log #252
+2024/05/03-11:17:38.868294 7f4110dd5700 Delete type=3 #250
+2024/05/03-11:17:38.868330 7f4110dd5700 Delete type=0 #252
+2024/05/09-11:24:29.680228 7f3e72335700 Level-0 table #256: started
+2024/05/09-11:24:29.680478 7f3e72335700 Level-0 table #256: 0 bytes OK
+2024/05/09-11:24:29.685038 7f3e72335700 Delete type=0 #254
+2024/05/09-11:24:29.689080 7f3e72335700 Manual compaction at level-0 from '!fog!0vb8IcKGzEH2k8Ps' @ 72057594037927935 : 1 .. '!fog!zhv5WoIE54yBI6vQ' @ 0 : 0; will stop at '!fog!kL8SmkjCn3i9jjqC' @ 675 : 1
+2024/05/09-11:24:29.689089 7f3e72335700 Compacting 1@0 + 0@1 files
+2024/05/09-11:24:29.696040 7f3e72335700 Generated table #257@0: 3 keys, 162438 bytes
+2024/05/09-11:24:29.696059 7f3e72335700 Compacted 1@0 + 0@1 files => 162438 bytes
+2024/05/09-11:24:29.696721 7f3e72335700 compacted to: files[ 0 1 2 0 0 0 0 ]
+2024/05/09-11:24:29.696876 7f3e72335700 Delete type=2 #251
+2024/05/09-11:24:29.705501 7f3e72335700 Manual compaction at level-0 from '!fog!kL8SmkjCn3i9jjqC' @ 675 : 1 .. '!fog!zhv5WoIE54yBI6vQ' @ 0 : 0; will stop at (end)
+2024/05/09-11:24:29.707573 7f3e72335700 Manual compaction at level-1 from '!fog!0vb8IcKGzEH2k8Ps' @ 72057594037927935 : 1 .. '!fog!zhv5WoIE54yBI6vQ' @ 0 : 0; will stop at '!fog!kL8SmkjCn3i9jjqC' @ 676 : 1
+2024/05/09-11:24:29.707587 7f3e72335700 Compacting 1@1 + 2@2 files
+2024/05/09-11:24:29.727404 7f3e72335700 Generated table #258@1: 45 keys, 2110559 bytes
+2024/05/09-11:24:29.738902 7f3e72335700 Generated table #259@1: 33 keys, 1032014 bytes
+2024/05/09-11:24:29.738926 7f3e72335700 Compacted 1@1 + 2@2 files => 3142573 bytes
+2024/05/09-11:24:29.740106 7f3e72335700 compacted to: files[ 0 0 2 0 0 0 0 ]
+2024/05/09-11:24:29.740202 7f3e72335700 Delete type=2 #257
+2024/05/09-11:24:29.740372 7f3e72335700 Delete type=2 #247
+2024/05/09-11:24:29.740659 7f3e72335700 Delete type=2 #246
+2024/05/09-11:24:29.744919 7f3e72335700 Manual compaction at level-1 from '!fog!kL8SmkjCn3i9jjqC' @ 676 : 1 .. '!fog!zhv5WoIE54yBI6vQ' @ 0 : 0; will stop at (end)

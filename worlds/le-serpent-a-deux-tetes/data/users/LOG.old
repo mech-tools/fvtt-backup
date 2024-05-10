@@ -1,5 +1,21 @@
-2024/05/03-11:12:41.759696 7f99ba7fc700 Recovering log #228
-2024/05/03-11:12:41.760665 7f99ba7fc700 Level-0 table #230: started
-2024/05/03-11:12:41.762373 7f99ba7fc700 Level-0 table #230: 32104 bytes OK
-2024/05/03-11:12:41.764843 7f99ba7fc700 Delete type=0 #228
-2024/05/03-11:12:41.764942 7f99ba7fc700 Delete type=3 #227
+2024/05/03-11:17:39.117083 7f4110dd5700 Recovering log #231
+2024/05/03-11:17:39.120286 7f4110dd5700 Delete type=0 #231
+2024/05/03-11:17:39.120314 7f4110dd5700 Delete type=3 #229
+2024/05/09-11:24:29.480983 7f3e72335700 Level-0 table #235: started
+2024/05/09-11:24:29.481251 7f3e72335700 Level-0 table #235: 0 bytes OK
+2024/05/09-11:24:29.482432 7f3e72335700 Delete type=0 #233
+2024/05/09-11:24:29.484767 7f3e72335700 Manual compaction at level-0 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at '!users!Y5jNoeB4JS4fjnj4' @ 787 : 1
+2024/05/09-11:24:29.484775 7f3e72335700 Compacting 1@0 + 0@1 files
+2024/05/09-11:24:29.485932 7f3e72335700 Generated table #236@0: 1 keys, 1395 bytes
+2024/05/09-11:24:29.485952 7f3e72335700 Compacted 1@0 + 0@1 files => 1395 bytes
+2024/05/09-11:24:29.486852 7f3e72335700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/05/09-11:24:29.486902 7f3e72335700 Delete type=2 #230
+2024/05/09-11:24:29.518140 7f3e72335700 Manual compaction at level-0 from '!users!Y5jNoeB4JS4fjnj4' @ 787 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
+2024/05/09-11:24:29.522703 7f3e72335700 Manual compaction at level-1 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at '!users!Y5jNoeB4JS4fjnj4' @ 829 : 1
+2024/05/09-11:24:29.522715 7f3e72335700 Compacting 1@1 + 1@2 files
+2024/05/09-11:24:29.523832 7f3e72335700 Generated table #237@1: 2 keys, 1742 bytes
+2024/05/09-11:24:29.523844 7f3e72335700 Compacted 1@1 + 1@2 files => 1742 bytes
+2024/05/09-11:24:29.524819 7f3e72335700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/05/09-11:24:29.527178 7f3e72335700 Delete type=2 #226
+2024/05/09-11:24:29.527235 7f3e72335700 Delete type=2 #236
+2024/05/09-11:24:29.529513 7f3e72335700 Manual compaction at level-1 from '!users!Y5jNoeB4JS4fjnj4' @ 829 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
