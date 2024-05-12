@@ -111,11 +111,26 @@
    ====== Presets ======
    ===================== */
 
-.mass-edit-dark-window .window-content {
+.mass-edit-dark-window .window-content,
+.mass-edit-dark-window .tag {
   background: rgba(50, 50, 50, 0.8);
+  color: rgba(255, 255, 240, 0.8);
+}
+
+.mass-edit-dark-window button {
+  background: black;
+  color: rgba(255, 255, 240, 0.8);
+}
+
+.mass-edit-dark-window input,
+.mass-edit-dark-window p.notes,
+.mass-edit-dark-window textarea {
+  color: var(--color-text-light-4);
+}
+
+.mass-edit-window-fill .window-content {
   padding-left: 1px;
   padding-right: 1px;
-  color: rgba(255, 255, 240, 0.8);
 }
 
 #mass-edit-presets.inactive {
@@ -460,11 +475,11 @@ input.me-subtract {
   opacity: 0.5;
 }
 
-.mass-edit-preset-form .item .preset-favorite {
+.mass-edit-preset-form .display-hover {
   display: none;
 }
 
-.mass-edit-preset-form .item .preset-favorite.show {
+.mass-edit-preset-form .display-hover.show {
   display: block;
 }
 
@@ -575,13 +590,13 @@ nav > a[data-tab='me-pinned'] {
   border-radius: 5px;
   padding: 3px;
   margin: 2px;
-  background: floralwhite;
   display: inline-block;
 }
 
 .me-tags .add-tag {
   flex: 0;
   margin-left: 0.5em;
+  line-height: inherit;
 }
 
 /* ================== 
@@ -606,19 +621,25 @@ nav > a[data-tab='me-pinned'] {
   background-color: darkorange;
 }
 
+.mass-edit-brush-menu .ui-slider-handle {
+  background-color: darkorange;
+  border-color: black;
+}
+
 .mass-edit-brush-menu .ui-slider {
   margin-top: 5px;
   margin-bottom: 5px;
 }
 
 .mass-edit-brush-menu .sub-controls {
-  display: flex;
+  display: inline-block;
   text-align: center;
-  margin-top: 14px;
+  margin-top: 3px;
+  line-height: 1.5em;
 }
 
 .mass-edit-brush-menu .sub-controls a {
-  flex: 1;
+  padding: 3px;
 }
 
 .mass-edit-brush-menu a.active {
@@ -632,4 +653,14 @@ nav > a[data-tab='me-pinned'] {
 
 .mass-edit-brush-menu input[type='text'] {
   color: wheat;
+}
+
+.rainbow-text {
+  background: red;
+  background: -webkit-linear-gradient(left, red, yellow, green, cyan, blue, violet);
+  background: -o-linear-gradient(right, red, yellow, green, cyan, blue, violet);
+  background: -moz-linear-gradient(right, red, yellow, green, cyan, blue, violet);
+  background: linear-gradient(to right, red, yellow, green, cyan, blue, violet);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

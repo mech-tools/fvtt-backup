@@ -3,7 +3,7 @@ import { Picker } from './picker.js';
 import { PresetAPI, PresetCollection } from './presets/collection.js';
 import { Preset } from './presets/preset.js';
 import { applyRandomization } from './randomizer/randomizerUtils.js';
-import { MODULE_ID } from './utils.js';
+import { MODULE_ID, TagInput } from './utils.js';
 
 export class Brush {
   static app;
@@ -16,6 +16,7 @@ export class Brush {
   static brushOverlay;
   static updatedPlaceables = new Map();
   static hoveredPlaceables = new Set();
+  static spawnPoints = [];
   static hoveredPlaceable;
   static documentName;
   static active = false;
@@ -29,9 +30,14 @@ export class Brush {
     this._boundOn3dMouseMove = this._on3dMouseMove.bind(this);
   }
 
-  static _performBrushDocumentUpdate(pos, placeable) {
-    if (pos) this._animateCrossTranslate(pos.x, pos.y);
-    pasteDataUpdate([placeable], this.preset, true, true, this.transform);
+  static _checkDensity(pos) {
+    const d = canvas.grid.size * this.spawnDensity;
+    return this.spawnPoints.every((p) => Math.sqrt((p.x - pos.x) ** 2 + (p.y - pos.y) ** 2) >= d);
+  }
+
+  static _performBrushDocumentUpdate(placeable) {
+    this.preset.callPostSpawnHooks({ objects: [placeable], documents: [placeable.document] });
+    if (this.preset.isEmpty) pasteDataUpdate([placeable], this.preset, true, true, this.transform);
     this.updatedPlaceables.set(placeable.id, placeable);
     BrushMenu.iterate();
   }
@@ -40,8 +46,11 @@ export class Brush {
     const now = new Date().getTime();
     if (!this.lastSpawnTime || now - this.lastSpawnTime > 100) {
       this.lastSpawnTime = now;
-      if (pos.z == null) Picker.resolve(pos);
-      else
+      if (pos.z == null) {
+        if (!this._checkDensity(pos)) return;
+        Picker.resolve(pos);
+        this.spawnPoints.push(pos);
+      } else {
         PresetAPI.spawnPreset({
           preset: this.preset,
           ...pos,
@@ -49,13 +58,15 @@ export class Brush {
           snapToGrid: this.snap,
           scaleToGrid: this.scaleToGrid,
         });
+      }
       BrushMenu.iterate();
     }
   }
 
   static _performBrushDocumentDelete(placeable) {
     this.hoveredPlaceable = null;
-    placeable.document?.delete();
+    if (!placeable._brushDelete) placeable.document?.delete();
+    placeable._brushDelete = true;
   }
 
   static _hitTestWall(point, wall) {
@@ -138,7 +149,7 @@ export class Brush {
       !this.updatedPlaceables.has(this.hoveredPlaceable.id)
     ) {
       if (this.eraser) this._performBrushDocumentDelete(this.hoveredPlaceable);
-      else this._performBrushDocumentUpdate(event.data.getLocalPosition(this.brushOverlay), this.hoveredPlaceable);
+      else this._performBrushDocumentUpdate(this.hoveredPlaceable);
     }
   }
 
@@ -154,7 +165,7 @@ export class Brush {
         if (p && p.document.documentName === this.documentName) {
           game.Levels3DPreview.interactionManager._downCameraPosition.set(0, 0, 0);
           if (this.eraser) this._performBrushDocumentDelete(p);
-          else this._performBrushDocumentUpdate(null, p);
+          else this._performBrushDocumentUpdate(p);
         }
         this.updatedPlaceables.clear();
       }
@@ -198,6 +209,7 @@ export class Brush {
     preset = null,
     deactivateCallback = null,
     spawner = false,
+    spawnDensity = 0.01,
     eraser = false,
     refresh = false,
     transform = {},
@@ -220,13 +232,17 @@ export class Brush {
     this.spawner = spawner;
     this.eraser = eraser;
     this.snap = snap;
+    this.spawnDensity = spawnDensity;
     this.scaleToGrid = scaleToGrid;
     if (this.app) {
       this.documentName = this.app.documentName;
     } else {
       this.documentName = this.preset.documentName;
     }
-    if (!refresh) this.updatedPlaceables.clear();
+    if (!refresh) {
+      this.updatedPlaceables.clear();
+      this.spawnPoints = [];
+    }
 
     const interaction = canvas.app.renderer.events;
     if (!interaction.cursorStyles['brush']) {
@@ -291,6 +307,7 @@ export class Brush {
         this._onBrushClickMove(event);
       }
       this.updatedPlaceables.clear();
+      this.spawnPoints = [];
     });
 
     this.brushOverlay.on('mousedown', (event) => {
@@ -400,6 +417,7 @@ export class Brush {
 
       if (!refresh) {
         this.updatedPlaceables.clear();
+        this.spawnPoints = [];
         this._clearHover(null, null, true);
       }
       this.hoverTest = null;
@@ -412,27 +430,6 @@ export class Brush {
       this.preset = null;
       this.transform = null;
       return true;
-    }
-  }
-
-  static async _animateCrossTranslate(x, y) {
-    let cross = new PIXI.Text('+', {
-      fontFamily: 'Arial',
-      fontSize: 11,
-      fill: 0x00ff11,
-      align: 'center',
-    });
-    cross = this.brushOverlay.addChild(cross);
-    cross.x = x + Math.random() * 16 - 8;
-    cross.y = y;
-    const translate = [{ parent: cross, attribute: 'y', to: y - 50 }];
-
-    const completed = await CanvasAnimation.animate(translate, {
-      duration: 700,
-      name: foundry.utils.randomID(5),
-    });
-    if (completed) {
-      this.brushOverlay.removeChild(cross).destroy();
     }
   }
 }
@@ -474,8 +471,8 @@ export class BrushMenu extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'mass-edit-brush-menu',
-      template: `modules/${MODULE_ID}/templates/preset/brush.html`,
-      classes: ['mass-edit-dark-window'],
+      template: `modules/${MODULE_ID}/templates/preset/brush/menu.html`,
+      classes: ['mass-edit-dark-window', 'mass-edit-window-fill'],
       resizable: false,
       minimizable: false,
       width: 200,
@@ -522,7 +519,12 @@ export class BrushMenu extends FormApplication {
 
     // Apply Color
     await this._applyColor();
-    if (this._settings.tmfxPreset) this._applyTmfxPreset(this.preset, this._settings.tmfxPreset);
+
+    // Apply TMFX Filters
+    this._applyTmfxPresets(this.preset, this._settings.tmfxPreset);
+
+    // Apply Tagger tags
+    this._applyTaggerTags(this.preset, this._settings.tagger);
 
     Brush.activate({
       preset: this.preset,
@@ -533,6 +535,7 @@ export class BrushMenu extends FormApplication {
       refresh,
       snap: this._settings.snap,
       scaleToGrid: this._settings.scaleToGrid,
+      spawnDensity: this._settings.density,
     });
   }
 
@@ -598,36 +601,41 @@ export class BrushMenu extends FormApplication {
     }
   }
 
-  _applyTmfxPreset(preset, tmfxPreset = 'fire') {
+  _applyTaggerTags(preset, tags) {
+    if (!tags || !tags.length) return;
+    if (!game.modules.get('tagger')?.active) return;
+
+    preset.addPostSpawnHook(({ objects } = {}) => {
+      Tagger.addTags(objects, tags);
+    });
+  }
+
+  _applyTmfxPresets(preset, tmfxPreset) {
+    if (!tmfxPreset) return;
     if (!game.modules.get('tokenmagic')?.active) return;
     if (!['Token', 'Tile', 'Drawing', 'MeasuredTemplate'].includes(preset.documentName)) return;
 
-    const pFilters = TokenMagic.getPreset(tmfxPreset);
-    if (!pFilters) return;
+    if (!Array.isArray(tmfxPreset)) tmfxPreset = [tmfxPreset];
 
-    for (const data of preset.data) {
-      let filters = foundry.utils.getProperty(data, 'flags.tokenmagic.filters') ?? [];
-      console.log(filters);
-      filters = filters.filter((f) => !pFilters.find((pf) => pf.filterId === f.tmFilters.tmFilterId));
-
-      for (const pf of pFilters) {
-        const filter = foundry.utils.deepClone(pf);
-        filter.filterOwner = game.data.userId;
-        filter.updateId = randomID();
-        filter.enabled = true;
-        filters.push({
-          tmFilters: {
-            tmFilterId: filter.filterId,
-            tmFilterInternalId: randomID(),
-            tmFilterType: filter.filterType,
-            filterOwner: game.data.userId,
-            tmParams: filter,
-          },
-        });
-      }
-
-      foundry.utils.setProperty(data, 'flags.tokenmagic.filters', filters);
+    if (tmfxPreset.includes('DELETE ALL')) {
+      this.preset.addPostSpawnHook(({ objects } = {}) => objects.forEach((o) => TokenMagic.deleteFilters(o)));
+      return;
+    } else if (tmfxPreset.includes('DELETE')) {
+      this.preset.addPostSpawnHook(({ objects } = {}) =>
+        objects.forEach(async (o) => {
+          for (const p of tmfxPreset) await TokenMagic.deleteFilters(o, p);
+        })
+      );
+      return;
     }
+
+    const filters = [];
+    tmfxPreset.forEach((presetName) => TokenMagic.getPreset(presetName)?.forEach((filter) => filters.push(filter)));
+
+    if (filters.length)
+      this.preset.addPostSpawnHook(({ objects } = {}) =>
+        objects.forEach((o) => TokenMagic.addUpdateFilters(o, filters))
+      );
   }
 
   get title() {
@@ -639,7 +647,8 @@ export class BrushMenu extends FormApplication {
       presets: this.presets,
       activePreset: this.preset,
       ...this._settings,
-      tmfxPresets: game.modules.get('tokenmagic')?.active ? TokenMagic.getPresets() : null,
+      tmfxActive: game.modules.get('tokenmagic')?.active,
+      taggerActive: game.modules.get('tagger')?.active,
     };
   }
 
@@ -679,26 +688,111 @@ export class BrushMenu extends FormApplication {
         },
       });
 
+      const densityRangeLabel = html.find('.density-range-label');
+      html.find('.density-slider').slider({
+        range: false,
+        min: 0.01,
+        max: 4,
+        step: 0.01,
+        value: settings.density ?? 0.01,
+        slide: function (event, ui) {
+          densityRangeLabel.text(`${ui.value}`);
+        },
+        change: function (event, ui) {
+          app._updateBrushSettings({ density: ui.value });
+        },
+      });
+
       this.setPosition({ height: 'auto' });
     });
 
-    html.find('.toggle-button').on('click', this._toggleSetting.bind(this));
+    html.on('click', '.toggle-button', this._toggleSetting.bind(this));
     html.find('.reset').on('click', this._resetToDefaults.bind(this));
     html.on('click', '.preset', this._onClickPreset.bind(this));
     html.on('contextmenu', '.preset', this._onRightClickPreset.bind(this));
-    html.find('.randomize-color').on('click', this._onRandomizeColor.bind(this));
-    html.find('input[type="color"]').on('change', this._onColorChange.bind(this));
-    html.find('.color').on('input paste', this._onColorChange.bind(this));
-    html.find('.tmfxPreset').on('change, input', this._onTmfxPresetChange.bind(this));
+
+    // Colorize
+    html.on('click', '.randomize-color', this._onRandomizeColor.bind(this));
+    html.on('change', 'input[type="color"]', this._onColorChange.bind(this));
+    html.on('input paste', '.color', this._onColorChange.bind(this));
+    html.find('.colorizeControl').on('click', this._onColorMenu.bind(this));
+
+    html.find('.tmfxPresetControl').on('click', () => {
+      this._onEditTaglikeField({
+        label: 'TMFX',
+        name: 'tmfxPreset',
+        tags: this._settings.tmfxPreset,
+        simplifyTags: false,
+        listId: 'tmfxPresets',
+        listEntries: TokenMagic.getPresets().map((p) => p.name),
+      });
+    });
+    html.find('.taggerControl').on('click', () => {
+      this._onEditTaglikeField({
+        label: 'Tagger',
+        name: 'tagger',
+        tags: this._settings.tagger,
+        simplifyTags: false,
+      });
+    });
   }
 
-  _onTmfxPresetChange(event) {
-    clearTimeout(this._tmfxPresetChangeTO);
-    let preset = $(event.currentTarget).val();
-    console.log(preset);
-    this._tmfxPresetChangeTO = setTimeout(() => {
-      this._updateBrushSettings({ tmfxPreset: preset });
-    }, 500);
+  async _onEditTaglikeField({ label, name, tags, simplifyTags = true, listId, listEntries } = {}) {
+    const subMenu = this._toggleSubMenu(name);
+    if (!subMenu) return;
+
+    if (tags && !Array.isArray(tags)) tags = [tags];
+    const template = Handlebars.compile(
+      `{{tagInput name=name label=label tags=tags listId=listId listEntries=listEntries}}`
+    );
+    let content = template(
+      { name, label, tags, listId, listEntries },
+      {
+        allowProtoMethodsByDefault: true,
+        allowProtoPropertiesByDefault: true,
+      }
+    );
+
+    subMenu.html(content);
+    this.setPosition({ height: 'auto' });
+
+    TagInput.activateListeners(subMenu, {
+      change: (tags) => {
+        this.setPosition({ height: 'auto' });
+        this._updateBrushSettings({ [name]: tags.length ? tags : null });
+      },
+      simplifyTags,
+    });
+  }
+
+  /**
+   * Controls toggling of the sub-menu div container. The div is shared between many different controls, and behaviour
+   * depends on whether the same or different controls are being toggled
+   * @param {String} name a name of the control issuing a toggle
+   * @returns {Boolean} sub-menu element if sub-menu is to be rendered, null if sub-menu was emptied
+   */
+  _toggleSubMenu(name) {
+    const subMenu = this.element.find('.sub-menu');
+    if (subMenu.attr('data-control') === name) {
+      subMenu.html('').attr('data-control', null);
+      this.setPosition({ height: 'auto' });
+      return null;
+    } else subMenu.attr('data-control', name);
+    return subMenu;
+  }
+
+  async _onColorMenu(event) {
+    const subMenu = this._toggleSubMenu('colorize');
+    if (!subMenu) return;
+
+    const template = await getTemplate(`modules/${MODULE_ID}/templates/preset/brush/colorize.html`);
+    let content = template(await this.getData({}), {
+      allowProtoMethodsByDefault: true,
+      allowProtoPropertiesByDefault: true,
+    });
+
+    subMenu.html(content);
+    this.setPosition({ height: 'auto' });
   }
 
   async _onColorChange(event) {
@@ -784,9 +878,11 @@ export class BrushMenu extends FormApplication {
     await this._updateBrushSettings({
       scale: [1, 1],
       rotation: [0, 0],
+      density: 1,
       color: null,
       randomColor: null,
       tmfxPreset: null,
+      tagger: null,
     });
     this.render(true);
   }

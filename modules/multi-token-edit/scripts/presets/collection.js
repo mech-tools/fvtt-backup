@@ -708,7 +708,7 @@ export class PresetAPI {
     preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type, folder, tags, random }));
     if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
 
-    let presetData = deepClone(preset.data);
+    let presetData = foundry.utils.deepClone(preset.data);
 
     // Instead of using the entire data group use only one random one
     if (preset.spawnRandom && presetData.length)
@@ -742,7 +742,7 @@ export class PresetAPI {
     if (preset.attached) {
       for (const attached of preset.attached) {
         if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
-        const data = deepClone(attached.data);
+        const data = foundry.utils.deepClone(attached.data);
         docToData.get(attached.documentName).push(data);
       }
     }
@@ -853,13 +853,17 @@ export class PresetAPI {
       documents.forEach((d) => allDocuments.push(d));
     }
 
-    // Execute post spawn scripts
+    // Execute post spawn script/function
     if (preset.postSpawnScript) {
       await executeScript(preset.postSpawnScript, {
         documents: allDocuments,
         objects: allDocuments.map((d) => d.object).filter(Boolean),
       });
     }
+    await preset.callPostSpawnHooks({
+      documents: allDocuments,
+      objects: allDocuments.map((d) => d.object).filter(Boolean),
+    });
 
     return allDocuments;
   }
@@ -1023,9 +1027,10 @@ class PresetTree {
       // If still no name is found, skip it
       if (!preset.documentName) {
         console.log(`Missing MetaData. Attempting document load: ${preset.id} | ${preset.name}`);
-        await preset.load();
+        await preset.load(true);
         if (!preset.documentName) continue;
-        if (!pack.locked) preset._updateIndex(preset); // Insert missing preset into metadata index
+        console.log(`MetaData. Found for: ${preset.id} | ${preset.name}`);
+        if (!pack.locked) await preset._updateIndex(preset); // Insert missing preset into metadata index
       }
 
       if (preset.folder) {
