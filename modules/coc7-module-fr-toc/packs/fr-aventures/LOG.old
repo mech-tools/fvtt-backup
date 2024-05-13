@@ -1,7 +1,7 @@
-2024/05/03-11:17:39.505345 7f4110dd5700 Recovering log #536
-2024/05/03-11:17:39.507741 7f4110dd5700 Delete type=0 #536
-2024/05/03-11:17:39.507773 7f4110dd5700 Delete type=3 #535
-2024/05/09-11:24:29.753590 7f3e72335700 Level-0 table #540: started
-2024/05/09-11:24:29.754052 7f3e72335700 Level-0 table #540: 0 bytes OK
-2024/05/09-11:24:29.755782 7f3e72335700 Delete type=0 #538
-2024/05/09-11:24:29.758434 7f3e72335700 Manual compaction at level-0 from '!adventures!0FqCqqwmZA2Wm8fu' @ 72057594037927935 : 1 .. '!folders!H9UXXYTTIsreKmt7' @ 0 : 0; will stop at (end)
+2024/05/09-11:29:56.643484 7f41115d6700 Recovering log #539
+2024/05/09-11:29:56.645628 7f41115d6700 Delete type=3 #537
+2024/05/09-11:29:56.645660 7f41115d6700 Delete type=0 #539
+2024/05/12-19:10:00.194290 7f3e72335700 Level-0 table #544: started
+2024/05/12-19:10:00.194541 7f3e72335700 Level-0 table #544: 0 bytes OK
+2024/05/12-19:10:00.195739 7f3e72335700 Delete type=0 #542
+2024/05/12-19:10:00.197714 7f3e72335700 Manual compaction at level-0 from '!adventures!0FqCqqwmZA2Wm8fu' @ 72057594037927935 : 1 .. '!folders!H9UXXYTTIsreKmt7' @ 0 : 0; will stop at (end)

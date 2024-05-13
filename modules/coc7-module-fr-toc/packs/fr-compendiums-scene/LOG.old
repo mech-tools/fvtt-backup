@@ -1,16 +1,7 @@
-2024/05/03-11:17:39.488612 7f41115d6700 Recovering log #577
-2024/05/03-11:17:39.489043 7f41115d6700 Level-0 table #579: started
-2024/05/03-11:17:39.491161 7f41115d6700 Level-0 table #579: 141070 bytes OK
-2024/05/03-11:17:39.493372 7f41115d6700 Delete type=3 #576
-2024/05/03-11:17:39.493404 7f41115d6700 Delete type=0 #577
-2024/05/09-11:24:29.687904 7f3e72335700 Level-0 table #582: started
-2024/05/09-11:24:29.688104 7f3e72335700 Level-0 table #582: 0 bytes OK
-2024/05/09-11:24:29.689024 7f3e72335700 Delete type=0 #580
-2024/05/09-11:24:29.702550 7f3e72335700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 404 : 1
-2024/05/09-11:24:29.702562 7f3e72335700 Compacting 1@0 + 1@1 files
-2024/05/09-11:24:29.704424 7f3e72335700 Generated table #583@0: 13 keys, 141412 bytes
-2024/05/09-11:24:29.704440 7f3e72335700 Compacted 1@0 + 1@1 files => 141412 bytes
-2024/05/09-11:24:29.705254 7f3e72335700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2024/05/09-11:24:29.705326 7f3e72335700 Delete type=2 #579
-2024/05/09-11:24:29.705410 7f3e72335700 Delete type=2 #541
-2024/05/09-11:24:29.707352 7f3e72335700 Manual compaction at level-0 from '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 404 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
+2024/05/09-11:29:56.624956 7f4111dd7700 Recovering log #581
+2024/05/09-11:29:56.627353 7f4111dd7700 Delete type=0 #581
+2024/05/09-11:29:56.627396 7f4111dd7700 Delete type=3 #578
+2024/05/12-19:10:00.181525 7f3e72335700 Level-0 table #587: started
+2024/05/12-19:10:00.181753 7f3e72335700 Level-0 table #587: 0 bytes OK
+2024/05/12-19:10:00.182772 7f3e72335700 Delete type=0 #585
+2024/05/12-19:10:00.184942 7f3e72335700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.tiles!fvlDSRFdDkgoUVvC.u4F4CfsGD3cRnB2R' @ 0 : 0; will stop at (end)
