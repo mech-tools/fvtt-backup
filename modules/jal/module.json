@@ -10,11 +10,11 @@
     }
   ],
   "library": true,
-  "version": "4.2.0",
+  "version": "4.2.2",
   "minimumCoreVersion": 10,
   "compatibility": {
     "minimum": 10,
-    "verified": "11.299"
+    "verified": 11
   },
   "scripts": [
     "lib/lib.js"
