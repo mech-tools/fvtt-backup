@@ -134,6 +134,10 @@ export class MatrixUser extends Lifeform {
     persona = new Persona();
 }
 export class Player extends MatrixUser {
+    karma = 0;
+    karma_total = 0;
+    heat = 0;
+    reputation = 0;
 }
 export var VehicleOpMode;
 (function (VehicleOpMode) {

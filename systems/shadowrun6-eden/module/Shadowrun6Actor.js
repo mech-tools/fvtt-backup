@@ -13,6 +13,9 @@ function isSpiritOrSprite(obj) {
 function isMatrixUser(obj) {
     return obj.persona != undefined;
 }
+function isPlayer(obj) {
+    return obj.karma != undefined;
+}
 function isGear(obj) {
     return obj.skill != undefined;
 }
@@ -60,6 +63,16 @@ export class Shadowrun6Actor extends Actor {
         const actorData = getActorData(this);
         const system = getSystemData(this);
         console.log("Shadowrun6Actor.prepareData() " + actorData.name + " = " + actorData.type);
+        if (isPlayer(system)) {
+            if (!system.karma)
+                system.karma = 0;
+            if (!system.karma_total)
+                system.karma_total = 0;
+            if (!system.heat)
+                system.heat = 0;
+            if (!system.reputation)
+                system.reputation = 0;
+        }
         try {
             if (actorData.type === "Spirit") {
                 this._applySpiritPreset();
@@ -197,6 +210,8 @@ export class Shadowrun6Actor extends Actor {
             // Magic rating
             data.attributes.mag.base = 0;
             data.essence = force;
+            if (!data.defenserating)
+                data.defenserating = new Ratings();
             data.defenserating.physical.base = force;
             data.defenserating.astral.base = force;
             data.initiative.physical.base = force * 2;
@@ -452,7 +467,7 @@ export class Shadowrun6Actor extends Actor {
             let itemSystem = getSystemData(item);
             if (item.type == "gear" && itemSystem.type == "ARMOR" && isArmor(itemSystem)) {
                 if (itemSystem.usedForPool) {
-                    data.defenserating.physical.pool += itemSystem.defense;
+                    data.defenserating.physical.pool += parseInt(itemSystem.defense);
                     data.defenserating.physical.modString += "\n+" + itemSystem.defense + " " + item.name;
                 }
             }
@@ -1052,7 +1067,6 @@ export class Shadowrun6Actor extends Actor {
         const items = actorData.items;
         let sustainedCount = 0;
         items.forEach((item) => {
-            console.log("Item: " + item.name);
             let itemSystem = getSystemData(item);
             if (item.type == "spell" && itemSystem.duration == "sustained") {
                 console.log("Type: " + item.type, "Duration: " + itemSystem.duration);
@@ -1206,7 +1220,7 @@ export class Shadowrun6Actor extends Actor {
             let token = val;
             let actor = token.actor;
             let here = map(actor);
-            console.log("Defense Rating of ", token.data._id, " is ", here);
+            console.log("Defense Rating of ", token, " is ", here);
             if (here > highest)
                 highest = here;
         }
@@ -1297,7 +1311,7 @@ export class Shadowrun6Actor extends Actor {
         console.log("ääääääääääääääääää targets ", roll.targets);
         let highestDefenseRating = this._getHighestDefenseRating((a) => {
             console.log("Determine defense rating of ", a);
-            return a.data.data.defenserating.physical.pool;
+            return a.system.defenserating.physical.pool;
         });
         console.log("Highest defense rating of targets: " + highestDefenseRating);
         if (highestDefenseRating > 0)
@@ -1351,7 +1365,7 @@ export class Shadowrun6Actor extends Actor {
         // and what defense eventually applies
         let hasDamageResist = !ritual;
         roll.attackRating = roll.performer.attackrating.astral.pool;
-        let highestDefenseRating = this._getHighestDefenseRating((a) => a.data.data.defenserating.physical.pool);
+        let highestDefenseRating = this._getHighestDefenseRating((a) => a.system.defenserating.physical.pool);
         console.log("Highest defense rating of targets: " + highestDefenseRating);
         if (highestDefenseRating > 0)
             roll.defenseRating = highestDefenseRating;

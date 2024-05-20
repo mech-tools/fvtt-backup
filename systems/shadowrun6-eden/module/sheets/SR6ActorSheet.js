@@ -378,6 +378,7 @@ export class Shadowrun6ActorSheet extends ActorSheet {
     _setDamage(html, i, monitorAttribute, id, event) {
         if (!isLifeform(getSystemData(this.actor)))
             return;
+        console.log("setDamage ", i, id, event.currentTarget.dataset);
         if (!event.currentTarget.dataset.value)
             event.currentTarget.dataset.value = 0;
         switch (event.target.parentNode.getAttribute("id")) {
@@ -385,32 +386,34 @@ export class Shadowrun6ActorSheet extends ActorSheet {
                 console.log("setDamage (physical health to " + event.currentTarget.dataset.value + ")");
                 //Allow setting zero health by clicking again
                 if ((getSystemData(this.actor).physical.dmg == monitorAttribute.max - 1) == i) {
-                    this.actor.update({ [`data.physical.dmg`]: monitorAttribute.max });
+                    this.actor.update({ [`system.physical.dmg`]: monitorAttribute.max });
                 }
                 else {
-                    this.actor.update({ [`data.physical.dmg`]: monitorAttribute.max - i });
+                    this.actor.update({ [`system.physical.dmg`]: monitorAttribute.max - i });
                 }
                 break;
             case "barStunBoxes":
                 console.log("setDamage (stun health to " + event.currentTarget.dataset.value + ")");
                 //Allow setting zero health by clicking again
                 if ((getSystemData(this.actor).stun.dmg == monitorAttribute.max - 1) == i) {
-                    this.actor.update({ [`data.stun.dmg`]: monitorAttribute.max });
+                    this.actor.update({ [`system.stun.dmg`]: monitorAttribute.max });
                 }
                 else {
-                    this.actor.update({ [`data.stun.dmg`]: monitorAttribute.max - i });
+                    this.actor.update({ [`system.stun.dmg`]: monitorAttribute.max - i });
                 }
                 break;
         }
     }
     //-----------------------------------------------------
     _redrawBar(html, id, monitorAttribute) {
+        console.log("_redrawBar ", id, monitorAttribute);
         if (!monitorAttribute || monitorAttribute.value < 0)
             return;
         //let vMax = parseInt(html.find("#data"+id+"Max")[0].value);
         //let vCur = parseInt(html.find("#data"+id+"Cur")[0].value);
         let perc = (monitorAttribute.value / monitorAttribute.max) * 100;
         if (html.find("#bar" + id + "Cur").length == 0) {
+            console.log("_redrawBar: No such bar ", "#bar" + id + "Cur");
             return;
         }
         html.find("#bar" + id + "Cur")[0].style.width = perc + "%";

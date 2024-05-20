@@ -2,6 +2,21 @@
   --illandril-token-tooltips--tooltip-rows: 5;
   --illandril-token-tooltips--tooltip-base-size: 1em;
   --illandril-token-tooltips--persistent-tooltip-base-size: 1em;
+  --illandril-token-tooltips--tooltip-bg: rgba(255, 255, 255, 0.8);
+  --illandril-token-tooltips--tooltip-fg: rgba(0, 0, 0, 0.9);
+  --illandril-token-tooltips--tooltip-fg-contrast: #fff;
+  --illandril-token-tooltips--tooltip-border-color: rgba(255, 255, 255, 0.9);
+  --illandril-token-tooltips--title-fg: rgba(0, 0, 100, 0.8);
+  --illandril-token-tooltips--hearts-fg: #900;
+}
+
+.illandril-token-tooltips--dark {
+  --illandril-token-tooltips--tooltip-bg: rgba(10, 10, 10, 0.8);
+  --illandril-token-tooltips--tooltip-fg: rgba(255, 255, 255, 0.9);
+  --illandril-token-tooltips--tooltip-fg-contrast: #000;
+  --illandril-token-tooltips--tooltip-border-color: rgba(0, 0, 0, 0.9);
+  --illandril-token-tooltips--title-fg: rgba(200, 200, 200, 0.8);
+  --illandril-token-tooltips--hearts-fg: #e00;
 }
 
 .illandril-token-tooltips--wrapper {
@@ -48,10 +63,10 @@
 .illandril-token-tooltips--tooltip {
   position: absolute;
   display: none;
-  background: rgba(255, 255, 255, 0.8);
-  color: rgba(0, 0, 0, 0.9);
+  background: var(--illandril-token-tooltips--tooltip-bg);
+  color: var(--illandril-token-tooltips--tooltip-fg);
   border-radius: 0.25em;
-  border: 0.125rem solid rgba(255, 255, 255, 0.9);
+  border: 0.125rem solid var(--illandril-token-tooltips--tooltip-border-color);
   font-size: var(--illandril-token-tooltips--tooltip-base-size);
   padding: 0.5em;
   z-index: var(--z-index-tooltip, 9999);
@@ -63,7 +78,7 @@
   font-weight: bold;
   text-align: center;
   font-size: 1.15em;
-  color: rgba(0, 0, 100, 0.8);
+  color: var(--illandril-token-tooltips--title-fg);
 }
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--data {
   max-height: calc(1.86em * var(--illandril-token-tooltips--tooltip-rows));
@@ -77,7 +92,8 @@
 .illandril-token-tooltips--tooltip[data-vertical] {
   writing-mode: vertical-rl;
 }
-.illandril-token-tooltips--tooltip[data-vertical] .fas, .illandril-token-tooltips--tooltip[data-vertical] .fat {
+.illandril-token-tooltips--tooltip[data-vertical] .fas,
+.illandril-token-tooltips--tooltip[data-vertical] .fat {
   rotate: 90deg;
 }
 .illandril-token-tooltips--tooltip[data-vertical] .illandril-token-tooltips--data {
@@ -140,7 +156,7 @@
   content: ")";
 }
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--hp-hearts {
-  color: #900;
+  color: var(--illandril-token-tooltips--hearts-fg);
 }
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--hp-hearts > * + * {
   margin-inline-start: 0.1em;
@@ -162,7 +178,7 @@
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--resource-number,
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--spellslot-level {
   font-size: 0.7em;
-  color: white;
+  color: var(--illandril-token-tooltips--tooltip-fg-contrast);
   z-index: 1;
 }
 .illandril-token-tooltips--tooltip .illandril-token-tooltips--damage-type--icon-and-text > i {
@@ -173,6 +189,25 @@
   display: inline-block;
   inline-size: 1em;
   text-align: center;
+}
+
+#illandril-token-tooltips--menu--importExport .form-body {
+  max-width: 30em;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 1em;
+  padding: 0.5em 1em;
+}
+#illandril-token-tooltips--menu--importExport .illandril-token-tooltips--menu--importExport--import input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+#illandril-token-tooltips--menu--importExport .form-footer {
+  margin-top: 0.5em;
+  display: flex;
+  gap: 0.5em;
 }
 
 #illandril-token-tooltips--menu--customOptions #illandril-token-tooltips--menu--customOptions--helpToggle {
@@ -275,11 +310,11 @@
   position: absolute;
   top: 0;
   left: calc(100% + 4px);
-  background: #fff;
-  color: #000;
+  background: var(--illandril-token-tooltips--tooltip-bg);
+  color: var(--illandril-token-tooltips--tooltip-fg);
   border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  padding: 2px 4px;
+  border: 1px solid var(--illandril-token-tooltips--tooltip-border-color);
+  padding: 4px 6px;
   width: max-content;
   max-width: 430px;
   white-space: initial;
@@ -311,34 +346,15 @@
   display: inline;
 }
 
-#illandril-token-tooltips--menu--importExport .form-body {
-  max-width: 30em;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 1em;
-  padding: 0.5em 1em;
-}
-#illandril-token-tooltips--menu--importExport .illandril-token-tooltips--menu--importExport--import input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-#illandril-token-tooltips--menu--importExport .form-footer {
-  margin-top: 0.5em;
-  display: flex;
-  gap: 0.5em;
-}
-
 .illandril-token-tooltips--debugDisplay--display {
   position: absolute;
   bottom: 10px;
   right: 325px;
   max-height: 500px;
   max-width: 400px;
-  background-color: #fff;
-  color: #000;
-  border: 1px solid #000;
+  background: var(--illandril-token-tooltips--tooltip-bg);
+  color: var(--illandril-token-tooltips--tooltip-fg);
+  border: 1px solid var(--illandril-token-tooltips--tooltip-border-color);
   overflow: auto;
   padding: 8px;
   z-index: var(--z-index-tooltip);
@@ -460,13 +476,13 @@
 }
 #illandril-token-tooltips--menu--persistentTooltips .illandril-token-tooltips--menu--persistentTooltips--idState[data-name]:hover::before {
   content: attr(data-name);
-  color: #000;
+  color: var(--illandril-token-tooltips--tooltip-fg);
   position: absolute;
   top: 0;
   left: calc(100% + 4px);
-  background: #fff;
+  background: var(--illandril-token-tooltips--tooltip-bg);
   border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--illandril-token-tooltips--tooltip-border-color);
   padding: 2px 4px;
   width: max-content;
   max-width: 430px;

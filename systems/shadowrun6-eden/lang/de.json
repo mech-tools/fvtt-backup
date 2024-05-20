@@ -600,7 +600,7 @@
     },
     "mortype": {
       "adept": "Adept",
-      "aspectedmagician": "Aspektmageier",
+      "aspectedmagician": "Aspektmagier",
       "magician": "Magier",
       "mundane": "Mundan",
       "mysticadept": "Magieradept",
@@ -920,6 +920,15 @@
         "add": "Focus hinzufügen",
         "column.rating": "St.",
         "title": "Foci"
+      },
+      "gear" : {
+        "title" : "Ausrüstung"
+      },
+      "karma" : {
+        "title" : "Karma, Fahndungsstufe, Ruf",
+        "karma" : "Karma",
+        "heat"  : "Fahndungsstufe",
+        "reputation": "Ruf"
       },
       "lifestyles": {
         "add": "Neuen Lebensstil hinzufügen",

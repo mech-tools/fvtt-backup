@@ -936,12 +936,18 @@
         "column.rating": "Lv",
         "title": "Foci"
       },
+      "gear" : {
+        "title" : "Gear"
+      },
+      "karma" : {
+        "title" : "Karma, Heat, Reputation",
+        "karma" : "Karma",
+        "heat"  : "Heat",
+        "reputation": "Reputation"
+      },
       "lifestyles" : {
         "add": "Add new lifestyle",
         "title" : "Lifestyles"
-      },
-      "gear" : {
-        "title" : "Gear"
       },
       "matrix_base": {
         "overwatch": "Overwatch"
@@ -1132,6 +1138,7 @@
         "rifles": "Rifles",
         "shotguns": "Shotguns",
         "submachine_guns": "Submachine Guns",
+        "machine_guns": "Machine Guns",
         "tasers": "Taser"
       },
       "influence": {
