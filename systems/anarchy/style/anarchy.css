@@ -530,8 +530,7 @@ img.checkbar-img:active {
   border: none;
 }
 
-.actor-marks .marks-group-list,
-.items-group .items-group-list {
+.actor-marks .marks-group-list {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -539,6 +538,30 @@ img.checkbar-img:active {
   align-items: flex-start;
   justify-content: flex-start;
   vertical-align: top;
+}
+
+
+.items-group .items-group-list {
+  display: grid;
+  gap: 6px 2px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  padding-bottom: 1rem;
+}
+
+.items-group .items-group-list div.item {
+  height: 100%;
+  position: relative;
+  padding: 4px;
+}
+
+.items-group .items-group-list div.item.anarchy-skill {
+  min-height: 52px;
+}
+
+.items-group .items-group-list div.item .item-controls {
+  position: absolute;
+  left: calc(100% - 16px);
+  bottom: initial;
 }
 
 :is(.npc-sheet, .device-sheet) .items-group .items-group-list {
@@ -604,21 +627,45 @@ div.define-item-type.item div.item-controls {
   justify-content: space-between;
 }
 
+.items-group div.define-item-type.item.anarchy-cyberdeck .item-content div.anarchy-monitor {
+  min-width: fit-content;
+}
+
 .items-group div.define-item-type.item.anarchy-cyberdeck .item-content .cyberdeck-details {
   display: flex;
   flex-direction: column;
 }
 
-
 :is(.npc-sheet, .device-sheet) .items-group div.item {
-  gap: 1px;
-  margin: 2px;
-  max-width: 12rem;
+  margin: 1px;
+  height: 100%;
+  position: relative;
+  padding: 1px;
+}
+
+:is(.npc-sheet, .device-sheet) .items-group .items-group-list {
+  display: grid;
+  gap: 2px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+:is(.npc-sheet, .device-sheet) .items-group .items-group-list div.item.anarchy-skill {
+  min-height: fit-content;
+}
+:is(.npc-sheet, .device-sheet) .items-group .items-group-list div.item.anarchy-skill .item-controls {
+  position: absolute;
+  left: calc(100% - 48px);
+  bottom: initial;
+}
+
+:is(.npc-sheet, .device-sheet) .items-group .items-group-list div.item:not(.anarchy-skill) .item-content {
+  max-width: calc(100% - 16px);
 }
 
 :is(.npc-sheet, .device-sheet) .items-group div.item.anarchy-cyberdeck {
   max-width: max-content;
 }
+
 
 /* Modifiers lists */
 .modifier-list {
@@ -1048,6 +1095,7 @@ div.column-details {
   margin-bottom: 2px;
   height: fit-content;
 }
+
 .roll-dialog div.roll-parameters div.parameter-category>label {
   height: 16px;
 }
@@ -1096,31 +1144,38 @@ div.column-details {
 }
 
 
-.roll-dialog div.roll-parameters div.parameter-source{
+.roll-dialog div.roll-parameters div.parameter-source {
   margin-left: -2rem;
 }
 
 .roll-dialog a.variable-dice-malus.active i {
   color: hsla(0, 100%, 40%, 0.7);
 }
+
 .roll-dialog a.variable-dice-malus.inactive i {
   color: hsla(0, 50%, 40%, 0.7);
 }
+
 .roll-dialog a.fixed-dice-malus.active i {
   color: hsla(20, 100%, 40%, 0.7);
 }
+
 .roll-dialog a.fixed-dice-malus.inactive i {
   color: hsla(20, 50%, 40%, 0.7);
 }
+
 .roll-dialog a.fixed-dice-bonus.active i {
   color: hsla(80, 100%, 40%, 0.7);
 }
+
 .roll-dialog a.fixed-dice-bonus.inactive i {
   color: hsla(80, 50%, 40%, 0.7);
 }
+
 .roll-dialog a.variable-dice-bonus.active i {
   color: hsla(100, 100%, 40%, 0.7);
 }
+
 .roll-dialog a.variable-dice-bonus.inactive i {
   color: hsla(100, 50%, 40%, 0.7);
 }
