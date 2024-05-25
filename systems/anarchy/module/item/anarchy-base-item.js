@@ -15,7 +15,7 @@ export class AnarchyBaseItem extends Item {
 
   constructor(docData, context = {}) {
     if (!context.anarchy?.ready) {
-      mergeObject(context, { anarchy: { ready: true } });
+      foundry.utils.mergeObject(context, { anarchy: { ready: true } });
       const ItemConstructor = game.system.anarchy.itemClasses[docData.type];
       if (ItemConstructor) {
         if (!docData.img) {
@@ -24,6 +24,7 @@ export class AnarchyBaseItem extends Item {
         return new ItemConstructor(docData, context);
       }
     }
+    context.anarchy = undefined
     super(docData, context);
   }
 
@@ -86,7 +87,7 @@ export class AnarchyBaseItem extends Item {
   }
 
   async createModifier(modifier = {}) {
-    modifier = mergeObject(modifier, {
+    modifier = foundry.utils.mergeObject(modifier, {
       group: 'roll',
       effect: 'pool',
       category: 'skill',

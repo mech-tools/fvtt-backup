@@ -93,7 +93,7 @@ export class CharacterActor extends AnarchyBaseActor {
       logic: TEMPLATE.attributes.logic,
       firewall: undefined,
       monitor: NO_MATRIX_MONITOR,
-      overflow: undefined,
+      overflow: undefined
     }
   }
 
@@ -162,7 +162,7 @@ export class CharacterActor extends AnarchyBaseActor {
   }
 
   async updateWord(wordType, id, updated) {
-    this._applyWordUpdate(wordType, id, it => mergeObject(it, { word: updated }, { overwrite: true }));
+    this._applyWordUpdate(wordType, id, it => foundry.utils.mergeObject(it, { word: updated }, { overwrite: true }));
   }
 
   async _applyWordUpdate(wordType, id, updateFunction) {

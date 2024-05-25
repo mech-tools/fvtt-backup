@@ -191,25 +191,6 @@
   text-align: center;
 }
 
-#illandril-token-tooltips--menu--importExport .form-body {
-  max-width: 30em;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 1em;
-  padding: 0.5em 1em;
-}
-#illandril-token-tooltips--menu--importExport .illandril-token-tooltips--menu--importExport--import input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-#illandril-token-tooltips--menu--importExport .form-footer {
-  margin-top: 0.5em;
-  display: flex;
-  gap: 0.5em;
-}
-
 #illandril-token-tooltips--menu--customOptions #illandril-token-tooltips--menu--customOptions--helpToggle {
   display: none;
 }
@@ -346,6 +327,25 @@
   display: inline;
 }
 
+#illandril-token-tooltips--menu--importExport .form-body {
+  max-width: 30em;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 1em;
+  padding: 0.5em 1em;
+}
+#illandril-token-tooltips--menu--importExport .illandril-token-tooltips--menu--importExport--import input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+#illandril-token-tooltips--menu--importExport .form-footer {
+  margin-top: 0.5em;
+  display: flex;
+  gap: 0.5em;
+}
+
 .illandril-token-tooltips--debugDisplay--display {
   position: absolute;
   bottom: 10px;
@@ -369,14 +369,15 @@
   user-select: text;
 }
 
-.dnd5e.sheet.actor .items-list .illandril-token-tooltips--actorSettings--tooltipToggleCell {
+.illandril-token-tooltips--actorSettings--tooltipToggleCell {
   flex: 0 0 2em;
 }
-.dnd5e.sheet.actor .items-list .illandril-token-tooltips--actorSettings--tooltipToggle {
+
+.illandril-token-tooltips--actorSettings--tooltipToggle {
   color: #000;
   opacity: 0.3;
 }
-.dnd5e.sheet.actor .items-list .illandril-token-tooltips--actorSettings--tooltipToggle[aria-checked=true] {
+.illandril-token-tooltips--actorSettings--tooltipToggle[aria-checked=true] {
   opacity: 0.8;
 }
 
