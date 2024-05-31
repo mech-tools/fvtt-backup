@@ -1464,7 +1464,7 @@ class DiceCreator extends FormApplication {
 	}
 
 	static get defaultOptions() {
-		return mergeObject(super.defaultOptions, {
+		return foundry.utils.mergeObject(super.defaultOptions, {
 			id: "dice-creator-form",
 			title: "DICE_TRAY.SETTINGS.DiceCreator",
 			template: "./modules/dice-calculator/templates/DiceCreator.hbs",
@@ -1480,7 +1480,7 @@ class DiceCreator extends FormApplication {
 			dice: this.object.dice,
 			diceRows: this.object.diceRows, // this.diceRows,
 			nextRow: nextRow < 0 ? this.object.diceRows.length : nextRow,
-			maxRows: Math.max(nextRow + 1, this.object.diceRows.length)
+			maxRows: Math.max(nextRow + 1, this.object.diceRows.length),
 		};
 	}
 
@@ -1492,12 +1492,12 @@ class DiceCreator extends FormApplication {
 	}
 
 	async _updateObject(event, formData) {
-		const { dice, row } = expandObject(formData);
+		const { dice, row } = foundry.utils.expandObject(formData);
 		if (this.object.dice && dice.row !== row) {
 			const key = this.object.dice.originalKey;
 			delete this.object.form.diceRows[row][key];
 		}
-		if ((row + 1) > this.object.form.diceRows.length) {
+		if (row + 1 > this.object.form.diceRows.length) {
 			this.object.form.diceRows.push({});
 		}
 		const cleanKey = Object.fromEntries(Object.entries(dice).filter(([k, v]) => k !== "key" && v !== ""));
@@ -1516,7 +1516,7 @@ class DiceRowSettings extends FormApplication {
 	}
 
 	static get defaultOptions() {
-		return mergeObject(super.defaultOptions, {
+		return foundry.utils.mergeObject(super.defaultOptions, {
 			id: "dice-row-form",
 			title: "DICE_TRAY.SETTINGS.DiceRowSettings",
 			template: "./modules/dice-calculator/templates/DiceRowSettings.hbs",
@@ -1556,7 +1556,7 @@ class DiceRowSettings extends FormApplication {
 					img,
 					label,
 					tooltip: tooltip !== key ? tooltip : "",
-					row: row
+					row: row,
 				},
 			}).render(true);
 		});
@@ -1575,7 +1575,7 @@ class DiceRowSettings extends FormApplication {
 		html.find("button[name=add]").on("click", async (event) => {
 			new DiceCreator({
 				form: this,
-				diceRows: this.diceRows
+				diceRows: this.diceRows,
 			}).render(true);
 		});
 		html.find("button[name=cancel]").on("click", async (event) => {
@@ -1598,7 +1598,7 @@ class DiceRowSettings extends FormApplication {
 
 class DiceTrayGeneralSettings extends FormApplication {
 	static get defaultOptions() {
-		return mergeObject(super.defaultOptions, {
+		return foundry.utils.mergeObject(super.defaultOptions, {
 			id: "dice-tray-form",
 			title: "Dice Tray Settings",
 			template: "./modules/dice-calculator/templates/GeneralSettings.hbs",
@@ -1607,7 +1607,7 @@ class DiceTrayGeneralSettings extends FormApplication {
 			width: 600,
 			height: "fit-content",
 			closeOnSubmit: true,
-			resizable: true
+			resizable: true,
 		});
 	}
 
@@ -1662,7 +1662,7 @@ class DiceTrayGeneralSettings extends FormApplication {
 				general: {
 					icon: "fas fa-cogs",
 					name: "DICE_TRAY.SETTINGS.General",
-				}
+				},
 			},
 		};
 		if (isGM) {
@@ -1670,7 +1670,7 @@ class DiceTrayGeneralSettings extends FormApplication {
 				general: {
 					enableDiceCalculator: this._prepSetting("enableDiceCalculator"),
 					enableDiceTray: this._prepSetting("enableDiceTray"),
-				}
+				},
 			};
 		} else {
 			data.settings = {
@@ -1684,7 +1684,7 @@ class DiceTrayGeneralSettings extends FormApplication {
 		for (const s in data.settings) {
 			// eslint-disable-next-line no-unused-vars
 			data.settings[s] = Object.fromEntries(
-				Object.entries(data.settings[s]).filter(([key, value]) => value !== undefined),
+				Object.entries(data.settings[s]).filter(([key, value]) => value !== undefined)
 			);
 		}
 
@@ -1697,21 +1697,18 @@ class DiceTrayGeneralSettings extends FormApplication {
 		super.activateListeners(html);
 		html.find("button").on("click", async (event) => {
 			if (event.currentTarget?.dataset?.action === "reset") {
-				const keys = [
-					"enableDiceCalculator",
-					"enableDiceTray",
-				];
+				const keys = ["enableDiceCalculator", "enableDiceTray"];
 				if (game.user.isGM) {
 					await Promise.all(
 						keys.map(async (key) => {
 							await this.resetToDefault(key);
-						}),
+						})
 					);
 				} else {
 					await Promise.all(
 						keys.map(async (key) => {
 							await game.user.unsetFlag("dice-calculator", key);
-						}),
+						})
 					);
 				}
 				this.close();
@@ -1724,7 +1721,9 @@ class DiceTrayGeneralSettings extends FormApplication {
 		let requiresWorldReload = false;
 		for (let [k, v] of Object.entries(foundry.utils.flattenObject(formData))) {
 			let s = game.settings.settings.get(`dice-calculator.${k}`);
-			let current = game.user.isGM ? game.settings.get(s.namespace, s.key) : game.user.getFlag("dice-calculator", k);
+			let current = game.user.isGM
+				? game.settings.get(s.namespace, s.key)
+				: game.user.getFlag("dice-calculator", k);
 			if (v === current) continue;
 			requiresClientReload ||= s.scope === "client" && s.requiresReload;
 			requiresWorldReload ||= s.scope === "world" && s.requiresReload;

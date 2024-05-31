@@ -2,6 +2,7 @@ import { GeneralDataAdapter } from '../applications/dataAdapters.js';
 import { MassEditPresets } from './presets/forms.js';
 import { applyRandomization } from './randomizer/randomizerUtils.js';
 
+export const MODULE_ID = 'multi-token-edit';
 export const SUPPORTED_PLACEABLES = [
   'Token',
   'MeasuredTemplate',
@@ -12,20 +13,17 @@ export const SUPPORTED_PLACEABLES = [
   'AmbientSound',
   'Note',
 ];
-
 export const UI_DOCS = ['FAVORITES', 'ALL', ...SUPPORTED_PLACEABLES];
-
 export const SUPPORT_SHEET_CONFIGS = [...SUPPORTED_PLACEABLES, 'Actor', 'PlaylistSound', 'Scene'];
-
-export const SUPPORTED_HISTORY_DOCS = [...SUPPORTED_PLACEABLES, 'Scene', 'Actor', 'PlaylistSound'];
-
 export const SUPPORTED_COLLECTIONS = ['Item', 'Cards', 'RollTable', 'Actor', 'JournalEntry', 'Scene'];
+const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png', 'svg', 'apng', 'avif', 'bmp', 'gif', 'tif'];
+const VIDEO_EXTENSIONS = ['mp4', 'ogv', 'webm', 'm4v'];
+const AUDIO_EXTENSIONS = ['aac', 'flac', 'm4a', 'mid', 'mp3', 'ogg', 'opus', 'wav'];
+export const FILE_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS];
 
 export function interpolateColor(u, c1, c2) {
   return c1.map((a, i) => Math.floor((1 - u) * a + u * c2[i]));
 }
-
-export const MODULE_ID = 'multi-token-edit';
 
 /**
  * Returns true of provided path points to an image
@@ -33,7 +31,7 @@ export const MODULE_ID = 'multi-token-edit';
 export function isImage(path) {
   var extension = path.split('.');
   extension = extension[extension.length - 1].toLowerCase();
-  return ['jpg', 'jpeg', 'png', 'svg', 'webp', 'gif'].includes(extension);
+  return IMAGE_EXTENSIONS.includes(extension);
 }
 
 /**
@@ -42,7 +40,16 @@ export function isImage(path) {
 export function isVideo(path) {
   var extension = path.split('.');
   extension = extension[extension.length - 1].toLowerCase();
-  return ['mp4', 'ogg', 'webm', 'm4v'].includes(extension);
+  return VIDEO_EXTENSIONS.includes(extension);
+}
+
+/**
+ * Returns true of provided path points to an audio file
+ */
+export function isAudio(path) {
+  var extension = path.split('.');
+  extension = extension[extension.length - 1].toLowerCase();
+  return AUDIO_EXTENSIONS.includes(extension);
 }
 
 export async function recursiveTraverse(path, source, bucket, files = []) {
@@ -589,6 +596,10 @@ export class SeededRandom {
 }
 
 export class TagInput {
+  static simplifyString(str) {
+    return str.replace(/[^0-9a-zA-Z_\- ]/gi, '').toLowerCase();
+  }
+
   static registerHandlebarsHelper() {
     Handlebars.registerHelper('tagInput', (options) => {
       const name = options.hash.name;
@@ -647,7 +658,7 @@ export class TagInput {
         .split(',')
         .map((t) => {
           t = t.trim();
-          if (simplifyTags) t = t.replace(/[^0-9a-zA-Z_\- ]/gi, '').toLowerCase();
+          if (simplifyTags) t = this.simplifyString(t);
           return t;
         })
         .filter(Boolean);

@@ -1,15 +1,8 @@
-2024/05/22-17:03:56.107006 7fb8e8ff9700 Recovering log #224
-2024/05/22-17:03:56.109550 7fb8e8ff9700 Delete type=0 #224
-2024/05/22-17:03:56.109576 7fb8e8ff9700 Delete type=3 #222
-2024/05/24-14:53:26.651978 7fb64bfe3700 Level-0 table #230: started
-2024/05/24-14:53:26.667302 7fb64bfe3700 Level-0 table #230: 595703 bytes OK
-2024/05/24-14:53:26.668799 7fb64bfe3700 Delete type=0 #228
-2024/05/24-14:53:26.670438 7fb64bfe3700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
-2024/05/24-14:53:26.671102 7fb64bfe3700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 17400 : 1
-2024/05/24-14:53:26.671111 7fb64bfe3700 Compacting 1@1 + 1@2 files
-2024/05/24-14:53:26.692944 7fb64bfe3700 Generated table #231@1: 5787 keys, 752594 bytes
-2024/05/24-14:53:26.692965 7fb64bfe3700 Compacted 1@1 + 1@2 files => 752594 bytes
-2024/05/24-14:53:26.693945 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/05/24-14:53:26.694023 7fb64bfe3700 Delete type=2 #226
-2024/05/24-14:53:26.694141 7fb64bfe3700 Delete type=2 #230
-2024/05/24-14:53:26.699675 7fb64bfe3700 Manual compaction at level-1 from '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 17400 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2024/05/30-16:56:29.669975 7fb8ea7fc700 Recovering log #234
+2024/05/30-16:56:29.673295 7fb8ea7fc700 Delete type=0 #234
+2024/05/30-16:56:29.673323 7fb8ea7fc700 Delete type=3 #232
+2024/05/30-17:01:53.531952 7fb64bfe3700 Level-0 table #239: started
+2024/05/30-17:01:53.531968 7fb64bfe3700 Level-0 table #239: 0 bytes OK
+2024/05/30-17:01:53.532727 7fb64bfe3700 Delete type=0 #237
+2024/05/30-17:01:53.533000 7fb64bfe3700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2024/05/30-17:01:53.536839 7fb64bfe3700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)

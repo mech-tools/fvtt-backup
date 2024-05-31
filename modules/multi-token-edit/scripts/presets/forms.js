@@ -14,11 +14,20 @@ import {
   localFormat,
   localize,
 } from '../utils.js';
-import { META_INDEX_ID, PresetAPI, PresetCollection, PresetPackFolder, PresetVirtualFolder } from './collection.js';
-import { DOC_ICONS, Preset } from './preset.js';
+import {
+  VirtualFileFolder,
+  META_INDEX_ID,
+  PresetAPI,
+  PresetCollection,
+  PresetPackFolder,
+  PresetFolder,
+} from './collection.js';
+import { FileIndexer, IndexerForm } from './fileIndexer.js';
+import { DOC_ICONS, Preset, VirtualFilePreset } from './preset.js';
 import { FolderState, mergePresetDataToDefaultDoc, placeableToData, randomizeChildrenFolderColors } from './utils.js';
 
 const SEARCH_MIN_CHAR = 2;
+const SEARCH_FOUND_MAX_COUNT = 1001;
 
 // const FLAG_DATA = {
 //   documentName: null,
@@ -91,7 +100,7 @@ export class MassEditPresets extends FormApplication {
       template: `modules/${MODULE_ID}/templates/preset/presets.html`,
       resizable: true,
       minimizable: true,
-      width: 350,
+      width: 360,
       height: 900,
       scrollY: ['.item-list'],
     });
@@ -113,9 +122,11 @@ export class MassEditPresets extends FormApplication {
     await getTemplate(`modules/${MODULE_ID}/templates/preset/presetsContent.html`, 'me-presets-content');
 
     const displayExtCompendiums = game.settings.get(MODULE_ID, 'presetExtComp');
+    const displayVirtualDirectory = game.settings.get(MODULE_ID, 'presetVirtualDir');
 
     this.tree = await PresetCollection.getTree(this.docName, {
-      mainOnly: !displayExtCompendiums,
+      externalCompendiums: displayExtCompendiums,
+      virtualDirectory: displayVirtualDirectory,
       setFormVisibility: true,
     });
     data.presets = this.tree.presets;
@@ -130,9 +141,11 @@ export class MassEditPresets extends FormApplication {
     data.layerSwitchActive = game.settings.get(MODULE_ID, 'presetLayerSwitch');
     data.scaling = game.settings.get(MODULE_ID, 'presetScaling');
     data.extCompActive = displayExtCompendiums;
+    data.virtDirActive = displayVirtualDirectory;
     data.sortMode = SORT_MODES[game.settings.get(MODULE_ID, 'presetSortMode')];
     data.searchMode = SEARCH_MODES[game.settings.get(MODULE_ID, 'presetSearchMode')];
-    data.displayDragDropMessage = data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length);
+    data.displayDragDropMessage =
+      data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length || data.extFolders);
     data.canvas3dActive = Boolean(game.Levels3DPreview?._active);
 
     data.lastSearch = MassEditPresets.lastSearch;
@@ -221,13 +234,13 @@ export class MassEditPresets extends FormApplication {
       this.dragData = uuids;
       this.draggedElements = itemList.find('.item.selected');
     });
-    html.on('dragleave', '.item.editable', (event) => {
+    html.on('dragleave', '.item.sortable', (event) => {
       $(event.target).closest('.item').removeClass('drag-bot').removeClass('drag-top');
     });
 
-    html.on('dragover', '.item.editable', (event) => {
+    html.on('dragover', '.item.sortable', (event) => {
       if (this.dragType !== 'item') return;
-      if (!this.draggedElements.hasClass('editable')) return;
+      if (!this.draggedElements.hasClass('sortable')) return;
 
       const targetItem = $(event.target).closest('.item');
 
@@ -245,9 +258,10 @@ export class MassEditPresets extends FormApplication {
       }
     });
 
-    html.on('drop', '.item.editable', (event) => {
+    html.on('drop', '.item.sortable', (event) => {
+      if (MassEditPresets.lastSearch?.length) return; // Prevent drops while searching
       if (this.dragType !== 'item') return;
-      if (!this.draggedElements.hasClass('editable')) return;
+      if (!this.draggedElements.hasClass('sortable')) return;
 
       const targetItem = $(event.target).closest('.item');
 
@@ -288,7 +302,7 @@ export class MassEditPresets extends FormApplication {
     // Folder Listeners
     html.on('click', '.folder > header', (event) => this._folderToggle($(event.target).closest('.folder')));
 
-    html.on('dragstart', '.folder.editable', (event) => {
+    html.on('dragstart', '.folder.sortable', (event) => {
       if (this.dragType == 'item') return;
       this.dragType = 'folder';
 
@@ -304,11 +318,11 @@ export class MassEditPresets extends FormApplication {
       this.dragData = uuids;
     });
 
-    html.on('dragleave', '.folder.editable header', (event) => {
+    html.on('dragleave', '.folder.sortable header', (event) => {
       $(event.target).closest('.folder').removeClass('drag-mid').removeClass('drag-top');
     });
 
-    html.on('dragover', '.folder.editable header', (event) => {
+    html.on('dragover', '.folder.sortable header', (event) => {
       const targetFolder = $(event.target).closest('.folder');
 
       if (this.dragType === 'folder') {
@@ -324,13 +338,15 @@ export class MassEditPresets extends FormApplication {
         } else {
           targetFolder.removeClass('drag-top').addClass('drag-mid');
         }
-      } else if (this.dragType === 'item' && this.draggedElements.hasClass('editable')) {
+      } else if (this.dragType === 'item' && this.draggedElements.hasClass('sortable')) {
         targetFolder.addClass('drag-mid');
       }
     });
 
-    html.on('drop', '.folder.editable header', (event) => {
+    html.on('drop', '.folder.sortable header', (event) => {
       if (this._foundryDrop(event)) return;
+      if (MassEditPresets.lastSearch?.length) return; // Prevent drops while searching
+
       const targetFolder = $(event.target).closest('.folder');
 
       if (this.dragType === 'folder') {
@@ -361,7 +377,7 @@ export class MassEditPresets extends FormApplication {
             }
           }
         }
-      } else if (this.dragType === 'item' && this.draggedElements.hasClass('editable')) {
+      } else if (this.dragType === 'item' && this.draggedElements.hasClass('sortable')) {
         targetFolder.removeClass('drag-mid');
         const uuids = this.dragData;
 
@@ -384,6 +400,7 @@ export class MassEditPresets extends FormApplication {
 
     html.on('drop', '.top-level-preset-items', (event) => {
       if (this._foundryDrop(event)) return;
+      if (MassEditPresets.lastSearch?.length) return; // Prevent drops while searching
       if (this.dragType === 'folder') {
         // Move HTML Elements
         const target = html.find('.top-level-folder-items');
@@ -391,7 +408,7 @@ export class MassEditPresets extends FormApplication {
         target.append(folder);
 
         this._onFolderSort(this.dragData[0], null);
-      } else if (this.dragType === 'item' && this.draggedElements.hasClass('editable')) {
+      } else if (this.dragType === 'item' && this.draggedElements.hasClass('sortable')) {
         const uuids = this.dragData;
 
         // Move HTML Elements
@@ -412,9 +429,9 @@ export class MassEditPresets extends FormApplication {
     // ================
 
     html.on('click', '.toggle-sort', this._onToggleSort.bind(this));
-    html.on('click', '.toggle-search-mode', this._onToggleSearch.bind(this));
     html.on('click', '.toggle-doc-lock', this._onToggleLock.bind(this));
     html.on('click', '.toggle-ext-comp', this._onToggleExtComp.bind(this));
+    html.on('click', '.toggle-virtual-dir', this._onToggleVirtDir.bind(this));
     html.on('click', '.toggle-scaling', this._onToggleScaling.bind(this));
     html.on('click', '.toggle-layer-switch', this._onToggleLayerSwitch.bind(this));
     html.on('click', '.document-select', this._onDocumentChange.bind(this));
@@ -428,6 +445,10 @@ export class MassEditPresets extends FormApplication {
     const headerSearch = html.find('.header-search input');
     headerSearch.on('input', (event) => this._onSearchInput(event));
     if ((MassEditPresets.lastSearch?.length ?? 0) >= SEARCH_MIN_CHAR) headerSearch.trigger('input');
+
+    html.on('click', '.toggle-search-mode', (event) => {
+      this._onToggleSearch(event, headerSearch);
+    });
 
     // Activate context menu
     this._contextMenu(html.find('.item-list'));
@@ -447,13 +468,13 @@ export class MassEditPresets extends FormApplication {
 
     if (folderElement.find('.folder-items').length) {
       folderElement.removeClass('collapsed');
-      folderElement.find('header h3 i').first().removeClass('fa-folder-closed').addClass('fa-folder-open');
+      folderElement.find('header .folder-icon').first().removeClass('fa-folder-closed').addClass('fa-folder-open');
     } else {
       let content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/presetFolder.html`, {
         folder,
         createEnabled: Boolean(this.configApp),
         callback: Boolean(this.callback),
-        editable: fromUuidSync(folder.uuid)?.pack === PresetCollection.workingPack,
+        sortable: fromUuidSync(folder.uuid)?.pack === PresetCollection.workingPack,
       });
       folderElement.replaceWith(content);
     }
@@ -461,7 +482,7 @@ export class MassEditPresets extends FormApplication {
 
   _folderCollapse(folderElement, folder) {
     folderElement.addClass('collapsed');
-    folderElement.find('header h3 i').first().removeClass('fa-folder-open').addClass('fa-folder-closed');
+    folderElement.find('header .folder-icon').first().removeClass('fa-folder-open').addClass('fa-folder-closed');
 
     FolderState.setExpanded(folder.uuid, false);
     folder.expanded = false;
@@ -535,10 +556,12 @@ export class MassEditPresets extends FormApplication {
     BrushMenu.close();
     // TODO: 3D Preview
     if (game.Levels3DPreview?._active) return;
-    const uuid = $(event.target).closest('.item').data('uuid');
+    const item = $(event.target).closest('.item');
+    const uuid = item.data('uuid');
     if (!uuid) return;
 
-    const preset = await PresetAPI.getPreset({ uuid });
+    let preset = await PresetAPI.getPreset({ uuid });
+
     if (!preset) return;
 
     if (preset.documentName === 'Scene') {
@@ -586,7 +609,7 @@ export class MassEditPresets extends FormApplication {
       {
         name: localize('CONTROLS.CommonEdit', false),
         icon: '<i class="fas fa-edit"></i>',
-        condition: (item) => item.hasClass('editable'),
+        condition: (item) => Preset.isEditable(item.data('uuid')),
         callback: (item) => this._onEditSelectedPresets(item),
       },
       {
@@ -598,6 +621,7 @@ export class MassEditPresets extends FormApplication {
       {
         name: localize('presets.open-journal'),
         icon: '<i class="fas fa-book-open"></i>',
+        condition: (item) => !item.hasClass('virtual'),
         callback: (item) => this._onOpenJournal(item),
       },
       {
@@ -611,8 +635,14 @@ export class MassEditPresets extends FormApplication {
       {
         name: localize('Duplicate', false),
         icon: '<i class="fa-solid fa-copy"></i>',
-        condition: (item) => item.hasClass('editable'),
+        condition: (item) => Preset.isEditable(item.data('uuid')) && !item.hasClass('virtual'),
         callback: (item) => this._onCopySelectedPresets(null, { keepFolder: true, keepId: false }),
+      },
+      {
+        name: localize('presets.copy-source-to-clipboard'),
+        icon: '<i class="fa-solid fa-copy"></i>',
+        condition: (item) => item.data('uuid').startsWith('virtual@'),
+        callback: (item) => game.clipboard.copyPlainText(item.data('uuid').substring(8)),
       },
       {
         name: localize('presets.copy-to-clipboard'),
@@ -633,7 +663,7 @@ export class MassEditPresets extends FormApplication {
       {
         name: localize('CONTROLS.CommonDelete', false),
         icon: '<i class="fas fa-trash fa-fw"></i>',
-        condition: (item) => item.hasClass('editable'),
+        condition: (item) => Preset.isEditable(item.data('uuid')) && !item.hasClass('virtual'),
         callback: (item) => this._onDeleteSelectedPresets(item),
       },
     ];
@@ -646,25 +676,42 @@ export class MassEditPresets extends FormApplication {
         icon: '<i class="fas fa-edit"></i>',
         condition: (header) => {
           const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
-          return !(folder instanceof PresetVirtualFolder) || folder instanceof PresetPackFolder;
+          return !folder.virtual || folder instanceof PresetPackFolder;
         },
         callback: (header) => this._onFolderEdit(header),
       },
       {
+        name: 'Save Index',
+        icon: '<i class="fas fa-file-search"></i>',
+        condition: (header) => {
+          const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
+          return folder.indexable;
+        },
+        callback: (header) => {
+          FileIndexer.saveFolderToCache(this.tree.allFolders.get(header.closest('.folder').data('uuid')));
+        },
+      },
+      {
         name: 'Export to Compendium',
         icon: '<i class="fas fa-file-export fa-fw"></i>',
-        callback: (header) => this._onExportFolder(header.closest('.folder').data('uuid')),
+        condition: (header) => {
+          const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
+          return !(folder instanceof VirtualFileFolder);
+        },
+        callback: (header) => {
+          this._onExportFolder(header.closest('.folder').data('uuid'));
+        },
       },
       {
         name: localize('FOLDER.Remove', false),
         icon: '<i class="fas fa-trash fa-fw"></i>',
-        condition: (header) => header.closest('.folder').hasClass('editable'),
+        condition: (header) => PresetFolder.isEditable(header.closest('.folder').data('uuid')),
         callback: (header) => this._onFolderDelete(header.closest('.folder').data('uuid')),
       },
       {
         name: localize('FOLDER.Delete', false),
         icon: '<i class="fas fa-dumpster"></i>',
-        condition: (header) => header.closest('.folder').hasClass('editable'),
+        condition: (header) => PresetFolder.isEditable(header.closest('.folder').data('uuid')),
         callback: (header) =>
           this._onFolderDelete(header.closest('.folder').data('uuid'), {
             deleteAll: true,
@@ -760,9 +807,17 @@ export class MassEditPresets extends FormApplication {
     if (selected.length) copyToClipboard(selected[0]);
   }
 
-  async _getSelectedPresets({ editableOnly = false, full = true } = {}) {
+  async _getSelectedPresets({ editableOnly = false, virtualOnly = false, full = true } = {}) {
     const uuids = [];
-    const items = this.element.find('.item-list').find('.item.selected' + (editableOnly ? '.editable' : ''));
+    let selector = '.item.selected';
+    if (virtualOnly) selector += '.virtual';
+
+    let items = this.element.find('.item-list').find(selector);
+    if (editableOnly)
+      items = items.filter(function () {
+        return Preset.isEditable($(this).data('uuid'));
+      });
+
     items.each(function () {
       const uuid = $(this).data('uuid');
       uuids.push(uuid);
@@ -782,7 +837,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onEditSelectedPresets(item) {
-    const [selected, _] = await this._getSelectedPresets({ editableOnly: true });
+    const [selected, _] = await this._getSelectedPresets({ virtualOnly: item.hasClass('virtual'), editableOnly: true });
     if (selected.length) {
       // Position edit window just bellow the item
       const options = item.offset();
@@ -942,7 +997,7 @@ export class MassEditPresets extends FormApplication {
 
     if (newSearch.length < SEARCH_MIN_CHAR) return;
 
-    const filter = event.target.value
+    let filter = event.target.value
       .trim()
       .toLowerCase()
       .split(' ')
@@ -950,25 +1005,31 @@ export class MassEditPresets extends FormApplication {
     if (!filter.length) return;
     $(event.target).addClass('active');
 
-    this.tree.folders.forEach((f) => this._searchFolder(filter, f));
-    this.tree.extFolders.forEach((f) => this._searchFolder(filter, f));
-    this.tree.presets.forEach((p) => this._searchPreset(filter, p));
+    const tags = filter.filter((f) => f.startsWith('#')).map((f) => f.substring(1));
+    filter = filter.filter((f) => !f.startsWith('#'));
+
+    this._searchFoundCount = 0;
+    this._searchFoundPresets = game.settings.get(MODULE_ID, 'presetSearchMode') === 'p' ? [] : null;
+
+    this.tree.folders.forEach((f) => this._searchFolder(filter, tags, f));
+    this.tree.extFolders.forEach((f) => this._searchFolder(filter, tags, f));
+    this.tree.presets.forEach((p) => this._searchPreset(filter, tags, p));
 
     this._renderContent();
   }
 
-  _searchFolder(filter, folder, forceRender = false) {
+  _searchFolder(filter, tags, folder, forceRender = false) {
     const folderName = folder.name.toLowerCase();
-    let match = filter.every((k) => folderName.includes(k));
+    let match = !tags.length && filter.every((k) => folderName.includes(k));
 
     let childFolderMatch = false;
     for (const f of folder.children) {
-      if (this._searchFolder(filter, f, match || forceRender)) childFolderMatch = true;
+      if (this._searchFolder(filter, tags, f, match || forceRender)) childFolderMatch = true;
     }
 
     let presetMatch = false;
     for (const p of folder.presets) {
-      if (this._searchPreset(filter, p, match || forceRender)) presetMatch = true;
+      if (this._searchPreset(filter, tags, p, match || forceRender)) presetMatch = true;
     }
 
     const containsMatch = match || childFolderMatch || presetMatch;
@@ -978,11 +1039,19 @@ export class MassEditPresets extends FormApplication {
     return containsMatch;
   }
 
-  _searchPreset(filter, preset, forceRender = false) {
+  _searchPreset(filter, tags, preset, forceRender = false) {
+    if (!preset._visible) return false;
+
     const presetName = preset.name.toLowerCase();
-    if (filter.every((k) => presetName.includes(k)) || filter.every((k) => preset.tags.includes(k))) {
+    if (
+      this._searchFoundCount < SEARCH_FOUND_MAX_COUNT &&
+      filter.every((k) => presetName.includes(k) || preset.tags.includes(k)) &&
+      tags.every((k) => preset.tags.includes(k))
+    ) {
+      this._searchFoundCount++;
       preset._render = true;
-      return true;
+      this._searchFoundPresets?.push(preset);
+      return preset._render;
     } else {
       preset._render = false || forceRender;
       return false;
@@ -990,6 +1059,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   _resetSearchState() {
+    this._searchFoundPresets = null;
     this.tree.folders.forEach((f) => this._resetSearchStateFolder(f));
     this.tree.extFolders.forEach((f) => this._resetSearchStateFolder(f));
     this.tree.presets.forEach((p) => this._resetSearchStatePreset(p));
@@ -1007,13 +1077,26 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _renderContent() {
-    const content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/presetsContent.html`, {
-      callback: Boolean(this.callback),
-      presets: this.tree.presets,
-      folders: this.tree.folders,
-      createEnabled: Boolean(this.configApp),
-      extFolders: this.tree.extFolders.length ? this.tree.extFolders : null,
-    });
+    let data;
+    if (this._searchFoundPresets) {
+      data = {
+        callback: Boolean(this.callback),
+        presets: this._searchFoundPresets,
+        folders: [],
+        createEnabled: Boolean(this.configApp),
+        extFolders: null,
+      };
+    } else {
+      data = {
+        callback: Boolean(this.callback),
+        presets: this.tree.presets,
+        folders: this.tree.folders,
+        createEnabled: Boolean(this.configApp),
+        extFolders: this.tree.extFolders.length ? this.tree.extFolders : null,
+      };
+    }
+
+    const content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/presetsContent.html`, data);
     this.element.find('.item-list').html(content);
   }
 
@@ -1105,7 +1188,7 @@ export class MassEditPresets extends FormApplication {
     this.render(true);
   }
 
-  async _onToggleSearch(event) {
+  async _onToggleSearch(event, headerSearch) {
     const searchControl = $(event.target).closest('.toggle-search-mode');
 
     const currentMode = game.settings.get(MODULE_ID, 'presetSearchMode');
@@ -1115,7 +1198,7 @@ export class MassEditPresets extends FormApplication {
     const mode = SEARCH_MODES[newMode];
     searchControl.attr('data-tooltip', mode.tooltip).html(mode.icon);
 
-    $(this.form).find('.header-search input').trigger('input');
+    if (MassEditPresets.lastSearch) headerSearch.trigger('input');
   }
 
   _onToggleLock(event) {
@@ -1134,7 +1217,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   _onToggleLayerSwitch(event) {
-    const switchControl = $(event.target).closest('.toggle-layer-switch');
+    const switchControl = $(event.currentTarget);
 
     const value = !game.settings.get(MODULE_ID, 'presetLayerSwitch');
     if (value) switchControl.addClass('active');
@@ -1143,8 +1226,19 @@ export class MassEditPresets extends FormApplication {
     game.settings.set(MODULE_ID, 'presetLayerSwitch', value);
   }
 
+  async _onToggleVirtDir(event) {
+    const switchControl = $(event.currentTarget);
+
+    const value = !game.settings.get(MODULE_ID, 'presetVirtualDir');
+    if (value) switchControl.addClass('active');
+    else switchControl.removeClass('active');
+
+    await game.settings.set(MODULE_ID, 'presetVirtualDir', value);
+    this.render(true);
+  }
+
   async _onToggleExtComp(event) {
-    const switchControl = $(event.target).closest('.toggle-ext-comp');
+    const switchControl = $(event.currentTarget);
 
     const value = !game.settings.get(MODULE_ID, 'presetExtComp');
     if (value) switchControl.addClass('active');
@@ -1171,6 +1265,11 @@ export class MassEditPresets extends FormApplication {
 
       if (game.settings.get(MODULE_ID, 'presetLayerSwitch'))
         canvas.getLayerByEmbeddedName(this.docName === 'Actor' ? 'Token' : this.docName)?.activate();
+
+      if (MassEditPresets.lastSearch) {
+        MassEditPresets.lastSearch = '';
+        this._resetSearchState();
+      }
 
       this.render(true);
     }
@@ -1464,6 +1563,13 @@ export class MassEditPresets extends FormApplication {
     });
     buttons.unshift({
       label: '',
+      class: 'mass-edit-indexer',
+      icon: 'fas fa-archive',
+      onclick: (ev) => this._onOpenIndexer(),
+    });
+
+    buttons.unshift({
+      label: '',
       class: 'mass-edit-export',
       icon: 'fas fa-file-export',
       onclick: (ev) => this._onExport(ev),
@@ -1500,8 +1606,16 @@ export class MassEditPresets extends FormApplication {
     }
   }
 
+  async _onOpenIndexer() {
+    if (FileIndexer._buildingIndex) {
+      ui.notifications.warn('Index Build In-Progress. Wait for it to finish before attempting it again.');
+      return;
+    }
+    new IndexerForm().render(true);
+  }
+
   async _onExport() {
-    const tree = await PresetCollection.getTree(null, { mainOnly: true });
+    const tree = await PresetCollection.getTree();
     exportPresets(tree.allPresets);
   }
 
@@ -1590,8 +1704,9 @@ export class PresetConfig extends FormApplication {
 
   /** @override */
   get title() {
-    if (this.presets.length > 1) return `Presets [${this.presets.length}]`;
-    else return `Preset: ${this.presets[0].name.substring(0, 20)}${this.presets[0].name.length > 20 ? '...' : ''}`;
+    const prefix = this.presets[0] instanceof VirtualFilePreset ? 'File' : 'Preset';
+    if (this.presets.length > 1) return `${prefix}s [${this.presets.length}]`;
+    else return `${prefix}: ${this.presets[0].name.substring(0, 20)}${this.presets[0].name.length > 20 ? '...' : ''}`;
   }
 
   _getHeaderButtons() {
@@ -1628,6 +1743,8 @@ export class PresetConfig extends FormApplication {
   async getData(options = {}) {
     const data = {};
     data.advancedOpen = this.advancedOpen;
+
+    data.virtual = this.presets[0] instanceof VirtualFilePreset;
 
     data.preset = {};
     if (this.presets.length === 1) {
@@ -1736,8 +1853,8 @@ export class PresetConfig extends FormApplication {
   _getSubmitData(updateData = {}) {
     const data = super._getSubmitData(updateData);
 
-    data.name = data.name.trim();
-    data.img = data.img.trim() || null;
+    data.name = data.name?.trim();
+    data.img = data.img?.trim() || null;
     data.preSpawnScript = data.preSpawnScript?.trim();
     data.postSpawnScript = data.postSpawnScript?.trim();
     data.tags = data.tags ? data.tags.split(',') : [];

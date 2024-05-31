@@ -12,9 +12,11 @@ import {
   executeScript,
   localize,
 } from '../utils.js';
-import { Preset } from './preset.js';
+import { FileIndexer } from './fileIndexer.js';
+import { Preset, VirtualFilePreset } from './preset.js';
 import {
   FolderState,
+  decodeURIComponentSafely,
   getPresetDataCenterOffset,
   getTransformToOrigin,
   mergePresetDataToDefaultDoc,
@@ -31,7 +33,7 @@ export class PresetCollection {
 
   static workingPack;
 
-  static async getTree(type, { mainOnly = false, setFormVisibility = false } = {}) {
+  static async getTree(type, { externalCompendiums = true, virtualDirectory = true, setFormVisibility = false } = {}) {
     if (CONFIG.debug.MassEdit) console.time('getTree');
 
     let pack;
@@ -52,7 +54,7 @@ export class PresetCollection {
 
     const extFolders = [];
 
-    if (!mainOnly) {
+    if (externalCompendiums) {
       for (const p of game.packs) {
         if (p.collection !== this.workingPack && p.index.get(META_INDEX_ID)) {
           const tree = await PresetTree.init(p, type, { setFormVisibility });
@@ -66,6 +68,26 @@ export class PresetCollection {
           for (const [uuid, folder] of tree.allFolders) {
             mainTree.allFolders.set(uuid, folder);
           }
+        }
+      }
+    }
+
+    // Read File Index
+    if (virtualDirectory) {
+      const vTree = await FileIndexer.getVirtualDirectoryTree(type, { setFormVisibility });
+      if (vTree?.hasVisible) {
+        const topFolder = new VirtualFileFolder({
+          name: 'VIRTUAL DIRECTORY',
+          children: vTree.folders,
+          uuid: 'virtual_directory',
+          color: '#1c5fa385',
+        });
+        extFolders.push(topFolder);
+
+        // Collate all folders with the main tree
+        mainTree.allFolders.set(topFolder.uuid, topFolder);
+        for (const [uuid, folder] of vTree.allFolders) {
+          mainTree.allFolders.set(uuid, folder);
         }
       }
     }
@@ -93,7 +115,7 @@ export class PresetCollection {
     const newExtFolders = [];
     for (const [group, folders] of Object.entries(groups)) {
       const id = SeededRandom.randomID(group); // For export operation a real ID is needed. Lets keep it consistent by seeding
-      const uuid = 'virtual.' + group; // faux uuid
+      const uuid = 'virtual@' + group; // faux uuid
 
       const groupFolder = new PresetVirtualFolder({
         id,
@@ -121,7 +143,10 @@ export class PresetCollection {
       if (!index.has(idx)) update['-=' + idx] = null;
     }
 
-    if (!foundry.utils.isEmpty(update)) metaDoc.setFlag(MODULE_ID, 'index', update);
+    if (!foundry.utils.isEmpty(update)) {
+      metaDoc.setFlag(MODULE_ID, 'index', update);
+      delete PresetTree._packTrees[pack.metadata.name];
+    }
   }
 
   static _sortFolders(folders, sorting = 'a') {
@@ -175,6 +200,7 @@ export class PresetCollection {
     });
 
     await metaDoc.setFlag(MODULE_ID, 'index', { [preset.id]: update });
+    delete PresetTree._packTrees[compendium.metadata.name];
   }
 
   /**
@@ -236,6 +262,8 @@ export class PresetCollection {
   }
 
   static async get(uuid, { full = true } = {}) {
+    if (uuid.startsWith('virtual@')) return this._constructVirtualFilePreset(uuid, { full });
+
     let { collection, documentId, documentType, embedded, doc } = foundry.utils.parseUuid(uuid);
     const index = collection.index.get(documentId);
 
@@ -250,6 +278,13 @@ export class PresetCollection {
     return null;
   }
 
+  static async _constructVirtualFilePreset(uuid, { full = true } = {}) {
+    const src = uuid.substring(8);
+    const preset = new VirtualFilePreset({ src });
+    if (full) await preset.load();
+    return preset;
+  }
+
   /**
    * @param {Preset|Array[Preset]} preset
    */
@@ -261,6 +296,7 @@ export class PresetCollection {
     const sorted = {};
     for (const preset of presets) {
       let { collection } = foundry.utils.parseUuid(preset.uuid);
+      if (!collection) continue;
       collection = collection.collection;
       if (!sorted[collection]) sorted[collection] = [preset];
       else sorted[collection].push(preset);
@@ -281,6 +317,7 @@ export class PresetCollection {
 
       await JournalEntry.deleteDocuments(deleteIds, { pack });
       metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
+      delete PresetTree._packTrees[compendium.metadata.name];
     }
   }
 
@@ -343,6 +380,7 @@ export class PresetCollection {
       metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
     }
 
+    delete PresetTree._packTrees[folderDoc.compendium.metadata.name];
     return await folderDoc.delete({ deleteSubfolders: deleteAll, deleteContents: deleteAll });
   }
 
@@ -379,7 +417,7 @@ export class PresetCollection {
    * @param {Array[CONFIG.SpotlightOmnisearch.SearchTerm]} soIndex
    */
   static async buildSpotlightOmnisearchIndex(soIndex) {
-    const tree = await PresetCollection.getTree();
+    const tree = await PresetCollection.getTree(null, { externalCompendiums: true });
 
     const SearchTerm = CONFIG.SpotlightOmnisearch.SearchTerm;
 
@@ -486,12 +524,15 @@ export class PresetAPI {
       else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
     }
 
-    const presets = PresetCollection._searchPresetTree(await PresetCollection.getTree(), {
-      name,
-      type,
-      folder,
-      tags,
-    });
+    const presets = PresetCollection._searchPresetTree(
+      await PresetCollection.getTree(type, { externalCompendiums: true, virtualDirectory: true }),
+      {
+        name,
+        type,
+        folder,
+        tags,
+      }
+    );
 
     const preset = random ? presets[Math.floor(Math.random() * presets.length)] : presets[0];
     return preset?.clone().load();
@@ -525,12 +566,15 @@ export class PresetAPI {
         else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
       }
 
-      presets = PresetCollection._searchPresetTree(await PresetCollection.getTree(), {
-        name,
-        type,
-        folder,
-        tags,
-      });
+      presets = PresetCollection._searchPresetTree(
+        await PresetCollection.getTree(type, { externalCompendiums: true, virtualDirectory: true }),
+        {
+          name,
+          type,
+          folder,
+          tags,
+        }
+      );
     }
 
     if (format === 'name') return presets.map((p) => p.name);
@@ -869,7 +913,12 @@ export class PresetAPI {
   }
 }
 
-class PresetFolder {
+export class PresetFolder {
+  static isEditable(uuid) {
+    const { collection } = foundry.utils.parseUuid(uuid);
+    return collection && !collection.locked;
+  }
+
   constructor({
     id,
     uuid,
@@ -917,9 +966,24 @@ export class PresetVirtualFolder extends PresetFolder {
   constructor(options) {
     super(options);
     this.virtual = true;
+    this.draggable = false;
   }
 
   async update(data) {}
+}
+
+export class VirtualFileFolder extends PresetVirtualFolder {
+  constructor(options) {
+    super(options);
+    this.id = randomID();
+    if (!options.types) this.types = ['ALL'];
+    this.bucket = options.bucket;
+    this.source = options.source;
+    this.name = decodeURIComponentSafely(this.name);
+    this.icon = options.icon;
+    this.subtext = options.subtext;
+    if (options.source && ['data', 'forgevtt'].includes(options.source)) this.indexable = true;
+  }
 }
 
 export class PresetPackFolder extends PresetVirtualFolder {
@@ -957,7 +1021,7 @@ export class PresetPackFolder extends PresetVirtualFolder {
   }
 }
 
-class PresetTree {
+export class PresetTree {
   static _packTrees = {};
 
   static async init(pack, type, { forceLoad = false, setFormVisibility = false } = {}) {
@@ -985,7 +1049,7 @@ class PresetTree {
         sorting: f.sorting,
         color: f.color,
         sort: f.sort,
-        draggable: f.pack === this.workingPack,
+        draggable: f.pack === PresetCollection.workingPack,
         folder: f.folder?.uuid,
         types: f.flags[MODULE_ID]?.types || ['ALL'],
       });
@@ -1085,7 +1149,6 @@ class PresetTree {
   setVisibility(type) {
     this.allFolders.forEach((f) => {
       f.render = true;
-      f.draggable = f.pack === this.workingPack;
       f.visible = type ? f.types.includes(type) : true;
     });
 
@@ -1102,23 +1165,23 @@ class PresetTree {
         } else if (preset.documentName !== type) preset._visible = false;
       }
 
-      if (preset.folder && type === 'FAVORITES') {
+      if (type === 'FAVORITES' && preset.folder && preset.isFavorite) {
         for (const [uuid, folder] of this.allFolders) {
           if (folder.id === preset.folder) {
-            if (preset.isFavorite) this._setChildAndParentFoldersVisible(folder);
+            this._setChildAndParentFoldersVisible(folder);
             break;
           }
         }
       }
 
-      this.hasVisible |= preset._visible;
+      this.hasVisible = this.hasVisible || preset._visible;
     }
   }
 
   _setChildAndParentFoldersVisible(folder) {
     folder.visible = true;
     if (folder.folder) {
-      for (const f of this.allFolders.entries()) {
+      for (const [uuid, f] of this.allFolders.entries()) {
         if (f.id === folder.folder) return this._setChildAndParentFoldersVisible(f);
       }
     }

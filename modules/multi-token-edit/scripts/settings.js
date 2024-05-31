@@ -63,12 +63,21 @@ export function registerSettings() {
     default: false,
   });
 
-  // Deprecated
-  game.settings.register(MODULE_ID, 'presets', {
+  game.settings.register(MODULE_ID, 'indexer', {
     scope: 'world',
     config: false,
     type: Object,
-    default: {},
+    default: {
+      indexDirs: [
+        { target: 'modules', source: 'data' },
+        { target: 'sounds', source: 'public' },
+      ],
+      cacheDir: { target: '', source: 'data' },
+      overrideTags: false,
+      ignoreExternal: false,
+      fileFilters: ['Thumb', '-thumb', 'Thumbnail', 'thumbnail'],
+      folderFilters: ['Thumb', 'thumb'],
+    },
   });
 
   // ===============
@@ -123,6 +132,13 @@ export function registerSettings() {
   });
 
   game.settings.register(MODULE_ID, 'presetExtComp', {
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: true,
+  });
+
+  game.settings.register(MODULE_ID, 'presetVirtualDir', {
     scope: 'world',
     config: false,
     type: Boolean,
@@ -196,24 +212,6 @@ export function registerSettings() {
   //   type: Boolean,
   //   default: true,
   // });
-
-  game.settings.register(MODULE_ID, 'enableHistory', {
-    name: localize('settings.enableHistory.name'),
-    hint: localize('settings.enableHistory.hint'),
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: false,
-  });
-
-  game.settings.register(MODULE_ID, 'historyMaxLength', {
-    name: localize('settings.historyMaxLength.name'),
-    hint: localize('settings.historyMaxLength.hint'),
-    scope: 'world',
-    config: true,
-    type: Number,
-    default: 10,
-  });
 
   game.settings.register(MODULE_ID, 'autoSnap', {
     name: localize('settings.autoSnap.name'),

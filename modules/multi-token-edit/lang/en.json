@@ -76,14 +76,6 @@
         "name": "Insert TMFX Fields",
         "hint": "DungeonDraft tint color and Preset filter fields will be added to Mass Edit forms. Selecting these fields will cause TokenMagicFX filters to be applied."
       },
-      "historyMaxLength": {
-        "name": "History Max Length",
-        "hint": "Number of updates to be recorded in history."
-      },
-      "enableHistory": {
-        "name": "Update History",
-        "hint": "(REQUIRES GAME RELOAD) When enabled updates made to placeables will be stored and accessible via Mass Edit forms."
-      },
       "enableFlagsTab": {
         "name": "Flags Tab",
         "hint": " When enabled 'Flags' tab will be added to Mass Edit forms to allow updating and removing of document flags."
@@ -151,6 +143,7 @@
       "apply-to-selected-warn": "Presets of multiple document types cannot be mixed for this operation.",
       "export-to-compendium": "Export to Compendium",
       "copy-to-clipboard": "Copy to Clipboard",
+      "copy-source-to-clipboard": "Copy Source to Clipboard",
       "keep-ids": "Keep Preset and Folder IDs",
       "keep-ids-hint": "Presets and Folders with the same IDs will be overridden at the destination.",
       "search-presets": "Search Presets",
@@ -176,7 +169,6 @@
       "pin": "Pin",
       "preset": "Preset",
       "presets": "Presets",
-      "history": "History",
       "delete": "Delete",
       "apply": "Apply",
       "ratio": "Ratio",

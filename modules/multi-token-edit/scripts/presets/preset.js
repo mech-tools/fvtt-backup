@@ -1,6 +1,7 @@
-import { MODULE_ID, SUPPORTED_PLACEABLES } from '../utils.js';
-import { META_INDEX_FIELDS, META_INDEX_ID } from './collection.js';
-import { placeableToData } from './utils.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES, isImage, isAudio } from '../utils.js';
+import { META_INDEX_FIELDS, META_INDEX_ID, PresetTree } from './collection.js';
+import { FileIndexer } from './fileIndexer.js';
+import { decodeURIComponentSafely, isVideo, placeableToData } from './utils.js';
 
 const DOCUMENT_FIELDS = ['id', 'name', 'sort', 'folder'];
 
@@ -41,8 +42,12 @@ export const DOC_ICONS = {
 };
 
 export class Preset {
-  static name = 'Preset';
-  document;
+  static isEditable(uuid) {
+    if (uuid.startsWith('virtual@')) return true;
+    let { collection } = foundry.utils.parseUuid(uuid);
+    if (!collection) return false;
+    return !collection.locked;
+  }
 
   constructor(data) {
     this.id = data.id ?? data._id ?? foundry.utils.randomID();
@@ -106,6 +111,7 @@ export class Preset {
 
   get isFavorite() {
     if (!Preset.favorites) Preset.favorites = game.settings.get(MODULE_ID, 'presetFavorites');
+
     return Boolean(Preset.favorites[this.uuid]);
   }
 
@@ -235,6 +241,7 @@ export class Preset {
         let tmp = {};
         tmp[this.id] = update;
         await metaDoc.setFlag(MODULE_ID, 'index', tmp);
+        delete PresetTree._packTrees[pack.metadata.name];
       } else {
         console.warn(`META INDEX missing in ${this.document.pack}`);
         return;
@@ -259,6 +266,115 @@ export class Preset {
   clone() {
     const clone = new Preset(this.toJSON());
     clone.document = this.document;
+    return clone;
+  }
+}
+
+export class VirtualFilePreset extends Preset {
+  constructor(data) {
+    if (!data.name) data.name = data.src.split('/').pop();
+    data.name = decodeURIComponentSafely(data.name);
+
+    data.uuid = 'virtual@' + data.src;
+    data.documentName = isAudio(data.src) ? 'AmbientSound' : 'Tile';
+
+    if (data.documentName === 'Tile') {
+      data.data = [{ texture: { src: data.src }, x: 0, y: 0, rotation: 0 }];
+      if (isVideo(data.src)) data.img = 'icons/svg/video.svg';
+      else data.img = data.src;
+    } else {
+      data.data = [{ path: data.src, radius: 20, x: 0, y: 0 }];
+      data.img = 'icons/svg/sound.svg';
+    }
+
+    data.gridSize = 150;
+    super(data);
+    this.src = data.src;
+  }
+
+  get virtual() {
+    return true;
+  }
+
+  async load(force = false) {
+    if (this._storedReference) return this;
+
+    const p = await FileIndexer.getPreset(this.uuid);
+    if (p) this.tags = p.tags;
+    this._storedReference = p;
+
+    // Ambient Sound, no further processing required
+    if (this.data[0].path) return this;
+
+    // Load image/video metadata to retrieve the width/height
+    const src = this.data[0].texture?.src;
+
+    let width, height;
+    let prom;
+    if (isImage(src)) {
+      const img = new Image();
+      prom = new Promise((resolve) => {
+        img.onload = resolve;
+        img.src = src;
+      });
+
+      await Promise.race([
+        prom,
+        (async () => {
+          await new Promise((res) => setTimeout(res, 1000));
+        })(),
+      ]);
+
+      if (!img.complete || img.naturalWidth === 0) {
+        console.log('Image Load failed', src);
+        return null;
+      }
+
+      width = img.naturalWidth;
+      height = img.naturalHeight;
+    } else {
+      const video = document.createElement('video');
+      prom = new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+        video.src = src;
+        video.load();
+      });
+
+      await Promise.race([
+        prom,
+        (async () => {
+          await new Promise((res) => setTimeout(res, 1000));
+        })(),
+      ]);
+
+      width = video.videoWidth;
+      height = video.videoHeight;
+    }
+
+    this.data[0].width = width;
+    this.data[0].height = height;
+
+    return this;
+  }
+
+  async update(update) {
+    if (!update.hasOwnProperty('tags')) return;
+
+    if (this._storedReference) {
+      this._storedReference.tags = update.tags;
+      clearTimeout(VirtualFilePreset._updateTimeout);
+      VirtualFilePreset._updateTimeout = setTimeout(() => FileIndexer.saveIndexToCache(), 3000);
+    }
+  }
+
+  toJSON() {
+    const json = super.toJSON();
+    json.src = this.src;
+    return json;
+  }
+
+  clone() {
+    const clone = new VirtualFilePreset(this.toJSON());
     return clone;
   }
 }
