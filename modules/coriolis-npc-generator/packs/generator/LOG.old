@@ -1,7 +1,7 @@
-2024/05/30-17:18:04.002307 7fb8e8ff9700 Recovering log #160
-2024/05/30-17:18:04.005889 7fb8e8ff9700 Delete type=0 #160
-2024/05/30-17:18:04.005956 7fb8e8ff9700 Delete type=3 #158
-2024/05/31-14:25:13.263793 7fb64bfe3700 Level-0 table #165: started
-2024/05/31-14:25:13.264634 7fb64bfe3700 Level-0 table #165: 0 bytes OK
-2024/05/31-14:25:13.265543 7fb64bfe3700 Delete type=0 #163
-2024/05/31-14:25:13.267527 7fb64bfe3700 Manual compaction at level-0 from '!macros!FlTMfy4g7ltbYR6O' @ 72057594037927935 : 1 .. '!macros!FlTMfy4g7ltbYR6O' @ 0 : 0; will stop at (end)
+2024/05/31-14:46:18.654428 7fb8ea7fc700 Recovering log #164
+2024/05/31-14:46:18.656978 7fb8ea7fc700 Delete type=3 #162
+2024/05/31-14:46:18.657008 7fb8ea7fc700 Delete type=0 #164
+2024/06/01-13:39:36.719176 7fb64bfe3700 Level-0 table #169: started
+2024/06/01-13:39:36.719437 7fb64bfe3700 Level-0 table #169: 0 bytes OK
+2024/06/01-13:39:36.720482 7fb64bfe3700 Delete type=0 #167
+2024/06/01-13:39:36.720851 7fb64bfe3700 Manual compaction at level-0 from '!macros!FlTMfy4g7ltbYR6O' @ 72057594037927935 : 1 .. '!macros!FlTMfy4g7ltbYR6O' @ 0 : 0; will stop at (end)
