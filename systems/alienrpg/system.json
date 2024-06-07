@@ -1,109 +1,134 @@
 {
-    "id": "alienrpg",
-    "title": "Alien RPG",
-    "description": "The Alien RPG system for Foundry VTT!",
-    "authors": [
-        {
-            "name": "Paul Watson"
-        }
-    ],
-    "url": "https://github.com/pwatson100/alienrpg",
-    "flags": {
-        "hotReload": {
-            "extensions": [
-                "css",
-                "js",
-                "json"
-            ],
-            "paths": [
-                "alienrpg.css",
-                "templates",
-                "lang"
-            ]
-        }
+  "id": "alienrpg",
+  "title": "Alien RPG",
+  "description": "The Alien RPG system for Foundry VTT!",
+  "authors": [
+    {
+      "name": "Paul Watson",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/pwatson100/alienrpg",
+  "flags": {
+    "hotReload": {
+      "extensions": [
+        "css",
+        "js",
+        "html",
+        "json"
+      ],
+      "paths": [
+        "./css/alienrpg.css",
+        "templates",
+        "lang"
+      ]
+    }
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "alienrpg",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "version": "3.2.0",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "12",
+    "maximum": "12"
+  },
+  "esmodules": [
+    "module/alienrpg.js"
+  ],
+  "styles": [
+    "css/alienrpg.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
     },
-    "relationships": {
-        "systems": [
-            {
-                "id": "alienrpg"
-            }
-        ]
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
     },
-    "version": "3.1.8",
-    "compatibility": {
-        "minimum": "10",
-        "verified": "11",
-        "maximum": "11"
+    {
+      "lang": "cn",
+      "name": "中文",
+      "path": "lang/cn.json",
+      "flags": {}
     },
-    "minimumCoreVersion": "10",
-    "compatibleCoreVersion": "10",
-    "scripts": [],
-    "esmodules": [
-        "module/alienrpg.js"
-    ],
-    "styles": [
-        "css/alienrpg.css"
-    ],
-    "languages": [
-        {
-            "lang": "en",
-            "name": "English",
-            "path": "lang/en.json"
-        },
-        {
-            "lang": "fr",
-            "name": "Français",
-            "path": "lang/fr.json"
-        },
-        {
-            "lang": "cn",
-            "name": "中文",
-            "path": "lang/cn.json"
-        },
-        {
-            "lang": "zh-tw",
-            "name": "正體中文",
-            "path": "lang/zh-tw.json"
-        },
-        {
-            "lang": "de",
-            "name": "Deutsche",
-            "path": "lang/de.json"
-        },
-        {
-            "lang": "es",
-            "name": "Español",
-            "path": "lang/es.json"
-        },
-        {
-            "lang": "pt-BR",
-            "name": "Português (Brasil)",
-            "path": "lang/pt-br.json"
-        },
-        {
-            "lang": "it",
-            "name": "italiano",
-            "path": "lang/it.json"
-        }
-    ],
-    "packs": [
-        {
-            "name": "alien-rpg-system",
-            "label": "Alien RPG System",
-            "path": "packs/alien-rpg-system.db",
-            "type": "Adventure",
-            "module": "AlienRPG",
-            "private": false,
-            "system": "alienrpg"
-        }
-    ],
-    "socket": true,
-    "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
-    "download": "https://github.com/pwatson100/alienrpg/releases/download/3.1.8/master.zip",
-    "protected": false,
-    "initiative": "1d10",
-    "gridDistance": 5,
-    "gridUnits": "m",
-    "primaryTokenAttribute": "health",
-    "secondaryTokenAttribute": "stress"
+    {
+      "lang": "zh-tw",
+      "name": "正體中文",
+      "path": "lang/zh-tw.json",
+      "flags": {}
+    },
+    {
+      "lang": "de",
+      "name": "Deutsche",
+      "path": "lang/de.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-br.json",
+      "flags": {}
+    },
+    {
+      "lang": "it",
+      "name": "italiano",
+      "path": "lang/it.json",
+      "flags": {}
+    }
+  ],
+  "packs": [
+    {
+      "name": "alien-rpg-system",
+      "label": "Alien RPG System",
+      "path": "packs/alien-rpg-system",
+      "type": "Adventure",
+      "system": "alienrpg",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "socket": true,
+  "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
+  "download": "https://github.com/pwatson100/alienrpg/releases/download/3.2.0/master.zip",
+  "initiative": "1d10",
+  "primaryTokenAttribute": "health",
+  "secondaryTokenAttribute": "stress",
+  "bugs": "https://github.com/pwatson100/alienrpg/issues",
+  "media": [
+    {
+      "type": "cover",
+      "loop": false,
+      "flags": {}
+    },
+    {
+      "type": "setup",
+      "url": "systems/alienrpg/images/egg.webp",
+      "loop": false,
+      "thumbnail": "systems/alienrpg/images/egg.webp",
+      "flags": {}
+    }
+  ],
+  "background": "systems/alienrpg/images/egg.webp"
 }
