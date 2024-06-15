@@ -33,12 +33,12 @@ export function placeableToData(placeable) {
     const attached = data.flags?.['token-attacher']?.attached || {};
     if (!foundry.utils.isEmpty(attached)) {
       const prototypeAttached = tokenAttacher.generatePrototypeAttached(data, attached);
-      setProperty(data, 'flags.token-attacher.attached', null);
-      setProperty(data, 'flags.token-attacher.prototypeAttached', prototypeAttached);
-      setProperty(data, 'flags.token-attacher.grid', {
+      foundry.utils.setProperty(data, 'flags.token-attacher.attached', null);
+      foundry.utils.setProperty(data, 'flags.token-attacher.prototypeAttached', prototypeAttached);
+      foundry.utils.setProperty(data, 'flags.token-attacher.grid', {
         size: canvas.grid.size,
-        w: canvas.grid.w,
-        h: canvas.grid.h,
+        w: canvas.grid.sizeX ?? canvas.grid.w, // v12
+        h: canvas.grid.sizeY ?? canvas.grid.h, // v12
       });
     }
   }
@@ -110,7 +110,14 @@ export function mergePresetDataToDefaultDoc(preset, presetData) {
       data = { name: preset.name, elevation: 0, x: 0, y: 0, rotation: 0, width: 1, height: 1 };
       break;
     case 'Tile':
-      data = { width: canvas.grid.w, height: canvas.grid.h, x: 0, y: 0, rotation: 0 };
+      data = {
+        width: canvas.grid.sizeX ?? canvas.grid.w, // v12
+        height: canvas.grid.sizeY ?? canvas.grid.h, // v12
+        x: 0,
+        y: 0,
+        rotation: 0,
+        elevation: 0,
+      };
       break;
     case 'AmbientSound':
       data = { radius: 20, x: 0, y: 0 };
@@ -118,8 +125,8 @@ export function mergePresetDataToDefaultDoc(preset, presetData) {
     case 'Drawing':
       data = {
         shape: {
-          width: canvas.grid.w * 2,
-          height: canvas.grid.h * 2,
+          width: (canvas.grid.sizeX ?? canvas.grid.w) * 2, // v12
+          height: (canvas.grid.sizeY ?? canvas.grid.h) * 2, // v12
           strokeWidth: 8,
           strokeAlpha: 1.0,
         },
@@ -232,6 +239,22 @@ export function getTransformToOrigin(docToData) {
     const c = data[0].c;
     transform.x = -c[0];
     transform.y = -c[1];
+  } else if (name === 'Region') {
+    transform.x = 0;
+    transform.y = 0;
+    data.shapes?.forEach((shape) => {
+      if (shape.points) {
+        for (let i = 0; i < shape.points.length; i += 2) {
+          transform.x = Math.min(transform.x, shape.points[i]);
+          transform.y = Math.min(transform.y, shape.points[i + 1]);
+        }
+      } else {
+        transform.x = Math.min(transform.x, shape.x);
+        transform.y = Math.min(transform.y, shape.y);
+      }
+    });
+    transform.x = -transform.x;
+    transform.y = -transform.y;
   } else {
     transform.x = -data[0].x;
     transform.y = -data[0].y;
@@ -253,9 +276,9 @@ export function getPresetDataBounds(docToData) {
   let y1 = Number.MAX_SAFE_INTEGER;
   let x2 = Number.MIN_SAFE_INTEGER;
   let y2 = Number.MIN_SAFE_INTEGER;
-  docToData.forEach((dataArr, docName) => {
+  docToData.forEach((dataArr, documentName) => {
     for (const data of dataArr) {
-      const b = getDataBounds(docName, data);
+      const b = getDataBounds(documentName, data);
       if (b.x1 < x1) x1 = b.x1;
       if (b.y1 < y1) y1 = b.y1;
       if (b.x2 > x2) x2 = b.x2;
@@ -267,14 +290,14 @@ export function getPresetDataBounds(docToData) {
 
 /**
  * Calculates and returns bounds of placeable's data
- * @param {String} docName
+ * @param {String} documentName
  * @param {Object} data
  * @returns
  */
-function getDataBounds(docName, data) {
+function getDataBounds(documentName, data) {
   let x1, y1, x2, y2;
 
-  if (docName === 'Wall') {
+  if (documentName === 'Wall') {
     x1 = Math.min(data.c[0], data.c[2]);
     y1 = Math.min(data.c[1], data.c[3]);
     x2 = Math.max(data.c[0], data.c[2]);
@@ -284,15 +307,33 @@ function getDataBounds(docName, data) {
     y1 = data.y || 0;
 
     let width, height;
-    if (docName === 'Tile') {
+    if (documentName === 'Tile') {
       width = data.width;
       height = data.height;
-    } else if (docName === 'Drawing') {
+    } else if (documentName === 'Drawing') {
       width = data.shape.width;
       height = data.shape.height;
-    } else if (docName === 'Token') {
+    } else if (documentName === 'Token') {
       width = data.width * canvas.dimensions.size;
       height = data.height * canvas.dimensions.size;
+    } else if (documentName === 'Region') {
+      data.shapes?.forEach((shape) => {
+        if (shape.points) {
+          for (let i = 0; i < shape.points.length; i += 2) {
+            let x = shape.points[0];
+            let y = shape.points[1];
+            x1 = Math.min(x1, x);
+            y1 = Math.min(y1, y);
+            x2 = Math.max(x2, x);
+            y2 = Math.max(y2, y);
+          }
+        } else {
+          x1 = Math.min(x1, shape.x);
+          y1 = Math.min(y1, shape.y);
+          x2 = Math.max(x2, shape.x + (shape.radiusX ?? shape.width));
+          y2 = Math.max(y2, shape.y + (shape.radiusY ?? shape.height));
+        }
+      });
     } else {
       width = 0;
       height = 0;

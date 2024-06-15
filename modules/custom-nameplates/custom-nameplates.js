@@ -4,11 +4,11 @@ import { libWrapper } from "./shim.js";
 export const modName = "Custom Nameplates";
 export const mod = "custom-nameplates";
 export const DEFAULT_STYLE = {
-    fontFamily: "Signika",
     fontSize: 24,
-    fill: "#FFFFFF",
-    dropShadowColor: "#000000",
-    stroke: "#111111",
+    fontFamily: "Signika",
+    fontColor: "#FFFFFF",
+    shadowColor: "#000000",
+    strokeColor: "#111111",
 };
 export class StyleDefinition {
     constructor(fontSize, fontFamily, fontColor, shadowColor, strokeColor, autoScale = false) {
@@ -53,10 +53,10 @@ export class CustomNameplates {
         return style;
     }
     loadLocalStyles() {
-        const setting = this.game.settings.get(mod, "local-styles");
+        const settingBySceneId = this.game.settings.get(mod, "local-styles");
         let localStyles = new Map();
-        for (const key of Object.keys(setting)) {
-            localStyles.set(key, StyleDefinition.fromSetting(setting[key]));
+        for (const sceneId of Object.keys(settingBySceneId)) {
+            localStyles.set(sceneId, StyleDefinition.fromSetting(settingBySceneId[sceneId]));
         }
         return localStyles;
     }
@@ -125,7 +125,10 @@ export class CustomNameplates {
         }
     }
     isAutoScaleEnabledForScene() {
-        return this.loadLocalStyles().has(this.game.scenes.viewed.id) || this.loadGlobalStyle().autoScale;
+        const localStyle = this.loadLocalStyles().get(this.game.scenes.viewed.id);
+        const localAutoScale = localStyle?.autoScale;
+        const globalAutoScale = this.loadGlobalStyle().autoScale;
+        return localAutoScale || (globalAutoScale && !localStyle);
     }
     checkAutoScale(canvas) {
         if (canvas.tokens.preview.children.length > 0 || canvas.templates.preview.children.length > 0) return;
@@ -178,17 +181,16 @@ class NameplateEditConfig extends FormApplication {
         options.id = "custom-nameplates-edit";
         options.template = "modules/custom-nameplates/templates/nameplate-config.html";
         options.width = 350;
-        //options.height = 280;
         return options;
     }
     get title() {
         return "Edit Nameplate Style";
     }
-    async getData(options) {
+    async getData(_options) {
         let localStyle = game.customNameplates.getLocalStyle(game.scenes.viewed.id);
         let hasLocalSettings = localStyle != null;
         if (!localStyle) {
-            localStyle = DEFAULT_STYLE;
+            localStyle = DEFAULT_STYLE_DEFINITION;
         }
         return {
             globalSettings: game.customNameplates.loadGlobalStyle(),
@@ -197,7 +199,7 @@ class NameplateEditConfig extends FormApplication {
             fontFamilies: FontConfig.getAvailableFontChoices(),
         };
     }
-    async _updateObject(event, formData) {
+    async _updateObject(_event, formData) {
         if (formData.localConfig) {
             let localStyle = {
                 fontFamily: formData.localFontFamily,
@@ -209,21 +211,21 @@ class NameplateEditConfig extends FormApplication {
             };
             await game.customNameplates.setLocalStyle(game.scenes.viewed.id, localStyle);
         } else {
-            let globalStyle = {
-                fontFamily: formData.globalFontFamily,
-                fontSize: formData.globalFontSize,
-                fontColor: formData.globalFontColor,
-                shadowColor: formData.globalShadowColor,
-                strokeColor: formData.globalStrokeColor,
-                autoScale: formData.globalAutoScaleFont,
-            };
-            await game.customNameplates.saveGlobalStyle(globalStyle);
-
             //Remove local settings (as local settings not enabled)
             if (game.customNameplates.isSceneBeingViewed()) {
                 await game.customNameplates.deleteLocalStyle(game.scenes.viewed.id);
             }
         }
+        let globalStyle = {
+            fontFamily: formData.globalFontFamily,
+            fontSize: formData.globalFontSize,
+            fontColor: formData.globalFontColor,
+            shadowColor: formData.globalShadowColor,
+            strokeColor: formData.globalStrokeColor,
+            autoScale: formData.globalAutoScaleFont,
+        };
+        await game.customNameplates.saveGlobalStyle(globalStyle);
+
         ui.notifications.notify("Updated nameplate styles. Please refresh for changes to apply");
         game.customNameplates.setCanvasStyle();
     }

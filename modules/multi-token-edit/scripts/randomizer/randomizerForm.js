@@ -92,7 +92,7 @@ export default class RandomizerForm extends FormApplication {
 
     data.fieldName = this.fieldName;
     data.title = this.title;
-    data.isTile = 'Tile' === this.configApp.docName;
+    data.isTile = 'Tile' === this.configApp.documentName;
 
     // Assign default values for some specific fields
     if (this.configuration.numberForm && !this.configuration.existing) {
@@ -190,7 +190,7 @@ export default class RandomizerForm extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
 
-    const docName = this.configApp.docName;
+    const documentName = this.configApp.documentName;
     $(html)
       .find('.folder-picker')
       .click(() => {
@@ -209,8 +209,8 @@ export default class RandomizerForm extends FormApplication {
         }).render(true);
       });
     html.find('.token-variants').click((ev) => {
-      if (game.modules.get('token-variants')?.active && docName) {
-        let type = docName;
+      if (game.modules.get('token-variants')?.active && documentName) {
+        let type = documentName;
         if (type === 'Actor') type = 'Portrait';
         else if (type === 'MeasuredTemplate') type = 'Tile';
         game.modules.get('token-variants').api.showArtSelect('image', {
@@ -322,13 +322,13 @@ export default class RandomizerForm extends FormApplication {
   _onSnapToGrid(event) {
     const form = $(event.target).closest('form');
     form.find('[name="minX"], [name="maxX"]').each(function () {
-      this.value = nearestStep(this.value, canvas.grid.w);
+      this.value = nearestStep(this.value, canvas.grid.sizeX ?? canvas.grid.w); //v12
     });
     form.find('[name="minY"], [name="maxY"]').each(function () {
-      this.value = nearestStep(this.value, canvas.grid.h);
+      this.value = nearestStep(this.value, canvas.grid.sizeY ?? canvas.grid.h); //v12
     });
-    form.find('[name="stepX"]').val(canvas.grid.w);
-    form.find('[name="stepY"]').val(canvas.grid.h);
+    form.find('[name="stepX"]').val(canvas.grid.sizeX ?? canvas.grid.w); //v12
+    form.find('[name="stepY"]').val(canvas.grid.sizeY ?? canvas.grid.h); //v12
   }
 
   /**
@@ -421,7 +421,12 @@ export default class RandomizerForm extends FormApplication {
         const maxX = Math.max(formData.minX, formData.maxX);
         const minY = Math.min(formData.minY, formData.maxY);
         const maxY = Math.max(formData.minY, formData.maxY);
-        const boundingBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        const boundingBox = {
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+        };
         this.configApp.randomizeFields['x'] = {
           type: 'coordinate',
           method: 'noOverlap',
@@ -483,8 +488,8 @@ export function showRandomizeDialog(formGroup, configApp) {
 
       if (type === 'SELECT') {
         _showRandomSelectDialog($(this), configApp, label);
-      } else if (type === 'INPUT') {
-        _processInput($(this), configApp, label, singleInput);
+      } else if (['INPUT', 'COLOR-PICKER', 'RANGE-PICKER'].includes(type)) {
+        _processInput(type, $(this), configApp, label, singleInput);
       } else {
         console.log(label, type);
       }
@@ -493,15 +498,15 @@ export function showRandomizeDialog(formGroup, configApp) {
 }
 
 // Handle <input> tag
-function _processInput(input, configApp, label, singleInput) {
+function _processInput(nodeName, input, configApp, label, singleInput) {
   const type = input.attr('type');
   if (type === 'number' || (type === 'text' && input.attr('data-dtype') === 'Number')) {
     _showRandomNumberDialog(input, configApp, label);
-  } else if (type === 'range') {
+  } else if (nodeName === 'RANGE-PICKER' || type === 'range') {
     _showRandomRangeDialog(input, configApp, label);
   } else if (type === 'checkbox') {
     _showRandomBoolDialog(input, configApp, label, singleInput);
-  } else if (type === 'text' && input.hasClass('color')) {
+  } else if (nodeName === 'COLOR-PICKER' || (type === 'text' && input.hasClass('color'))) {
     _showRandomColorDialog(input, configApp, label);
   } else if (type === 'text' && input.hasClass('image')) {
     _showRandomImageDialog(input, configApp, label);
@@ -526,11 +531,17 @@ function processCoordinate(inputX, inputY, configApp, label) {
 }
 
 function _showRandomTextDialog(input, configApp, label) {
-  new RandomizerForm(label, input, configApp, { textForm: true, current: input.val() }).render(true);
+  new RandomizerForm(label, input, configApp, {
+    textForm: true,
+    current: input.val(),
+  }).render(true);
 }
 
 function _showRandomImageDialog(input, configApp, label) {
-  new RandomizerForm(label, input, configApp, { imageForm: true, current: input.val() }).render(true);
+  new RandomizerForm(label, input, configApp, {
+    imageForm: true,
+    current: input.val(),
+  }).render(true);
 }
 
 function _showRandomColorDialog(input, configApp, label) {

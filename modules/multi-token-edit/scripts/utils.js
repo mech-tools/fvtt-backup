@@ -141,7 +141,7 @@ export function selectAddSubtractFields(form, fields) {
   }
 }
 
-export function applyAddSubtract(updates, objects, docName, addSubtractFields) {
+export function applyAddSubtract(updates, objects, documentName, addSubtractFields) {
   // See if any field need to be added or subtracted
   if (!addSubtractFields || foundry.utils.isEmpty(addSubtractFields)) return;
 
@@ -149,7 +149,7 @@ export function applyAddSubtract(updates, objects, docName, addSubtractFields) {
     const update = updates[i];
     const data = foundry.utils.flattenObject(getData(objects[i]).toObject());
 
-    GeneralDataAdapter.dataToForm(docName, objects[i], data);
+    GeneralDataAdapter.dataToForm(documentName, objects[i], data);
 
     for (const field of Object.keys(update)) {
       if (field in addSubtractFields && field in data) {
@@ -230,7 +230,7 @@ export function mergeObjectPreserveDot(original, other = {}, nestedKey = '') {
     const t = foundry.utils.getType(val);
     if (t === 'Object') mergeObjectPreserveDot(val, other, fullKey);
     else {
-      const prop = getProperty(other, fullKey);
+      const prop = foundry.utils.getProperty(other, fullKey);
       if (prop !== undefined) {
         original[key] = prop;
       }
@@ -340,7 +340,7 @@ export function flattenToDepth(obj, d = 0) {
 
 // TODO
 export function activeEffectPresetSelect(aeConfig) {
-  const showPresetGeneric = function (docName) {
+  const showPresetGeneric = function (documentName) {
     new MassEditPresets(
       aeConfig,
       async (preset) => {
@@ -357,7 +357,7 @@ export function activeEffectPresetSelect(aeConfig) {
           else value = JSON.stringify(preset.data[0][k]);
 
           nChanges.push({
-            key: docName === 'Token' ? 'ATL.' + k : k,
+            key: documentName === 'Token' ? 'ATL.' + k : k,
             mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
             priority: 20,
             value,
@@ -370,7 +370,7 @@ export function activeEffectPresetSelect(aeConfig) {
 
         aeConfig.object.update({ changes: nChanges });
       },
-      docName
+      documentName
     ).render(true);
   };
 
@@ -420,8 +420,8 @@ export function activeEffectPresetSelect(aeConfig) {
 }
 
 export function getDocumentName(doc) {
-  const docName = doc.document ? doc.document.documentName : doc.documentName;
-  return docName ?? 'NONE';
+  const documentName = doc.document ? doc.document.documentName : doc.documentName;
+  return documentName ?? 'NONE';
 }
 
 export const DOCUMENT_CREATE_REQUESTS = {};

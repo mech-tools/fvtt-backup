@@ -1,4 +1,4 @@
-import { checkApplySpecialFields } from '../../applications/forms.js';
+import { checkApplySpecialFields } from '../../applications/formUtils.js';
 import { Brush } from '../brush.js';
 import { DataTransform, Picker } from '../picker.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
@@ -19,6 +19,7 @@ import {
   decodeURIComponentSafely,
   getPresetDataCenterOffset,
   getTransformToOrigin,
+  isVideo,
   mergePresetDataToDefaultDoc,
   modifySpawnData,
   placeableToData,
@@ -144,6 +145,7 @@ export class PresetCollection {
     }
 
     if (!foundry.utils.isEmpty(update)) {
+      if (CONFIG.debug.MassEdit) console.log('Mass Edit - Index Cleanup', update);
       metaDoc.setFlag(MODULE_ID, 'index', update);
       delete PresetTree._packTrees[pack.metadata.name];
     }
@@ -315,8 +317,10 @@ export class PresetCollection {
         metaUpdate['-=' + preset.id] = null;
       }
 
-      await JournalEntry.deleteDocuments(deleteIds, { pack });
-      metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
+      const opts = { pack };
+      opts.ids = deleteIds; // v12 fix
+      await JournalEntry.deleteDocuments(deleteIds, opts);
+      await metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
       delete PresetTree._packTrees[compendium.metadata.name];
     }
   }
@@ -630,13 +634,13 @@ export class PresetAPI {
 
     const groups = {};
     for (const placeable of placeables) {
-      const docName = placeable.document.documentName;
-      if (!groups.hasOwnProperty(docName)) groups[docName] = [];
-      groups[docName].push(placeable);
+      const documentName = placeable.document.documentName;
+      if (!groups.hasOwnProperty(documentName)) groups[documentName] = [];
+      groups[documentName].push(placeable);
     }
 
     const presets = [];
-    for (const [docName, placeables] of Object.entries(groups)) {
+    for (const [documentName, placeables] of Object.entries(groups)) {
       const data = [];
       for (const placeable of placeables) {
         data.push(placeableToData(placeable));
@@ -645,7 +649,7 @@ export class PresetAPI {
       // Preset data before merging with user provided
       const defPreset = {
         name: localize('presets.default-name'),
-        documentName: docName,
+        documentName,
         data: data,
       };
 
@@ -835,42 +839,52 @@ export class PresetAPI {
       }
     }
 
-    if (center) {
-      const offset = getPresetDataCenterOffset(docToData);
-      x -= offset.x;
-      y -= offset.y;
+    // If not using coorPicker (Picker) we need to handle position snapping here
+    if (!coordPicker) {
+      if (center) {
+        const offset = getPresetDataCenterOffset(docToData);
+        x -= offset.x;
+        y -= offset.y;
+      }
+
+      let pos = { x, y };
+
+      if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
+        // v12
+        if (canvas.grid.getSnappedPoint) {
+          pos = canvas.getLayerByEmbeddedName(preset.documentName).getSnappedPoint(pos);
+        } else {
+          pos = canvas.grid.getSnappedPosition(
+            pos.x,
+            pos.y,
+            canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
+          );
+        }
+      }
+      pos.z = z;
+
+      const posTransform = getTransformToOrigin(docToData);
+      posTransform.x += pos.x;
+      posTransform.y += pos.y;
+
+      // 3D Support
+
+      if (game.Levels3DPreview?._active) {
+        if (pos.z == null) posTransform.z = 0;
+        else posTransform.z += pos.z;
+      }
+
+      docToData.forEach((dataArr, documentName) => {
+        dataArr.forEach((data) => {
+          DataTransform.apply(documentName, data, { x: 0, y: 0 }, posTransform);
+        });
+      });
     }
 
-    let pos = { x, y };
-
-    if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
-      pos = canvas.grid.getSnappedPosition(
-        pos.x,
-        pos.y,
-        canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
-      );
-    }
-    pos.z = z;
-    // ==================
-
-    // ==================
-    // Set positions taking into account relative distances between each object
-
-    const posTransform = getTransformToOrigin(docToData);
-    posTransform.x += pos.x;
-    posTransform.y += pos.y;
-
-    // 3D Support
-
-    if (game.Levels3DPreview?._active) {
-      if (pos.z == null) posTransform.z = 0;
-      else posTransform.z += pos.z;
-    }
-
+    // Assign ownership to the user who triggered the spawn
+    // And hide if necessary
     docToData.forEach((dataArr, documentName) => {
       dataArr.forEach((data) => {
-        DataTransform.apply(documentName, data, { x: 0, y: 0 }, posTransform);
-
         // Assign ownership for Drawings and MeasuredTemplates
         if (['Drawing', 'MeasuredTemplate'].includes(documentName)) {
           if (documentName === 'Drawing') data.author = game.user.id;
@@ -881,8 +895,6 @@ export class PresetAPI {
         if (hidden || game.keyboard.downKeys.has('AltLeft')) data.hidden = true;
       });
     });
-
-    // ==================
 
     if (layerSwitch) {
       if (game.user.isGM || ['Token', 'MeasuredTemplate', 'Note'].includes(preset.documentName))
@@ -975,7 +987,7 @@ export class PresetVirtualFolder extends PresetFolder {
 export class VirtualFileFolder extends PresetVirtualFolder {
   constructor(options) {
     super(options);
-    this.id = randomID();
+    this.id = foundry.utils.randomID();
     if (!options.types) this.types = ['ALL'];
     this.bucket = options.bucket;
     this.source = options.source;

@@ -1,5 +1,5 @@
 import { TokenDataAdapter } from '../../applications/dataAdapters.js';
-import { copyToClipboard, pasteDataUpdate } from '../../applications/forms.js';
+import { copyToClipboard, pasteDataUpdate } from '../../applications/formUtils.js';
 import { showMassEdit } from '../../applications/multiConfig.js';
 import { countFolderItems, trackProgress } from '../../applications/progressDialog.js';
 import { BrushMenu } from '../brush.js';
@@ -11,6 +11,7 @@ import {
   TagInput,
   UI_DOCS,
   applyPresetToScene,
+  isAudio,
   localFormat,
   localize,
 } from '../utils.js';
@@ -24,7 +25,14 @@ import {
 } from './collection.js';
 import { FileIndexer, IndexerForm } from './fileIndexer.js';
 import { DOC_ICONS, Preset, VirtualFilePreset } from './preset.js';
-import { FolderState, mergePresetDataToDefaultDoc, placeableToData, randomizeChildrenFolderColors } from './utils.js';
+import { TagSelector } from './tagSelector.js';
+import {
+  FolderState,
+  isVideo,
+  mergePresetDataToDefaultDoc,
+  placeableToData,
+  randomizeChildrenFolderColors,
+} from './utils.js';
 
 const SEARCH_MIN_CHAR = 2;
 const SEARCH_FOUND_MAX_COUNT = 1001;
@@ -70,7 +78,7 @@ export class MassEditPresets extends FormApplication {
   static objectHover = false;
   static lastSearch;
 
-  constructor(configApp, callback, docName, options = {}) {
+  constructor(configApp, callback, documentName, options = {}) {
     // Restore position and dimensions the previously closed window
     if (!options.preventPositionOverride && MassEditPresets.previousPosition) {
       options = { ...options, ...MassEditPresets.previousPosition };
@@ -84,12 +92,12 @@ export class MassEditPresets extends FormApplication {
     this.dragData = null;
     this.draggedElements = null;
 
-    if (!configApp && UI_DOCS.includes(docName)) {
+    if (!configApp && UI_DOCS.includes(documentName)) {
       const docLock = game.settings.get(MODULE_ID, 'presetDocLock');
-      this.docName = docLock || docName;
+      this.documentName = docLock || documentName;
     } else {
       this.configApp = configApp;
-      this.docName = docName || this.configApp.documentName;
+      this.documentName = documentName || this.configApp.documentName;
     }
   }
 
@@ -108,7 +116,7 @@ export class MassEditPresets extends FormApplication {
 
   get title() {
     let title = localize('common.presets');
-    if (!UI_DOCS.includes(this.docName)) title += ` [${this.docName}]`;
+    if (!UI_DOCS.includes(this.documentName)) title += ` [${this.documentName}]`;
     else title += ` [${localize('common.placeable')}]`;
     return title;
   }
@@ -124,20 +132,24 @@ export class MassEditPresets extends FormApplication {
     const displayExtCompendiums = game.settings.get(MODULE_ID, 'presetExtComp');
     const displayVirtualDirectory = game.settings.get(MODULE_ID, 'presetVirtualDir');
 
-    this.tree = await PresetCollection.getTree(this.docName, {
+    this.tree = await PresetCollection.getTree(this.documentName, {
       externalCompendiums: displayExtCompendiums,
       virtualDirectory: displayVirtualDirectory,
       setFormVisibility: true,
     });
+    this._tagSelector?.render(true);
+
     data.presets = this.tree.presets;
     data.folders = this.tree.folders;
     data.extFolders = this.tree.extFolders.length ? this.tree.extFolders : null;
 
     data.createEnabled = Boolean(this.configApp);
     data.isPlaceable =
-      SUPPORTED_PLACEABLES.includes(this.docName) || this.docName === 'ALL' || this.docName === 'FAVORITES';
-    data.allowDocumentSwap = UI_DOCS.includes(this.docName) && !this.configApp;
-    data.docLockActive = game.settings.get(MODULE_ID, 'presetDocLock') === this.docName;
+      SUPPORTED_PLACEABLES.includes(this.documentName) ||
+      this.documentName === 'ALL' ||
+      this.documentName === 'FAVORITES';
+    data.allowDocumentSwap = UI_DOCS.includes(this.documentName) && !this.configApp;
+    data.docLockActive = game.settings.get(MODULE_ID, 'presetDocLock') === this.documentName;
     data.layerSwitchActive = game.settings.get(MODULE_ID, 'presetLayerSwitch');
     data.scaling = game.settings.get(MODULE_ID, 'presetScaling');
     data.extCompActive = displayExtCompendiums;
@@ -158,7 +170,7 @@ export class MassEditPresets extends FormApplication {
     }, {});
 
     data.documents = UI_DOCS;
-    data.currentDocument = this.docName;
+    data.currentDocument = this.documentName;
 
     data.callback = Boolean(this.callback);
 
@@ -209,10 +221,12 @@ export class MassEditPresets extends FormApplication {
     // Hide/Show preset tags and favorite control
     html.on('mouseenter', '.item', (event) => {
       $(event.currentTarget).find('.tags, .display-hover').addClass('show');
+      this._playPreview(event);
     });
 
     html.on('mouseleave', '.item', (event) => {
       $(event.currentTarget).find('.tags, .display-hover').removeClass('show');
+      this._endPreview(event);
     });
 
     html.on('dragstart', '.item', (event) => {
@@ -441,6 +455,7 @@ export class MassEditPresets extends FormApplication {
     html.on('click', '.preset-update a', this._onPresetUpdate.bind(this));
     html.on('click', '.preset-favorite', this._onToggleFavorite.bind(this));
     html.on('click', '.preset-callback', this._onApplyPreset.bind(this));
+    html.on('click', '.tagSelector', this._onToggleTagSelector.bind(this));
 
     const headerSearch = html.find('.header-search input');
     headerSearch.on('input', (event) => this._onSearchInput(event));
@@ -452,6 +467,55 @@ export class MassEditPresets extends FormApplication {
 
     // Activate context menu
     this._contextMenu(html.find('.item-list'));
+  }
+
+  async _playPreview(event) {
+    clearTimeout(this._previewTimeout);
+    this._previewTimeout = setTimeout(() => this._renderPlayPreview(event), 200);
+  }
+
+  async _renderPlayPreview(event) {
+    await this._endPreview();
+    const uuid = $(event.currentTarget).data('uuid');
+    if (!uuid) return;
+
+    const preset = await PresetCollection.get(uuid, { full: false });
+    if (preset.documentName === 'AmbientSound') {
+      const src = isAudio(preset.img) ? preset.img : (await preset.load()).data[0]?.path;
+      if (!src) return;
+      const sound = await game.audio.play(src);
+      sound._mePreview = true;
+    } else if (preset.documentName === 'Tile' && preset.thumbnail === 'icons/svg/video.svg') {
+      await preset.load();
+      const src = preset.data[0].texture?.src;
+      if (src && isVideo(src)) {
+        if (!this._videoPreviewElement) {
+          this._videoPreviewElement = $('<div class="meVideoPreview"></div>');
+          $(document.body).append(this._videoPreviewElement);
+        } else {
+          this._videoPreviewElement.empty();
+        }
+
+        const ratio = visualViewport.width / 1024;
+        this._videoPreviewElement.append(
+          `<video width="${320 * ratio}" height="${240 * ratio}" autoplay loop><source src="${src}" type="video/${src
+            .split('.')
+            .pop()
+            .toLowerCase()}"></video>`
+        );
+      }
+    }
+  }
+
+  async _endPreview() {
+    clearTimeout(this._previewTimeout);
+    game.audio.playing.forEach((s) => {
+      if (s._mePreview) s.stop();
+    });
+    if (this._videoPreviewElement) {
+      this._videoPreviewElement.remove();
+      this._videoPreviewElement = null;
+    }
   }
 
   _folderToggle(folderElement) {
@@ -536,7 +600,10 @@ export class MassEditPresets extends FormApplication {
       { pack: PresetCollection.workingPack }
     );
 
-    nFolder = await Folder.create(nFolder, { pack: nFolder.pack, keepId: options.keepId });
+    nFolder = await Folder.create(nFolder, {
+      pack: nFolder.pack,
+      keepId: options.keepId,
+    });
 
     for (const child of folder.children) {
       if (!this._importTracker?.active) break;
@@ -545,7 +612,10 @@ export class MassEditPresets extends FormApplication {
 
     for (const actor of folder.contents) {
       if (!this._importTracker?.active) break;
-      await PresetAPI.createPresetFromActorUuid(actor.uuid, { folder: nFolder.id, keepId: options.keepId });
+      await PresetAPI.createPresetFromActorUuid(actor.uuid, {
+        folder: nFolder.id,
+        keepId: options.keepId,
+      });
       this._importTracker.incrementCount();
     }
 
@@ -636,7 +706,11 @@ export class MassEditPresets extends FormApplication {
         name: localize('Duplicate', false),
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) => Preset.isEditable(item.data('uuid')) && !item.hasClass('virtual'),
-        callback: (item) => this._onCopySelectedPresets(null, { keepFolder: true, keepId: false }),
+        callback: (item) =>
+          this._onCopySelectedPresets(null, {
+            keepFolder: true,
+            keepId: false,
+          }),
       },
       {
         name: localize('presets.copy-source-to-clipboard'),
@@ -837,7 +911,10 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onEditSelectedPresets(item) {
-    const [selected, _] = await this._getSelectedPresets({ virtualOnly: item.hasClass('virtual'), editableOnly: true });
+    const [selected, _] = await this._getSelectedPresets({
+      virtualOnly: item.hasClass('virtual'),
+      editableOnly: true,
+    });
     if (selected.length) {
       // Position edit window just bellow the item
       const options = item.offset();
@@ -848,7 +925,10 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onDeleteSelectedPresets(item) {
-    const [selected, items] = await this._getSelectedPresets({ editableOnly: true, full: false });
+    const [selected, items] = await this._getSelectedPresets({
+      editableOnly: true,
+      full: false,
+    });
     if (selected.length) {
       const confirm =
         selected.length === 0
@@ -868,12 +948,16 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onOpenJournal(item) {
-    const [selected, _] = await this._getSelectedPresets({ editableOnly: false });
+    const [selected, _] = await this._getSelectedPresets({
+      editableOnly: false,
+    });
     selected.forEach((p) => p.openJournal());
   }
 
   async _onApplyToSelected(item) {
-    const [selected, _] = await this._getSelectedPresets({ editableOnly: false });
+    const [selected, _] = await this._getSelectedPresets({
+      editableOnly: false,
+    });
     if (!selected.length) return;
 
     // Confirm that all presets are of the same document type
@@ -896,12 +980,12 @@ export class MassEditPresets extends FormApplication {
 
   async _onCreateFolder(event) {
     const types = [];
-    if (this.docName === 'ALL') {
+    if (this.documentName === 'ALL') {
       types.push('ALL');
-    } else if (UI_DOCS.includes(this.docName)) {
-      types.push('ALL', this.docName);
+    } else if (UI_DOCS.includes(this.documentName)) {
+      types.push('ALL', this.documentName);
     } else {
-      types.push(this.docName);
+      types.push(this.documentName);
     }
 
     const folder = new Folder.implementation(
@@ -1008,9 +1092,7 @@ export class MassEditPresets extends FormApplication {
     const tags = filter.filter((f) => f.startsWith('#')).map((f) => f.substring(1));
     filter = filter.filter((f) => !f.startsWith('#'));
 
-    this._searchFoundCount = 0;
-    this._searchFoundPresets = game.settings.get(MODULE_ID, 'presetSearchMode') === 'p' ? [] : null;
-
+    this._searchFoundPresets = [];
     this.tree.folders.forEach((f) => this._searchFolder(filter, tags, f));
     this.tree.extFolders.forEach((f) => this._searchFolder(filter, tags, f));
     this.tree.presets.forEach((p) => this._searchPreset(filter, tags, p));
@@ -1044,13 +1126,12 @@ export class MassEditPresets extends FormApplication {
 
     const presetName = preset.name.toLowerCase();
     if (
-      this._searchFoundCount < SEARCH_FOUND_MAX_COUNT &&
+      this._searchFoundPresets.length < SEARCH_FOUND_MAX_COUNT &&
       filter.every((k) => presetName.includes(k) || preset.tags.includes(k)) &&
       tags.every((k) => preset.tags.includes(k))
     ) {
-      this._searchFoundCount++;
       preset._render = true;
-      this._searchFoundPresets?.push(preset);
+      this._searchFoundPresets.push(preset);
       return preset._render;
     } else {
       preset._render = false || forceRender;
@@ -1059,7 +1140,7 @@ export class MassEditPresets extends FormApplication {
   }
 
   _resetSearchState() {
-    this._searchFoundPresets = null;
+    this._searchFoundPresets = [];
     this.tree.folders.forEach((f) => this._resetSearchStateFolder(f));
     this.tree.extFolders.forEach((f) => this._resetSearchStateFolder(f));
     this.tree.presets.forEach((p) => this._resetSearchStatePreset(p));
@@ -1078,7 +1159,7 @@ export class MassEditPresets extends FormApplication {
 
   async _renderContent() {
     let data;
-    if (this._searchFoundPresets) {
+    if (game.settings.get(MODULE_ID, 'presetSearchMode') === 'p') {
       data = {
         callback: Boolean(this.callback),
         presets: this._searchFoundPresets,
@@ -1098,6 +1179,8 @@ export class MassEditPresets extends FormApplication {
 
     const content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/presetsContent.html`, data);
     this.element.find('.item-list').html(content);
+
+    this._tagSelector?.render(true);
   }
 
   async _onFolderSort(sourceUuid, targetUuid, { inside = true, folderUuid = null } = {}) {
@@ -1129,7 +1212,9 @@ export class MassEditPresets extends FormApplication {
 
         ctrl.target.sort = update.sort;
       });
-      await Folder.updateDocuments(updates, { pack: PresetCollection.workingPack });
+      await Folder.updateDocuments(updates, {
+        pack: PresetCollection.workingPack,
+      });
     }
     this.render(true);
   }
@@ -1205,7 +1290,7 @@ export class MassEditPresets extends FormApplication {
     const lockControl = $(event.target).closest('.toggle-doc-lock');
 
     let currentLock = game.settings.get(MODULE_ID, 'presetDocLock');
-    let newLock = this.docName;
+    let newLock = this.documentName;
 
     if (newLock !== currentLock) lockControl.addClass('active');
     else {
@@ -1259,12 +1344,12 @@ export class MassEditPresets extends FormApplication {
   }
 
   _onDocumentChange(event) {
-    const newDocName = $(event.target).closest('.document-select').data('name');
-    if (newDocName != this.docName) {
-      this.docName = newDocName;
+    const newDocumentName = $(event.target).closest('.document-select').data('name');
+    if (newDocumentName != this.documentName) {
+      this.documentName = newDocumentName;
 
       if (game.settings.get(MODULE_ID, 'presetLayerSwitch'))
-        canvas.getLayerByEmbeddedName(this.docName === 'Actor' ? 'Token' : this.docName)?.activate();
+        canvas.getLayerByEmbeddedName(this.documentName === 'Actor' ? 'Token' : this.documentName)?.activate();
 
       if (MassEditPresets.lastSearch) {
         MassEditPresets.lastSearch = '';
@@ -1298,6 +1383,16 @@ export class MassEditPresets extends FormApplication {
     if (this.callback) {
       const uuid = $(event.target).closest('.item').data('uuid');
       this.callback(await PresetCollection.get(uuid));
+    }
+  }
+
+  async _onToggleTagSelector(event) {
+    if (this._tagSelector) {
+      this._tagSelector.close(true);
+      this._tagSelector = null;
+    } else {
+      this._tagSelector = new TagSelector(this);
+      this._tagSelector.render(true);
     }
   }
 
@@ -1377,7 +1472,9 @@ export class MassEditPresets extends FormApplication {
   }
 
   async _onActivateBrush(item) {
-    const [selected, _] = await this._getSelectedPresets({ editableOnly: false });
+    const [selected, _] = await this._getSelectedPresets({
+      editableOnly: false,
+    });
     BrushMenu.addPresets(selected);
   }
 
@@ -1406,7 +1503,9 @@ export class MassEditPresets extends FormApplication {
       const tarW = width || el.offsetWidth;
       const minW = parseInt(styles.minWidth) || (pop ? MIN_WINDOW_WIDTH : 0);
       const maxW = el.style.maxWidth || window.innerWidth / scale;
-      currentPosition.width = width = Math.clamped(tarW, minW, maxW);
+      currentPosition.width = width = Math.clamp
+        ? Math.clamp(tarW, minW, maxW) // v12
+        : Math.clamped(tarW, minW, maxW);
       el.style.width = `${width}px`;
       if (width * scale + currentPosition.left > window.innerWidth) left = currentPosition.left;
     }
@@ -1417,7 +1516,9 @@ export class MassEditPresets extends FormApplication {
       const tarH = height || el.offsetHeight + 1;
       const minH = parseInt(styles.minHeight) || (pop ? MIN_WINDOW_HEIGHT : 0);
       const maxH = el.style.maxHeight || window.innerHeight / scale;
-      currentPosition.height = height = Math.clamped(tarH, minH, maxH);
+      currentPosition.height = height = Math.clamp
+        ? Math.clamp(tarH, minH, maxH) // v12
+        : Math.clamped(tarH, minH, maxH);
       el.style.height = `${height}px`;
       if (height * scale + currentPosition.top > window.innerHeight + 1) top = currentPosition.top - 1;
     }
@@ -1429,7 +1530,9 @@ export class MassEditPresets extends FormApplication {
       const scaledWidth = width * scale;
       const tarL = Number.isFinite(left) ? left : (window.innerWidth - scaledWidth) / 2;
       const maxL = Math.max(window.innerWidth - scaledWidth, 0);
-      currentPosition.left = left = Math.clamped(tarL, 0, maxL);
+      currentPosition.left = left = Math.clamp
+        ? Math.clamp(tarL, 0, maxL) // v12
+        : Math.clamped(tarL, 0, maxL);
       leftT = left;
     }
 
@@ -1438,7 +1541,9 @@ export class MassEditPresets extends FormApplication {
       const scaledHeight = height * scale;
       const tarT = Number.isFinite(top) ? top : (window.innerHeight - scaledHeight) / 2;
       const maxT = Math.max(window.innerHeight - scaledHeight, 0);
-      currentPosition.top = Math.clamped(tarT, 0, maxT);
+      currentPosition.top = Math.clamp
+        ? Math.clamp(tarT, 0, maxT) // v12
+        : Math.clamped(tarT, 0, maxT);
 
       topT = currentPosition.top;
     }
@@ -1474,6 +1579,8 @@ export class MassEditPresets extends FormApplication {
 
   async close(options = {}) {
     MassEditPresets.objectHover = false;
+    this._tagSelector?.close();
+    this._endPreview();
     return super.close(options);
   }
 
@@ -1493,7 +1600,7 @@ export class MassEditPresets extends FormApplication {
 
     // Detection modes may have been selected out of order
     // Fix that here
-    if (this.docName === 'Token') {
+    if (this.documentName === 'Token') {
       TokenDataAdapter.correctDetectionModeOrder(selectedFields, randomize);
     }
 
@@ -1512,7 +1619,7 @@ export class MassEditPresets extends FormApplication {
 
     const preset = new Preset({
       name: localize('presets.default-name'),
-      documentName: this.docName,
+      documentName: this.documentName,
       data: selectedFields,
       addSubtract: this.configApp.addSubtractFields,
       randomize: this.configApp.randomizeFields,
@@ -1534,7 +1641,7 @@ export class MassEditPresets extends FormApplication {
 
     // Switch to just created preset's category before rendering if not set to 'ALL'
     const documentName = placeables[0].document.documentName;
-    if (this.docName !== 'ALL' && this.docName !== documentName) this.docName = documentName;
+    if (this.documentName !== 'ALL' && this.documentName !== documentName) this.documentName = documentName;
 
     const options = { isCreate: true };
     options.left = this.position.left + this.position.width + 20;
@@ -1549,7 +1656,9 @@ export class MassEditPresets extends FormApplication {
   }
 
   _getActiveEffectFields() {
-    return { changes: foundry.utils.deepClone(this.configApp.object.changes ?? []) };
+    return {
+      changes: foundry.utils.deepClone(this.configApp.object.changes ?? []),
+    };
   }
 
   _getHeaderButtons() {
@@ -1748,7 +1857,7 @@ export class PresetConfig extends FormApplication {
 
     data.preset = {};
     if (this.presets.length === 1) {
-      data.preset = deepClone(this.presets[0].toJSON());
+      data.preset = foundry.utils.deepClone(this.presets[0].toJSON());
       data.displayFieldDelete = true;
       data.displayFieldModify = true;
 
@@ -1782,10 +1891,10 @@ export class PresetConfig extends FormApplication {
     }
 
     // Check if all presets are for the same document type and thus can be edited using a Mass Edit form
-    const docName = this.presets[0].documentName;
-    if (docName !== 'Actor' && this.presets.every((p) => p.documentName === docName)) {
-      data.documentEdit = docName;
-      data.isPlaceable = SUPPORTED_PLACEABLES.includes(docName);
+    const documentName = this.presets[0].documentName;
+    if (documentName !== 'Actor' && this.presets.every((p) => p.documentName === documentName)) {
+      data.documentEdit = documentName;
+      data.isPlaceable = SUPPORTED_PLACEABLES.includes(documentName);
     }
 
     return data;
@@ -1847,7 +1956,9 @@ export class PresetConfig extends FormApplication {
       });
 
     //Tags
-    TagInput.activateListeners(html, { change: () => this.setPosition({ height: 'auto' }) });
+    TagInput.activateListeners(html, {
+      change: () => this.setPosition({ height: 'auto' }),
+    });
   }
 
   _getSubmitData(updateData = {}) {
@@ -1877,8 +1988,13 @@ export class PresetConfig extends FormApplication {
   async dropPlaceable(placeables, event) {
     this.advancedOpen = true;
 
-    if (!this.attached) this.attached = deepClone(this.presets[0].attached ?? []);
-    placeables.forEach((p) => this.attached.push({ documentName: p.document.documentName, data: placeableToData(p) }));
+    if (!this.attached) this.attached = foundry.utils.deepClone(this.presets[0].attached ?? []);
+    placeables.forEach((p) =>
+      this.attached.push({
+        documentName: p.document.documentName,
+        data: placeableToData(p),
+      })
+    );
 
     await this.render(true);
     setTimeout(() => this.setPosition({ height: 'auto' }), 30);
@@ -1886,7 +2002,7 @@ export class PresetConfig extends FormApplication {
 
   async onAttachedRemove(event) {
     const index = $(event.target).closest('.attached').data('index');
-    this.attached = this.attached || deepClone(this.presets[0].attached);
+    this.attached = this.attached || foundry.utils.deepClone(this.presets[0].attached);
     this.attached.splice(index, 1);
     await this.render(true);
     setTimeout(() => this.setPosition({ height: 'auto' }), 30);
@@ -1932,7 +2048,10 @@ export class PresetConfig extends FormApplication {
     const cls = CONFIG[this.presets[0].documentName].documentClass;
 
     for (const p of this.presets) {
-      p.data.forEach((d) => documents.push(new cls(mergePresetDataToDefaultDoc(p, d))));
+      p.data.forEach((d) => {
+        const tempDoc = new cls(mergePresetDataToDefaultDoc(p, d), { parent: canvas.scene });
+        documents.push(tempDoc);
+      });
     }
 
     const app = await showMassEdit(documents, null, {
@@ -2139,7 +2258,10 @@ class PresetFieldDelete extends PresetFieldSelect {
   /** @override */
   async getData(options = {}) {
     const data = await super.getData(options);
-    data.button = { icon: '<i class="fas fa-trash"></i>', text: localize('common.delete') };
+    data.button = {
+      icon: '<i class="fas fa-trash"></i>',
+      text: localize('common.delete'),
+    };
     return data;
   }
 
@@ -2187,7 +2309,10 @@ class PresetFieldModify extends PresetFieldSelect {
   /** @override */
   async getData(options = {}) {
     const data = await super.getData(options);
-    data.button = { icon: '<i class="fas fa-check"></i>', text: localize('CONTROLS.CommonSelect', false) };
+    data.button = {
+      icon: '<i class="fas fa-check"></i>',
+      text: localize('CONTROLS.CommonSelect', false),
+    };
     for (const field of data.fields) {
       if (this.modifyOnSpawn.includes(field.name)) field.selected = true;
     }
@@ -2274,7 +2399,12 @@ class PresetFolderConfig extends FolderConfig {
       this.displayTypes = true;
       docs = [];
       UI_DOCS.forEach((type) => {
-        if (type != 'FAVORITES') docs.push({ name: type, icon: DOC_ICONS[type], active: folderDocs.includes(type) });
+        if (type != 'FAVORITES')
+          docs.push({
+            name: type,
+            icon: DOC_ICONS[type],
+            active: folderDocs.includes(type),
+          });
       });
     }
 
@@ -2401,7 +2531,11 @@ function getCompendiumDialog(resolve, { excludePack, exportTo = false, keepIdSel
         label: config.buttonLabel,
         callback: (html) => {
           const pack = $(html).find('select').val();
-          if (keepIdSelect) resolve({ pack, keepId: $(html).find('[name="keepId"]').is(':checked') });
+          if (keepIdSelect)
+            resolve({
+              pack,
+              keepId: $(html).find('[name="keepId"]').is(':checked'),
+            });
           else resolve(pack);
         },
       },
@@ -2472,9 +2606,10 @@ function hoverMassEditForm(mouseX, mouseY, documentName) {
     const position = app.position;
     const appX = position.left;
     const appY = position.top;
+    const height = Number.isNumeric(position.height) ? position.height : $(app.element).height();
+    const width = Number.isNumeric(position.width) ? position.width : $(app.element).width();
 
-    if (mouseX > appX && mouseX < appX + position.width && mouseY > appY && mouseY < appY + position.height)
-      return true;
+    if (mouseX > appX && mouseX < appX + width && mouseY > appY && mouseY < appY + height) return true;
     return false;
   };
 
