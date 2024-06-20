@@ -1,8 +1,15 @@
-2024/05/26-10:07:28.224530 7f655e7fc700 Recovering log #257
-2024/05/26-10:07:28.228055 7f655e7fc700 Delete type=0 #257
-2024/05/26-10:07:28.228095 7f655e7fc700 Delete type=3 #255
-2024/05/26-10:08:34.033814 7f62dca42700 Level-0 table #262: started
-2024/05/26-10:08:34.033852 7f62dca42700 Level-0 table #262: 0 bytes OK
-2024/05/26-10:08:34.035316 7f62dca42700 Delete type=0 #260
-2024/05/26-10:08:34.037575 7f62dca42700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
-2024/05/26-10:08:34.037739 7f62dca42700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2024/05/26-10:08:37.921803 7f655ffff700 Recovering log #261
+2024/05/26-10:08:37.925618 7f655ffff700 Delete type=0 #261
+2024/05/26-10:08:37.925648 7f655ffff700 Delete type=3 #259
+2024/06/19-22:49:24.653331 7f62dca42700 Level-0 table #266: started
+2024/06/19-22:49:24.654631 7f62dca42700 Level-0 table #266: 3215 bytes OK
+2024/06/19-22:49:24.656000 7f62dca42700 Delete type=0 #264
+2024/06/19-22:49:24.659427 7f62dca42700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2024/06/19-22:49:24.659539 7f62dca42700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at '!actors!GDYabkegy9DpJ7lz' @ 8050 : 1
+2024/06/19-22:49:24.659551 7f62dca42700 Compacting 1@1 + 1@2 files
+2024/06/19-22:49:24.696043 7f62dca42700 Generated table #267@1: 1807 keys, 1613446 bytes
+2024/06/19-22:49:24.696068 7f62dca42700 Compacted 1@1 + 1@2 files => 1613446 bytes
+2024/06/19-22:49:24.697044 7f62dca42700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/06/19-22:49:24.697148 7f62dca42700 Delete type=2 #234
+2024/06/19-22:49:24.698639 7f62dca42700 Delete type=2 #266
+2024/06/19-22:49:24.701899 7f62dca42700 Manual compaction at level-1 from '!actors!GDYabkegy9DpJ7lz' @ 8050 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
