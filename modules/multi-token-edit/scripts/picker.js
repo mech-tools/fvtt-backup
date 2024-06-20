@@ -10,6 +10,7 @@ export class Picker {
   static boundStart;
   static boundEnd;
   static callback;
+  static _transformAccumulator = { rotation: 0, scale: 1 };
 
   static isActive() {
     return Boolean(this.pickerOverlay);
@@ -18,11 +19,22 @@ export class Picker {
   static addRotation(rotation) {
     this._rotation += rotation;
     this.pickerOverlay?.setPositions?.(canvas.mousePosition);
+    this._transformAccumulator.rotation += rotation;
   }
 
   static addScaling(scale) {
     this._scale += scale;
+    this._transformAccumulator.scale *= this._scale;
     this.pickerOverlay?.setPositions?.(canvas.mousePosition);
+  }
+
+  static resetTransformAccumulator() {
+    this._transformAccumulator.rotation = 0;
+    this._transformAccumulator.scale = 1;
+  }
+
+  static getTransformAccumulator() {
+    return foundry.utils.deepClone(this._transformAccumulator);
   }
 
   /**
@@ -54,6 +66,8 @@ export class Picker {
       let { previews, layer, previewDocuments } = await this._genPreviews(preview);
       this._rotation = preview.rotation ?? 0;
       this._scale = preview.scale ?? 1;
+
+      const levelsActive = game.modules.get('levels')?.active;
 
       const centerOnCursor = () => {
         return preview.center && !(layer.name === 'TokenLayer' && preview.previewData.size === 1);
@@ -90,7 +104,8 @@ export class Picker {
 
         for (const preview of previews) {
           const doc = preview.document;
-          DataTransform.apply(doc.documentName, preview._pData ?? doc, pos, transform, preview);
+          const documentName = doc.documentName;
+          DataTransform.apply(documentName, preview._pData ?? doc, pos, transform, preview);
 
           // TODO: 3D Preview
           // if (preview._l3dPreview) {
@@ -123,53 +138,49 @@ export class Picker {
           // =====
           // Hacks
           // =====
-          preview.document.alpha = 0.4;
           preview.renderFlags.set({ refresh: true });
-          preview.visible = true;
 
-          // TODO improve
-          if (!preview._meVInsert && preview instanceof Region) {
-            Object.defineProperty(preview, 'visible', {
-              get: function () {
-                return true;
-              },
-              set: function () {},
-            });
-            preview._meVInsert = true;
-          } else if (preview instanceof Region) {
-            preview._onUpdate({ shapes: null });
-          }
-
-          // Tile z order, to make sure previews are rendered on-top
-          // v12
+          // TODO: improve _meSort, _meElevation
           if (foundry.utils.isNewerVersion(game.version, 12)) {
-            if (preview.document.sort != null) {
-              if (!preview.sort) preview.sort = preview.document.sort;
-              if (preview.sort) preview.document.sort = preview.sort + 9999999;
+            // Elevation, sort, and z order hacks to make sure previews are always rendered on-top
+            if (doc.sort != null) {
+              if (!preview._meSort) preview._meSort = doc.sort;
+              doc.sort = preview._meSort + 10000;
+            }
+
+            if (doc.elevation != null) {
+              if (!preview._meElevation) preview._meElevation = doc.elevation;
+              doc.elevation = preview._meElevation + 10000;
+            }
+
+            // Special position update conditions
+            // - Region: We need to simulate doc update via `_onUpdate` call
+            // - AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
+            if (documentName === 'Region') {
+              preview._onUpdate({ shapes: null });
+            } else if (documentName === 'AmbientLight') {
+              preview.initializeLightSource();
+            } else if (documentName === 'AmbientSound') {
+              preview.initializeSoundSource();
             }
           } else {
-            if (!preview.z) preview.z = preview.document.z;
-            if (preview.z) preview.document.z = preview.z + 9999999;
+            if (!preview.z) preview.z = doc.z;
+            if (preview.z) doc.z = preview.z + 10000;
+
+            if (documentName === 'Token') {
+              if (!preview._meElevation) preview._meElevation = doc.elevation;
+              doc.elevation = preview._meElevation + 10000;
+            } else if (levelsActive) {
+              if (!preview._meElevation)
+                preview._meElevation = foundry.utils.getProperty('flags.levels.rangeBottom') ?? 0;
+              foundry.utils.setProperty(doc, 'flags.levels.rangeBottom', preview._meElevation + 10000);
+              doc.overhead = true;
+            }
+
+            // AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
+            if (preview.source) preview.updateSource();
           }
 
-          // V12
-          if (preview.initializeLightSource) preview.initializeLightSource();
-          else if (preview.initializeSoundSource) preview.initializeSoundSource();
-          else if (preview.source) preview.updateSource();
-
-          if (preview.controlIcon && !preview.controlIcon._meVInsert) {
-            preview.controlIcon.alpha = 0.4;
-
-            // ControlIcon visibility is difficult to set and keep as true
-            // Lets hack it by defining a getter that always returns true
-            Object.defineProperty(preview.controlIcon, 'visible', {
-              get: function () {
-                return true;
-              },
-              set: function () {},
-            });
-            preview.controlIcon._meVInsert = true;
-          }
           // End of Hacks
         }
 
@@ -272,8 +283,20 @@ export class Picker {
     const document = new cls(createData, { parent: canvas.scene });
 
     const object = new CONFIG[documentName].objectClass(document);
+    document._object = object;
+    object.eventMode = 'none';
+    object.document.alpha = 0.4;
     this.preview.addChild(object);
     await object.draw();
+
+    // Since we do elevation manipulation to force previews to be rendered on top
+    // we don't want the user to see these temporary values
+    if (object.tooltip) object.tooltip.renderable = false;
+    if (object.controlIcon?.tooltip) object.controlIcon.tooltip.renderable = false;
+
+    // Foundry as well as various modules might have complex `isVisible` and 'visible' conditions
+    // lets simplify by overriding this function to make sure the preview is always visible
+    Picker._overridePlaceableVisibility(object);
 
     // TODO: 3D Preview
     // if (game.Levels3DPreview._active) {
@@ -285,6 +308,30 @@ export class Picker {
     // }
 
     return object;
+  }
+
+  static _overridePlaceableVisibility(placeable) {
+    Object.defineProperty(placeable, 'isVisible', {
+      get: function () {
+        return true;
+      },
+      set: function () {},
+    });
+    Object.defineProperty(placeable, 'visible', {
+      get: function () {
+        return true;
+      },
+      set: function () {},
+    });
+    if (placeable.controlIcon) {
+      placeable.controlIcon.alpha = 0.4;
+      Object.defineProperty(placeable.controlIcon, 'visible', {
+        get: function () {
+          return true;
+        },
+        set: function () {},
+      });
+    }
   }
 
   static async _genPreviews(preview) {

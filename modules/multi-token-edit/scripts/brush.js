@@ -451,9 +451,9 @@ export class BrushMenu extends FormApplication {
     this._instance.removePreset(id);
   }
 
-  static iterate(forward = true) {
+  static iterate(forward = true, force = false) {
     if (!this._instance) return;
-    this._instance.iterate(forward);
+    this._instance.iterate(forward, force);
   }
 
   static render(presets, settings = {}) {
@@ -939,8 +939,8 @@ export class BrushMenu extends FormApplication {
     else this.render(true);
   }
 
-  async iterate(forward = true) {
-    if (!this._settings.lock) {
+  async iterate(forward = true, force = false) {
+    if (force || !this._settings.lock) {
       if (this._settings.random) this._it = Math.floor(Math.random() * this._index.length);
       else {
         this._it += forward ? 1 : -1;
@@ -955,20 +955,35 @@ export class BrushMenu extends FormApplication {
     this.render(true);
   }
 
+  /**
+   * Get transform to be immediately applied to the preset preview
+   * @returns {Object} e.g. { rotation: 45, scale: 0.8 }
+   */
   _getTransform() {
     const settings = this._settings;
     const transform = {};
-    if (settings.scale[0] === settings.scale[1]) transform.scale = settings.scale[0];
-    else {
+
+    // Scale and Rotation transformation are accumulated on the picker
+    // We want to preserve these when rendering a new preview
+    const accumulatedTransform = Picker.getTransformAccumulator();
+
+    if (settings.scale[0] === settings.scale[1]) {
+      transform.scale = settings.scale[0];
+      transform.scale *= accumulatedTransform.scale;
+    } else {
       const stepsInRange = (settings.scale[1] - settings.scale[0]) / 0.01;
       transform.scale = Math.floor(Math.random() * stepsInRange) * 0.01 + settings.scale[0];
+      transform.scale *= accumulatedTransform.scale;
     }
 
-    if (settings.rotation[0] === settings.rotation[1]) transform.rotation = settings.rotation[0];
-    else {
+    if (settings.rotation[0] === settings.rotation[1]) {
+      transform.rotation = settings.rotation[0];
+      transform.rotation += accumulatedTransform.rotation;
+    } else {
       const stepsInRange = (settings.rotation[1] - settings.rotation[0] + 1) / 1;
       transform.rotation = Math.floor(Math.random() * stepsInRange) * 1 + settings.rotation[0];
     }
+
     return transform;
   }
 
@@ -1048,6 +1063,7 @@ export class BrushMenu extends FormApplication {
     Brush.deactivate();
     BrushMenu._instance = null;
     Picker.destroy();
+    Picker.resetTransformAccumulator();
     return super.close(options);
   }
 }
