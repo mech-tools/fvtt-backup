@@ -1,8 +1,8 @@
-2024/06/14-13:09:45.235882 7fb8e97fa700 Recovering log #2318
-2024/06/14-13:09:45.238364 7fb8e97fa700 Delete type=0 #2318
-2024/06/14-13:09:45.238389 7fb8e97fa700 Delete type=3 #2316
-2024/06/19-11:09:50.106012 7fb64bfe3700 Level-0 table #2323: started
-2024/06/19-11:09:50.106317 7fb64bfe3700 Level-0 table #2323: 0 bytes OK
-2024/06/19-11:09:50.107801 7fb64bfe3700 Delete type=0 #2321
-2024/06/19-11:09:50.108279 7fb64bfe3700 Manual compaction at level-0 from '!scenes!fT64AORvwMUdHzwr' @ 72057594037927935 : 1 .. '!scenes.walls!w5eztsez7EhiFrmE.zlashxFbpTyjyOHo' @ 0 : 0; will stop at (end)
-2024/06/19-11:09:50.108524 7fb64bfe3700 Manual compaction at level-1 from '!scenes!fT64AORvwMUdHzwr' @ 72057594037927935 : 1 .. '!scenes.walls!w5eztsez7EhiFrmE.zlashxFbpTyjyOHo' @ 0 : 0; will stop at (end)
+2024/06/19-11:13:11.199961 7fb8ea7fc700 Recovering log #2322
+2024/06/19-11:13:11.202293 7fb8ea7fc700 Delete type=3 #2320
+2024/06/19-11:13:11.202324 7fb8ea7fc700 Delete type=0 #2322
+2024/06/22-20:30:52.615914 7fb64bfe3700 Level-0 table #2327: started
+2024/06/22-20:30:52.616238 7fb64bfe3700 Level-0 table #2327: 0 bytes OK
+2024/06/22-20:30:52.617515 7fb64bfe3700 Delete type=0 #2325
+2024/06/22-20:30:52.625301 7fb64bfe3700 Manual compaction at level-0 from '!scenes!fT64AORvwMUdHzwr' @ 72057594037927935 : 1 .. '!scenes.walls!w5eztsez7EhiFrmE.zlashxFbpTyjyOHo' @ 0 : 0; will stop at (end)
+2024/06/22-20:30:52.625383 7fb64bfe3700 Manual compaction at level-1 from '!scenes!fT64AORvwMUdHzwr' @ 72057594037927935 : 1 .. '!scenes.walls!w5eztsez7EhiFrmE.zlashxFbpTyjyOHo' @ 0 : 0; will stop at (end)

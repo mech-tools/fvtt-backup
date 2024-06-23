@@ -1,4 +1,4 @@
-import { getPresetDataCenterOffset } from './presets/utils.js';
+import { getDataBounds, getPresetDataCenterOffset } from './presets/utils.js';
 import { SUPPORTED_PLACEABLES } from './utils.js';
 
 /**
@@ -89,10 +89,12 @@ export class Picker {
             pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
           }
         }
+
         // calculate transform
-        const fpX = previews[0].document.documentName === 'Wall' ? previews[0].document.c[0] : previews[0].document.x;
-        const fpY = previews[0].document.documentName === 'Wall' ? previews[0].document.c[1] : previews[0].document.y;
-        let transform = { x: pos.x - fpX - offset.x, y: pos.y - fpY - offset.y };
+        const pd = previews[0].document;
+        const b = getDataBounds(pd.documentName, pd);
+        let transform = { x: pos.x - b.x1 - offset.x, y: pos.y - b.y1 - offset.y };
+
         if (Picker._rotation != 0) {
           transform.rotation = Picker._rotation;
           Picker._rotation = 0;
@@ -198,11 +200,17 @@ export class Picker {
         }
       };
 
+      let lastX = Infinity;
+      let lastY = Infinity;
       pickerOverlay.on('pointermove', (event) => {
-        setPositions(event.data.getLocalPosition(pickerOverlay));
+        const client = event.data.client;
+        if (client.x !== lastX || client.y !== lastY) {
+          lastX = client.x;
+          lastY = client.y;
+          setPositions(event.data.getLocalPosition(pickerOverlay));
+        }
       });
-      setPositions(canvas.mousePosition);
-      setPositions(canvas.mousePosition);
+      //setTimeout(() => setPositions(canvas.mousePosition), 50);
       pickerOverlay.setPositions = setPositions;
     }
 
@@ -346,6 +354,10 @@ export class Picker {
           if (documentName === 'Wall') {
             transform.x = -data.c?.[0] ?? 0;
             transform.y = -data.c?.[1] ?? 0;
+          } else if (documentName === 'Region') {
+            const shape = data.shapes[0];
+            transform.x = -(shape?.x ?? shape.points?.[0] ?? 0);
+            transform.y = -(shape?.y ?? shape.points?.[1] ?? 0);
           } else {
             transform.x = -data.x ?? 0;
             transform.y = -data.y ?? 0;
@@ -564,7 +576,6 @@ export class DataTransform {
           [rectCenter.x, rectCenter.y] = this.rotatePoint(origin.x, origin.y, rectCenter.x, rectCenter.y, dr);
           shape.x = rectCenter.x - (shape.radiusX ?? shape.width) / 2;
           shape.y = rectCenter.y - (shape.radiusY ?? shape.height) / 2;
-          shape.rotation += Math.toDegrees(dr);
         }
       }
     }
@@ -784,6 +795,8 @@ export class DataTransform {
     if (transform.z != null) {
       data.elevation = (data.elevation ?? 0) + transform.z;
     }
+
+    // console.log(transform.rotation % 360);
 
     if (transform.rotation != null) {
       const dr = Math.toRadians(transform.rotation % 360);
