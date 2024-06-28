@@ -37,15 +37,15 @@ export class AnarchyBaseActor extends Actor {
     return undefined;
   }
 
-  getAllowedUsers(permission = CONST.DOCUMENT_PERMISSION_LEVELS.OWNER) {
+  getAllowedUsers(permission = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
     return game.users.filter(user => this.testUserPermission(user, permission));
   }
 
-  getAllowedUserIds(permission = CONST.DOCUMENT_PERMISSION_LEVELS.OWNER) {
+  getAllowedUserIds(permission = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
     return this.getAllowedUsers(permission).map(it => it.id);
   }
 
-  getRightToDefend() { return CONST.DOCUMENT_PERMISSION_LEVELS.OWNER }
+  getRightToDefend() { return CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER }
 
   hasOwnAnarchy() { return false; }
   hasGMAnarchy() { return !this.hasPlayerOwner; }
