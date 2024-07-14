@@ -8,10 +8,10 @@
             "flags": {}
         }
     ],
-    "version": "1.0.5",
+    "version": "1.0.6",
     "compatibility": {
         "minimum": "0.6.6",
-        "verified": "11"
+        "verified": "12"
     },
     "url": "https://github.com/lipefl/sync-token-name",
     "manifest": "https://raw.githubusercontent.com/lipefl/sync-token-name/main/module.json",
