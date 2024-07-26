@@ -2,7 +2,7 @@
 // window.Azzu.ExtendedSettingsConfig is guaranteed to be initialized after Hooks->ready
 
 const SETTINGS_EXTENDER_VERSION = {
-	version: `1.2.2`,
+	version: `1.2.3`,
 	get major() {
 		return this.version.split(`.`)[0];
 	},
@@ -83,6 +83,13 @@ class Compatibility {
 			// constructor function breaks this equality and reverts to the pre-0.8.5 behavior
 			extraType.prototype.constructor = (val) => val;
 		}
+	}
+
+	/**
+	 * Compatibility for v14, window.mergeObject is deprecated in favor of foundry.utils.mergeObject
+	 */
+	static mergeObject(obj1, obj2) {
+		return (foundry?.utils?.mergeObject || window.mergeObject)(obj1, obj2);
 	}
 }
 
@@ -388,7 +395,7 @@ class ExtendedSettingsConfig extends SettingsConfig {
 	}
 
 	static get defaultOptions() {
-		return mergeObject(super.defaultOptions, {
+		return Compatibility.mergeObject(super.defaultOptions, {
 			baseApplication: 'SettingsConfig'
 		});
 	}

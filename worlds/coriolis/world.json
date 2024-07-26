@@ -13,11 +13,11 @@
     "minimum": "11",
     "verified": "11.315"
   },
-  "systemVersion": "3.8.0",
+  "systemVersion": "3.9.1",
   "resetKeys": false,
   "background": "modules/coriolis-corerules/images/ch11/Kap4_coriolis_start.webp",
-  "lastPlayed": "Sat Jul 13 2024 18:10:42 GMT+0200 (Central European Summer Time)",
-  "playtime": 23053013,
+  "lastPlayed": "Thu Jul 25 2024 11:59:16 GMT+0200 (Central European Summer Time)",
+  "playtime": 23995571,
   "safeMode": false,
   "packs": [
     {
