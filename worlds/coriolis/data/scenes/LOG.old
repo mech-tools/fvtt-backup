@@ -1,8 +1,15 @@
-2024/07/13-18:10:42.333807 7fb8e9ffb700 Recovering log #289
-2024/07/13-18:10:42.336865 7fb8e9ffb700 Delete type=0 #289
-2024/07/13-18:10:42.336904 7fb8e9ffb700 Delete type=3 #287
-2024/07/25-11:50:44.196296 7fb64bfe3700 Level-0 table #295: started
-2024/07/25-11:50:44.196611 7fb64bfe3700 Level-0 table #295: 0 bytes OK
-2024/07/25-11:50:44.197862 7fb64bfe3700 Delete type=0 #293
-2024/07/25-11:50:44.198405 7fb64bfe3700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
-2024/07/25-11:50:44.202267 7fb64bfe3700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2024/07/25-11:59:16.034859 7fb8e9ffb700 Recovering log #294
+2024/07/25-11:59:16.037364 7fb8e9ffb700 Delete type=3 #292
+2024/07/25-11:59:16.037398 7fb8e9ffb700 Delete type=0 #294
+2024/08/27-20:52:20.803932 7fb64bfe3700 Level-0 table #299: started
+2024/08/27-20:52:20.812937 7fb64bfe3700 Level-0 table #299: 664058 bytes OK
+2024/08/27-20:52:20.814066 7fb64bfe3700 Delete type=0 #297
+2024/08/27-20:52:20.822197 7fb64bfe3700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2024/08/27-20:52:20.823525 7fb64bfe3700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.walls!hNPX2WwHQrJ4JkQP.zfZ5lB9WjOAxcBTM' @ 19477 : 1
+2024/08/27-20:52:20.823531 7fb64bfe3700 Compacting 1@1 + 1@2 files
+2024/08/27-20:52:20.841009 7fb64bfe3700 Generated table #300@1: 5986 keys, 786078 bytes
+2024/08/27-20:52:20.841042 7fb64bfe3700 Compacted 1@1 + 1@2 files => 786078 bytes
+2024/08/27-20:52:20.841789 7fb64bfe3700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/08/27-20:52:20.841875 7fb64bfe3700 Delete type=2 #291
+2024/08/27-20:52:20.842034 7fb64bfe3700 Delete type=2 #299
+2024/08/27-20:52:20.849058 7fb64bfe3700 Manual compaction at level-1 from '!scenes.walls!hNPX2WwHQrJ4JkQP.zfZ5lB9WjOAxcBTM' @ 19477 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)

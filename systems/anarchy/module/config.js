@@ -277,6 +277,7 @@ export const ANARCHY = {
         },
         weapon: {
             skill: 'ANARCHY.item.weapon.skill',
+            drain: 'ANARCHY.item.weapon.drain',
             damage: 'ANARCHY.item.weapon.damage',
             strength: 'ANARCHY.item.weapon.strength',
             defense: 'ANARCHY.item.weapon.defense',

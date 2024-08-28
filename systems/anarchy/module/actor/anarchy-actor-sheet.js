@@ -39,7 +39,7 @@ export class AnarchyActorSheet extends ActorSheet {
     hbsData.options.classes = Misc.distinct(hbsData.options.classes);
     hbsData.system = this.actor.system;
 
-    Misc.classifyInto(hbsData.items, this.actor.items);
+    Misc.classifyInto(hbsData.items, this.actor.items)
     return hbsData;
   }
 

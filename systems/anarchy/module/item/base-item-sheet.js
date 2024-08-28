@@ -44,7 +44,6 @@ export class BaseItemSheet extends ItemSheet {
         ANARCHY: ANARCHY
       });
     hbsData.system = this.item.system;
-
     return hbsData;
   }
 

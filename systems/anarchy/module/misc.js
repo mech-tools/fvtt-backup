@@ -88,13 +88,13 @@ export class Misc {
 
   static classifyInto(itemsBy, items, classifier = it => it.type) {
     for (const item of items) {
-      const classification = classifier(item);
-      let list = itemsBy[classification];
+      const classification = classifier(item)
+      let list = itemsBy[classification]
       if (!list) {
-        list = [];
-        itemsBy[classification] = list;
+        list = []
+        itemsBy[classification] = list
       }
-      list.push(item);
+      list.push(item)
     }
   }
 
