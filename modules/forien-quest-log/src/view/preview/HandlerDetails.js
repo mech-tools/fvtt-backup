@@ -1,17 +1,29 @@
-import Enrich        from '../../control/Enrich.js';
-import Socket        from '../../control/Socket.js';
-import Utils         from '../../control/Utils.js';
-import FQLDialog     from '../FQLDialog.js';
+import {
+   Socket,
+   Utils }           from '../../control/index.js';
 
-import { FVTTCompat } from '../../FVTTCompat.js';
+import { Quest }     from '../../model/index.js';
 
-import { constants, jquery, settings } from '../../model/constants.js';
+import { FQLDialog } from '../internal/index.js';
+
+import {
+   constants,
+   jquery,
+   settings }        from '../../model/constants.js';
 
 /**
  * Provides all {@link JQuery} callbacks for the `details` tab.
  */
-export default class HandlerDetails
+export class HandlerDetails
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * @param {JQuery.ClickEvent} event - JQuery.ClickEvent.
     *
@@ -51,8 +63,8 @@ export default class HandlerDetails
        * @returns {Promise<void>}
        * @package
        *
-       * @see {@link QuestPreview.close}
-       * @see {@link QuestPreview._activeFocusOutFunction}
+       * @see QuestPreview.close
+       * @see QuestPreview._activeFocusOutFunction
        */
       questPreview._activeFocusOutFunction = async (event, saveOptions = void 0) =>
       {
@@ -122,8 +134,8 @@ export default class HandlerDetails
        * @returns {Promise<void>}
        * @package
        *
-       * @see {@link QuestPreview.close}
-       * @see {@link QuestPreview._activeFocusOutFunction}
+       * @see QuestPreview.close
+       * @see QuestPreview._activeFocusOutFunction
        */
       questPreview._activeFocusOutFunction = async (event, saveOptions = void 0) =>
       {
@@ -171,7 +183,7 @@ export default class HandlerDetails
             quest.giver = 'abstract';
             quest.image = path;
             quest.giverName = game.i18n.localize('ForienQuestLog.QuestPreview.Labels.CustomSource');
-            quest.giverData = await Enrich.giverFromQuest(quest);
+            quest.giverData = await Quest.giverFromQuest(quest);
             delete quest.giverData.uuid;
 
             await questPreview.saveQuest();
@@ -220,7 +232,7 @@ export default class HandlerDetails
 
       if (typeof uuid === 'string')
       {
-         const giverData = await Enrich.giverFromUUID(uuid);
+         const giverData = await Quest.giverFromUUID(uuid);
          if (giverData)
          {
             quest.giver = uuid;
@@ -234,20 +246,11 @@ export default class HandlerDetails
       }
       else
       {
-         // Slightly awkward on v10 as we need to check if this is an actor owned item specifically.
-         if (FVTTCompat.isV10 && typeof data?.uuid === 'string' &&
+         // Slightly awkward as we need to check if this is an actor owned item specifically.
+         if (typeof data?.uuid === 'string' &&
           data.uuid.startsWith('Actor') && (data.uuid.match(/\./g) || []).length > 1)
          {
             ui.notifications.warn(game.i18n.localize('ForienQuestLog.QuestPreview.Notifications.WrongDocType'));
-         }
-         else
-         {
-            // Document has data, but lacks a UUID, so it is a data copy. Inform user that quest giver may only be
-            // from world and compendium sources with a UUID.
-            if (typeof data?.data === 'object')
-            {
-               ui.notifications.warn(game.i18n.localize('ForienQuestLog.QuestPreview.Notifications.WrongDocType'));
-            }
          }
       }
    }
@@ -283,7 +286,7 @@ export default class HandlerDetails
    {
       quest.toggleImage();
 
-      const giverData = await Enrich.giverFromQuest(quest);
+      const giverData = await Quest.giverFromQuest(quest);
       if (giverData)
       {
          quest.giverData = giverData;
@@ -345,8 +348,8 @@ export default class HandlerDetails
        * @returns {Promise<void>}
        * @package
        *
-       * @see {@link QuestPreview.close}
-       * @see {@link QuestPreview._activeFocusOutFunction}
+       * @see QuestPreview.close
+       * @see QuestPreview._activeFocusOutFunction
        */
       questPreview._activeFocusOutFunction = async (event, saveOptions = void 0) =>
       {
@@ -487,13 +490,7 @@ export default class HandlerDetails
             id: document.id
          };
 
-         // Pass on document data on v9; v10 systems should work solely w/ UUID.
-         if (!FVTTCompat.isV10)
-         {
-            dataTransfer.data = document.data;
-         }
-
-         // Add compendium pack info if applicable
+         // Add compendium pack info if applicable.
          if (uuidData && uuidData.pack) { dataTransfer.pack = uuidData.pack; }
 
          event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify(dataTransfer));
@@ -551,13 +548,33 @@ export default class HandlerDetails
          Socket.refreshQuestPreview({ questId: quest.id });
       }
 
-      if (data?.type === 'Item' && data?._fqlData === void 0)
+      if (data?._fqlData !== void 0) { return; }
+
+      if (data?.type === 'Actor')
       {
          const uuid = Utils.getUUID(data);
 
          if (typeof uuid === 'string')
          {
-            const item = await Enrich.giverFromUUID(uuid);
+            const actor = await Quest.giverFromUUID(uuid);
+            if (actor)
+            {
+               quest.addReward({ type: 'Actor', data: actor, hidden: true });
+               await questPreview.saveQuest();
+            }
+            else
+            {
+               ui.notifications.warn(game.i18n.format('ForienQuestLog.QuestPreview.Notifications.BadUUID', { uuid }));
+            }
+         }
+      }
+      else if (data?.type === 'Item')
+      {
+         const uuid = Utils.getUUID(data);
+
+         if (typeof uuid === 'string')
+         {
+            const item = await Quest.giverFromUUID(uuid);
             if (item)
             {
                quest.addReward({ type: 'Item', data: item, hidden: true });
@@ -570,20 +587,11 @@ export default class HandlerDetails
          }
          else
          {
-            // Slightly awkward on v10 as we need to check if this is an actor owned item specifically.
-            if (FVTTCompat.isV10 && typeof data?.uuid === 'string' &&
+            // Slightly awkward as we need to check if this is an actor owned item specifically.
+            if (typeof data?.uuid === 'string' &&
              data.uuid.startsWith('Actor') && (data.uuid.match(/\./g) || []).length > 1)
             {
                ui.notifications.warn(game.i18n.localize('ForienQuestLog.QuestPreview.Notifications.WrongItemType'));
-            }
-            else
-            {
-               // Document has data, but lacks a UUID, so it is a data copy. Inform user that rewards may only be
-               // items that are backed by a document with a UUID.
-               if (typeof data.data === 'object')
-               {
-                  ui.notifications.warn(game.i18n.localize('ForienQuestLog.QuestPreview.Notifications.WrongItemType'));
-               }
             }
          }
       }
@@ -624,7 +632,7 @@ export default class HandlerDetails
     *
     * @returns {Promise<void>}
     */
-   static async rewardSelectAbstractImage(event, quest, questPreview)
+   static async rewardSelectImage(event, quest, questPreview)
    {
       const uuidv4 = $(event.target).data('uuidv4');
 
@@ -713,7 +721,7 @@ export default class HandlerDetails
     *
     * @returns {Promise<void>}
     */
-   static async rewardShowItemSheet(event, quest, questPreview)
+   static async rewardShowSheet(event, quest, questPreview)
    {
       event.stopPropagation();
       const data = $(event.currentTarget).data('transfer');
@@ -962,8 +970,8 @@ export default class HandlerDetails
        *
        * @returns {Promise<void>}
        * @protected
-       * @see {@link QuestPreview.close}
-       * @see {@link QuestPreview._activeFocusOutFunction}
+       * @see QuestPreview.close
+       * @see QuestPreview._activeFocusOutFunction
        */
       questPreview._activeFocusOutFunction = async (event, saveOptions = void 0) =>
       {
@@ -1053,7 +1061,7 @@ export default class HandlerDetails
  *
  * @property {string} itemName - The reward item name.
  *
- * @property {string} userName - The user name who is dropping the item.
+ * @property {string} userName - The username who is dropping the item.
  */
 
 /**
@@ -1068,4 +1076,6 @@ export default class HandlerDetails
  * @property {string}      uuid - The UUID of the document.
  *
  * @property {id}          id - The ID of the document.
+ *
+ * @property {string}      [pack] - Any associated compendium pack.
  */

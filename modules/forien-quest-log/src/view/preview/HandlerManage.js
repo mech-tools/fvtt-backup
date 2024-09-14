@@ -1,12 +1,22 @@
-import QuestDB                      from '../../control/QuestDB.js';
-import ViewManager                  from '../../control/ViewManager.js';
-import FQLDocumentOwnershipConfig   from '../FQLDocumentOwnershipConfig.js';
+import {
+   QuestDB,
+   ViewManager }                       from '../../control/index.js';
+
+import { FQLDocumentOwnershipConfig }  from '../internal/index.js';
 
 /**
  * Provides all {@link JQuery} callbacks for the `management` tab.
  */
-export default class HandlerManage
+export class HandlerManage
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * @param {Quest}          quest - The current quest being manipulated.
     *

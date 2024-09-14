@@ -1,16 +1,19 @@
-import FQLDialog              from '../FQLDialog.js';
-import QuestDB                from '../../control/QuestDB.js';
-import Socket                 from '../../control/Socket.js';
-import TinyMCE                from '../../control/TinyMCE.js';
-import Utils                  from '../../control/Utils.js';
+import {
+   FVTTCompat,
+   QuestDB,
+   Socket,
+   Utils }                    from '../../control/index.js';
 
-import HandlerAny             from './HandlerAny.js';
-import HandlerDetails         from './HandlerDetails.js';
-import HandlerManage          from './HandlerManage.js';
+import { FQLDialog }          from '../internal/index.js';
 
-import { FVTTCompat }          from '../../FVTTCompat.js';
+import { HandlerAny }         from './HandlerAny.js';
+import { HandlerDetails }     from './HandlerDetails.js';
+import { HandlerManage }      from './HandlerManage.js';
 
-import { constants, jquery, settings }  from '../../model/constants.js';
+import {
+   constants,
+   jquery,
+   settings }                 from '../../model/constants.js';
 
 /**
  * QuestPreview is the main app / window of FQL for modifying individual Quest data. It appears reactive, but every
@@ -49,7 +52,7 @@ import { constants, jquery, settings }  from '../../model/constants.js';
  * to the user. The GM and trusted players with edit capabilities have full access to editing all parameters of a quest
  * except no players have access to the GM notes tab which is for private notes for the GM only.
  *
- * The general control of Foundry when {@link https://foundryvtt.com/api/Application.html#render} is invoked goes as
+ * The general control of Foundry when {@link https://foundryvtt.com/api/classes/client.Application.html#render} is invoked goes as
  * follows:
  * - {@link QuestPreview.getData} prepares all data for the Handlebars template and sets the local user tracking
  * variables.
@@ -64,12 +67,19 @@ import { constants, jquery, settings }  from '../../model/constants.js';
  * {@link ViewManager} responds to `closeQuestPreview` and `renderQuestPreview` tracking the opened QuestPreview
  * instances.
  *
- * @see {@link HandlerAny}
- * @see {@link HandlerDetails}
- * @see {@link HandlerManage}
+ * @see HandlerAny
+ * @see HandlerDetails
+ * @see HandlerManage
  */
-export default class QuestPreview extends FormApplication
+export class QuestPreview extends FormApplication
 {
+   /**
+    * Stores the quest being displayed / edited.
+    *
+    * @type {Quest}
+    */
+   #quest;
+
    /**
     * Constructs a QuestPreview instance with a Quest and passes on options to FormApplication.
     *
@@ -77,22 +87,16 @@ export default class QuestPreview extends FormApplication
     *
     * @param {object}   options - The FormApplication options.
     *
-    * @see https://foundryvtt.com/api/FormApplication.html#options
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#options
     */
    constructor(quest, options = {})
    {
       super(void 0, options);
 
-      /**
-       * Stores the quest being displayed / edited.
-       *
-       * @type {Quest}
-       * @private
-       */
-      this._quest = quest;
+      this.#quest = quest;
 
       // Set the title of the FormApplication with the quest name.
-      this.options.title = game.i18n.format('ForienQuestLog.QuestPreview.Title', this._quest);
+      this.options.title = game.i18n.format('ForienQuestLog.QuestPreview.Title', this.#quest);
 
       /**
        * Set in `getData`. Determines if the player can accept quests which for non-GM / trusted players w/ edit allows
@@ -101,7 +105,7 @@ export default class QuestPreview extends FormApplication
        * @type {boolean}
        * @package
        *
-       * @see {@link QuestPreview.getData}
+       * @see QuestPreview.getData
        */
       this.canAccept = false;
 
@@ -111,7 +115,7 @@ export default class QuestPreview extends FormApplication
        * @type {boolean}
        * @package
        *
-       * @see {@link QuestPreview.getData}
+       * @see QuestPreview.getData
        */
       this.canEdit = false;
 
@@ -121,7 +125,7 @@ export default class QuestPreview extends FormApplication
        * @type {boolean}
        * @package
        *
-       * @see {@link QuestPreview.getData}
+       * @see QuestPreview.getData
        */
       this.playerEdit = false;
 
@@ -140,10 +144,10 @@ export default class QuestPreview extends FormApplication
        * @type {Function}
        * @package
        *
-       * @see {@link HandlerDetails.questEditName}
-       * @see {@link HandlerDetails.questGiverCustomEditName}
-       * @see {@link HandlerDetails.rewardAbstractEditName}
-       * @see {@link HandlerDetails.taskEditName}
+       * @see HandlerDetails.questEditName
+       * @see HandlerDetails.questGiverCustomEditName
+       * @see HandlerDetails.rewardAbstractEditName
+       * @see HandlerDetails.taskEditName
        */
       this._activeFocusOutFunction = void 0;
 
@@ -163,8 +167,8 @@ export default class QuestPreview extends FormApplication
        * @type {FQLDocumentOwnershipConfig}
        * @package
        *
-       * @see {@link HandlerManage.configurePermissions}
-       * @see {@link QuestPreview.close}
+       * @see HandlerManage.configurePermissions
+       * @see QuestPreview.close
        */
       this._ownershipControl = void 0;
 
@@ -177,7 +181,7 @@ export default class QuestPreview extends FormApplication
        * @type {ImagePopout}
        * @package
        *
-       * @see {@link https://foundryvtt.com/api/ImagePopout.html}
+       * @see https://foundryvtt.com/api/classes/client.ImagePopout.html
        */
       this._rewardImagePopup = void 0;
 
@@ -190,7 +194,7 @@ export default class QuestPreview extends FormApplication
        * @type {ImagePopout}
        * @package
        *
-       * @see {@link https://foundryvtt.com/api/ImagePopout.html}
+       * @see https://foundryvtt.com/api/classes/client.ImagePopout.html
        */
       this._splashImagePopup = void 0;
    }
@@ -199,17 +203,13 @@ export default class QuestPreview extends FormApplication
     * Default Application options
     *
     * @returns {object} options - FormApplication options.
-    * @see https://foundryvtt.com/api/FormApplication.html#options
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#options
     */
    static get defaultOptions()
    {
-      // TinyMCE editor Handlebars helper has changed. Load different templates for v10 or v9
-      const template = FVTTCompat.isV10 ? 'modules/forien-quest-log/templates/quest-preview-v10.html' :
-       'modules/forien-quest-log/templates/quest-preview-v9.html';
-
       return foundry.utils.mergeObject(super.defaultOptions, {
          classes: ['forien-quest-preview'],
-         template,
+         template: 'modules/forien-quest-log/templates/quest-preview.html',
          width: 1000,
          height: 640,
          minimizable: true,
@@ -229,7 +229,7 @@ export default class QuestPreview extends FormApplication
     */
    get id()
    {
-      return `quest-${this._quest.id}`;
+      return `quest-${this.#quest.id}`;
    }
 
    /**
@@ -240,7 +240,7 @@ export default class QuestPreview extends FormApplication
     */
    get object()
    {
-      return this._quest;
+      return this.#quest;
    }
 
    /**
@@ -274,12 +274,12 @@ export default class QuestPreview extends FormApplication
             label: game.i18n.localize('ForienQuestLog.Labels.AppHeader.ShowPlayers'),
             class: 'share-quest',
             icon: 'fas fa-eye',
-            onclick: () => Socket.showQuestPreview(this._quest.id)
+            onclick: () => Socket.showQuestPreview(this.#quest.id)
          });
       }
 
       // Show splash image popup if splash image is defined.
-      if (this._quest.splash.length)
+      if (this.#quest.splash.length)
       {
          buttons.unshift({
             label: '',
@@ -288,9 +288,9 @@ export default class QuestPreview extends FormApplication
             onclick: async () =>
             {
                // Only show popup if a splash image is defined.
-               if (this._quest.splash.length)
+               if (this.#quest.splash.length)
                {
-                  await HandlerDetails.splashImagePopupShow(this._quest, this);
+                  await HandlerDetails.splashImagePopupShow(this.#quest, this);
                }
             }
          });
@@ -303,7 +303,7 @@ export default class QuestPreview extends FormApplication
          icon: 'fas fa-link',
          onclick: async () =>
          {
-            if (await Utils.copyTextToClipboard(`@JournalEntry[${this._quest.id}]{${this._quest.name}}`))
+            if (await Utils.copyTextToClipboard(`@JournalEntry[${this.#quest.id}]{${this.#quest.name}}`))
             {
                ui.notifications.info(game.i18n.format('ForienQuestLog.Notifications.LinkCopied'));
             }
@@ -316,7 +316,7 @@ export default class QuestPreview extends FormApplication
    /**
     * Close any tracked permission control app / dialog when tabs change.
     *
-    * @private
+    * @protected
     * @inheritDoc
     */
    _onChangeTab(event, tabs, active)
@@ -333,9 +333,9 @@ export default class QuestPreview extends FormApplication
    /**
     * This might be a FormApplication, but we don't want the submit event to fire.
     *
-    * @private
+    * @protected
     * @inheritDoc
-    * @see https://foundryvtt.com/api/FormApplication.html#_onSubmit
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#_onSubmit
     */
    async _onSubmit(event, options) // eslint-disable-line
    {
@@ -348,9 +348,9 @@ export default class QuestPreview extends FormApplication
     * is prevented.
     *
     * @override
-    * @private
+    * @protected
     * @inheritDoc
-    * @see https://foundryvtt.com/api/FormApplication.html#_updateObject
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#_updateObject
     */
    async _updateObject(event, formData) // eslint-disable-line no-unused-vars
    {
@@ -362,31 +362,7 @@ export default class QuestPreview extends FormApplication
     *
     * @returns {Quest} Associated Quest.
     */
-   get quest() { return this._quest; }
-
-   /**
-    * Provide TinyMCE overrides when an editor is activated. The overrides are important to provide custom options to
-    * configure TinyMCE. There are various other content plugins enabled in the custom options and the ability to
-    * respond to the `esc` key to quit editing.
-    *
-    * @override
-    * @see {@link Utils.tinyMCEOptions}
-    * @see https://foundryvtt.com/api/FormApplication.html#activateEditor
-    */
-   activateEditor(name, options = {}, initialContent = '')
-   {
-      const tinyMCEOptions = TinyMCE.options({
-         editorName: name,
-         initialContent,
-         questId: this._quest.id
-      });
-
-      super.activateEditor(name, Object.assign({}, options, tinyMCEOptions), initialContent);
-
-      // Remove the activate editor button as FQL has a transparent toolbar background. If pressed twice it will create
-      // an error.
-      if (this.editors[name].button) { this.editors[name].button.remove(); }
-   }
+   get quest() { return this.#quest; }
 
    /**
     * Defines all jQuery control callbacks with event listeners for click, drag, drop via various CSS selectors.
@@ -394,13 +370,13 @@ export default class QuestPreview extends FormApplication
     *
     * @param {JQuery}  html - The jQuery instance for the window content of this Application.
     *
-    * @see {@link HandlerAny}
-    * @see {@link HandlerDetails}
-    * @see {@link HandlerManage}
-    * @see {@link QuestPreview.canAccept}
-    * @see {@link QuestPreview.canEdit}
-    * @see {@link QuestPreview.playerEdit}
-    * @see https://foundryvtt.com/api/FormApplication.html#activateListeners
+    * @see HandlerAny
+    * @see HandlerDetails
+    * @see HandlerManage
+    * @see QuestPreview.canAccept
+    * @see QuestPreview.canEdit
+    * @see QuestPreview.playerEdit
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#activateListeners
     */
    activateListeners(html)
    {
@@ -418,17 +394,20 @@ export default class QuestPreview extends FormApplication
       html.on(jquery.dragenter, (event) => event.preventDefault());
 
       html.on(jquery.dragstart, '.item-reward .editable-container', async (event) =>
-       await HandlerDetails.rewardDragStartItem(event, this._quest));
+       await HandlerDetails.rewardDragStartItem(event, this.#quest));
 
       html.on(jquery.dragstart, '.quest-rewards .fa-sort', (event) => HandlerDetails.rewardDragStartSort(event));
 
       html.on(jquery.click, '.abstract-reward .editable-container', async (event) =>
-       await HandlerDetails.rewardShowImagePopout(event, this._quest, this));
+       await HandlerDetails.rewardShowImagePopout(event, this.#quest, this));
+
+      html.on(jquery.click, '.actor-reward .editable-container', async (event) =>
+       await HandlerDetails.rewardShowSheet(event, this.#quest, this));
 
       html.on(jquery.click, '.item-reward .editable-container', async (event) =>
-       await HandlerDetails.rewardShowItemSheet(event, this._quest, this));
+       await HandlerDetails.rewardShowSheet(event, this.#quest, this));
 
-      html.on(jquery.click, '.splash-image-link', () => HandlerDetails.splashImagePopupShow(this._quest, this));
+      html.on(jquery.click, '.splash-image-link', () => HandlerDetails.splashImagePopupShow(this.#quest, this));
 
       html.on(jquery.dragstart, '.quest-tasks .fa-sort', (event) => HandlerDetails.taskDragStartSort(event));
 
@@ -436,37 +415,37 @@ export default class QuestPreview extends FormApplication
       if (this.canEdit || this.playerEdit)
       {
          html.on(jquery.click, '.actions-single.quest-name .editable', (event) =>
-          HandlerDetails.questEditName(event, this._quest, this));
+          HandlerDetails.questEditName(event, this.#quest, this));
 
          html.on(jquery.drop, '.quest-giver-gc', async (event) =>
-          await HandlerDetails.questGiverDropDocument(event, this._quest, this));
+          await HandlerDetails.questGiverDropDocument(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-giver-gc .toggleImage', async () =>
-          await HandlerDetails.questGiverToggleImage(this._quest, this));
+          await HandlerDetails.questGiverToggleImage(this.#quest, this));
 
          html.on(jquery.click, '.quest-giver-gc .deleteQuestGiver', async () =>
-          await HandlerDetails.questGiverDelete(this._quest, this));
+          await HandlerDetails.questGiverDelete(this.#quest, this));
 
          html.on(jquery.click, '.quest-tasks .add-new-task',
-          (event) => HandlerDetails.taskAdd(event, this._quest, this));
+          (event) => HandlerDetails.taskAdd(event, this.#quest, this));
 
          html.on(jquery.click, '.actions.tasks .delete', async (event) =>
-          await HandlerDetails.taskDelete(event, this._quest, this));
+          await HandlerDetails.taskDelete(event, this.#quest, this));
 
-         html.on(jquery.drop, '.tasks-box', async (event) => await HandlerDetails.taskDropItem(event, this._quest));
+         html.on(jquery.drop, '.tasks-box', async (event) => await HandlerDetails.taskDropItem(event, this.#quest));
 
          html.on(jquery.click, '.actions.tasks .editable',
-          (event) => HandlerDetails.taskEditName(event, this._quest, this));
+          (event) => HandlerDetails.taskEditName(event, this.#quest, this));
 
          html.on(jquery.click, 'li.task .toggleState', async (event) =>
-          await HandlerDetails.taskToggleState(event, this._quest, this));
+          await HandlerDetails.taskToggleState(event, this.#quest, this));
       }
 
       // Callbacks for GM, trusted player edit, or players who can accept quests.
       if (this.canEdit || this.canAccept)
       {
          html.on(jquery.click, '.actions.quest-status i.delete', async (event) =>
-          await HandlerAny.questDelete(event, this._quest));
+          await HandlerAny.questDelete(event, this.#quest));
 
          html.on(jquery.click, '.actions.quest-status i.move', async (event) =>
          {
@@ -479,64 +458,64 @@ export default class QuestPreview extends FormApplication
       if (this.canEdit)
       {
          html.on(jquery.click, '.quest-giver-name .actions-single .editable', (event) =>
-          HandlerDetails.questGiverCustomEditName(event, this._quest, this));
+          HandlerDetails.questGiverCustomEditName(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-giver-gc .drop-info', () =>
-          HandlerDetails.questGiverCustomSelectImage(this._quest, this));
+          HandlerDetails.questGiverCustomSelectImage(this.#quest, this));
 
-         html.on(jquery.click, '.quest-tabs .is-primary', () => Socket.setQuestPrimary({ quest: this._quest }));
+         html.on(jquery.click, '.quest-tabs .is-primary', () => Socket.setQuestPrimary({ quest: this.#quest }));
 
          html.on(jquery.click, '.quest-rewards .add-abstract', (event) =>
-          HandlerDetails.rewardAddAbstract(event, this._quest, this));
+          HandlerDetails.rewardAddAbstract(event, this.#quest, this));
 
          html.on(jquery.click, '.actions.rewards .editable', (event) =>
-          HandlerDetails.rewardAbstractEditName(event, this._quest, this));
+          HandlerDetails.rewardAbstractEditName(event, this.#quest, this));
 
          html.on(jquery.click, '.actions.rewards .delete', async (event) =>
-          await HandlerDetails.rewardDelete(event, this._quest, this));
+          await HandlerDetails.rewardDelete(event, this.#quest, this));
 
          html.on(jquery.drop, '.rewards-box',
-          async (event) => await HandlerDetails.rewardDropItem(event, this._quest, this));
+          async (event) => await HandlerDetails.rewardDropItem(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-rewards .hide-all-rewards', async () =>
-          await HandlerDetails.rewardsHideAll(this._quest, this));
+          await HandlerDetails.rewardsHideAll(this.#quest, this));
 
          html.on(jquery.click, '.quest-rewards .lock-all-rewards', async () =>
-          await HandlerDetails.rewardsLockAll(this._quest, this));
+          await HandlerDetails.rewardsLockAll(this.#quest, this));
 
-         html.on(jquery.click, '.abstract-reward .reward-image', async (event) =>
-          await HandlerDetails.rewardSelectAbstractImage(event, this._quest, this));
+         html.on(jquery.click, '.reward-image', async (event) =>
+          await HandlerDetails.rewardSelectImage(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-rewards .show-all-rewards', async () =>
-          await HandlerDetails.rewardsShowAll(this._quest, this));
+          await HandlerDetails.rewardsShowAll(this.#quest, this));
 
          html.on(jquery.click, '.actions.rewards .toggleHidden', async (event) =>
-          await HandlerDetails.rewardToggleHidden(event, this._quest, this));
+          await HandlerDetails.rewardToggleHidden(event, this.#quest, this));
 
          html.on(jquery.click, '.actions.rewards .toggleLocked', async (event) =>
-          await HandlerDetails.rewardToggleLocked(event, this._quest, this));
+          await HandlerDetails.rewardToggleLocked(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-rewards .unlock-all-rewards', async () =>
-          await HandlerDetails.rewardsUnlockAll(this._quest, this));
+          await HandlerDetails.rewardsUnlockAll(this.#quest, this));
 
          html.on(jquery.click, '.actions.tasks .toggleHidden', async (event) =>
-          await HandlerDetails.taskToggleHidden(event, this._quest, this));
+          await HandlerDetails.taskToggleHidden(event, this.#quest, this));
 
          // Management view callbacks -------------------------------------------------------------------------------
 
-         html.on(jquery.click, '.add-subquest-btn', async () => await HandlerManage.addSubquest(this._quest, this));
+         html.on(jquery.click, '.add-subquest-btn', async () => await HandlerManage.addSubquest(this.#quest, this));
 
-         html.on(jquery.click, '.configure-perm-btn', () => HandlerManage.configurePermissions(this._quest, this));
+         html.on(jquery.click, '.configure-perm-btn', () => HandlerManage.configurePermissions(this.#quest, this));
 
-         html.on(jquery.click, '.delete-splash', async () => await HandlerManage.deleteSplashImage(this._quest, this));
+         html.on(jquery.click, '.delete-splash', async () => await HandlerManage.deleteSplashImage(this.#quest, this));
 
-         html.on(jquery.click, `.quest-splash #splash-as-icon-${this._quest.id}`, async (event) =>
-          await HandlerManage.setSplashAsIcon(event, this._quest, this));
+         html.on(jquery.click, `.quest-splash #splash-as-icon-${this.#quest.id}`, async (event) =>
+          await HandlerManage.setSplashAsIcon(event, this.#quest, this));
 
          html.on(jquery.click, '.quest-splash .drop-info',
-          async () => await HandlerManage.setSplashImage(this._quest, this));
+          async () => await HandlerManage.setSplashImage(this.#quest, this));
 
-         html.on(jquery.click, '.change-splash-pos', async () => await HandlerManage.setSplashPos(this._quest, this));
+         html.on(jquery.click, '.change-splash-pos', async () => await HandlerManage.setSplashPos(this.#quest, this));
       }
    }
 
@@ -559,12 +538,12 @@ export default class QuestPreview extends FormApplication
     *
     * @returns {Promise<void>}
     * @inheritDoc
-    * @see {@link FormApplication.close}
-    * @see https://foundryvtt.com/api/FormApplication.html#close
+    * @see FormApplication.close
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#close
     */
    async close({ noSave = false, ...options } = {})
    {
-      FQLDialog.closeDialogs({ questId: this._quest.id });
+      FQLDialog.closeDialogs({ questId: this.#quest.id });
 
       // If a permission control app / dialog is open close it.
       if (this._ownershipControl)
@@ -595,7 +574,7 @@ export default class QuestPreview extends FormApplication
       }
 
       // Only potentially save the quest if the user is the owner and noSave is false.
-      if (!noSave && this._quest.isOwner)
+      if (!noSave && this.#quest.isOwner)
       {
          // If there is an active input focus function set then invoke it so that the input field is saved.
          if (typeof this._activeFocusOutFunction === 'function')
@@ -605,8 +584,8 @@ export default class QuestPreview extends FormApplication
             // Send a socket refresh event to all clients. This will also render all local apps as applicable.
             // Must update parent and any subquests / children.
             Socket.refreshQuestPreview({
-               questId: this._quest.parent ? [this._quest.parent, this._quest.id, ...this._quest.subquests] :
-                [this._quest.id, ...this._quest.subquests],
+               questId: this.#quest.parent ? [this.#quest.parent, this.#quest.id, ...this.#quest.subquests] :
+                [this.#quest.id, ...this.#quest.subquests],
                focus: false,
             });
          }
@@ -627,24 +606,29 @@ export default class QuestPreview extends FormApplication
     *
     * @override
     * @inheritDoc
-    * @see {@link QuestPreview.canAccept}
-    * @see {@link QuestPreview.canEdit}
-    * @see {@link QuestPreview.playerEdit}
-    * @see https://foundryvtt.com/api/FormApplication.html#getData
+    * @see QuestPreview.canAccept
+    * @see QuestPreview.canEdit
+    * @see QuestPreview.playerEdit
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#getData
     */
    async getData(options = {}) // eslint-disable-line no-unused-vars
    {
-      const content = QuestDB.getQuestEntry(this._quest.id).enrich;
+      const content = QuestDB.getQuestEntry(this.#quest.id).enrich;
 
       this.canAccept = game.settings.get(constants.moduleName, settings.allowPlayersAccept);
-      this.canEdit = game.user.isGM || (this._quest.isOwner && Utils.isTrustedPlayerEdit());
-      this.playerEdit = this._quest.isOwner;
+      this.canEdit = game.user.isGM || (this.#quest.isOwner && Utils.isTrustedPlayerEdit());
+      this.playerEdit = this.#quest.isOwner;
 
-      // By default all normal players and trusted players without ownership of a quest are always on the the default
-      // tab 'details'. In the case of a trusted player who has permissions revoked to access the quest and is on the
-      // 'management' the details tab needs to be activated. This is possible in 'getData' as it is fairly early in the
-      // render process. At this time the internal state of the application is '1' for 'RENDERING'.
-      if (!this.canEdit && this._tabs[0] && this._tabs[0].active !== 'details')
+      // Player notes can be edited if current user is the owner of the journal document or there is an active GM
+      // online.
+      const canEditPlayerNotes = this.#quest.canUserUpdate || game.users.activeGM !== null;
+
+      // By default, all normal players and trusted players without ownership of a quest are always on the default
+      // tab 'details' or 'playernotes'. In the case of a trusted player who has permissions revoked to access the
+      // quest and is on the 'management' the details tab needs to be activated. This is possible in 'getData' as it
+      // is fairly early in the render process. At this time the internal state of the application is '1' for
+      // 'RENDERING'.
+      if (!this.canEdit && this._tabs[0] && this._tabs[0].active !== 'details' && this._tabs[0].active !== 'playernotes')
       {
          this._tabs[0].activate('details');
       }
@@ -652,8 +636,10 @@ export default class QuestPreview extends FormApplication
       const data = {
          isGM: game.user.isGM,
          isPlayer: !game.user.isGM,
+
          canAccept: this.canAccept,
          canEdit: this.canEdit,
+         canEditPlayerNotes,
          playerEdit: this.playerEdit
       };
 
@@ -669,8 +655,8 @@ export default class QuestPreview extends FormApplication
    async refresh()
    {
       Socket.refreshQuestPreview({
-         questId: this._quest.parent ? [this._quest.parent, this._quest.id, ...this._quest.subquests] :
-          [this._quest.id, ...this._quest.subquests],
+         questId: this.#quest.parent ? [this.#quest.parent, this.#quest.id, ...this.#quest.subquests] :
+          [this.#quest.id, ...this.#quest.subquests],
          focus: false,
       });
 
@@ -683,10 +669,24 @@ export default class QuestPreview extends FormApplication
     *
     * @override
     * @inheritDoc
-    * @see https://foundryvtt.com/api/FormApplication.html#saveEditor
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#saveEditor
     */
-   async saveEditor()
+   async saveEditor(name)
    {
+      // Any user regardless of ownership may edit player notes. If the user can't update the backing journal document
+      // Then send a socket request to a GM user who can perform the update.
+      if (name === 'playernotes' && !this.#quest.canUserUpdate && game.users.activeGM)
+      {
+         const playernotes = FVTTCompat.getEditorContent(this.editors?.playernotes);
+
+         if (typeof playernotes === 'string')
+         {
+            Socket.savePlayerNotes({ quest: this.#quest, playernotes });
+         }
+
+         return super.saveEditor(name);
+      }
+
       return this.saveQuest();
    }
 
@@ -698,23 +698,25 @@ export default class QuestPreview extends FormApplication
     * @param {boolean} options.refresh - Execute `QuestPreview.refresh`
     *
     * @returns {Promise<void>}
-    * @see {@link QuestPreview.refresh}
+    * @see QuestPreview.refresh
     */
    async saveQuest({ refresh = true } = {})
    {
-      // Save any altered content from the TinyMCE editors.
+      // Save any altered content from the editors.
       for (const key of Object.keys(this.editors))
       {
          const editor = this.editors[key];
 
-         if (editor.mce)
+         const content = FVTTCompat.getEditorContent(editor);
+
+         if (content)
          {
-            this._quest[key] = editor.mce.getContent();
+            this.#quest[key] = content;
             await super.saveEditor(key);
          }
       }
 
-      await this._quest.save();
+      await this.#quest.save();
 
       return refresh ? this.refresh() : void 0;
    }

@@ -1,15 +1,28 @@
-import FoundryUIManager from '../../control/FoundryUIManager.js';
-import QuestAPI         from '../../control/public/QuestAPI.js';
-import QuestDB          from '../../control/QuestDB.js';
-import Socket           from '../../control/Socket.js';
+import {
+   FoundryUIManager,
+   QuestDB,
+   Socket }          from '../../control/index.js';
 
-import { constants, sessionConstants, settings } from '../../model/constants.js';
+import { QuestAPI }  from '../../control/public/index.js';
+
+import {
+   constants,
+   sessionConstants,
+   settings }        from '../../model/constants.js';
 
 /**
  * Provides all {@link JQuery} and {@link PointerEvent} callbacks for the {@link QuestTracker}.
  */
-export default class HandlerTracker
+export class HandlerTracker
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * Handles the pointer down event from the header to reset the pinned state.
     *

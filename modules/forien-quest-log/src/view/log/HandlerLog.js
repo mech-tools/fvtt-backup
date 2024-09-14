@@ -1,14 +1,27 @@
-import QuestAPI      from '../../control/public/QuestAPI.js';
-import QuestDB       from '../../control/QuestDB.js';
-import ViewManager   from '../../control/ViewManager.js';
-import Socket        from '../../control/Socket.js';
-import FQLDialog     from '../FQLDialog.js';
+import {
+   QuestDB,
+   Socket,
+   ViewManager }     from '../../control/index.js';
+
+import { QuestAPI }  from '../../control/public/index.js';
+
+import { Quest }     from '../../model/index.js';
+
+import { FQLDialog } from '../internal/index.js';
 
 /**
  * Provides all {@link JQuery} callbacks for the {@link QuestLog}.
  */
-export default class HandlerLog
+export class HandlerLog
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * Handles the quest add button.
     *
@@ -50,7 +63,7 @@ export default class HandlerLog
    static questDragStart(event)
    {
       const dataTransfer = {
-         type: 'Quest',
+         type: Quest.documentName,
          id: $(event.target).data('quest-id')
       };
 

@@ -1,13 +1,24 @@
-import QuestAPI   from '../../control/public/QuestAPI.js';
-import QuestDB    from '../../control/QuestDB.js';
-import Socket     from '../../control/Socket.js';
-import FQLDialog  from '../FQLDialog.js';
+import {
+   QuestDB,
+   Socket }          from '../../control/index.js';
+
+import { QuestAPI }  from '../../control/public/index.js';
+
+import { FQLDialog } from '../internal/index.js';
 
 /**
  * These handler {@link JQuery} callbacks can be called on any tab.
  */
-export default class HandlerAny
+export class HandlerAny
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * Confirms deleting a quest with {@link FQLDialog.confirmDeleteQuest} before invoking {@link QuestDB.deleteQuest}.
     *

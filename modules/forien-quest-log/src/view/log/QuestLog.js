@@ -1,12 +1,21 @@
-import QuestDB          from '../../control/QuestDB.js';
-import Socket           from '../../control/Socket.js';
-import Utils            from '../../control/Utils.js';
-import FQLContextMenu   from '../FQLContextMenu.js';
-import FQLDialog        from '../FQLDialog.js';
+import {
+   QuestDB,
+   Socket,
+   Utils }              from '../../control/index.js';
 
-import HandlerLog    from './HandlerLog.js';
+import {
+   FQLContextMenu,
+   FQLDialog }          from '../internal/index.js';
 
-import { constants, jquery, questStatus, questStatusI18n, questTabIndex, settings } from '../../model/constants.js';
+import { HandlerLog }   from './HandlerLog.js';
+
+import {
+   constants,
+   jquery,
+   questStatus,
+   questStatusI18n,
+   questTabIndex,
+   settings }           from '../../model/constants.js';
 
 /**
  * Provides the main quest log app which shows the quests separated by status either with bookmark or classic tabs.
@@ -20,11 +29,11 @@ import { constants, jquery, questStatus, questStatusI18n, questTabIndex, setting
  * {@link JQuery} control callbacks are setup in {@link QuestLog.activateListeners} and are located in a separate static
  * control class {@link HandlerLog}.
  */
-export default class QuestLog extends Application
+export class QuestLog extends Application
 {
    /**
     * @inheritDoc
-    * @see https://foundryvtt.com/api/Application.html
+    * @see https://foundryvtt.com/api/classes/client.Application.html
     */
    constructor(options = {})
    {
@@ -35,7 +44,7 @@ export default class QuestLog extends Application
     * Default Application options
     *
     * @returns {object} options - Application options.
-    * @see https://foundryvtt.com/api/Application.html#options
+    * @see https://foundryvtt.com/api/classes/client.Application.html#options
     */
    static get defaultOptions()
    {
@@ -89,7 +98,7 @@ export default class QuestLog extends Application
     *
     * @param {JQuery}  html - The jQuery instance for the window content of this Application.
     *
-    * @see https://foundryvtt.com/api/FormApplication.html#activateListeners
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#activateListeners
     */
    activateListeners(html)
    {
@@ -128,7 +137,7 @@ export default class QuestLog extends Application
 
       html.on(jquery.click, '.actions.quest-status i.move', HandlerLog.questStatusSet);
 
-      this._contextMenu(html);
+      this.#contextMenu(html);
    }
 
    /**
@@ -147,10 +156,8 @@ export default class QuestLog extends Application
     * Create the context menu. There are two separate context menus for the active / in progress tab and all other tabs.
     *
     * @param {JQuery}   html - JQuery element for this application.
-    *
-    * @private
     */
-   _contextMenu(html)
+   #contextMenu(html)
    {
       const menuItemCopyLink = {
          name: 'ForienQuestLog.QuestLog.ContextMenu.CopyEntityLink',
@@ -222,7 +229,7 @@ export default class QuestLog extends Application
     *
     * @override
     * @inheritDoc
-    * @see https://foundryvtt.com/api/FormApplication.html#getData
+    * @see https://foundryvtt.com/api/classes/client.FormApplication.html#getData
     */
    async getData(options = {})
    {
@@ -269,8 +276,8 @@ export default class QuestLog extends Application
    }
 
    /**
-    * Some game systems and custom UI theming modules provide hard overrides on overflow-x / overflow-y styles. Alas we
-    * need to set these for '.window-content' to 'visible' which will cause an issue for very long tables. Thus we must
+    * Some game systems and custom UI theming modules provide hard overrides on overflow-x / overflow-y styles. Alas, we
+    * need to set these for '.window-content' to 'visible' which will cause an issue for very long tables. Thus, we must
     * manually set the table max-heights based on the position / height of the {@link Application}.
     *
     * @param {object}               opts - Optional parameters.

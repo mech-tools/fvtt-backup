@@ -1,5 +1,8 @@
-import QuestDB                 from '../QuestDB.js';
-import { constants, settings } from '../../model/constants.js';
+import { QuestDB }   from '../index.js';
+
+import {
+   constants,
+   settings }        from '../../model/constants.js';
 
 /**
  * Provides a shim to the publicly exposed methods of QuestDB. Except for {@link QuestDBShim.createQuest} all other
@@ -8,6 +11,14 @@ import { constants, settings } from '../../model/constants.js';
  */
 class QuestDBShim
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * @returns {QuestDBHooks} The QuestDB hooks.
     */
@@ -44,7 +55,7 @@ class QuestDBShim
     * @param {string}   [options.type] - The quest type / status to iterate.
     *
     * @returns {QuestEntry[]}  An Array of matched values
-    * @see {@link Array#filter}
+    * @see Array#filter
     */
    static filter(predicate, options)
    {
@@ -93,7 +104,7 @@ class QuestDBShim
     * @param {string}   [options.type] - The quest type / status to iterate.
     *
     * @returns {QuestEntry} The QuestEntry, if found, otherwise undefined.
-    * @see {@link Array#find}
+    * @see Array#find
     */
    static find(predicate, options)
    {
@@ -213,4 +224,4 @@ class QuestDBShim
 
 Object.freeze(QuestDBShim);
 
-export default QuestDBShim;
+export { QuestDBShim };

@@ -1,8 +1,12 @@
-import QuestDBShim   from './QuestDBShim.js';
-import Socket        from '../Socket.js';
-import ViewManager   from '../ViewManager.js';
+import { QuestDBShim }  from './QuestDBShim.js';
 
-import { constants, settings } from '../../model/constants.js';
+import {
+   Socket,
+   ViewManager }        from '../index.js';
+
+import {
+   constants,
+   settings }           from '../../model/constants.js';
 
 /**
  * Quest public API. QuestAPI exposes control capabilities publicly. This functionality is gated as necessary depending
@@ -13,6 +17,14 @@ import { constants, settings } from '../../model/constants.js';
  */
 class QuestAPI
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated.');
+   }
+
    /**
     * @returns {QuestDBShim} Public QuestDB access.
     */
@@ -81,4 +93,4 @@ class QuestAPI
 
 Object.freeze(QuestAPI);
 
-export default QuestAPI;
+export { QuestAPI };

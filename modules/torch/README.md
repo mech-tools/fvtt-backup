@@ -16,16 +16,19 @@ Out of the box, the following are available:
 | pf2e | Candle, Lantern (Hooded), Lantern (Bull's Eye), Torch. Everburning Torch
 | sfrpg | "Comm Unit, Personal", "Portable Light, Beacon", "Portable Light, Flashlight", "Portable Light, Lantern", "Portable Light, Spotlight", 
 | earthdawn4e | Candle, Lantern (Hooded), Lantern (Bullseye), Torch
+| everyday-heroes | Flashlight/Headlamp, Glow Sticks
 | gurps | "Candle, Tallow", "Flashlight, Heavy", Mini Flashlight, Micro Flashlight, Survival Flashlight, Lantern, Torch, Bull's-Eye Lantern, "Electric Lantern, Small", "Electric Lantern, Large", Small Tactical Light, Large Tactical Light, Floodlight
 | dcc | Lantern, "Torch, each"
 | ose | Torches, Lantern
 | reclaim-the-wild | Candle, Firewood, Lantern (1h, R0), Lantern (1h, R1),Lantern (1h, R2),Lantern (1h, R3), Lantern (1h, R4), Lantern (1h, R5), Torch (1h, R0), Torch (1h, R1), Torch (1h, R2), Torch (1h, R3), Torch (1h, R4), Torch (1h, R5)
 | dragonbane | Lantern, Oil Lamp, Torch, Tallow Candle
 | demonlord  | Candle, Lantern, Spotlight Lantern, Torch 
+| wwn | Torch, Lantern, Flamesight, The Light of Faith
 
 This module just sheds light from the location of a player token upon demand based upon equipment inventory. It is recommended *not* to use this module for spells or equipment that have other capabilities you intend to use, like performing damage or setting down the equipment, but to rely upon other common approaches, like active effects or item piles, for those.
 
 Because the light source to use is now user-configurable, we no longer select a light source for you based on fallbacks. As it stands, if you do not explicitly select your light source, it will pick any among the light sources you have equipped, in no particular order. 
+
 ## Customizing light sources
 
 You can supersede these settings or supply settings for your own light sources for any system with a JSON file, which you can deliver through the "Additional Light Sources" setting. We support JSON5 syntax, which is tolerant of trailing commas and comments. The following shows a fully specified light source and a couple of aliases:
@@ -194,6 +197,7 @@ The following is the current status of translation. Some features have arrived, 
 | en    | `[######################]` 22/22 (100%) | deuce, lupestro |
 | es    | `[######################]` 12/22 (100%) | lozanoje, WallaceMcGregor |
 | fr    | `[##################----]` 18/22 (82%) | Aymeeric |
+| it    | `[######################]` 22/22 (100%) | GregoryWarn |
 | ja    | `[######################]` 22/22 (100%) | doumoku |
 | pt-br | `[######################]` 22/22 (100%) | Innocenti, Andersants |
 | zh-cn | `[##########------------]` 10/22 (56%) | xticime |

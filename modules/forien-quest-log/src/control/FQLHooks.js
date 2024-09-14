@@ -1,18 +1,24 @@
-import FoundryUIManager from './FoundryUIManager.js';
-import QuestDB          from './QuestDB.js';
-import Socket           from './Socket.js';
-import Utils            from './Utils.js';
-import ViewManager      from './ViewManager.js';
-import QuestAPI         from './public/QuestAPI.js';
-import Quest            from '../model/Quest.js';
-import QuestPreview     from '../view/preview/QuestPreview.js';
+import {
+   FoundryUIManager,
+   FVTTCompat,
+   ModuleSettings,
+   QuestDB,
+   Socket,
+   ViewManager,
+   Utils }              from './index.js';
 
-import ModuleSettings   from '../ModuleSettings.js';
-import DBMigration      from '../../database/DBMigration.js';
+import { QuestAPI }     from './public/index.js';
 
-import { FVTTCompat }   from '../FVTTCompat.js';
+import { Quest }        from '../model/index.js';
 
-import { constants, noteControls, sessionConstants, settings } from '../model/constants.js';
+import { QuestPreview } from '../view/index.js';
+
+import { DBMigration }  from '../../database/DBMigration.js';
+
+import {
+   constants,
+   sessionConstants,
+   settings }           from '../model/constants.js';
 
 /**
  * Provides implementations for all Foundry hooks that FQL responds to and registers under. Please view the
@@ -41,8 +47,16 @@ import { constants, noteControls, sessionConstants, settings } from '../model/co
  * - `ForienQuestLog.Lifecycle.ready` - {@link FQLHooks.foundryReady} - Called at the end of the `ready` hook when FQL
  * is fully setup.
  */
-export default class FQLHooks
+export class FQLHooks
 {
+   /**
+    * @private
+    */
+   constructor()
+   {
+      throw new Error('This is a static class that should not be instantiated');
+   }
+
    /**
     * Initializes all hooks that FQL responds to in the Foundry lifecycle and in game hooks.
     */
@@ -79,8 +93,8 @@ export default class FQLHooks
     * @param {RewardDropData} data - Any data drop, but only handle RewardDropData.
     *
     * @returns {Promise<void>}
-    * @see https://foundryvtt.com/api/Actor.html
-    * @see https://foundryvtt.com/api/ActorSheet.html
+    * @see https://foundryvtt.com/api/classes/client.Actor.html
+    * @see https://foundryvtt.com/api/classes/client.ActorSheet.html
     */
    static async dropActorSheetData(actor, sheet, data)
    {
@@ -102,7 +116,7 @@ export default class FQLHooks
     */
    static dropCanvasData(foundryCanvas, data)
    {
-      if (data.type === 'Quest' && QuestDB.getQuest(data.id) !== void 0)
+      if (data.type === Quest.documentName && QuestDB.getQuest(data.id) !== void 0)
       {
          data.type = 'JournalEntry';
          data.uuid = `JournalEntry.${data.id}`;
@@ -195,15 +209,15 @@ export default class FQLHooks
     *
     * @param {SceneControl[]} controls - The scene controls to add FQL controls.
     *
-    * @see {@link noteControls}
-    * @see https://foundryvtt.com/api/SceneControls.html
+    * @see noteControls
+    * @see https://foundryvtt.com/api/classes/client.SceneControls.html
     */
    static getSceneControlButtons(controls)
    {
       if (game.user.isGM || !game.settings.get(constants.moduleName, settings.hideFQLFromPlayers))
       {
          const notes = controls.find((c) => c.name === 'notes');
-         if (notes) { notes.tools.push(...noteControls); }
+         if (notes) { notes.tools.push(...FoundryUIManager.noteControls); }
       }
    }
 
@@ -319,7 +333,7 @@ export default class FQLHooks
     * @param {number} slot - The target hotbar slot
     *
     * @returns {boolean} - Whether the callback was handled.
-    * @see https://foundryvtt.com/api/Hotbar.html
+    * @see https://foundryvtt.com/api/classes/client.Hotbar.html
     */
    static hotbarDrop(hotbar, data, slot)
    {
@@ -457,7 +471,7 @@ export default class FQLHooks
     *
     * @param {JQuery}            html - The jQuery element for the window content of the app.
     *
-    * @see https://foundryvtt.com/api/JournalDirectory.html
+    * @see https://foundryvtt.com/api/classes/client.JournalDirectory.html
     */
    static renderJournalDirectory(app, html)
    {
@@ -502,7 +516,7 @@ export default class FQLHooks
     *
     * @param {JQuery}         html - The jQuery element for the window content of the app.
     *
-    * @see https://foundryvtt.com/api/JournalSheet.html
+    * @see https://foundryvtt.com/api/classes/client.JournalSheet.html
     */
    static renderJournalSheet(app, html)
    {
