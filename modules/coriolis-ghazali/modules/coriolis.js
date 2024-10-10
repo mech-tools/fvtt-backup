@@ -123,7 +123,7 @@ async function showIntro() {
   setTimeout(() => {
     try {
       game.scenes.getName("Coriolis - Last Voyage of the Ghazali").activate();
-      game.journal.getName("Last Voyage - How To Use This Module").show();
+      game.journal.getName("00 - Index - Ghazali").show();
       const entry = game.playlists.getName("Coriolis Soundtrack");
       if (entry) {
         entry.playAll();

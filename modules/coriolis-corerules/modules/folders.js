@@ -93,6 +93,6 @@ async function createSingleFolder(parentId, folderName, directory, color) {
     name: folderName,
     type: directory,
     color: color,
-    parent: parentId,
+    folder: parentId,
   });
 }

@@ -166,13 +166,9 @@ async function importTables() {
     if (entityExists(targetFolder.id, entity)) {
       continue;
     }
-    await game.tables.importFromCompendium(
-      pack,
-      entity.id,
-      {
-        folder: targetFolder.id,
-      },
-    );
+    await game.tables.importFromCompendium(pack, entity.id, {
+      folder: targetFolder.id,
+    });
   }
 }
 

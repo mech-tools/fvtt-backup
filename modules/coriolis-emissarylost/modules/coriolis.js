@@ -124,7 +124,7 @@ async function showIntro() {
   setTimeout(() => {
     try {
       game.scenes.getName("Coriolis - Emissary Lost").activate();
-      game.journal.getName("Emissary Lost - How To Use This Module").show(); // TODO: make sure to direct to Emissary Lost 'how to'
+      game.journal.getName("00 - Index - Emissary Lost").show(); // TODO: make sure to direct to Emissary Lost 'how to'
       // game.playlists.getName("Coriolis Soundtrack").playAll();
     } catch (e) {
       console.error("failed to load intro", e);

@@ -2,13 +2,14 @@
   "title": "Shadowrun Anarchy",
   "version": "1.0.0",
   "system": "anarchy",
-  "coreVersion": "10.291",
+  "coreVersion": "11.315",
   "resetKeys": false,
   "safeMode": false,
-  "systemVersion": "10.2.8",
+  "systemVersion": "12.2.4",
   "id": "shadowrun-anarchy",
   "compatibility": {
-    "verified": "10.291",
-    "minimum": "10"
-  }
+    "verified": "11.315",
+    "minimum": "11"
+  },
+  "lastPlayed": "Wed Oct 09 2024 16:51:11 GMT+0200 (Central European Summer Time)"
 }
