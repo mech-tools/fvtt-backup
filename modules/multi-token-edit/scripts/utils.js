@@ -1,25 +1,7 @@
-import { GeneralDataAdapter } from '../applications/dataAdapters.js';
+import { AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, MODULE_ID, SUPPORTED_PLACEABLES, VIDEO_EXTENSIONS } from './constants.js';
+import { Picker } from './picker.js';
 import { MassEditPresets } from './presets/forms.js';
 import { applyRandomization } from './randomizer/randomizerUtils.js';
-
-export const MODULE_ID = 'multi-token-edit';
-export const SUPPORTED_PLACEABLES = [
-  'Token',
-  'MeasuredTemplate',
-  'Tile',
-  'Drawing',
-  'Wall',
-  'AmbientLight',
-  'AmbientSound',
-  'Note',
-];
-export const UI_DOCS = ['FAVORITES', 'ALL', ...SUPPORTED_PLACEABLES];
-export const SUPPORT_SHEET_CONFIGS = [...SUPPORTED_PLACEABLES, 'Actor', 'PlaylistSound', 'Scene'];
-export const SUPPORTED_COLLECTIONS = ['Item', 'Cards', 'RollTable', 'Actor', 'JournalEntry', 'Scene'];
-const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png', 'svg', 'apng', 'avif', 'bmp', 'gif', 'tif'];
-const VIDEO_EXTENSIONS = ['mp4', 'ogv', 'webm', 'm4v'];
-const AUDIO_EXTENSIONS = ['aac', 'flac', 'm4a', 'mid', 'mp3', 'ogg', 'opus', 'wav'];
-export const FILE_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS];
 
 export function interpolateColor(u, c1, c2) {
   return c1.map((a, i) => Math.floor((1 - u) * a + u * c2[i]));
@@ -138,66 +120,6 @@ export function selectAddSubtractFields(form, fields) {
         'title',
         fields[key].method === 'add' ? `+ ${localize('form.adding')}` : `- ${localize('form.subtracting')}`
       );
-  }
-}
-
-export function applyAddSubtract(updates, objects, documentName, addSubtractFields) {
-  // See if any field need to be added or subtracted
-  if (!addSubtractFields || foundry.utils.isEmpty(addSubtractFields)) return;
-
-  for (let i = 0; i < updates.length; i++) {
-    const update = updates[i];
-    const data = foundry.utils.flattenObject(getData(objects[i]).toObject());
-
-    GeneralDataAdapter.dataToForm(documentName, objects[i], data);
-
-    for (const field of Object.keys(update)) {
-      if (field in addSubtractFields && field in data) {
-        const ctrl = addSubtractFields[field];
-        let val = data[field];
-
-        // Special processing for Tagger module fields
-        if (field === 'flags.tagger.tags') {
-          const currentTags = Array.isArray(val) ? val : (val ?? '').split(',').map((s) => s.trim());
-          const modTags = (update[field] ?? '').split(',').map((s) => s.trim());
-          for (const tag of modTags) {
-            if (ctrl.method === 'add') {
-              if (!currentTags.includes(tag)) currentTags.push(tag);
-            } else if (ctrl.method === 'subtract') {
-              const index = currentTags.indexOf(tag);
-              if (index > -1) currentTags.splice(index, 1);
-            }
-          }
-          update[field] = currentTags.filter((t) => t).join(',');
-          continue;
-        } else if (ctrl.type === 'text') {
-          if (ctrl.method === 'add') {
-            const toAdd = 'value' in ctrl ? ctrl.value : update[field];
-            if (toAdd.startsWith('>>')) {
-              val = toAdd.replace('>>', '') + val;
-            } else {
-              val += toAdd;
-            }
-          } else {
-            val = val.replace('value' in ctrl ? ctrl.value : update[field], '');
-          }
-          update[field] = val;
-          continue;
-        }
-
-        if (ctrl.method === 'add') {
-          val += 'value' in ctrl ? ctrl.value : update[field];
-        } else {
-          val -= 'value' in ctrl ? ctrl.value : update[field];
-        }
-        if ('min' in ctrl && val < ctrl.min) {
-          val = ctrl.min;
-        } else if ('max' in ctrl && val > ctrl.max) {
-          val = ctrl.max;
-        }
-        update[field] = val;
-      }
-    }
   }
 }
 
@@ -338,7 +260,6 @@ export function flattenToDepth(obj, d = 0) {
   return flat;
 }
 
-// TODO
 export function activeEffectPresetSelect(aeConfig) {
   const showPresetGeneric = function (documentName) {
     new MassEditPresets(
@@ -476,6 +397,23 @@ export function resolveCreateDocumentRequest({ requestID, sceneID, documentName,
 
   DOCUMENT_CREATE_REQUESTS[requestID](documents);
   delete DOCUMENT_CREATE_REQUESTS[requestID];
+}
+
+export async function updateEmbeddedDocumentsViaGM(documentName, updates, context, scene) {
+  if (game.user.isGM) {
+    return scene.updateEmbeddedDocuments(documentName, updates, context);
+  } else {
+    const message = {
+      handlerName: 'document',
+      args: { sceneID: scene.id, documentName, updates, context },
+      type: 'UPDATE',
+    };
+    game.socket.emit(`module.${MODULE_ID}`, message);
+  }
+}
+
+export function isResponsibleGM() {
+  return game.users.filter((u) => u.active && u.isGM).sort((a, b) => b.role - a.role || a.id.compare(b.id))[0]?.isSelf;
 }
 
 export function localize(path, moduleLocalization = true) {
@@ -696,4 +634,34 @@ export class TagInput {
       change?.(newTags);
     });
   }
+}
+
+/**
+ * Activates Picker allowing drag selection of document across all placeables layers
+ * @returns {Array[CanvasDocumentMixin]}
+ */
+export async function pickerSelectMultiLayerDocuments() {
+  // Activate picker to define select box
+  const coords = await new Promise(async (resolve) => {
+    Picker.activate(resolve);
+  });
+  if (!coords) return [];
+
+  // Selects placeables within the bounding box
+  const selectionRect = new PIXI.Rectangle(
+    coords.start.x,
+    coords.start.y,
+    coords.end.x - coords.start.x,
+    coords.end.y - coords.start.y
+  );
+
+  let selected = [];
+  SUPPORTED_PLACEABLES.forEach((documentName) => {
+    canvas.getLayerByEmbeddedName(documentName).placeables.forEach((p) => {
+      const c = p.center;
+      if (selectionRect.contains(c.x, c.y)) selected.push(p.document);
+    });
+  });
+
+  return selected;
 }

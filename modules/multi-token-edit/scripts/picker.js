@@ -1,5 +1,8 @@
+import { SUPPORTED_PLACEABLES } from './constants.js';
+import { LinkerAPI } from './linker/linker.js';
+import { Mouse3D } from './mouse3d.js';
 import { getDataBounds, getPresetDataCenterOffset } from './presets/utils.js';
-import { SUPPORTED_PLACEABLES } from './utils.js';
+import { pickerSelectMultiLayerDocuments } from './utils.js';
 
 /**
  * Cross-hair and optional preview image/label that can be activated to allow the user to select
@@ -37,6 +40,16 @@ export class Picker {
     return foundry.utils.deepClone(this._transformAccumulator);
   }
 
+  static mirrorX() {
+    this._mirrorX = true;
+    this.pickerOverlay?.setPositions?.(canvas.mousePosition);
+  }
+
+  static mirrorY() {
+    this._mirrorY = true;
+    this.pickerOverlay?.setPositions?.(canvas.mousePosition);
+  }
+
   /**
    * Activates the picker overlay.
    * @param {Function} callback callback function with coordinates returned as starting and ending bounds of a rectangles
@@ -66,8 +79,8 @@ export class Picker {
       let { previews, layer, previewDocuments } = await this._genPreviews(preview);
       this._rotation = preview.rotation ?? 0;
       this._scale = preview.scale ?? 1;
-
-      const levelsActive = game.modules.get('levels')?.active;
+      this._mirrorX = false;
+      this._mirrorY = false;
 
       const centerOnCursor = () => {
         return preview.center && !(layer.name === 'TokenLayer' && preview.previewData.size === 1);
@@ -76,25 +89,26 @@ export class Picker {
       // Position offset to center preview over the mouse
       let offset;
       if (centerOnCursor()) offset = getPresetDataCenterOffset(preview.previewData);
-      else offset = { x: 0, y: 0 };
+      else offset = { x: 0, y: 0, z: 0 };
+
+      if (!game.Levels3DPreview?._active) delete offset.z; // We don't want to perform z axis transform if not on 3D canvas
 
       const setPositions = function (pos) {
         if (!pos) return;
         if (centerOnCursor()) offset = getPresetDataCenterOffset(preview.previewData);
         if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
-          // v12
-          if (layer.getSnappedPoint) {
-            pos = layer.getSnappedPoint(pos);
-          } else {
-            pos = canvas.grid.getSnappedPosition(pos.x, pos.y, layer.gridPrecision);
-          }
+          const snapped = layer.getSnappedPoint(pos);
+          snapped.z = pos.z;
+          pos = snapped;
         }
 
         // calculate transform
         const pd = previews[0].document;
         const b = getDataBounds(pd.documentName, pd);
         let transform = { x: pos.x - b.x1 - offset.x, y: pos.y - b.y1 - offset.y };
+        if (pos.z != null) transform.z = pos.z - b.z1 - offset.z;
 
+        // Instant transforms
         if (Picker._rotation != 0) {
           transform.rotation = Picker._rotation;
           Picker._rotation = 0;
@@ -104,38 +118,16 @@ export class Picker {
           Picker._scale = 1;
         }
 
+        transform.mirrorX = Picker._mirrorX;
+        Picker._mirrorX = false;
+
+        transform.mirrorY = Picker._mirrorY;
+        Picker._mirrorY = false;
+
         for (const preview of previews) {
           const doc = preview.document;
           const documentName = doc.documentName;
           DataTransform.apply(documentName, preview._pData ?? doc, pos, transform, preview);
-
-          // TODO: 3D Preview
-          // if (preview._l3dPreview) {
-          //   try {
-          //     preview._l3dPreview.collision = false;
-          //     const mPos = game.Levels3DPreview.interactionManager.canvas3dMousePosition;
-          //     const cPos = game.Levels3DPreview.interactionManager.camera.position;
-
-          //     const intersects = game.Levels3DPreview.interactionManager.computeSightCollisionFrom3DPositions(
-          //       cPos,
-          //       mPos,
-          //       'collision',
-          //       false,
-          //       false,
-          //       false,
-          //       true
-          //     );
-
-          //     if (intersects[0]) {
-          //       const mesh = preview._l3dPreview.mesh;
-          //       mesh.position.x = intersects[0].point.x;
-          //       mesh.position.y = intersects[0].point.y;
-          //       mesh.position.z = intersects[0].point.z;
-          //     }
-          //   } catch (e) {
-          //     console.log(e);
-          //   }
-          // }
 
           // =====
           // Hacks
@@ -143,44 +135,29 @@ export class Picker {
           preview.renderFlags.set({ refresh: true });
 
           // TODO: improve _meSort, _meElevation
-          if (foundry.utils.isNewerVersion(game.version, 12)) {
-            // Elevation, sort, and z order hacks to make sure previews are always rendered on-top
-            if (doc.sort != null) {
-              if (!preview._meSort) preview._meSort = doc.sort;
-              doc.sort = preview._meSort + 10000;
-            }
+          // Elevation, sort, and z order hacks to make sure previews are always rendered on-top
+          if (doc.sort != null) {
+            if (!preview._meSort) preview._meSort = doc.sort;
+            doc.sort = preview._meSort + 10000;
+          }
 
-            if (doc.elevation != null) {
-              if (!preview._meElevation) preview._meElevation = doc.elevation;
-              doc.elevation = preview._meElevation + 10000;
-            }
+          if (!game.Levels3DPreview?._active && doc.elevation != null) {
+            if (!preview._meElevation) preview._meElevation = doc.elevation;
+            doc.elevation = preview._meElevation + 10000;
+          }
 
-            // Special position update conditions
-            // - Region: We need to simulate doc update via `_onUpdate` call
-            // - AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
-            if (documentName === 'Region') {
-              preview._onUpdate({ shapes: null });
-            } else if (documentName === 'AmbientLight') {
-              preview.initializeLightSource();
-            } else if (documentName === 'AmbientSound') {
-              preview.initializeSoundSource();
-            }
-          } else {
-            if (!preview.z) preview.z = doc.z;
-            if (preview.z) doc.z = preview.z + 10000;
+          // For some reason collision bool is refreshed after creation of the preview
+          if (preview._l3dPreview) preview._l3dPreview.collision = false;
 
-            if (documentName === 'Token') {
-              if (!preview._meElevation) preview._meElevation = doc.elevation;
-              doc.elevation = preview._meElevation + 10000;
-            } else if (levelsActive) {
-              if (!preview._meElevation)
-                preview._meElevation = foundry.utils.getProperty('flags.levels.rangeBottom') ?? 0;
-              foundry.utils.setProperty(doc, 'flags.levels.rangeBottom', preview._meElevation + 10000);
-              doc.overhead = true;
-            }
-
-            // AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
-            if (preview.source) preview.updateSource();
+          // Special position update conditions
+          // - Region: We need to simulate doc update via `_onUpdate` call
+          // - AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
+          if (documentName === 'Region') {
+            preview._onUpdate({ shapes: null });
+          } else if (documentName === 'AmbientLight') {
+            preview.initializeLightSource();
+          } else if (documentName === 'AmbientSound') {
+            preview.initializeSoundSource();
           }
 
           // End of Hacks
@@ -210,38 +187,48 @@ export class Picker {
           setPositions(event.data.getLocalPosition(pickerOverlay));
         }
       });
+
       //setTimeout(() => setPositions(canvas.mousePosition), 50);
       pickerOverlay.setPositions = setPositions;
     }
 
     if (!preview?.previewOnly) {
-      pickerOverlay.hitArea = canvas.dimensions.rect;
-      pickerOverlay.cursor = 'crosshair';
-      pickerOverlay.interactive = true;
-      pickerOverlay.zIndex = 5;
-      pickerOverlay.on('remove', () => pickerOverlay.off('pick'));
-      pickerOverlay.on('mousedown', (event) => {
-        Picker.boundStart = event.data.getLocalPosition(pickerOverlay);
-      });
-      pickerOverlay.on('mouseup', (event) => {
-        Picker.boundEnd = event.data.getLocalPosition(pickerOverlay);
-      });
-      pickerOverlay.on('click', (event) => {
-        if (event.nativeEvent.which == 2) {
-          this.callback?.(null);
-        } else {
-          const minX = Math.min(this.boundStart.x, this.boundEnd.x);
-          const maxX = Math.max(this.boundStart.x, this.boundEnd.x);
-          const minY = Math.min(this.boundStart.y, this.boundEnd.y);
-          const maxY = Math.max(this.boundStart.y, this.boundEnd.y);
-          this.callback?.({ start: { x: minX, y: minY }, end: { x: maxX, y: maxY } });
-        }
-        this.destroy();
-      });
+      if (game.Levels3DPreview?._active) {
+        Mouse3D.activate({
+          mouseMoveCallback: Picker.feedPos.bind(Picker),
+          mouseClickCallback: Picker.resolve.bind(Picker),
+          mouseWheelClickCallback: Picker.destroy.bind(Picker),
+        });
+      } else {
+        pickerOverlay.hitArea = canvas.dimensions.rect;
+        pickerOverlay.cursor = 'crosshair';
+        pickerOverlay.interactive = true;
+        pickerOverlay.zIndex = 5;
+        pickerOverlay.on('remove', () => pickerOverlay.off('pick'));
+        pickerOverlay.on('mousedown', (event) => {
+          Picker.boundStart = event.data.getLocalPosition(pickerOverlay);
+        });
+        pickerOverlay.on('mouseup', (event) => {
+          Picker.boundEnd = event.data.getLocalPosition(pickerOverlay);
+        });
+        pickerOverlay.on('click', (event) => {
+          if (event.nativeEvent.which == 2) {
+            this.callback?.(null);
+          } else {
+            const minX = Math.min(this.boundStart.x, this.boundEnd.x);
+            const maxX = Math.max(this.boundStart.x, this.boundEnd.x);
+            const minY = Math.min(this.boundStart.y, this.boundEnd.y);
+            const maxY = Math.max(this.boundStart.y, this.boundEnd.y);
+            this.callback?.({ start: { x: minX, y: minY }, end: { x: maxX, y: maxY } });
+          }
+          this.destroy();
+        });
 
-      canvas.stage.addChild(pickerOverlay);
+        canvas.stage.addChild(pickerOverlay);
+      }
     }
     this.pickerOverlay = pickerOverlay;
+    setTimeout(() => this.feedPos(canvas.mousePosition), 100);
   }
 
   static feedPos(pos) {
@@ -263,12 +250,11 @@ export class Picker {
         this.pickerOverlay.previewDocuments.forEach((name) => {
           const layer = canvas.getLayerByEmbeddedName(name);
           if (layer) {
-            // TODO: 3D Preview
-            // if (game.Levels3DPreview?._active) {
-            //   layer.preview.children.forEach((c) => {
-            //     c._l3dPreview?.destroy();
-            //   });
-            // }
+            if (game.Levels3DPreview?._active) {
+              layer.preview.children.forEach((c) => {
+                c._l3dPreview?.destroy();
+              });
+            }
             layer.clearPreviewContainer();
           }
         });
@@ -278,6 +264,7 @@ export class Picker {
       this.pickerOverlay.children?.forEach((c) => c.destroy(true));
       this.callback?.(null);
       this.pickerOverlay = null;
+      Mouse3D.deactivate();
     }
     this.callback = null;
   }
@@ -294,6 +281,7 @@ export class Picker {
     document._object = object;
     object.eventMode = 'none';
     object.document.alpha = 0.4;
+    if (object.document.occlusion) object.document.occlusion.alpha = 0.4;
     this.preview.addChild(object);
     await object.draw();
 
@@ -306,14 +294,27 @@ export class Picker {
     // lets simplify by overriding this function to make sure the preview is always visible
     Picker._overridePlaceableVisibility(object);
 
-    // TODO: 3D Preview
-    // if (game.Levels3DPreview._active) {
-    //   if (documentName === 'Tile') {
-    //     game.Levels3DPreview.createTile(object);
-    //     object._l3dPreview = game.Levels3DPreview.tiles[object.id];
-    //     console.log(object._l3dPreview);
-    //   }
-    // }
+    // 3D Canvas
+    if (game.Levels3DPreview?._active) {
+      if (documentName === 'Tile') {
+        game.Levels3DPreview.createTile(object);
+        const l3dPreview = game.Levels3DPreview.tiles[object.id];
+
+        l3dPreview.castShadow = false;
+        l3dPreview.collision = false;
+
+        object._l3dPreview = l3dPreview;
+      } else if (documentName === 'Token') {
+        // Tokens get async loaded without a way to await them
+        // We'll need to retrieve the 3D token when the transforms are actually getting applied
+        game.Levels3DPreview.addToken(object);
+        object._l3dPreview = null;
+      } else if (documentName === 'AmbientLight') {
+        game.Levels3DPreview.addLight(object);
+        const l3dPreview = game.Levels3DPreview.lights[object.id];
+        object._l3dPreview = l3dPreview;
+      }
+    }
 
     return object;
   }
@@ -477,8 +478,6 @@ export class DataTransform {
     if (transform.x == null) transform.x = 0;
     if (transform.y == null) transform.y = 0;
 
-    // TODO: Add checks for data with missing fields
-
     if (documentName === 'Wall') {
       this.transformWall(data, origin, transform, preview);
     } else if (documentName === 'Tile') {
@@ -497,16 +496,9 @@ export class DataTransform {
       this.transformDrawing(data, origin, transform, preview);
     } else if (documentName === 'Region') {
       this.transformRegion(data, origin, transform, preview);
-    } else {
-      data.x += transform.x;
-      data.y += transform.y;
-      if (data.elevation != null) data.elevation += transform.z ?? 0;
-      if (preview) {
-        preview.document.x = data.x;
-        preview.document.y = data.y;
-        if (data.elevation) preview.document.elevation = data.elevation;
-      }
     }
+
+    return data;
   }
 
   static transformRegion(data, origin, transform, preview) {
@@ -556,6 +548,26 @@ export class DataTransform {
 
     if (transform.rotation != null && data.shapes) {
       for (const shape of data.shapes) {
+        if (shape.type === 'rectangle') {
+          // Foundry does not support rotation for rectangles
+          // Convert it to a polygon instead
+          shape.type = 'polygon';
+          shape.points = [
+            shape.x,
+            shape.y,
+            shape.x + shape.width,
+            shape.y,
+            shape.x + shape.width,
+            shape.y + shape.height,
+            shape.x,
+            shape.y + shape.height,
+          ];
+          delete shape.width;
+          delete shape.height;
+          delete shape.x;
+          delete shape.y;
+          delete shape.rotation;
+        }
         if (shape.type === 'polygon') {
           const dr = Math.toRadians(transform.rotation % 360);
           for (let i = 0; i < shape.points.length; i += 2) {
@@ -580,6 +592,36 @@ export class DataTransform {
       }
     }
 
+    if (transform.mirrorX || transform.mirrorY) {
+      for (const shape of data.shapes) {
+        if (shape.type === 'rectangle' || shape.type === 'ellipse') {
+          const rectCenter = {
+            x: shape.x + (shape.width ?? shape.radiusX) / 2,
+            y: shape.y + (shape.height ?? shape.radiusY) / 2,
+          };
+          if (transform.mirrorX) {
+            rectCenter.x = origin.x - (rectCenter.x - origin.x);
+            shape.x = rectCenter.x - (shape.width ?? shape.radiusX) / 2;
+          }
+          if (transform.mirrorY) {
+            rectCenter.y = origin.y - (rectCenter.y - origin.y);
+            shape.y = rectCenter.y - (shape.height ?? shape.radiusY) / 2;
+          }
+        } else if (shape.type === 'polygon') {
+          if (transform.mirrorX) {
+            for (let i = 0; i < shape.points.length; i += 2) {
+              shape.points[i] = origin.x - (shape.points[i] - origin.x);
+            }
+          }
+          if (transform.mirrorY) {
+            for (let i = 1; i < shape.points.length; i += 2) {
+              shape.points[i] = origin.y - (shape.points[i] - origin.y);
+            }
+          }
+        }
+      }
+    }
+
     if (preview) {
       const doc = preview.document;
       if (data.elevation) doc.elevation = data.elevation;
@@ -588,9 +630,10 @@ export class DataTransform {
           const docShape = doc.shapes[i];
           const dataShape = data.shapes[i];
 
-          if (docShape.type !== dataShape.type) break;
-
-          if (docShape.type === 'polygon') {
+          if (docShape.type !== dataShape.type) {
+            // We've performed a type change (rectangle -> polygon)
+            doc.shapes[i] = new foundry.data.PolygonShapeData(dataShape);
+          } else if (docShape.type === 'polygon') {
             docShape.points = dataShape.points;
           } else {
             docShape.x = dataShape.x;
@@ -623,6 +666,13 @@ export class DataTransform {
     if (transform.rotation != null) {
       const dr = Math.toRadians(transform.rotation % 360);
       [data.x, data.y] = this.rotatePoint(origin.x, origin.y, data.x, data.y, dr);
+    }
+
+    if (transform.mirrorX) {
+      data.x = origin.x - (data.x - origin.x);
+    }
+    if (transform.mirrorY) {
+      data.y = origin.y - (data.y - origin.y);
     }
 
     if (preview) {
@@ -661,6 +711,13 @@ export class DataTransform {
       [data.x, data.y] = this.rotatePoint(origin.x, origin.y, data.x, data.y, dr);
     }
 
+    if (transform.mirrorX) {
+      data.x = origin.x - (data.x - origin.x);
+    }
+    if (transform.mirrorY) {
+      data.y = origin.y - (data.y - origin.y);
+    }
+
     if (preview) {
       const doc = preview.document;
       doc.x = data.x;
@@ -692,6 +749,15 @@ export class DataTransform {
       [c[2], c[3]] = this.rotatePoint(origin.x, origin.y, c[2], c[3], dr);
     }
 
+    if (transform.mirrorX) {
+      c[0] = origin.x - (c[0] - origin.x);
+      c[2] = origin.x - (c[2] - origin.x);
+    }
+    if (transform.mirrorY) {
+      c[1] = origin.y - (c[1] - origin.y);
+      c[3] = origin.y - (c[3] - origin.y);
+    }
+
     data.c = c;
     if (preview) preview.document.c = c;
   }
@@ -715,6 +781,18 @@ export class DataTransform {
       const dr = Math.toRadians(transform.rotation % 360);
       [data.x, data.y] = this.rotatePoint(origin.x, origin.y, data.x, data.y, dr);
       data.direction += Math.toDegrees(dr);
+    }
+
+    if (transform.mirrorX || transform.mirrorY) {
+      if (transform.mirrorX) {
+        data.x = origin.x - (data.x - origin.x);
+        if (data.direction > 180) data.direction = 360 - (data.direction - 180);
+        else data.direction = 180 - data.direction;
+      }
+      if (transform.mirrorY) {
+        data.y = origin.y - (data.y - origin.y);
+        data.direction = 180 - (data.direction - 180);
+      }
     }
 
     if (preview) {
@@ -758,6 +836,18 @@ export class DataTransform {
       data.rotation += Math.toDegrees(dr);
     }
 
+    if (transform.mirrorX || transform.mirrorY) {
+      if (transform.mirrorX) {
+        data.x = origin.x - (data.x - origin.x);
+        data.rotation = 180 - (data.rotation - 180);
+      }
+      if (transform.mirrorY) {
+        data.y = origin.y - (data.y - origin.y);
+        if (data.rotation > 180) data.rotation = 360 - (data.rotation - 180);
+        else data.rotation = 180 - data.rotation;
+      }
+    }
+
     if (preview) {
       const doc = preview.document;
       doc.x = data.x;
@@ -766,13 +856,22 @@ export class DataTransform {
       doc.config.dim = data.config.dim;
       doc.config.bright = data.config.bright;
       if (data.elevation) doc.elevation = data.elevation;
+
+      if (preview._l3dPreview) {
+        const pos = game.Levels3DPreview.ruler.constructor.posCanvasTo3d({
+          x: doc.x,
+          y: doc.y,
+          z: doc.elevation,
+        });
+        const mesh = preview._l3dPreview.mesh;
+        mesh.position.x = pos.x;
+        mesh.position.y = pos.y;
+        mesh.position.z = pos.z;
+      }
     }
   }
 
   static transformTile(data, origin, transform, preview) {
-    // 3D support
-    const depth = data.flags?.['levels-3d-preview']?.depth;
-
     if (transform.scale != null) {
       const scale = transform.scale;
       data.x *= scale;
@@ -781,7 +880,8 @@ export class DataTransform {
       data.height *= scale;
 
       // 3D Support
-      if (depth != null && depth != '') data.flags['levels-3d-preview'].depth *= scale;
+      const depth = data.flags?.['levels-3d-preview']?.depth;
+      if (depth != null && depth != '') data.flags['levels-3d-preview'].depth = depth * scale;
       if (data.elevation != null) {
         data.elevation *= scale;
       }
@@ -790,13 +890,6 @@ export class DataTransform {
     data.x += transform.x;
     data.y += transform.y;
     if (data.elevation != null) data.elevation += transform.z ?? 0;
-
-    // 3D Support
-    if (transform.z != null) {
-      data.elevation = (data.elevation ?? 0) + transform.z;
-    }
-
-    // console.log(transform.rotation % 360);
 
     if (transform.rotation != null) {
       const dr = Math.toRadians(transform.rotation % 360);
@@ -807,6 +900,21 @@ export class DataTransform {
       data.rotation += Math.toDegrees(dr);
     }
 
+    if (transform.mirrorX || transform.mirrorY) {
+      let rectCenter = { x: data.x + data.width / 2, y: data.y + data.height / 2 };
+      if (transform.mirrorX) {
+        rectCenter.x = origin.x - (rectCenter.x - origin.x);
+        data.texture.scaleX *= -1;
+        data.x = rectCenter.x - data.width / 2;
+      }
+      if (transform.mirrorY) {
+        rectCenter.y = origin.y - (rectCenter.y - origin.y);
+        data.texture.scaleY *= -1;
+        data.y = rectCenter.y - data.height / 2;
+      }
+      data.rotation = 180 - (data.rotation - 180);
+    }
+
     if (preview) {
       const doc = preview.document;
       doc.x = data.x;
@@ -814,7 +922,28 @@ export class DataTransform {
       doc.width = data.width;
       doc.height = data.height;
       doc.rotation = data.rotation;
-      if (data.elevation) doc.elevation = data.elevation;
+      doc.texture.scaleX = data.texture.scaleX;
+      doc.texture.scaleY = data.texture.scaleY;
+      if (data.elevation != null) doc.elevation = data.elevation;
+
+      if (preview._l3dPreview && preview._l3dPreview.mesh) {
+        const pos = game.Levels3DPreview.ruler.constructor.posCanvasTo3d({
+          x: doc.x + doc.width / 2,
+          y: doc.y + doc.height / 2,
+          z: doc.elevation,
+        });
+        const mesh = preview._l3dPreview.mesh;
+        mesh.position.x = pos.x;
+        mesh.position.y = pos.y;
+        mesh.position.z = pos.z;
+
+        if (transform.scale != null) {
+          mesh.scale.multiplyScalar(transform.scale);
+        }
+        if (transform.rotation != null) {
+          mesh.rotation.y += game.Levels3DPreview.THREE.MathUtils.degToRad(-transform.rotation);
+        }
+      }
     }
   }
 
@@ -844,6 +973,34 @@ export class DataTransform {
       data.x = rectCenter.x - data.shape.width / 2;
       data.y = rectCenter.y - data.shape.height / 2;
       data.rotation += Math.toDegrees(dr);
+    }
+
+    if (transform.mirrorX || transform.mirrorY) {
+      const rectCenter = { x: data.x + data.shape.width / 2, y: data.y + data.shape.height / 2 };
+
+      if (transform.mirrorX) {
+        data.x = origin.x - (rectCenter.x - origin.x);
+        if (data.shape.points) {
+          const points = data.shape.points;
+          for (let i = 0; i < points.length; i += 2) {
+            points[i] = data.shape.width / 2 - (points[i] - data.shape.width / 2);
+          }
+        }
+        data.x = rectCenter.x - data.shape.width / 2;
+      }
+
+      if (transform.mirrorY) {
+        data.y = origin.y - (rectCenter.y - origin.y);
+        if (data.shape.points) {
+          const points = data.shape.points;
+          for (let i = 1; i < points.length; i += 2) {
+            points[i] = data.shape.height / 2 - (points[i] - data.shape.height / 2);
+          }
+        }
+        data.y = rectCenter.y - data.shape.height / 2;
+      }
+
+      data.rotation = 180 - (data.rotation - 180);
     }
 
     if (preview) {
@@ -878,13 +1035,31 @@ export class DataTransform {
     if (transform.rotation != null) {
       const dr = Math.toRadians(transform.rotation % 360);
       let rectCenter = {
-        x: data.x + (data.width * (grid.sizeX ?? grid.w)) / 2,
-        y: data.y + (data.height * (grid.sizeY ?? grid.h)) / 2,
+        x: data.x + (data.width * grid.sizeX) / 2,
+        y: data.y + (data.height * grid.sizeY) / 2,
       };
       [rectCenter.x, rectCenter.y] = this.rotatePoint(origin.x, origin.y, rectCenter.x, rectCenter.y, dr);
-      data.x = rectCenter.x - (data.width * (grid.sizeX ?? grid.w)) / 2;
-      data.y = rectCenter.y - (data.height * (grid.sizeY ?? grid.h)) / 2;
+      data.x = rectCenter.x - (data.width * grid.sizeX) / 2;
+      data.y = rectCenter.y - (data.height * grid.sizeY) / 2;
       data.rotation = (data.rotation + Math.toDegrees(dr)) % 360;
+    }
+
+    if (transform.mirrorX || transform.mirrorY) {
+      let rectCenter = {
+        x: data.x + (data.width * grid.sizeX) / 2,
+        y: data.y + (data.height * grid.sizeY) / 2,
+      };
+      if (transform.mirrorX) {
+        rectCenter.x = origin.x - (rectCenter.x - origin.x);
+        data.texture.scaleX *= -1;
+        data.x = rectCenter.x - (data.width * grid.sizeX) / 2;
+      }
+      if (transform.mirrorY) {
+        rectCenter.y = origin.y - (rectCenter.y - origin.y);
+        data.texture.scaleY *= -1;
+        data.y = rectCenter.y - (data.height * grid.sizeY) / 2;
+      }
+      data.rotation = 180 - (data.rotation - 180);
     }
 
     if (preview) {
@@ -895,7 +1070,23 @@ export class DataTransform {
       doc.rotation = data.rotation;
       doc.width = data.width;
       doc.height = data.height;
+      doc.texture.scaleX = data.texture.scaleX;
+      doc.texture.scaleY = data.texture.scaleY;
       if (data.elevation) doc.elevation = data.elevation;
+      if (preview.hasOwnProperty('_l3dPreview')) {
+        preview._l3dPreview = game.Levels3DPreview.tokens[preview.id];
+        if (!preview._l3dPreview) return;
+
+        const pos = game.Levels3DPreview.ruler.constructor.posCanvasTo3d({
+          x: doc.x + (doc.width * canvas.grid.sizeX) / 2,
+          y: doc.y + (doc.height * canvas.grid.sizeY) / 2,
+          z: doc.elevation,
+        });
+        const mesh = preview._l3dPreview.mesh;
+        mesh.position.x = pos.x;
+        mesh.position.y = pos.y;
+        mesh.position.z = pos.z;
+      }
     }
   }
 
@@ -916,81 +1107,63 @@ export class DataTransform {
 }
 
 export async function editPreviewPlaceables() {
-  const docToPlaceables = new Map();
+  const controlled = new Set();
 
   SUPPORTED_PLACEABLES.forEach((documentName) => {
-    const controlled = canvas.getLayerByEmbeddedName(documentName).controlled;
-    if (controlled.length) {
-      docToPlaceables.set(
-        documentName,
-        controlled.map((p) => p)
-      );
-    }
+    canvas.getLayerByEmbeddedName(documentName).controlled.forEach((p) => {
+      controlled.add(p.document);
+      LinkerAPI.getLinkedDocuments(p.document).forEach((d) => controlled.add(d));
+    });
   });
 
-  if (!docToPlaceables.size) {
-    // Activate picker to define select box
-    const coords = await new Promise(async (resolve) => {
-      Picker.activate(resolve);
-    });
-    if (!coords) return;
-
-    // Selects placeables within the bounding box
-    const selectionRect = new PIXI.Rectangle(
-      coords.start.x,
-      coords.start.y,
-      coords.end.x - coords.start.x,
-      coords.end.y - coords.start.y
-    );
-
-    SUPPORTED_PLACEABLES.forEach((documentName) => {
-      let insideRect = [];
-      canvas.getLayerByEmbeddedName(documentName).placeables.forEach((p) => {
-        const c = p.center;
-        if (selectionRect.contains(c.x, c.y)) insideRect.push(p);
-      });
-      if (insideRect.length) docToPlaceables.set(documentName, insideRect);
-    });
+  if (!controlled.size) {
+    const pickerSelected = await pickerSelectMultiLayerDocuments();
+    pickerSelected.forEach((d) => controlled.add(d));
   }
 
-  if (!docToPlaceables.size) return;
+  if (!controlled.size) return;
 
   // Generate data from the selected placeables and pass them to Picker to create previews
   const docToData = new Map();
-  const originalDocTolData = new Map();
 
   let mainDocumentName;
-  docToPlaceables.forEach((placeables, documentName) => {
-    if (SUPPORTED_PLACEABLES.includes(documentName)) {
-      let data = placeables.map((p) => p.document.toCompendium(null, { keepId: true }));
 
-      if (
-        documentName === 'Token' &&
-        game.modules.get('token-attacher')?.active &&
-        tokenAttacher?.generatePrototypeAttached
-      ) {
-        for (const d of data) {
-          const attached = d.flags?.['token-attacher']?.attached || {};
-          if (!foundry.utils.isEmpty(attached)) {
-            const prototypeAttached = tokenAttacher.generatePrototypeAttached(d, attached);
-            foundry.utils.setProperty(d, 'flags.token-attacher.attached', null);
-            foundry.utils.setProperty(d, 'flags.token-attacher.prototypeAttached', prototypeAttached);
-            foundry.utils.setProperty(d, 'flags.token-attacher.grid', {
-              size: canvas.grid.size,
-              w: canvas.grid.sizeX ?? canvas.grid.w, // v12
-              h: canvas.grid.sizeY ?? canvas.grid.h, // v12
-            });
-          }
-        }
+  controlled.forEach((document) => {
+    const documentName = document.documentName;
+    if (!SUPPORTED_PLACEABLES.includes(documentName)) return;
+
+    let data = document.toObject();
+
+    if (
+      documentName === 'Token' &&
+      game.modules.get('token-attacher')?.active &&
+      tokenAttacher?.generatePrototypeAttached
+    ) {
+      const attached = data.flags?.['token-attacher']?.attached || {};
+      if (!foundry.utils.isEmpty(attached)) {
+        const prototypeAttached = tokenAttacher.generatePrototypeAttached(data, attached);
+        foundry.utils.setProperty(data, 'flags.token-attacher.attached', null);
+        foundry.utils.setProperty(data, 'flags.token-attacher.prototypeAttached', prototypeAttached);
+        foundry.utils.setProperty(data, 'flags.token-attacher.grid', {
+          size: canvas.grid.size,
+          w: canvas.grid.sizeX,
+          h: canvas.grid.sizeY,
+        });
       }
-
-      docToData.set(documentName, data);
-      originalDocTolData.set(documentName, foundry.utils.deepClone(data));
-      if (!mainDocumentName) mainDocumentName = documentName;
     }
+
+    if (docToData.get(documentName)) docToData.get(documentName).push(data);
+    else docToData.set(documentName, [data]);
+
+    if (!mainDocumentName) mainDocumentName = documentName;
   });
 
-  if (!docToData.size) return;
+  // Lets create copies of original data so that we can perform a diff after transforms have been
+  // applied by the Picker
+  const originalDocToData = new Map();
+  docToData.forEach((dataArr, documentName) => {
+    originalDocToData.set(documentName, foundry.utils.deepClone(dataArr));
+  });
 
   Picker.activate(
     async (coords) => {
@@ -999,16 +1172,16 @@ export async function editPreviewPlaceables() {
       docToData.forEach((data, documentName) => {
         let updates = [];
 
-        const originalData = originalDocTolData.get(documentName);
+        const originalData = originalDocToData.get(documentName);
         for (let i = 0; i < originalData.length; i++) {
           const diff = foundry.utils.diffObject(originalData[i], data[i]);
           if (!foundry.utils.isEmpty(diff)) {
             diff._id = originalData[i]._id;
-            delete diff.flags;
             updates.push(diff);
           }
         }
-        if (updates.length) canvas.scene.updateEmbeddedDocuments(documentName, updates);
+        if (updates.length)
+          canvas.scene.updateEmbeddedDocuments(documentName, updates, { ignoreLinks: true, animate: false });
       });
     },
     {

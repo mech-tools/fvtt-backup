@@ -1,30 +1,23 @@
 import { checkApplySpecialFields } from '../../applications/formUtils.js';
+import { showGenericForm } from '../../applications/multiConfig.js';
 import { Brush } from '../brush.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES, UI_DOCS } from '../constants.js';
 import { DataTransform, Picker } from '../picker.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
-import {
-  MODULE_ID,
-  SUPPORTED_PLACEABLES,
-  SeededRandom,
-  UI_DOCS,
-  applyPresetToScene,
-  createDocuments,
-  executeScript,
-  localize,
-} from '../utils.js';
+import { SeededRandom, applyPresetToScene, createDocuments, executeScript, localize } from '../utils.js';
 import { FileIndexer } from './fileIndexer.js';
 import { Preset, VirtualFilePreset } from './preset.js';
 import {
   FolderState,
+  applyTaggerTagRules,
   decodeURIComponentSafely,
   getPresetDataCenterOffset,
   getTransformToOrigin,
   mergePresetDataToDefaultDoc,
-  modifySpawnData,
   placeableToData,
 } from './utils.js';
 
-export const DEFAULT_PACK = 'world.mass-edit-presets-main';
+const DEFAULT_PACK = 'world.mass-edit-presets-main';
 export const META_INDEX_ID = 'MassEditMetaData';
 export const META_INDEX_FIELDS = ['id', 'img', 'documentName', 'tags'];
 
@@ -517,8 +510,8 @@ export class PresetAPI {
    * @param {Boolean} [options.random]                   If multiple presets are found a random one will be chosen
    * @returns {Preset}
    */
-  static async getPreset({ uuid, name, type, folder, tags, random = false } = {}) {
-    if (uuid) return await PresetCollection.get(uuid);
+  static async getPreset({ uuid, name, type, folder, tags, random = false, full = true } = {}) {
+    if (uuid) return await PresetCollection.get(uuid, { full });
     else if (!name && !type && !folder && !tags)
       throw Error('UUID, Name, Type, and/or Folder required to retrieve a Preset.');
 
@@ -537,8 +530,12 @@ export class PresetAPI {
       }
     );
 
-    const preset = random ? presets[Math.floor(Math.random() * presets.length)] : presets[0];
-    return preset?.clone().load();
+    let preset = random ? presets[Math.floor(Math.random() * presets.length)] : presets[0];
+    if (preset) {
+      preset = preset.clone();
+      if (full) await preset.load();
+    }
+    return preset;
   }
 
   /**
@@ -552,13 +549,13 @@ export class PresetAPI {
    * @param {String} [options.format]                    The form to return placeables in ('preset', 'name', 'nameAndFolder')
    * @returns {Array[Preset]|Array[String]|Array[Object]}
    */
-  static async getPresets({ uuid, name, type, folder, format = 'preset', tags } = {}) {
+  static async getPresets({ uuid, name, type, folder, format = 'preset', tags, full = true } = {}) {
     let presets;
     if (uuid) {
       presets = [];
       const uuids = Array.isArray(uuid) ? uuid : [uuid];
       for (const uuid of uuids) {
-        const preset = await PresetCollection.get(uuid);
+        const preset = await PresetCollection.get(uuid, { full });
         if (preset) presets.push(preset);
       }
     } else if (!name && !type && !folder && !tags) {
@@ -735,6 +732,7 @@ export class PresetAPI {
     coordPicker = false,
     pickerLabel,
     taPreview,
+    sceneId = canvas.scene.id,
     snapToGrid = true,
     hidden = false,
     layerSwitch = false,
@@ -743,7 +741,7 @@ export class PresetAPI {
     center = false,
     transform = {},
     previewOnly = false,
-    sceneId,
+    flags,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
     if (!(uuid || preset || name || type || folder || tags))
@@ -778,20 +776,51 @@ export class PresetAPI {
     await checkApplySpecialFields(preset.documentName, presetData, presetData); // Apply Special fields (TMFX)
     presetData = presetData.map((d) => foundry.utils.expandObject(d));
 
+    let presetAttached = foundry.utils.deepClone(preset.attached);
+
     if (preset.preSpawnScript) {
-      await executeScript(preset.preSpawnScript, { data: presetData });
+      await executeScript(preset.preSpawnScript, { data: presetData, attached: presetAttached });
     }
 
     // Lets sort the preset data as well as any attached placeable data into document groups
     // documentName -> data array
     const docToData = new Map();
     docToData.set(preset.documentName, presetData);
-    if (preset.attached) {
-      for (const attached of preset.attached) {
+    if (presetAttached) {
+      for (const attached of presetAttached) {
         if (!docToData.get(attached.documentName)) docToData.set(attached.documentName, []);
-        const data = foundry.utils.deepClone(attached.data);
-        docToData.get(attached.documentName).push(data);
+        docToData.get(attached.documentName).push(attached.data);
       }
+    }
+
+    // Regenerate links present within preset data. This will ensure uniqueness on the links
+    // when placed on a scene
+    if (!preset.preserveLinks) {
+      const links = new Map();
+
+      const newLinkId = function (oldId) {
+        let id = links.get(oldId);
+        if (!id) {
+          if (oldId.startsWith('LinkTokenBehavior - ')) {
+            id = 'LinkTokenBehavior - ' + foundry.utils.randomID(8);
+          } else {
+            id = foundry.utils.randomID();
+          }
+          links.set(oldId, id);
+        }
+        return id;
+      };
+
+      docToData.forEach((data) => {
+        data.forEach((d) => {
+          d.flags?.[MODULE_ID]?.links?.forEach((l) => {
+            l.id = newLinkId(l.id);
+          });
+          d.behaviors?.forEach((b) => {
+            if (b.system?.linkId) b.system.linkId = newLinkId(b.system.linkId);
+          });
+        });
+      });
     }
 
     // Scale data relative to grid size
@@ -849,16 +878,7 @@ export class PresetAPI {
       let pos = { x, y };
 
       if (snapToGrid && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
-        // v12
-        if (canvas.grid.getSnappedPoint) {
-          pos = canvas.getLayerByEmbeddedName(preset.documentName).getSnappedPoint(pos);
-        } else {
-          pos = canvas.grid.getSnappedPosition(
-            pos.x,
-            pos.y,
-            canvas.getLayerByEmbeddedName(preset.documentName).gridPrecision
-          );
-        }
+        pos = canvas.getLayerByEmbeddedName(preset.documentName).getSnappedPoint(pos);
       }
       pos.z = z;
 
@@ -867,7 +887,6 @@ export class PresetAPI {
       posTransform.y += pos.y;
 
       // 3D Support
-
       if (game.Levels3DPreview?._active) {
         if (pos.z == null) posTransform.z = 0;
         else posTransform.z += pos.z;
@@ -880,8 +899,7 @@ export class PresetAPI {
       });
     }
 
-    // Assign ownership to the user who triggered the spawn
-    // And hide if necessary
+    // Assign ownership to the user who triggered the spawn, hide and apply flags if if necessary
     docToData.forEach((dataArr, documentName) => {
       dataArr.forEach((data) => {
         // Assign ownership for Drawings and MeasuredTemplates
@@ -892,9 +910,33 @@ export class PresetAPI {
 
         // Hide
         if (hidden || game.keyboard.downKeys.has('AltLeft')) data.hidden = true;
+        if (flags) data.flags = foundry.utils.mergeObject(data.flags ?? {}, flags);
+
+        // Apply Tagger rules for Spawn Preset behaviors
+        if (documentName === 'Region' && data.behaviors) {
+          data.behaviors.forEach((b) => {
+            if (b.system?.destinationTags?.length)
+              b.system.destinationTags = applyTaggerTagRules(b.system.destinationTags);
+          });
+        }
+
+        // TODO: REMOVE once Foundry implements bug fix for null flag override
+        if (documentName === 'Token' && data.flags?.['token-attacher']?.attached === null) {
+          delete data.flags['token-attacher'].attached;
+        }
       });
     });
 
+    // We need to make sure that newly spawned tiles are displayed above currently places ones
+    if (docToData.get('Tile')) {
+      const maxSort = Math.max(0, ...game.scenes.get(sceneId).tiles.map((d) => d.sort)) + 1;
+      docToData
+        .get('Tile')
+        .sort((t1, t2) => (t1.sort ?? 0) - (t2.sort ?? 0))
+        .forEach((d, i) => (d.sort = maxSort + i));
+    }
+
+    // Switch active layer to the preset's base placeable type
     if (layerSwitch) {
       if (game.user.isGM || ['Token', 'MeasuredTemplate', 'Note'].includes(preset.documentName))
         canvas.getLayerByEmbeddedName(preset.documentName)?.activate();
@@ -904,7 +946,7 @@ export class PresetAPI {
     const allDocuments = [];
 
     for (const [documentName, dataArr] of docToData.entries()) {
-      const documents = await createDocuments(documentName, dataArr, sceneId ?? canvas.scene.id);
+      const documents = await createDocuments(documentName, dataArr, sceneId);
       documents.forEach((d) => allDocuments.push(d));
     }
 
@@ -1197,4 +1239,52 @@ export class PresetTree {
       }
     }
   }
+}
+
+/**
+ * Opens a GenericMassEdit form to modify specific fields within the provided data
+ * @param {Object} data            data to be modified
+ * @param {Array[String]} toModify fields within data to be modified
+ * @returns modified data or null if form was canceled
+ */
+async function modifySpawnData(data, toModify) {
+  const fields = {};
+  const flatData = foundry.utils.flattenObject(data);
+  for (const field of toModify) {
+    if (field in flatData) {
+      if (flatData[field] == null) fields[field] = '';
+      else fields[field] = flatData[field];
+    }
+  }
+
+  if (!foundry.utils.isEmpty(fields)) {
+    await new Promise((resolve) => {
+      showGenericForm(fields, 'PresetFieldModify', {
+        callback: (modified) => {
+          if (foundry.utils.isEmpty(modified)) {
+            if (modified == null) data = null;
+            resolve();
+            return;
+          }
+
+          for (const [k, v] of Object.entries(modified)) {
+            flatData[k] = v;
+          }
+
+          const tmpData = foundry.utils.expandObject(flatData);
+
+          const reorganizedData = [];
+          for (let i = 0; i < data.length; i++) {
+            reorganizedData.push(tmpData[i]);
+          }
+          data = reorganizedData;
+          resolve();
+        },
+        simplified: true,
+        noTabs: true,
+      });
+    });
+  }
+
+  return data;
 }

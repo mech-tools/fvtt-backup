@@ -1,4 +1,5 @@
-import { MODULE_ID, SUPPORTED_PLACEABLES, isImage, isAudio } from '../utils.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES } from '../constants.js';
+import { isImage, isAudio } from '../utils.js';
 import { META_INDEX_FIELDS, META_INDEX_ID, PresetTree } from './collection.js';
 import { FileIndexer } from './fileIndexer.js';
 import { decodeURIComponentSafely, isVideo, placeableToData } from './utils.js';
@@ -23,6 +24,7 @@ const PRESET_FIELDS = [
   'spawnRandom',
   'attached',
   'tags',
+  'preserveLinks',
 ];
 
 export const DOC_ICONS = {
@@ -74,6 +76,7 @@ export class Preset {
     this.postSpawnScript = data.postSpawnScript;
     this.attached = data.attached;
     this.spawnRandom = data.spawnRandom;
+    this.preserveLinks = data.preserveLinks;
     this._visible = true;
     this._render = true;
   }
@@ -165,6 +168,7 @@ export class Preset {
       this.postSpawnScript = preset.postSpawnScript;
       this.attached = preset.attached;
       this.spawnRandom = preset.spawnRandom;
+      this.preserveLinks = preset.preserveLinks;
       this.tags = preset.tags ?? [];
     }
 

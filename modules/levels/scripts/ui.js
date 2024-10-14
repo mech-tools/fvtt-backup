@@ -47,8 +47,8 @@ class LevelsUI extends FormApplication {
     }
 
     async activateListeners(html) {
-        ui.controls.control.foreground = true;
-        canvas.tiles._activateSubLayer(true);
+        await canvas.scene.update({ foregroundElevation: 999 });
+        canvas.tiles.activate();
         this.rangeEnabled = true;
         this.loadLevels();
         html.on("click", ".level-item", this._onChangeLevel.bind(this));
@@ -131,12 +131,7 @@ class LevelsUI extends FormApplication {
 
     activateForeground() {
         try {
-            ui.controls.control.foreground = true;
-            ui.controls.control.foreground = true;
-            canvas.tiles._activateSubLayer(true);
-            canvas.perception.update({ refreshLighting: true, refreshTiles: true }, true);
-            const fgControl = document.querySelector(`[data-tool="foreground"]`);
-            if (fgControl) fgControl.classList.add("active");
+            canvas.perception.update({ refreshLighting: true, refreshOcclusion: true }, true);
         } catch (e) {}
     }
 
@@ -346,7 +341,7 @@ class LevelsUI extends FormApplication {
             }
         }
 
-        for (let tile of canvas.tiles.placeables.filter((t) => t.document.overhead)) {
+        for (let tile of canvas.tiles.placeables.filter((t) => t)) {
             let { rangeBottom, rangeTop } = CONFIG.Levels.helpers.getRangeForDocument(tile);
             if ((rangeBottom || rangeBottom == 0) && (rangeTop || rangeTop == 0) && rangeTop != Infinity && rangeBottom != -Infinity) {
                 autoLevels[`${rangeBottom}${rangeTop}`] = [rangeBottom, rangeTop];
@@ -411,9 +406,9 @@ class LevelsUI extends FormApplication {
 
     getObjUpdateData(range) {
         return {
+            elevation: parseFloat(range[0]),
             flags: {
                 [`${CONFIG.Levels.MODULE_ID}`]: {
-                    rangeBottom: parseFloat(range[0]),
                     rangeTop: parseFloat(range[1]),
                 },
             },
@@ -546,17 +541,15 @@ Hooks.on("ready", () => {
         Hooks.on("preCreateTile", (tile, updates) => {
             if (CONFIG.Levels.UI.tokensOnly) return;
             if (CONFIG.Levels.UI.rangeEnabled == true) {
-                tile.updateSource({
-                    overhead: true,
-                });
+                tile.updateSource({occlusion: { mode: 1 }});
                 if (!game.Levels3DPreview?._active) {
                     tile.updateSource({
+                        elevation: CONFIG.Levels.UI.roofEnabled ? parseFloat(CONFIG.Levels.UI.range[1]) : parseFloat(CONFIG.Levels.UI.range[0]),
                         flags: {
                             betterroofs: {
                                 brMode: CONFIG.Levels.UI.roofEnabled,
                             },
                             [`${CONFIG.Levels.MODULE_ID}`]: {
-                                rangeBottom: CONFIG.Levels.UI.roofEnabled ? parseFloat(CONFIG.Levels.UI.range[1]) : parseFloat(CONFIG.Levels.UI.range[0]),
                                 rangeTop: CONFIG.Levels.UI.roofEnabled ? Infinity : parseFloat(CONFIG.Levels.UI.range[1]),
                                 allWallBlockSight: CONFIG.Levels.UI.roofEnabled,
                             },
@@ -575,12 +568,12 @@ Hooks.on("ready", () => {
                 if (CONFIG.Levels.UI.placeOverhead) {
                     tile.updateSource({
                         roof: false,
+                        elevation: parseFloat(CONFIG.Levels.UI.range[1]) - 0.1,
                         flags: {
                             [`${CONFIG.Levels.MODULE_ID}`]: {
                                 showIfAbove: true,
                                 noCollision: true,
                                 showAboveRange: parseFloat(CONFIG.Levels.UI.range[1]) - parseFloat(CONFIG.Levels.UI.range[0]),
-                                rangeBottom: parseFloat(CONFIG.Levels.UI.range[1]),
                                 rangeTop: parseFloat(CONFIG.Levels.UI.range[1]),
                             },
                         },
@@ -611,6 +604,44 @@ Hooks.on("ready", () => {
             }
         });
 
+        Hooks.on("preCreateRegion", (region, updates) => {
+            if (CONFIG.Levels.UI.tokensOnly) return;
+            if (!CONFIG.Levels.UI.rangeEnabled) return;
+            let sortedLevels = [...CONFIG.Levels.UI.definedLevels].sort((a, b) => {
+                return parseFloat(b[0]) - parseFloat(a[0]);
+            });
+            let aboverange = sortedLevels.find((l) => CONFIG.Levels.UI.range[0] === l[0] && CONFIG.Levels.UI.range[1] === l[1]);
+            aboverange = sortedLevels.indexOf(aboverange) === 0 ? undefined : sortedLevels[sortedLevels.indexOf(aboverange) - 1];
+
+            const bottom = parseFloat(CONFIG.Levels.UI.range[0]);
+            const top = aboverange ? aboverange[0] : parseFloat(CONFIG.Levels.UI.range[1]);
+
+            region.updateSource({
+                elevation: {
+                    bottom,
+                    top,
+                },
+            });
+            if (!CONFIG.Levels.UI.stairEnabled) return;
+            region.updateSource({
+                name: `Levels Stair ${bottom}-${top}`,
+                color: "#fe6c0b",
+            });
+            Hooks.once("createRegion", (region) => {
+                region.createEmbeddedDocuments("RegionBehavior", [
+                    {
+                        name: "Execute Script",
+                        type: "executeScript",
+                        system: {
+                            events: ["tokenEnter"],
+                            source: `CONFIG.Levels.handlers.RegionHandler.stair(region,event);\n//Check the wiki page for more region options https://wiki.theripper93.com/levels#regions
+                            `,
+                        },
+                    },
+                ])
+            });
+        });
+
         Hooks.on("preCreateDrawing", (drawing, updates) => {
             if (CONFIG.Levels.UI.tokensOnly) return;
             let sortedLevels = [...CONFIG.Levels.UI.definedLevels].sort((a, b) => {
@@ -624,12 +655,12 @@ Hooks.on("ready", () => {
                 let newBot = aboverange[0];
                 if (CONFIG.Levels.UI.rangeEnabled == true) {
                     drawing.updateSource({
+                        elevation: parseFloat(CONFIG.Levels.UI.range[0]),
                         hidden: CONFIG.Levels.UI.stairEnabled,
                         text: CONFIG.Levels.UI.stairEnabled ? `Levels Stair ${CONFIG.Levels.UI.range[0]}-${newBot}` : "",
                         flags: {
                             levels: {
                                 drawingMode: CONFIG.Levels.UI.stairEnabled ? 2 : 0,
-                                rangeBottom: parseFloat(CONFIG.Levels.UI.range[0]),
                                 rangeTop: newBot - 1,
                             },
                         },
@@ -640,10 +671,10 @@ Hooks.on("ready", () => {
                     drawing.updateSource({
                         hidden: CONFIG.Levels.UI.stairEnabled,
                         text: CONFIG.Levels.UI.stairEnabled ? `Levels Stair ${CONFIG.Levels.UI.range[0]}-${parseFloat(CONFIG.Levels.UI.range[1]) + 1}` : "",
+                        elevation: parseFloat(CONFIG.Levels.UI.range[0]),
                         flags: {
                             levels: {
                                 drawingMode: CONFIG.Levels.UI.stairEnabled ? 2 : 0,
-                                rangeBottom: parseFloat(CONFIG.Levels.UI.range[0]),
                                 rangeTop: parseFloat(CONFIG.Levels.UI.range[1]),
                             },
                         },
@@ -679,6 +710,7 @@ Hooks.on("ready", () => {
 });
 
 Hooks.on("getSceneControlButtons", (controls, b, c) => {
+    if (!CONFIG.Levels) return;
     let templateTool = {
         name: "setTemplateElevation",
         title: game.i18n.localize("levels.controls.setTemplateElevation.name"),

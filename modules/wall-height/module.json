@@ -2,7 +2,7 @@
     "title": "Wall Height",
     "id": "wall-height",
     "description": "Adds the ability to set wall height for walls so that tokens can look and move over them.",
-    "version": "5.1.5",
+    "version": "6.0.16",
     "authors": [
         {
             "name": "theripper93",
@@ -47,7 +47,7 @@
     ],
     "url": "https://github.com/theripper93/wall-height",
     "manifest": "https://github.com/theripper93/wall-height/releases/latest/download/module.json",
-    "download": "https://github.com/theripper93/wall-height/releases/download/5.1.5/module.zip",
+    "download": "https://github.com/theripper93/wall-height/releases/download/6.0.16/module.zip",
     "relationships": {
         "requires": [
             {
@@ -66,7 +66,7 @@
         ]
     },
     "compatibility": {
-        "minimum": "11",
-        "verified": "11"
+        "minimum": "12",
+        "verified": "12"
     }
 }

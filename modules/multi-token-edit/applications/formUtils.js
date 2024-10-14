@@ -1,11 +1,8 @@
+import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES } from '../scripts/constants.js';
 import { DataTransform } from '../scripts/picker.js';
 import { applyRandomization } from '../scripts/randomizer/randomizerUtils.js';
 import { applyDDTint, applyTMFXPreset } from '../scripts/tmfx.js';
 import {
-  MODULE_ID,
-  SUPPORTED_COLLECTIONS,
-  SUPPORTED_PLACEABLES,
-  applyAddSubtract,
   flagCompare,
   getCommonData,
   getData,
@@ -119,6 +116,66 @@ function performDocSearch(docs, documentName, selectedFields, found) {
   }
 }
 
+export function applyAddSubtract(updates, objects, documentName, addSubtractFields) {
+  // See if any field need to be added or subtracted
+  if (!addSubtractFields || foundry.utils.isEmpty(addSubtractFields)) return;
+
+  for (let i = 0; i < updates.length; i++) {
+    const update = updates[i];
+    const data = foundry.utils.flattenObject(getData(objects[i]).toObject());
+
+    GeneralDataAdapter.dataToForm(documentName, objects[i], data);
+
+    for (const field of Object.keys(update)) {
+      if (field in addSubtractFields && field in data) {
+        const ctrl = addSubtractFields[field];
+        let val = data[field];
+
+        // Special processing for Tagger module fields
+        if (field === 'flags.tagger.tags') {
+          const currentTags = Array.isArray(val) ? val : (val ?? '').split(',').map((s) => s.trim());
+          const modTags = (update[field] ?? '').split(',').map((s) => s.trim());
+          for (const tag of modTags) {
+            if (ctrl.method === 'add') {
+              if (!currentTags.includes(tag)) currentTags.push(tag);
+            } else if (ctrl.method === 'subtract') {
+              const index = currentTags.indexOf(tag);
+              if (index > -1) currentTags.splice(index, 1);
+            }
+          }
+          update[field] = currentTags.filter((t) => t).join(',');
+          continue;
+        } else if (ctrl.type === 'text') {
+          if (ctrl.method === 'add') {
+            const toAdd = 'value' in ctrl ? ctrl.value : update[field];
+            if (toAdd.startsWith('>>')) {
+              val = toAdd.replace('>>', '') + val;
+            } else {
+              val += toAdd;
+            }
+          } else {
+            val = val.replace('value' in ctrl ? ctrl.value : update[field], '');
+          }
+          update[field] = val;
+          continue;
+        }
+
+        if (ctrl.method === 'add') {
+          val += 'value' in ctrl ? ctrl.value : update[field];
+        } else {
+          val -= 'value' in ctrl ? ctrl.value : update[field];
+        }
+        if ('min' in ctrl && val < ctrl.min) {
+          val = ctrl.min;
+        } else if ('max' in ctrl && val > ctrl.max) {
+          val = ctrl.max;
+        }
+        update[field] = val;
+      }
+    }
+  }
+}
+
 export async function performMassUpdate(data, objects, documentName, applyType) {
   // Used by GenericForms, we want just the data, and no updates
   if (this.options?.simplified) {
@@ -175,7 +232,7 @@ export async function performMassUpdate(data, objects, documentName, applyType) 
   } else if (documentName === 'PlaylistSound') {
     for (let i = 0; i < objects.length; i++) {
       delete updates[i]._id;
-      objects[i].update(updates[i], context);
+      objects[i].update(updates[i]);
     }
   } else if (documentName === 'Note') {
     // Notes can be updated across different scenes
@@ -378,12 +435,17 @@ export function pasteDataUpdate(docs, preset, suppressNotif = false, excludePosi
     if (!foundry.utils.isEmpty(preset.randomize)) context.randomizeFields = preset.randomize;
     if (!foundry.utils.isEmpty(preset.addSubtract)) context.addSubtractFields = preset.addSubtract;
 
-    let data = foundry.utils.deepClone(preset.data[Math.floor(Math.random() * preset.data.length)]);
-    if (transform) DataTransform.apply(documentName, data, { x: 0, y: 0 }, transform);
+    const ogData = preset.data[Math.floor(Math.random() * preset.data.length)];
+    let data = foundry.utils.deepClone(ogData);
+    if (transform) {
+      DataTransform.apply(documentName, data, { x: 0, y: 0 }, transform);
+      data = foundry.utils.mergeObject(ogData, data, { insertKeys: false, inplace: false });
+    }
     if (excludePosition) {
       delete data.x;
       delete data.y;
       delete data.c;
+      delete data.elevation;
     }
 
     performMassUpdate.call(context, foundry.utils.flattenObject(data), docs, preset.documentName, applyType);

@@ -1,41 +1,30 @@
 {
+  "id": "coriolis-mystic-disturbances-compendium",
   "title": "Coriolis Mystic Disturbances",
   "description": "A compendium containing the mystic disturbances.",
-  "version": "2.0.1",
-  "esmodules": [
-    "scripts/main.js"
+  "authors": [
+    {
+      "name": "Félix-Étienne Trépanier"
+    }
   ],
+  "version": "3.0.1",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "relationships": {
+    "systems": [{ "id": "yzecoriolis", "type": "system" }]
+  },
+  "esmodules": ["./scripts/main.js"],
   "packs": [
     {
       "name": "coriolis-mystic-disturbances",
       "label": "Coriolis Mystic Disturbances",
       "path": "packs/mystic-disturbances.db",
-      "private": false,
       "type": "Item",
-      "system": "yzecoriolis",
-      "flags": {}
+      "package": "coriolis-mystic-disturbances"
     }
   ],
   "manifest": "https://raw.githubusercontent.com/coderunner/coriolis-mystic-disturbances-compendium/main/module.json",
-  "download": "https://github.com/coderunner/coriolis-mystic-disturbances-compendium/archive/refs/tags/2.0.1.zip",
-  "id": "coriolis-mystic-disturbances-compendium",
-  "authors": [
-    {
-      "name": "Félix-Étienne Trépanier",
-      "flags": {}
-    }
-  ],
-  "relationships": {
-    "systems": [
-      {
-        "id": "yzecoriolis",
-        "type": "system",
-        "compatibility": {}
-      }
-    ]
-  },
-  "compatibility": {
-    "minimum": "10",
-    "verified": "10"
-  }
+  "download": "https://github.com/coderunner/coriolis-mystic-disturbances-compendium/archive/refs/tags/3.0.1.zip"
 }

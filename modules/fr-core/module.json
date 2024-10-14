@@ -1,12 +1,12 @@
 {
   "id": "fr-core",
   "title": "FR - Traduction du core",
-  "version": "11.315.2",
-  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p><p> *** Participez à la traduction sur le <a href:='https://weblate.foundryvtt-hub.com/projects/fr-core/main/fr/'>weblate fr-core</a></p>",
+  "version": "12.331.5",
+  "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
   "compatibility": {
-    "minimum": "11",
-    "verified": "11",
-    "maximum": "11"
+    "minimum": "12",
+    "verified": "12",
+    "maximum": "12"
   },
   "coreTranslation": true,
   "authors": [
@@ -60,9 +60,14 @@
     },
     {
       "name": "vonv"
+    },
+    {
+      "name": "DjLeChuck"
     }
   ],
-  "scripts": [],
+  "scripts": [
+    "./scripts/bouton-sidebar.js"
+  ],
   "styles": [],
   "packs": [],
   "languages": [
@@ -70,9 +75,41 @@
       "lang": "fr",
       "name": "Français",
       "path": "fr.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/backups-overview.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/canvas-controls.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/compatibility-preview-overview.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/creating-a-world.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/installing-a-system.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/sidebar.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/ui-overview.json"
+    },
+    {
+      "lang": "fr",
+      "path": "tours/welcome.json"
     }
   ],
-  "url": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr",
-  "manifest": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/raw/V11/module.json",
-  "download": "https://gitlab.com/baktov.sugar/foundryvtt-lang-fr-fr/-/jobs/artifacts/core-11.315.2/raw/fr-core.zip?job=build"
+  "url": "https://github.com/Fonderie-VTT/fr-core",
+  "manifest": "https://github.com/Fonderie-VTT/fr-core/releases/latest/download/module.json",
+  "download": "https://github.com/Fonderie-VTT/fr-core/releases/download/12.331.5/module.zip"
 }

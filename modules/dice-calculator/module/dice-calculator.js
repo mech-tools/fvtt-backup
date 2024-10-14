@@ -1,455 +1,3 @@
-class DiceCalculator {
-	/** Sets if the KH/KL buttons will be called Advantage/Disadvantage */
-	adv = false;
-
-	/** Buttons that aren't dependent on an actor being selected, like extra dice buttons */
-	customButtons = [];
-
-	/**
-	 * Gets buttons that are specific to an actor.
-	 * @param {Actor} actor
-	 * @returns {{Array, Array ,Array}}
-	 */
-	actorSpecificButtons(actor) {
-		const abilities = [];
-		const attributes = [];
-		const customButtons = [];
-		return { abilities, attributes, customButtons };
-	}
-
-	/**
-	 * Handles the data and returns it to the module.
-	 * @param {Actor} actor
-	 * @returns {{Array, Array ,Array}}
-	 */
-	getData(actor = null) {
-		let { abilities, attributes, customButtons } = this.actorSpecificButtons(actor);
-		return {
-			abilities,
-			attributes,
-			customButtons: [...customButtons, ...this.customButtons]
-		};
-	}
-}
-
-class archmageDiceCalculator extends DiceCalculator {
-	adv = true;
-
-	abilities = ["str", "dex", "con", "int", "wis", "cha"];
-
-	attributes = ["init", "level", "standardBonuses"];
-
-	actorSpecificButtons(actor) {
-		const abilities = [];
-		const attributes = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system.abilities) {
-				for (let prop in actor.system.abilities) {
-					if (this.abilities.includes(prop)) {
-						let formula = "";
-						if (actor.system.abilities[prop].mod !== undefined) {
-							formula = `@abil.${prop}.mod`;
-						} else if (actor.system.abilities[prop].value !== undefined) {
-							formula = `@abil.${prop}.value`;
-						} else {
-							formula = `@abil.${prop}`;
-						}
-						abilities.push({
-							label: prop,
-							name: game.i18n.localize(`ARCHMAGE.${prop}.key`),
-							formula: formula
-						});
-					}
-				}
-				// Add a custom row of buttons based on 13th Age's ability damage at high levels.
-				let levelMultiplier = 1;
-				if (actor.data.data.attributes.level.value >= 8) {
-					levelMultiplier = 3;
-				} else if (actor.data.data.attributes.level.value >= 5) {
-					levelMultiplier = 2;
-				}
-
-				if (levelMultiplier > 1) {
-					for (let prop in actor.system.abilities) {
-						customButtons.push({
-							label: prop,
-							name: `${levelMultiplier}x ${prop}`,
-							formula: `(${levelMultiplier} * @abil.str.mod)`
-						});
-					}
-				}
-			}
-			if (actor.system.attributes) {
-				for (let prop of this.attributes) {
-					if (prop in actor.system.attributes) {
-						let formula = "";
-						if (actor.system.attributes[prop].mod !== undefined) {
-							formula = `@attr.${prop}.mod`;
-						} else if (actor.system.attributes[prop].value !== undefined) {
-							formula = `@attr.${prop}.value`;
-						} else {
-							formula = `@attr.${prop}`;
-						}
-						attributes.push({
-							label: prop,
-							name: prop,
-							formula: formula
-						});
-					}
-				}
-				if (actor.system.attributes?.level) {
-					const level = actor.system.attributes.level;
-					attributes.push({
-						label: "level_half",
-						name: "1/2 Level",
-						formula: level !== undefined ? Math.floor(level / 2) : 0
-					});
-				}
-			}
-			attributes.push(...[
-				{
-					label: "escalation",
-					name: "Esc. Die",
-					formula: "@attr.escalation.value"
-				},
-				{
-					label: "melee",
-					name: "W [Melee]",
-					formula: "@attr.weapon.melee.value"
-				},
-				{
-					label: "ranged",
-					name: "W [Ranged]",
-					formula: "@attr.weapon.ranged.value"
-				},
-				{
-					label: "standard_bonuses",
-					name: "Standard Bonuses",
-					formula: "@attr.standardBonuses.value"
-				}
-			]);
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
-class dccDiceCalculator extends DiceCalculator {
-	abilities = ["str", "agl", "sta", "per", "int", "lck"];
-
-	customButtons = [
-		{
-			label: "d3",
-			name: "d3",
-			formula: "d3"
-		},
-		{
-			label: "d5",
-			name: "d5",
-			formula: "d5"
-		},
-		{
-			label: "d7",
-			name: "d7",
-			formula: "d7"
-		},
-		{
-			label: "d14",
-			name: "d14",
-			formula: "d14"
-		},
-		{
-			label: "d16",
-			name: "d16",
-			formula: "d16"
-		},
-		{
-			label: "d24",
-			name: "d24",
-			formula: "d24"
-		},
-		{
-			label: "d30",
-			name: "d30",
-			formula: "d30"
-		}
-	];
-
-	actorSpecificButtons(actor) {
-		const abilities = [];
-		const attributes = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system.abilities) {
-				for (let prop in actor.system.abilities) {
-					if (this.abilities.includes(prop)) {
-						let formula = "";
-						if (actor.system.abilities[prop].mod !== undefined) {
-							formula = `@abil.${prop}.mod`;
-						} else if (actor.system.abilities[prop].value !== undefined) {
-							formula = `@abil.${prop}.value`;
-						} else {
-							formula = `@abil.${prop}`;
-						}
-						abilities.push({
-							label: prop,
-							name: game.i18n.localize(`DCC.Ability${prop.capitalize()}Short`),
-							formula: formula
-						});
-					}
-				}
-			}
-			if (actor.system.details?.level?.value) {
-				attributes.push({
-					label: "level",
-					name: game.i18n.localize("DCC.Level"),
-					formula: "@details.level.value"
-				});
-			}
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
-class demonlordDiceCalculator extends DiceCalculator {
-	adv = false;
-
-	abilities = ["agility", "intellect", "perception", "strength", "will"]; // The system calls these "attribtues"
-
-	attributes = ["corruption", "insanity"]; // The system calls these "Characteristics"
-
-	actorSpecificButtons(actor) {
-		const attributes = [];
-		const abilities = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system?.attributes) {
-				for (let prop in actor.system.attributes) {
-					if (this.abilities.includes(prop)) {
-						if (actor.system.attributes[prop].modifier !== undefined) {
-							abilities.push({
-								label: prop,
-								name: game.i18n.localize(`DL.Attribute${prop.capitalize()}`),
-								formula: `@attr.${prop}.modifier`
-							});
-						}
-					}
-				}
-
-				if (actor.system?.level) {
-					const level = actor.system.level;
-					attributes.push(...[
-						{
-							label: "level",
-							name: game.i18n.localize("DL.CharLevel"),
-							formula: "@level"
-						},
-						{
-							label: "level_half",
-							name: `1/2 ${game.i18n.localize("DL.CharLevel")}`,
-							formula: level !== undefined ? Math.floor(level / 2) : 0
-						}
-					]);
-				}
-			}
-			if (actor.system?.characteristics) {
-				for (let prop in actor.system.characteristics) {
-					if (this.attributes.includes(prop)) {
-						if (actor.system.characteristics[prop].value !== undefined) {
-							attributes.push({
-								label: prop,
-								name: game.i18n.localize(`DL.Char${prop.capitalize()}`),
-								formula: `@characteristics.${prop}.value`
-							});
-						}
-					}
-				}
-			}
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
-class dnd5eDiceCalculator extends DiceCalculator {
-	adv = true;
-
-	abilities = ["str", "dex", "con", "int", "wis", "cha"];
-
-	attributes = {
-		init: game.i18n.localize("DND5E.Initiative"),
-		prof: game.i18n.localize("DND5E.Proficiency")
-	};
-
-	actorSpecificButtons(actor) {
-		const abilities = [];
-		const attributes = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system.abilities) {
-				for (let prop in actor.system.abilities) {
-					if (this.abilities.includes(prop)) {
-						let formula = "";
-						if (actor.system.abilities[prop].mod !== undefined) {
-							formula = `@abil.${prop}.mod`;
-						} else if (actor.system.abilities[prop].value !== undefined) {
-							formula = `@abil.${prop}.value`;
-						} else {
-							formula = `@abil.${prop}`;
-						}
-						abilities.push({
-							label: prop,
-							name: game.i18n.localize(`DND5E.Ability${prop.capitalize()}Abbr`),
-							formula: formula
-						});
-					}
-				}
-			}
-			if (actor.system.attributes) {
-				if (actor.system?.details?.level) {
-					const level = actor.system.details.level;
-					attributes.push(...[
-						{
-							label: "level",
-							name: game.i18n.localize("DND5E.Level"),
-							formula: "@details.level"
-						},
-						{
-							label: "level_half",
-							name: `1/2 ${game.i18n.localize("DND5E.Level")}`,
-							formula: level !== undefined ? Math.floor(level / 2) : 0
-						}
-					]);
-				}
-
-				for (let prop in actor.system.attributes) {
-					if (prop in this.attributes) {
-						let formula = "";
-						if (actor.system.attributes[prop].mod !== undefined) {
-							formula = `@attr.${prop}.mod`;
-						} else if (actor.system.attributes[prop].value !== undefined) {
-							formula = `@attr.${prop}.value`;
-						} else {
-							formula = `@attr.${prop}`;
-						}
-						attributes.push({
-							label: prop,
-							name: this.attributes[prop],
-							formula: formula
-						});
-					}
-				}
-				if (actor.system?.attributes?.prof) {
-					const prof = actor.system.attributes.prof;
-					attributes.push({
-						label: "prof_half",
-						name: "1/2 Prof",
-						formula: prof !== undefined ? Math.floor(prof / 2) : 0
-					});
-					attributes.push({
-						label: "prof_double",
-						name: "2x Prof",
-						formula: prof !== undefined ? 2 * prof : 0
-					});
-				}
-			}
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
-class pf2eDiceCalculator extends DiceCalculator {
-	adv = true;
-
-	abilities = ["str", "dex", "con", "int", "wis", "cha"];
-
-	attributes = ["perception"];
-
-	actorSpecificButtons(actor) {
-		const abilities = [];
-		const attributes = [];
-		const customButtons = [];
-
-		if (actor) {
-			if (actor.system.abilities) {
-				for (let prop in actor.system.abilities) {
-					if (this.abilities.includes(prop)) {
-						let formula = "";
-						if (actor.system.abilities[prop].mod !== undefined) {
-							formula = `@abil.${prop}.mod`;
-						} else if (actor.system.abilities[prop].value !== undefined) {
-							formula = `@abil.${prop}.value`;
-						} else {
-							formula = `@abil.${prop}`;
-						}
-						abilities.push({
-							label: prop,
-							name: game.i18n.localize(`PF2E.AbilityId.${prop}`),
-							formula: formula
-						});
-					}
-				}
-			}
-			if (actor.system.attributes?.perception) {
-				let formula = "@attr.perception.value";
-				attributes.push({
-					label: "perception",
-					name: game.i18n.localize("PF2E.PerceptionLabel"),
-					formula: formula
-				});
-			}
-			if (actor.system.details?.level?.value) {
-				attributes.push(...[
-					{
-						label: "level",
-						name: game.i18n.localize("PF2E.LevelLabel"),
-						formula: "@details.level.value"
-					},
-					{
-						label: "prof_t",
-						name: game.i18n.localize("PF2E.ProficiencyLevel1"),
-						formula: "(2 + @details.level.value)"
-					},
-					{
-						label: "prof_e",
-						name: game.i18n.localize("PF2E.ProficiencyLevel2"),
-						formula: "(4 + @details.level.value)"
-					},
-					{
-						label: "prof_m",
-						name: game.i18n.localize("PF2E.ProficiencyLevel3"),
-						formula: "(6 + @details.level.value)"
-					},
-					{
-						label: "prof_l",
-						name: game.i18n.localize("PF2E.ProficiencyLevel4"),
-						formula: "(8 + @details.level.value)"
-					},
-				]);
-			}
-		}
-
-		return { abilities, attributes, customButtons };
-	}
-}
-
-var diceCalculators = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	Template: DiceCalculator,
-	archmage: archmageDiceCalculator,
-	dcc: dccDiceCalculator,
-	demonlord: demonlordDiceCalculator,
-	dnd5e: dnd5eDiceCalculator,
-	pf2e: pf2eDiceCalculator
-});
-
 class TemplateDiceMap {
 	/** Unmark the KH/KL buttons if a roll is made */
 	removeAdvOnRoll = true;
@@ -533,6 +81,13 @@ class TemplateDiceMap {
 			disadvantage: "DICE_TRAY.KeepLowest",
 			dis: "KL"
 		};
+	}
+
+	/**
+	 * List of additional settings to be registered during the i18nInit hook.
+	 */
+	get settings() {
+		return {};
 	}
 
 	/**
@@ -757,9 +312,8 @@ class TemplateDiceMap {
 		if (match_string.test(currFormula)) {
 			const match = currFormula.match(match_string);
 			const parts = {
-				txt: match[0] || "",
-				qty: match[1] || "1",
-				die: match[2] || "",
+				qty: match.groups?.qty ?? (match[1] || "1"),
+				die: match.groups?.dice ?? (match[2] || ""),
 			};
 
 			if (parts.die === "" && match[3]) {
@@ -1149,6 +703,17 @@ class SWADEDiceMap extends TemplateDiceMap {
 		};
 	}
 
+	get settings() {
+		return {
+			wildDieBehavior: {
+				name: "DICE_TRAY.SETTINGS.SWADE.wildDieBehavior.name",
+				hint: "DICE_TRAY.SETTINGS.SWADE.wildDieBehavior.hint",
+				default: false,
+				type: Boolean
+			}
+		};
+	}
+
 	_extraButtonsLogic(html) {
 		html.find(".dice-tray__advantage").on("click", (event) => {
 			event.preventDefault();
@@ -1179,9 +744,163 @@ class SWADEDiceMap extends TemplateDiceMap {
 		}
 
 		if (add_wild) {
-			return `{${qty === "" ? 1 : qty}${dice}${roll_suffix},1d6${roll_suffix}}kh`;
+			if (!game.settings.get("dice-calculator", "wildDieBehavior")) {
+				return `{${qty === "" ? 1 : qty}${dice}${roll_suffix},1d6${roll_suffix}}kh`;
+			}
+
+			dice = dice.replace("(", "").replace(")", "");
+			if (!Number.isNumeric(qty)) {
+				return `{1(?<dice>${dice})${roll_suffix}.*,1d6${roll_suffix}}kh(?<qty>\\d*)`;
+			}
+			return `{${`1${dice}${roll_suffix},`.repeat(qty)}1d6${roll_suffix}}kh${qty}`;
 		}
 		return `${qty === "" ? 1 : qty}${dice}${roll_suffix}`;
+	}
+}
+
+class HeXXen1733DiceMap extends TemplateDiceMap {
+	/** Shows the KH/KL buttons */
+	showExtraButtons = false;
+
+	get dice() {
+		return [
+			{
+				h: {
+					tooltip: "HeXXenwürfel",
+					img: "systems/hexxen-1733/img/dice/svg/erfolgswuerfel_einfach.svg",
+					color: "#00a806"
+				},
+				s: {
+					tooltip: "Segnungswürfel",
+					img: "systems/hexxen-1733/img/dice/svg/erfolgswuerfel_doppel.svg",
+					color: "#d1c5a8"
+				},
+				b: {
+					tooltip: "Blutwürfel",
+					img: "systems/hexxen-1733/img/dice/svg/blutwuerfel_3.svg",
+					color: "#a74937"
+				},
+				e: {
+					tooltip: "Elixierwürfel",
+					img: "systems/hexxen-1733/img/dice/svg/elixirwuerfel_5.svg",
+					color: "#4c7ba0"
+				}
+			}
+		];
+	}
+
+	applyModifier(html) {
+		const $mod_input = html.find(".dice-tray__input");
+		const mod_val = Number($mod_input.val());
+
+		if ($mod_input.length === 0 || isNaN(mod_val)) return;
+
+		let mod_string = "";
+		let mod_temp = "";
+		if (mod_val > 0) {
+			mod_string = `${mod_val}+`;
+		} else if (mod_val < 0) {
+			mod_temp = Math.abs(mod_val);
+			mod_string = `${mod_temp}-`;
+		}
+
+		const $chat = html.find("#chat-form textarea");
+		const chat_val = String($chat.val());
+
+		const match_string = /(\d+)(\+|-)$/;
+		if (match_string.test(chat_val)) {
+			$chat.val(chat_val.replace(match_string, mod_string));
+		} else if (chat_val !== "") {
+			$chat.val(chat_val + mod_string);
+		} else {
+			const rollPrefix = this._getRollMode(html);
+			$chat.val(`${rollPrefix} ${mod_string}`);
+		}
+		if (/(\/r|\/gmr|\/br|\/sr) $/g.test($chat.val())) {
+			$chat.val("");
+		}
+	}
+
+	updateChatDice(dataset, direction, html) {
+		const $chat = html.find("#chat-form textarea");
+		let currFormula = String($chat.val());
+		if (direction === "sub" && currFormula === "") return;
+		let newFormula = null;
+		let rollPrefix = this._getRollMode(html);
+		let qty = 0;
+
+		let match_dice = dataset.formula;
+		const match_string = new RegExp(`${this.rawFormula("(\\d*)", `(${match_dice})`, html)}(?=[0-9]|$)`);
+
+		if (match_string.test(currFormula)) {
+			const match = currFormula.match(match_string);
+			const parts = {
+				txt: match[0] || "",
+				qty: match[1] || "1",
+				die: match[2] || "",
+			};
+
+			if (parts.die === "" && match[3]) {
+				parts.die = match[3];
+			}
+
+			qty = direction === "add" ? Number(parts.qty) + (qty || 1) : Number(parts.qty) - (qty || 1);
+
+			// Update the dice quantity.
+			qty = qty < 1 ? "" : qty;
+
+			if (qty === "" && direction === "sub") {
+				newFormula = "";
+				let regexxx =`${this.rawFormula("(\\d+)", `(${match_dice})`, html)}(?=[0-9]|$)`;
+				const new_match_string = new RegExp(regexxx);
+				currFormula = currFormula.replace(new_match_string, newFormula);
+				if (!(/(\d+[hsbe+-])/.test(currFormula))) {
+
+					currFormula = "";
+				}
+			} else {
+				newFormula = this.rawFormula(qty, parts.die, html);
+				currFormula = currFormula.replace(match_string, newFormula);
+			}
+			$chat.val(currFormula);
+		} else {
+			if (!qty) {
+				qty = 1;
+			}
+			if (currFormula === "") {
+				$chat.val(`${rollPrefix} ${this.rawFormula(qty, dataset.formula, html)}`);
+			} else {
+				const signal = (/(\/r|\/gmr|\/br|\/sr) (?!-)/g.test(currFormula)) ? "" : "";
+				currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr) /g, `${rollPrefix} ${this.rawFormula(qty, dataset.formula, html)}${signal}`);
+				$chat.val(currFormula);
+			}
+		}
+		// TODO consider separate this into another method to make overriding simpler
+		// TODO e.g. cases where a button adds 2+ dice
+
+		// Add a flag indicator on the dice.
+		qty = Number(qty);
+		const $flag_button = html.find(`.dice-tray__flag--${dataset.formula}`);
+		if (!qty) {
+			qty = direction === "add" ? 1 : 0;
+		}
+
+		if (qty > 0) {
+			$flag_button.text(qty);
+			$flag_button.removeClass("hide");
+		} else if (qty < 0) {
+			$flag_button.text(qty);
+		} else {
+			$flag_button.text("");
+			$flag_button.addClass("hide");
+		}
+
+		currFormula = $chat.val();
+		currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr)(( \+)| )/g, `${rollPrefix} `)
+			.replace(/\+{2}/g, "+")
+			.replace(/-{2}/g, "-");
+		$chat.val(currFormula);
+		this.applyModifier(html);
 	}
 }
 
@@ -1196,166 +915,155 @@ var keymaps = /*#__PURE__*/Object.freeze({
 	fatex: FateDiceMap,
 	pf2e: pf2eDiceMap,
 	starwarsffg: starwarsffgDiceMap,
-	swade: SWADEDiceMap
+	swade: SWADEDiceMap,
+	hexxen1733: HeXXen1733DiceMap
 });
 
-class DiceCalculatorDialog extends Dialog {
-	static get defaultOptions() {
-		return foundry.utils.mergeObject(super.defaultOptions, {
-			template: "templates/hud/dialog.html",
-			focus: true,
-			classes: ["dialog", "dialog--dice-calculator"],
+class DiceCalculatorDialog extends foundry.applications.api.DialogV2 {
+	static DEFAULT_OPTIONS = {
+		id: "dialog-{id}",
+		classes: ["dialog", "dialog--dice-calculator"],
+		tag: "dialog",
+		position: {
 			width: 400,
 			left: window.innerWidth - 710,
-			jQuery: true
-		});
+			top: window.innerHeight - 500
+		},
+		window: {
+			frame: true,
+			positioned: true,
+			minimizable: false
+		}
+	};
+
+	get title() {
+		return game.i18n.localize("DICE_TRAY.Calculator");
 	}
 
-	activateListeners(html) {
-		super.activateListeners(html);
-		// Toggle the memory display.
-		html.find(".dice-calculator__text-input").on("focus", (event) => {
-			$(".dice-calculator__rolls--hidden").addClass("visible");
+	_onRender(context, options) {
+		// this.window.header.style.display = "none";
+		const textInput = this.element.querySelector(".dice-calculator__text-input");
+		const buttons = this.element.querySelectorAll(".dice-calculator--button");
+
+		textInput.addEventListener("focus", (event) => {
+			this.element.querySelector(".dice-calculator__rolls--hidden")?.classList.toggle("visible");
 		});
-		html.find(".dice-calculator__text-input").on("blur", (event) => {
+		textInput.addEventListener("blur", (event) => {
 			setTimeout(() => {
-				$(".dice-calculator__rolls--hidden").removeClass("visible");
+				this.element.querySelector(".dice-calculator__rolls--hidden")?.classList.toggle("visible");
 			}, 250);
 		});
 
-		// Replace with the selected die formula.
-		html.find(".dice-calculator__roll").on("click", (event) => {
-			let formula = event.target.textContent;
-			$(".dice-calculator__text-input").val(formula);
-		});
+		for (const button of buttons) {
+			button.addEventListener("click", (event) => {
+				event.preventDefault();
 
-		// Update the dice formula.
-		html.find(".dice-calculator--button").on("click", (event) => {
-			event.preventDefault();
+				// Retrieve variables to start things off.
+				const buttonFormula = event.currentTarget.dataset.formula;
+				let currentFormula = textInput.value;
+				let currentFormulaArray = currentFormula.split(" ");
+				let last = currentFormulaArray.slice(-1)[0];
 
-			// Retrieve variables to start things off.
-			let buttonFormula = String($(event.currentTarget).data("formula"));
-			let $formulaInput = $(document).find(".dice-calculator textarea");
-			let currentFormula = $formulaInput.val();
-			let currentFormulaArray = currentFormula.split(" ");
-			let last = currentFormulaArray.slice(-1)[0];
-			let skip = false;
+				// Used for determining when to add directly.
+				// TODO replace for Object.keys(CONFIG.Dice.fulfillment.dice)
+				const standardDice = [
+					"d3",
+					"d4",
+					"d6",
+					"d8",
+					"d10",
+					"d12",
+					"d20",
+					"d30",
+					"d100"
+				];
 
-			// Used for determining when to add directly.
-			const standardDice = [
-				"d3",
-				"d4",
-				"d6",
-				"d8",
-				"d10",
-				"d12",
-				"d20",
-				"d30",
-				"d100"
-			];
+				// Used to prevent doubling up on operations/symbols.
+				const opFormulas = ["/", "*", "+", "-"];
+				const parenthesesFormulas = ["(", ")"];
 
-			// Used to prevent doubling up on operations/symbols.
-			const opFormulas = [
-				"/",
-				"*",
-				"+",
-				"-"
-			];
-			const parenthesesFormulas = [
-				"(",
-				")"
-			];
+				const isOperationOrParenthesis = (formula) =>
+					opFormulas.includes(formula) || parenthesesFormulas.includes(formula);
 
-			// If the last item and the incoming item are both math operations,
-			// skip adding it.
-			if (opFormulas.includes(last) && opFormulas.includes(buttonFormula)) {
-				skip = true;
-			}
-
-			// If the incoming item is either an operation or parentheses, skip it
-			// in certain cases.
-			if (opFormulas.includes(buttonFormula)
-			|| parenthesesFormulas.includes(buttonFormula)) {
-				if (last === buttonFormula) {
-					skip = true;
+				// Skip if last and incoming item are operation/parenthesis or if both are "dx"
+				if (
+					(isOperationOrParenthesis(buttonFormula) && isOperationOrParenthesis(last))
+					|| (buttonFormula === "d" && last === "d")
+				) {
+					return;
 				}
 
-				if (opFormulas.includes(last) || parenthesesFormulas.includes(last)) {
-					skip = true;
+				// Handle clear.
+				if (buttonFormula === "CLEAR") {
+					currentFormula = "";
 				}
-			}
-
-			// Handle clear.
-			if (buttonFormula === "CLEAR") {
-				currentFormula = "";
-			}
-			// Handle backspace/delete.
-			else if (buttonFormula === "DELETE") {
-				currentFormulaArray.pop();
-				currentFormula = currentFormulaArray.join(" ");
-			}
-			// Handle token attributes and abilities.
-			else if (last.includes("@") || buttonFormula.includes("@")) {
-				let joiner = opFormulas.includes(last) || opFormulas.includes(buttonFormula) ? " " : " + ";
-				joiner = last.length < 1 ? "" : joiner;
-				currentFormula = currentFormula + joiner + buttonFormula;
-			}
-			// Handle inputs such as 'd4' and 'd6'
-			else if (buttonFormula.includes("d")) {
-				let updated = false;
-				let count = 0;
-				// @TODO: Investigate whether this option is worthwhile, perhaps as a
-				// a setting.
-				// -----------------------------------------------------------------------
-				// Loop through all existing items in the formula array to see if this
-				// die type has been used before. If so, increase the count on that entry.
-				// for (let i = 0; i < currentFormulaArray.length; i++) {
-				//   if (currentFormulaArray[i].includes(buttonFormula)) {
-				//     let result = currentFormulaArray[i].split('d');
-				//     if (result[0] && (result[0].length !== 0 || !isNaN(result[0]))) {
-				//       count = parseInt(result[0]);
-				//     }
-				//     else {
-				//       count = 1;
-				//     }
-				//     updated = true;
-				//     currentFormulaArray[i] = (count + 1) + buttonFormula;
-				//   }
-				// }
-
-				// Update the number of dice in the last item if it's the same as the
-				// button formula.
-				const matchString = new RegExp(`${buttonFormula}(?!0)`, "i");
-				if (matchString.test(last)) {
-					let result = last.split("d");
-					if (result[0] && (result[0].length !== 0 || !isNaN(result[0]))) {
-						count = parseInt(result[0]);
-					} else {
-						count = 1;
-					}
-					const adv = result[1].split(/\d+/)[1];
-					updated = true;
-					currentFormulaArray[currentFormulaArray.length - 1] = (count + 1) + buttonFormula + adv;
-				}
-				// If we updated an item, create a new text version of the formula.
-				if (updated) {
+				// Handle backspace/delete.
+				else if (buttonFormula === "DELETE") {
+					currentFormulaArray.pop();
 					currentFormula = currentFormulaArray.join(" ");
 				}
-				// Otherwise, append to the original.
-				else {
-					let joiner = " ";
-					if (last.includes("d")) {
-						joiner = " + ";
-					} else if (!isNaN(last)) {
-						joiner = "";
-					}
+				// Handle token attributes and abilities.
+				else if (last.includes("@") || buttonFormula.includes("@")) {
+					let joiner = opFormulas.includes(last) || opFormulas.includes(buttonFormula) ? " " : " + ";
+					joiner = last.length < 1 ? "" : joiner;
 					currentFormula = currentFormula + joiner + buttonFormula;
 				}
-			}
-			// Handle adv/dis.
-			else if (buttonFormula.includes("k")) {
-				if (last.includes("d")) {
-				// If the last item isn't kh or kl, append.
+				// Handle inputs such as 'd4' and 'd6'
+				else if (buttonFormula.includes("d")) {
+					let updated = false;
+					let count = 0;
+					// @TODO: Investigate whether this option is worthwhile, perhaps as a
+					// a setting.
+					// -----------------------------------------------------------------------
+					// Loop through all existing items in the formula array to see if this
+					// die type has been used before. If so, increase the count on that entry.
+					// for (let i = 0; i < currentFormulaArray.length; i++) {
+					//   if (currentFormulaArray[i].includes(buttonFormula)) {
+					//     let result = currentFormulaArray[i].split('d');
+					//     if (result[0] && (result[0].length !== 0 || !isNaN(result[0]))) {
+					//       count = parseInt(result[0]);
+					//     }
+					//     else {
+					//       count = 1;
+					//     }
+					//     updated = true;
+					//     currentFormulaArray[i] = (count + 1) + buttonFormula;
+					//   }
+					// }
+
+					// Update the number of dice in the last item if it's the same as the
+					// button formula.
+					const matchString = new RegExp(`${buttonFormula}(?!0)`, "i");
+					if (matchString.test(last)) {
+						let result = last.split("d");
+						if (result[0] && (result[0].length !== 0 || !isNaN(result[0]))) {
+							count = parseInt(result[0]);
+						} else {
+							count = 1;
+						}
+						const adv = result[1].split(/\d+/)[1];
+						updated = true;
+						currentFormulaArray[currentFormulaArray.length - 1] = (count + 1) + buttonFormula + adv;
+					}
+					// If we updated an item, create a new text version of the formula.
+					if (updated) {
+						currentFormula = currentFormulaArray.join(" ");
+					}
+					// Otherwise, append to the original.
+					else {
+						let joiner = " ";
+						if (last.includes("d")) {
+							joiner = " + ";
+						} else if (!isNaN(last)) {
+							joiner = "";
+						}
+						currentFormula = currentFormula + joiner + buttonFormula;
+					}
+				}
+				// Handle adv/dis.
+				else if (buttonFormula.includes("k")) {
+					if (!last.includes("d")) return;
+					// If the last item isn't kh or kl, append.
 					let lastArray = last.split("k");
 					if (!last.includes("k")) {
 						if (/^(1|)(d\d+)/.test(last)) {
@@ -1396,59 +1104,60 @@ class DiceCalculatorDialog extends Dialog {
 							currentFormula = currentFormula + count;
 						}
 					}
-				} else {
-					skip = true;
 				}
-			}
-			// Handle custom dice.
-			else if (buttonFormula === "d") {
-				let joiner = last.includes("d") || isNaN(last) ? " + " : "";
-				currentFormula = currentFormula + joiner + buttonFormula;
-			}
-			// Handle numbers appended to custom dice..
-			else if ((last === "d" || last.includes("k")
-			|| parenthesesFormulas.includes(last)) && !isNaN(buttonFormula)) {
-				currentFormula = currentFormula + buttonFormula;
-			}
-			// All other inputs.
-			else {
-			// Normally we want to append with either an empty string or a space.
-				let joiner = "";
-				if (currentFormula.length === 0) {
-					joiner = "";
+				// Handle custom dice.
+				else if (buttonFormula === "d") {
+					let joiner = last.includes("d") || isNaN(last) ? " + " : "";
+					currentFormula = currentFormula + joiner + buttonFormula;
 				}
-				if (opFormulas.includes(buttonFormula)) {
-					joiner = " ";
+				// Handle numbers appended to custom dice..
+				else if (
+					(last === "d" || last.includes("k")
+					|| parenthesesFormulas.includes(last)) && !isNaN(buttonFormula)
+				) {
+					currentFormula = currentFormula + buttonFormula;
 				}
-				// If the last item is a die, append with as addition.
-				else if (last.includes("d")) {
-					if (standardDice.includes(last) && buttonFormula !== "0") {
-						joiner = " + ";
-					}
-					// If the last item isn't a complete die (such as "3d") and this is
-					// a number, append directly.
-					else if (!isNaN(last) || !isNaN(parseInt(buttonFormula))) {
-						joiner = "";
-					} else {
+				// All other inputs.
+				else {
+				// Normally we want to append with either an empty string or a space.
+					let joiner = "";
+					if (opFormulas.includes(buttonFormula)) {
 						joiner = " ";
 					}
-				} else if (isNaN(parseInt(last))) {
-					joiner = " ";
+					// If the last item is a die, append with as addition.
+					else if (last.includes("d")) {
+						if (standardDice.includes(last) && buttonFormula !== "0") {
+							joiner = " + ";
+						}
+						// If the last item isn't a complete die (such as "3d") and this is
+						// a number, append directly.
+						else if (!isNaN(last) || !isNaN(parseInt(buttonFormula))) {
+							joiner = "";
+						} else {
+							joiner = " ";
+						}
+					} else if (isNaN(parseInt(last))) {
+						joiner = " ";
+					}
+					currentFormula = currentFormula + joiner + buttonFormula;
 				}
-				currentFormula = currentFormula + joiner + buttonFormula;
-			}
 
-			// If no operations said to skip this entry, update the input.
-			if (!skip) {
-				$formulaInput.val(currentFormula);
-			}
-		});
+				textInput.value = currentFormula;
+			});
+		}
+	}
+
+	async _onSubmit(target, event) {
+		event.preventDefault();
+		const button = this.options.buttons[target?.dataset.action];
+		const result = (await button?.callback?.(event, target, this.element)) ?? button?.action;
+		await this.options.submit?.(result);
 	}
 }
 
-const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const { ApplicationV2: ApplicationV2$1, HandlebarsApplicationMixin: HandlebarsApplicationMixin$1 } = foundry.applications.api;
 
-class DiceTrayPopOut extends HandlebarsApplicationMixin(ApplicationV2) {
+class DiceTrayPopOut extends HandlebarsApplicationMixin$1(ApplicationV2$1) {
 	static DEFAULT_OPTIONS = {
 		id: "dice-tray-popout",
 		tag: "aside",
@@ -1490,7 +1199,6 @@ class DiceTrayPopOut extends HandlebarsApplicationMixin(ApplicationV2) {
 		const left = position.left ?? ui.nav?.element[0].getBoundingClientRect().left;
 		const top = position.top ?? ui.controls?.element[0].getBoundingClientRect().top;
 		options.position = {...options.position, left, top};
-		canvas.scene.apps[this.id] = this;
 	}
 
 	_onRender(context, options) {
@@ -1616,7 +1324,8 @@ class DiceTrayPopOut extends HandlebarsApplicationMixin(ApplicationV2) {
  * for systems with dashes in their names is to create this map.
  */
 const KEYS = {
-	"fate-core-official": "fateCoreOfficial"
+	"fate-core-official": "fateCoreOfficial",
+	"hexxen-1733": "hexxen1733"
 };
 
 async function preloadTemplates() {
@@ -1627,9 +1336,63 @@ async function preloadTemplates() {
 		"modules/dice-calculator/templates/GeneralSettings.hbs",
 		"modules/dice-calculator/templates/calculator.html",
 		"modules/dice-calculator/templates/tray.html",
+		"modules/dice-calculator/templates/OperationRow.hbs"
 	];
 
 	return loadTemplates(templatePaths);
+}
+
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+
+class CalculatorConfig extends HandlebarsApplicationMixin(ApplicationV2) {
+	static DEFAULT_OPTIONS = {
+		classes: ["form"],
+		id: "dice-tray-calculator-config",
+		tag: "form",
+		position: {
+			width: 420,
+			height: "auto",
+		},
+		form: {
+			handler: CalculatorConfig.#onSubmit,
+			closeOnSubmit: true,
+		},
+		window: {
+			contentClasses: ["standard-form"],
+			title: "Dice Calculator Configuration"
+		},
+	};
+
+	static PARTS = {
+		config: {
+			template: "modules/dice-calculator/templates/CalculatorConfig.hbs"
+		},
+		footer: {
+			template: "templates/generic/form-footer.hbs",
+		},
+	};
+
+	_getButtons() {
+		return [
+			{ type: "submit", icon: "fa-solid fa-save", label: "SETTINGS.Save" },
+			{ type: "reset", action: "reset", icon: "fa-solid fa-undo", label: "SETTINGS.Reset" },
+		];
+	}
+
+	_prepareContext(options) {
+		const dice = CONFIG.Dice.fulfillment.dice;
+		const configs = game.settings.get("dice-calculator", "calculatorConfigs");
+		return {
+			dice,
+			configs,
+			buttons: this._getButtons()
+		};
+	}
+
+	static async #onSubmit(event, form, formData) {
+		const settings = foundry.utils.expandObject(formData.object);
+		await game.settings.set("dice-calculator", "calculatorConfigs", settings);
+	}
 }
 
 class DiceCreator extends FormApplication {
@@ -1928,6 +1691,13 @@ function registerSettings() {
 		type: DiceRowSettings,
 		restricted: true,
 	});
+	game.settings.registerMenu("dice-calculator", "DiceCalculatorSettings", {
+		name: "DICE_TRAY.SETTINGS.DiceCalculatorSettings",
+		label: "DICE_TRAY.SETTINGS.DiceCalculatorSettings",
+		icon: "fas fa-cogs",
+		type: CalculatorConfig,
+		restricted: true,
+	});
 
 	game.settings.register("dice-calculator", "enableDiceCalculator", {
 		name: game.i18n.localize("DICE_TRAY.SETTINGS.enableDiceCalculator.name"),
@@ -1947,6 +1717,16 @@ function registerSettings() {
 		default: true,
 		type: Boolean,
 		requiresReload: true
+	});
+
+	game.settings.register("dice-calculator", "calculatorConfigs", {
+		scope: "world",
+		config: false,
+		default: Object.keys(CONFIG.Dice.fulfillment.dice).reduce((obj, die) => {
+			obj[die] = true;
+			return obj;
+		}, {}),
+		type: Object
 	});
 
 	game.settings.register("dice-calculator", "hideAdv", {
@@ -1969,7 +1749,7 @@ function registerSettings() {
 	});
 
 	game.settings.register("dice-calculator", "rolls", {
-		scope: "world",
+		scope: "client",
 		config: false,
 		default: [],
 		type: Array,
@@ -2005,31 +1785,50 @@ function registerSettings() {
 		default: {},
 		type: Object
 	});
+
+	for (const [key, data] of Object.entries(CONFIG.DICETRAY.settings)) {
+		game.settings.register("dice-calculator", key, foundry.utils.mergeObject(
+			{
+				scope: "world",
+				config: true
+			},
+			data
+		));
+	}
 }
 
 // Initialize module
 Hooks.once("init", () => {
 	preloadTemplates();
+	Handlebars.registerHelper({
+		diceTrayTimes: (n, options) => {
+			let accum = "";
+			let data;
+			if (options.data) {
+				data = Handlebars.createFrame(options.data);
+			}
+			let { start = 0, reverse = false } = options.hash;
+			for (let i = 0; i < n; ++i) {
+				if (data) {
+					data.index = reverse ? (n - i - 1 + start) : (i + start);
+					data.first = i === 0;
+					data.last = i === (n - 1);
+				}
+				accum += options.fn(i, { data: data });
+			}
+			return accum;
+		},
+	});
 });
 
 Hooks.once("i18nInit", () => {
 	const newMaps = foundry.utils.deepClone(keymaps);
-	const newCalculators = foundry.utils.deepClone(diceCalculators);
 
 	Hooks.callAll("dice-calculator.keymaps", newMaps, newMaps.Template);
 	const supportedSystemMaps = Object.keys(newMaps).join("|");
 	const systemMapsRegex = new RegExp(`^(${supportedSystemMaps})$`);
 	const providerStringMaps = getProviderString(systemMapsRegex) || "Template";
 	CONFIG.DICETRAY = new newMaps[providerStringMaps]();
-
-	Hooks.callAll("dice-calculator.calculator", newCalculators, newCalculators.Template);
-	const supportedSystemCalculators = Object.keys(newCalculators).join("|");
-	const systemCalculatorsRegex = new RegExp(`^(${supportedSystemCalculators})$`);
-	const providerStringCalculators = getProviderString(systemCalculatorsRegex);
-
-	if (providerStringCalculators) {
-		CONFIG.DICETRAY.calculator = new newCalculators[providerStringCalculators]();
-	}
 
 	registerSettings();
 	game.keybindings.register("dice-calculator", "popout", {
@@ -2200,46 +1999,40 @@ Hooks.on("renderSidebarTab", async (app, html, data) => {
 		diceIconSelector.on("click", async (event) => {
 			event.preventDefault();
 
-			const $dialog = $(".dialog--dice-calculator");
-
-			if ($dialog.length < 1) {
-				const controlledTokens = canvas?.tokens?.controlled ?? [];
-				const actor = controlledTokens.length > 0 ? controlledTokens[0].actor : null;
-
-				const calculatorConfig = CONFIG.DICETRAY?.calculator?.getData(actor);
-				const { abilities, attributes, customButtons } = calculatorConfig ?? {
-					abilities: [],
-					attributes: [],
-					customButtons: [],
-				};
+			if (!CONFIG.DICETRAY.dialog?.rendered) {
+				const dice = Object.entries(game.settings.get("dice-calculator", "calculatorConfigs"))
+					.filter(([k, v]) => v)
+					.map(([k, v]) => (k));
+				const highest = dice.pop();
 
 				// Build the template.
 				const rolls = game.settings.get("dice-calculator", "rolls");
 				const templateData = {
+					dice,
+					highest,
 					rolls,
-					abilities,
-					attributes,
-					customButtons,
-					adv: CONFIG.DICETRAY?.calculator?.adv || false,
 				};
 
 				// Render the modal.
 				const content = await renderTemplate("modules/dice-calculator/templates/calculator.html", templateData);
-				new DiceCalculatorDialog(
+				const controlledTokens = canvas?.tokens?.controlled ?? [];
+				const actor = controlledTokens.length > 0 ? controlledTokens[0].actor : null;
+				CONFIG.DICETRAY.dialog = new DiceCalculatorDialog(
 					{
-						title: `Dice Tray: ${game.i18n.localize("DICE_TRAY.Calculator")}`,
 						content,
-						buttons: {
-							roll: {
+						buttons: [
+							{
+								action: "roll",
+								class: "dice-calculator--roll",
 								label: game.i18n.localize("TABLE.Roll"),
-								callback: () => dcRollDice(actor),
-							},
-						},
-					},
-					{ top: event.clientY - 80 }
-				).render(true);
+								callback: async () => await dcRollDice(actor),
+							}
+						],
+					}
+				);
+				CONFIG.DICETRAY.dialog.render(true);
 			} else {
-				$dialog.remove();
+				CONFIG.DICETRAY.dialog.close({ animate: false });
 			}
 		});
 	}
@@ -2267,17 +2060,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
  * Helper function to roll dice formula and output to chat.
  * @param {object} actor The actor to use for rolls, if any.
  */
-function dcRollDice(actor = null) {
+async function dcRollDice(actor = null) {
 	// Retrieve the formula.
-	let formula = $(".dice-calculator textarea").val();
-	// Replace shorthand.
-	formula = formula.replace(/@abil\./g, "@abilities.").replace(/@attr\./g, "@attributes.");
+	const formula = CONFIG.DICETRAY.dialog.element.querySelector(".dice-calculator textarea").value;
 	if (!formula) return;
 
 	// Roll the dice!
-	let data = actor ? actor.getRollData() : {};
-	let roll = new Roll(formula, data);
-	roll.toMessage();
+	const data = actor ? actor.getRollData() : {};
+	const roll = new Roll(formula, data);
+	await roll.evaluate({ allowInteractive: false });
+	await roll.toMessage();
 
 	// Throw a warning to the user if they tried to use a stat without a token.
 	// If there's no actor and the user tried to use a stat, warn them.

@@ -1,0 +1,27 @@
+.illandril-chat-enhancements--current-speaker {
+  flex: 0 !important;
+  padding: 3px 0.5em;
+}
+
+.illandril-chat-enhancements--current-speaker #context-menu {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.illandril-chat-enhancements--token-thumbnail {
+  vertical-align: text-bottom;
+  margin-right: 5px;
+  height: 1.5em;
+  border: none;
+}
+
+.illandril-chat-enhancements--player-name {
+  opacity: 0.5;
+}
+
+.illandril-chat-enhancements--clear-chat--confirm-message {
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
+  border: 0.125rem dashed var(--color-level-error, #a00);
+  padding: 0.5rem;
+}

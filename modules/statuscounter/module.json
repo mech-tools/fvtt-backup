@@ -1,62 +1,40 @@
 {
-  "id": "statuscounter",
-  "title": "Status Icon Counters",
-  "description": "Adds the option to add the same status multiple times and displays a counter for the number of stacks.",
-  "version": "2.1.1",
-  "compatibility": {
-    "minimum": "11.299",
-    "verified": "11.315"
-  },
-  "authors": [
-    {
-      "name": "Adrian Haberecht",
-      "flags": {}
+    "id": "statuscounter",
+    "title": "Status Icon Counters",
+    "description": "Adds the option to add the same status multiple times and displays a counter for the number of stacks.",
+    "version": "2.1.3",
+    "compatibility": {"minimum": "12.324", "verified": "12.328"},
+    "authors": [
+        {
+            "name": "Adrian Haberecht",
+            "url": "https://gitlab.com/woodentavern",
+            "discord": "dj_addi"
+        }
+    ],
+    "esmodules": ["statuscounter.js"],
+    "styles": ["styles/combatTracker.css", "styles/contextMenu.css"],
+    "languages": [
+        {"lang": "de", "name": "Deutsch", "path": "lang/de.json", "flags": {}},
+        {"lang": "en", "name": "English", "path": "lang/en.json", "flags": {}},
+        {"lang": "ja", "name": "日本語", "path": "lang/ja.json", "flags": {}},
+        {
+            "lang": "pt-BR",
+            "name": "Português (Brasil)",
+            "path": "lang/pt-BR.json",
+            "flags": {}
+        }
+    ],
+    "url": "https://gitlab.com/woodentavern/status-icon-counters",
+    "manifest": "https://gitlab.com/woodentavern/status-icon-counters/-/raw/master/src/module.json",
+    "download": "https://gitlab.com/api/v4/projects/21318592/packages/generic/statuscounters/2.1.3/statuscounter-v2.1.3.zip",
+    "license": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/LICENSE",
+    "readme": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/README.md",
+    "bugs": "https://gitlab.com/woodentavern/status-icon-counters/-/issues",
+    "changelog": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/CHANGELOG.md",
+    "flags": {
+        "hotReload": {
+            "extensions": ["css", "json"],
+            "paths": ["styles", "lang"]
+        }
     }
-  ],
-  "esmodules": [
-    "statuscounter.js"
-  ],
-  "styles": [
-    "styles/combatTracker.css",
-    "styles/contextMenu.css"
-  ],
-  "languages": [
-    {
-      "lang": "de",
-      "name": "Deutsch",
-      "path": "lang/de.json",
-      "flags": {}
-    },
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
-    },
-    {
-      "lang": "ja",
-      "name": "日本語",
-      "path": "lang/ja.json",
-      "flags": {}
-    }
-  ],
-  "url": "https://gitlab.com/woodentavern/status-icon-counters",
-  "manifest": "https://gitlab.com/woodentavern/status-icon-counters/-/raw/master/src/module.json",
-  "download": "https://gitlab.com/woodentavern/status-icon-counters/uploads/b64ffcefb51f390dc0cc36790a29582d/statuscounter-v2.1.1.zip",
-  "license": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/LICENSE",
-  "readme": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/README.md",
-  "bugs": "https://gitlab.com/woodentavern/status-icon-counters/-/issues",
-  "changelog": "https://gitlab.com/woodentavern/status-icon-counters/-/blob/master/CHANGELOG.md",
-  "flags": {
-    "hotReload": {
-      "extensions": [
-        "css",
-        "json"
-      ],
-      "paths": [
-        "styles",
-        "lang"
-      ]
-    }
-  }
 }

@@ -5,7 +5,7 @@
  * @param {Object} newData The data to be merged into the token data.
  */
 export const synchronizeEffectCounters = function(tokenData, newData) {
-	if (!("effects" in newData) && hasProperty(newData, "flags.statuscounter.effectCounters")) {
+    if (!("effects" in newData) && foundry.utils.hasProperty(newData, "flags.statuscounter.effectCounters")) {
 		synchronizeEffects(tokenData, newData);
 	} else if ("effects" in newData) {
 		synchronizeCounters(tokenData, newData);

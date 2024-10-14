@@ -11,6 +11,7 @@ class WallHeightUtils{
     this._autoLosHeight = false;
     this._defaultTokenHeight = 6;
     this._losHeightMulti = 0.89;
+    this.reinitializeLightSources = foundry.utils.debounce(this.reinitializeLightSources.bind(this), 16);
   }
 
   cacheSettings(){
@@ -20,6 +21,10 @@ class WallHeightUtils{
     this._enableWallText = game.settings.get(MODULE_ID, "enableWallText");
     this._losHeightMulti = game.settings.get(MODULE_ID, "losHeightMulti");
     this.schedulePerceptionUpdate();
+  }
+
+  get currentToken() {
+    return this._token;
   }
 
   get tokenElevation(){
@@ -40,6 +45,7 @@ class WallHeightUtils{
       update = true;
     }
     if (update) {
+      this.processRegions();
       this.schedulePerceptionUpdate();
     }
   }
@@ -48,18 +54,45 @@ class WallHeightUtils{
     return this._currentTokenElevation;
   }
 
-  schedulePerceptionUpdate(){
+  schedulePerceptionUpdate(reinitializeLightSources = true) {
     if (!canvas.ready) return;
+    if(reinitializeLightSources) this.reinitializeLightSources();
     canvas.perception.update({
 
-      initializeLighting: true,
+      initializeLightSources: true,
       initializeSounds: true,
       initializeVision: true,
       refreshLighting: true,
       refreshSounds: true,
-      refreshTiles: true,
+      refreshOcclusion: true,
       refreshVision: true,
     }, true);
+  }
+
+  //Revisit if performance issues
+  reinitializeLightSources() {
+    if(game.Levels3DPreview?._active) return;
+    canvas.lighting.placeables.forEach(l => l.initializeLightSource());
+    canvas.tokens.placeables.forEach(t => t.initializeLightSource());
+    this.processRegions();
+  }
+
+  processRegions() {
+    if(!canvas.visibility.vision) return;
+    const regionMeshes = canvas.effects.illumination.darknessLevelMeshes.children.concat(canvas.visibility.vision.light.global.meshes.children);
+    for (const mesh of regionMeshes) {
+      if (!(mesh instanceof foundry.canvas.regions.RegionMesh)) continue;
+      const currentLos = WallHeight.currentTokenElevation;
+      if (currentLos == null) {
+        mesh.visible = true;
+        continue;
+      }
+      
+      const top = mesh.region.document.elevation.top ?? Infinity;
+      const bottom = mesh.region.document.elevation.bottom ?? -Infinity;
+      mesh.visible = currentLos >= bottom && currentLos <= top;
+    }
+    canvas.effects.illumination.invalidateDarknessLevelContainer(true);
   }
 
   updateCurrentTokenElevation() {
@@ -80,17 +113,15 @@ class WallHeightUtils{
 
   getSourceElevationTop(document) {
     if (document instanceof TokenDocument) return document.object.losHeight
-    return document.document.flags?.levels?.rangeTop ?? +Infinity;
+    return document.document.flags?.levels?.rangeTop ?? document.document.elevation ?? +Infinity;
   }
 
   async setSourceElevationBottom(document, value) {
-    if (document instanceof TokenDocument) return await document.update({ "elevation": bottom });
-    return await document.update({ "flags.levels.rangeBottom": value });
+    return document.update({ "elevation": bottom });
   }
 
   getSourceElevationBottom(document) {
-    if (document instanceof TokenDocument) return document.document.elevation;
-    return document.document.flags?.levels?.rangeBottom ?? -Infinity;
+    return document.document.elevation;
   }
 
   async setSourceElevationBounds(document, bottom, top) {
@@ -227,14 +258,6 @@ class WallHeightUtils{
 export function registerWrappers() {
   globalThis.WallHeight = new WallHeightUtils();
 
-  if(!globalThis.WallHeight.isLevels){
-    Object.defineProperty(AmbientLightDocument.prototype, "elevation", {
-      get: function () {
-        return this.flags?.levels?.rangeBottom ?? canvas.primary.background.elevation;
-      }
-    });
-  }
-
 
   function tokenOnUpdate(wrapped, ...args) {
     wrapped(...args);
@@ -243,7 +266,6 @@ export function registerWrappers() {
   }
 
   function updateTokenSourceBounds(token) {
-    const { advancedVision } = getSceneSettings(token.scene);
     const losHeight = token.losHeight;
     const sourceId = token.sourceId;
     if (canvas.effects.visionSources.has(sourceId)) {
@@ -259,14 +281,17 @@ export function registerWrappers() {
     }
   }
 
-  function testWallInclusion(wrapped, ...args) {
-    if (!wrapped(...args)) return false;
-    const wall = args[0]
-    const { advancedVision } = getSceneSettings(wall.scene);
-    if (!advancedVision) return true;
-    const { top, bottom } = getWallBounds(wall);
-    const b = this.config?.source?.object?.b ?? this.origin?.object?.b ?? -Infinity;
-    const t = this.config?.source?.object?.t ?? this.origin?.object?.t ?? +Infinity;
+  function _testEdgeInclusion(wrapped, ...args) {
+    const wall = args[0].object;
+    const result = wrapped(...args);
+    if (!wall || !result) return result;
+    const { advancedVision } = getSceneSettings(canvas.scene);
+    if (!advancedVision) return result;
+    const {top, bottom} = getWallBounds(wall);
+    const object = this.config?.source?.object ?? this.origin?.object ?? this.object;
+    if (!object) return result;
+    const b = object?.b ?? object?.elevation ?? -Infinity;
+    const t = object?.t ?? object?.elevation ?? +Infinity;
     return b >= bottom && t <= top;
   } 
 
@@ -279,7 +304,6 @@ export function registerWrappers() {
     const {top, bottom} = getWallBounds(wall);
     let inRange = elevation >= bottom && elevation <= top;
     if (isUI) inRange = elevation >= bottom && elevation < top;
-    //if (elevation < bottom || elevation > top) return false;
     return wrapped(...args) && inRange;
   }
 
@@ -319,9 +343,10 @@ export function registerWrappers() {
     return wrapped(origin, config, ...args);
   }
 
-  function pointSourceInitialize(wrapped, ...args) {
-    if(this.object) args[0].elevation = this.object.losHeight ?? this.object.document.elevation;
-    return wrapped(...args);
+  function _getVisionSourceData(wrapped, ...args) {
+    const data = wrapped(...args);
+    data.elevation = this.losHeight ?? this.object?.losHeight ?? this.object?.document?.elevation ?? this.document?.elevation;
+    return data;
   }
 
   function drawWallRange(wrapped, ...args) {
@@ -376,7 +401,7 @@ export function registerWrappers() {
 
   Hooks.on("updateWall", (wall, updates) => {
     if(updates.flags && updates.flags[MODULE_ID]) {
-      WallHeight.schedulePerceptionUpdate();
+      WallHeight.schedulePerceptionUpdate(false);
     }
     if(canvas.walls.active) wall.object.refresh();
   })
@@ -389,33 +414,14 @@ export function registerWrappers() {
 
   libWrapper.register(MODULE_ID, "CONFIG.Token.objectClass.prototype._onUpdate", tokenOnUpdate, "WRAPPER");
 
-  libWrapper.register(MODULE_ID, "ClockwiseSweepPolygon.prototype._testWallInclusion", testWallInclusion, "WRAPPER", { perf_mode: "FAST" });
+  libWrapper.register(MODULE_ID, "ClockwiseSweepPolygon.prototype._testEdgeInclusion", _testEdgeInclusion, "WRAPPER", { perf_mode: "FAST" });
 
   libWrapper.register(MODULE_ID, "ClockwiseSweepPolygon.prototype.initialize", setSourceElevation, "WRAPPER");
 
-  libWrapper.register(MODULE_ID, "RenderedPointSource.prototype._initialize", pointSourceInitialize, "WRAPPER");
+  libWrapper.register(MODULE_ID, "Token.prototype._getVisionSourceData", _getVisionSourceData, "WRAPPER");
+
+  libWrapper.register(MODULE_ID, "Token.prototype._getLightSourceData", _getVisionSourceData, "WRAPPER");
 
   libWrapper.register(MODULE_ID, "Wall.prototype.refresh", drawWallRange, "WRAPPER");
 
-  libWrapper.register(
-    MODULE_ID,
-    "VisionSource.prototype.elevation",
-    function () {
-        return this.object?.losHeight ?? canvas.primary.background.elevation;
-    },
-    libWrapper.OVERRIDE,
-    { perf_mode: libWrapper.PERF_FAST }
-  );
-
-  libWrapper.register(
-    MODULE_ID,
-    "LightSource.prototype.elevation",
-    function () {
-        return this.object instanceof Token
-          ? this.object.losHeight
-          : this.object?.document?.elevation ?? canvas.primary.background.elevation;
-    },
-    libWrapper.OVERRIDE,
-    { perf_mode: libWrapper.PERF_FAST }
-  );
 }

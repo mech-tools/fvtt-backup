@@ -1,7 +1,6 @@
-import { showGenericForm } from '../../applications/multiConfig.js';
+import { MODULE_ID } from '../constants.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
-import { MODULE_ID, SUPPORTED_PLACEABLES } from '../utils.js';
-import { Preset } from './preset.js';
+import { PresetAPI } from './collection.js';
 
 /**
  * Tracking of folder open/close state
@@ -22,11 +21,12 @@ export class FolderState {
  * @returns
  */
 export function placeableToData(placeable) {
-  const data = placeable.document.toCompendium();
+  const document = placeable.document ?? placeable;
+  const data = document.toObject();
 
   // Check if `Token Attacher` has attached elements to this token
   if (
-    placeable.document.documentName === 'Token' &&
+    document.documentName === 'Token' &&
     game.modules.get('token-attacher')?.active &&
     tokenAttacher?.generatePrototypeAttached
   ) {
@@ -47,51 +47,79 @@ export function placeableToData(placeable) {
 }
 
 /**
- * Opens a GenericMassEdit form to modify specific fields within the provided data
- * @param {Object} data            data to be modified
- * @param {Array[String]} toModify fields within data to be modified
- * @returns modified data or null if form was canceled
+ * Portions of code taken from Tagger (https://github.com/fantasycalendar/FoundryVTT-Tagger)
+ * Applies Tagger module's tag rules
+ * @param {Array[String]} tags
+ * @returns {Array[String]}
  */
-export async function modifySpawnData(data, toModify) {
-  const fields = {};
-  const flatData = foundry.utils.flattenObject(data);
-  for (const field of toModify) {
-    if (field in flatData) {
-      if (flatData[field] == null) fields[field] = '';
-      else fields[field] = flatData[field];
-    }
-  }
+export function applyTaggerTagRules(tags) {
+  if (game.modules.get('tagger')?.active) {
+    const rules = {
+      /**
+       * Replaces a portion of the tag with a number based on how many objects in this scene has the same numbered tag
+       * @private
+       */
+      '{#}': (tag, regx) => {
+        const findTag = new RegExp('^' + tag.replace(regx, '([1-9]+[0-9]*)') + '$');
+        const existingDocuments = Tagger.getByTag(findTag);
+        if (!existingDocuments.length) return tag.replace(regx, 1);
 
-  if (!foundry.utils.isEmpty(fields)) {
-    await new Promise((resolve) => {
-      showGenericForm(fields, 'PresetFieldModify', {
-        callback: (modified) => {
-          if (foundry.utils.isEmpty(modified)) {
-            if (modified == null) data = null;
-            resolve();
-            return;
+        const numbers = existingDocuments.map((existingDocument) => {
+          return Number(
+            Tagger.getTags(existingDocument)
+              .find((tag) => {
+                return tag.match(findTag);
+              })
+              .match(findTag)[1]
+          );
+        });
+
+        const length = Math.max(...numbers) + 1;
+        for (let i = 1; i <= length; i++) {
+          if (!numbers.includes(i)) {
+            return tag.replace(regx, i);
           }
+        }
+      },
 
-          for (const [k, v] of Object.entries(modified)) {
-            flatData[k] = v;
+      /**
+       *  Replaces the section of the tag with a random ID
+       *  @private
+       */
+      '{id}': (tag, regx, index) => {
+        let id = temporaryIds?.[tag]?.[index];
+        if (!id) {
+          if (!temporaryIds?.[tag]) {
+            temporaryIds[tag] = [];
           }
+          id = foundry.utils.randomID();
+          temporaryIds[tag].push(id);
+        }
+        return tag.replace(regx, id);
+      },
+    };
 
-          const tmpData = foundry.utils.expandObject(flatData);
+    const tagRules = Object.entries(rules).filter((entry) => {
+      entry[0] = new RegExp(`${entry[0]}`, 'g');
+      return entry;
+    });
 
-          const reorganizedData = [];
-          for (let i = 0; i < data.length; i++) {
-            reorganizedData.push(tmpData[i]);
-          }
-          data = reorganizedData;
-          resolve();
-        },
-        simplified: true,
-        noTabs: true,
+    tags = Tagger._validateTags(tags, 'TaggerHandler');
+
+    tags = tags.map((tag, index) => {
+      const applicableTagRules = tagRules.filter(([regx]) => {
+        return tag.match(regx);
       });
+      if (!applicableTagRules.length) return tag;
+
+      applicableTagRules.forEach(([regx, method]) => {
+        tag = method(tag, regx, index);
+      });
+
+      return tag;
     });
   }
-
-  return data;
+  return tags;
 }
 
 /**
@@ -240,7 +268,7 @@ export function getPresetDataCenterOffset(docToData) {
   const b = getPresetDataBounds(docToData);
   const center = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   const transform = getTransformToOrigin(docToData);
-  return { x: center.x + transform.x, y: center.y + transform.y };
+  return { x: center.x + transform.x, y: center.y + transform.y, z: 0 };
 }
 
 /**
@@ -255,17 +283,16 @@ export function getTransformToOrigin(docToData) {
     const c = data[0].c;
     transform.x = -c[0];
     transform.y = -c[1];
+    transform.z = 0;
   } else if (name === 'Region') {
     const b = getDataBounds(name, data[0]);
     transform.x = -b.x1;
     transform.y = -b.y1;
+    transform.z = -b.z1;
   } else {
     transform.x = -data[0].x;
     transform.y = -data[0].y;
-    if (game.Levels3DPreview?._active) {
-      const height = data[0].elevation ?? data[0].flags?.levels?.rangeBottom ?? 0;
-      transform.z = -height;
-    }
+    transform.z = -(data[0].elevation ?? 0);
   }
   return transform;
 }
@@ -299,16 +326,44 @@ export function getPresetDataBounds(docToData) {
  * @returns
  */
 export function getDataBounds(documentName, data) {
-  let x1, y1, x2, y2;
+  let x1, y1, x2, y2, z1, z2;
 
   if (documentName === 'Wall') {
     x1 = Math.min(data.c[0], data.c[2]);
     y1 = Math.min(data.c[1], data.c[3]);
     x2 = Math.max(data.c[0], data.c[2]);
     y2 = Math.max(data.c[1], data.c[3]);
+    z1 = 0;
+    z2 = 0;
+  } else if (documentName === 'Region') {
+    x2 = -Infinity;
+    y2 = -Infinity;
+    x1 = Infinity;
+    y1 = Infinity;
+    z1 = data.elevation?.bottom ?? 0;
+    z2 = data.elevation?.top ?? 0;
+    data.shapes?.forEach((shape) => {
+      if (shape.points) {
+        for (let i = 0; i < shape.points.length; i += 2) {
+          let x = shape.points[i];
+          let y = shape.points[i + 1];
+          x1 = Math.min(x1, x);
+          y1 = Math.min(y1, y);
+          x2 = Math.max(x2, x);
+          y2 = Math.max(y2, y);
+        }
+      } else {
+        x1 = Math.min(x1, shape.x);
+        y1 = Math.min(y1, shape.y);
+        x2 = Math.max(x2, shape.x + (shape.radiusX ?? shape.width));
+        y2 = Math.max(y2, shape.y + (shape.radiusY ?? shape.height));
+      }
+    });
+    return { x1, y1, x2, y2, z1, z2 };
   } else {
     x1 = data.x || 0;
     y1 = data.y || 0;
+    z1 = data.elevation ?? 0;
 
     let width, height;
     if (documentName === 'Tile') {
@@ -320,29 +375,6 @@ export function getDataBounds(documentName, data) {
     } else if (documentName === 'Token') {
       width = data.width * canvas.dimensions.size;
       height = data.height * canvas.dimensions.size;
-    } else if (documentName === 'Region') {
-      x2 = -Infinity;
-      y2 = -Infinity;
-      x1 = Infinity;
-      y1 = Infinity;
-      data.shapes?.forEach((shape) => {
-        if (shape.points) {
-          for (let i = 0; i < shape.points.length; i += 2) {
-            let x = shape.points[i];
-            let y = shape.points[i + 1];
-            x1 = Math.min(x1, x);
-            y1 = Math.min(y1, y);
-            x2 = Math.max(x2, x);
-            y2 = Math.max(y2, y);
-          }
-        } else {
-          x1 = Math.min(x1, shape.x);
-          y1 = Math.min(y1, shape.y);
-          x2 = Math.max(x2, shape.x + (shape.radiusX ?? shape.width));
-          y2 = Math.max(y2, shape.y + (shape.radiusY ?? shape.height));
-        }
-      });
-      return { x1, y1, x2, y2 };
     } else {
       width = 0;
       height = 0;
@@ -350,8 +382,9 @@ export function getDataBounds(documentName, data) {
 
     x2 = x1 + (width || 0);
     y2 = y1 + (height || 0);
+    z2 = z1;
   }
-  return { x1, y1, x2, y2 };
+  return { x1, y1, x2, y2, z1, z2 };
 }
 
 export function isImage(path) {
@@ -389,4 +422,54 @@ export async function readJSONFile(url) {
     return await jQuery.getJSON(url);
   } catch (e) {}
   return null;
+}
+
+/**
+ * Handle dropping of AmbientSound presets onto the sidebar playlists
+ */
+export function registerSideBarPresetDropListener() {
+  Hooks.on('renderSidebar', (sidebar, html) => {
+    if (!game.user.isGM) return;
+    html.on('drop', async (event) => {
+      const playlistId = $(event.target).closest('.directory-item.playlist').data('document-id');
+      if (!playlistId) return;
+      const playlist = game.playlists.get(playlistId);
+      if (!playlist) return;
+
+      let data = event.originalEvent.dataTransfer.getData('text/plain');
+      if (!data) return;
+      data = JSON.parse(data);
+
+      let presets = (await PresetAPI.getPresets({ uuid: data.uuids, full: false })).filter(
+        (p) => p.documentName === 'AmbientSound'
+      );
+
+      for (const p of presets) {
+        await p.load();
+      }
+
+      const updates = [];
+
+      presets.forEach((p) => {
+        p.data.forEach((d) => {
+          if (d.path) {
+            updates.push({
+              name: p.name,
+              path: d.path,
+              channel: 'music',
+              repeat: false,
+              fade: null,
+              description: 'Mass Edit Preset',
+              volume: 0.52,
+              playing: false,
+              pausedTime: null,
+              flags: {},
+            });
+          }
+        });
+      });
+
+      PlaylistSound.create(updates, { parent: playlist });
+    });
+  });
 }

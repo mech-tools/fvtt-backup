@@ -216,7 +216,7 @@ class EffectCounter {
      * @returns {EffectCounter} The counter object if it exists, undefined otherwise.
      */
     static findCounter(tokenDoc, iconPath) {
-        const actorEffect = tokenDoc.actor?.effects.find(effect => effect.icon == iconPath);
+        const actorEffect = tokenDoc.actor?.effects.find(effect => effect.img == iconPath);
         return actorEffect
             ? ActiveEffectCounter.getCounter(actorEffect)
             : EffectCounter.getCounters(tokenDoc).find(counter => counter.path === iconPath);
@@ -245,7 +245,7 @@ class EffectCounter {
         const tokenCounters = tokenDoc.getFlag("statuscounter", "effectCounters");
         return Array.isArray(tokenCounters)
             ? tokenCounters.map(effectCounter => new EffectCounter(effectCounter))
-            : tokenDoc.effects.map(effectPath => new EffectCounter(1, effectPath, tokenDoc));
+            : [];
     }
 
     /**
@@ -342,7 +342,7 @@ class ActiveEffectCounter extends EffectCounter {
 
             // If it doesn't exist, create it here so it can be accessed before the first update.
             if (!effect) {
-                let effectData = CONFIG.statusEffects.find(effect => effect.icon === this.path);
+                let effectData = CONFIG.statusEffects.find(effect => effect.icon === this.path || effect.img === this.path);
 
                 let createData;
                 if (effectData) {
@@ -367,7 +367,7 @@ class ActiveEffectCounter extends EffectCounter {
                 const cls = getDocumentClass("ActiveEffect");
                 cls.migrateDataSafe(createData);
                 cls.cleanData(createData);
-                createData._id = foundry.utils.randomID();
+                createData._id ??= foundry.utils.randomID();
 
                 effect = new cls(createData, { parent: actor });
                 effect._temporary = true;
@@ -412,7 +412,7 @@ class ActiveEffectCounter extends EffectCounter {
         const tmpEffect = temporaryEffects[actor.uuid + '.' + this.path];
         if (tmpEffect) return tmpEffect;
 
-        return actor.effects.find(effect => effect.icon === this.path);
+        return actor.effects.find(effect => effect.img === this.path);
     }
 
     /**
@@ -442,7 +442,7 @@ class ActiveEffectCounter extends EffectCounter {
             const statusId = this.findStatusId(parent);
             delete temporaryEffects[effect.parent.uuid + '.' + this.path];
 
-            foundry.utils.setProperty(effect._source, "flags.statuscounter.counter", this);
+            effect.updateSource({ "flags.statuscounter.counter": this });
             const effectData = effect.toObject();
 
             if (statusId && ["pf1", "D35E"].includes(game.system.id)) {
@@ -452,7 +452,7 @@ class ActiveEffectCounter extends EffectCounter {
                     .find(e => (e.statuses.first() ?? e.getFlag("core", "statusId")) === statusId);
                 await actorEffect?.update({ "flags.statuscounter": effect.flags.statuscounter, duration: effect.duration });
             } else {
-                const createdEffects = await effect.parent.createEmbeddedDocuments("ActiveEffect", [effectData]);
+                const createdEffects = await effect.parent.createEmbeddedDocuments("ActiveEffect", [effectData], { keepId: true });
                 const actorEffect = createdEffects[0];
 
                 // Provide compatibility with Starfinder.
@@ -518,9 +518,9 @@ class ActiveEffectCounter extends EffectCounter {
      * @returns {ActiveEffectCounter?} The counter of the effect or null.
      */
     static getCounter(effect) {
-        if (effect.getFlag("core", "overlay") || !effect.icon) return null;
+        if (effect.getFlag("core", "overlay") || !effect.img) return null;
         const counter = effect.getFlag("statuscounter", "counter");
-        return counter ? new ActiveEffectCounter(counter) : new ActiveEffectCounter(1, effect.icon, effect);
+        return counter ? new ActiveEffectCounter(counter) : new ActiveEffectCounter(1, effect.img, effect);
     }
 
     /**

@@ -64,8 +64,9 @@
 		},
 
 		"SETTINGS": {
+			"DiceCalculatorSettings": "Dice Calculator Configuration",
 			"DiceCreator": "Dice Creator",
-			"DiceRowSettings": "Dice Rows Setting",
+			"DiceRowSettings": "Dice Rows Configuration",
 			"GeneralSettings": "General Settings",
 			"General": "General",
 			"autoOpenPopout": {
@@ -85,6 +86,12 @@
 				"hint": "Adds a button on the Controls bar to toggle the Dice Tray popout. You can also toggle the popout by setting a keybinding.",
 				"options": {
 					"all": "All Controls"
+				}
+			},
+			"SWADE": {
+				"wildDieBehavior": {
+					"name": "Use Dice Pool for Wild Button",
+					"hint": "Clicking the same dice while Wild is active will add dice to the pool rather than increasing the current dice in the list."
 				}
 			}
 		}

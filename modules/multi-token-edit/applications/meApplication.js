@@ -1,19 +1,11 @@
 import { Brush } from '../scripts/brush.js';
+import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES } from '../scripts/constants.js';
 import { injectVisibility } from '../scripts/fieldInjector.js';
 import { MassEditPresets } from '../scripts/presets/forms.js';
 import { Preset } from '../scripts/presets/preset.js';
 import { selectRandomizerFields } from '../scripts/randomizer/randomizerUtils.js';
 import { getDDTint } from '../scripts/tmfx.js';
-import {
-  MODULE_ID,
-  SUPPORTED_COLLECTIONS,
-  SUPPORTED_PLACEABLES,
-  getDocumentName,
-  hasFlagRemove,
-  localFormat,
-  localize,
-  selectAddSubtractFields,
-} from '../scripts/utils.js';
+import { getDocumentName, hasFlagRemove, localFormat, localize, selectAddSubtractFields } from '../scripts/utils.js';
 import { getInUseStyle } from './cssEdit.js';
 import { GeneralDataAdapter, TokenDataAdapter } from './dataAdapters.js';
 import { copyToClipboard, getCommonDocData, onInputChange, performMassSearch, performMassUpdate } from './formUtils.js';
@@ -667,7 +659,8 @@ export const WithBaseMassEditForm = (cls) => {
     _insertModUpdateCheckboxes(html) {
       if (this.options.massEdit && !this.options.simplified && !this.options.presetEdit) {
         const app = this;
-        html.find('button[type="submit"]').each(function () {
+        const preSelectAutoApply = game.settings.get(MODULE_ID, 'preSelectAutoApply');
+        html.find('button[type="submit"]').each(function (index) {
           const button = $(this);
           const modButton = $(
             `<div class="me-mod-update" title="${localize(
@@ -682,6 +675,10 @@ export const WithBaseMassEditForm = (cls) => {
             app.modUpdate = isChecked;
             app.modUpdateType = $(event.target).data('submit');
           });
+
+          if (index === 0 && preSelectAutoApply) {
+            modButton.find('input[type="checkbox"]').prop('checked', true).trigger('change');
+          }
 
           modButton.insertAfter(button);
         });

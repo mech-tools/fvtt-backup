@@ -28,7 +28,7 @@ export const registerKeybinds = function (entity, html) {
             .on("contextmenu.statuscounter", ".effect-control", onEffectRightClick.bind(entity));
     }
 
-    onFirst(effectHud, "click.statuscounter", ".effect-control", onEffectCtrlClick);
+    clickFirst(effectHud.find(".effect-control"), onEffectCtrlClick);
 
     if (game.settings.get("statuscounter", "rebindNumberKeys")) {
         effectHud.on("mouseover.statuscounter", ".effect-control", onEffectMouseOver.bind(entity))
@@ -39,18 +39,16 @@ export const registerKeybinds = function (entity, html) {
 }
 
 /**
- * Binds an event handler so that it is executed before other handlers on the
- *  same element. Note that handlers defined in the DOM can still run before it.
- * @param {jQuery} element The parent jQuery element to bind the listeners on.
- * @param {String} eventName The name and namespace of the event.
- * @param {String} selector The selector that the event will be active for.
- * @param {Function} eventHandler The handler of the event.
+ * Binds a click event handler so that it is executed before other handlers.
+ * @param {jQuery} elements The elements to bind the listener on.
+ * @param {Function} handler The handler of the event.
  */
-function onFirst(element, eventName, selector, eventHandler) {
-    element.on(eventName, selector, eventHandler);
-
-    let handlers = jQuery._data(element[0]).events[eventName.split('.')[0]];
-    handlers.unshift(handlers.pop());
+function clickFirst(elements, handler) {
+    elements.click(handler);
+    for (const el of elements) {
+        const handlers = jQuery._data(el).events.click;
+        if (handlers.length > 1) handlers.unshift(handlers.pop());
+    }
 }
 
 /**
@@ -128,14 +126,14 @@ function onEffectClick(event) {
         }
     } else if (event.altKey) {
         const iconPath = findIconPath(event);
-        const effect = CONFIG.statusEffects.find(e => e.icon === iconPath);
+        const effect = CONFIG.statusEffects.find(e => e.icon === iconPath || e.img === iconPath);
         const statusName = effect
             ? game.i18n.localize(effect.name ?? effect.label)
             : iconPath.split("\\").pop().split("/").pop().split(".").shift();
         const valuePrompt = new Dialog({
             title: game.i18n.localize("statuscounter.stackInput.title"),
             content: `<p>${game.i18n.format("statuscounter.stackInput.content", { status: statusName })}</p>
-                <p><input type="number" name="statusCount" value="1"/></p>`,
+                <p><input autofocus type="number" name="statusCount" value="1"/></p>`,
             buttons: {
                 ok: {
                     icon: '<i class="fas fa-check"></i>',
@@ -233,13 +231,11 @@ function changeIconCounter(event, tokenHud, value, incremental) {
     const tokenDocs = getUniqueSelectedTokens(tokenHud.object).map(t => t.document);
     let baseHasOverlay;
     for (const tokenDoc of tokenDocs) {
-        const effectIsActive = tokenDoc.effects.includes(iconPath);
         let effectCounter = EffectCounter.findCounter(tokenDoc, iconPath);
 
         // Don't initialize with negative or 0 values
         if (value <= 0 && !effectCounter) {
-            if (effectIsActive) toggleEffect(tokenDoc.object, event, false);
-            else if (incremental && (tokenDoc === tokenHud.object.document
+            if (incremental && (tokenDoc === tokenHud.object.document
                 || (baseHasOverlay ??= hasOverlay(tokenHud.object.document, iconPath)) === hasOverlay(tokenDoc, iconPath))) {
                 toggleEffect(tokenDoc.object, event, true);
             }
@@ -275,7 +271,8 @@ function changeIconCounter(event, tokenHud, value, incremental) {
  * @returns {Promise} A promise representing the operation.
  */
 function toggleEffect(token, event, overlay) {
-    return TokenHUD.prototype._onToggleEffect.apply({ object: token }, [event, { overlay }]);
+    const statusId = event.currentTarget.dataset.statusId;
+    token.actor?.toggleStatusEffect(statusId, { overlay });
 }
 
 /**
@@ -297,6 +294,5 @@ function getUniqueSelectedTokens(token) {
  * @returns {boolean} True if the effect exists as an overlay, false otherwise.
  */
 function hasOverlay(tokenDoc, icon) {
-    return tokenDoc.overlayEffect === icon
-        || tokenDoc.actor.effects.some(e => e.flags.core?.overlay && e.icon === icon);
+    return tokenDoc.actor?.effects.some(e => e.flags.core?.overlay && e.img === icon);
 }

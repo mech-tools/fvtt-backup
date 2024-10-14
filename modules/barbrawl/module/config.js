@@ -3,34 +3,57 @@ import { getDefaultResources, setDefaultResources } from "./settings.js";
 import { prepareCreation, prepareUpdate } from "./synchronization.js";
 
 /**
+ * Constants to use for rendering the bar configuration from any context.
+ */
+const configConsts = {
+    positions: {
+        "top-inner": "barbrawl.position.top-inner",
+        "top-outer": "barbrawl.position.top-outer",
+        "bottom-inner": "barbrawl.position.bottom-inner",
+        "bottom-outer": "barbrawl.position.bottom-outer",
+        "left-inner": "barbrawl.position.left-inner",
+        "left-outer": "barbrawl.position.left-outer",
+        "right-inner": "barbrawl.position.right-inner",
+        "right-outer": "barbrawl.position.right-outer",
+    },
+    styles: {
+        user: "barbrawl.textStyle.user",
+        none: "barbrawl.textStyle.none",
+        fraction: "barbrawl.textStyle.fraction",
+        percent: "barbrawl.textStyle.percent"
+    }
+}
+
+/**
  * Extends the way Foundry updates the configuration of the default token. If
  *  available, the libWrapper module is used for better compatibility.
  */
 export const extendDefaultTokenConfig = function () {
     if (game.modules.get("lib-wrapper")?.active) {
         // Override using libWrapper: https://github.com/ruipin/fvtt-lib-wrapper
+        libWrapper.register("barbrawl", "CONFIG.Token.prototypeSheetClass.prototype._getSubmitData",
+            function (wrapped, updateData) {
+                return wrapped(ensureAttributeData(updateData));
+            }, "WRAPPER");
         libWrapper.register("barbrawl", "DefaultTokenConfig.prototype._getSubmitData",
             function (wrapped, updateData) {
-                updateData ??= {};
-                updateData.bar1 ??= { attribute: "" };
-                updateData.bar2 ??= { attribute: "" };
+                updateData = ensureAttributeData(updateData);
                 const formData = wrapped(updateData);
                 prepareUpdate(this.token, formData);
                 return formData;
             }, "WRAPPER");
-
-        libWrapper.register("barbrawl", "CONFIG.Token.prototypeSheetClass.prototype._onBarChange",
-            onChangeBarAttribute, "OVERRIDE");
-        libWrapper.register("barbrawl", "DefaultTokenConfig.prototype._onBarChange",
-            onChangeBarAttribute, "OVERRIDE");
+        libWrapper.register("barbrawl", "CONFIG.Token.prototypeSheetClass.prototype._onBarChange", onChangeBarAttribute, "OVERRIDE");
+        libWrapper.register("barbrawl", "DefaultTokenConfig.prototype._onBarChange", onChangeBarAttribute, "OVERRIDE");
     } else {
         // Manual override
-        const originalGetSubmitData = DefaultTokenConfig.prototype._getSubmitData;
+        const originalGetSubmitData = CONFIG.Token.prototypeSheetClass.prototype._getSubmitData;
+        CONFIG.Token.prototypeSheetClass.prototype._getSubmitData = function (updateData) {
+            return originalGetSubmitData.call(this, ensureAttributeData(updateData));
+        };
+        const originalDefaultGetSubmitData = DefaultTokenConfig.prototype._getSubmitData;
         DefaultTokenConfig.prototype._getSubmitData = function (updateData) {
-            updateData ??= {};
-            updateData.bar1 ??= { attribute: "" };
-            updateData.bar2 ??= { attribute: "" };
-            const formData = originalGetSubmitData.call(this, updateData);
+            updateData = ensureAttributeData(updateData);
+            const formData = originalDefaultGetSubmitData.call(this, updateData);
             prepareUpdate(this.token, formData);
             return formData;
         };
@@ -48,14 +71,15 @@ export const extendDefaultTokenConfig = function () {
  * @param {Object} data The data of the token configuration.
  */
 export const extendTokenConfig = async function (tokenConfig, html, data) {
+    data.constants = configConsts;
     data.brawlBars = api.getBars(tokenConfig.token);
+    data.barAttributes.unshift({ value: "custom", label: "barbrawl.attribute.custom" });
 
     if (tokenConfig instanceof DefaultTokenConfig) {
         // Make sure that the current value exists for selection.
-        const attrLists = Object.values(data.barAttributes);
         for (let bar of Object.values(data.brawlBars)) {
-            if (!attrLists.some(list => list.includes(bar.attribute))) {
-                attrLists[0].push(bar.attribute);
+            if (!data.barAttributes.some(attr => attr.value === bar.attribute)) {
+                data.barAttributes.push({ value: bar.attribute, label: bar.attribute });
             }
         }
     }
@@ -70,10 +94,10 @@ export const extendTokenConfig = async function (tokenConfig, html, data) {
     resourceTab.find("div.form-fields").parent().remove();
     resourceTab.append(barConfiguration);
 
+    resourceTab.on("click", "details > summary", () => setTimeout(() => tokenConfig.setPosition()));
     resourceTab.on("click", ".bar-modifiers .fa-trash", onDeleteBar);
     resourceTab.on("click", ".bar-modifiers .fa-chevron-up", onMoveBarUp);
     resourceTab.on("click", ".bar-modifiers .fa-chevron-down", onMoveBarDown);
-    resourceTab.on("click", "button.file-picker", tokenConfig._activateFilePicker.bind(tokenConfig));
     resourceTab.on("change", ".bar-attribute", tokenConfig._onBarChange.bind(tokenConfig));
 
     resourceTab.find(".brawlbar-add").click(event => onAddResource(event, tokenConfig, data));
@@ -87,6 +111,18 @@ export const extendTokenConfig = async function (tokenConfig, html, data) {
     // Refresh diplayed value for all attributes.
     if (game.system.id === "dnde5") return;
     resourceTab.find("select.brawlbar-attribute").each((_, el) => refreshValueInput(tokenConfig.token, el));
+}
+
+/**
+ * Prepares the given data to ensure that it contains objects for FoundryVTT bar attributes.
+ * @param {object?} data The data to prepare. Defaults to empty object.
+ * @returns {object} The prepared data.
+ */
+function ensureAttributeData(data) {
+    data ??= {};
+    data.bar1 ??= { attribute: "" };
+    data.bar2 ??= { attribute: "" };
+    return data;
 }
 
 /**
@@ -226,7 +262,8 @@ function swapButtonState(selector, firstElement, secondElement) {
  * @param {Object} data The data of the token configuration.
  */
 async function onAddResource(event, tokenConfig, data) {
-    const allBarEls = $(event.currentTarget).siblings("details");
+    const container = event.currentTarget.parentElement.querySelector(".bar-container");
+    const allBarEls = $(container).find("> details");
     const barEls = allBarEls.filter(":visible");
 
     // Create raw bar data.
@@ -236,11 +273,12 @@ async function onAddResource(event, tokenConfig, data) {
     // Remove insibible elements with the same ID.
     if (allBarEls.length !== barEls.length) allBarEls.find("div#" + newBar.id).parent().remove();
 
-    event.currentTarget.insertAdjacentHTML("beforebegin", await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
+    container.insertAdjacentHTML("beforeend", await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
+        constants: configConsts,
         brawlBars: [newBar],
-        barAttributes: data.barAttributes
+        barAttributes: data.barAttributes,
     }));
-    const barConfiguration = event.currentTarget.previousElementSibling;
+    const barConfiguration = container.lastElementChild;
 
     if (game.system.id === "dnd5e" && tokenConfig._prepareResourceLabels) tokenConfig._prepareResourceLabels(barConfiguration);
     if (barEls.length) {
@@ -393,14 +431,18 @@ async function setCurrentResources(app, attributes, resources) {
         }
     });
 
-    if (barData.length === 0) return;
+    if (barData.length === 0) {
+        app.setPosition();
+        return;
+    }
 
     // Render and insert bars.
     container.insertAdjacentHTML("afterbegin", await renderTemplate("modules/barbrawl/templates/bar-config.hbs", {
+        constants: configConsts,
         brawlBars: barData,
-        barAttributes: attributes
+        barAttributes: attributes,
     }));
-    if (container.parentElement.classList.contains("active")) app.setPosition();
+    if (container.parentElement.parentElement.classList.contains("active")) app.setPosition();
     container.querySelectorAll("select.brawlbar-attribute").forEach(el => refreshValueInput(app.token, el));
     if (game.system.id === "dnd5e") app._prepareResourceLabels(container);
 }

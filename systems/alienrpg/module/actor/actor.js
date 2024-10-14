@@ -174,6 +174,24 @@ export class alienrpgActor extends Actor {
 		} else {
 			foundry.utils.setProperty(actorData, 'system.general.panic.value', 0);
 		}
+		let conDition7 = await this.hasCondition('hypoxia');
+		if (conDition7 != undefined || conDition7) {
+			foundry.utils.setProperty(actorData, 'system.general.hypoxia.value', true);
+		} else {
+			foundry.utils.setProperty(actorData, 'system.general.hypoxia.value', false);
+		}
+		let conDition8 = await this.hasCondition('heatstroke');
+		if (conDition8 != undefined || conDition8) {
+			foundry.utils.setProperty(actorData, 'system.general.heatstroke.value', true);
+		} else {
+			foundry.utils.setProperty(actorData, 'system.general.heatstroke.value', false);
+		}
+		let conDition9 = await this.hasCondition('gravitydyspraxia');
+		if (conDition9 != undefined || conDition9) {
+			foundry.utils.setProperty(actorData, 'system.general.gravitydyspraxia.value', true);
+		} else {
+			foundry.utils.setProperty(actorData, 'system.general.gravitydyspraxia.value', false);
+		}
 	}
 
 	async pushRoll(actor, reRoll, hostile, blind, message) {
@@ -431,7 +449,7 @@ export class alienrpgActor extends Actor {
 				} else aStress = actor.getRollData().header.stress.value + rollModifier;
 
 				let modRoll = '1d6' + '+' + parseInt(aStress);
-				const roll = await Roll.create(modRoll).evaluate();
+				const roll = await new Roll(modRoll).evaluate();
 				const customResults = await table.roll({ roll });
 				console.warn(
 					`Rolling stress, ${modRoll}, Panic Value ${actor.system.general.panic.value}, Last ${actor.system.general.panic.lastRoll}, Roll ${customResults.roll.total}`
@@ -539,7 +557,7 @@ export class alienrpgActor extends Actor {
 					whispertarget.push(game.user._id);
 				}
 
-				let blind = false;
+				blind = false;
 				if (rollMode == 'blindroll') {
 					blind = true;
 					if (!game.user.isGM) {
@@ -644,18 +662,22 @@ export class alienrpgActor extends Actor {
 							break;
 					}
 				}
-
-				ChatMessage.create({
-					speaker: {
-						actor: actorId,
-					},
-
+				let chatData = {
+					user: game.user.id,
+					speaker: ChatMessage.getSpeaker({
+						actor: actor.id,
+					}),
 					content: chatMessage,
 					whisper: whispertarget,
-					roll: customResults.roll,
+					rolls: [customResults.roll],
 					sound: CONFIG.sounds.dice,
-					blind,
-				});
+				};
+				if (['gmroll', 'blindroll'].includes(chatData.rollMode)) {
+					chatData.whisper = ChatMessage.getWhisperRecipients('GM');
+				} else if (chatData.rollMode === 'selfroll') {
+					chatData.whisper = [game.user];
+				}
+				ChatMessage.create(chatData);
 			}
 		}
 	}
@@ -1177,15 +1199,20 @@ export class alienrpgActor extends Actor {
 			let chatMessage = '';
 			chatMessage += '<h2>' + game.i18n.localize('ALIENRPG.AcidAttack') + '</h2>';
 			chatMessage += `<h4><i>` + game.i18n.localize('ALIENRPG.AcidBlood') + `</i></h4>`;
-			ChatMessage.create({
-				user: game.user._id,
-				speaker: {
+			let chatData = {
+				user: game.user.id,
+				speaker: ChatMessage.getSpeaker({
 					actor: actor.id,
-				},
+				}),
+				rollMode: game.settings.get('core', 'rollMode'),
 				content: chatMessage,
-				whisper: game.users.contents.filter((u) => u.isGM).map((u) => u._id),
-				blind: true,
-			});
+			};
+			if (['gmroll', 'blindroll'].includes(chatData.rollMode)) {
+				chatData.whisper = ChatMessage.getWhisperRecipients('GM');
+			} else if (chatData.rollMode === 'selfroll') {
+				chatData.whisper = [game.user];
+			}
+			ChatMessage.create(chatData);
 		}
 	}
 
@@ -1199,13 +1226,13 @@ export class alienrpgActor extends Actor {
 		}
 		const table = game.tables.contents.find((b) => b.name === targetTable);
 
-		const roll = await Roll.create('1d6').evaluate();
+		const roll = await new Roll('1d6').evaluate();
 
 		if (!manCrit) {
 			customResults = await table.roll({ roll });
 		} else {
 			const formula = manCrit;
-			const roll = await Roll.create(formula).evaluate();
+			const roll = await new Roll(formula).evaluate();
 			customResults = await table.roll({ roll });
 		}
 
@@ -1214,16 +1241,23 @@ export class alienrpgActor extends Actor {
 		chatMessage += '<h2>' + game.i18n.localize('ALIENRPG.AttackRoll') + '</h2>';
 		chatMessage += `<h4><i>${table.name}</i></h4>`;
 		chatMessage += `${customResults.results[0].text}`;
-		ChatMessage.create({
-			user: game.user._id,
-			speaker: {
+		let chatData = {
+			user: game.user.id,
+			speaker: ChatMessage.getSpeaker({
 				actor: actor.id,
-			},
-			roll: customResults.roll,
+			}),
+			rolls: [customResults.roll],
+			rollMode: game.settings.get('core', 'rollMode'),
 			content: chatMessage,
-			// whisper: game.users.contents.filter((u) => u.isGM).map((u) => u._id),
-			// type: CONST.CHAT_MESSAGE_STYLES.ROLL,
-		});
+			sound: CONFIG.sounds.dice,
+		};
+		if (['gmroll', 'blindroll'].includes(chatData.rollMode)) {
+			chatData.whisper = ChatMessage.getWhisperRecipients('GM');
+		} else if (chatData.rollMode === 'selfroll') {
+			chatData.whisper = [game.user];
+		}
+		ChatMessage.create(chatData);
+		return;
 	}
 
 	async creatureManAttackRoll(actor, dataset) {
@@ -1419,7 +1453,7 @@ export class alienrpgActor extends Actor {
 			test1 = await atable.draw({ displayChat: false });
 		} else {
 			const formula = manCrit;
-			const roll = await Roll.create(formula).evaluate();
+			const roll = await new Roll(formula).evaluate();
 			test1 = await atable.draw({ roll: roll, displayChat: false });
 		}
 		const messG = test1.results[0].text;
@@ -1434,8 +1468,8 @@ export class alienrpgActor extends Actor {
 						if (testArray[9].length > 0) {
 							rollheal = testArray[9].match(/^\[\[([0-9]d[0-9]+)]/)[1];
 							newHealTime = testArray[9].match(/^\[\[([0-9]d[0-9]+)\]\] ?(.*)/)[2];
-							testArray[9] = (await Roll.create(`${rollheal}`).evaluate()).result + ' ' + newHealTime;
-							// testArray[9] = (await Roll.create(`${rollheal}`).evaluate().result) + ' ' + newHealTime;
+							testArray[9] = (await new Roll(`${rollheal}`).evaluate()).result + ' ' + newHealTime;
+							// testArray[9] = (await new Roll(`${rollheal}`).evaluate().result) + ' ' + newHealTime;
 						} else {
 							testArray[9] = 'None';
 						}

@@ -1,24 +1,33 @@
 export class TileHandler{
-    static isTileVisible(tile){
+    static isTileVisible(tile) {
         const currentToken = CONFIG.Levels.currentToken;
-
-        CONFIG.Levels.FoWHandler.lazyCreateTileFogMask(tile);
-        if(!currentToken) return true;
-
-        const tokenElevation = currentToken.document.elevation;
-        const tokenLOS = currentToken.losHeight;
         const bgElevation = canvas?.scene?.flags?.levels?.backgroundElevation ?? 0;
 
-        //Handle background tiles
-        if(!tile.document.overhead){
+        CONFIG.Levels.FoWHandler.lazyCreateTileFogMask(tile);
+        if (!currentToken) {
+            canvas.primary.hoverFadeElevation = bgElevation;
+            if (game.user.isGM && CONFIG.Levels?.UI?.rangeEnabled) {
+                canvas.primary.hoverFadeElevation = CONFIG.Levels.UI.getRange().bottom
+            }
+            return true;
+        }
+        
+        
+        const tokenElevation = currentToken.document.elevation;
+        const tokenLOS = currentToken.losHeight;
+
+        canvas.primary.hoverFadeElevation = tokenElevation;
+
+        if(tile.document.elevation === bgElevation){
             return tokenLOS >= bgElevation
         }
 
+        
         if(!tile.document.flags.levels) return true;
 
         const {rangeTop, rangeBottom, showIfAbove, showAboveRange, isBasement, noFogHide} = getFlags(tile.document)
         //Not a levels tile, hide if token is under background
-        if(rangeTop === Infinity && rangeBottom === -Infinity || !tile.document.overhead) return tokenLOS >= bgElevation;
+        if(rangeTop === Infinity && rangeBottom === -Infinity) return tokenLOS >= bgElevation;
 
         const inRange = tokenLOS < rangeTop && tokenLOS >= rangeBottom;
 
@@ -37,19 +46,6 @@ export class TileHandler{
         return true;
 
     }
-
-    static _identifyOccludedTiles(tokens) {
-        const occluded = new Set();
-        const controlled = tokens.filter(t => t.controlled);
-        for ( const token of (controlled.length ? controlled : tokens) ) {
-          const tiles = canvas.tiles.quadtree.getObjects(token.bounds);
-          for ( const tile of tiles ) {
-            if ( occluded.has(tile) ) continue;  // Don't bother re-testing a tile
-            if ( tile.testOcclusion(token, {corners: tile.isRoof}) ) occluded.add(tile);
-          }
-        }
-        return occluded;
-      }
 }
 
 function getFlags(document){
@@ -58,6 +54,8 @@ function getFlags(document){
     for( const [k,v] of Object.entries(document.flags.levels)){
         flags[k] = v ?? defaultValues[k];
     }
+
+    flags.rangeBottom = document.elevation;
 
     return flags;
 

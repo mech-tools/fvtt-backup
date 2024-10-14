@@ -122,6 +122,11 @@
   color: white;
 }
 
+.mass-edit-dark-window button:disabled {
+  background: gray;
+  color: white;
+}
+
 .mass-edit-dark-window input,
 .mass-edit-dark-window textarea {
   color: white;
@@ -493,6 +498,10 @@ input.me-subtract {
   opacity: 0.5;
 }
 
+#mass-edit-preset-edit input[type="checkbox"]:checked {
+  accent-color: darkorange;
+}
+
 .mass-edit-preset-form .display-hover {
   display: none;
 }
@@ -707,4 +716,76 @@ nav > a[data-tab='me-pinned'] {
   border: 5px solid darkorange;
   z-index: 9999;
   pointer-events: none;
+}
+
+/* ======================== 
+   ====== Smart Link ======
+   ======================== */
+
+.smart-linker-menu .image {
+  flex: 1;
+  border: none;
+  padding-right: 10px;
+}
+
+/* ======================== 
+   ====== Linker Menu =====
+   ======================== */
+
+#mass-edit-linker-menu {
+  min-width: 270px;
+  min-height: 270px;
+}
+
+.mass-edit-linker .controls {
+  flex: 0 0 46px;
+  display: flex;
+  padding-left: 2px;
+  padding-right: 4px;
+}
+
+.mass-edit-linker .controls .control {
+  font-size: 24px;
+  margin-bottom: 4px;
+  box-shadow: 0 0 3px dimgray;
+  color: white;
+  text-align: center;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 5px;
+  cursor: pointer;
+  pointer-events: all;
+  place-content: center;
+  line-height: 40px;
+}
+
+.mass-edit-linker .controls a[disabled].control {
+  color:black;
+  pointer-events: none;
+}
+
+.mass-edit-linker .controls .control:hover {
+  border: 1px solid var(--color-border-highlight-alt);
+  border-bottom: 1px solid var(--color-border-highlight);
+  box-shadow: 0 0 3px var(--color-shadow-highlight);
+}
+
+/* ==================================
+   ====== Spawn Preset Behavior =====
+   ================================== */
+
+.application preset-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.application preset-tags button {
+  flex: 0 0 36px !important;
+  line-height: var(--form-field-height);
+}
+
+.application preset-tags input {
+  flex: 1;
 }

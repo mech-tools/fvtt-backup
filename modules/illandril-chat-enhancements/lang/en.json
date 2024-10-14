@@ -1,0 +1,63 @@
+{
+  "illandril-chat-enhancements": {
+    "currentSpeaker": "You: {name}",
+    "setting": {
+      "debug": {
+        "label": "Debug Mode",
+        "hint": "Leave this disabled unless specifically asked to enable it by Illandril (otherwise, it will slow things down)."
+      },
+      "clear-chat": {
+        "enabled": {
+          "label": "Clear Chat on Load",
+          "hint": "If enabled, the chat log will be cleaned up whenever a GM loads Foundry and there are more than Clear Trigger chat messages in the chat log. WARNING: Chat messages that are deleted cannot be recovered - they will be lost forever."
+        },
+        "check-every-message": {
+          "label": "Clear Chat on Message",
+          "hint": "(Not Recommended) If enabled, the chat log will be cleaned up whenever a chat message is created if a GM is connected and there are more than Clear Trigger chat messages in the chat log. WARNING: Chat messages that are deleted cannot be recovered - they will be lost forever. The Confirm Before Deleting setting will be ignored when chat is cleared this way. Someone spamming chat messages could cause earlier chat messages to be lost forever before you have a chance to react."
+        },
+        "confirm": {
+          "label": "Confirm Before Deleting",
+          "hint": "(Recommended; Clear Chat on Load only) If enabled, the GM will be prompted to confirm before the chat messages are deleted."
+        },
+        "trigger": {
+          "label": "Clear Trigger",
+          "hint": "If Clear Chat on Load is enabled, and there are more than this many messages when a GM loads Foundry, the Chat Log will be cleaned up. Note: Must be equal to or larger than Clear Target."
+        },
+        "target": {
+          "label": "Clear Target",
+          "hint": "If Clear Chat on Load is enabled, and the Clear Trigger is met, all but this many messages will be deleted. Note: Must be a non-negative number."
+        }
+      },
+      "sender-name": {
+        "label": "Show Sender Name",
+        "hint": "Shows the name of the User that sent a chat message after the Token name."
+      },
+      "speaker-focus": {
+        "label": "Allow Speaker Focus",
+        "hint": "Hovering over the speaker name for a chat message will highlight the associated token. Double-clicking the speaker name will pan to the token."
+      },
+      "speaking-as": {
+        "label": "Show Speaking As",
+        "hint": "Shows the name of the token you will speak as (or your user name, if you will not speak as a token) between the Chat Log and the Chat Message input."
+      },
+      "speaking-as-selector": {
+        "label": "Allow Speaking As Selection",
+        "hint": "Right-clicking on the Speaking As indicator will show a menu of all the controllable tokens for the player. Selecting a token name will select that token, making the user speak as that token."
+      },
+      "speaking-as-focus": {
+        "label": "Allow Speaking As Focus",
+        "hint": "Hovering over the Speaking As indicator will highlight the associated token. Double-clicking the Speaking As indicator will pan to the token."
+      }
+    },
+    "clear-chat": {
+      "confirm": {
+        "title": "Illandril's Chat Enhancements - Chat Log Cleaner",
+        "message": "More than {trigger} messages were detected in the chat log.\nWould you like to delete all but {target} messages?\n\n{count} of {total} messages will be deleted.\n\nDeleted messages cannot be recovered. Export your Chat Log before clicking Yes (and confirm the export contents) if you want to save a copy."
+      },
+      "notification": {
+        "deleting": "Illandril's Chat Enhancements - Chat Log Cleaner - Deleting {count} Chat Messages...",
+        "deleted": "Illandril's Chat Enhancements - Chat Log Cleaner - Deleted {count} Chat Messages!"
+      }
+    }
+  }
+}

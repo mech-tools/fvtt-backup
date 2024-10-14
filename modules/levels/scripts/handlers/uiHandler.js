@@ -1,4 +1,10 @@
 export class UIHandler {
+
+    static isVisibleWrapper(wrapped, ...args) {
+        const result = wrapped(...args);
+        return result && UIHandler.UIVisible(this);
+    }
+
     static UIVisible(placeable) {
         const isPreview = placeable.document?.id == null;
         if (isPreview) {
@@ -6,21 +12,21 @@ export class UIHandler {
             if (CONFIG.Levels.UI?.rangeEnabled && !placeable.document?.flags?.levels) {
                 const uiRange = CONFIG.Levels.UI.getRange();
                 placeable.document.flags.levels = {
-                    rangeBottom: uiRange.bottom,
                     rangeTop: uiRange.top,
                 };
+                placeable.document.elevation = uiRange.bottom;
             }
             return true;
         }
-        if (!game.user.isGM || !CONFIG.Levels.UI?.rangeEnabled) return;
+        if (!game.user.isGM || !CONFIG.Levels.UI?.rangeEnabled) return true;
         const isTokenSelected = canvas?.tokens?.controlled[0] || CONFIG.Levels.currentToken;
         const isVision = canvas.effects.visionSources.size;
-        if (isTokenSelected && isVision) return;
-        if (isTokenSelected && !isVision && !(placeable instanceof Token)) return;
-        if ((canvas?.tokens?.controlled[0] || CONFIG.Levels.currentToken) && canvas.effects.visionSources.size) return;
+        if (isTokenSelected && isVision) return true;
+        if (isTokenSelected && !isVision && !(placeable instanceof Token)) return true;
+        if ((canvas?.tokens?.controlled[0] || CONFIG.Levels.currentToken) && canvas.effects.visionSources.size) return true;
         let { rangeBottom, rangeTop } = CONFIG.Levels.helpers.getRangeForDocument(placeable.document);
         rangeBottom = placeable.document.elevation ?? rangeBottom;
-        if (rangeBottom == -Infinity && rangeTop == Infinity) return;
+        if (rangeBottom == -Infinity && rangeTop == Infinity) return true;
         if (placeable instanceof Token) {
             rangeBottom = placeable.losHeight;
             rangeTop = placeable.losHeight;
@@ -57,17 +63,14 @@ export class UIHandler {
     }
 
     static inUIRangeTile(bottom, top, tile) {
-        const overhead = tile.document.overhead;
         const UIBottom = parseFloat(CONFIG.Levels.UI.range[0]);
         const UITop = parseFloat(CONFIG.Levels.UI.range[1]);
-        if (!overhead) {
-            return UIBottom >= (canvas?.scene?.flags?.levels?.backgroundElevation ?? 0);
-        }
         if (CONFIG.Levels.UI.roofEnabled) {
             if (top == Infinity && bottom <= UITop + 1 && bottom >= UIBottom) {
                 return true;
             }
         }
-        return top <= UITop; //bottom >= UIBottom && top <= UITop;
+        //return top <= UITop; //bottom >= UIBottom && top <= UITop;
+        return bottom < UITop;
     }
 }

@@ -1,12 +1,13 @@
 export class SightHandler {
     static _testRange(visionSource, mode, target, test) {
+        if (mode.range === null) return true;
         if (mode.range <= 0) return false;
         let radius = visionSource.object.getLightRadius(mode.range);
         const unitsToPixel = canvas.dimensions.size / canvas.dimensions.distance;
         const sourceZ = visionSource.elevation * unitsToPixel;
         const dx = test.point.x - visionSource.x;
         const dy = test.point.y - visionSource.y;
-        const dz = (test.point.z ?? sourceZ) - sourceZ;
+        const dz = (test.elevation ?? sourceZ) - sourceZ;
         return dx * dx + dy * dy + dz * dz <= radius * radius;
     }
 
@@ -17,7 +18,7 @@ export class SightHandler {
     static advancedLosTestVisibility(sourceToken, tokenOrPoint, source, type = "sight") {
         const angleTest = this.testInAngle(sourceToken, tokenOrPoint, source);
         if (!angleTest) return false;
-        return !this.advancedLosTestInLos(sourceToken, tokenOrPoint, type);
+        return !this.advancedLosTestInLos(sourceToken, tokenOrPoint, type, source);
         const inLOS = !this.advancedLosTestInLos(sourceToken, tokenOrPoint, type);
         if (sourceToken.vision.los === source) return inLOS;
         const inRange = this.tokenInRange(sourceToken, tokenOrPoint);
@@ -57,15 +58,15 @@ export class SightHandler {
         return tokenCorners;
     }
 
-    static advancedLosTestInLos(sourceToken, tokenOrPoint, type = "sight") {
-        if (!(tokenOrPoint instanceof Token) || CONFIG.Levels.settings.get("preciseTokenVisibility") === false) return this.checkCollision(sourceToken, tokenOrPoint, type);
+    static advancedLosTestInLos(sourceToken, tokenOrPoint, type = "sight", source) {
+        if (!(tokenOrPoint instanceof Token) || CONFIG.Levels.settings.get("preciseTokenVisibility") === false) return this.checkCollision(sourceToken, tokenOrPoint, type, { sourcePolygon: source });
         const sourceCenter = {
             x: sourceToken.vision.x,
             y: sourceToken.vision.y,
             z: sourceToken.losHeight,
         };
         for (let point of this.getTestPoints(tokenOrPoint)) {
-            let collision = this.testCollision(sourceCenter, point, type, { source: sourceToken, target: tokenOrPoint });
+            let collision = this.testCollision(sourceCenter, point, type, { source: sourceToken, target: tokenOrPoint, sourcePolygon: source });
             if (!collision) return collision;
         }
         return true;
@@ -126,7 +127,7 @@ export class SightHandler {
     static testInLight(object, testTarget, source, result) {
         const unitsToPixel = canvas.dimensions.size / canvas.dimensions.distance;
         const top = object.document.flags?.levels?.rangeTop ?? Infinity;
-        const bottom = object.document.flags?.levels?.rangeBottom ?? -Infinity;
+        const bottom = object.document.elevation ?? -Infinity;
         let lightHeight = null;
         if (object instanceof Token) {
             lightHeight = object.losHeight;
@@ -152,6 +153,68 @@ export class SightHandler {
         return false;
     }
 
+    static _createVisibilityTestConfig(point, { tolerance = 2, object = null, elevation = 0 } = {}) {
+        const t = tolerance;
+        const offsets =
+            t > 0
+                ? [
+                      [0, 0],
+                      [-t, -t],
+                      [-t, t],
+                      [t, t],
+                      [t, -t],
+                      [-t, 0],
+                      [t, 0],
+                      [0, -t],
+                      [0, t],
+                  ]
+                : [[0, 0]];
+
+        let e;
+
+        if (object instanceof Token && !Number.isFinite(elevation)) e = object.document.losHeight;
+        else if (object instanceof DoorControl) e = WallHeight.currentTokenElevation;
+        else e = elevation;
+        const config = {
+            object,
+            tests: offsets.map((o) => ({
+                point: { x: point.x + o[0], y: point.y + o[1] },
+                e,
+                los: new Map(),
+            })),
+        };
+        return SightHandler.elevatePoints(config, e);
+    }
+
+    static elevatePoints(config, e) {
+        const object = config.object;
+        const unitsToPixel = canvas.dimensions.size / canvas.dimensions.distance;
+        if (object instanceof Token) {
+            if (config.tests._levels !== object) {
+                config.tests.length = 0;
+                for (const p of SightHandler.getTestPoints(object)) {
+                    const elevation = p.z * unitsToPixel;
+                    config.tests.push({ elevation, point: { x: p.x, y: p.y, z: elevation }, los: new Map() });
+                }
+                config.tests._levels = object;
+            }
+        } else {
+            let z;
+            if (object instanceof PlaceableObject) {
+                z = object.document.elevation;
+            } else if (object instanceof DoorControl) {
+                z = e;
+            }
+            z ??= canvas.primary.background.elevation;
+            z *= unitsToPixel;
+            for (const test of config.tests) {
+                test.point.z = z;
+                test.elevation = z;
+            }
+        }
+        return config;
+    }
+
     static _testCollision(wrapped, ...args) {
         const visionSource = this.config?.source;
         const target = CONFIG?.Levels?.visibilityTestObject;
@@ -160,7 +223,7 @@ export class SightHandler {
         if (target instanceof Token) {
             targetElevation = target.losHeight;
         } else if (target instanceof PlaceableObject) {
-            targetElevation = target.document.elevation ?? target.document.flags.levels?.rangeBottom;
+            targetElevation = target.document.elevation;
         } else if (target instanceof DoorControl) {
             targetElevation = visionSource.elevation;
         } else {
@@ -190,9 +253,9 @@ export class SightHandler {
     static containsWrapper(wrapped, ...args) {
         const LevelsConfig = CONFIG.Levels;
         const testTarget = LevelsConfig.visibilityTestObject;
-        if (!this.config?.source?.object || !(testTarget instanceof Token) || this.config.source instanceof GlobalLightSource) return wrapped(...args);
+        if (!this.config?.source?.object || !(testTarget instanceof Token) || this.config.source instanceof foundry.canvas.sources.GlobalLightSource) return wrapped(...args);
         let result;
-        if (this.config.source instanceof LightSource) {
+        if (this.config.source instanceof foundry.canvas.sources.PointLightSource) {
             result = LevelsConfig.handlers.SightHandler.testInLight(this.config.source.object, testTarget, this, wrapped(...args));
         } else if (this.config.source.object instanceof Token) {
             const point = {
@@ -202,6 +265,7 @@ export class SightHandler {
                 object: testTarget,
             };
             result = LevelsConfig.handlers.SightHandler.performLOSTest(this.config.source.object, point, this, this.config.type);
+            //if(canvas.effects.darknessSources.size) result = result && wrapped(...args);
         } else {
             result = wrapped(...args);
         }
@@ -213,30 +277,30 @@ export class SightHandler {
      * @param {Integer} collisionType - The collision type being checked: 0 for sight, 1 for movement, 2 for sound, 3 for light
      * @returns {boolean} Whether the wall should be ignored
      */
-    static shouldIgnoreWall(wall, collisionType, options) {
-        const proximity = this.shouldIgnoreProximityWall(wall.document, options.A, options.B, options.source?.vision?.data?.externalRadius ?? 0);
+    static shouldIgnoreWall(wall, collisionType, options, edge) {
+        const {sight, light, sound, move} = edge;
+        const proximity = this.shouldIgnoreProximityWall(wall?.document, options.A, options.B, options.source?.vision?.data?.externalRadius ?? 0);
         if (collisionType === 0) {
             return (
-                wall.document.sight === CONST.WALL_SENSE_TYPES.NONE ||
+                sight === CONST.WALL_SENSE_TYPES.NONE ||
                 proximity ||
-                //wall.document.sight > 20 ||
-                (wall.document.door != 0 && wall.document.ds === 1)
+                (wall?.document?.door != 0 && wall?.document?.ds === 1)
             );
         } else if (collisionType === 1) {
-            return wall.document.move === CONST.WALL_MOVEMENT_TYPES.NONE || (wall.document.door != 0 && wall.document.ds === 1);
+            return move === CONST.WALL_MOVEMENT_TYPES.NONE || (wall?.document?.door != 0 && wall?.document?.ds === 1);
         } else if (collisionType === 2) {
-            return wall.document.sound === CONST.WALL_MOVEMENT_TYPES.NONE || wall.document.sound > 20 || (wall.document.door != 0 && wall.document.ds === 1);
+            return sound === CONST.WALL_MOVEMENT_TYPES.NONE || sound > 20 || (wall?.document?.door != 0 && wall?.document?.ds === 1);
         } else if (collisionType === 3) {
-            return wall.document.light === CONST.WALL_MOVEMENT_TYPES.NONE || wall.document.light > 20 || (wall.document.door != 0 && wall.document.ds === 1);
+            return light === CONST.WALL_MOVEMENT_TYPES.NONE || light > 20 || (wall?.document?.door != 0 && wall?.document?.ds === 1);
         }
     }
 
     static shouldIgnoreProximityWall(document, source, target, externalRadius = 0) {
-        if (!source || !target) return false;
+        if (!source || !target || !document) return false;
         const d = document.threshold?.sight;
         if (!d || d.sight < 30) return false; // No threshold applies
         const proximity = document.sight === CONST.WALL_SENSE_TYPES.PROXIMITY;
-        const pt = foundry.utils.closestPointToSegment(source, document.object.A, document.object.B);
+        const pt = foundry.utils.closestPointToSegment(source, document.object.edge.a, document.object.edge.b);
         //const ptTarget = foundry.utils.closestPointToSegment(target, document.object.A, document.object.B);
         //const targetDistance = Math.hypot(ptTarget.x - target.x, ptTarget.y - target.y);
         const sourceDistance = Math.hypot(pt.x - source.x, pt.y - source.y);
@@ -272,6 +336,7 @@ export class SightHandler {
 
         const TYPE = type == "sight" ? 0 : type == "sound" ? 2 : type == "light" ? 3 : 1;
         const ALPHATTHRESHOLD = type == "sight" ? 0.99 : 0.1;
+        const IGNOREDARKNESS = !options?.sourcePolygon?.config?.includeDarkness;
         //If the point are on the same Z axis return the 3d wall test
         if (z0 == z1) {
             return walls3dTest.bind(this)();
@@ -290,12 +355,12 @@ export class SightHandler {
 
         //Loop through all the planes and check for both ceiling and floor collision on each tile
         for (let tile of canvas.tiles.placeables) {
-            if (tile.document.flags?.levels?.noCollision || !tile.document.overhead) continue;
-            const bottom = tile.document.flags?.levels?.rangeBottom ?? -Infinity;
+            if (tile.document.flags?.levels?.noCollision) continue;
+            const bottom = tile.document.elevation ?? -Infinity;
             const top = tile.document.flags?.levels?.rangeTop ?? Infinity;
             if (bottom != -Infinity) {
                 const zIntersectionPoint = getPointForPlane(bottom);
-                if (((z0 < bottom && bottom < z1) || (z1 < bottom && bottom < z0)) && tile.mesh?.containsPixel(zIntersectionPoint.x, zIntersectionPoint.y, ALPHATTHRESHOLD)) {
+                if (((z0 < bottom && bottom < z1) || (z1 < bottom && bottom < z0)) && tile.mesh?.containsCanvasPoint({ x: zIntersectionPoint.x, y: zIntersectionPoint.y }, ALPHATTHRESHOLD)) {
                     return {
                         x: zIntersectionPoint.x,
                         y: zIntersectionPoint.y,
@@ -330,6 +395,10 @@ export class SightHandler {
         }
         //Get wall heights flags, avoid infinity, use arbitrary large number instead
         function getWallHeightRange3Dcollision(wall) {
+            if(!wall) return [-1e9, 1e9];
+            if (wall.elevation !== undefined) {
+                return [wall.elevation, wall.document.flags.levels?.rangeTop ?? Infinity];
+            }
             let { top, bottom } = WallHeight.getWallBounds(wall);
             if (bottom == -Infinity) bottom = -1e9;
             if (top == Infinity) top = 1e9;
@@ -344,21 +413,21 @@ export class SightHandler {
             const rectW = Math.abs(x1 - x0);
             const rectH = Math.abs(y1 - y0);
             const rect = new PIXI.Rectangle(rectX, rectY, rectW, rectH);
-            const walls = canvas.walls.quadtree.getObjects(rect);
             let terrainWalls = 0;
-            for (let wall of walls) {
-                if (this.shouldIgnoreWall(wall, TYPE, options)) continue;
-
-                let isTerrain = (TYPE === 0 && wall.document.sight === CONST.WALL_SENSE_TYPES.LIMITED) || (TYPE === 1 && wall.document.move === CONST.WALL_SENSE_TYPES.LIMITED) || (TYPE === 2 && wall.document.sound === CONST.WALL_SENSE_TYPES.LIMITED) || (TYPE === 3 && wall.document.light === CONST.WALL_SENSE_TYPES.LIMITED);
+            for (const [k, edge] of canvas.edges) {
+                if (this.shouldIgnoreWall(edge.object, TYPE, options, edge)) continue;
+                if (IGNOREDARKNESS && edge.type === "darkness") continue;
+                let isTerrain = (TYPE === 0 && edge.sight === CONST.WALL_SENSE_TYPES.LIMITED) || (TYPE === 1 && edge.move === CONST.WALL_MOVEMENT_TYPES.LIMITED) || (TYPE === 2 && edge.sound === CONST.WALL_MOVEMENT_TYPES.LIMITED) || (TYPE === 3 && edge.light === CONST.WALL_MOVEMENT_TYPES.LIMITED);
 
                 //declare points in 3d space of the rectangle created by the wall
-                const wallBotTop = getWallHeightRange3Dcollision(wall);
-                const wx1 = wall.document.c[0];
-                const wx2 = wall.document.c[2];
-                const wx3 = wall.document.c[2];
-                const wy1 = wall.document.c[1];
-                const wy2 = wall.document.c[3];
-                const wy3 = wall.document.c[3];
+                const wallBotTop = getWallHeightRange3Dcollision(edge.object);
+
+                const wx1 = edge.a.x;
+                const wx2 = edge.b.x;
+                const wx3 = edge.b.x;
+                const wy1 = edge.a.y;
+                const wy2 = edge.b.y;
+                const wy3 = edge.b.y;
                 const wz1 = wallBotTop[0];
                 const wz2 = wallBotTop[0];
                 const wz3 = wallBotTop[1];
@@ -378,11 +447,11 @@ export class SightHandler {
 
                 //Check for directional walls
 
-                if (wall.direction !== null) {
+                if (edge.direction) {
                     // Directional walls where the ray angle is not in the same hemisphere
                     const rayAngle = Math.atan2(y1 - y0, x1 - x0);
                     const angleBounds = [rayAngle - Math.PI / 2, rayAngle + Math.PI / 2];
-                    if (!wall.isDirectionBetweenAngles(...angleBounds)) continue;
+                    if (edge.object?.isDirectionBetweenAngles && !edge.object.isDirectionBetweenAngles(...angleBounds)) continue;
                 }
 
                 //calculate intersection point
@@ -398,6 +467,7 @@ export class SightHandler {
                     continue;
                 }
                 if (isb && iz <= wallBotTop[1] && iz >= wallBotTop[0]) return { x: ix, y: iy, z: iz };
+
             }
             return false;
         }
@@ -410,7 +480,7 @@ export class SightHandler {
      * @param {String} type - "sight" or "move"/"collision" or "sound" or "light" (defaults to "sight")
      * @returns {Boolean} returns the collision point if a collision is detected, flase if it's not
      **/
-    static checkCollision(tokenOrPoint1, tokenOrPoint2, type = "sight") {
+    static checkCollision(tokenOrPoint1, tokenOrPoint2, type = "sight", options = {}) {
         const p0 =
             tokenOrPoint1 instanceof Token
                 ? {
@@ -427,6 +497,6 @@ export class SightHandler {
                       z: tokenOrPoint2.losHeight,
                   }
                 : tokenOrPoint2;
-        return this.testCollision(p0, p1, type, { source: tokenOrPoint1, target: tokenOrPoint2 });
+        return this.testCollision(p0, p1, type, { source: tokenOrPoint1, target: tokenOrPoint2, ...options });
     }
 }

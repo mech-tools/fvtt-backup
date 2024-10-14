@@ -10,12 +10,14 @@ import { NoteHandler } from "./handlers/noteHandler.js";
 import { TokenHandler } from "./handlers/tokenHandler.js";
 import { TemplateHandler } from "./handlers/templateHandler.js";
 import { FoWHandler } from "./handlers/fowHandler.js";
-import { BackgroundHandler } from "./handlers/backgroundHandler.js";
+import {BackgroundHandler} from "./handlers/backgroundHandler.js";
+import {RegionHandler} from "./handlers/regionHandler.js";
 import { SettingsHandler } from "./handlers/settingsHandler.js";
 import { LevelsAPI } from "./API.js";
 import { registerWrappers } from "./wrappers.js";
 import { inRange, getRangeForDocument, cloneTileMesh, inDistance } from "./helpers.js";
 import { setupWarnings } from "./warnings.js";
+import {LevelsMigration} from "./migration.js";
 
 //warnings
 
@@ -23,28 +25,12 @@ Hooks.on("ready", () => {
     if (!game.user.isGM) return;
 
     setupWarnings();
-
-    const recommendedVersion = "10.291";
-
-    if (isNewerVersion(recommendedVersion, game.version)) {
-        ui.notifications.error(`Levels recommends Foundry VTT version ${recommendedVersion} or newer. Levels might not work as expected in the currently installed version (${game.version}).`, { permanent: true });
-        return;
-    }
 });
 
 Object.defineProperty(globalThis, "_levels", {
     get: () => {
         console.warn("Levels: _levels is deprecated. Use CONFIG.Levels.API instead.");
         return CONFIG.Levels.API;
-    },
-});
-
-Object.defineProperty(TileDocument.prototype, "elevation", {
-    get: function () {
-        if (CONFIG.Levels?.UI?.rangeEnabled && !this.id) {
-            return parseFloat(CONFIG.Levels.UI.range[0] || 0);
-        }
-        return this.overhead ? this.flags?.levels?.rangeBottom ?? canvas.scene.foregroundElevation : canvas.primary.background.elevation;
     },
 });
 
@@ -62,45 +48,6 @@ Tile.prototype.inTriggeringRange = function (token) {
     }
 };
 
-Object.defineProperty(DrawingDocument.prototype, "elevation", {
-    get: function () {
-        if (CONFIG.Levels?.UI?.rangeEnabled && !this.id) {
-            return parseFloat(CONFIG.Levels.UI.range[0] || 0);
-        }
-        return this.flags?.levels?.rangeBottom ?? canvas.primary.background.elevation;
-    },
-});
-
-Object.defineProperty(NoteDocument.prototype, "elevation", {
-    get: function () {
-        return this.flags?.levels?.rangeBottom ?? canvas.primary.background.elevation;
-    },
-});
-
-Object.defineProperty(AmbientLightDocument.prototype, "elevation", {
-    get: function () {
-        if (CONFIG.Levels.UI.rangeEnabled && !this.id) {
-            return parseFloat(CONFIG.Levels.UI.range[0] || 0);
-        }
-        return this.flags?.levels?.rangeBottom ?? canvas.primary.background.elevation;
-    },
-});
-
-Object.defineProperty(AmbientSoundDocument.prototype, "elevation", {
-    get: function () {
-        if (CONFIG.Levels.UI.rangeEnabled && !this.id) {
-            return parseFloat(CONFIG.Levels.UI.range[0] || 0);
-        }
-        if (isNaN(this.flags?.levels?.rangeBottom)) return canvas.primary.background.elevation;
-        return (this.flags?.levels?.rangeBottom + (this.flags?.levels?.rangeTop ?? this.flags?.levels?.rangeBottom)) / 2;
-    },
-});
-
-Object.defineProperty(MeasuredTemplateDocument.prototype, "elevation", {
-    get: function () {
-        return this.flags?.levels?.elevation ?? canvas.primary.background.elevation;
-    },
-});
 
 Object.defineProperty(WeatherEffects.prototype, "elevation", {
     get: function () {
@@ -148,6 +95,7 @@ Hooks.on("init", () => {
         FoWHandler,
         BackgroundHandler,
         SettingsHandler,
+        RegionHandler,
     };
 
     CONFIG.Levels.helpers = {
@@ -155,6 +103,7 @@ Hooks.on("init", () => {
         getRangeForDocument,
         cloneTileMesh,
         inDistance,
+        migration: new LevelsMigration(),
     };
 
     CONFIG.Levels.API = LevelsAPI;
@@ -170,10 +119,14 @@ Hooks.on("init", () => {
     CONFIG.Levels.FoWHandler = new FoWHandler();
     CONFIG.Levels.handlers.BackgroundHandler.setupElevation();
 
+
     Hooks.callAll("levelsReady", CONFIG.Levels);
 });
 
 Hooks.once("ready", () => {
+
+    if(game.user.isGM && game.settings.get("levels", "migrateOnStartup")) CONFIG.Levels.helpers.migration.migrateAll();
+
     if (game.modules.get("levels-3d-preview")?.active) return;
     // Module title
     const MODULE_ID = CONFIG.Levels.MODULE_ID;
@@ -302,18 +255,6 @@ Hooks.on("init", () => {
         },
     });
 
-    game.settings.register(CONFIG.Levels.MODULE_ID, "enableTooltips", {
-        name: game.i18n.localize("levels.settings.enableTooltips.name"),
-        hint: game.i18n.localize("levels.settings.enableTooltips.hint"),
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: false,
-        onChange: () => {
-            CONFIG.Levels.settings.cacheSettings();
-        },
-    });
-
     game.settings.register(CONFIG.Levels.MODULE_ID, "preciseTokenVisibility", {
         name: game.i18n.localize("levels.settings.preciseTokenVisibility.name"),
         hint: game.i18n.localize("levels.settings.preciseTokenVisibility.hint"),
@@ -336,6 +277,16 @@ Hooks.on("init", () => {
         onChange: () => {
             CONFIG.Levels.settings.cacheSettings();
         },
+    });
+
+    game.settings.register(CONFIG.Levels.MODULE_ID, "migrateOnStartup", {
+        name: game.i18n.localize("levels.settings.migrateOnStartup.name"),
+        hint: game.i18n.localize("levels.settings.migrateOnStartup.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: true,
     });
 });
 
@@ -363,14 +314,6 @@ Hooks.on("renderTileConfig", (app, html, data) => {
             units: game.i18n.localize("levels.tileconfig.range.unit"),
             default: "",
             placeholder: "Infinity",
-            step: "any",
-        },
-        rangeBottom: {
-            type: "number",
-            label: game.i18n.localize("levels.tileconfig.rangeBottom.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: "",
-            placeholder: "-Infinity",
             step: "any",
         },
         showIfAbove: {
@@ -409,24 +352,21 @@ Hooks.on("renderTileConfig", (app, html, data) => {
         },
     });
     injHtml.find(`input[name="flags.${CONFIG.Levels.MODULE_ID}.rangeTop"]`).closest(".form-group").before(`
-  <p class="notes" style="color: red" id="no-overhead-warning">${game.i18n.localize("levels.tileconfig.noOverhead")}</>
   <p class="notes" style="color: red" id="occlusion-none-warning">${game.i18n.localize("levels.tileconfig.occlusionNone")}</>
   `);
-    html.on("change", "input", (e) => {
-        const isOverhead = html.find(`input[name="overhead"]`).is(":checked");
+    html.on("change", "input, select", (e) => {
         const occlusionMode = html.find(`select[name="occlusion.mode"]`).val();
         const isShowIfAbove = injHtml.find(`input[name="flags.levels.showIfAbove"]`).is(":checked");
-        injHtml.find("input").prop("disabled", !isOverhead);
         injHtml.find("input[name='flags.levels.showAboveRange']").closest(".form-group").toggle(isShowIfAbove);
-        html.find("#no-overhead-warning").toggle(!isOverhead);
         html.find("#occlusion-none-warning").toggle(occlusionMode == 0);
         app.setPosition({ height: "auto" });
     });
-    html.find(`input[name="overhead"]`).trigger("change");
+    html.find(`[name="occlusion.mode"]`).trigger("change");
     app.setPosition({ height: "auto" });
 });
 
 Hooks.on("renderAmbientLightConfig", (app, html, data) => {
+    if(html.querySelector(`[name="flags.levels.rangeTop"]`)) return;
     const injHtml = injectConfig.inject(app, html, {
         moduleId: "levels",
         inject: 'input[name="config.dim"]',
@@ -437,15 +377,7 @@ Hooks.on("renderAmbientLightConfig", (app, html, data) => {
             default: "",
             placeholder: "Infinity",
             step: "any",
-        },
-        rangeBottom: {
-            type: "number",
-            label: game.i18n.localize("levels.tileconfig.rangeBottom.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: "",
-            placeholder: "-Infinity",
-            step: "any",
-        },
+        }
     });
 });
 
@@ -460,19 +392,12 @@ Hooks.on("renderNoteConfig", (app, html, data) => {
             default: "",
             placeholder: "Infinity",
             step: "any",
-        },
-        rangeBottom: {
-            type: "number",
-            label: game.i18n.localize("levels.tileconfig.rangeBottom.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: "",
-            placeholder: "-Infinity",
-            step: "any",
-        },
+        }
     });
 });
 
 Hooks.on("renderAmbientSoundConfig", (app, html, data) => {
+    if(html.querySelector(`[name="flags.levels.rangeTop"]`)) return;
     const injHtml = injectConfig.inject(app, html, {
         moduleId: "levels",
         inject: 'input[name="radius"]',
@@ -483,22 +408,14 @@ Hooks.on("renderAmbientSoundConfig", (app, html, data) => {
             default: "",
             placeholder: "Infinity",
             step: "any",
-        },
-        rangeBottom: {
-            type: "number",
-            label: game.i18n.localize("levels.tileconfig.rangeBottom.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: "",
-            placeholder: "-Infinity",
-            step: "any",
-        },
+        }
     });
 });
 
 Hooks.on("renderDrawingConfig", (app, html, data) => {
     const injHtml = injectConfig.inject(app, html, {
         moduleId: "levels",
-        inject: 'input[name="z"]',
+        inject: 'input[name="sort"]',
         drawingMode: {
             type: "select",
             label: game.i18n.localize("levels.drawingconfig.isHole.name"),
@@ -524,30 +441,14 @@ Hooks.on("renderDrawingConfig", (app, html, data) => {
             default: "",
             placeholder: "Infinity",
             step: "any",
-        },
-        rangeBottom: {
-            type: "number",
-            label: game.i18n.localize("levels.tileconfig.rangeBottom.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: "",
-            placeholder: "-Infinity",
-            step: "any",
-        },
+        }
     });
 });
 
 Hooks.on("renderMeasuredTemplateConfig", (app, html, data) => {
     const injHtml = injectConfig.inject(app, html, {
         moduleId: "levels",
-        inject: 'input[name="width"]',
-        elevation: {
-            type: "text",
-            dType: "Number",
-            label: game.i18n.localize("levels.template.elevation.name"),
-            units: game.i18n.localize("levels.tileconfig.range.unit"),
-            default: Infinity,
-            step: "any",
-        },
+        inject: '[name="elevation"]',
         special: {
             type: "number",
             label: game.i18n.localize("levels.template.depth.name"),
@@ -587,9 +488,10 @@ Hooks.on("renderTokenHUD", (data, hud, drawData) => {
 
 Hooks.on("preCreateMeasuredTemplate", (template) => {
     const templateData = CONFIG.Levels.handlers.TemplateHandler.getTemplateData();
-    if (template.flags?.levels?.elevation) return;
+    if (template.elevation) return;
     template.updateSource({
-        flags: { levels: { elevation: templateData.elevation, special: templateData.special } },
+        elevation: templateData.elevation,
+        flags: { levels: { special: templateData.special } },
     });
 });
 
@@ -619,7 +521,7 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
 
     injectConfig.inject(app, html, {
         moduleId: "levels",
-        inject: 'input[name="fogExploration"]',
+        inject: 'input[name="fog.exploration"]',
         lightMasking: {
             type: "checkbox",
             label: game.i18n.localize("levels.sceneconfig.lightMasking.name"),

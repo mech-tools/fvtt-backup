@@ -166,9 +166,14 @@ async function createResourceBar(token, data, reservedSpace) {
  * @returns {Promise.<PIXI.Texture[]>} An array containing the background and foreground texture.
  */
 async function loadBarTextures(data) {
-    const bgTexture = data.bgImage ? await loadTexture(data.bgImage) : null;
-    const fgTexture = data.fgImage ? await loadTexture(data.fgImage) : null;
-    return [bgTexture, fgTexture];
+    try {
+        const bgTexture = data.bgImage ? await loadTexture(data.bgImage) : null;
+        const fgTexture = data.fgImage ? await loadTexture(data.fgImage) : null;
+        return [bgTexture, fgTexture];
+    } catch (err) {
+        console.error("Bar Brawl | Failed to load bar texture: " + err.message);
+        return [null, null];
+    }
 }
 
 /**
@@ -241,7 +246,7 @@ function drawResourceBar(token, bar, data, textures) {
     drawBarBackground(bar, data, textures[0]);
 
     const barValue = data.invert ? labelValue.max - labelValue.value : labelValue.value;
-    const barPercentage = Math.clamped(barValue, 0, labelValue.max) / labelValue.max;
+    const barPercentage = Math.clamp(barValue, 0, labelValue.max) / labelValue.max;
 
     drawBarForeground(bar, data, textures[1], barPercentage, labelValue.approximated ? barValue : 1);
     drawBarLabel(bar, token, data, labelValue.value, labelValue.max);
@@ -370,7 +375,7 @@ function drawBarLabel(bar, token, data, value, max) {
             break;
         case "percent":
             // Label does not match bar percentage because of possible inversion.
-            const percentage = Math.round((Math.clamped(value, 0, max) / max) * 100);
+            const percentage = Math.round((Math.clamp(value, 0, max) / max) * 100);
             createBarLabel(bar, token, data, `${data.label ? data.label + "  " : ""}${percentage}%`);
             break;
         default:

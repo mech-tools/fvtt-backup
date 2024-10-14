@@ -1,4 +1,4 @@
-import { MODULE_ID } from '../utils.js';
+import { MODULE_ID } from '../constants.js';
 import { META_INDEX_ID, PresetCollection } from './collection.js';
 
 export class V12Migrator {
@@ -16,7 +16,12 @@ export class V12Migrator {
         continue;
       }
 
-      this.migratePack({ pack, migrateFunc, coreMigration });
+      try {
+        this.migratePack({ pack, migrateFunc, coreMigration });
+      } catch (e) {
+        console.warn(`Mass Edit - Ran into an issue while migrating ${pack.metadata.label}`);
+        console.error(e);
+      }
     }
   }
 
@@ -86,7 +91,7 @@ export class V12Migrator {
     const cls = getDocumentClass(documentName);
 
     for (const data of dataArr) {
-      if (coreMigration) cls.migrateData(data); // Core Foundry migration
+      if (coreMigration) cls?.migrateData(data); // Core Foundry migration
       if (migrateFunc) migrateFunc(data, documentName); // Custom migration function
 
       // Token Attacher data traversal
@@ -101,3 +106,27 @@ export class V12Migrator {
     }
   }
 }
+
+// Todo: support TA migration to Links
+// if (taToLinks) {
+//   p.name = p.name + ' - LINKED';
+//   const lData = [];
+//   p.data.forEach((d) => {
+//     const attached = foundry.utils.getProperty(d, 'flags.token-attacher.prototypeAttached');
+//     if (attached) {
+//       const link = { id: foundry.utils.randomID(), type: 0 };
+//       Object.keys(attached).forEach((embedName) => {
+//         attached[embedName].forEach((ad) => {
+//           foundry.utils.setProperty(ad, 'flags.multi-token-edit.links', [foundry.utils.deepClone(link)]);
+//           delete ad.flags?.['token-attacher'];
+//           lData.push({ documentName: embedName, data: ad });
+//         });
+//       });
+//       delete d.flags['token-attacher'];
+//       console.log(d);
+//       foundry.utils.setProperty(d, 'flags.multi-token-edit.links', [link]);
+
+//       p.attached = lData;
+//     }
+//   });
+// }

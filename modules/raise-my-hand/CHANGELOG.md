@@ -1,3 +1,13 @@
+1.4.9
+- fix for sound
+
+1.4.8
+- sound can play only for gm user https://github.com/brunocalado/raise-my-hand-plus/issues/17
+
+1.4.7
+- v12
+- fix AudioHelper
+
 1.4.6
 - translation pt-br  fix
 

@@ -1,1 +1,7 @@
-2023/12/19-11:04:30.610667 7f58b67fc640 Delete type=3 #1
+2024/10/13-21:51:50.980658 7f59effff700 Recovering log #17
+2024/10/13-21:51:50.983368 7f59effff700 Delete type=0 #17
+2024/10/13-21:51:50.983397 7f59effff700 Delete type=3 #15
+2024/10/13-22:05:38.410895 7f54eebbe700 Level-0 table #22: started
+2024/10/13-22:05:38.410913 7f54eebbe700 Level-0 table #22: 0 bytes OK
+2024/10/13-22:05:38.411910 7f54eebbe700 Delete type=0 #20
+2024/10/13-22:05:38.413028 7f54eebbe700 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at (end)

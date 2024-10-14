@@ -1,20 +1,11 @@
 import { TokenDataAdapter } from '../../applications/dataAdapters.js';
 import { copyToClipboard, pasteDataUpdate } from '../../applications/formUtils.js';
-import { showMassEdit } from '../../applications/multiConfig.js';
+import { getMassEditForm, showMassEdit } from '../../applications/multiConfig.js';
 import { countFolderItems, trackProgress } from '../../applications/progressDialog.js';
 import { BrushMenu } from '../brush.js';
 import { importPresetFromJSONDialog } from '../dialogs.js';
 import { SortingHelpersFixed } from '../fixedSort.js';
-import {
-  MODULE_ID,
-  SUPPORTED_PLACEABLES,
-  TagInput,
-  UI_DOCS,
-  applyPresetToScene,
-  isAudio,
-  localFormat,
-  localize,
-} from '../utils.js';
+import { TagInput, applyPresetToScene, isAudio, localFormat, localize } from '../utils.js';
 import {
   VirtualFileFolder,
   META_INDEX_ID,
@@ -24,6 +15,7 @@ import {
   PresetFolder,
 } from './collection.js';
 import { FileIndexer, IndexerForm } from './fileIndexer.js';
+import { LinkerAPI } from '../linker/linker.js';
 import { DOC_ICONS, Preset, VirtualFilePreset } from './preset.js';
 import { TagSelector } from './tagSelector.js';
 import {
@@ -33,6 +25,7 @@ import {
   placeableToData,
   randomizeChildrenFolderColors,
 } from './utils.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES, UI_DOCS } from '../constants.js';
 
 const SEARCH_MIN_CHAR = 2;
 const SEARCH_FOUND_MAX_COUNT = 1001;
@@ -158,7 +151,6 @@ export class MassEditPresets extends FormApplication {
     data.searchMode = SEARCH_MODES[game.settings.get(MODULE_ID, 'presetSearchMode')];
     data.displayDragDropMessage =
       data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length || data.extFolders);
-    data.canvas3dActive = Boolean(game.Levels3DPreview?._active);
 
     data.lastSearch = MassEditPresets.lastSearch;
 
@@ -247,6 +239,11 @@ export class MassEditPresets extends FormApplication {
       });
       this.dragData = uuids;
       this.draggedElements = itemList.find('.item.selected');
+
+      if (event.originalEvent.dataTransfer) {
+        event.originalEvent.dataTransfer.clearData();
+        event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({ uuids }));
+      }
     });
     html.on('dragleave', '.item.sortable', (event) => {
       $(event.target).closest('.item').removeClass('drag-bot').removeClass('drag-top');
@@ -624,8 +621,7 @@ export class MassEditPresets extends FormApplication {
 
   async _onDoubleClickPreset(event) {
     BrushMenu.close();
-    // TODO: 3D Preview
-    if (game.Levels3DPreview?._active) return;
+
     const item = $(event.target).closest('.item');
     const uuid = item.data('uuid');
     if (!uuid) return;
@@ -723,6 +719,11 @@ export class MassEditPresets extends FormApplication {
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) => $(this.form).find('.item-list').find('.item.selected').length === 1,
         callback: (item) => this._onCopyPresetToClipboard(),
+      },
+      {
+        name: 'Copy UUID',
+        icon: '<i class="fa-solid fa-passport"></i>',
+        callback: (item) => this._onCopyUUID(item),
       },
       {
         name: localize('presets.export-as-json'),
@@ -952,6 +953,19 @@ export class MassEditPresets extends FormApplication {
       editableOnly: false,
     });
     selected.forEach((p) => p.openJournal());
+  }
+
+  _onCopyUUID(item) {
+    item.data('uuid');
+
+    game.clipboard.copyPlainText(item.data('uuid'));
+    ui.notifications.info(
+      game.i18n.format('DOCUMENT.IdCopiedClipboard', {
+        label: item.attr('name'),
+        type: 'uuid',
+        id: item.data('uuid'),
+      })
+    );
   }
 
   async _onApplyToSelected(item) {
@@ -1647,6 +1661,24 @@ export class MassEditPresets extends FormApplication {
     options.left = this.position.left + this.position.width + 20;
     options.top = this.position.top;
 
+    const linked = LinkerAPI.getLinkedDocuments(placeables.map((p) => p.document));
+    if (linked.size) {
+      const response = await new Promise((resolve) => {
+        Dialog.confirm({
+          title: 'Attach Linked',
+          content: `<p>Linked placeables have been detected [<b>${linked.size}</b>].</p><p>Should they be included as <b>Attached</b>?</p>`,
+          yes: () => resolve(true),
+          no: () => resolve(false),
+          defaultYes: false,
+        });
+      });
+      if (response) {
+        options.attached = Array.from(linked).map((l) => {
+          return { documentName: l.documentName, data: placeableToData(l) };
+        });
+      }
+    }
+
     this._editPresets(presets, options, event);
     this.render(true);
   }
@@ -1723,8 +1755,13 @@ export class MassEditPresets extends FormApplication {
     new IndexerForm().render(true);
   }
 
+  /**
+   * Export all working pack presets as as JSON file
+   */
   async _onExport() {
-    const tree = await PresetCollection.getTree();
+    const pack = game.packs.get(PresetCollection.workingPack);
+    await pack.getDocuments();
+    const tree = await PresetCollection.getTree(null, { externalCompendiums: false, virtualDirectory: false });
     exportPresets(tree.allPresets);
   }
 
@@ -1791,6 +1828,7 @@ export class PresetConfig extends FormApplication {
     this.presets = presets;
     this.callback = options.callback;
     this.isCreate = options.isCreate;
+    this.attached = options.attached;
   }
 
   /** @inheritdoc */
@@ -1799,6 +1837,8 @@ export class PresetConfig extends FormApplication {
       classes: ['sheet', 'mass-edit-dark-window'],
       template: `modules/${MODULE_ID}/templates/preset/presetEdit.html`,
       width: 360,
+      height: 'auto',
+      tabs: [{ navSelector: '.sheet-tabs', contentSelector: '.content', initial: 'main' }],
     });
   }
 
@@ -1851,7 +1891,6 @@ export class PresetConfig extends FormApplication {
   /** @override */
   async getData(options = {}) {
     const data = {};
-    data.advancedOpen = this.advancedOpen;
 
     data.virtual = this.presets[0] instanceof VirtualFilePreset;
 
@@ -1930,11 +1969,6 @@ export class PresetConfig extends FormApplication {
       });
     });
 
-    // Advanced Options tracking between renders
-    html.find('details').on('toggle', (event) => {
-      this.advancedOpen = Boolean($(event.target).attr('open'));
-    });
-
     //Hover
     const hoverOverlay = html.closest('.window-content').find('.drag-drop-overlay');
     html
@@ -1986,8 +2020,6 @@ export class PresetConfig extends FormApplication {
    * @param {Event} event
    */
   async dropPlaceable(placeables, event) {
-    this.advancedOpen = true;
-
     if (!this.attached) this.attached = foundry.utils.deepClone(this.presets[0].attached ?? []);
     placeables.forEach((p) =>
       this.attached.push({
@@ -2025,22 +2057,38 @@ export class PresetConfig extends FormApplication {
   }
 
   async _onAssignDocument() {
-    const layer = canvas.getLayerByEmbeddedName(this.presets[0].documentName);
-    if (!layer) return;
+    const controlled = canvas.getLayerByEmbeddedName(this.presets[0].documentName)?.controlled.map((p) => p.document);
+    if (!controlled?.length) return;
 
-    const data = layer.controlled.map((p) => placeableToData(p));
-    if (data.length) {
-      this.data = data;
-      ui.notifications.info(
-        localFormat('presets.assign', {
-          count: data.length,
-          document: this.presets[0].documentName,
-        })
-      );
-      this.gridSize = canvas.grid.size;
-      this.modifyOnSpawn = [];
-      this.render(true);
+    const linked = LinkerAPI.getLinkedDocuments(controlled);
+    if (linked.size) {
+      const response = await new Promise((resolve) => {
+        Dialog.confirm({
+          title: 'Override Attached',
+          content: `<p>Linked placeables have been detected [<b>${linked.size}</b>].</p><p>Should they be included and override <b>Attached</b>?</p>`,
+          yes: () => resolve(true),
+          no: () => resolve(false),
+          defaultYes: false,
+        });
+      });
+      if (response) {
+        this.attached = Array.from(linked).map((l) => {
+          return { documentName: l.documentName, data: placeableToData(l) };
+        });
+      }
     }
+
+    const data = controlled.map((p) => placeableToData(p));
+    this.data = data;
+    ui.notifications.info(
+      localFormat('presets.assign', {
+        count: data.length,
+        document: this.presets[0].documentName,
+      })
+    );
+    this.gridSize = canvas.grid.size;
+    this.modifyOnSpawn = [];
+    this.render(true);
   }
 
   async _onEditDocument() {
@@ -2105,6 +2153,7 @@ export class PresetConfig extends FormApplication {
       if (formData.preSpawnScript != null) update.preSpawnScript = formData.preSpawnScript;
       if (formData.postSpawnScript != null) update.postSpawnScript = formData.postSpawnScript;
       if (formData.spawnRandom != null) update.spawnRandom = formData.spawnRandom;
+      if (formData.preserveLinks != null) update.preserveLinks = formData.preserveLinks;
 
       // If this is a single preset config, we override all tags
       // If not we merge
@@ -2464,17 +2513,26 @@ class PresetFolderConfig extends FolderConfig {
 }
 
 function checkMouseInWindow(event) {
-  let app = $(event.target).closest('.window-app');
-  var offset = app.offset();
+  let inWindow = false;
+
+  if (ui.sidebar?.element?.length) {
+    inWindow = _coordOverElement(event.pageX, event.pageY, ui.sidebar.element);
+  }
+  if (!inWindow) {
+    inWindow = _coordOverElement(event.pageX, event.pageY, $(event.target).closest('.window-app'));
+  }
+
+  return inWindow;
+}
+
+function _coordOverElement(x, y, element) {
+  var offset = element.offset();
   let appX = offset.left;
   let appY = offset.top;
-  let appW = app.width();
-  let appH = app.height();
+  let appW = element.width();
+  let appH = element.height();
 
-  var mouseX = event.pageX;
-  var mouseY = event.pageY;
-
-  if (mouseX > appX && mouseX < appX + appW && mouseY > appY && mouseY < appY + appH) {
+  if (x > appX && x < appX + appW && y > appY && y < appY + appH) {
     return true;
   }
   return false;
@@ -2613,5 +2671,102 @@ function hoverMassEditForm(mouseX, mouseY, documentName) {
     return false;
   };
 
-  return Object.values(ui.windows).find((app) => app.meForm && app.documentName === documentName && hitTest(app));
+  const app = getMassEditForm();
+  if (app && app.documentName === documentName && hitTest(app)) return app;
+  return null;
+}
+
+export function registerPresetBrowserHooks() {
+  // Intercept and prevent certain placeable drag and drop if they are hovering over the MassEditPresets form
+  // passing on the placeable to it to perform preset creation.
+  const dragDropHandler = function (wrapped, ...args) {
+    if (MassEditPresets.objectHover || PresetConfig.objectHover) {
+      this.mouseInteractionManager.cancel(...args);
+      const app = Object.values(ui.windows).find(
+        (x) =>
+          (MassEditPresets.objectHover && x instanceof MassEditPresets) ||
+          (PresetConfig.objectHover && x instanceof PresetConfig)
+      );
+      if (app) {
+        const placeables = canvas.activeLayer.controlled.length ? [...canvas.activeLayer.controlled] : [this];
+        app.dropPlaceable(placeables, ...args);
+      }
+      // Pass in a fake event that hopefully is enough to allow other modules to function
+      this._onDragLeftCancel(...args);
+    } else {
+      return wrapped(...args);
+    }
+  };
+
+  SUPPORTED_PLACEABLES.forEach((name) => {
+    libWrapper.register(MODULE_ID, `${name}.prototype._onDragLeftDrop`, dragDropHandler, 'MIXED');
+  });
+
+  // Scene Control to open preset browser
+  Hooks.on('renderSceneControls', (sceneControls, html, options) => {
+    if (!game.user.isGM) return;
+    if (!game.settings.get(MODULE_ID, 'presetSceneControl')) return;
+
+    const presetControl = $(`
+<li class="scene-control mass-edit-scene-control" data-control="me-presets" aria-label="Mass Edit: Presets" role="tab" data-tooltip="Mass Edit: Presets">
+  <i class="fa-solid fa-books"></i>
+</li>
+  `);
+
+    presetControl.on('click', () => {
+      let documentName = canvas.activeLayer.constructor.documentName;
+      if (!SUPPORTED_PLACEABLES.includes(documentName)) documentName = 'ALL';
+
+      const presetForm = Object.values(ui.windows).find((app) => app instanceof MassEditPresets);
+      if (presetForm) {
+        presetForm.close();
+        return;
+      }
+
+      new MassEditPresets(null, null, documentName, {
+        left: presetControl.position().left + presetControl.width() + 40,
+      }).render(true);
+    });
+
+    html.find('.control-tools').find('.scene-control').last().after(presetControl);
+  });
+
+  // Change default behavior of JournalEntry click and context menu within the CompendiumDirectory
+  libWrapper.register(
+    MODULE_ID,
+    'CompendiumDirectory.prototype._getEntryContextOptions',
+    function (wrapped, ...args) {
+      const options = wrapped(...args);
+      options.push({
+        name: 'Open Journal Compendium',
+        icon: '<i class="fas fa-book-open"></i>',
+        condition: (li) => {
+          const pack = game.packs.get(li.data('pack'));
+          return pack.metadata.type === 'JournalEntry' && pack.index.get(META_INDEX_ID);
+        },
+        callback: (li) => {
+          const pack = game.packs.get(li.data('pack'));
+          pack.render(true);
+        },
+      });
+      console.log(options);
+      return options;
+    },
+    'WRAPPER'
+  );
+  libWrapper.register(
+    MODULE_ID,
+    'CompendiumDirectory.prototype._onClickEntryName',
+    async function (wrapped, event) {
+      const element = event.currentTarget;
+      const packId = element.closest('[data-pack]').dataset.pack;
+      const pack = game.packs.get(packId);
+      if (pack.metadata.type === 'JournalEntry' && pack.index.get(META_INDEX_ID)) {
+        new MassEditPresets(null, null, 'ALL').render(true);
+        return;
+      }
+      return wrapped(event);
+    },
+    'MIXED'
+  );
 }

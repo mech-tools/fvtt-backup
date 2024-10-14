@@ -1,23 +1,21 @@
 import CSSEdit, { STYLES } from '../applications/cssEdit.js';
+import { copyToClipboard } from '../applications/formUtils.js';
 import { MassEditGenericForm } from '../applications/generic/genericForm.js';
 import {
+  getMassEditForm,
   getSelected,
   pasteData,
   showMassActorForm,
   showMassEdit,
   showMassSelect,
 } from '../applications/multiConfig.js';
-import { editPreviewPlaceables } from './picker.js';
+import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES } from './constants.js';
+import { LinkerAPI } from './linker/linker.js';
+import { editPreviewPlaceables, Picker } from './picker.js';
 import { PresetCollection } from './presets/collection.js';
 import { MassEditPresets } from './presets/forms.js';
-import {
-  MODULE_ID,
-  SUPPORTED_COLLECTIONS,
-  SUPPORTED_PLACEABLES,
-  activeEffectPresetSelect,
-  getDocumentName,
-  localize,
-} from './utils.js';
+import { Preset } from './presets/preset.js';
+import { activeEffectPresetSelect, getDocumentName, localize } from './utils.js';
 
 export function registerSettings() {
   // Register Settings
@@ -231,6 +229,15 @@ export function registerSettings() {
     default: true,
   });
 
+  game.settings.register(MODULE_ID, 'preSelectAutoApply', {
+    name: 'Pre-Select Auto-apply',
+    hint: 'Should the auto-apply button be ticked by default on Mass Edit forms.',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   if (game.modules.get('tokenmagic')?.active) {
     game.settings.register(MODULE_ID, 'tmfxFieldsEnable', {
       name: localize('settings.tmfxFieldsEnable.name'),
@@ -261,9 +268,73 @@ export function registerSettings() {
 }
 
 export function registerKeybinds() {
+  game.keybindings.register(MODULE_ID, 'linker', {
+    name: localize('keybindings.linkerMenu.name'),
+    hint: localize('keybindings.linkerMenu.hint'),
+    editable: [
+      {
+        key: 'KeyQ',
+        modifiers: ['Shift'],
+      },
+    ],
+    onDown: () => {
+      LinkerAPI.openMenu();
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'smartLink', {
+    name: 'Smart Link',
+    hint: 'Initiate smart document linking.',
+    editable: [
+      {
+        key: 'KeyL',
+        modifiers: [],
+      },
+    ],
+    onDown: () => {
+      LinkerAPI.smartLink({ multiLayer: !Boolean(LinkerAPI._getSelected().length) });
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'smartUnlink', {
+    name: 'Smart Un-Link',
+    hint: 'Initiate smart document un-linking.',
+    editable: [
+      {
+        key: 'KeyU',
+        modifiers: [],
+      },
+    ],
+    onDown: () => {
+      LinkerAPI.removeLinksFromSelected({ notification: true, multiLayer: !Boolean(LinkerAPI._getSelected().length) });
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'deleteAllLinked', {
+    name: 'Delete Selected & Linked',
+    hint: 'Deletes currently selected placeable and all placeables linked to it via the `Linker Menu`',
+    editable: [
+      {
+        key: 'Delete',
+        modifiers: ['Shift'],
+      },
+    ],
+    onDown: () => {
+      LinkerAPI.deleteSelectedLinkedPlaceables();
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
   game.keybindings.register(MODULE_ID, 'placeablePreviewEdit', {
-    name: 'Select Edit Placeables',
-    hint: '',
+    name: localize('keybindings.placeableEdit.name'),
+    hint: localize('keybindings.placeableEdit.hint'),
     editable: [
       {
         key: 'KeyD',
@@ -271,6 +342,34 @@ export function registerKeybinds() {
       },
     ],
     onDown: editPreviewPlaceables,
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'mirrorX', {
+    name: 'Mirror Preview Horizontally',
+    hint: '',
+    editable: [
+      {
+        key: 'KeyH',
+        modifiers: [],
+      },
+    ],
+    onDown: () => Picker.mirrorX(),
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'mirrorY', {
+    name: 'Mirror Preview Vertically',
+    hint: '',
+    editable: [
+      {
+        key: 'KeyV',
+        modifiers: [],
+      },
+    ],
+    onDown: () => Picker.mirrorY(),
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
   });
@@ -285,7 +384,7 @@ export function registerKeybinds() {
       },
     ],
     onDown: () => {
-      const app = Object.values(ui.windows).find((w) => w.meObjects);
+      const app = getMassEditForm();
       if (app) {
         app.close();
         return;
@@ -297,8 +396,8 @@ export function registerKeybinds() {
   });
 
   game.keybindings.register(MODULE_ID, 'copyKey', {
-    name: 'Copy',
-    hint: '',
+    name: localize('common.copy'),
+    hint: 'Copy data from within an opened Mass Edit form OR the selected and all linked placeables.',
     editable: [
       {
         key: 'KeyC',
@@ -308,9 +407,25 @@ export function registerKeybinds() {
     onDown: () => {
       // Check if a Mass Config form is open and if so copy data from there
       if (window.getSelection().toString() === '') {
-        Object.values(ui.windows)
-          .find((app) => app.meObjects != null)
-          ?.performMassCopy();
+        const app = Object.values(ui.windows).find((app) => app.meObjects != null);
+        if (app) return app.performMassCopy();
+      }
+
+      // If no form is open attempt to copy the selected placeable and its linked placeables
+      const selected = LinkerAPI._getSelected().map((s) => s.document);
+      if (selected.length) {
+        const linked = Array.from(
+          LinkerAPI.getHardLinkedDocuments(selected).filter((l) => !selected.find((s) => s.id === l.id))
+        );
+
+        const preset = new Preset({
+          documentName: selected[0].documentName,
+          data: selected.map((s) => s.toObject()),
+          attached: linked.map((l) => {
+            return { documentName: l.documentName, data: l.toObject() };
+          }),
+        });
+        copyToClipboard(preset);
       }
     },
     restricted: true,
@@ -318,8 +433,8 @@ export function registerKeybinds() {
   });
 
   game.keybindings.register(MODULE_ID, 'pasteKey', {
-    name: 'Paste',
-    hint: '',
+    name: localize('common.paste'),
+    hint: 'Paste data onto selected placeables or spawn it as a new placeable.',
     editable: [
       {
         key: 'KeyV',

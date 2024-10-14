@@ -7,8 +7,8 @@ import { EffectCounter } from "./api.js";
 export const extendEffectRenderer = function () {
     if(game.modules.get("lib-wrapper")?.active) {
         // Override using libWrapper: https://github.com/ruipin/fvtt-lib-wrapper
-        libWrapper.register("statuscounter", "Token.prototype.drawEffects", async function (wrapped, ...args) {
-            await wrapped(...args);
+        libWrapper.register("statuscounter", "Token.prototype._refreshEffects", async function (wrapped, ...args) {
+            wrapped(...args);
             drawEffectCounters(this);
         }, "WRAPPER");
         libWrapper.register("statuscounter", "Token.prototype._drawEffect", async function (wrapped, src, ...args) {
@@ -18,9 +18,9 @@ export const extendEffectRenderer = function () {
         }, "WRAPPER");
     } else {
         // Manual override
-        const originalDrawEffects = Token.prototype.drawEffects;
-        Token.prototype.drawEffects = async function () {
-            await originalDrawEffects.apply(this, arguments);
+        const originalDrawEffects = Token.prototype._refreshEffects;
+        Token.prototype._refreshEffects = function () {
+            originalDrawEffects.apply(this, arguments);
             drawEffectCounters(this);
         }
 
@@ -100,6 +100,7 @@ function drawEffectCounters(token) {
     }
 
     for (let sprite of token.effects.children.filter(effect => effect.isSprite && effect.name)) {
+        if (sprite === token.effects.overlay) continue;
         const counter = effectCounters.find(effect => sprite.name === effect.path);
         if (counter) token.effectCounters.addChild(createEffectCounter(tokenDoc, counter, sprite));
     }
