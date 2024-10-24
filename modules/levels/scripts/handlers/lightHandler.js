@@ -2,8 +2,8 @@ export class LightHandler{
     static isLightVisibleWrapper(wrapped, ...args) {
         const result = wrapped(...args);
         const isPreview = this.document?.id == null;
-        if(isPreview) return result;
-        if(!CONFIG.Levels.handlers.UIHandler.emitsLightUI(this)) return false;
+        if (isPreview) return result;
+        if(!CONFIG.Levels.handlers.UIHandler.emitsLightUIToken(this)) return false;
         if (game.Levels3DPreview?._active) return result;
         const isToken = this instanceof Token;
         const rangeBottom = this.document.elevation ?? -Infinity;
@@ -30,7 +30,7 @@ export class LightHandler{
     static _isLightSourceDisabled(wrapped, ...args) {
         const result = wrapped(...args);
         const isPreview = this.document?.id == null;
-        if(isPreview) return result;
+        if(isPreview || (canvas.scene.flags.levels?.lightMasking ?? true)) return result;
         if(!CONFIG.Levels.handlers.UIHandler.emitsLightUI(this)) return true;
         if (game.Levels3DPreview?._active) return result;
         const isToken = this instanceof Token;
@@ -41,17 +41,17 @@ export class LightHandler{
         const underBackground = currentElevation >= canvas.primary.background.elevation && rangeTop < canvas.primary.background.elevation;
         if(underBackground) return true;
         let isLightVisible = false;
-        if ((canvas.scene.flags.levels?.lightMasking ?? true)) {
+        /*if ((canvas.scene.flags.levels?.lightMasking ?? true)) {
             if (isToken) isLightVisible = true;//this.visible || rangeBottom <= currentElevation;
             else isLightVisible = rangeBottom <= currentElevation;
-        } else {
+        } else {*/
             let inTokenElevationRange = false;
             if (isToken) {
                 const currentTokenElevation = CONFIG.Levels.currentToken?.document?.elevation ?? currentElevation;
                 inTokenElevationRange = rangeBottom <= currentTokenElevation && currentTokenElevation <= rangeTop;
             }
             isLightVisible = (rangeBottom <= currentElevation && currentElevation <= rangeTop) || inTokenElevationRange;
-        }
+        //}
         return result || !isLightVisible;
     }
 }
