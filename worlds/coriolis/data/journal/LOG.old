@@ -1,8 +1,16 @@
-2024/10/13-22:07:01.464646 7f5a258d8700 Recovering log #340
-2024/10/13-22:07:01.467409 7f5a258d8700 Delete type=0 #340
-2024/10/13-22:07:01.467438 7f5a258d8700 Delete type=3 #338
-2024/10/13-22:23:25.899351 7f54eebbe700 Level-0 table #346: started
-2024/10/13-22:23:25.899374 7f54eebbe700 Level-0 table #346: 0 bytes OK
-2024/10/13-22:23:25.901559 7f54eebbe700 Delete type=0 #344
-2024/10/13-22:23:25.903251 7f54eebbe700 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
-2024/10/13-22:23:25.905740 7f54eebbe700 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2024/10/23-10:18:57.135819 7f59effff700 Recovering log #345
+2024/10/23-10:18:57.138809 7f59effff700 Delete type=3 #343
+2024/10/23-10:18:57.138853 7f59effff700 Delete type=0 #345
+2024/10/27-11:32:30.600716 7f54eebbe700 Level-0 table #350: started
+2024/10/27-11:32:30.608688 7f54eebbe700 Level-0 table #350: 397003 bytes OK
+2024/10/27-11:32:30.609812 7f54eebbe700 Delete type=0 #348
+2024/10/27-11:32:30.613746 7f54eebbe700 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2024/10/27-11:32:30.614455 7f54eebbe700 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal.pages!x173252544561488.8fd1040ecda91d6d' @ 4506 : 1
+2024/10/27-11:32:30.614465 7f54eebbe700 Compacting 1@1 + 1@2 files
+2024/10/27-11:32:30.648447 7f54eebbe700 Generated table #351@1: 971 keys, 2121415 bytes
+2024/10/27-11:32:30.649916 7f54eebbe700 Generated table #352@1: 6 keys, 18477 bytes
+2024/10/27-11:32:30.649937 7f54eebbe700 Compacted 1@1 + 1@2 files => 2139892 bytes
+2024/10/27-11:32:30.651028 7f54eebbe700 compacted to: files[ 0 0 3 0 0 0 0 ]
+2024/10/27-11:32:30.651108 7f54eebbe700 Delete type=2 #342
+2024/10/27-11:32:30.651265 7f54eebbe700 Delete type=2 #350
+2024/10/27-11:32:30.658024 7f54eebbe700 Manual compaction at level-1 from '!journal.pages!x173252544561488.8fd1040ecda91d6d' @ 4506 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)

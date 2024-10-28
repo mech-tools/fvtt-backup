@@ -5,13 +5,13 @@
   "coreVersion": "12.331",
   "resetKeys": false,
   "safeMode": false,
-  "systemVersion": "12.2.6",
+  "systemVersion": "12.2.7",
   "id": "shadowrun-anarchy",
   "compatibility": {
     "verified": "12.331",
     "minimum": "12"
   },
-  "lastPlayed": "Wed Oct 23 2024 10:17:59 GMT+0200 (Central European Summer Time)",
+  "lastPlayed": "Sun Oct 27 2024 18:59:54 GMT+0100 (Central European Standard Time)",
   "playtime": 604390,
   "background": "worlds/sr6/img/seattlebg.jpg",
   "joinTheme": "default"

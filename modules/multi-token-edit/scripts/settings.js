@@ -15,15 +15,24 @@ import { editPreviewPlaceables, Picker } from './picker.js';
 import { PresetCollection } from './presets/collection.js';
 import { MassEditPresets } from './presets/forms.js';
 import { Preset } from './presets/preset.js';
+import { enablePixelPerfectSelect } from './tools/selectTool.js';
 import { activeEffectPresetSelect, getDocumentName, localize } from './utils.js';
 
 export function registerSettings() {
   // Register Settings
+
+  game.settings.register(MODULE_ID, 'debug', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'cssStyle', {
     scope: 'world',
     config: false,
     type: String,
-    default: 'Solid Background',
+    default: 'Default',
   });
 
   game.settings.register(MODULE_ID, 'cssCustom', {
@@ -77,6 +86,22 @@ export function registerSettings() {
       folderFilters: ['Thumb', 'thumb'],
     },
   });
+
+  game.settings.register(MODULE_ID, 'pixelPerfectTile', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: enablePixelPerfectSelect,
+  });
+  game.settings.register(MODULE_ID, 'pixelPerfectToken', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: enablePixelPerfectSelect,
+  });
+  enablePixelPerfectSelect();
 
   // ===============
   // Preset Settings
@@ -317,8 +342,8 @@ export function registerKeybinds() {
   });
 
   game.keybindings.register(MODULE_ID, 'deleteAllLinked', {
-    name: 'Delete Selected & Linked',
-    hint: 'Deletes currently selected placeable and all placeables linked to it via the `Linker Menu`',
+    name: 'Delete Selected: Ignore Links',
+    hint: 'Deletes currently selected placeable without removing any placeables linked to it via the `Linker Menu`',
     editable: [
       {
         key: 'Delete',
@@ -326,7 +351,12 @@ export function registerKeybinds() {
       },
     ],
     onDown: () => {
-      LinkerAPI.deleteSelectedLinkedPlaceables();
+      const selected = LinkerAPI._getSelected().map((s) => s.document);
+      canvas.scene.deleteEmbeddedDocuments(
+        selected[0].documentName,
+        selected.map((s) => s.id),
+        { linkerDelete: true }
+      );
     },
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,

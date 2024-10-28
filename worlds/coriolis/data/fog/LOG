@@ -1,3 +1,8 @@
-2024/10/23-10:18:57.100783 7f5a258d8700 Recovering log #322
-2024/10/23-10:18:57.103521 7f5a258d8700 Delete type=0 #322
-2024/10/23-10:18:57.103563 7f5a258d8700 Delete type=3 #320
+2024/10/27-11:33:28.456889 7f59effff700 Recovering log #326
+2024/10/27-11:33:28.460351 7f59effff700 Delete type=0 #326
+2024/10/27-11:33:28.460376 7f59effff700 Delete type=3 #324
+2024/10/27-18:59:44.711405 7f54eebbe700 Level-0 table #331: started
+2024/10/27-18:59:44.711684 7f54eebbe700 Level-0 table #331: 0 bytes OK
+2024/10/27-18:59:44.712984 7f54eebbe700 Delete type=0 #329
+2024/10/27-18:59:44.719045 7f54eebbe700 Manual compaction at level-0 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)
+2024/10/27-18:59:44.719132 7f54eebbe700 Manual compaction at level-1 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)

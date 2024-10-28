@@ -1,7 +1,22 @@
-2024/10/13-22:07:01.415717 7f5a248d6700 Recovering log #330
-2024/10/13-22:07:01.417970 7f5a248d6700 Delete type=3 #328
-2024/10/13-22:07:01.418002 7f5a248d6700 Delete type=0 #330
-2024/10/13-22:23:25.885997 7f54eebbe700 Level-0 table #335: started
-2024/10/13-22:23:25.887280 7f54eebbe700 Level-0 table #335: 9093 bytes OK
-2024/10/13-22:23:25.888107 7f54eebbe700 Delete type=0 #333
-2024/10/13-22:23:25.889687 7f54eebbe700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2024/10/23-10:18:57.085730 7f5a248d6700 Recovering log #334
+2024/10/23-10:18:57.088590 7f5a248d6700 Delete type=3 #332
+2024/10/23-10:18:57.088628 7f5a248d6700 Delete type=0 #334
+2024/10/27-11:32:30.538519 7f54eebbe700 Level-0 table #339: started
+2024/10/27-11:32:30.542686 7f54eebbe700 Level-0 table #339: 212935 bytes OK
+2024/10/27-11:32:30.543713 7f54eebbe700 Delete type=0 #337
+2024/10/27-11:32:30.548349 7f54eebbe700 Manual compaction at level-0 from '!messages!07kXHbjp9rMwHL04' @ 72057594037927935 : 1 .. '!messages!zVnXCKsH4BAgxcPD' @ 0 : 0; will stop at '!messages!zVnXCKsH4BAgxcPD' @ 4926 : 1
+2024/10/27-11:32:30.548359 7f54eebbe700 Compacting 1@0 + 1@1 files
+2024/10/27-11:32:30.551881 7f54eebbe700 Generated table #340@0: 125 keys, 128011 bytes
+2024/10/27-11:32:30.551893 7f54eebbe700 Compacted 1@0 + 1@1 files => 128011 bytes
+2024/10/27-11:32:30.552883 7f54eebbe700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/10/27-11:32:30.552944 7f54eebbe700 Delete type=2 #339
+2024/10/27-11:32:30.553012 7f54eebbe700 Delete type=2 #335
+2024/10/27-11:32:30.586288 7f54eebbe700 Manual compaction at level-0 from '!messages!zVnXCKsH4BAgxcPD' @ 4926 : 1 .. '!messages!zVnXCKsH4BAgxcPD' @ 0 : 0; will stop at (end)
+2024/10/27-11:32:30.593751 7f54eebbe700 Manual compaction at level-1 from '!messages!07kXHbjp9rMwHL04' @ 72057594037927935 : 1 .. '!messages!zVnXCKsH4BAgxcPD' @ 0 : 0; will stop at '!messages!zVnXCKsH4BAgxcPD' @ 4927 : 1
+2024/10/27-11:32:30.593787 7f54eebbe700 Compacting 1@1 + 1@2 files
+2024/10/27-11:32:30.597866 7f54eebbe700 Generated table #341@1: 78 keys, 129141 bytes
+2024/10/27-11:32:30.597885 7f54eebbe700 Compacted 1@1 + 1@2 files => 129141 bytes
+2024/10/27-11:32:30.598751 7f54eebbe700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/10/27-11:32:30.598841 7f54eebbe700 Delete type=2 #340
+2024/10/27-11:32:30.598927 7f54eebbe700 Delete type=2 #323
+2024/10/27-11:32:30.600552 7f54eebbe700 Manual compaction at level-1 from '!messages!zVnXCKsH4BAgxcPD' @ 4927 : 1 .. '!messages!zVnXCKsH4BAgxcPD' @ 0 : 0; will stop at (end)

@@ -7,8 +7,16 @@ import { selectRandomizerFields } from '../scripts/randomizer/randomizerUtils.js
 import { getDDTint } from '../scripts/tmfx.js';
 import { getDocumentName, hasFlagRemove, localFormat, localize, selectAddSubtractFields } from '../scripts/utils.js';
 import { getInUseStyle } from './cssEdit.js';
-import { GeneralDataAdapter, TokenDataAdapter } from './dataAdapters.js';
-import { copyToClipboard, getCommonDocData, onInputChange, performMassSearch, performMassUpdate } from './formUtils.js';
+import { GeneralDataAdapter, TokenDataAdapter } from '../scripts/data/adapters.js';
+import {
+  copyToClipboard,
+  deselectTabs,
+  getCommonDocData,
+  onInputChange,
+  performMassSearch,
+  performMassUpdate,
+  selectTabs,
+} from './formUtils.js';
 import { WithMassPermissions } from './forms.js';
 import MacroForm from './macro.js';
 import { showMassActorForm } from './multiConfig.js';
@@ -649,6 +657,19 @@ export const WithBaseMassEditForm = (cls) => {
               </div>`);
         $(html).find('[name="texture.scaleX"]').closest('.form-group').before(scaleInput);
         this._processFormGroup(scaleInput, 'meInsert');
+      }
+
+      if (this.documentName === 'AmbientLight') {
+        const hiddenInput = $(`
+          <div class="form-group">
+            <label>Hidden</label>
+            <div class="form-fields">
+              <input type="checkbox" name="hidden" >
+            </div>
+          </div>
+        `);
+        $(html).find('[name="config.shadows"]').closest('.form-group').after(hiddenInput);
+        this._processFormGroup(hiddenInput, 'meInsert');
       }
     }
 

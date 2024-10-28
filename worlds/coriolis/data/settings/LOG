@@ -1,3 +1,15 @@
-2024/10/23-10:18:57.299561 7f5a248d6700 Recovering log #370
-2024/10/23-10:18:57.302051 7f5a248d6700 Delete type=0 #370
-2024/10/23-10:18:57.302078 7f5a248d6700 Delete type=3 #368
+2024/10/27-11:33:28.606813 7f59effff700 Recovering log #375
+2024/10/27-11:33:28.609542 7f59effff700 Delete type=0 #375
+2024/10/27-11:33:28.609573 7f59effff700 Delete type=3 #373
+2024/10/27-18:59:44.726185 7f54eebbe700 Level-0 table #381: started
+2024/10/27-18:59:44.727757 7f54eebbe700 Level-0 table #381: 1691 bytes OK
+2024/10/27-18:59:44.728964 7f54eebbe700 Delete type=0 #379
+2024/10/27-18:59:44.731879 7f54eebbe700 Manual compaction at level-0 from '!settings!0VveToLFfisWubw0' @ 72057594037927935 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at (end)
+2024/10/27-18:59:44.731927 7f54eebbe700 Manual compaction at level-1 from '!settings!0VveToLFfisWubw0' @ 72057594037927935 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at '!settings!ue8o1OEtJlWhb6zt' @ 3541 : 1
+2024/10/27-18:59:44.731932 7f54eebbe700 Compacting 1@1 + 1@2 files
+2024/10/27-18:59:44.734241 7f54eebbe700 Generated table #382@1: 96 keys, 35573 bytes
+2024/10/27-18:59:44.734254 7f54eebbe700 Compacted 1@1 + 1@2 files => 35573 bytes
+2024/10/27-18:59:44.735205 7f54eebbe700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/10/27-18:59:44.735298 7f54eebbe700 Delete type=2 #381
+2024/10/27-18:59:44.735420 7f54eebbe700 Delete type=2 #377
+2024/10/27-18:59:44.756298 7f54eebbe700 Manual compaction at level-1 from '!settings!ue8o1OEtJlWhb6zt' @ 3541 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at (end)

@@ -1,3 +1,7 @@
-2024/10/23-10:18:57.906270 7f5a248d6700 Recovering log #221
-2024/10/23-10:18:57.909214 7f5a248d6700 Delete type=3 #219
-2024/10/23-10:18:57.909250 7f5a248d6700 Delete type=0 #221
+2024/10/27-11:33:29.286359 7f5a258d8700 Recovering log #225
+2024/10/27-11:33:29.289051 7f5a258d8700 Delete type=0 #225
+2024/10/27-11:33:29.289074 7f5a258d8700 Delete type=3 #223
+2024/10/27-18:59:44.599786 7f54eebbe700 Level-0 table #230: started
+2024/10/27-18:59:44.600154 7f54eebbe700 Level-0 table #230: 0 bytes OK
+2024/10/27-18:59:44.602930 7f54eebbe700 Delete type=0 #228
+2024/10/27-18:59:44.608321 7f54eebbe700 Manual compaction at level-0 from '!journal!MassEditMetaData' @ 72057594037927935 : 1 .. '!journal!MassEditMetaData' @ 0 : 0; will stop at (end)
