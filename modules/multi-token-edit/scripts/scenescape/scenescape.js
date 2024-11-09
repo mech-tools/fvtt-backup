@@ -3,10 +3,8 @@ import ScenescapeConfig from './configuration.js';
 import { ScenescapeControls } from './controls.js';
 
 export function registerScenescapeHooks() {
-  // TODO remove debug check once ready for full release
-  if (game.settings.get(MODULE_ID, 'debug')) {
-    Hooks.on('renderSceneConfig', (app, html, options) => {
-      const element = $(`
+  Hooks.on('renderSceneConfig', (app, html, options) => {
+    const element = $(`
     <div class="form-group">
         <label>Scenescape</label>
         <div class="form-fields">
@@ -17,11 +15,10 @@ export function registerScenescapeHooks() {
         <p class="notes">Configure this scene as a 'Scenescape' allowing dynamic scaling and positioning of assets on a landscape background.</p>
     </div>
             `);
-      element.on('click', '.configureScenescape', () => new ScenescapeConfig().render(true));
-      html.find('.initial-position').after(element);
-      app.setPosition({ height: 'auto' });
-    });
-  }
+    element.on('click', '.configureScenescape', () => new ScenescapeConfig().render(true));
+    html.find('.initial-position').after(element);
+    app.setPosition({ height: 'auto' });
+  });
 
   ScenescapeControls.registerMainHooks();
 }
@@ -43,6 +40,13 @@ export class Scenescape {
     return this._movementLimits;
   }
 
+  static get depth() {
+    if (this._markers?.length) {
+      return this._markers[this._markers.length - 1].elevation;
+    }
+    return 0;
+  }
+
   static loadFlags() {
     const flags = canvas.scene.getFlag(MODULE_ID, 'scenescape');
     this._active = Boolean(flags?.markers?.length);
@@ -53,6 +57,7 @@ export class Scenescape {
       this._movementLimits = flags.movementLimits;
       this._markers = flags.markers;
       this.blackBars = Boolean(flags.blackBars);
+      this.pixelPerfect = Boolean(flags.pixelPerfect ?? true);
     }
   }
 

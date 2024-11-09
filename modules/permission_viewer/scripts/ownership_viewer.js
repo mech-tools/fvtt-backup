@@ -80,8 +80,8 @@ class OwnershipViewer {
 			}
 
 			if (isJournalSheet) {
-				li.querySelector(".page-ownership").remove();
-				li.querySelector(".page-heading").appendChild(div);
+				li.querySelector(".page-ownership")?.remove();
+				li.querySelector(".page-heading")?.appendChild(div);
 			} else {
 				li.appendChild(div);
 			}
@@ -90,7 +90,7 @@ class OwnershipViewer {
 		// Ensure any clicks on the OwnershipViewer div open the ownership config for that document
 		if (ownershipOption) {
 			function registerClickEvents() {
-				html.find(".ownership-viewer").click((event) => {
+				html.find(".ownership-viewer").on("click", (event) => {
 					event.preventDefault();
 					event.stopPropagation();
 					const li = $(event.currentTarget).closest("li");

@@ -387,6 +387,10 @@
   flex-direction: column;
   display: flex;
 }
+#token-action-hud-app #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroups .tah-list-image,
+#token-action-hud-app #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroups .tah-list-image {
+  display: none;
+}
 #token-action-hud-app #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroups .tah-list-subgroups,
 #token-action-hud-app #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroups .tah-list-subgroups {
   background: none;

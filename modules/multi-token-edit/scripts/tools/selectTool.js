@@ -1,4 +1,4 @@
-import { MODULE_ID, SUPPORTED_PLACEABLES } from '../constants.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES, THRESHOLDS } from '../constants.js';
 import { DataTransformer } from '../data/transformer.js';
 import { getDataBounds } from '../presets/utils.js';
 import { libWrapper } from '../shim/shim.js';
@@ -9,12 +9,15 @@ import { libWrapper } from '../shim/shim.js';
 let pixelPerfectTileWrapper;
 let pixelPerfectTokenWrapper;
 
-export function enablePixelPerfectSelect() {
+export function enablePixelPerfectSelect(force = false) {
+  let tileWrapperChanged, tokenWrapperChanged;
+
   // Pixel perfect hover for tiles
-  if (!game.settings.get(MODULE_ID, 'pixelPerfectTile')) {
+  if (!game.settings.get(MODULE_ID, 'pixelPerfectTile') && !force) {
     if (pixelPerfectTileWrapper) {
       libWrapper.unregister(MODULE_ID, pixelPerfectTileWrapper);
       pixelPerfectTileWrapper = undefined;
+      tileWrapperChanged = true;
     }
   } else if (!pixelPerfectTileWrapper) {
     pixelPerfectTileWrapper = libWrapper.register(
@@ -29,7 +32,8 @@ export function enablePixelPerfectSelect() {
         hitArea._mesh = this.mesh;
         hitArea.contains = function (...args) {
           let contains = this._originalContains.call(this, ...args);
-          if (contains && this._mesh) return this._mesh.containsCanvasPoint(canvas.mousePosition);
+          if (contains && this._mesh)
+            return this._mesh.containsCanvasPoint(canvas.mousePosition, THRESHOLDS.PIXEL_PERFECT_ALPHA);
           return contains;
         };
 
@@ -37,13 +41,15 @@ export function enablePixelPerfectSelect() {
       },
       'WRAPPER'
     );
+    tileWrapperChanged = true;
   }
 
   // Pixel perfect hover for tokens
-  if (!game.settings.get(MODULE_ID, 'pixelPerfectToken')) {
+  if (!game.settings.get(MODULE_ID, 'pixelPerfectToken') && !force) {
     if (pixelPerfectTokenWrapper) {
       libWrapper.unregister(MODULE_ID, pixelPerfectTokenWrapper);
       pixelPerfectTokenWrapper = undefined;
+      tokenWrapperChanged = true;
     }
   } else if (!pixelPerfectTokenWrapper) {
     pixelPerfectTokenWrapper = libWrapper.register(
@@ -57,7 +63,8 @@ export function enablePixelPerfectSelect() {
         shape._mesh = this.mesh;
         shape.contains = function (...args) {
           let contains = this._originalContains.call(this, ...args);
-          if (contains && this._mesh) return this._mesh.containsCanvasPoint(canvas.mousePosition);
+          if (contains && this._mesh)
+            return this._mesh.containsCanvasPoint(canvas.mousePosition, THRESHOLDS.PIXEL_PERFECT_ALPHA);
           return contains;
         };
 
@@ -65,10 +72,11 @@ export function enablePixelPerfectSelect() {
       },
       'WRAPPER'
     );
+    tokenWrapperChanged = true;
   }
 
-  canvas.tiles?.placeables.forEach((t) => t.renderFlags.set({ redraw: true }));
-  canvas.tokens?.placeables.forEach((t) => t.renderFlags.set({ refreshShape: true }));
+  if (tileWrapperChanged) canvas.tiles?.placeables.forEach((t) => t.renderFlags.set({ redraw: true }));
+  if (tokenWrapperChanged) canvas.tokens?.placeables.forEach((t) => t.renderFlags.set({ refreshShape: true }));
 }
 
 /**
@@ -130,30 +138,36 @@ function _getControlButtons(controls) {
         });
         control.activeTool = 'select';
       }
-    } else if (control.name === 'tiles') {
-      control.tools.push({
-        name: 'pixelPerfect',
-        title: 'Pixel Perfect Hover',
-        icon: 'fa-solid fa-bullseye-pointer',
-        visible: game.user.isGM,
-        active: game.settings.get(MODULE_ID, 'pixelPerfectTile'),
-        toggle: true,
-        onClick: () => {
-          game.settings.set(MODULE_ID, 'pixelPerfectTile', !game.settings.get(MODULE_ID, 'pixelPerfectTile'));
-        },
-      });
-    } else if (control.name === 'token') {
-      control.tools.push({
-        name: 'pixelPerfect',
-        title: 'Pixel Perfect Hover',
-        icon: 'fa-solid fa-bullseye-pointer',
-        visible: game.user.isGM,
-        active: game.settings.get(MODULE_ID, 'pixelPerfectToken'),
-        toggle: true,
-        onClick: () => {
-          game.settings.set(MODULE_ID, 'pixelPerfectToken', !game.settings.get(MODULE_ID, 'pixelPerfectToken'));
-        },
-      });
+    }
+  }
+
+  if (!game.settings.get(MODULE_ID, 'disablePixelPerfectHoverButton')) {
+    for (const control of controls) {
+      if (control.name === 'tiles') {
+        control.tools.push({
+          name: 'pixelPerfect',
+          title: 'Pixel Perfect Hover',
+          icon: 'fa-solid fa-bullseye-pointer',
+          visible: game.user.isGM,
+          active: game.settings.get(MODULE_ID, 'pixelPerfectTile'),
+          toggle: true,
+          onClick: () => {
+            game.settings.set(MODULE_ID, 'pixelPerfectTile', !game.settings.get(MODULE_ID, 'pixelPerfectTile'));
+          },
+        });
+      } else if (control.name === 'token') {
+        control.tools.push({
+          name: 'pixelPerfect',
+          title: 'Pixel Perfect Hover',
+          icon: 'fa-solid fa-bullseye-pointer',
+          visible: game.user.isGM,
+          active: game.settings.get(MODULE_ID, 'pixelPerfectToken'),
+          toggle: true,
+          onClick: () => {
+            game.settings.set(MODULE_ID, 'pixelPerfectToken', !game.settings.get(MODULE_ID, 'pixelPerfectToken'));
+          },
+        });
+      }
     }
   }
 }

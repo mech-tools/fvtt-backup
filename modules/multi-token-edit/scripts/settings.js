@@ -9,12 +9,13 @@ import {
   showMassEdit,
   showMassSelect,
 } from '../applications/multiConfig.js';
-import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES } from './constants.js';
+import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES, THRESHOLDS } from './constants.js';
 import { LinkerAPI } from './linker/linker.js';
 import { editPreviewPlaceables, Picker } from './picker.js';
 import { PresetCollection } from './presets/collection.js';
 import { MassEditPresets } from './presets/forms.js';
 import { Preset } from './presets/preset.js';
+import { Scenescape } from './scenescape/scenescape.js';
 import { enablePixelPerfectSelect } from './tools/selectTool.js';
 import { activeEffectPresetSelect, getDocumentName, localize } from './utils.js';
 
@@ -87,21 +88,33 @@ export function registerSettings() {
     },
   });
 
-  game.settings.register(MODULE_ID, 'pixelPerfectTile', {
-    scope: 'client',
-    config: false,
-    type: Boolean,
-    default: false,
-    onChange: enablePixelPerfectSelect,
+  game.settings.register(MODULE_ID, 'pixelPerfectAlpha', {
+    name: 'Pixel Perfect Hover: Alpha Threshold',
+    hint: 'The lower the value the more transparent a pixel can be while still being recognised as hovered over.',
+    scope: 'world',
+    config: true,
+    type: new foundry.data.fields.NumberField({
+      required: true,
+      min: 0.0,
+      max: 1,
+      step: 0.01,
+      initial: THRESHOLDS.PIXEL_PERFECT_ALPHA,
+    }),
+    onChange: (val) => {
+      THRESHOLDS.PIXEL_PERFECT_ALPHA = val;
+    },
   });
-  game.settings.register(MODULE_ID, 'pixelPerfectToken', {
-    scope: 'client',
-    config: false,
-    type: Boolean,
-    default: false,
-    onChange: enablePixelPerfectSelect,
+  THRESHOLDS.PIXEL_PERFECT_ALPHA = game.settings.get(MODULE_ID, 'pixelPerfectAlpha');
+
+  ['pixelPerfectTile', 'pixelPerfectToken'].forEach((setting) => {
+    game.settings.register(MODULE_ID, setting, {
+      scope: 'client',
+      config: false,
+      type: Boolean,
+      default: false,
+      onChange: enablePixelPerfectSelect,
+    });
   });
-  enablePixelPerfectSelect();
 
   // ===============
   // Preset Settings
@@ -274,6 +287,19 @@ export function registerSettings() {
     });
   }
 
+  game.settings.register(MODULE_ID, 'disablePixelPerfectHoverButton', {
+    name: `Pixel Perfect Hover: Remove Button`,
+    hint: 'When enabled `Pixel Perfect Hover` toggle will be removed from Token and Tile layer controls.',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => {
+      ui.controls.controls = ui.controls._getControlButtons();
+      ui.controls.render(true);
+    },
+  });
+
   game.settings.register(MODULE_ID, 'brush', {
     scope: 'world',
     config: false,
@@ -289,6 +315,13 @@ export function registerSettings() {
       snap: false,
       scaleToGrid: true,
     },
+  });
+
+  game.settings.register(MODULE_ID, 'pockets', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
   });
 }
 
@@ -560,6 +593,25 @@ export function registerKeybinds() {
         showMassActorForm(selected, { massEdit: true });
       } else {
         new MassEditGenericForm(selected, { massEdit: true, documentName }).render(true);
+      }
+    },
+    restricted: true,
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  game.keybindings.register(MODULE_ID, 'autoScale', {
+    name: 'Scenescape: Toggle Auto-scaling',
+    hint: '',
+    editable: [
+      {
+        key: 'KeyZ',
+        modifiers: ['Shift'],
+      },
+    ],
+    onDown: () => {
+      if (Picker.isActive()) {
+        Scenescape.autoScale = !Scenescape.autoScale;
+        ui.notifications.info('Scenescape: Autoscale => ' + (Scenescape.autoScale ? 'ON' : 'OFF'));
       }
     },
     restricted: true,
