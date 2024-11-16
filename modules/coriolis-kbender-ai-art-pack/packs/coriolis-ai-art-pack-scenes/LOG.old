@@ -1,7 +1,7 @@
-2024/10/27-11:33:29.510124 7f5a258d8700 Recovering log #29
-2024/10/27-11:33:29.512768 7f5a258d8700 Delete type=3 #27
-2024/10/27-11:33:29.512807 7f5a258d8700 Delete type=0 #29
-2024/10/27-18:59:44.654397 7f54eebbe700 Level-0 table #34: started
-2024/10/27-18:59:44.654806 7f54eebbe700 Level-0 table #34: 0 bytes OK
-2024/10/27-18:59:44.656226 7f54eebbe700 Delete type=0 #32
-2024/10/27-18:59:44.658333 7f54eebbe700 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at (end)
+2024/11/08-17:16:44.450098 7f59effff700 Recovering log #33
+2024/11/08-17:16:44.453085 7f59effff700 Delete type=3 #31
+2024/11/08-17:16:44.453117 7f59effff700 Delete type=0 #33
+2024/11/12-20:50:36.139043 7f54eebbe700 Level-0 table #38: started
+2024/11/12-20:50:36.139829 7f54eebbe700 Level-0 table #38: 0 bytes OK
+2024/11/12-20:50:36.141097 7f54eebbe700 Delete type=0 #36
+2024/11/12-20:50:36.143306 7f54eebbe700 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at (end)
