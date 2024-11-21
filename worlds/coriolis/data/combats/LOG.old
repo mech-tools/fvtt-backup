@@ -1,8 +1,15 @@
-2024/11/15-15:17:29.658046 7f5a258d8700 Recovering log #334
-2024/11/15-15:17:29.661007 7f5a258d8700 Delete type=3 #332
-2024/11/15-15:17:29.661043 7f5a258d8700 Delete type=0 #334
-2024/11/16-11:36:29.117199 7f54eebbe700 Level-0 table #339: started
-2024/11/16-11:36:29.117460 7f54eebbe700 Level-0 table #339: 0 bytes OK
-2024/11/16-11:36:29.118663 7f54eebbe700 Delete type=0 #337
-2024/11/16-11:36:29.154727 7f54eebbe700 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!nqfaD6cyvRATCCMu.vngbYH9YYBrOPnpr' @ 0 : 0; will stop at (end)
-2024/11/16-11:36:29.154968 7f54eebbe700 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!nqfaD6cyvRATCCMu.vngbYH9YYBrOPnpr' @ 0 : 0; will stop at (end)
+2024/11/16-11:36:58.480635 7f5a250d7700 Recovering log #338
+2024/11/16-11:36:58.483374 7f5a250d7700 Delete type=0 #338
+2024/11/16-11:36:58.483417 7f5a250d7700 Delete type=3 #336
+2024/11/20-15:41:39.780322 7f54eebbe700 Level-0 table #343: started
+2024/11/20-15:41:39.781500 7f54eebbe700 Level-0 table #343: 9877 bytes OK
+2024/11/20-15:41:39.782505 7f54eebbe700 Delete type=0 #341
+2024/11/20-15:41:39.795489 7f54eebbe700 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!nqfaD6cyvRATCCMu.vngbYH9YYBrOPnpr' @ 0 : 0; will stop at (end)
+2024/11/20-15:41:39.798224 7f54eebbe700 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!nqfaD6cyvRATCCMu.vngbYH9YYBrOPnpr' @ 0 : 0; will stop at '!combats.combatants!PT9VYFL32ICWr3Vd.eru8DQ3iZN96R79Y' @ 4306 : 1
+2024/11/20-15:41:39.798234 7f54eebbe700 Compacting 1@1 + 1@2 files
+2024/11/20-15:41:39.799508 7f54eebbe700 Generated table #344@1: 19 keys, 4425 bytes
+2024/11/20-15:41:39.799529 7f54eebbe700 Compacted 1@1 + 1@2 files => 4425 bytes
+2024/11/20-15:41:39.800592 7f54eebbe700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2024/11/20-15:41:39.800673 7f54eebbe700 Delete type=2 #343
+2024/11/20-15:41:39.800781 7f54eebbe700 Delete type=2 #327
+2024/11/20-15:41:39.844935 7f54eebbe700 Manual compaction at level-1 from '!combats.combatants!PT9VYFL32ICWr3Vd.eru8DQ3iZN96R79Y' @ 4306 : 1 .. '!combats.combatants!nqfaD6cyvRATCCMu.vngbYH9YYBrOPnpr' @ 0 : 0; will stop at (end)

@@ -56,7 +56,7 @@
 #token-action-hud-app {
   height: min-content;
   margin: 5px 3px 0 0;
-  z-index: 30;
+  z-index: 20;
 }
 #token-action-hud-app.tah-expanded #token-action-hud {
   position: relative;
@@ -230,7 +230,7 @@
   box-shadow: var(--tah-button-active-box-shadow);
   color: var(--tah-button-active-text-color);
 }
-#token-action-hud-app #token-action-hud .tah-button-box.active.activeText > .tah-action-button-content:after {
+#token-action-hud-app #token-action-hud .tah-button-box.active.activeText > .tah-button-content:after {
   content: "*";
 }
 #token-action-hud-app #token-action-hud .tah-button-box.shrink {
