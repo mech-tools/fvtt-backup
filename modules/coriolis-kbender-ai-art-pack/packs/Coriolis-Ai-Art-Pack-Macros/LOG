@@ -3,3 +3,16 @@
 2024/11/20-15:54:23.119297 7f59effff700 Level-0 table #31: 13887 bytes OK
 2024/11/20-15:54:23.121927 7f59effff700 Delete type=3 #27
 2024/11/20-15:54:23.121982 7f59effff700 Delete type=0 #29
+2024/11/25-10:41:21.420443 7f54eebbe700 Level-0 table #34: started
+2024/11/25-10:41:21.421783 7f54eebbe700 Level-0 table #34: 13377 bytes OK
+2024/11/25-10:41:21.423053 7f54eebbe700 Delete type=0 #32
+2024/11/25-10:41:21.433522 7f54eebbe700 Manual compaction at level-0 from '!folders!cSyPT5Tq9HGIHW2A' @ 72057594037927935 : 1 .. '!macros!zhy4tbjPKuwgWnRW' @ 0 : 0; will stop at '!macros!zhy4tbjPKuwgWnRW' @ 75 : 1
+2024/11/25-10:41:21.433540 7f54eebbe700 Compacting 3@0 + 1@1 files
+2024/11/25-10:41:21.436937 7f54eebbe700 Generated table #35@0: 13 keys, 13626 bytes
+2024/11/25-10:41:21.436966 7f54eebbe700 Compacted 3@0 + 1@1 files => 13626 bytes
+2024/11/25-10:41:21.438240 7f54eebbe700 compacted to: files[ 0 1 0 0 0 0 0 ]
+2024/11/25-10:41:21.438321 7f54eebbe700 Delete type=2 #31
+2024/11/25-10:41:21.438391 7f54eebbe700 Delete type=2 #34
+2024/11/25-10:41:21.438449 7f54eebbe700 Delete type=2 #28
+2024/11/25-10:41:21.438502 7f54eebbe700 Delete type=2 #18
+2024/11/25-10:41:21.439003 7f54eebbe700 Manual compaction at level-0 from '!macros!zhy4tbjPKuwgWnRW' @ 75 : 1 .. '!macros!zhy4tbjPKuwgWnRW' @ 0 : 0; will stop at (end)

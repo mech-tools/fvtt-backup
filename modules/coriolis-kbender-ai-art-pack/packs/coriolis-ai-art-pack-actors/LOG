@@ -3,3 +3,14 @@
 2024/11/20-15:54:23.128018 7f5a258d8700 Level-0 table #5: 20133 bytes OK
 2024/11/20-15:54:23.130163 7f5a258d8700 Delete type=0 #3
 2024/11/20-15:54:23.130227 7f5a258d8700 Delete type=3 #2
+2024/11/25-10:41:21.409335 7f54eebbe700 Level-0 table #8: started
+2024/11/25-10:41:21.410728 7f54eebbe700 Level-0 table #8: 21735 bytes OK
+2024/11/25-10:41:21.411537 7f54eebbe700 Delete type=0 #6
+2024/11/25-10:41:21.423158 7f54eebbe700 Manual compaction at level-0 from '!actors!4e6mtVLsqCxstrra' @ 72057594037927935 : 1 .. '!folders!SWbNJlm8UF1ziNP6' @ 0 : 0; will stop at '!folders!SWbNJlm8UF1ziNP6' @ 26 : 1
+2024/11/25-10:41:21.423173 7f54eebbe700 Compacting 2@0 + 0@1 files
+2024/11/25-10:41:21.424798 7f54eebbe700 Generated table #9@0: 26 keys, 21898 bytes
+2024/11/25-10:41:21.424817 7f54eebbe700 Compacted 2@0 + 0@1 files => 21898 bytes
+2024/11/25-10:41:21.425535 7f54eebbe700 compacted to: files[ 0 1 0 0 0 0 0 ]
+2024/11/25-10:41:21.425607 7f54eebbe700 Delete type=2 #8
+2024/11/25-10:41:21.425679 7f54eebbe700 Delete type=2 #5
+2024/11/25-10:41:21.438574 7f54eebbe700 Manual compaction at level-0 from '!folders!SWbNJlm8UF1ziNP6' @ 26 : 1 .. '!folders!SWbNJlm8UF1ziNP6' @ 0 : 0; will stop at (end)
