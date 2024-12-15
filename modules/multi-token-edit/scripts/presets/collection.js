@@ -558,7 +558,7 @@ export class PresetAPI {
    * @param {String} [options.name]                      Preset name
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
    * @param {String|Array[String]|Object} [options.tags] Tags to match a preset against. Can be provided as an object containing 'tags' array and 'match' any flag.
-   *                                                     Comma separated string, or a list of strings. In the latter 2 case 'matchAny' is assumed true
+   *                                                     Comma separated string, or a list of strings. In the latter 2 cases 'matchAny' is assumed true
    * @param {String} [options.folder]                    Folder name
    * @param {Boolean} [options.random]                   If multiple presets are found a random one will be chosen
    * @returns {Preset}
@@ -990,18 +990,7 @@ export class PresetTree {
       if (type) {
         if (type === 'ALL') {
           if (!UI_DOCS.includes(preset.documentName)) preset._visible = false;
-        } else if (type === 'FAVORITES') {
-          if (!preset.isFavorite) preset._visible = false;
         } else if (preset.documentName !== type) preset._visible = false;
-      }
-
-      if (type === 'FAVORITES' && preset.folder && preset.isFavorite) {
-        for (const [uuid, folder] of this.allFolders) {
-          if (folder.id === preset.folder) {
-            this._setChildAndParentFoldersVisible(folder);
-            break;
-          }
-        }
       }
 
       this.hasVisible = this.hasVisible || preset._visible;

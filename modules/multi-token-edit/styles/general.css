@@ -117,6 +117,10 @@
   color: white;
 }
 
+.mass-edit-dark-window .window-header {
+  background-color: black;
+}
+
 .mass-edit-dark-window button {
   background: rgba(0, 0, 0, 0.4);
   color: white;
@@ -129,8 +133,13 @@
 }
 
 .mass-edit-dark-window input,
-.mass-edit-dark-window textarea {
+.mass-edit-dark-window textarea,
+.mass-edit-dark-window select {
   color: white;
+}
+
+.mass-edit-dark-window select option {
+  background-color: gray;
 }
 
 .mass-edit-dark-window p.notes {
@@ -142,7 +151,7 @@
   padding-right: 1px;
 }
 
-#mass-edit-presets.inactive {
+.mass-edit-inactive {
   opacity: 10%;
   pointer-events: none;
 }
@@ -293,6 +302,7 @@
   padding-left: 2px;
   margin-top: 1px;
   padding: 0;
+  padding-top: 1px;
   margin: 0;
 }
 
@@ -506,14 +516,6 @@ input.me-subtract {
   accent-color: darkorange;
 }
 
-.mass-edit-preset-form .display-hover {
-  display: none;
-}
-
-.mass-edit-preset-form .display-hover.show {
-  display: block;
-}
-
 @container (min-width: 450px) {
   .mass-edit-preset-form .preset-items {
     grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -545,6 +547,11 @@ input.me-subtract {
   .mass-edit-preset-form .item img {
     flex: none;
   }
+}
+
+.mass-edit-bag {
+  min-height: 240px;
+  min-width: 240px;
 }
 
 /* ===================== 

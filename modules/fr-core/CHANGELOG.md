@@ -1,3 +1,6 @@
+12.331.6
+- Ajout des traductions pour EFFECT.StatusHover, EFFECT.StatusBurrow, HUD.OpenConfig, CONTROLS.DrawingRole, HUD.ToggleTargetState, HUD.WarningEffectNoActor
+
 12.331.5
 - Modification des titres et boutons dans la sidebar (ie. Créer Acteur => Créer un acteur)
 - Modification des titres et boutons des fenêtres de dialogue

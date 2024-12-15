@@ -37,8 +37,10 @@ Token Action HUD Core requires a companion Token Action HUD system module to be 
 - [Token Action HUD for Anime Campaign](https://foundryvtt.com/packages/token-action-hud-ac)
 - [Token Action HUD BCDice](https://foundryvtt.com/packages/token-action-hud-bcdice)
 - [Token Action HUD for Blade Runner](https://foundryvtt.com/packages/token-action-hud-bladerunner)
+- [Token Action HUD Cairn](https://foundryvtt.com/packages/token-action-hud-cairn)
 - [Token Action HUD COF1e](https://foundryvtt.com/packages/fvtt-token-action-hud-cof1e)
 - [Token Action HUD for Coriolis](https://foundryvtt.com/packages/token-action-hud-coriolis)
+- [Token Action HUD Crucible](https://foundryvtt.com/packages/token-action-hud-crucible)
 - [Token Action HUD CypherSystem](https://foundryvtt.com/packages/token-action-hud-cyphersystem)
 - [Token Action HUD DC20 RPG](https://foundryvtt.com/packages/token-action-hud-dc20rpg)
 - [Token Action HUD D&D 5e](https://foundryvtt.com/packages/token-action-hud-dnd5e)
@@ -63,6 +65,7 @@ Token Action HUD Core requires a companion Token Action HUD system module to be 
 - [Token Action HUD The Witcher TRPG](https://foundryvtt.com/packages/token-action-hud-thewitchertrpg)
 - [Token Action HUD for Twodsix](https://foundryvtt.com/packages/fvtt-token-action-hud-twodsix)
 - [Token Action HUD WFRP4e](https://foundryvtt.com/packages/token-action-hud-wfrp4e)
+- [Token Action HUD for WoD](https://foundryvtt.com/packages/token-action-hud-wod)
 - [Token Action HUD Worlds Without Number](https://foundryvtt.com/packages/token-action-hud-wwn)
 
 ## socketlib

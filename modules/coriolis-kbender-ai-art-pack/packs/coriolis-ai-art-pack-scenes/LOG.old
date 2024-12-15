@@ -1,16 +1,7 @@
-2024/11/20-15:54:23.136284 7f5a248d6700 Recovering log #3
-2024/11/20-15:54:23.136411 7f5a248d6700 Level-0 table #5: started
-2024/11/20-15:54:23.137745 7f5a248d6700 Level-0 table #5: 13443 bytes OK
-2024/11/20-15:54:23.139900 7f5a248d6700 Delete type=0 #3
-2024/11/20-15:54:23.139937 7f5a248d6700 Delete type=3 #2
-2024/11/25-10:41:21.411744 7f54eebbe700 Level-0 table #8: started
-2024/11/25-10:41:21.419239 7f54eebbe700 Level-0 table #8: 17326 bytes OK
-2024/11/25-10:41:21.420353 7f54eebbe700 Delete type=0 #6
-2024/11/25-10:41:21.427380 7f54eebbe700 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 66 : 1
-2024/11/25-10:41:21.427394 7f54eebbe700 Compacting 2@0 + 0@1 files
-2024/11/25-10:41:21.428711 7f54eebbe700 Generated table #9@0: 48 keys, 17381 bytes
-2024/11/25-10:41:21.428727 7f54eebbe700 Compacted 2@0 + 0@1 files => 17381 bytes
-2024/11/25-10:41:21.430002 7f54eebbe700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2024/11/25-10:41:21.430105 7f54eebbe700 Delete type=2 #8
-2024/11/25-10:41:21.433391 7f54eebbe700 Delete type=2 #5
-2024/11/25-10:41:21.438859 7f54eebbe700 Manual compaction at level-0 from '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 66 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at (end)
+2024/11/29-18:06:02.120148 7f5a258d8700 Recovering log #7
+2024/11/29-18:06:02.123147 7f5a258d8700 Delete type=0 #7
+2024/11/29-18:06:02.123179 7f5a258d8700 Delete type=3 #4
+2024/12/05-21:04:42.349146 7f54eebbe700 Level-0 table #13: started
+2024/12/05-21:04:42.349380 7f54eebbe700 Level-0 table #13: 0 bytes OK
+2024/12/05-21:04:42.350444 7f54eebbe700 Delete type=0 #11
+2024/12/05-21:04:42.352102 7f54eebbe700 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.tokens.delta!E4evApFB5EovWZh7.ymXh16sXTt8uIGkc.VGR1AdhDMLibkUAt' @ 0 : 0; will stop at (end)
