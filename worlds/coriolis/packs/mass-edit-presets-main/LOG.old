@@ -1,7 +1,7 @@
-2024/11/29-18:06:01.784378 7f5a258d8700 Recovering log #245
-2024/11/29-18:06:01.787383 7f5a258d8700 Delete type=3 #243
-2024/11/29-18:06:01.787435 7f5a258d8700 Delete type=0 #245
-2024/12/05-21:04:42.313863 7f54eebbe700 Level-0 table #250: started
-2024/12/05-21:04:42.314086 7f54eebbe700 Level-0 table #250: 0 bytes OK
-2024/12/05-21:04:42.316089 7f54eebbe700 Delete type=0 #248
-2024/12/05-21:04:42.316673 7f54eebbe700 Manual compaction at level-0 from '!journal!MassEditMetaData' @ 72057594037927935 : 1 .. '!journal!MassEditMetaData' @ 0 : 0; will stop at (end)
+2024/12/14-16:45:45.472548 7f5a248d6700 Recovering log #249
+2024/12/14-16:45:45.474933 7f5a248d6700 Delete type=3 #247
+2024/12/14-16:45:45.474961 7f5a248d6700 Delete type=0 #249
+2024/12/22-11:34:00.660630 7f54eebbe700 Level-0 table #254: started
+2024/12/22-11:34:00.660839 7f54eebbe700 Level-0 table #254: 0 bytes OK
+2024/12/22-11:34:00.663050 7f54eebbe700 Delete type=0 #252
+2024/12/22-11:34:00.663388 7f54eebbe700 Manual compaction at level-0 from '!journal!MassEditMetaData' @ 72057594037927935 : 1 .. '!journal!MassEditMetaData' @ 0 : 0; will stop at (end)
