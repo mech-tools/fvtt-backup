@@ -1,0 +1,7 @@
+2024/12/24-11:47:28.343519 7f548daa9700 Recovering log #7
+2024/12/24-11:47:28.346700 7f548daa9700 Delete type=0 #7
+2024/12/24-11:47:28.346729 7f548daa9700 Delete type=3 #4
+2024/12/24-11:47:34.092558 7f4f56e13700 Level-0 table #13: started
+2024/12/24-11:47:34.092579 7f4f56e13700 Level-0 table #13: 0 bytes OK
+2024/12/24-11:47:34.093472 7f4f56e13700 Delete type=0 #11
+2024/12/24-11:47:34.095304 7f4f56e13700 Manual compaction at level-0 from '!tables!DGd9QwhMguct5kJr' @ 72057594037927935 : 1 .. '!tables.results!DGd9QwhMguct5kJr.z16tJQGOk23wTa4C' @ 0 : 0; will stop at (end)

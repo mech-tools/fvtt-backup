@@ -1,0 +1,4 @@
+2024/07/18-10:25:08.090779 b2dfd400 Log #48: 0 ops saved to Table #49 OK
+2024/07/18-10:25:08.101548 b2dfd400 Archiving /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-aventures/000048.log: OK
+2024/07/18-10:25:08.115321 b2dfd400 Archiving /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-aventures/MANIFEST-000046: OK
+2024/07/18-10:25:08.132709 b2dfd400 **** Repaired leveldb /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-aventures; recovered 0 files; 0 bytes. Some data may have been lost. ****

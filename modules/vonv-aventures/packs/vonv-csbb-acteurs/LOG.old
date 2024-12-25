@@ -1,0 +1,4 @@
+2024/07/18-10:25:08.233905 b35fe400 Log #48: 0 ops saved to Table #49 OK
+2024/07/18-10:25:08.244901 b35fe400 Archiving /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-acteurs/000048.log: OK
+2024/07/18-10:25:08.259134 b35fe400 Archiving /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-acteurs/MANIFEST-000046: OK
+2024/07/18-10:25:08.277158 b35fe400 **** Repaired leveldb /home/pi/vttnas/vttfoundrydata1/Data/modules/vonv-aventures/packs/vonv-csbb-acteurs; recovered 0 files; 0 bytes. Some data may have been lost. ****

@@ -31,8 +31,9 @@ Hooks.once("init", async () => {
  * READY HOOK
  */
 Hooks.on("ready", async () => {
-  if (game.user.isGM) {
-    const searchMessages = game.messages.filter((m) => m.flags.world?.type === "searchPage");
+  const userSearchSetting = game.settings.get("fullsearch", "userSearch");
+  if (game.user.isGM || userSearchSetting) {
+    const searchMessages = game.messages.filter((m) => (m.flags.world?.type === "searchPage") && (m.isContentVisible));
     for (const message of searchMessages) {
       await SearchChat.updateMessage(message._id, true);
     }
@@ -44,8 +45,9 @@ Hooks.on("ready", async () => {
  * RENDER CHAT MESSAGE HOOK
  */
 Hooks.on("renderChatMessage", (message, html, data) => {
-  if (game.user.isGM) {
-    console.debug("renderChatMessage", message, html, data);
+  const userSearchSetting = game.settings.get("fullsearch", "userSearch");
+  if (game.user.isGM || userSearchSetting) {
+    //console.debug("renderChatMessage", message, html, data);
     const typeMessage = data.message.flags.world?.type;
     if (typeMessage === "searchPage") {
       const messageId = data.message._id;

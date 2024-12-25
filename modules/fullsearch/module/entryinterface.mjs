@@ -5,8 +5,9 @@ export function initControlButtons() {
   CONFIG.Canvas.layers.fullsearch = { layerClass: ControlsLayer, group: "primary" };
 
   Hooks.on("getSceneControlButtons", (btns) => {
+    const userSearchSetting = game.settings.get("fullsearch", "userSearch");
     let menu = [];
-    if (game.user.isGM) {
+    if (game.user.isGM || userSearchSetting) {
       menu.push({
         name: "fullsearch",
         title: "FULLSEARCH.dialog_title",
@@ -30,7 +31,8 @@ export function initControlButtons() {
 //add the search icon in left menu
 export function initSearchChatBar() {
   Hooks.on("renderSidebarTab", async (app, html, data) => {
-    if (game.user.isGM) {
+    const userSearchSetting = game.settings.get("fullsearch", "userSearch");
+    if (game.user.isGM || userSearchSetting) {
       if (app.tabName !== "chat") return;
       let $chat_form = html.find("#chat-form");
       const content = await renderTemplate("modules/fullsearch/templates/chat/chatbar.hbs");

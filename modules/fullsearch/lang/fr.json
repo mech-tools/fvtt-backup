@@ -20,7 +20,9 @@
       "chatBar" : "Barre en bas de la fenêtre de Tchat",
       "controlButton": "Icone dans la colonne de gauche",
       "maxResultsName" : "Résultats Max",
-      "maxResultsHint" : "Nombre maximum de résultats"
+      "maxResultsHint" : "Nombre maximum de résultats",
+      "userSearchName" : "Recherche pour les joueurs",
+      "userSearchHint" : "Permet aux joueurs et joueuses de faire des recherches"
     }
   }
 }

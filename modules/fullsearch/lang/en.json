@@ -21,7 +21,9 @@
       "chatBar" : "Bar at the bottom of chat",
       "controlButton": "Icon in the left icon column",
       "maxResultsName" : "Max results",
-      "maxResultsHint" : "Maximum number of results"
+      "maxResultsHint" : "Maximum number of results",
+      "userSearchName" : "Allow players",
+      "userSearchHint" : "Allow players access to the search function"
     }
   }
 }

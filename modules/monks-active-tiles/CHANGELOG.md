@@ -1,3 +1,95 @@
+## Version 12.02
+
+Allowing rotation action to pick Ambient lights
+
+Fixing issues Foundry introduced with changing colour from a string to an Object.
+
+Fixing issues with referencing Permission constants instead of Ownership constants.
+
+Allowing Roll Table quantity to use Handlebar notation.
+
+Allow open journal to set the ownership of the journal
+
+Fixed setting permissions for a user to include players that aren't logged in.
+
+Fixed setting a scene's background action to actually set the background image.
+
+Fixed set tile image to allow using `1-4` notation
+
+Fixed Dialog so that it can use html files again.
+
+Fixed scene preload action
+
+Added trigger caching, so instead of having to search through all tiles every time a trigger is requested, the tiles are already cached and the trigger knows exactly which tiles would apply.
+
+Added a new trigger, when lighting change animates
+
+Fixed issue with rotating an ambient Light
+
+Fixed issue with temporary Images
+
+Updated the Region Trigger to allow triggering the tile with appropriate data filled in.
+
+Fixed issue with adding an item to a character that D&D 5e introduced.
+
+Fixed issue with tile history not being recorded properly.
+
+Fixed issues with Burning Wheel system
+
+Fixed issue with Tile image when dropping an item on the canvas.
+
+Fixed issue with door trigger when turning into a secret door
+
+## Version 12.01
+
+v12 compatibility
+
+Added the option for the GM to see imageless tiles in v12.
+
+Updated the game time action to handle hous and minutes better, and to not break when advancing time.
+
+Fixed issue with Stop Within Tile and Movement Within Tile causing a tile to trigger even if no movement has happened.
+
+Fixed issue with tokens within Tile when triggering another tile.
+
+Added the name property to Tiles so you can give them a name, this helps when triggering them from a Region.
+
+Added Tile Triggering as a behavior in regions.
+
+## Version 11.27
+
+Increased the precision of the playlist volume slider
+
+Fixed issue where the playlist volume wasn't being used when playing a track, only when the track was resumed.
+
+Fixed issue where deleting an item in PF2e that is a condition bricks the character.  Still not sure what PF2e is doing that causes the issue, but it should be avoided now.
+
+Added a macro that will restore the character so it can be opened and the faulty condition manually removed.
+
+Fixed issue where the attack action wasn't targetting the token correctly
+
+Updated the Game Time action to allow for increases and decreases rather than just setting the value.
+
+Fixed issue with the Check Data action not getting to correct attribute value
+
+Added a quick trigger function so that you can trigger a tile easily from a Macro.  `game.MonksActiveTiles.triggerTile('Scene.ykdBMiSq6M7Qu1Yy.Tile.KSaaDmKLQ390bJMd')` will trigger a specific Tile.
+
+Added the triger point and origin point to the function that gets values
+
+Added variables and the origin point to data that gets passed to a Macro.
+
+Tried to fix an issue where the inline roll wasn't respecting the proper roll mode.  Ends up there's not much I can do because Foundry just ignores the option anyways.
+
+Fixed issue with players triggering a Tile via a door trigger.
+
+Fixed issue where checking for permission to open a journal entry was preventing it from being opened for players.
+
+Fixed issue where the userId and tokens triggering a tile weren't being passed through on some triggers.
+
+BREAKING CHANGE: Macros were being called with the Tile and Token data and that should have been the TileDocument and TokenDocument.  The data has been changed so any macro that references `tile.document` or `token.document` will need to be changed to `tile` and `token` respectively.
+
+The Active Tiles Macros have all been updated to use the updated data sent to Macros.
+
 ## Version 11.26
 
 Fixed issue with the Movement trigger

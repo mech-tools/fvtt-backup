@@ -1,0 +1,197 @@
+{
+  "id": "vonv-aventures",
+  "version": "0.0.7",
+  "title": "vonv Aventures (csb-coc7)",
+  "description": "Matériel pour aventures/campagnes pour:\n- Système CSB perso\n- Système CoC7",
+  "authors": [
+    {
+      "name": "vonv",
+      "email": "vonv@tentacules.net",
+      "url": "https://tentacules.net",
+      "discord": "@vonv"
+    }
+  ],
+  "url": "https://gitlab.com/vonv/fvtt-mod-vonv-aventures/-/raw/main/module.json",
+  "manifest": "https://gitlab.com/vonv/fvtt-mod-vonv-aventures/-/raw/main/module.json",
+  "download": "https://gitlab.com/vonv/fvtt-mod-vonv-aventures/-/archive/main/fvtt-mod-vonv-aventures.zip",
+  "compatibility": {
+    "minimum": "9",
+    "verified": "12"
+  },
+  "packFolders": [
+    {
+      "name": "vonvAventures",
+      "sorting": "m",
+      "color": "#227733",
+      "packs": [
+        "vonv-journaux",
+        "vonv-macros",
+        "vonv-scenes",
+        "vonv-zik",
+        "vonv-csb-acteurs",
+        "vonv-csb-aventures",
+        "vonv-csb-objets",
+        "vonv-coc7-acteurs",
+        "vonv-coc7-aventures",
+        "vonv-coc7-objets",
+        "vonv-csbb-acteurs",
+        "vonv-csbb-aventures",
+        "vonv-csbb-objets"
+      ]
+    }
+  ],
+  "packs": [
+    {
+      "name": "vonv-csb-aventures",
+      "label": "vonv-Aventures",
+      "path": "packs/vonv-csb-aventures",
+      "type": "Adventure",
+      "system": "custom-system-builder",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-csbb-aventures",
+      "label": "vonv-Aventures",
+      "path": "packs/vonv-csbb-aventures",
+      "type": "Adventure",
+      "system": "custom-system-builder-beta",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-coc7-aventures",
+      "label": "vonv-Aventures",
+      "path": "packs/vonv-coc7-aventures",
+      "type": "Adventure",
+      "system": "CoC7",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-csb-acteurs",
+      "label": "vonv-Acteurs",
+      "path": "packs/vonv-csb-acteurs",
+      "type": "Actor",
+      "system": "custom-system-builder",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-csbb-acteurs",
+      "label": "vonv-Acteurs",
+      "path": "packs/vonv-csbb-acteurs",
+      "type": "Actor",
+      "system": "custom-system-builder-beta",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-coc7-acteurs",
+      "label": "vonv-Acteurs",
+      "path": "packs/vonv-coc7-acteurs",
+      "type": "Actor",
+      "system": "CoC7",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-csb-objets",
+      "label": "vonv-Objets",
+      "path": "packs/vonv-csb-objets",
+      "type": "Item",
+      "system": "custom-system-builder",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-csbb-objets",
+      "label": "vonv-Objets",
+      "path": "packs/vonv-csbb-objets",
+      "type": "Item",
+      "system": "custom-system-builder-beta",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-coc7-objets",
+      "label": "vonv-Objets",
+      "path": "packs/vonv-coc7-objets",
+      "type": "Item",
+      "system": "CoC7",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-scenes",
+      "label": "vonv-Scenes",
+      "path": "packs/vonv-scenes",
+      "type": "Scene",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-journaux",
+      "label": "vonv-Journaux",
+      "path": "packs/vonv-journaux",
+      "type": "JournalEntry",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-macros",
+      "label": "vonv-Macros",
+      "path": "packs/vonv-macros",
+      "type": "Macro",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "vonv-zik",
+      "label": "vonv-Zik",
+      "path": "packs/vonv-zik",
+      "type": "Playlist",
+      "banner": "modules/vonv-aventures/banniere_compendium.webp",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ]
+}

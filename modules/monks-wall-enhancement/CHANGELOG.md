@@ -1,3 +1,31 @@
+# Version 12.02
+
+Fixed spelling mistake
+
+Tried to add some clarification on showing walls to players when the GM wants to see it on the token layer
+
+Tried to make the function that detects one way doors a little more effecient to prevent it causing lag.
+
+Fixed issue with detecting visibility of a wall
+
+Added a setting to allow for the snap to grid to use mid points and not just the vertices
+
+Added setting to swap the wall direction on a double right click, or flip the wall itself while holdinging down the ctrl key and double right clicking the wall.
+
+Prevented door sounds when using the close all doors function
+
+# Version 12.01
+
+v12 compatibility
+
+Added the ability to see walls no matter the layer you're on.  That way you can set up a map easier.
+
+Fixed issue where a one way door would still show the door control from a specific direction.
+
+Fixed issue where using alt to change a door state was causing the sound effect to players
+
+Fixed issues when converting a drawing to walls not accurately reflecting the drawings position or rotation
+
 # Version 11.02
 
 Added the option to allow position of wall using arrow keys.  Hold down the Shift key to move only one of the points, and Ctrl + Shift to move the other one.
@@ -32,7 +60,7 @@ Added the option to change the tool icons to something that makes more sense.  H
 
 Fixed libWrapper warning when overriding the door right click function to toggle a secret door.
 
-Added a tollerance setting for joining points as it was a little too small to affect some points.
+Added a tolerance setting for joining points as it was a little too small to affect some points.
 
 Updated the convert drawings to walls to use the current wall type selected.
 
@@ -80,7 +108,7 @@ Adding v9 support, just some styling changes, nothing major.
 
 Added the option to convert drawings to walls.
 
-Added a setting so you can change the tollerance when freehand drawing a wall
+Added a setting so you can change the tolerance when freehand drawing a wall
 
 Fixed the undo feature so any joined points will also be included when the change is undone.
 

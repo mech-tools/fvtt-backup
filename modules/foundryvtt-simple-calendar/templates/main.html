@@ -1,4 +1,4 @@
-<div class="fsc-qf">
+<div class="fsc-rf">
     {{#if uiElementStates.compactView}}
         <div class="fsc-pj">
             {{#if compactViewDisplay.currentSeasonName }}
@@ -26,30 +26,30 @@
         </div>
         <div class="fsc-qj">
             <div class="fsc-rj">
-                <button class="fsc-yb {{#if (gt calendar.selectedDay.noteCount 0)}} fsc-dc{{else}} fsc-kf{{/if}} fsc-ag" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa-solid fa-note-sticky"></span>&nbsp;{{calendar.selectedDay.noteCount}}</button>
+                <button class="fsc-yb {{#if (gt calendar.selectedDay.noteCount 0)}} fsc-dc{{else}} fsc-lf{{/if}} fsc-bg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa-solid fa-note-sticky"></span>&nbsp;{{calendar.selectedDay.noteCount}}</button>
                 {{#if (gt calendar.selectedDay.noteReminderCount 0)}}
-                    <button class="fsc-yb fsc-mi fsc-bg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-bell"></span>&nbsp;{{calendar.selectedDay.noteReminderCount}}</button>
+                    <button class="fsc-yb fsc-mi fsc-cg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-bell"></span>&nbsp;{{calendar.selectedDay.noteReminderCount}}</button>
                 {{/if}}
                 {{#if addNotes}}
-                    <button class="fsc-yb fsc-tc fsc-_f" data-tooltip="{{localize 'FSC.Notes.AddNew'}}"><span class="fa-solid fa-note-sticky"></span>&nbsp;<span class="fa fa-plus"></span></button>
+                    <button class="fsc-yb fsc-uc fsc-ag" data-tooltip="{{localize 'FSC.Notes.AddNew'}}"><span class="fa-solid fa-note-sticky"></span>&nbsp;<span class="fa fa-plus"></span></button>
                 {{/if}}
             </div>
         </div>
-        <div class="fsc-rf">
-            <div class="fsc-sf">
-                <div class="fsc-tf">{{calendar.selectedDay.dateDisplay}}</div>
+        <div class="fsc-sf">
+            <div class="fsc-tf">
+                <div class="fsc-uf">{{calendar.selectedDay.dateDisplay}}</div>
             </div>
         </div>
         {{#if showClock}}
-        <div class="fsc-rf">
-            <div class="fsc-uf">
+        <div class="fsc-sf">
+            <div class="fsc-vf">
                 {{sc-clock id=calendar.clockDisplayId calendarId=calendar.id theme='none'}}
                 {{#if changeDateTime}}
                     {{#if showTimeControls}}
                         {{#if isPrimary}}
                             <div class="fsc-gj">
-                                <button class="fsc-yb fsc-eg {{#if (eq clockClass 'started')}} fsc-dc{{else}} fsc-tc{{/if}}" data-tooltip="{{localize 'FSC.Time.Start'}}"><span class="fa {{#if (eq clockClass 'started')}} fa-pause{{else}} fa-play{{/if}}"></span></button>
-                                <button class="fsc-yb fsc-fg {{#if (eq clockClass 'stopped')}} fsc-kf{{else}} fsc-jc{{/if}}" data-tooltip="{{localize 'FSC.Time.Stop'}}"><span class="fa fa-stop"></span></button>
+                                <button class="fsc-yb fsc-fg {{#if (eq clockClass 'started')}} fsc-dc{{else}} fsc-uc{{/if}}" data-tooltip="{{localize 'FSC.Time.Start'}}"><span class="fa {{#if (eq clockClass 'started')}} fa-pause{{else}} fa-play{{/if}}"></span></button>
+                                <button class="fsc-yb fsc-gg {{#if (eq clockClass 'stopped')}} fsc-lf{{else}} fsc-ic{{/if}}" data-tooltip="{{localize 'FSC.Time.Stop'}}"><span class="fa fa-stop"></span></button>
                             </div>
 
                         {{else if uiElementStates.primaryCheckRunning}}
@@ -61,19 +61,19 @@
         </div>
         {{/if}}
         {{#if changeDateTime}}
-            <div class="fsc-rf">
+            <div class="fsc-sf">
                 {{sc-date-time-controls showDateControls=showDateControls showTimeControls=showTimeControls displayType=compactViewDisplay.dateTimeControlDisplay fullDisplay=dateTimeFullDisplay largeSteps=uiElementStates.cvLargerSteps reverseTime=uiElementStates.cvReverseTime }}
             </div>
         {{/if}}
-        <div class="fsc-rf">
-            <div class="fsc-nf fsc-if {{sideDrawerDirection}} {{#if uiElementStates.fsc-if}} fsc-c{{else}} fsc-d{{/if}}">
+        <div class="fsc-sf">
+            <div class="fsc-of fsc-jf {{sideDrawerDirection}} {{#if uiElementStates.fsc-jf}} fsc-c{{else}} fsc-d{{/if}}">
                 <h2>{{localize 'FSC.Notes.For'}} {{calendar.selectedDay.dateDisplay}}</h2>
                 {{#if calendar.selectedDay.notes.length}}
-                    <div class="fsc-if">
+                    <div class="fsc-jf">
                         {{#each calendar.selectedDay.notes}}
-                            <div class="fsc-ig" data-index="{{entryId}}" draggable="{{#if ../reorderNotes}}true{{else}}false{{/if}}">
+                            <div class="fsc-jg" data-index="{{entryId}}" draggable="{{#if ../reorderNotes}}true{{else}}false{{/if}}">
                                 <div class="fsc-dk">
-                                    <h3 class="fsc-jh">{{title}}</h3>
+                                    <h3 class="fsc-kh">{{title}}</h3>
                                     <div class="fsc-ek">
                                         {{#if ../isGM}}
                                             <div class="fsc-ck fsc-fk {{playerVisible.color}}" data-tooltip="{{playerVisible.players}}">
@@ -81,7 +81,7 @@
                                             </div>
                                         {{/if}}
                                         {{#if userReminderRegistered}}
-                                            <div class="fsc-ck fsc-fk fsc-bh" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
+                                            <div class="fsc-ck fsc-fk fsc-ch" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
                                                 <span class="fa fa-bell"></span>
                                             </div>
                                         {{/if}}
@@ -132,37 +132,37 @@
         {{#unless (eq '' message)}}
             <div class="fsc-wj fsc-xj">{{{message}}}</div>
         {{/unless}}
-        <div class="fsc-rf">
-            <div class="fsc-gg">
+        <div class="fsc-sf">
+            <div class="fsc-hg">
                 {{sc-full-calendar id=calendar.calendarDisplayId calendarId=calendar.id theme='none' date=calendar.visibleDate}}
             </div>
-            <div class="fsc-wf">
+            <div class="fsc-xf">
                 {{#if (gt mainViewDisplay.calendarList.length 1)}}
-                    <button class="fsc-yb fsc-zb fsc-xf" data-tooltip="{{localize 'FSC.Calendars'}}"><span class="fa fa-calendar"></span></button>
+                    <button class="fsc-yb fsc-zb fsc-yf" data-tooltip="{{localize 'FSC.Calendars'}}"><span class="fa fa-calendar"></span></button>
                 {{/if}}
-                <button class="fsc-yb {{#if (gt calendar.selectedDay.noteCount 0)}} fsc-dc{{else}} fsc-kf{{/if}} fsc-ag" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-sticky-note"></span>&nbsp;{{calendar.selectedDay.noteCount}}</button>
+                <button class="fsc-yb {{#if (gt calendar.selectedDay.noteCount 0)}} fsc-dc{{else}} fsc-lf{{/if}} fsc-bg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-sticky-note"></span>&nbsp;{{calendar.selectedDay.noteCount}}</button>
                 {{#if (gt calendar.selectedDay.noteReminderCount 0)}}
-                    <button class="fsc-yb fsc-mi fsc-bg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-bell"></span>&nbsp;{{calendar.selectedDay.noteReminderCount}}</button>
+                    <button class="fsc-yb fsc-mi fsc-cg" data-tooltip="{{localize 'FSC.Configuration.General.Notes'}}"><span class="fa fa-bell"></span>&nbsp;{{calendar.selectedDay.noteReminderCount}}</button>
                 {{/if}}
                 {{#if addNotes}}
-                    <button class="fsc-yb fsc-tc fsc-_f" data-tooltip="{{localize 'FSC.Notes.AddNew'}}"><span class="fa fa-sticky-note"></span>&nbsp;<span class="fa fa-plus"></span></button>
+                    <button class="fsc-yb fsc-uc fsc-ag" data-tooltip="{{localize 'FSC.Notes.AddNew'}}"><span class="fa fa-sticky-note"></span>&nbsp;<span class="fa fa-plus"></span></button>
                 {{/if}}
-                <button class="fsc-yb fsc-kf fsc-zf" data-tooltip="{{localize 'FSC.Search.Title'}}"><span class="fa fa-search "></span></button>
+                <button class="fsc-yb fsc-lf fsc-_f" data-tooltip="{{localize 'FSC.Search.Title'}}"><span class="fa fa-search "></span></button>
                 {{{mainViewDisplay.addonButtons}}}
-                <span class="fsc-ih"></span>
+                <span class="fsc-jh"></span>
                 {{#if changeDateTime}}
                     {{#if showSetCurrentDate}}
-                        <button class="fsc-yb fsc-tc fsc-dg " data-tooltip="{{localize 'FSC.SetCurrentDate'}}"><span class="fa fa-calendar-check"></span></button>
+                        <button class="fsc-yb fsc-uc fsc-eg " data-tooltip="{{localize 'FSC.SetCurrentDate'}}"><span class="fa fa-calendar-check"></span></button>
                     {{/if}}
                 {{/if}}
-                <button class="fsc-yb fsc-kf fsc-cg" data-tooltip="{{localize 'FSC.Today'}}"><span class="fa fa-calendar-day"></span></button>
-                <button class="fsc-yb fsc-kf fsc-yf" data-tooltip="{{localize 'FSC.Configure'}}"><span class="fa fa-cog"></span></button>
+                <button class="fsc-yb fsc-lf fsc-dg" data-tooltip="{{localize 'FSC.Today'}}"><span class="fa fa-calendar-day"></span></button>
+                <button class="fsc-yb fsc-lf fsc-zf" data-tooltip="{{localize 'FSC.Configure'}}"><span class="fa fa-cog"></span></button>
             </div>
             {{#if (gt mainViewDisplay.calendarList.length 1)}}
-                <div class="fsc-nf fsc-cf {{sideDrawerDirection}} {{#if uiElementStates.fsc-cf}} fsc-c{{else}} fsc-d{{/if}}">
+                <div class="fsc-of fsc-df {{sideDrawerDirection}} {{#if uiElementStates.fsc-df}} fsc-c{{else}} fsc-d{{/if}}">
                     <h2>{{localize 'FSC.Calendars'}}</h2>
                     {{#each mainViewDisplay.calendarList}}
-                        <div class="fsc-gg {{#if (eq id ../activeCalendarId)}} fsc-sh{{/if}} {{#if (eq id ../calendar.id)}} fsc-jj{{/if}} {{#unless ../mainViewDisplay.showChangeCalendarControls}} fsc-ij{{/unless}}" data-calid="{{id}}">
+                        <div class="fsc-hg {{#if (eq id ../activeCalendarId)}} fsc-sh{{/if}} {{#if (eq id ../calendar.id)}} fsc-jj{{/if}} {{#unless ../mainViewDisplay.showChangeCalendarControls}} fsc-ij{{/unless}}" data-calid="{{id}}">
                             <div class="fsc-kj">
                                 <div class="fsc-lj">{{name}}</div>
                                 <div class="fsc-mj">
@@ -175,8 +175,8 @@
                                 </div>
                                 {{#if ../mainViewDisplay.showChangeCalendarControls}}
                                     {{#unless (eq id ../activeCalendarId)}}
-                                        <div class="fsc-hg">
-                                            <button class="fsc-yb fsc-tc"><span class="fa fa-check"></span> {{localize 'FSC.MakeActive'}}</button>
+                                        <div class="fsc-ig">
+                                            <button class="fsc-yb fsc-uc"><span class="fa fa-check"></span> {{localize 'FSC.MakeActive'}}</button>
                                         </div>
                                     {{/unless}}
                                 {{/if}}
@@ -185,14 +185,14 @@
                     {{/each}}
                 </div>
             {{/if}}
-            <div class="fsc-nf fsc-if {{sideDrawerDirection}} {{#if uiElementStates.fsc-if}} fsc-c{{else}} fsc-d{{/if}}">
+            <div class="fsc-of fsc-jf {{sideDrawerDirection}} {{#if uiElementStates.fsc-jf}} fsc-c{{else}} fsc-d{{/if}}">
                 <h2>{{localize 'FSC.Notes.For'}} {{calendar.selectedDay.dateDisplay}}</h2>
                 {{#if calendar.selectedDay.notes.length}}
-                    <div class="fsc-if">
+                    <div class="fsc-jf">
                         {{#each calendar.selectedDay.notes}}
-                            <div class="fsc-ig" data-index="{{entryId}}" draggable="{{#if ../reorderNotes}}true{{else}}false{{/if}}">
+                            <div class="fsc-jg" data-index="{{entryId}}" draggable="{{#if ../reorderNotes}}true{{else}}false{{/if}}">
                                 <div class="fsc-dk">
-                                    <h3 class="fsc-jh">{{title}}</h3>
+                                    <h3 class="fsc-kh">{{title}}</h3>
                                     <div class="fsc-ek">
                                         {{#if ../isGM}}
                                             <div class="fsc-ck fsc-fk {{playerVisible.color}}" data-tooltip="{{playerVisible.players}}">
@@ -200,7 +200,7 @@
                                             </div>
                                         {{/if}}
                                         {{#if userReminderRegistered}}
-                                            <div class="fsc-ck fsc-fk fsc-bh" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
+                                            <div class="fsc-ck fsc-fk fsc-ch" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
                                                 <span class="fa fa-bell"></span>
                                             </div>
                                         {{/if}}
@@ -234,19 +234,19 @@
                     <em>{{localize 'FSC.Notes.Empty'}}</em>
                 {{/if}}
             </div>
-            <div class="fsc-nf fsc-jf {{sideDrawerDirection}} {{#if uiElementStates.fsc-jf}} fsc-c{{else}} fsc-d{{/if}}">
+            <div class="fsc-of fsc-kf {{sideDrawerDirection}} {{#if uiElementStates.fsc-kf}} fsc-c{{else}} fsc-d{{/if}}">
                 <h2>{{localize 'FSC.SearchNotes'}}</h2>
-                <div class="fsc-jg">
+                <div class="fsc-kg">
                     <input id="simpleCalendarSearchBox" type="text" value="{{mainViewDisplay.search.term}}" aria-label="{{localize 'FSC.SearchNotes'}}" />
                     {{#if mainViewDisplay.search.results.length}}
                         <button class="fsc-yb fsc-dl" data-tooltip="{{localize 'FSC.Clear'}}"><span class="fa fa-times"></span></button>
                     {{/if}}
                     <button class="fsc-yb"><span class="fa fa-search"></span></button>
                 </div>
-                <h3 class="fsc-kg">{{localize 'FSC.Search.Options.Title'}} <span class="fa fa-caret-down"></span></h3>
-                <div class="fsc-ng {{#if uiElementStates.searchOptionsOpen}} fsc-c{{else}} fsc-d{{/if}}">
+                <h3 class="fsc-lg">{{localize 'FSC.Search.Options.Title'}} <span class="fa fa-caret-down"></span></h3>
+                <div class="fsc-og {{#if uiElementStates.searchOptionsOpen}} fsc-c{{else}} fsc-d{{/if}}">
                     <p><strong>Fields:</strong>Select which fields to search on a note.</p>
-                    <div class="fsc-lg">
+                    <div class="fsc-mg">
                         <label><input type="checkbox" data-field="date" {{checked mainViewDisplay.search.options.fields.date}}> {{localize 'FSC.Search.Options.Fields.Date'}}</label>
                         <label><input type="checkbox" data-field="title" {{checked mainViewDisplay.search.options.fields.title}}> {{localize 'FSC.Search.Options.Fields.Title'}}</label>
                         <label><input type="checkbox" data-field="details" {{checked mainViewDisplay.search.options.fields.details}}> {{localize 'FSC.Search.Options.Fields.Details'}}</label>
@@ -254,12 +254,12 @@
                         <label><input type="checkbox" data-field="categories" {{checked mainViewDisplay.search.options.fields.categories}}> {{localize 'FSC.Search.Options.Fields.Categories'}}</label>
                     </div>
                 </div>
-                <div class="fsc-if">
+                <div class="fsc-jf">
                     {{#if mainViewDisplay.search.results.length}}
                         {{#each mainViewDisplay.search.results}}
-                            <div class="fsc-ig" data-index="{{entryId}}">
+                            <div class="fsc-jg" data-index="{{entryId}}">
                                 <div class="fsc-dk">
-                                    <h3 class="fsc-jh">{{title}}</h3>
+                                    <h3 class="fsc-kh">{{title}}</h3>
                                     <div class="fsc-ek">
                                         {{#if ../isGM}}
                                             <div class="fsc-ck fsc-fk {{playerVisible.color}}" data-tooltip="{{playerVisible.players}}">
@@ -267,7 +267,7 @@
                                             </div>
                                         {{/if}}
                                         {{#if reminder}}
-                                            <div class="fsc-ck fsc-fk fsc-bh" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
+                                            <div class="fsc-ck fsc-fk fsc-ch" data-tooltip="{{localize 'FSC.Notes.ReminderHelp'}}">
                                                 <span class="fa fa-bell"></span>
                                             </div>
                                         {{/if}}
@@ -312,17 +312,17 @@
             </div>
         </div>
         {{#if showClock}}
-            <div class="fsc-rf">
-                <div class="fsc-uf">
+            <div class="fsc-sf">
+                <div class="fsc-vf">
                     {{sc-clock id=calendar.clockDisplayId calendarId=calendar.id theme='none'}}
                 </div>
-                <div class="fsc-wf">
+                <div class="fsc-xf">
                     {{#if changeDateTime}}
                         {{#if showTimeControls}}
                             {{#if isPrimary}}
                                 <div class="fsc-gj">
-                                    <button class="fsc-yb fsc-eg {{#if (eq clockClass 'started')}} fsc-dc{{else}} fsc-tc{{/if}}" data-tooltip="{{localize 'FSC.Time.Start'}}"><span class="fa {{#if (eq clockClass 'started')}} fa-pause{{else}} fa-play{{/if}}"></span></button>
-                                    <button class="fsc-yb fsc-fg {{#if (eq clockClass 'stopped')}} fsc-kf{{else}} fsc-jc{{/if}}" data-tooltip="{{localize 'FSC.Time.Stop'}}"><span class="fa fa-stop"></span></button>
+                                    <button class="fsc-yb fsc-fg {{#if (eq clockClass 'started')}} fsc-dc{{else}} fsc-uc{{/if}}" data-tooltip="{{localize 'FSC.Time.Start'}}"><span class="fa {{#if (eq clockClass 'started')}} fa-pause{{else}} fa-play{{/if}}"></span></button>
+                                    <button class="fsc-yb fsc-gg {{#if (eq clockClass 'stopped')}} fsc-lf{{else}} fsc-ic{{/if}}" data-tooltip="{{localize 'FSC.Time.Stop'}}"><span class="fa fa-stop"></span></button>
                                 </div>
 
                             {{else if uiElementStates.primaryCheckRunning}}
@@ -334,7 +334,7 @@
             </div>
         {{/if}}
         {{#if changeDateTime}}
-            <div class="fsc-rf">
+            <div class="fsc-sf">
                 {{sc-date-time-controls showDateControls=showDateControls showTimeControls=showTimeControls displayType='full' fullDisplay=dateTimeFullDisplay }}
             </div>
         {{/if}}

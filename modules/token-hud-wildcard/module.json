@@ -1,39 +1,38 @@
 {
-  "id": "token-hud-wildcard",
-  "title": "Token HUD Wildcard",
-  "description": "This module adds a button to the Token HUD if the token has wildcard set and detects more than 1 image to choose from. Pressing the button displays a panel on the right side of the HUD with buttons for each image, pressing one of these allows to change the token image.",
-  "url": "https://github.com/mhilbrunner/token-hud-wildcard",
-  "manifest": "https://github.com/mhilbrunner/token-hud-wildcard/releases/latest/download/module.json",
-  "download": "https://github.com/mhilbrunner/token-hud-wildcard/releases/download/1.8.0/module.zip",
-  "version": "1.8.0",
-  "compatibility": {
-    "minimum": "0.8.0",
-    "verified": "11"
-  },
-  "scripts": [
-    "main.js"
-  ],
-  "styles": [
-    "css/token-hud-wildcard.css"
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+    "id": "token-hud-wildcard",
+    "title": "Token HUD Wildcard",
+    "description": "This module adds a button to the Token HUD if the token has wildcard set and detects more than 1 image to choose from. Pressing the button displays a panel on the right side of the HUD with buttons for each image, pressing one of these allows to change the token image. Originally created by Javieros.",
+    "url": "https://github.com/mhilbrunner/token-hud-wildcard",
+    "manifest": "https://github.com/mhilbrunner/token-hud-wildcard/releases/latest/download/module.json",
+    "download": "https://github.com/mhilbrunner/token-hud-wildcard/releases/download/2.1.0/module.zip",
+    "version": "2.1.0",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "12"
     },
-    {
-      "lang": "es",
-      "name": "Español (Spanish)",
-      "path": "lang/es.json",
-      "flags": {}
-    },
-    {
-      "lang": "de",
-      "name": "Deutsch",
-      "path": "lang/de.json",
-      "flags": {}
-    }
-  ]
+    "minimumCoreVersion": "11",
+    "compatibleCoreVersion": "12",
+    "scripts": [
+        "main.js"
+    ],
+    "styles": [
+        "./css/token-hud-wildcard.css"
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        },
+        {
+            "lang": "es",
+            "name": "Español (Spanish)",
+            "path": "lang/es.json"
+        },
+        {
+            "lang": "de",
+            "name": "Deutsch",
+            "path": "lang/de.json"
+        }
+    ]
 }

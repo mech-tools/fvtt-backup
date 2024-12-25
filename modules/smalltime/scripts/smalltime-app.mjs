@@ -1,6 +1,8 @@
 import { Helpers, ST_Config } from './helpers.mjs';
 
 Hooks.on('init', () => {
+  Helpers.configureReleaseSpecificStuff();
+
   game.keybindings.register('smalltime', 'toggle-hotkey', {
     name: game.i18n.localize('SMLTME.Toggle_Hotkey'),
     hint: game.i18n.localize('SMLTME.Toggle_Hotkey_Hint'),
@@ -130,6 +132,7 @@ Hooks.on('init', () => {
     hint: game.i18n.localize('SMLTME.Small_Step_Hint'),
     scope: 'world',
     config: true,
+    requiresReload: true,
     type: Number,
     choices: {
       1: '1',
@@ -147,12 +150,14 @@ Hooks.on('init', () => {
     hint: game.i18n.localize('SMLTME.Large_Step_Hint'),
     scope: 'world',
     config: true,
+    requiresReload: true,
     type: Number,
     choices: {
       20: '20',
       30: '30',
       60: '60',
       240: '120',
+      360: '360',
     },
     default: 60,
   });
@@ -304,7 +309,9 @@ Hooks.on('canvasInit', () => {
     }
   }
   // Re-draw the canvas with the new Darkness color.
-  canvas.colorManager.initialize();
+  if (game.release.generation < 12) {
+    canvas.colorManager.initialize();
+  }
 });
 
 // Set the initial state for newly rendered scenes.
@@ -386,11 +393,11 @@ Hooks.on('canvasReady', () => {
     const visDefault = game.settings.get('smalltime', 'player-visibility-default');
 
     // Set the Darkness link state to the default choice.
-    if (!hasProperty(thisScene, 'flags.smalltime.darkness-link')) {
+    if (!foundry.utils.hasProperty(thisScene, 'flags.smalltime.darkness-link')) {
       thisScene.setFlag('smalltime', 'darkness-link', darknessDefault);
     }
     // Set the Player Vis state to the default choice.
-    if (!hasProperty(thisScene, 'flags.smalltime.player-vis')) {
+    if (!foundry.utils.hasProperty(thisScene, 'flags.smalltime.player-vis')) {
       thisScene.setFlag('smalltime', 'player-vis', visDefault);
     }
 
@@ -477,11 +484,11 @@ Hooks.on('renderSceneConfig', async (obj) => {
   const darknessDefault = game.settings.get('smalltime', 'darkness-default');
   const visDefault = game.settings.get('smalltime', 'player-visibility-default');
   // Set the Darkness link state to the default choice.
-  if (!hasProperty(obj.object, 'flags.smalltime.darkness-link')) {
+  if (!foundry.utils.hasProperty(obj.object, 'flags.smalltime.darkness-link')) {
     await obj.object.setFlag('smalltime', 'darkness-link', darknessDefault);
   }
   // Set the Player Vis state to the default choice.
-  if (!hasProperty(obj.object, 'flags.smalltime.player-vis')) {
+  if (!foundry.utils.hasProperty(obj.object, 'flags.smalltime.player-vis')) {
     await obj.object.setFlag('smalltime', 'player-vis', visDefault);
   }
 
@@ -558,12 +565,12 @@ Hooks.on('renderSceneConfig', async (obj) => {
   obj.setPosition();
 
   if (obj.object.getFlag('smalltime', 'moonlight')) {
-    const currentThreshold = obj.object.data.globalLightThreshold;
+    const currentThreshold = `obj.object.data.${ST_Config.GlobalThresholdPath}`;
     const coreThresholdCheckbox = $('input[name="hasGlobalThreshold"]');
     coreThresholdCheckbox.attr({
       checked: '',
     });
-    const coreThresholdSlider = $('input[name="globalLightThreshold"]');
+    const coreThresholdSlider = $('input[name="' + `${ST_Config.GlobalThresholdPath}` + '"]');
     coreThresholdSlider.attr({
       class: 'smalltime-threshold-override',
       'aria-label': game.i18n.localize('SMLTME.Threshold_Override_Tooltip'),
@@ -571,13 +578,30 @@ Hooks.on('renderSceneConfig', async (obj) => {
       disabled: '',
       value: currentThreshold,
     });
-    const coreThresholdField = $('input[name="globalLightThreshold"]').nextAll('span:first');
+    const coreThresholdField = $('input[name="' + `${ST_Config.GlobalThresholdPath}` + '"]').nextAll('span:first');
     coreThresholdField.text(currentThreshold);
   }
 });
 
 Hooks.on('renderSettingsConfig', (obj) => {
-  // Everything here is GM-only.
+  // Add a reset-position popup to the setting title. This is available to both Players and GMs.
+  const opacityTitleElement = $('label:contains(' + game.i18n.localize('SMLTME.Resting_Opacity') + ')');
+  let popupDirection = 'right';
+  if (game.modules.get('tidy-ui_game-settings')?.active) popupDirection = 'up';
+  opacityTitleElement.attr({
+    'aria-label': game.i18n.localize('SMLTME.Position_Reset'),
+    'data-balloon-pos': popupDirection,
+  });
+
+  // Reset to pinned position on Shift-click, and refresh the page.
+  $(opacityTitleElement).on('click', function () {
+    if (event.shiftKey) {
+      game.settings.set('smalltime', 'pinned', true);
+      window.location.reload(false);
+    }
+  });
+
+  // Everything below is GM-only.
   if (!game.user.isGM) return;
 
   // Tweak the Client Settings window's size to account for specific
@@ -626,23 +650,6 @@ Hooks.on('renderSettingsConfig', (obj) => {
   $('input[name="smalltime.sunrise-start"]').parent().parent().css('display', 'none');
   $('input[name="smalltime.sunrise-end"]').parent().parent().css('display', 'none');
   $('input[name="smalltime.sunset-start"]').parent().parent().css('display', 'none');
-
-  // Add a reset-position popup to the setting title.
-  const opacityTitleElement = $('label:contains(' + game.i18n.localize('SMLTME.Resting_Opacity') + ')');
-  let popupDirection = 'right';
-  if (game.modules.get('tidy-ui_game-settings')?.active) popupDirection = 'up';
-  opacityTitleElement.attr({
-    'aria-label': game.i18n.localize('SMLTME.Position_Reset'),
-    'data-balloon-pos': popupDirection,
-  });
-
-  // Reset to pinned position on Shift-click, and refresh the page.
-  $(opacityTitleElement).on('click', function () {
-    if (event.shiftKey) {
-      game.settings.set('smalltime', 'pinned', true);
-      window.location.reload(false);
-    }
-  });
 
   // Add a reset-to-defaults popup to the setting title.
   const darknessTitleElement = $('label:contains(' + game.i18n.localize('SMLTME.Darkness_Config') + ')');
@@ -838,7 +845,7 @@ class SmallTimeApp extends FormApplication {
 
     this.initialPosition = game.settings.get('smalltime', 'position');
 
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ['form'],
       popOut: true,
       submitOnChange: true,
@@ -991,7 +998,7 @@ class SmallTimeApp extends FormApplication {
     $(document).on(
       'input',
       '#timeSlider',
-      debounce(async function () {
+      foundry.utils.debounce(async function () {
         $('#hourString').html(SmallTimeApp.convertTimeIntegerToDisplay($(this).val()).hours);
         $('#minuteString').html(SmallTimeApp.convertTimeIntegerToDisplay($(this).val()).minutes);
         SmallTimeApp.timeTransition($(this).val());

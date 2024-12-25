@@ -2,10 +2,10 @@
   "id": "fullsearch",
   "title": "Search and Highlight",
   "description": "Module for searching a pattern in all journal pages and highlighting it",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "compatibility": {
     "minimum": 11,
-    "verified": "11"
+    "verified": "12"
   },
   "system": [],
   "relationships": {},
@@ -35,6 +35,6 @@
   "packs": [],
   "manifest": "https://github.com/Khaali-dev/fullsearch/releases/latest/download/module.json",
   "url": "https://github.com/Khaali-dev/fullsearch",
-  "download": "https://github.com/Khaali-dev/fullsearch/releases/download/1.1.0/module.zip",
+  "download": "https://github.com/Khaali-dev/fullsearch/releases/download/1.2.1/module.zip",
   "protected": false
 }

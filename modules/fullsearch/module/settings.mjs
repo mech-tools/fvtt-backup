@@ -1,7 +1,7 @@
 export default function registerModuleSettings() {
   game.settings.register("fullsearch", "entryMethod", {
     config: true,
-    scope: "world",
+    scope: 'client',
     name: "FULLSEARCH.settings.entryMethodName",
     hint: "FULLSEARCH.settings.entryMethodHint",
     type: String,
@@ -15,7 +15,7 @@ export default function registerModuleSettings() {
 
   game.settings.register("fullsearch", "maxResults", {
     config: true,
-    scope: "world",
+    scope: 'client',
     name: "FULLSEARCH.settings.maxResultsName",
     hint: "FULLSEARCH.settings.maxResultsHint",
     type: String,
@@ -26,5 +26,15 @@ export default function registerModuleSettings() {
     },
     default: "20",
     requiresReload: false,
+  });
+
+  game.settings.register("fullsearch", "userSearch", {
+    config: true,
+    scope: "world",
+    name: "FULLSEARCH.settings.userSearchName",
+    hint: "FULLSEARCH.settings.userSearchHint",
+    type: Boolean,
+    default: false,
+    requiresReload: true,
   });
 }

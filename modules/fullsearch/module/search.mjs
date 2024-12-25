@@ -11,7 +11,7 @@ export class SearchChat {
     this.data = {
       pageResultCollection: [],
       itemResultCollection: [],
-      actorResultCollection: []
+      actorResultCollection: [],
     };
     this.template = "modules/fullsearch/templates/chat/search-result.hbs";
   }
@@ -36,7 +36,7 @@ export class SearchChat {
    */
   async _createContent() {
     // Update the data to provide to the template
-    const data = duplicate(this.data);
+    const data = foundry.utils.duplicate(this.data);
 
     data.searchPattern = this.searchPattern;
     data.highlighted = this.highlighted;
@@ -53,10 +53,11 @@ export class SearchChat {
     this.content = await this._createContent();
 
     // Create the chat data
-    const chatData = duplicate(this.data);
+    const chatData = foundry.utils.duplicate(this.data);
     chatData.user = game.user.id;
     chatData.content = this.content;
     chatData.flags = { world: { type: "searchPage", searchPattern: this.searchPattern, searchData: this.data, highlighted: this.highlighted } };
+    ChatMessage.applyRollMode(chatData, "selfroll");
 
     this.chat = await ChatMessage.create(chatData);
     return this;
@@ -68,13 +69,9 @@ export class SearchChat {
    */
   async searchWorld() {
     let pages = [];
-    game.journal.forEach(async (doc) => {
-      let pagesArray = doc.pages.search({ query: this.searchPattern });
-      pagesArray.forEach((page) => {
-        pages.push({ name: page.name, id: page._id, journalId: doc._id, journalName: doc.name });
-      });
-    });
+    const groupedByJournal = await this.searchPages();
 
+    /*
     // Group by journal
     const groupedByJournal = pages.reduce((acc, page) => {
       // Create a new group for the journal if it doesn't exist
@@ -87,23 +84,24 @@ export class SearchChat {
       acc[page.journalId].pages.push({ pageId: page.id });
       return acc;
     }, {});
-
+*/
     const maxResults = parseInt(game.settings.get("fullsearch", "maxResults"));
 
     this.data.pageResultCollection = groupedByJournal;
-    this.data.pageresults = pages.length;
+    this.data.pageresults = Object.keys(groupedByJournal).length;
+    console.log("groupedByJournal", groupedByJournal);
 
-    const itemResults = await game.items.search({ query: this.searchPattern });
+    const itemResults = await game.items.search({ query: this.searchPattern }).filter((obj) => obj.permission);
     this.data.itemResultCollection = itemResults.map((item) => item._id);
     this.data.itemresults = this.data.itemResultCollection.length;
 
-    const actorResults = await game.actors.search({ query: this.searchPattern });
+    const actorResults = await game.actors.search({ query: this.searchPattern }).filter((obj) => obj.permission);
     this.data.actorResultCollection = actorResults.map((actor) => actor._id);
     this.data.actorresults = this.data.actorResultCollection.length;
 
     this.data.hasresults = this.data.pageresults + this.data.itemresults + this.data.actorresults;
-    this.data.tooMuchResults = this.data.hasresults > maxResults ? game.i18n.format("FULLSEARCH.too_many_results", {maxResults : maxResults}) : false;
-    
+    this.data.tooMuchResults = this.data.hasresults > maxResults ? game.i18n.format("FULLSEARCH.too_many_results", { maxResults: maxResults }) : false;
+
     return this;
   }
 
@@ -160,8 +158,26 @@ export class SearchChat {
     const newContent = await renderTemplate(newChatMessage.template, newChatMessage.data);
     message.update({ content: newContent, "flags.world.highlighted": reset ? false : !highlighted });
   }
-}
 
+  async searchPages() {
+    const groupedByJournal = {};
+    game.journal.forEach(async (doc) => {
+      let pagesArray = await doc.pages.search({ query: this.searchPattern });
+      pagesArray.forEach((page) => {
+        if (page.permission) {
+          // Create a new group for the journal if it doesn't exist
+          groupedByJournal[doc._id] = groupedByJournal[doc._id] || {
+            journalName: doc.name,
+            journalId: doc._id,
+            pages: [],
+          };
+          groupedByJournal[doc._id].pages.push({ pageId: page.id });
+        }
+      });
+    });
+    return groupedByJournal;
+  }
+}
 /**
  * Prompt the user to perform a search.
  * @extends {Dialog}

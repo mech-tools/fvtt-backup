@@ -3,13 +3,13 @@
   "title": "Le Serpent à Deux Têtes",
   "version": "1.0.0",
   "compatibility": {
-    "minimum": "11",
-    "verified": "11"
+    "minimum": "12",
+    "verified": "12.331"
   },
   "relationships": {
     "requires": [
       {
-        "id": "coc7-module-fr-toc",
+        "id": "coc7-module-fr-toc-off",
         "type": "module",
         "compatibility": {}
       }
@@ -21,19 +21,20 @@
       "flags": {}
     }
   ],
-  "styles": ["./cthulhu-mod/cthulhu-mod.css"],
+  "styles": [
+    "cthulhu-mod/cthulhu-mod.css"
+  ],
   "packs": [
     {
       "name": "le-serpent-a-deux-tetes",
       "label": "Le Serpent à Deux Têtes",
       "path": "packs/le-serpent-a-deux-tetes",
       "type": "Adventure",
+      "system": "CoC7",
       "ownership": {
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
-      },
-      "system": "CoC7",
-      "flags": {}
+      }
     }
   ]
 }

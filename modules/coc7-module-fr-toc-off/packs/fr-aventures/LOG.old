@@ -1,0 +1,7 @@
+2024/12/14-17:36:38.759780 7fa578f080 Recovering log #912
+2024/12/14-17:36:38.777818 7fa578f080 Delete type=0 #912
+2024/12/14-17:36:38.780888 7fa578f080 Delete type=3 #910
+2024/12/14-17:38:17.845073 7d83c3f080 Level-0 table #917: started
+2024/12/14-17:38:17.847177 7d83c3f080 Level-0 table #917: 0 bytes OK
+2024/12/14-17:38:17.853349 7d83c3f080 Delete type=0 #915
+2024/12/14-17:38:17.857100 7d83c3f080 Manual compaction at level-0 from '!adventures!0FqCqqwmZA2Wm8fu' @ 72057594037927935 : 1 .. '!folders!H9UXXYTTIsreKmt7' @ 0 : 0; will stop at (end)
