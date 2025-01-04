@@ -1,15 +1,8 @@
-2024/12/14-16:45:44.577962 7f5a258d8700 Recovering log #368
-2024/12/14-16:45:44.580592 7f5a258d8700 Delete type=0 #368
-2024/12/14-16:45:44.580990 7f5a258d8700 Delete type=3 #366
-2024/12/22-11:34:00.742764 7f54eebbe700 Level-0 table #374: started
-2024/12/22-11:34:00.743981 7f54eebbe700 Level-0 table #374: 12211 bytes OK
-2024/12/22-11:34:00.744775 7f54eebbe700 Delete type=0 #372
-2024/12/22-11:34:00.750194 7f54eebbe700 Manual compaction at level-0 from '!messages!8MnYpRJ81DSf1WMe' @ 72057594037927935 : 1 .. '!messages!qT0fJSl2UWqjaaaz' @ 0 : 0; will stop at (end)
-2024/12/22-11:34:00.750290 7f54eebbe700 Manual compaction at level-1 from '!messages!8MnYpRJ81DSf1WMe' @ 72057594037927935 : 1 .. '!messages!qT0fJSl2UWqjaaaz' @ 0 : 0; will stop at '!messages!tEo0Swd0dBsNadVa' @ 5435 : 0
-2024/12/22-11:34:00.750295 7f54eebbe700 Compacting 1@1 + 1@2 files
-2024/12/22-11:34:00.751446 7f54eebbe700 Generated table #375@1: 4 keys, 6964 bytes
-2024/12/22-11:34:00.751461 7f54eebbe700 Compacted 1@1 + 1@2 files => 6964 bytes
-2024/12/22-11:34:00.752139 7f54eebbe700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2024/12/22-11:34:00.752194 7f54eebbe700 Delete type=2 #374
-2024/12/22-11:34:00.752237 7f54eebbe700 Delete type=2 #370
-2024/12/22-11:34:00.804660 7f54eebbe700 Manual compaction at level-1 from '!messages!tEo0Swd0dBsNadVa' @ 5435 : 0 .. '!messages!qT0fJSl2UWqjaaaz' @ 0 : 0; will stop at (end)
+2024/12/22-11:35:19.448147 7f59effff700 Recovering log #373
+2024/12/22-11:35:19.450787 7f59effff700 Delete type=3 #371
+2024/12/22-11:35:19.450819 7f59effff700 Delete type=0 #373
+2025/01/03-09:48:10.280371 7f54eebbe700 Level-0 table #379: started
+2025/01/03-09:48:10.280573 7f54eebbe700 Level-0 table #379: 0 bytes OK
+2025/01/03-09:48:10.281557 7f54eebbe700 Delete type=0 #377
+2025/01/03-09:48:10.284263 7f54eebbe700 Manual compaction at level-0 from '!messages!8MnYpRJ81DSf1WMe' @ 72057594037927935 : 1 .. '!messages!qT0fJSl2UWqjaaaz' @ 0 : 0; will stop at (end)
+2025/01/03-09:48:10.284434 7f54eebbe700 Manual compaction at level-1 from '!messages!8MnYpRJ81DSf1WMe' @ 72057594037927935 : 1 .. '!messages!qT0fJSl2UWqjaaaz' @ 0 : 0; will stop at (end)
