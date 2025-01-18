@@ -13,11 +13,11 @@ import { MODULE_ID, SUPPORTED_COLLECTIONS, SUPPORTED_PLACEABLES, THRESHOLDS } fr
 import { LinkerAPI } from './linker/linker.js';
 import { editPreviewPlaceables, Picker } from './picker.js';
 import { PresetCollection } from './presets/collection.js';
-import { MassEditPresets } from './presets/forms.js';
+import { openPresetBrowser, PresetBrowser } from './presets/browser/browserApp.js';
 import { Preset } from './presets/preset.js';
 import { Scenescape } from './scenescape/scenescape.js';
 import { enablePixelPerfectSelect } from './tools/selectTool.js';
-import { activeEffectPresetSelect, getDocumentName, localize } from './utils.js';
+import { activeEffectPresetSelect, getDocumentName, localize, TagInput } from './utils.js';
 
 export function registerSettings() {
   // Register Settings
@@ -130,80 +130,6 @@ export function registerSettings() {
   });
   PresetCollection.workingPack = game.settings.get(MODULE_ID, 'workingPack');
 
-  game.settings.register(MODULE_ID, 'docPresets', {
-    scope: 'world',
-    config: false,
-    type: Array,
-    default: [],
-  });
-
-  // Temp setting needed for migration
-  game.settings.register(MODULE_ID, 'presetsMigrated', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: false,
-  });
-
-  // Temp setting needed for migration
-  game.settings.register(MODULE_ID, 'presetsCompMigrated', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: false,
-  });
-
-  game.settings.register(MODULE_ID, 'presetDocLock', {
-    scope: 'world',
-    config: false,
-    type: String,
-    default: '',
-  });
-
-  game.settings.register(MODULE_ID, 'presetLayerSwitch', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: true,
-  });
-
-  game.settings.register(MODULE_ID, 'presetExtComp', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: true,
-  });
-
-  game.settings.register(MODULE_ID, 'presetVirtualDir', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: true,
-  });
-
-  game.settings.register(MODULE_ID, 'presetScaling', {
-    scope: 'world',
-    config: false,
-    type: Boolean,
-    default: true,
-  });
-
-  game.settings.register(MODULE_ID, 'presetSortMode', {
-    scope: 'world',
-    config: false,
-    type: String,
-    default: 'manual',
-  });
-
-  // p = preset only
-  // pf = preset & folder
-  game.settings.register(MODULE_ID, 'presetSearchMode', {
-    scope: 'world',
-    config: false,
-    type: String,
-    default: 'pf',
-  });
-
   game.settings.register(MODULE_ID, 'presetSceneControl', {
     name: 'Scene Controls: Preset Button',
     scope: 'world',
@@ -214,6 +140,29 @@ export function registerSettings() {
       ui.controls.render();
     },
   });
+
+  // Consolidated preset browser settings
+  game.settings.register(MODULE_ID, 'presetBrowser', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {
+      dropdownDocuments: [],
+      persistentSearch: true,
+      searchMode: 'pf', // p = preset only | pf = preset & folder
+      sortMode: 'manual', // manual | alphabetical
+      autoScale: true,
+      virtualDirectory: true,
+      externalCompendiums: true,
+      switchLayer: true,
+      documentLock: '',
+      dropdownDocuments: ['MeasuredTemplate', 'Note', 'Region'],
+    },
+    onChange: (val) => {
+      PresetBrowser.CONFIG = val;
+    },
+  });
+  PresetBrowser.CONFIG = game.settings.get(MODULE_ID, 'presetBrowser');
 
   /**
    * Preset bags
@@ -232,20 +181,61 @@ export function registerSettings() {
     default: {},
   });
 
-  // Convert favorites to a Preset bag
+  // Convert settings based bags to Preset Bags
   // TODO: Remove after sufficient time has passed for users to have run this
   // 25/11/2024
   const favorites = game.settings.get(MODULE_ID, 'presetFavorites');
+  const bags = game.settings.get(MODULE_ID, 'bags');
   if (!foundry.utils.isEmpty(favorites)) {
     let sort = -1;
     const presets = Object.keys(favorites).map((uuid) => {
       sort++;
       return { uuid, sort };
     });
-    const bags = game.settings.get(MODULE_ID, 'bags');
+
     bags['FAVORITES'] = { presets, name: 'FAVORITES' };
-    game.settings.set(MODULE_ID, 'bags', bags);
-    game.settings.set(MODULE_ID, 'presetFavorites', {});
+  }
+
+  if (!foundry.utils.isEmpty(bags)) {
+    const presets = [];
+    for (let [id, bag] of Object.entries(bags)) {
+      let searchesInclusive = [];
+      if (bag.tags?.length) {
+        searchesInclusive.push({
+          terms: '#' + bag.tags.join(' #'),
+          matchAll: false,
+        });
+      }
+
+      presets.push(
+        new Preset({
+          name: 'Bag: ' + bag.name ?? id,
+          tags: ['id-' + TagInput.simplifyString(id)],
+          documentName: 'Bag',
+          img: `icons/containers/bags/pack-engraved-leather-tan.webp`,
+          data: [
+            {
+              uuids: bag.presets,
+              searches: {
+                inclusive: searchesInclusive,
+                exclusive: [],
+              },
+              virtualDirectory: true,
+            },
+          ],
+        })
+      );
+    }
+
+    if (presets.length) {
+      setTimeout(() => {
+        if (game.user?.isGM) {
+          PresetCollection.set(presets);
+          game.settings.set(MODULE_ID, 'bags', {});
+          game.settings.set(MODULE_ID, 'presetFavorites', {});
+        }
+      }, 10000);
+    }
   }
 
   // end of Preset Settings
@@ -423,9 +413,23 @@ export function registerKeybinds() {
         modifiers: ['Shift'],
       },
     ],
-    onDown: editPreviewPlaceables,
-    restricted: true,
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+    onDown: async (event) => {
+      let editing = false;
+
+      if (game.user.isGM) editing = await editPreviewPlaceables();
+      else {
+        // Move That For You module support
+        if (
+          canvas.tiles.controlled.length &&
+          canvas.tiles.controlled.every((t) => t.document.allowPlayerMove?.() && t.document.allowPlayerRotate?.())
+        ) {
+          editing = await editPreviewPlaceables(canvas.tiles.controlled);
+        }
+      }
+      if (editing) event.event.preventDefault();
+    },
+    restricted: false,
+    precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY,
   });
 
   game.keybindings.register(MODULE_ID, 'mirrorX', {
@@ -556,7 +560,7 @@ export function registerKeybinds() {
       },
     ],
     onDown: () => {
-      const app = Object.values(ui.windows).find((w) => w instanceof MassEditPresets);
+      const app = Object.values(ui.windows).find((w) => w instanceof PresetBrowser);
       if (app) {
         app.close(true);
         return;
@@ -571,7 +575,7 @@ export function registerKeybinds() {
 
       const documentName = canvas.activeLayer.constructor.documentName;
       if (!SUPPORTED_PLACEABLES.includes(documentName)) return;
-      new MassEditPresets(null, null, documentName).render(true);
+      openPresetBrowser(documentName);
     },
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
@@ -582,12 +586,12 @@ export function registerKeybinds() {
     hint: localize('keybindings.presetApplyScene.hint'),
     editable: [],
     onDown: () => {
-      const app = Object.values(ui.windows).find((w) => w instanceof MassEditPresets);
+      const app = Object.values(ui.windows).find((w) => w instanceof PresetBrowser);
       if (app) {
         app.close(true);
         return;
       }
-      new MassEditPresets(null, null, 'Scene').render(true);
+      openPresetBrowser('Scene');
     },
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,

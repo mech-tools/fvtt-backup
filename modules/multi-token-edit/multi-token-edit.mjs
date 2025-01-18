@@ -9,19 +9,22 @@ import {
 import { libWrapper } from './scripts/shim/shim.js';
 import { enableUniversalSelectTool } from './scripts/tools/selectTool.js';
 import { META_INDEX_ID, PresetAPI, PresetCollection } from './scripts/presets/collection.js';
-import { registerPresetBrowserHooks } from './scripts/presets/forms.js';
+import { openPresetBrowser, registerPresetBrowserHooks } from './scripts/presets/browser/browserApp.js';
 import { registerKeybinds, registerSettings } from './scripts/settings.js';
 import { Picker } from './scripts/picker.js';
 import { BrushMenu, activateBrush, deactivateBush, openBrushMenu } from './scripts/brush.js';
 import { V12Migrator } from './scripts/presets/migration.js';
 import { deleteFromClipboard, performMassSearch, performMassUpdate } from './applications/formUtils.js';
-import { registerSideBarPresetDropListener } from './scripts/presets/utils.js';
+import { importSceneCompendium, registerSideBarPresetDropListener } from './scripts/presets/utils.js';
 import { LinkerAPI, registerLinkerHooks } from './scripts/linker/linker.js';
 import { MODULE_ID, PIVOTS } from './scripts/constants.js';
 import { registerScenescapeHooks, Scenescape } from './scripts/scenescape/scenescape.js';
 import { Spawner } from './scripts/presets/spawner.js';
 import { registerBehaviors } from './scripts/behaviors/behaviors.js';
 import { openBag } from './scripts/presets/bagApp.js';
+import { openCategoryBrowser } from './scripts/presets/categoryBrowserApp.js';
+import { PresetContainer, registerPresetHandlebarPartials } from './scripts/presets/containerApp.js';
+import { FileIndexerAPI } from './scripts/presets/fileIndexer.js';
 
 // Initialize module
 Hooks.once('init', () => {
@@ -36,6 +39,9 @@ Hooks.once('init', () => {
 
   // TODO: Replace with core v12 implementation of tag HTML element
   TagInput.registerHandlebarsHelper();
+
+  // Partials used for Preset rendering
+  registerPresetHandlebarPartials();
 
   // Enable select tool for all layers
   enableUniversalSelectTool();
@@ -84,10 +90,15 @@ Hooks.once('init', () => {
 
       if (
         (Picker.isActive() || BrushMenu.isActive()) &&
-        (event.ctrlKey || event.shiftKey || event.metaKey || event.altKey || game.keyboard.downKeys.has('KeyZ'))
+        (event.ctrlKey ||
+          event.shiftKey ||
+          event.metaKey ||
+          event.altKey ||
+          game.keyboard.downKeys.has('KeyZ') ||
+          game.keyboard.downKeys.has('Space'))
       ) {
         // Prevent zooming the entire browser window
-        if (event.ctrlKey) event.preventDefault();
+        if (event.ctrlKey || event.altKey) event.preventDefault();
 
         let dy = (event.delta = event.deltaY);
         if (event.shiftKey && dy === 0) {
@@ -95,7 +106,7 @@ Hooks.once('init', () => {
         }
         if (dy === 0) return;
 
-        if (event.altKey) Picker.addScaling(event.delta < 0 ? 0.05 : -0.05);
+        if (event.altKey || game.keyboard.downKeys.has('Space')) Picker.addScaling(event.delta < 0 ? 0.05 : -0.05);
         else if ((event.ctrlKey || event.metaKey) && event.shiftKey) BrushMenu.iterate(event.delta >= 0, true);
         else if (event.ctrlKey || event.metaKey) Picker.addRotation(event.delta < 0 ? 2.5 : -2.5);
         else if (event.shiftKey) Picker.addRotation(event.delta < 0 ? 15 : -15);
@@ -109,6 +120,17 @@ Hooks.once('init', () => {
 
       const result = wrapped(...args);
       return result;
+    },
+    'MIXED'
+  );
+
+  // Prevent placeable highlighting if a preview is active either via a Picker or BrushMenu
+  libWrapper.register(
+    MODULE_ID,
+    'Canvas.prototype.highlightObjects',
+    function (wrapped, ...args) {
+      if (Picker.isActive() || BrushMenu.isActive()) return;
+      return wrapped(...args);
     },
     'MIXED'
   );
@@ -197,12 +219,17 @@ Hooks.once('init', () => {
     spawnPreset: Spawner.spawnPreset,
     activateBrush: activateBrush,
     openBag,
+    openCategoryBrowser,
     deactivateBrush: deactivateBush,
     openBrushMenu: openBrushMenu,
     migratePack: (pack, options = {}) => V12Migrator.migratePack(pack, options),
     migrateAllPacks: (options = {}) => V12Migrator.migrateAllPacks(options),
     linker: LinkerAPI,
     PIVOTS: PIVOTS,
+    PresetContainer,
+    importSceneCompendium,
+    openPresetBrowser,
+    FileIndexerAPI,
   };
 
   game.modules.get(MODULE_ID).api = {

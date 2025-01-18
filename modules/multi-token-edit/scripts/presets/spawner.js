@@ -52,6 +52,7 @@ export class Spawner {
     z,
     preview = false,
     previewLabel,
+    previewRestrictedDocuments = null,
     sceneId = canvas.scene.id,
     snapToGrid = true,
     hidden = false,
@@ -172,6 +173,7 @@ export class Spawner {
           previewData: docToData,
           snap: snapToGrid,
           label: previewLabel,
+          restrict: previewRestrictedDocuments,
           pivot,
           previewOnly,
           ...transform,
@@ -271,7 +273,7 @@ export class Spawner {
   }
 
   /**
-   * Assign ownership to the user who triggered the spawn, hide and apply flags if if necessary
+   * Assign ownership to the user who triggered the spawn, hide and apply flags if necessary
    * @param {*} docToData
    */
   static _autoModifyData(docToData, hidden, flags, preserveLinks, sceneId) {

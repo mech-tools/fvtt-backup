@@ -1,6 +1,8 @@
 import { AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, MODULE_ID, SUPPORTED_PLACEABLES, VIDEO_EXTENSIONS } from './constants.js';
 import { Picker } from './picker.js';
-import { MassEditPresets } from './presets/forms.js';
+import { PresetBrowser } from './presets/browser/browserApp.js';
+import { Preset } from './presets/preset.js';
+import { Spawner } from './presets/spawner.js';
 import { applyRandomization } from './randomizer/randomizerUtils.js';
 
 export function interpolateColor(u, c1, c2) {
@@ -262,7 +264,7 @@ export function flattenToDepth(obj, d = 0) {
 
 export function activeEffectPresetSelect(aeConfig) {
   const showPresetGeneric = function (documentName) {
-    new MassEditPresets(
+    new PresetBrowser(
       aeConfig,
       async (preset) => {
         if (!foundry.utils.isEmpty(preset.randomize)) {
@@ -296,7 +298,7 @@ export function activeEffectPresetSelect(aeConfig) {
   };
 
   const showPresetActiveEffect = function () {
-    new MassEditPresets(
+    new PresetBrowser(
       aeConfig,
       (preset) => {
         const changes = aeConfig.object.changes ?? [];
@@ -682,4 +684,66 @@ export async function loadImageVideoDimensions(src) {
   } catch (e) {}
 
   return { width, height };
+}
+
+export async function spawnSceneAsPreset(scene) {
+  const attached = [];
+
+  SUPPORTED_PLACEABLES.forEach((name) => {
+    scene.getEmbeddedCollection(name).forEach((embed) => {
+      attached.push({ documentName: name, data: embed.toObject() });
+    });
+  });
+
+  let presetData;
+  if (scene.background.src) {
+    let { x, y, width, height } = scene.dimensions.sceneRect;
+
+    const tiles = attached.filter((att) => att.documentName === 'Tile');
+    let minSort = tiles.length
+      ? Math.min.apply(
+          Math,
+          tiles.map((t) => t.data.sort ?? 0)
+        )
+      : 0;
+    let minElevation = tiles.length
+      ? Math.min.apply(
+          Math,
+          tiles.map((t) => t.data.elevation ?? 0)
+        )
+      : 0;
+
+    presetData = {
+      documentName: 'Tile',
+      data: {
+        texture: {
+          src: scene.background.src,
+        },
+        width,
+        height,
+        x,
+        y,
+        sort: minSort - 1,
+        elevation: minElevation,
+      },
+    };
+  } else {
+    presetData = attached.findSplice((att) => att.documentName === 'Token');
+    if (!presetData) presetData = attached.findSplice((att) => att.documentName === 'Tile');
+    if (!presetData) presetData = attached.shift();
+  }
+
+  const preset = new Preset({ documentName: presetData.documentName, data: [presetData.data], attached });
+
+  const documents = await Spawner.spawnPreset({
+    preset,
+    preview: true,
+    previewRestrictedDocuments: preset.documentName === 'AmbientLight' ? null : ['AmbientLight'],
+    pivot: MassEdit.PIVOTS.CENTER,
+  });
+
+  // const linkId = foundry.utils.randomID();
+  // documents.forEach((d) => {
+  //   LinkerAPI.addLink(d, linkId);
+  // });
 }

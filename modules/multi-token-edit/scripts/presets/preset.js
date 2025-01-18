@@ -30,6 +30,7 @@ export const PRESET_FIELDS = [
 
 export const DOC_ICONS = {
   ALL: 'fas fa-globe',
+  Bag: 'fa-solid fa-sack',
   Token: 'fas fa-user-circle',
   MeasuredTemplate: 'fas fa-ruler-combined',
   Tile: 'fa-solid fa-cubes',
@@ -41,6 +42,7 @@ export const DOC_ICONS = {
   Region: 'fa-regular fa-game-board',
   Actor: 'fas fa-user-alt',
   Scene: 'fas fa-map',
+  FauxScene: 'fas fa-map',
   DEFAULT: 'fa-solid fa-question',
 };
 

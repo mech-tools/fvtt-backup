@@ -1,6 +1,7 @@
 import { MODULE_ID, PIVOTS } from '../constants.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
 import { PresetAPI, PresetCollection } from './collection.js';
+import { Preset } from './preset.js';
 
 /**
  * Tracking of folder open/close state
@@ -520,4 +521,72 @@ export async function exportPresets(presets, fileName) {
   });
 
   saveDataToFile(JSON.stringify(presets, null, 2), 'text/json', (fileName ?? 'mass-edit-presets') + '.json');
+}
+
+/**
+ * Parses a search query returning terms, tags, and type found within it
+ * @param {String} query
+ * @returns {object} query components
+ */
+export function parseSearchQuery(query, { matchAny = true } = {}) {
+  let parsedQuery = {};
+
+  let terms = query
+    .trim()
+    .split(' ')
+    .filter((w) => w.length >= 2);
+  if (!terms.length) return parsedQuery;
+
+  const tags = terms.filter((f) => f.startsWith('#')).map((f) => f.substring(1));
+  if (tags.length) parsedQuery.tags = { tags, matchAny };
+
+  const type = terms.find((f) => f.startsWith('@'))?.substring(1);
+  if (type) parsedQuery.type = type;
+
+  terms = terms.filter((f) => !(f.startsWith('#') || f.startsWith('@'))).map((t) => t.toLocaleLowerCase());
+  if (terms.length) parsedQuery.terms = terms;
+
+  return parsedQuery;
+}
+
+export async function importSceneCompendium(pack) {
+  // TODO: Display a dialog with scene compendium options
+
+  const compendium = game.packs.get(pack) ?? game.packs.getName(pack);
+  if (!compendium) throw Error('Invalid pack: ' + pack);
+  if (compendium.documentName !== 'Scene') throw Error('Pack provided is not a Scene compendium: ' + pack);
+
+  const presets = [];
+
+  const workingPackTree = await PresetCollection.getTree('SceneP', {
+    externalCompendiums: false,
+    virtualDirectory: false,
+    setFormVisibility: false,
+  });
+  const index = workingPackTree.metaDoc?.flags[MODULE_ID].index;
+
+  let alreadyImportedCount = 0;
+
+  compendium.index.forEach((i) => {
+    if (!index?.[i._id]) {
+      const preset = new Preset({
+        documentName: 'FauxScene',
+        id: i._id,
+        name: i.name,
+        img: i.thumb,
+        data: [
+          {
+            uuid: i.uuid,
+          },
+        ],
+      });
+      presets.push(preset);
+    } else {
+      alreadyImportedCount++;
+    }
+  });
+
+  await PresetCollection.set(presets);
+
+  ui.notifications.info(`Imported scenes: ${presets.length}/${alreadyImportedCount + presets.length}`);
 }

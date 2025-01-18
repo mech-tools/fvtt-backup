@@ -3,12 +3,21 @@ import { getMassEditForm } from '../../applications/multiConfig.js';
 import { BrushMenu } from '../brush.js';
 import { MODULE_ID, PIVOTS, SUPPORTED_PLACEABLES } from '../constants.js';
 import { Scenescape } from '../scenescape/scenescape.js';
-import { applyPresetToScene, isAudio, localize } from '../utils.js';
-import { PresetAPI, PresetCollection } from './collection.js';
+import { applyPresetToScene, isAudio, localize, spawnSceneAsPreset } from '../utils.js';
+import { PresetAPI, PresetCollection, PresetFolder, PresetPackFolder, VirtualFileFolder } from './collection.js';
 import { PresetConfig } from './editApp.js';
+import { PresetBrowser } from './browser/browserApp.js';
 import { Preset } from './preset.js';
 import { Spawner } from './spawner.js';
 import { FolderState, isVideo } from './utils.js';
+import { FileIndexer } from './fileIndexer.js';
+
+export async function registerPresetHandlebarPartials() {
+  await getTemplate(`modules/${MODULE_ID}/templates/preset/partials/preset.html`, 'me-preset');
+  await getTemplate(`modules/${MODULE_ID}/templates/preset/partials/folder.html`, 'me-preset-folder');
+  await getTemplate(`modules/${MODULE_ID}/templates/preset/partials/presetsContent.html`, 'me-presets-content');
+  await getTemplate(`modules/${MODULE_ID}/templates/preset/partials/presetsTopList.html`, 'me-preset-list');
+}
 
 export class PresetContainer extends FormApplication {
   constructor(opts1, opts2) {
@@ -20,20 +29,9 @@ export class PresetContainer extends FormApplication {
     this.draggedElements = null;
 
     this.presetsSortable = opts2.sortable;
-    this.presetsDuplicable = opts2.duplicable;
+    this.presetsDuplicatable = opts2.duplicatable;
     this.presetsForceAllowDelete = opts2.forceAllowDelete;
-  }
-
-  async getData(options) {
-    const data = super.getData(options);
-
-    // Cache partials
-    // TODO: Cache at a more appropriate place, so we only need to do it once
-    await getTemplate(`modules/${MODULE_ID}/templates/preset/preset.html`, 'me-preset');
-    await getTemplate(`modules/${MODULE_ID}/templates/preset/presetFolder.html`, 'me-preset-folder');
-    await getTemplate(`modules/${MODULE_ID}/templates/preset/presetsContent.html`, 'me-presets-content');
-
-    return data;
+    this.presetsDisableDelete = opts2.disableDelete;
   }
 
   /**
@@ -289,35 +287,44 @@ export class PresetContainer extends FormApplication {
   }
 
   async _onDoubleClickPreset(event) {
-    BrushMenu.close();
-
     const item = $(event.target).closest('.item');
     const uuid = item.data('uuid');
     if (!uuid) return;
 
     let preset = await PresetAPI.getPreset({ uuid });
-
     if (!preset) return;
+
+    BrushMenu.close();
 
     if (preset.documentName === 'Scene') {
       ui.notifications.info(`Mass Edit: ${localize('common.apply')} [${preset.name}]`);
       applyPresetToScene(preset);
+    } else if (preset.documentName === 'Bag') {
+      this._onOpenBag(preset.uuid);
+    } else if (preset.documentName === 'FauxScene') {
+      const scene = await fromUuid(preset.data[0].uuid);
+      scene.sheet.render(true);
     }
 
     if (!SUPPORTED_PLACEABLES.includes(preset.documentName)) return;
 
     ui.notifications.info(`Mass Edit: ${localize('presets.spawning')} [${preset.name}]`);
 
+    // Spawn Preset
     this._setInteractivityState(false);
-    await Spawner.spawnPreset({
+    await this._onSpawnPreset(preset);
+    this._setInteractivityState(true);
+  }
+
+  async _onSpawnPreset(preset, options = {}) {
+    return await Spawner.spawnPreset({
       preset,
       preview: true,
-      layerSwitch: game.settings.get(MODULE_ID, 'presetLayerSwitch'),
-      scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling') || Scenescape.active,
+      layerSwitch: PresetBrowser.CONFIG.switchLayer,
+      scaleToGrid: PresetBrowser.CONFIG.autoScale || Scenescape.active,
       pivot: PIVOTS.CENTER,
+      ...options,
     });
-
-    this._setInteractivityState(true);
   }
 
   async _onRightClickPreset(eventTarget) {
@@ -340,11 +347,14 @@ export class PresetContainer extends FormApplication {
   }
 
   _contextMenu(html) {
-    ContextMenu.create(this, html, '.item', this._getItemContextOptions(), {
+    const itemOptions = this._getItemContextOptions().sort((o1, o2) => (o1.sort ?? -1) - (o2.sort ?? -1));
+    ContextMenu.create(this, html, '.item', itemOptions, {
       hookName: 'MassEditPresetContext',
       onOpen: this._onRightClickPreset.bind(this),
     });
-    ContextMenu.create(this, html, '.folder header', this._getFolderContextOptions(), {
+
+    const folderOptions = this._getFolderContextOptions().sort((o1, o2) => (o1.sort ?? -1) - (o2.sort ?? -1));
+    ContextMenu.create(this, html, '.folder header', folderOptions, {
       hookName: 'MassEditFolderContext',
     });
   }
@@ -352,22 +362,46 @@ export class PresetContainer extends FormApplication {
   _getItemContextOptions() {
     return [
       {
+        name: 'Open Bag',
+        icon: '<i class="fas fa-edit"></i>',
+        condition: (item) => item.data('doc-name') === 'Bag',
+        callback: (item) => this._onOpenBag(),
+        sort: 0,
+      },
+      {
+        name: 'Import Scene',
+        icon: '<i class="fas fa-download fa-fw"></i>',
+        condition: (item) => item.data('doc-name') === 'FauxScene',
+        callback: this._onImportFauxScene,
+        sort: 50,
+      },
+      {
+        name: 'Spawn Scene',
+        icon: '<i class="fa-solid fa-books"></i>',
+        condition: (item) => item.data('doc-name') === 'FauxScene',
+        callback: this._onSpawnScene,
+        sort: 51,
+      },
+      {
         name: localize('CONTROLS.CommonEdit', false),
         icon: '<i class="fas fa-edit"></i>',
         condition: (item) => game.user.isGM && Preset.isEditable(item.data('uuid')),
         callback: (item) => this._onEditSelectedPresets(item),
+        sort: 100,
       },
       {
         name: 'Brush',
         icon: '<i class="fa-solid fa-paintbrush"></i>',
         condition: (item) => game.user.isGM && SUPPORTED_PLACEABLES.includes(item.data('doc-name')),
         callback: (item) => this._onActivateBrush(item),
+        sort: 200,
       },
       {
         name: localize('presets.open-journal'),
         icon: '<i class="fas fa-book-open"></i>',
         condition: (item) => !item.hasClass('virtual'),
         callback: (item) => this._onOpenJournal(item),
+        sort: 300,
       },
       {
         name: localize('presets.apply-to-selected'),
@@ -377,61 +411,139 @@ export class PresetContainer extends FormApplication {
           SUPPORTED_PLACEABLES.includes(item.data('doc-name')) &&
           canvas.getLayerByEmbeddedName(item.data('doc-name')).controlled.length,
         callback: (item) => this._onApplyToSelected(item),
+        sort: 400,
       },
       {
         name: localize('Duplicate', false),
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) =>
-          game.user.isGM && this.presetsDuplicable && Preset.isEditable(item.data('uuid')) && !item.hasClass('virtual'),
+          game.user.isGM &&
+          this.presetsDuplicatable &&
+          Preset.isEditable(item.data('uuid')) &&
+          !item.hasClass('virtual'),
         callback: (item) =>
           this._onCopySelectedPresets(null, {
             keepFolder: true,
             keepId: false,
           }),
+        sort: 500,
       },
       {
         name: localize('presets.copy-source-to-clipboard'),
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) => item.data('uuid').startsWith('virtual@'),
         callback: (item) => game.clipboard.copyPlainText(item.data('uuid').substring(8)),
+        sort: 600,
       },
       {
         name: localize('presets.copy-to-clipboard'),
         icon: '<i class="fa-solid fa-copy"></i>',
         condition: (item) => game.user.isGM && $(this.form).find('.item-list').find('.item.selected').length === 1,
         callback: (item) => this._onCopyPresetToClipboard(),
+        sort: 700,
       },
       {
         name: 'Copy UUID',
         icon: '<i class="fa-solid fa-passport"></i>',
         condition: () => game.user.isGM,
         callback: (item) => this._onCopyUUID(item),
+        sort: 800,
       },
       {
         name: localize('presets.export-as-json'),
         icon: '<i class="fas fa-file-export fa-fw"></i>',
         condition: () => game.user.isGM,
         callback: (item) => this._onExportSelectedPresets(),
+        sort: 900,
       },
       {
         name: localize('presets.export-to-compendium'),
         icon: '<i class="fas fa-file-export fa-fw"></i>',
-        condition: () => game.user.isGM && this.presetsDuplicable,
+        condition: () => game.user.isGM && this.presetsDuplicatable,
         callback: (item) => this._onExportSelectedPresetsToComp(),
+        sort: 1000,
       },
       {
         name: localize('CONTROLS.CommonDelete', false),
         icon: '<i class="fas fa-trash fa-fw"></i>',
         condition: (item) =>
           game.user.isGM &&
+          !this.presetsDisableDelete &&
           (this.presetsForceAllowDelete || (Preset.isEditable(item.data('uuid')) && !item.hasClass('virtual'))),
         callback: (item) => this._onDeleteSelectedPresets(item),
+        sort: 1100,
       },
     ];
   }
 
+  async _onImportFauxScene(item) {
+    const preset = await PresetAPI.getPreset({ uuid: item.data('uuid') });
+    const scene = await fromUuid(preset.data[0].uuid);
+    return game.scenes.importFromCompendium(scene.compendium, scene.id, {}, { renderSheet: true });
+  }
+
+  async _onSpawnScene(item) {
+    const preset = await PresetAPI.getPreset({ uuid: item.data('uuid') });
+    const scene = await fromUuid(preset.data[0].uuid);
+    return spawnSceneAsPreset(scene);
+  }
+
   _getFolderContextOptions() {
-    return [];
+    return [
+      {
+        name: 'Edit',
+        icon: '<i class="fas fa-edit"></i>',
+        condition: (header) => {
+          const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
+          return !folder.virtual || folder instanceof PresetPackFolder;
+        },
+        callback: (header) => this._onFolderEdit(header),
+      },
+      {
+        name: 'Save Index',
+        icon: '<i class="fas fa-file-search"></i>',
+        condition: (header) => {
+          const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
+          return folder.indexable;
+        },
+        callback: (header) => {
+          FileIndexer.saveFolderToCache(this.tree.allFolders.get(header.closest('.folder').data('uuid')));
+        },
+      },
+      {
+        name: 'Export to Compendium',
+        icon: '<i class="fas fa-file-export fa-fw"></i>',
+        condition: (header) => {
+          const folder = this.tree.allFolders.get(header.closest('.folder').data('uuid'));
+          return !(folder instanceof VirtualFileFolder);
+        },
+        callback: (header) => {
+          this._onExportFolder(header.closest('.folder').data('uuid'));
+        },
+      },
+      {
+        name: localize('FOLDER.Remove', false),
+        icon: '<i class="fas fa-trash fa-fw"></i>',
+        condition: (header) => PresetFolder.isEditable(header.closest('.folder').data('uuid')),
+        callback: (header) => this._onFolderDelete(header.closest('.folder').data('uuid')),
+      },
+      {
+        name: localize('FOLDER.Delete', false),
+        icon: '<i class="fas fa-dumpster"></i>',
+        condition: (header) => PresetFolder.isEditable(header.closest('.folder').data('uuid')),
+        callback: (header) =>
+          this._onFolderDelete(header.closest('.folder').data('uuid'), {
+            deleteAll: true,
+          }),
+      },
+      {
+        name: 'Randomize Child Folder Colors',
+        icon: '<i class="fas fa-dice"></i>',
+        condition: () => game.settings.get(MODULE_ID, 'debug'),
+        callback: (header) =>
+          randomizeChildrenFolderColors(header.closest('.folder').data('uuid'), this.tree, () => this.render(true)),
+      },
+    ];
   }
 
   async _onApplyToSelected(item) {
@@ -540,9 +652,9 @@ export class PresetContainer extends FormApplication {
     game.audio.playing.forEach((s) => {
       if (s._mePreview) s.stop();
     });
-    if (this._videoPreviewElement) {
-      this._videoPreviewElement.remove();
-      this._videoPreviewElement = null;
+    if (this._previewElement) {
+      this._previewElement.remove();
+      this._previewElement = null;
     }
   }
 
@@ -551,25 +663,31 @@ export class PresetContainer extends FormApplication {
     const uuid = $(event.currentTarget).data('uuid');
     if (!uuid) return;
 
+    const addClearPreviewElement = () => {
+      if (!this._previewElement) {
+        this._previewElement = $('<div class="mePreviewElement"></div>');
+        $(document.body).append(this._previewElement);
+      } else {
+        this._previewElement.empty();
+      }
+    };
+
     const preset = await PresetCollection.get(uuid, { full: false });
     if (preset.documentName === 'AmbientSound') {
       const src = isAudio(preset.img) ? preset.img : (await preset.load()).data[0]?.path;
       if (!src) return;
       const sound = await game.audio.play(src);
       sound._mePreview = true;
+
+      addClearPreviewElement();
+      this._previewElement.append(`<img width="320" height="320" src='icons/svg/sound.svg'></img>`);
     } else if (preset.documentName === 'Tile' && preset.thumbnail === 'icons/svg/video.svg') {
       await preset.load();
       const src = preset.data[0].texture?.src;
       if (src && isVideo(src)) {
-        if (!this._videoPreviewElement) {
-          this._videoPreviewElement = $('<div class="meVideoPreview"></div>');
-          $(document.body).append(this._videoPreviewElement);
-        } else {
-          this._videoPreviewElement.empty();
-        }
-
+        addClearPreviewElement();
         const ratio = visualViewport.width / 1024;
-        this._videoPreviewElement.append(
+        this._previewElement.append(
           `<video width="${320 * ratio}" height="${240 * ratio}" autoplay loop><source src="${src}" type="video/${src
             .split('.')
             .pop()
@@ -639,8 +757,8 @@ export class PresetContainer extends FormApplication {
       y: mouseY,
       z: mouseZ,
       mousePosition: false,
-      layerSwitch: game.settings.get(MODULE_ID, 'presetLayerSwitch'),
-      scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
+      layerSwitch: PresetBrowser.CONFIG.switchLayer,
+      scaleToGrid: PresetBrowser.CONFIG.autoScale,
     });
   }
 
@@ -660,7 +778,7 @@ export class PresetContainer extends FormApplication {
       folderElement.removeClass('collapsed');
       folderElement.find('header .folder-icon').first().removeClass('fa-folder-closed').addClass('fa-folder-open');
     } else {
-      let content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/presetFolder.html`, {
+      let content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/partials/folder.html`, {
         folder,
         createEnabled: Boolean(this.configApp),
         callback: Boolean(this.callback),
@@ -679,6 +797,28 @@ export class PresetContainer extends FormApplication {
     folder.expanded = false;
   }
 
+  async _renderContent({ callback = false, presets, folders, createEnabled = false, extFolders } = {}) {
+    const content = await renderTemplate(`modules/${MODULE_ID}/templates/preset/partials/presetsContent.html`, {
+      callback,
+      presets,
+      folders,
+      createEnabled,
+      extFolders,
+    });
+    this.element.find('.item-list').html(content);
+  }
+
+  _onCopyUUID(item) {
+    game.clipboard.copyPlainText(item.data('uuid'));
+    ui.notifications.info(
+      game.i18n.format('DOCUMENT.IdCopiedClipboard', {
+        label: item.attr('name'),
+        type: 'uuid',
+        id: item.data('uuid'),
+      })
+    );
+  }
+
   async _onItemSort(sourceUuids, targetUuid, { before = true, folderUuid = null } = {}) {
     throw new Error('A subclass of the PresetContainer must implement the _onItemSort method.');
   }
@@ -693,6 +833,115 @@ export class PresetContainer extends FormApplication {
 
   async _onDeleteSelectedPresets(item) {
     throw new Error('A subclass of the PresetContainer must implement the _onDeleteSelectedPresets method.');
+  }
+
+  async _onOpenBag(uuid) {
+    if (!uuid) {
+      let [selected, _] = await this._getSelectedPresets({
+        editableOnly: false,
+      });
+
+      if (selected.length) {
+        const module = await import('./bagApp.js');
+        selected.filter((p) => p.documentName === 'Bag').forEach((p) => module.openBag(p.uuid));
+      }
+    } else {
+      const module = await import('./bagApp.js');
+      module.openBag(uuid);
+    }
+  }
+
+  /**
+   * @override
+   * Application.setPosition(...) has been modified to use css transform for window translation across the screen
+   * instead of top/left css properties which force full-window style recomputation
+   */
+  setPosition({ left, top, width, height, scale } = {}) {
+    if (!this.popOut && !this.options.resizable) return; // Only configure position for popout or resizable apps.
+    const el = this.element[0];
+    const currentPosition = this.position;
+    const pop = this.popOut;
+    const styles = window.getComputedStyle(el);
+    if (scale === null) scale = 1;
+    scale = scale ?? currentPosition.scale ?? 1;
+
+    // If Height is "auto" unset current preference
+    if (height === 'auto' || this.options.height === 'auto') {
+      el.style.height = '';
+      height = null;
+    }
+
+    // Update width if an explicit value is passed, or if no width value is set on the element
+    if (!el.style.width || width) {
+      const tarW = width || el.offsetWidth;
+      const minW = parseInt(styles.minWidth) || (pop ? MIN_WINDOW_WIDTH : 0);
+      const maxW = el.style.maxWidth || window.innerWidth / scale;
+      currentPosition.width = width = Math.clamp
+        ? Math.clamp(tarW, minW, maxW) // v12
+        : Math.clamped(tarW, minW, maxW);
+      el.style.width = `${width}px`;
+      if (width * scale + currentPosition.left > window.innerWidth) left = currentPosition.left;
+    }
+    width = el.offsetWidth;
+
+    // Update height if an explicit value is passed, or if no height value is set on the element
+    if (!el.style.height || height) {
+      const tarH = height || el.offsetHeight + 1;
+      const minH = parseInt(styles.minHeight) || (pop ? MIN_WINDOW_HEIGHT : 0);
+      const maxH = el.style.maxHeight || window.innerHeight / scale;
+      currentPosition.height = height = Math.clamp
+        ? Math.clamp(tarH, minH, maxH) // v12
+        : Math.clamped(tarH, minH, maxH);
+      el.style.height = `${height}px`;
+      if (height * scale + currentPosition.top > window.innerHeight + 1) top = currentPosition.top - 1;
+    }
+    height = el.offsetHeight;
+
+    let leftT, topT;
+    // Update Left
+    if ((pop && !this.posSet) || Number.isFinite(left)) {
+      const scaledWidth = width * scale;
+      const tarL = Number.isFinite(left) ? left : (window.innerWidth - scaledWidth) / 2;
+      const maxL = Math.max(window.innerWidth - scaledWidth, 0);
+      currentPosition.left = left = Math.clamp
+        ? Math.clamp(tarL, 0, maxL) // v12
+        : Math.clamped(tarL, 0, maxL);
+      leftT = left;
+    }
+
+    // Update Top
+    if ((pop && !this.posSet) || Number.isFinite(top)) {
+      const scaledHeight = height * scale;
+      const tarT = Number.isFinite(top) ? top : (window.innerHeight - scaledHeight) / 2;
+      const maxT = Math.max(window.innerHeight - scaledHeight, 0);
+      currentPosition.top = Math.clamp
+        ? Math.clamp(tarT, 0, maxT) // v12
+        : Math.clamped(tarT, 0, maxT);
+
+      topT = currentPosition.top;
+    }
+
+    let transform = '';
+
+    // Update Scale
+    if (scale) {
+      currentPosition.scale = Math.max(scale, 0);
+
+      if (scale === 1) transform += ``;
+      else transform += `scale(${scale})`;
+    }
+
+    if (leftT || topT) {
+      this.posSet = true;
+      transform += 'translate(' + leftT + 'px,' + topT + 'px)';
+    }
+
+    if (transform) {
+      el.style.transform = transform;
+    }
+
+    // Return the updated position object
+    return currentPosition;
   }
 }
 

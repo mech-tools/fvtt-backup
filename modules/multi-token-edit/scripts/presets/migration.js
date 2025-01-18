@@ -1,6 +1,6 @@
 import { MODULE_ID } from '../constants.js';
 import { META_INDEX_FIELDS, META_INDEX_ID, PresetCollection, PresetTree } from './collection.js';
-import { MassEditPresets } from './forms.js';
+import { PresetBrowser } from './browser/browserApp.js';
 import { PRESET_FIELDS } from './preset.js';
 
 export class V12Migrator {
@@ -145,7 +145,7 @@ export class V12Migrator {
       setTimeout(() => {
         delete PresetTree._packTrees[pack.metadata.name];
         Object.values(ui.windows)
-          .find((app) => app instanceof MassEditPresets)
+          .find((app) => app instanceof PresetBrowser)
           ?.render(true);
       }, 500);
     }
@@ -172,27 +172,3 @@ export class V12Migrator {
     }
   }
 }
-
-// Todo: support TA migration to Links
-// if (taToLinks) {
-//   p.name = p.name + ' - LINKED';
-//   const lData = [];
-//   p.data.forEach((d) => {
-//     const attached = foundry.utils.getProperty(d, 'flags.token-attacher.prototypeAttached');
-//     if (attached) {
-//       const link = { id: foundry.utils.randomID(), type: 0 };
-//       Object.keys(attached).forEach((embedName) => {
-//         attached[embedName].forEach((ad) => {
-//           foundry.utils.setProperty(ad, 'flags.multi-token-edit.links', [foundry.utils.deepClone(link)]);
-//           delete ad.flags?.['token-attacher'];
-//           lData.push({ documentName: embedName, data: ad });
-//         });
-//       });
-//       delete d.flags['token-attacher'];
-//       console.log(d);
-//       foundry.utils.setProperty(d, 'flags.multi-token-edit.links', [link]);
-
-//       p.attached = lData;
-//     }
-//   });
-// }

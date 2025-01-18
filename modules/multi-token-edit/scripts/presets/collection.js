@@ -1,10 +1,11 @@
 import { Brush } from '../brush.js';
-import { MODULE_ID, SUPPORTED_PLACEABLES, UI_DOCS } from '../constants.js';
+import { MODULE_ID, SUPPORTED_PLACEABLES } from '../constants.js';
 import { SeededRandom, applyPresetToScene, localize } from '../utils.js';
 import { FileIndexer } from './fileIndexer.js';
+import { PresetBrowser } from './browser/browserApp.js';
 import { Preset, VirtualFilePreset } from './preset.js';
 import { Spawner } from './spawner.js';
-import { FolderState, decodeURIComponentSafely, placeableToData } from './utils.js';
+import { FolderState, decodeURIComponentSafely, parseSearchQuery, placeableToData } from './utils.js';
 
 const DEFAULT_PACK = 'world.mass-edit-presets-main';
 export const META_INDEX_ID = 'MassEditMetaData';
@@ -41,7 +42,7 @@ export class PresetCollection {
       for (const p of game.packs) {
         if (p.collection !== this.workingPack && p.index.get(META_INDEX_ID)) {
           const tree = await PresetTree.init(p, type, { setFormVisibility });
-          if (!tree.hasVisible) continue;
+          if (setFormVisibility && !tree.hasVisible) continue;
 
           const topFolder = new PresetPackFolder({ pack: p, tree });
           extFolders.push(topFolder);
@@ -58,7 +59,7 @@ export class PresetCollection {
     // Read File Index
     if (virtualDirectory) {
       const vTree = await FileIndexer.getVirtualDirectoryTree(type, { setFormVisibility });
-      if (vTree?.hasVisible) {
+      if (vTree?.hasVisible || !setFormVisibility) {
         const topFolder = new VirtualFileFolder({
           name: 'VIRTUAL DIRECTORY',
           children: vTree.folders,
@@ -197,8 +198,9 @@ export class PresetCollection {
   }
 
   /**
-   * TODO: create a method to batch set presets
+   * Create presets within a pack
    * @param {Preset|Array[Preset]} presets
+   * @param {String} pack
    */
   static async set(presets, pack) {
     if (!presets) throw new Error('Attempting to set invalid Preset/s', presets);
@@ -444,16 +446,28 @@ export class PresetCollection {
     return presets;
   }
 
+  static _searchPresets(presets, options) {
+    const results = [];
+
+    // Make sure terms are provided in lowercase
+    if (options.terms) options.terms = options.terms.map((t) => t.toLowerCase());
+
+    this._searchPresetList(presets, results, options);
+
+    return results;
+  }
+
   static _searchPresetFolder(folder, presets, options) {
     if (options.folder && folder.name !== options.folder) return;
     this._searchPresetList(folder.presets, presets, options, folder.name);
   }
 
-  static _searchPresetList(toSearch, presets, { name, type, tags } = {}, folderName) {
+  static _searchPresetList(toSearch, presets, { name, type, tags, terms } = {}) {
     for (const preset of toSearch) {
       let match = true;
       if (name && name !== preset.name) match = false;
       if (type && type !== preset.documentName) match = false;
+      if (terms && !terms.every((t) => preset.name.toLowerCase().includes(t))) match = false;
       if (match && tags) {
         if (tags.matchAny) match = tags.tags.some((t) => preset.tags.includes(t));
         else match = tags.tags.every((t) => preset.tags.includes(t));
@@ -477,7 +491,7 @@ export class PresetCollection {
         await Spawner.spawnPreset({
           preset: this.data,
           preview: true,
-          scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
+          scaleToGrid: PresetBrowser.CONFIG.autoScale,
         });
         ui.spotlightOmnisearch?.setDraggingState(false);
       }
@@ -490,7 +504,7 @@ export class PresetCollection {
           preset: this.data,
           x,
           y,
-          scaleToGrid: game.settings.get(MODULE_ID, 'presetScaling'),
+          scaleToGrid: PresetBrowser.CONFIG.autoScale,
         });
       } else if (this.data.documentName === 'Scene') {
         applyPresetToScene(this.data);
@@ -557,27 +571,48 @@ export class PresetAPI {
    * @param {String} [options.uuid]                      Preset UUID
    * @param {String} [options.name]                      Preset name
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
-   * @param {String|Array[String]|Object} [options.tags] Tags to match a preset against. Can be provided as an object containing 'tags' array and 'match' any flag.
+   * @param {String} [options.query]                     Search query to be ran. Format: "blue #castle @AmbientLight"
+   *                                                     Terms: blue, Tags: castle, Type: AmbientLight
+   *                                                     None, or all component of the query can be provided or excluded
+   * @param {String|Array[String]|Object} [options.tags] Tags to match a preset against. Can be provided as an object containing 'tags' array and 'matchAny' flag.
    *                                                     Comma separated string, or a list of strings. In the latter 2 cases 'matchAny' is assumed true
    * @param {String} [options.folder]                    Folder name
    * @param {Boolean} [options.random]                   If multiple presets are found a random one will be chosen
    * @returns {Preset}
    */
-  static async getPreset({ uuid, name, type, folder, tags, random = false, full = true } = {}) {
+  static async getPreset({
+    uuid,
+    name,
+    type,
+    folder,
+    tags,
+    query,
+    matchAny = true,
+    random = false,
+    virtualDirectory = true,
+    externalCompendiums = true,
+    full = true,
+  } = {}) {
     if (uuid) return await PresetCollection.get(uuid, { full });
-    else if (!name && !type && !folder && !tags)
-      throw Error('UUID, Name, Type, and/or Folder required to retrieve a Preset.');
+    else if (!name && !type && !folder && !tags && !query)
+      throw Error('UUID, Name, Type, Folder, and/or Query required to retrieve a Preset.');
+
+    let terms;
+    if (query) {
+      ({ terms, tags, type } = parseSearchQuery(query, { matchAny }));
+    }
 
     if (tags) {
-      if (Array.isArray(tags)) tags = { tags, matchAny: true };
-      else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
+      if (Array.isArray(tags)) tags = { tags, matchAny };
+      else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
     }
 
     const presets = PresetCollection._searchPresetTree(
-      await PresetCollection.getTree(type, { externalCompendiums: true, virtualDirectory: true }),
+      await PresetCollection.getTree(type, { externalCompendiums, virtualDirectory }),
       {
         name,
         type,
+        terms,
         folder,
         tags,
       }
@@ -597,42 +632,59 @@ export class PresetAPI {
    * @param {String|Array[String]} [options.uuid]        Preset UUID/s
    * @param {String} [options.name]                      Preset name
    * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {String} [options.query]                     See PresetAPI.getPreset
    * @param {String} [options.folder]                    Folder name
    * @param {String|Array[String]|Object} [options.tags] See PresetAPI.getPreset
-   * @param {String} [options.format]                    The form to return placeables in ('preset', 'name', 'nameAndFolder')
    * @returns {Array[Preset]|Array[String]|Array[Object]}
    */
-  static async getPresets({ uuid, name, type, folder, format = 'preset', tags, full = true } = {}) {
-    let presets;
+  static async getPresets({
+    uuid,
+    name,
+    type,
+    query,
+    matchAny = true,
+    folder,
+    tags,
+    virtualDirectory = true,
+    externalCompendiums = true,
+    full = true,
+    presets,
+  } = {}) {
+    let results;
     if (uuid) {
-      presets = [];
+      results = [];
       const uuids = Array.isArray(uuid) ? uuid : [uuid];
-      presets = await PresetCollection.getBatch(uuids, { full });
-    } else if (!name && !type && !folder && !tags) {
-      throw Error('UUID, Name, Type, Folder and/or Tags required to retrieve a Preset.');
+      results = await PresetCollection.getBatch(uuids, { full });
+    } else if (!name && !type && !folder && !tags && !query) {
+      throw Error('UUID, Name, Type, Folder, Tags, and/or Query required to retrieve Presets.');
     } else {
-      if (tags) {
-        if (Array.isArray(tags)) tags = { tags, matchAny: true };
-        else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny: true };
+      let terms;
+      if (query) {
+        ({ terms, type, tags } = parseSearchQuery(query, { matchAny }));
       }
 
-      presets = PresetCollection._searchPresetTree(
-        await PresetCollection.getTree(type, { externalCompendiums: true, virtualDirectory: true }),
-        {
-          name,
-          type,
-          folder,
-          tags,
-        }
-      );
+      if (tags) {
+        if (Array.isArray(tags)) tags = { tags, matchAny };
+        else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
+      }
+
+      if (presets) {
+        results = PresetCollection._searchPresets(presets, { name, type, terms, folder, tags });
+      } else {
+        results = PresetCollection._searchPresetTree(
+          await PresetCollection.getTree(type, { externalCompendiums, virtualDirectory }),
+          {
+            name,
+            type,
+            terms,
+            folder,
+            tags,
+          }
+        );
+      }
     }
 
-    if (format === 'name') return presets.map((p) => p.name);
-    else if (format === 'nameAndFolder')
-      return presets.map((p) => {
-        return { name: p.name, folder: p._folderName };
-      });
-    return presets;
+    return results;
   }
 
   /**
@@ -944,7 +996,7 @@ export class PresetTree {
     }
 
     // Sort folders
-    const sorting = game.settings.get(MODULE_ID, 'presetSortMode') === 'manual' ? 'm' : 'a';
+    const sorting = PresetBrowser.CONFIG.sortMode === 'manual' ? 'm' : 'a';
     const sortedFolders = PresetCollection._sortFolders(Array.from(topLevelFolders.values()), sorting);
     const sortedPresets = PresetCollection._sortPresets(topLevelPresets, sorting);
 
@@ -989,7 +1041,7 @@ export class PresetTree {
       preset._render = true;
       if (type) {
         if (type === 'ALL') {
-          if (!UI_DOCS.includes(preset.documentName)) preset._visible = false;
+          if (!SUPPORTED_PLACEABLES.includes(preset.documentName)) preset._visible = false;
         } else if (preset.documentName !== type) preset._visible = false;
       }
 

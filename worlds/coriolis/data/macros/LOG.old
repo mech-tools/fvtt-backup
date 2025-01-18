@@ -1,8 +1,15 @@
-2024/12/22-11:35:19.526589 7f5a258d8700 Recovering log #341
-2024/12/22-11:35:19.529292 7f5a258d8700 Delete type=0 #341
-2024/12/22-11:35:19.529323 7f5a258d8700 Delete type=3 #339
-2025/01/03-09:48:10.284860 7f54eebbe700 Level-0 table #346: started
-2025/01/03-09:48:10.285108 7f54eebbe700 Level-0 table #346: 0 bytes OK
-2025/01/03-09:48:10.286150 7f54eebbe700 Delete type=0 #344
-2025/01/03-09:48:10.290232 7f54eebbe700 Manual compaction at level-0 from '!macros!2yEQc0IRD8i2tP4b' @ 72057594037927935 : 1 .. '!macros!y8Ma5zZmRBCaNkvX' @ 0 : 0; will stop at (end)
-2025/01/03-09:48:10.290308 7f54eebbe700 Manual compaction at level-1 from '!macros!2yEQc0IRD8i2tP4b' @ 72057594037927935 : 1 .. '!macros!y8Ma5zZmRBCaNkvX' @ 0 : 0; will stop at (end)
+2025/01/03-09:51:33.077285 7f5a258d8700 Recovering log #345
+2025/01/03-09:51:33.079935 7f5a258d8700 Delete type=3 #343
+2025/01/03-09:51:33.079966 7f5a258d8700 Delete type=0 #345
+2025/01/17-14:21:48.076485 7f54eebbe700 Level-0 table #350: started
+2025/01/17-14:21:48.078022 7f54eebbe700 Level-0 table #350: 683 bytes OK
+2025/01/17-14:21:48.079289 7f54eebbe700 Delete type=0 #348
+2025/01/17-14:21:48.127015 7f54eebbe700 Manual compaction at level-0 from '!macros!2yEQc0IRD8i2tP4b' @ 72057594037927935 : 1 .. '!macros!y8Ma5zZmRBCaNkvX' @ 0 : 0; will stop at (end)
+2025/01/17-14:21:48.128048 7f54eebbe700 Manual compaction at level-1 from '!macros!2yEQc0IRD8i2tP4b' @ 72057594037927935 : 1 .. '!macros!y8Ma5zZmRBCaNkvX' @ 0 : 0; will stop at '!macros!atIEXht2YfFcDcSw' @ 60 : 0
+2025/01/17-14:21:48.128060 7f54eebbe700 Compacting 1@1 + 1@2 files
+2025/01/17-14:21:48.129581 7f54eebbe700 Generated table #351@1: 25 keys, 5896 bytes
+2025/01/17-14:21:48.129594 7f54eebbe700 Compacted 1@1 + 1@2 files => 5896 bytes
+2025/01/17-14:21:48.130323 7f54eebbe700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/01/17-14:21:48.130373 7f54eebbe700 Delete type=2 #350
+2025/01/17-14:21:48.130441 7f54eebbe700 Delete type=2 #314
+2025/01/17-14:21:48.178808 7f54eebbe700 Manual compaction at level-1 from '!macros!atIEXht2YfFcDcSw' @ 60 : 0 .. '!macros!y8Ma5zZmRBCaNkvX' @ 0 : 0; will stop at (end)

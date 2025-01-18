@@ -4,7 +4,7 @@ import { LinkerAPI } from './linker/linker.js';
 import { Mouse3D } from './mouse3d.js';
 import { getPivotOffset, getPresetDataBounds } from './presets/utils.js';
 import { Scenescape } from './scenescape/scenescape.js';
-import { pickerSelectMultiLayerDocuments } from './utils.js';
+import { pickerSelectMultiLayerDocuments, updateEmbeddedDocumentsViaGM } from './utils.js';
 
 /**
  * Cross-hair and optional preview image/label that can be activated to allow the user to select
@@ -107,16 +107,14 @@ export class Picker {
       this._mirrorX = false;
       this._mirrorY = false;
 
+      // If we're previewing multiple types of document lets use wall layer snapping
+      if (previewDocuments.size !== 1) {
+        layer = canvas.walls;
+      }
+
       // Position offset to center preview over the mouse
       const setPositions = function (pos) {
         if (!pos) return;
-
-        // Snap mouse if needed
-        if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
-          const snapped = layer.getSnappedPoint(pos);
-          snapped.z = pos.z;
-          pos = snapped;
-        }
 
         // Place top-left preview corner on the mouse
         const b = getPresetDataBounds(preview.previewData);
@@ -127,28 +125,37 @@ export class Picker {
         transform.x -= offset.x;
         transform.y -= offset.y;
 
+        // Snap bounds after transform
+        if (preview.snap && layer && !game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT)) {
+          const postTransformPos = { x: b.x + transform.x, y: b.y + transform.y };
+          const snapped = layer.getSnappedPoint(postTransformPos);
+
+          transform.x += snapped.x - postTransformPos.x;
+          transform.y += snapped.y - postTransformPos.y;
+        }
+
         // Dynamic scenescape scaling
         if (Scenescape.active && Scenescape.autoScale) {
           const params = Scenescape.getParallaxParameters(canvas.mousePosition);
 
           // Special handling for Token drag
           // Tokens have an actor defined size which we want to be maintained unless it was manually scaled during preview
-          if (previews.length === 1 && previews[0].document.documentName === 'Token') {
+          if (previews.length === 1 && previews[0].documentName === 'Token') {
             let size;
             // Manual token scaling, this should apply a fixed size to the token
             if (Picker._scale != 1) {
               size = Scenescape.getTokenSize(previews[0]) * Picker._scale;
 
               let tSize = (size * 6) / 100;
-              foundry.utils.setProperty(previews[0]._pData, `flags.${MODULE_ID}.size`, tSize);
+              foundry.utils.setProperty(previews[0].data, `flags.${MODULE_ID}.size`, tSize);
               foundry.utils.setProperty(previews[0].document, `flags.${MODULE_ID}.size`, tSize);
             }
 
             // Scenescape dynamic scaling
             if (params.scale !== Picker._paraScale) {
-              size = size ?? Scenescape.getTokenSize(previews[0]);
+              size = size ?? Scenescape.getTokenSize(previews[0].preview);
 
-              const currHeight = previews[0].document.height * canvas.dimensions.size;
+              const currHeight = previews[0].preview.document.height * canvas.dimensions.size;
               const targHeight = size * params.scale;
 
               let scale = targHeight / currHeight;
@@ -197,44 +204,47 @@ export class Picker {
         // - end of transform calculations
 
         // Apply transformations
-        for (const preview of previews) {
-          const doc = preview.document;
-          const documentName = doc.documentName;
-          DataTransformer.apply(documentName, preview._pData ?? doc, pos, transform, preview);
+        for (const previewContainer of previews) {
+          const preview = previewContainer.preview;
+
+          const documentName = previewContainer.documentName;
+          DataTransformer.apply(documentName, previewContainer.data, pos, transform, preview);
 
           // =====
           // Hacks
           // =====
-          preview.renderFlags.set({ refresh: true });
+          if (preview) {
+            preview.renderFlags.set({ refresh: true });
+            const doc = preview.document;
 
-          // Elevation, sort, and z order hacks to make sure previews are always rendered on-top
-          // TODO: improve _meSort, _meElevation
-          if (doc.sort != null) {
-            if (!preview._meSort) preview._meSort = doc.sort;
-            doc.sort = preview._meSort + 10000;
-          }
-          if (!Scenescape.active) {
-            if (!game.Levels3DPreview?._active && doc.elevation != null) {
-              if (!preview._meElevation) preview._meElevation = doc.elevation;
-              doc.elevation = preview._meElevation + 10000;
+            // Elevation, sort, and z order hacks to make sure previews are always rendered on-top
+            // TODO: improve _meSort, _meElevation
+            if (doc.sort != null) {
+              if (!preview._meSort) preview._meSort = doc.sort;
+              doc.sort = preview._meSort + 10000;
+            }
+            if (!Scenescape.active) {
+              if (!game.Levels3DPreview?._active && doc.elevation != null) {
+                if (!preview._meElevation) preview._meElevation = doc.elevation;
+                doc.elevation = preview._meElevation + 10000;
+              }
+            }
+            // end of sort hacks
+
+            // For some reason collision bool is refreshed after creation of the preview
+            if (preview._l3dPreview) preview._l3dPreview.collision = false;
+
+            // Special position update conditions
+            // - Region: We need to simulate doc update via `_onUpdate` call
+            // - AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
+            if (documentName === 'Region') {
+              preview._onUpdate({ shapes: null });
+            } else if (documentName === 'AmbientLight') {
+              preview.initializeLightSource();
+            } else if (documentName === 'AmbientSound') {
+              preview.initializeSoundSource();
             }
           }
-          // end of sort hacks
-
-          // For some reason collision bool is refreshed after creation of the preview
-          if (preview._l3dPreview) preview._l3dPreview.collision = false;
-
-          // Special position update conditions
-          // - Region: We need to simulate doc update via `_onUpdate` call
-          // - AmbientLight and AmbientSound sources need to be re-initialized to have their fields properly rendered
-          if (documentName === 'Region') {
-            preview._onUpdate({ shapes: null });
-          } else if (documentName === 'AmbientLight') {
-            preview.initializeLightSource();
-          } else if (documentName === 'AmbientSound') {
-            preview.initializeSoundSource();
-          }
-
           // End of Hacks
         }
 
@@ -446,13 +456,17 @@ export class Picker {
     const previewDocuments = new Set();
     const previews = [];
     for (const { documentName, data } of toCreate) {
-      const p = await this._createPreview.call(
-        canvas.getLayerByEmbeddedName(documentName),
-        foundry.utils.deepClone(data)
-      );
-      p._pData = data;
-      previews.push(p);
-      previewDocuments.add(documentName);
+      const previewContainer = { documentName, data };
+
+      if (!preview.restrict?.includes(documentName)) {
+        previewContainer.preview = await this._createPreview.call(
+          canvas.getLayerByEmbeddedName(documentName),
+          foundry.utils.deepClone(data)
+        );
+        previewDocuments.add(documentName);
+      }
+
+      previews.push(previewContainer);
     }
     return { previews, layer: canvas.getLayerByEmbeddedName(preview.documentName), previewDocuments };
   }
@@ -532,7 +546,7 @@ export async function editPreviewPlaceables(placeables, confirmOnRelease = false
     pickerSelected.forEach((d) => controlled.add(d));
   }
 
-  if (!controlled.size) return;
+  if (!controlled.size) return false;
 
   // Generate data from the selected placeables and pass them to Picker to create previews
   const docToData = new Map();
@@ -592,11 +606,16 @@ export async function editPreviewPlaceables(placeables, confirmOnRelease = false
           }
         }
         if (updates.length) {
-          canvas.scene.updateEmbeddedDocuments(documentName, updates, {
-            ignoreLinks: true,
-            animate: false,
-            preventParallaxScaling: true,
-          });
+          updateEmbeddedDocumentsViaGM(
+            documentName,
+            updates,
+            {
+              ignoreLinks: true,
+              animate: false,
+              preventParallaxScaling: true,
+            },
+            canvas.scene
+          );
         }
 
         callback?.(coords);
@@ -610,4 +629,6 @@ export async function editPreviewPlaceables(placeables, confirmOnRelease = false
       confirmOnRelease,
     }
   );
+
+  return true;
 }
