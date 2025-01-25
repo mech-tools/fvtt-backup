@@ -1,56 +1,48 @@
 /**
- * This is the entry file for the FoundryVTT module to manipulate and display 
- * 	counters for status effects.
+ * This is the entry file for the FoundryVTT module to manipulate and display counters for status effects.
  * @author Adrian Haberecht
  */
 
 import { registerSettings } from './module/settings.js';
-import { redrawEffectCounters, extendEffectRenderer, extendCombatTracker } from './module/rendering.js';
+import { extendEffectRenderer, extendCombatTracker } from './module/rendering.js';
 import { registerKeybinds, onEffectKeyDown } from './module/keybinds.js';
-import { registerCountdown, registerCountdownSettings } from './module/countdown.js';
-import { registerMultiplier } from './module/multiplier.js';
 import { ActiveEffectCounter, CounterTypes, EffectCounter } from './module/api.js';
-import { synchronizeEffectCounters } from "./module/synchronization.js";
+import { addCounterType, initializeCounters, queueCreation, unqueueCreation } from './module/counterTypes.js';
+import StatusCounter from './module/counter.js';
+import { registerVisualActiveEffects } from './module/integration.js';
 
 /** Hook to register settings. */
-Hooks.once('init', async function() {
-	console.log('statuscounter | Initializing statuscounter');
+Hooks.once('init', function () {
+    console.log('Status Icon Counters | Initializing module.');
 
-	// Global class registrations
+    // Provide global access to legacy API.
 	window.EffectCounter = EffectCounter;
 	window.ActiveEffectCounter = ActiveEffectCounter;
 	window.CounterTypes = CounterTypes;
 
-	// Register counter types
-	CounterTypes.addType("statuscounter.simple");
-	registerMultiplier();
-    registerCountdown();
+    // Create API.
+    game.modules.get("statuscounter").api = {
+        StatusCounter,
+        addCounterType,
+        queueCreation,
+        unqueueCreation,
+    }
 
     // Register custom module settings
     registerSettings();
-    registerCountdownSettings();
+    initializeCounters();
 
-    if (game.system.id === "sfrpg") {
-        // Override the active effect toggle to prevent duplicates.
-        const originalToggle = CONFIG.Token.documentClass.prototype.toggleActiveEffect;
-        CONFIG.Token.documentClass.prototype.toggleActiveEffect = async function (effectData, { overlay = false, active } = {}) {
-            if (active === true && overlay === false && effectData.id) {
-                const existing = this.actor?.effects.find(e => e.getFlag("core", "statusId") === effectData.id);
-                if (existing) return true;
-            }
-
-            return originalToggle.apply(this, arguments);
-        }
-    }
+    if (game.modules.get("visual-active-effects")?.active) registerVisualActiveEffects();
+    // TODO reintegrate with DAE
 });
 
 /** Hook to extend the status effect rendering. */
-Hooks.once("setup", function() {
+Hooks.once("setup", function () {
     extendEffectRenderer();
 });
 
 /** Hook to register the global key events. */
-Hooks.once("ready", function() {
+Hooks.once("ready", function () {
 	$(document).on("keydown.statuscounter", onEffectKeyDown);
 });
 
@@ -62,23 +54,4 @@ Hooks.on("renderTokenHUD", function(tokenHud, html) {
 /** Hook to render status counters on the combat tracker. */
 Hooks.on("renderCombatTracker", function(_combatTracker, html) {
 	extendCombatTracker(html);
-});
-
-/** Hook to synchronize status counters and effects. */
-Hooks.on("preUpdateToken", function(token, changes) {
-    synchronizeEffectCounters(token, changes);
-});
-
-/** Hook to update status counters without redrawing all effects. */
-Hooks.on("updateToken", function(token, changes) {
-    if ("effects" in changes || foundry.utils.hasProperty(changes, "delta.effects")) {
-        let tokenId = foundry.utils.getProperty(canvas, "tokens.hud.object._id");
-        if (tokenId === token.id) canvas.tokens.hud.refreshStatusIcons();
-		return;
-	}
-
-    if (foundry.utils.hasProperty(changes, "flags.statuscounter.effectCounters")) {
-		redrawEffectCounters(token.object, EffectCounter.getCounters(token));
-        if (token.inCombat) ui.combat.render();
-	}
 });

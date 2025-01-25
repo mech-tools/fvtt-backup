@@ -203,6 +203,20 @@ Returns the remaining quantity of the specified light source for the specified t
 ### `game.Torch.sourceExhausted(sceneId, tokenId, source)`
 Returns true if the specified light source is consumable, and the instance held by the specified token has no more inventory.
 
+## Hooks for macro authors
+Because sometimes you want to respond to somebody clicking on the torch in the HUD, we also provide the following hooks:
+
+### `"torch.changed" token, source, state`
+The light source state changed, either via toggling or by turning off directly.
+* **token**: The token for which the light source state has changed
+* **source**: The name of the light source
+* **state**: The new state - "on", "dim", "off"
+
+### `"torch.selected" token, source`
+A new light source was selected.
+* **token**: The token for which the light source has been selected
+* **source**: The name of the light source now selected
+
 ## Changelog - now in [separate file](./CHANGELOG.md)
 
 ## Translation Status
@@ -211,7 +225,7 @@ The following is the current status of translation. Some features have arrived, 
 
 | Language | Completion | Contributors |
 | -------- | ---------- | ------------ |
-| de    | `[################--------]` 16/24 (67%) | ToGreedy, Beff42 |
+| de    | `[########################]` 24/24 (100%) | ToGreedy, Beff42, MKBraun |
 | en    | `[########################]` 24/24 (100%) | deuce, lupestro |
 | es    | `[################--------]` 16/24 (67%) | lozanoje, WallaceMcGregor |
 | fr    | `[############------------]` 12/24 (50%) | Aymeeric |

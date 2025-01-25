@@ -1,6 +1,10 @@
-import { CounterTypes, EffectCounter } from './api.js';
-import { updateCountdownFont } from "./countdown.js";
+import DefaultCounterConfig from './defaultCounterConfig.js';
+import { resetFontCache } from './rendering.js';
 
+/**
+ * List of system ids that are incompatible with the default mouse keybinds.
+ * @type {Array.<string>}
+ */
 const noMouseSupportSystems = ["pf2e"]
 
 /**
@@ -15,7 +19,7 @@ export const registerSettings = function() {
 		config: true,
 		type: Boolean,
 		default: !noMouseSupportSystems.some(systemId => game.system.id === systemId),
-		onChange: updateTokenHud
+        onChange: updateTokenHud,
 	});
 
 	game.settings.register("statuscounter", "rebindNumberKeys", {
@@ -25,7 +29,7 @@ export const registerSettings = function() {
 		config: true,
 		type: Boolean,
 		default: true,
-		onChange: updateTokenHud
+        onChange: updateTokenHud,
 	});
 
     game.settings.register("statuscounter", "multiSelect", {
@@ -34,7 +38,7 @@ export const registerSettings = function() {
         scope: "user",
         config: true,
         type: Boolean,
-        default: true
+        default: true,
     });
 
 	game.settings.register("statuscounter", "displayOne", {
@@ -49,7 +53,7 @@ export const registerSettings = function() {
 			"never": "statuscounter.displayOne.never"
 		},
 		default: "countdown",
-		onChange: updateVisibility
+        onChange: updateVisibility,
 	});
 	
 	game.settings.register("statuscounter", "counterFontSize", {
@@ -59,7 +63,7 @@ export const registerSettings = function() {
 		config: true,
 		type: Number,
 		default: 16,
-		onChange: updateCounters
+        onChange: updateCounters,
 	});
 	
 	game.settings.register("statuscounter", "counterColor", {
@@ -69,23 +73,34 @@ export const registerSettings = function() {
 		config: true,
 		type: String,
 		default: "00ffff",
-		onChange: updateCounters
-	});
+        onChange: updateCounters,
+    });
 
-    game.settings.register("statuscounter", "defaultType", {
-        name: game.i18n.localize("statuscounter.defaultType.name"),
-        hint: game.i18n.localize("statuscounter.defaultType.hint"),
+    game.settings.register("statuscounter", "countdownColor", {
+        name: game.i18n.localize("statuscounter.countdownColor.name"),
+        hint: game.i18n.localize("statuscounter.countdownColor.hint"),
         scope: "world",
         config: true,
         type: String,
-        choices: Object.keys(CounterTypes.types).reduce((choices, type) => {
-            choices[type] = game.i18n.localize(type);
-            return choices;
-        }, {}),
-        default: "statuscounter.simple"
+        default: "ffff00",
+        onChange: updateCounters,
     });
 
-	updateFont();
+    game.settings.register("statuscounter", "counterDefaults", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {},
+    });
+
+    game.settings.registerMenu("statuscounter", "counterDefaults", {
+        name: game.i18n.localize("statuscounter.counterDefaults.name"),
+        hint: game.i18n.localize("statuscounter.counterDefaults.hint"),
+        label: game.i18n.localize("statuscounter.counterDefaults.reset"),
+        icon: "fas fa-bars",
+        type: DefaultCounterConfig,
+        restricted: true,
+    });
 }
 
 /**
@@ -96,41 +111,25 @@ function updateTokenHud() {
 }
 
 /**
- * Updates the visibility of all counters with one stack. When set to countdown
- * 	only, it is hidden by default (since we don't know the previous value).
+ * Updates the visibility of all counters with one stack.
  */
-function updateVisibility() {
-	let defaultVisibility = game.settings.get("statuscounter", "displayOne") === "always";
-	for (let token of canvas.tokens.ownedTokens) {
-        for (let counter of foundry.utils.getProperty(token, "flags.statuscounter.effectCounters") ?? []) {
-			if (counter.value <= 1) counter.visible = defaultVisibility;
-		}
-
-		for (let effect of token.actor?.effects ?? []) {
-            let counter = foundry.utils.getProperty(effect, "flags.statuscounter.counter");
-			if (counter && counter.value <= 1) counter.visible = defaultVisibility;
-		}
-		
-		token.drawEffects();
-	}
+async function updateVisibility() {
+    const displayOne = game.settings.get("statuscounter", "displayOne");
+    for (const actor of game.actors) {
+        for (const effect of actor.effects) {
+            const counter = effect.statusCounter;
+            if (counter.displayValue === 1
+                && ((displayOne === "always" && !counter.visible) || (displayOne === "never" && counter.visible))) {
+                await effect.update({ "flags.statuscounter.visible": !counter.visible });
+            }
+        }
+    }
 }
 
 /**
  * Redraws the status effects (and counters) to display new settings.
  */
 function updateCounters() {
-	updateFont();
-	updateCountdownFont();
-	EffectCounter.drawCounters();
-}
-
-/**
- * Updates the font size and color for the default type from the configuration.
- */
-function updateFont() {
-	let font = CONFIG.canvasTextStyle.clone();
-    font.fontSize = game.settings.get("statuscounter", "counterFontSize");
-	font.fill = '#' + game.settings.get("statuscounter", "counterColor").replace('#', '');
-	CounterTypes.setFont("statuscounter.simple", font);
-	CounterTypes.setFont("statuscounter.multiplier", font);
+    resetFontCache();
+    for (const token of canvas.tokens.ownedTokens) token.drawEffects();
 }

@@ -5,7 +5,7 @@ import { FileIndexer } from './fileIndexer.js';
 import { PresetBrowser } from './browser/browserApp.js';
 import { Preset, VirtualFilePreset } from './preset.js';
 import { Spawner } from './spawner.js';
-import { FolderState, decodeURIComponentSafely, parseSearchQuery, placeableToData } from './utils.js';
+import { FolderState, decodeURIComponentSafely, matchPreset, parseSearchQuery, placeableToData } from './utils.js';
 
 const DEFAULT_PACK = 'world.mass-edit-presets-main';
 export const META_INDEX_ID = 'MassEditMetaData';
@@ -437,45 +437,32 @@ export class PresetCollection {
     return await folderDoc.delete({ deleteSubfolders: deleteAll, deleteContents: deleteAll });
   }
 
-  static _searchPresetTree(tree, options) {
+  static _searchPresetTree(tree, search, negativeSearch) {
     const presets = [];
 
-    if (!options.folder) this._searchPresetList(tree.allPresets, presets, options);
-    tree.allFolders.forEach((folder) => this._searchPresetFolder(folder, presets, options));
+    if (!search?.folder) this._searchPresetList(tree.allPresets, presets, search, negativeSearch);
+    tree.allFolders.forEach((folder) => this._searchPresetFolder(folder, presets, search, negativeSearch));
 
     return presets;
   }
 
-  static _searchPresets(presets, options) {
+  static _searchPresets(presets, search, negativeSearch) {
     const results = [];
-
-    // Make sure terms are provided in lowercase
-    if (options.terms) options.terms = options.terms.map((t) => t.toLowerCase());
-
-    this._searchPresetList(presets, results, options);
-
+    this._searchPresetList(presets, results, search, negativeSearch);
     return results;
   }
 
-  static _searchPresetFolder(folder, presets, options) {
-    if (options.folder && folder.name !== options.folder) return;
-    this._searchPresetList(folder.presets, presets, options, folder.name);
+  static _searchPresetFolder(folder, presets, search, negativeSearch) {
+    if (search?.folder && folder.name !== search.folder) return;
+    this._searchPresetList(folder.presets, presets, search, negativeSearch);
   }
 
-  static _searchPresetList(toSearch, presets, { name, type, tags, terms } = {}) {
+  static _searchPresetList(toSearch, presets, search, negativeSearch) {
     for (const preset of toSearch) {
-      let match = true;
-      if (name && name !== preset.name) match = false;
-      if (type && type !== preset.documentName) match = false;
-      if (terms && !terms.every((t) => preset.name.toLowerCase().includes(t))) match = false;
-      if (match && tags) {
-        if (tags.matchAny) match = tags.tags.some((t) => preset.tags.includes(t));
-        else match = tags.tags.every((t) => preset.tags.includes(t));
-      }
-
-      if (match) presets.push(preset);
+      if (matchPreset(preset, search, negativeSearch)) presets.push(preset);
     }
   }
+
   /**
    * Build preset index for 'Spotlight Omnisearch' module
    * @param {Array[CONFIG.SpotlightOmnisearch.SearchTerm]} soIndex
@@ -570,7 +557,7 @@ export class PresetAPI {
    * @param {object} [options={}]
    * @param {String} [options.uuid]                      Preset UUID
    * @param {String} [options.name]                      Preset name
-   * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {Array[String]} [options.types]              Preset types ("Token", "Tile", etc)
    * @param {String} [options.query]                     Search query to be ran. Format: "blue #castle @AmbientLight"
    *                                                     Terms: blue, Tags: castle, Type: AmbientLight
    *                                                     None, or all component of the query can be provided or excluded
@@ -583,7 +570,7 @@ export class PresetAPI {
   static async getPreset({
     uuid,
     name,
-    type,
+    types,
     folder,
     tags,
     query,
@@ -594,29 +581,26 @@ export class PresetAPI {
     full = true,
   } = {}) {
     if (uuid) return await PresetCollection.get(uuid, { full });
-    else if (!name && !type && !folder && !tags && !query)
-      throw Error('UUID, Name, Type, Folder, and/or Query required to retrieve a Preset.');
+    else if (!name && !types && !folder && !tags && !query)
+      throw Error('UUID, Name, Types, Folder, and/or Query required to retrieve a Preset.');
+    else if (query && (types || folder || tags || name))
+      throw console.warn(`When 'query' is provided 'types', 'folder', 'tags', and 'name' arguments are ignored.`);
 
-    let terms;
+    let search, negativeSearch;
     if (query) {
-      ({ terms, tags, type } = parseSearchQuery(query, { matchAny }));
-    }
-
-    if (tags) {
-      if (Array.isArray(tags)) tags = { tags, matchAny };
-      else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
-    }
-
-    const presets = PresetCollection._searchPresetTree(
-      await PresetCollection.getTree(type, { externalCompendiums, virtualDirectory }),
-      {
-        name,
-        type,
-        terms,
-        folder,
-        tags,
+      ({ search, negativeSearch } = parseSearchQuery(query, { matchAny }));
+    } else {
+      if (tags) {
+        if (Array.isArray(tags)) tags = { tags, matchAny };
+        else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
       }
-    );
+
+      search = { name, types, folder, tags };
+    }
+    if (!search && !negativeSearch) return null;
+
+    const tree = await PresetCollection.getTree(null, { externalCompendiums, virtualDirectory });
+    const presets = PresetCollection._searchPresetTree(tree, search, negativeSearch);
 
     let preset = random ? presets[Math.floor(Math.random() * presets.length)] : presets[0];
     if (preset) {
@@ -631,7 +615,7 @@ export class PresetAPI {
    * @param {object} [options={}]
    * @param {String|Array[String]} [options.uuid]        Preset UUID/s
    * @param {String} [options.name]                      Preset name
-   * @param {String} [options.type]                      Preset type ("Token", "Tile", etc)
+   * @param {Array[String]} [options.types]              Preset types ("Token", "Tile", etc)
    * @param {String} [options.query]                     See PresetAPI.getPreset
    * @param {String} [options.folder]                    Folder name
    * @param {String|Array[String]|Object} [options.tags] See PresetAPI.getPreset
@@ -640,7 +624,7 @@ export class PresetAPI {
   static async getPresets({
     uuid,
     name,
-    type,
+    types,
     query,
     matchAny = true,
     folder,
@@ -654,37 +638,44 @@ export class PresetAPI {
     if (uuid) {
       results = [];
       const uuids = Array.isArray(uuid) ? uuid : [uuid];
-      results = await PresetCollection.getBatch(uuids, { full });
-    } else if (!name && !type && !folder && !tags && !query) {
+      return await PresetCollection.getBatch(uuids, { full });
+    } else if (!name && !types && !folder && !tags && !query)
       throw Error('UUID, Name, Type, Folder, Tags, and/or Query required to retrieve Presets.');
-    } else {
-      let terms;
-      if (query) {
-        ({ terms, type, tags } = parseSearchQuery(query, { matchAny }));
-      }
+    else if (query && (types || folder || tags || name))
+      throw console.warn(`When 'query' is provided 'types', 'folder', 'tags', and 'name' arguments are ignored.`);
 
+    let search, negativeSearch;
+    if (query) {
+      ({ search, negativeSearch } = parseSearchQuery(query, { matchAny }));
+    } else {
       if (tags) {
         if (Array.isArray(tags)) tags = { tags, matchAny };
         else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
       }
 
-      if (presets) {
-        results = PresetCollection._searchPresets(presets, { name, type, terms, folder, tags });
-      } else {
-        results = PresetCollection._searchPresetTree(
-          await PresetCollection.getTree(type, { externalCompendiums, virtualDirectory }),
-          {
-            name,
-            type,
-            terms,
-            folder,
-            tags,
-          }
-        );
-      }
+      search = { name, types, folder, tags };
+    }
+    if (!search && !negativeSearch) return [];
+
+    if (presets) {
+      presets = PresetCollection._searchPresets(presets, search, negativeSearch);
+    } else {
+      presets = PresetCollection._searchPresetTree(
+        await PresetCollection.getTree(null, { externalCompendiums, virtualDirectory }),
+        search,
+        negativeSearch
+      );
     }
 
-    return results;
+    // Incase these presets are to be rendered, we set the _render and _visible flags to true
+    // as we might be re-using presets that have been utilized by other forms and had these flags
+    // toggled
+    presets.forEach((p) => {
+      p._render = true;
+      p._visible = true;
+    });
+
+    return presets;
   }
 
   /**

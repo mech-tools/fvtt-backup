@@ -1,15 +1,16 @@
-import { ActiveEffectCounter, EffectCounter, CounterTypes } from "./api.js";
-import { HudContextMenu } from "./hudContextMenu.js";
+import { queueCreation } from "./counterTypes.js";
+import { findEffectById } from "./effectUtils.js";
+import { on, stopEvent } from "./jsUtils.js";
 
 /**
  * The currently hovered token HUD entity and status icon element.
  */
-var activeEffectHud, activeEffectHudIcon;
+let activeEffectHud, activeEffectHudIcon;
 
 /**
  * Flag used to block multiple asynchronous create operations.
  */
-var creationState = new Set();
+const creationState = new Set();
 
 /**
  * Applies keybinds to the given entity to change status counters. Which 
@@ -19,165 +20,84 @@ var creationState = new Set();
  * @param {jQuery} html The HTML code of the element.
  */
 export const registerKeybinds = function (entity, html) {
-    let effectHud = html.find(".status-effects");
-    if (!effectHud.length) return;
+    let effectHud = html[0].querySelector(".status-effects");
+    if (!effectHud) return;
 
     if (game.settings.get("statuscounter", "rebindMouseButtons")) {
-        effectHud.off("click contextmenu", ".effect-control");
-        effectHud.on("click.statuscounter", ".effect-control", onEffectClick.bind(entity))
-            .on("contextmenu.statuscounter", ".effect-control", onEffectRightClick.bind(entity));
+        on(effectHud, "click", ".effect-control", onEffectClick.bind(entity), true);
+        on(effectHud, "contextmenu", ".effect-control", onEffectRightClick.bind(entity), true);
     }
-
-    clickFirst(effectHud.find(".effect-control"), onEffectCtrlClick);
 
     if (game.settings.get("statuscounter", "rebindNumberKeys")) {
-        effectHud.on("mouseover.statuscounter", ".effect-control", onEffectMouseOver.bind(entity))
-            .on("mouseout.statuscounter", ".effect-control", onEffectMouseOut.bind(entity));
-    }
-
-    createContextMenu(entity.object.document, html);
-}
-
-/**
- * Binds a click event handler so that it is executed before other handlers.
- * @param {jQuery} elements The elements to bind the listener on.
- * @param {Function} handler The handler of the event.
- */
-function clickFirst(elements, handler) {
-    elements.click(handler);
-    for (const el of elements) {
-        const handlers = jQuery._data(el).events.click;
-        if (handlers.length > 1) handlers.unshift(handlers.pop());
+        on(effectHud, "mouseover", ".effect-control", onEffectMouseOver.bind(entity));
+        on(effectHud, "mouseout", ".effect-control", onEffectMouseOut.bind(entity));
     }
 }
 
 /**
- * Stops all further processing for the given event.
- * @param {jQuery.Event} event The event to stop.
- */
-function stopEvent(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-}
-
-/**
- * Add a custom context menu to the effect HUD. The menu contains an entry for
- *  each known counter type, allowing the user to change it.
- * @param {TokenDocument} token The token document associated with the HUD.
- * @param {jQuery} effectHud The jQuery element of the HUD.
- */
-function createContextMenu(token, effectHud) {
-    let entries = [];
-    for (let counterType of Object.keys(CounterTypes.types)) {
-        entries.push(
-            {
-                name: counterType,
-                icon: "",
-                condition: function (contextElement) {
-                    let counter = EffectCounter.findCounter(token, contextElement.attr("src"));
-                    if (!counter || !counter.allowType(counterType)) return false;
-
-                    this.icon = counter.type === this.name
-                        ? "<span class='current-counter-type' style='visibility: inherit;'>&bull;</span>"
-                        : "<span class='current-counter-type'>&bull;</span>";
-                    return true;
-                },
-                callback: function (contextElement) {
-                    let counter = EffectCounter.findCounter(token, contextElement.attr("src"));
-                    if (counter && counter.type !== this.name) {
-                        counter.changeType(this.name, token);
-                    }
-                }
-            });
-    }
-
-    new HudContextMenu(effectHud, ".effect-control.active", entries, { eventName: "ctrl-click" });
-}
-
-/**
- * Handles the click event on a status icon when the CTRL key is pressed by
- *  redrecting the event to a custom "ctrl-click" name and stopping propagation.
- * @param {jQuery.Event} event The mouse click event triggered by jQuery.
- */
-function onEffectCtrlClick(event) {
-    if (event.ctrlKey || event.metaKey) {
-        const modifiedEvent = new CustomEvent("ctrl-click", { bubbles: true });
-        event.currentTarget.dispatchEvent(modifiedEvent);
-        stopEvent(event);
-    }
-}
-
-/**
- * Handles the click event on a status icon. If the shift key is pressed, the 
- *  status is applied as overlay. Otherwise, the status counter is incremented 
- *  by 1 and the token is updated accordingly.
- * @param {jQuery.Event} event The mouse click event triggered by jQuery.
+ * Handles the click event on a status icon. If the shift key is pressed, the status is applied as overlay. Otherwise,
+ *  the status counter is incremented by 1 and the token is updated accordingly.
+ * @param {PointerEvent} event The mouse click event.
  */
 function onEffectClick(event) {
+    if (creationState.has(this.object)) return;
+
+    const { statusId } = event.delegateTarget.dataset;
     if (event.shiftKey) {
-        const iconPath = findIconPath(event);
-        const isActive = hasOverlay(this.object.document, iconPath);
-        const tokens = getUniqueSelectedTokens(this.object);
-        for (const token of tokens) {
-            if (token === this.object || isActive === hasOverlay(token.document, iconPath)) {
-                toggleEffect(token, event, true);
+        toggleOverlay(this.object, getUniqueSelectedTokens(this.object), statusId);
+    } else if (event.ctrlKey || event.metaKey) {
+        this.object.actor?.effects
+            .find(effect => effect.statuses.has(statusId))?.statusCounter
+            .configure();
+    } else {
+        for (const token of getUniqueSelectedTokens(this.object)) {
+            const effect = findEffectById(token.actor, statusId);
+            if (effect) {
+                effect.statusCounter.increment(event.altKey);
+            } else {
+                if (event.altKey) queueCreation(token, statusId, 1, true);
+                toggleEffect(token, statusId, false);
             }
         }
-    } else if (event.altKey) {
-        const iconPath = findIconPath(event);
-        const effect = CONFIG.statusEffects.find(e => e.icon === iconPath || e.img === iconPath);
-        const statusName = effect
-            ? game.i18n.localize(effect.name ?? effect.label)
-            : iconPath.split("\\").pop().split("/").pop().split(".").shift();
-        const valuePrompt = new Dialog({
-            title: game.i18n.localize("statuscounter.stackInput.title"),
-            content: `<p>${game.i18n.format("statuscounter.stackInput.content", { status: statusName })}</p>
-                <p><input autofocus type="number" name="statusCount" value="1"/></p>`,
-            buttons: {
-                ok: {
-                    icon: '<i class="fas fa-check"></i>',
-                    label: game.i18n.localize("statuscounter.stackInput.button"),
-                    callback: html => {
-                        const input = html[0].querySelector("input[name='statusCount']");
-                        changeIconCounter(event, this, input.valueAsNumber, false);
-                    }
-                }
-            },
-            default: "ok"
-        });
-        valuePrompt.render(true);
-    } else {
-        changeIconCounter(event, this, 1, true);
     }
 
     stopEvent(event);
 }
 
 /**
- * Handles the contextmenu event on a status icon by decrementing the status 
- *  counter by 1 and updating the token accordingly.
- * @param {jQuery.Event} event The mouse right click event triggered by jQuery.
+ * Handles the contextmenu event on a status icon by decrementing the status counter by 1 and updating the token
+ *  accordingly.
+ * @param {PointerEvent} event The mouse right click event.
  */
 function onEffectRightClick(event) {
+    if (creationState.has(this.object)) return;
     if (ui.context) ui.context.close();
-    changeIconCounter(event, this, -1, true);
+
+    const { statusId } = event.delegateTarget.dataset;
+    const tokens = getUniqueSelectedTokens(this.object);
+    const effects = tokens.map(token => findEffectById(token.actor, statusId)).filter(Boolean);
+
+    if (effects.length === 0) {
+        toggleOverlay(this.object, tokens, statusId);
+    } else {
+        for (const effect of effects) effect.statusCounter.decrement(event.altKey);
+    }
     stopEvent(event);
 }
 
 /**
- * Handles the mouseover event onto a status icon to store the active entity so 
- *  that it can be accessed by the global key event handler.
- * @param {jQuery.Event} event The mouse over event triggered by jQuery.
+ * Handles the mouseover event onto a status icon to store the active entity so that it can be accessed by the global
+ *  key event handler.
+ * @param {PointerEvent} event The mouse over event.
  */
 function onEffectMouseOver(event) {
     activeEffectHud = this;
-    activeEffectHudIcon = event.currentTarget;
+    activeEffectHudIcon = event.delegateTarget;
 }
 
 /**
- * Handles the mouseout event off a status icon to reset the active entity so 
- *  that it can no longer be accessed by the global key event handler.
+ * Handles the mouseout event off a status icon to reset the active entity so that it can no longer be accessed by the
+ *  global key event handler.
  */
 function onEffectMouseOut() {
     if (activeEffectHud === this) {
@@ -186,93 +106,68 @@ function onEffectMouseOut() {
 }
 
 /**
- * Handles the keydown event for the currently active status icon HUD element. 
- *  If none is active or the key is not a digit, this handler returns 
- *  immediately. Otherwise, the pressed digit is set as the counter for the 
- *  active status icon and the associated token is updated accordingly.
- *  Note that this handler modifies the event target and stops propagation if 
- *  any counters are changed.
+ * Handles the keydown event for the currently active status icon HUD element. If none is active or the key is not a
+ *  digit, this handler returns immediately. Otherwise, the pressed digit is set as the counter for the active status
+ *  icon and the associated token is updated accordingly. Note that this handler modifies the event target and stops
+ *  propagation if any counters are changed.
  * @param {jQuery.Event} event The key down event triggered by jQuery.
  */
 export const onEffectKeyDown = function (event) {
-    if (!activeEffectHud || !activeEffectHud.object.visible) return;
+    if (!activeEffectHud || !activeEffectHud.object.visible || creationState.has(this.object)) return;
 
     let keyValue = parseInt(event.key);
     if (Number.isNaN(keyValue)) return;
 
     event.currentTarget = activeEffectHudIcon;
-    changeIconCounter(event, activeEffectHud, keyValue, false);
-    stopEvent(event);
-}
+    const { statusId } = event.currentTarget.dataset;
 
-/**
- * Attempts to retreive the source image path from the event target.
- * @param {jQuery.Event} event The event triggered by jQuery.
- */
-function findIconPath(event) {
-    return $(event.currentTarget).attr("src");
-}
-
-/**
- * Modifies a status counter by adding, subtracting or setting the new value 
- *  based on the element associated with the event. If the status is inactive, 
- *  it is toggled or applied as an overlay (replicating the default Foundry 
- *  behavior).
- * @param {jQuery.Event} event The event triggered by jQuery.
- * @param {TokenHUD} tokenHud The Foundry entity associated with the event.
- * @param {Number} value The counter value to apply. This can be negative for incremental usage.
- * @param {Boolean} incremental Flag to indicate whether the value should be set or added.
- */
-function changeIconCounter(event, tokenHud, value, incremental) {
-    // Don't increment by 0
-    if (incremental && value == 0) return;
-
-    const iconPath = findIconPath(event);
-    const tokenDocs = getUniqueSelectedTokens(tokenHud.object).map(t => t.document);
-    let baseHasOverlay;
-    for (const tokenDoc of tokenDocs) {
-        let effectCounter = EffectCounter.findCounter(tokenDoc, iconPath);
-
-        // Don't initialize with negative or 0 values
-        if (value <= 0 && !effectCounter) {
-            if (incremental && (tokenDoc === tokenHud.object.document
-                || (baseHasOverlay ??= hasOverlay(tokenHud.object.document, iconPath)) === hasOverlay(tokenDoc, iconPath))) {
-                toggleEffect(tokenDoc.object, event, true);
-            }
-            continue;
-        }
-
-        if (!effectCounter) {
-            // Do not allow parallel execution of effect creation to prevent inconsistent data.
-            if (creationState.has(tokenDoc.id)) {
-                console.warn("statuscounter | Prevented parallel effect creation.");
-                continue;
-            }
-
-            effectCounter = event.currentTarget.dataset.statusId
-                ? new ActiveEffectCounter(value, iconPath, tokenDoc)
-                : new EffectCounter(value, iconPath, tokenDoc);
-            creationState.add(tokenDoc.id);
-            effectCounter.update(tokenDoc).finally(() => creationState.delete(tokenDoc.id));
-        } else {
-            const newValue = incremental ? (value + effectCounter.getValue(tokenDoc) ?? 0) : value;
-            effectCounter.setValue(newValue, tokenDoc);
+    for (const token of getUniqueSelectedTokens(activeEffectHud.object)) {
+        const effect = findEffectById(token.actor, statusId);
+        if (effect) {
+            effect.statusCounter.set(keyValue, event.altKey);
+        } else if (keyValue != 0) {
+            queueCreation(token, statusId, keyValue, event.altKey);
+            toggleEffect(token, statusId, false);
         }
     }
 
-    return false;
+    stopEvent(event);
 }
 
 /**
  * Toggles an effect using FoundryVTT workflows regardless of whether a HUD is currently active.
  * @param {Token} token The token to toggle the effect on.
- * @param {jQuery.Event} event The event that triggered the toggle.
+ * @param {string} statusId The id of the status to toggle.
  * @param {boolean} overlay Indicates whether the effect should be an overlay.
  * @returns {Promise} A promise representing the operation.
  */
-function toggleEffect(token, event, overlay) {
-    const statusId = event.currentTarget.dataset.statusId;
-    token.actor?.toggleStatusEffect(statusId, { overlay });
+async function toggleEffect(token, statusId, overlay) {
+    try {
+        creationState.add(token);
+        const options = { overlay };
+
+        // SFRPG checks for existance of the property instead of its value.
+        if (!overlay && game.system.id === "sfrpg") delete options.overlay;
+
+        await token.actor?.toggleStatusEffect(statusId, options);
+    } finally {
+        creationState.delete(token);
+    }
+}
+
+/**
+ * Toggles an effect as overlay for all selected tokens, unifying the state between them if necessary.
+ * @param {Token} token The token to copy the overlay state from.
+ * @param {Token[]} selectedTokens An array of currently selected tokens.
+ * @param {string} statusId The id of the status to toggle.
+ */
+function toggleOverlay(token, selectedTokens, statusId) {
+    const isActive = hasOverlay(token.document, statusId);
+    for (const selectedToken of selectedTokens) {
+        if (selectedToken === token || isActive === hasOverlay(selectedToken.document, statusId)) {
+            toggleEffect(selectedToken, statusId, true);
+        }
+    }
 }
 
 /**
@@ -290,9 +185,9 @@ function getUniqueSelectedTokens(token) {
 /**
  * Checks if the given token document has an overlay effect matching the given icon path.
  * @param {TokenDocument} tokenDoc The token document to check.
- * @param {string} icon The icon path of the effect.
+ * @param {string} statusId The id of the status to check.
  * @returns {boolean} True if the effect exists as an overlay, false otherwise.
  */
-function hasOverlay(tokenDoc, icon) {
-    return tokenDoc.actor?.effects.some(e => e.flags.core?.overlay && e.img === icon);
+function hasOverlay(tokenDoc, statusId) {
+    return tokenDoc.actor?.effects.some(e => e.flags.core?.overlay && e.statuses.has(statusId));
 }

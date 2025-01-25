@@ -12,11 +12,6 @@
             "name": "Alle ausgewählten Figuren bearbeiten",
             "hint": "Ändert Effekte und Zähler für alle ausgewählten Figuren."
         },
-        "stackInput": {
-            "title": "Neuen Wert eingeben",
-            "content": "Gib eine neue Anzahl für den Status <strong>{status}</strong> ein:",
-            "button": "Anzahl anwenden"
-        },
         "displayOne": {
             "name": "'1' anzeigen",
             "hint": "Konfiguriert wann bzw. ob der Zähler angezeigt wird, wenn nur der Status nur einmal vorhanden ist.",
@@ -36,13 +31,37 @@
             "name": "Farbe der Countdowns",
             "hint": "Die Farbe von kampfbasierten Countdown-Zählern im RRGGBB Format."
         },
-        "defaultType": {
-            "name": "Standardtyp",
-            "hint": "Der Standardtyp von Zählern, sofern für den Effekt nichts anderes konfiguriert ist."
+        "counterDefaults": {
+            "name": "Standards zurücksetzen",
+            "hint": "Öffnet einen Dialog, um Standardeinstellungen für einen oder mehrere Statuseffekte zurückzusetzen.",
+            "reset": "Ausgewählte Effekte zurücksetzen",
+            "none": "Es sind keine Standardeinstellungen vorhanden."
         },
-        "simple": "Einfach",
-        "countdown_turn": "Countdown (Aktion)",
-        "countdown_round": "Countdown (Runde)",
-        "multiplier": "Multiplikator"
+        "config": {
+            "title": "Zähler-Konfiguration",
+            "value": "Anzahl",
+            "type": {
+                "name": "Art",
+                "default": "Einfach"
+            },
+            "durationType": {
+                "name": "Dauer",
+                "hint": "Bestimmt, wie die verbleibende Dauer des Effekts angezeigt wird.",
+                "none": "Keine",
+                "round": "Runden",
+                "turn": "Züge"
+            },
+            "localEffect": "Lokaler Effekt {name} kann nicht konfiguriert werden.",
+            "modifyDuration": {
+                "name": "Dauer modifizieren",
+                "hint": "Maus- und Tastatureingaben für das Token verändern die Dauer (anstatt die Anzahl)."
+            },
+            "multiplyEffect": {
+                "name": "Wirkung verstärken",
+                "hint": "Multipliziert die Auswirkungen des Effekts mit der Anzahl des Zählers. Dies wirkt sich nur auf additive und multiplikative Effekte aus."
+            },
+            "save": "Speichern",
+            "saveDefault": "Speichern als Standard für <strong>{status}</strong>"
+        }
     }
 }

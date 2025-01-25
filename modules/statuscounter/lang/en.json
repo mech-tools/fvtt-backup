@@ -12,11 +12,6 @@
             "name": "Modify all selected tokens",
             "hint": "Adjusts effects and counters for all selected tokens."
         },
-        "stackInput": {
-            "title": "Enter new value",
-            "content": "Enter the new amount of stacks for status <strong>{status}</strong>:",
-            "button": "Apply counter"
-        },
         "displayOne": {
             "name": "Display '1'",
             "hint": "Configures when/if the counter should be displayed for a single stack.",
@@ -36,13 +31,37 @@
             "name": "Countdown color",
             "hint": "The color of combat countdowns in RRGGBB format."
         },
-        "defaultType": {
-            "name": "Default type",
-            "hint": "The default counter type if the effect has no configured type."
+        "counterDefaults": {
+            "name": "Reset defaults",
+            "hint": "Opens a dialog to reset default configurations for one or more status effects.",
+            "reset": "Reset selected effects",
+            "none": "There are no defaults configured."
         },
-        "simple": "Simple",
-        "countdown_turn": "Countdown (Turn)",
-        "countdown_round": "Countdown (Round)",
-        "multiplier": "Multiplier"
+        "config": {
+            "title": "Counter configuration",
+            "value": "Amount",
+            "type": {
+                "name": "Type",
+                "default": "Simple"
+            },
+            "durationType": {
+                "name": "Duration",
+                "hint": "Determines how the remaining duration of the effect is displayed.",
+                "none": "None",
+                "round": "Rounds",
+                "turn": "Turns"
+            },
+            "localEffect": "Local effect {name} cannot be configured.",
+            "modifyDuration": {
+                "name": "Modify duration",
+                "hint": "Mouse and keyboard inputs for the token change the duration (instead of the amount)."
+            },
+            "multiplyEffect": {
+                "name": "Amplify effect",
+                "hint": "Multiplies the modifications of the effect with the amount of the counter. This only applies to additive and multiplicative modifiers."
+            },
+            "save": "Save",
+            "saveDefault": "Save as default for <strong>{status}</strong>"
+        }
     }
 }

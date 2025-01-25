@@ -12,11 +12,6 @@
             "name": "Modificar Tokens Selecionados",
             "hint": "Ajusta efeitos e contadores para todos os tokens selecionados."
         },
-        "stackInput": {
-            "title": "Insirir Novo Valor",
-            "content": "Digite o novo número dos acúmulos do status <strong>{status}</strong>:",
-            "button": "Aplicar Acúmulo"
-        },
         "displayOne": {
             "name": "Exibir '1'",
             "hint": "Configura quando ou se o contador deve ser exibido para um único acúmulo.",
@@ -36,13 +31,37 @@
             "name": "Cor da Contagem Regressiva",
             "hint": "A cor das contagens regressivas de combate no formato RRGBBB."
         },
-        "defaultType": {
-            "name": "Tipo Padrão",
-            "hint": "O tipo de contador padrão se o efeito não tiver um tipo configurado."
+        "counterDefaults": {
+            "name": "Redefinir Padrões",
+            "hint": "Abre uma janela para redefinir as configurações padrão para um ou mais efeitos de status.",
+            "reset": "Redefinir Efeitos Selecionados",
+            "none": "Não há padrões configurados."
         },
-        "simple": "Simples",
-        "countdown_turn": "Contagem Regressiva (Turno)",
-        "countdown_round": "Contagem Regressiva (Rodada)",
-        "multiplier": "Multiplicador"
+        "config": {
+            "title": "Configuração do Contador",
+            "value": "Quantidade",
+            "type": {
+                "name": "Tipo",
+                "default": "Simples"
+            },
+            "durationType": {
+                "name": "Duração",
+                "hint": "Determina como a duração restante do efeito é exibida.",
+                "none": "Nenhum",
+                "round": "Rodada",
+                "turn": "Turno"
+            },
+            "localEffect": "Local effect {name} cannot be configured.",
+            "modifyDuration": {
+                "name": "Modificar Duração",
+                "hint": "As entradas do mouse e teclado para o token alteram a duração (em vez da quantidade)."
+            },
+            "multiplyEffect": {
+                "name": "Amplificar Efeito",
+                "hint": "Multiplica as modificações do efeito pela quantidade do contador. Isso se aplica apenas a modificadores aditivos e multiplicativos."
+            },
+            "save": "Salvar",
+            "saveDefault": "Salvar como padrão para <strong>{status}</strong>"
+        }
     }
 }
