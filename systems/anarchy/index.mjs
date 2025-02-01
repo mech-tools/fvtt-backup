@@ -2907,7 +2907,7 @@ class S extends Actor {
       initiative: A.sumModifiers(this.items, "other", "initiative")
     }, Object.entries(this.system.monitors).forEach((e) => {
       e[1].maxBonus = A.sumMonitorModifiers(this.items, e[0], "max"), e[1].resistanceBonus = A.sumMonitorModifiers(this.items, e[0], "resistance");
-    }), Object.entries(this.system.attributes).forEach((e) => e[1].total = this.getAttributeValue(e[0]));
+    }), this.system.attributes && Object.entries(this.system.attributes).forEach((e) => e[1].total = this.getAttributeValue(e[0]));
   }
   getAttributes() {
     return [];
@@ -3349,6 +3349,7 @@ class ye extends ActorSheet {
         ownerActor: this.actor.getOwnerActor(),
         ownedActors: this.actor.getOwnedActors(),
         options: {
+          limited: this.document.limited,
           owner: this.document.isOwner,
           cssClass: this.isEditable ? "editable" : "locked"
         },
@@ -3944,6 +3945,7 @@ const Kt = [
   "systems/anarchy/templates/actor/character/metatype.hbs",
   "systems/anarchy/templates/actor/character/social-celebrity.hbs",
   // character parts
+  "systems/anarchy/templates/actor/character-limited.hbs",
   "systems/anarchy/templates/actor/parts/words.hbs",
   "systems/anarchy/templates/actor/parts/contact.hbs",
   "systems/anarchy/templates/actor/parts/contacts.hbs",
