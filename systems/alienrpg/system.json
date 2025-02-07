@@ -17,7 +17,7 @@
                 "json"
             ],
             "paths": [
-                "./css/alienrpg.css",
+                "css/alienrpg.css",
                 "templates",
                 "lang"
             ]
@@ -30,11 +30,11 @@
             }
         ]
     },
-    "version": "3.2.1",
+    "version": "3.2.2",
     "compatibility": {
         "minimum": "12",
         "verified": "12",
-        "maximum": "12"
+        "maximum": "13"
     },
     "scripts": [],
     "esmodules": [
@@ -81,8 +81,13 @@
         },
         {
             "lang": "it",
-            "name": "italiano",
+            "name": "Italiano",
             "path": "lang/it.json"
+        },
+        {
+            "lang": "pl",
+            "name": "Polski",
+            "path": "lang/pl.json"
         }
     ],
     "packs": [
@@ -109,7 +114,7 @@
     "background": "systems/alienrpg/images/egg.webp",
     "socket": true,
     "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
-    "download": "https://github.com/pwatson100/alienrpg/releases/download/3.2.1/master.zip",
+    "download": "https://github.com/pwatson100/alienrpg/releases/download/3.2.2/master.zip",
     "protected": false,
     "initiative": "1d10",
     "bugs": "https://github.com/pwatson100/alienrpg/issues",

@@ -1,3 +1,24 @@
-2025/01/17-14:22:54.070963 7f5a250d7700 Recovering log #420
-2025/01/17-14:22:54.073754 7f5a250d7700 Delete type=3 #418
-2025/01/17-14:22:54.073800 7f5a250d7700 Delete type=0 #420
+2025/01/24-16:50:44.314356 7ff041141700 Recovering log #424
+2025/01/24-16:50:44.316245 7ff041141700 Level-0 table #426: started
+2025/01/24-16:50:44.319263 7ff041141700 Level-0 table #426: 133084 bytes OK
+2025/01/24-16:50:44.321963 7ff041141700 Delete type=0 #424
+2025/01/24-16:50:44.322036 7ff041141700 Delete type=3 #423
+2025/01/31-12:30:00.579343 7feb0b4e0700 Level-0 table #429: started
+2025/01/31-12:30:00.584458 7feb0b4e0700 Level-0 table #429: 220690 bytes OK
+2025/01/31-12:30:00.585559 7feb0b4e0700 Delete type=0 #427
+2025/01/31-12:30:00.587775 7feb0b4e0700 Manual compaction at level-0 from '!settings!0VveToLFfisWubw0' @ 72057594037927935 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at '!settings!ue8o1OEtJlWhb6zt' @ 4015 : 1
+2025/01/31-12:30:00.587784 7feb0b4e0700 Compacting 2@0 + 0@1 files
+2025/01/31-12:30:00.590513 7feb0b4e0700 Generated table #430@0: 7 keys, 7115 bytes
+2025/01/31-12:30:00.590528 7feb0b4e0700 Compacted 2@0 + 0@1 files => 7115 bytes
+2025/01/31-12:30:00.591318 7feb0b4e0700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/01/31-12:30:00.591427 7feb0b4e0700 Delete type=2 #429
+2025/01/31-12:30:00.591537 7feb0b4e0700 Delete type=2 #426
+2025/01/31-12:30:00.593951 7feb0b4e0700 Manual compaction at level-0 from '!settings!ue8o1OEtJlWhb6zt' @ 4015 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at (end)
+2025/01/31-12:30:00.604772 7feb0b4e0700 Manual compaction at level-1 from '!settings!0VveToLFfisWubw0' @ 72057594037927935 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at '!settings!ue8o1OEtJlWhb6zt' @ 4015 : 1
+2025/01/31-12:30:00.604787 7feb0b4e0700 Compacting 1@1 + 1@2 files
+2025/01/31-12:30:00.607075 7feb0b4e0700 Generated table #431@1: 98 keys, 35925 bytes
+2025/01/31-12:30:00.607096 7feb0b4e0700 Compacted 1@1 + 1@2 files => 35925 bytes
+2025/01/31-12:30:00.607910 7feb0b4e0700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/01/31-12:30:00.607977 7feb0b4e0700 Delete type=2 #422
+2025/01/31-12:30:00.608030 7feb0b4e0700 Delete type=2 #430
+2025/01/31-12:30:00.609324 7feb0b4e0700 Manual compaction at level-1 from '!settings!ue8o1OEtJlWhb6zt' @ 4015 : 1 .. '!settings!yhEVKvWJRoAo9hdZ' @ 0 : 0; will stop at (end)
