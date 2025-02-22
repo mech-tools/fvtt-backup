@@ -2,7 +2,7 @@
  * Manage placeable linking to one another using `links` flag.
  */
 
-import { libWrapper } from '../shim/shim.js';
+import { libWrapper } from '../libs/shim/shim.js';
 import { pickerSelectMultiLayerDocuments, updateEmbeddedDocumentsViaGM } from '../utils.js';
 import { getDataBounds } from '../presets/utils.js';
 import { LINKER_DOC_COLORS, MODULE_ID, SUPPORTED_PLACEABLES } from '../constants.js';
@@ -346,7 +346,8 @@ export class LinkerAPI {
    * @param {CanvasDocumentMixin|Array<CanvasDocumentMixin>} documents embedded document/s
    * @returns {Set<CanvasDocumentMixin>}
    */
-  static getLinkedDocuments(documents) {
+  static getLinkedDocuments(documents, { hardLinked = false } = {}) {
+    if (hardLinked) return this.getHardLinkedDocuments(documents);
     if (!Array.isArray(documents)) documents = [documents];
     documents = documents.map((d) => d.document ?? d);
 
@@ -362,14 +363,14 @@ export class LinkerAPI {
    * @param {Array<CanvasDocumentMixin>} documents
    * @returns
    */
-  static getHardLinkedDocuments(documents) {
+  static getHardLinkedDocuments(documents, array = false) {
     if (!Array.isArray(documents)) documents = [documents];
 
     const allLinked = new Set();
     documents.forEach((document) => this._findHardLinked(document, allLinked));
     documents.forEach((document) => allLinked.delete(document));
 
-    return allLinked;
+    return array ? Array.from(allLinked) : allLinked;
   }
 
   /**

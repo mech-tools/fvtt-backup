@@ -1,6 +1,6 @@
 import { MODULE_ID, SUPPORTED_PLACEABLES } from '../constants.js';
 import { Scenescape } from '../scenescape/scenescape.js';
-import { isAudio, loadImageVideoDimensions } from '../utils.js';
+import { is3DModel, isAudio, loadImageVideoDimensions } from '../utils.js';
 import { META_INDEX_FIELDS, META_INDEX_ID, PresetTree } from './collection.js';
 import { FileIndexer } from './fileIndexer.js';
 import { decodeURIComponentSafely, isVideo, placeableToData } from './utils.js';
@@ -305,7 +305,7 @@ export class Preset {
   toJSON() {
     let json = {};
     PRESET_FIELDS.forEach((field) => {
-      json[field] = this[field];
+      json[field] = foundry.utils.deepClone(this[field]);
     });
 
     json.randomize = Object.entries(json.randomize ?? {});
@@ -337,11 +337,11 @@ export class VirtualFilePreset extends Preset {
       } else {
         data.data = [{ path: data.src, radius: 20, x: 0, y: 0 }];
       }
-      data.img = data.src;
+      data.img = data.thumb ?? data.src;
     }
-
     data.gridSize = 150;
     super(data);
+    if (data.thumb) this._thumb = data.thumb;
   }
 
   get virtual() {
@@ -349,8 +349,6 @@ export class VirtualFilePreset extends Preset {
   }
 
   async load(force = false) {
-    if (this._storedReference) return this;
-
     const p = await FileIndexer.getPreset(this.uuid);
     if (p) this.tags = p.tags;
     this._storedReference = p;
@@ -358,15 +356,52 @@ export class VirtualFilePreset extends Preset {
     // Ambient Sound, no further processing required
     if (this.data[0].path) return this;
 
-    // Load image/video metadata to retrieve the width/height
+    // Width already determined, no further processing required
+    if (this.data[0].width) return this;
+
+    // Load image/video/3D Model metadata to retrieve dimensions
     const src = this.data[0].texture?.src;
 
-    let { width, height } = await loadImageVideoDimensions(src);
-
-    this.data[0].width = width ?? 100;
-    this.data[0].height = height ?? 100;
+    if (is3DModel(src) || foundry.utils.getProperty(this.data[0], 'flags.levels-3d-preview.model3d')) {
+      await this._load3DModel(src, this.data[0]);
+    } else {
+      let { width, height } = await loadImageVideoDimensions(src);
+      this.data[0].width = width ?? 100;
+      this.data[0].height = height ?? 100;
+    }
 
     return this;
+  }
+
+  async _load3DModel(src, data) {
+    src = foundry.utils.getProperty(data, 'flags.levels-3d-preview.model3d') ?? src;
+    if (!game.Levels3DPreview) {
+      foundry.utils.setProperty(data, 'flags.levels-3d-preview.model3d', src);
+      foundry.utils.setProperty(data, 'texture.src', 'modules/levels-3d-preview/assets/blank.webp');
+      return;
+    }
+
+    data.flags = {
+      'levels-3d-preview': {
+        model3d: src,
+        autoGround: true,
+        autoCenter: false,
+        cameraCollision: false,
+        castShadow: true,
+        collision: true,
+        color: '#ffffff',
+        dynaMesh: 'default',
+        sight: true,
+      },
+    };
+
+    const object3d = await game.Levels3DPreview.helpers.loadModel(src);
+    const modelBB = new game.Levels3DPreview.THREE.Box3().setFromObject(object3d.model);
+    const depth = (modelBB.max.y - modelBB.min.y) * canvas.grid.size;
+    data.flags['levels-3d-preview'].depth = depth ?? 0.05;
+    data.width = canvas.grid.size * (modelBB.max.x - modelBB.min.x);
+    data.height = canvas.grid.size * (modelBB.max.z - modelBB.min.z);
+    data.texture.src = `modules/levels-3d-preview/assets/blank.webp`;
   }
 
   async update(update) {

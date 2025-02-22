@@ -1,10 +1,12 @@
-import { MODULE_ID } from '../constants.js';
-import { editPreviewPlaceables, Picker } from '../picker.js';
-import { libWrapper } from '../shim/shim.js';
+import { MODULE_ID, PIVOTS } from '../constants.js';
+import { getDataPivotPoint } from '../presets/utils.js';
+import { libWrapper } from '../libs/shim/shim.js';
 import { enablePixelPerfectSelect } from '../tools/selectTool.js';
 import { loadImageVideoDimensions } from '../utils.js';
 import ScenescapeConfig from './configuration.js';
 import { Scenescape } from './scenescape.js';
+import { LinkerAPI } from '../linker/linker.js';
+import { editPreviewPlaceables, MassTransformer, TransformBus } from '../transformer.js';
 
 /**
  * Class to manage registering and un-registering of wrapper functions to change
@@ -61,6 +63,15 @@ export class ScenescapeControls {
     if (this._hooks.length) return;
 
     let id;
+
+    id = Hooks.on('renderTokenConfig', async (app, html, options) => {
+      const formGroup = await renderTemplate(`modules/${MODULE_ID}/templates/scenescapes/autoFlipFormGroup.html`, {
+        autoFlipX: app.object.getFlag(MODULE_ID, 'autoFlipX'),
+        autoFlipY: app.object.getFlag(MODULE_ID, 'autoFlipY'),
+      });
+      $(html).find('[name="mirrorX"]').closest('.form-group').after(formGroup);
+    });
+    this._hooks.push({ hook: 'renderTokenConfig', id });
 
     id = Hooks.on('preCreateToken', async (token, data, options, userId) => {
       if (!options.spawnPreset && token.actor?.img) token.updateSource({ 'texture.src': token.actor.img });
@@ -136,13 +147,27 @@ export class ScenescapeControls {
     );
     this._wrapperIds.push(id);
 
-    // Only show token border when it is controlled
+    // Instead of token border, show a filter outline
     id = libWrapper.register(
       MODULE_ID,
       'Token.prototype._refreshState',
       function (wrapped, ...args) {
         const result = wrapped(...args);
-        this.border.visible = !this.document.isSecret && this.controlled;
+        this.border.visible = false;
+
+        if (!this.mesh.filter) this.mesh.filters = [];
+        if (!this.document.isSecret && this.controlled && !this.mesh.filters.find((f) => f.ssOutline)) {
+          const outlineFilter = OutlineFilter.create({
+            outlineColor: Color.from(_token._getBorderColor()).rgb,
+            animated: false,
+          });
+          outlineFilter.ssOutline = true;
+          outlineFilter.animated = false;
+          this.mesh.filters.push(outlineFilter);
+        } else {
+          this.mesh.filters = this.mesh.filters.filter((f) => !f.ssOutline);
+        }
+
         return result;
       },
       'WRAPPER'
@@ -211,10 +236,10 @@ export class ScenescapeControls {
 
         if (objects.length) {
           const draggedObject = objects[0];
-          draggedObject._meDragging = true;
-          editPreviewPlaceables([draggedObject], true, () => {
-            draggedObject._meDragging = undefined;
-            draggedObject.renderFlags.set({ refreshState: true });
+          editPreviewPlaceables({
+            placeables: [draggedObject],
+            mainPlaceable: draggedObject,
+            hardLinked: true,
           });
         }
 
@@ -229,20 +254,9 @@ export class ScenescapeControls {
       MODULE_ID,
       'PlaceableObject.prototype._canDragLeftStart',
       function (wrapped, user, event) {
-        if (Picker.isActive() || !this._canDrag(game.user, event)) return false;
+        if (TransformBus.active() || !this._canDrag(game.user, event)) return false;
 
         return wrapped(user, event);
-      },
-      'MIXED'
-    );
-    this._wrapperIds.push(id);
-
-    id = libWrapper.register(
-      MODULE_ID,
-      'PlaceableObject.prototype._getTargetAlpha',
-      function (wrapped) {
-        if (this._meDragging) return 0.4;
-        return wrapped();
       },
       'MIXED'
     );
@@ -270,61 +284,50 @@ export class ScenescapeControls {
     const documentName = this.constructor.documentName;
     const incrementScale = game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT) ? 0.5 : 1.0;
 
-    const updateData = objects.map((obj) => {
-      let update = { _id: obj.id };
-
-      const size = documentName === 'Token' ? obj.getSize() : obj.document;
-      const bottom = { x: obj.document.x + size.width / 2, y: obj.document.y + size.height };
-      const params = Scenescape.getParallaxParameters(bottom);
-      const dimensions = canvas.dimensions;
-
+    for (const obj of objects) {
+      const bottom = getDataPivotPoint(documentName, obj.document, PIVOTS.BOTTOM);
       const nBottom = Scenescape.moveCoordinate(
         bottom,
         dx * incrementScale,
         dy * incrementScale,
         documentName === 'Tile'
       );
-      const nParams = Scenescape.getParallaxParameters(nBottom);
 
-      if (documentName === 'Token') {
-        const fixedSize = Scenescape.getTokenSize(obj);
+      const transformer = new MassTransformer()
+        .documents(LinkerAPI.getHardLinkedDocuments(obj.document, true))
+        .pivotDocument(obj);
 
-        update.height = (fixedSize * nParams.scale) / dimensions.size;
-        update.width = (update.height / size.height) * size.width;
-
-        update.flags = {
-          [MODULE_ID]: {
-            width: update.width,
-            height: update.height,
-          },
-        };
-
-        update.x = nBottom.x - (update.width * dimensions.size) / 2;
-        update.y = nBottom.y - update.height * dimensions.size;
-
-        // Prevent foundry validation errors
-        // We attempt to keep TokenDocument and the width/height flag as close as possible where we can
-        // but we have to diverge at this threshold
-        if (update.width < 0.5 || update.height < 0.5) {
-          update.width = 0.5;
-          update.height = 0.5;
+      const document = obj.document;
+      let update = {};
+      if (document.documentName === 'Token') {
+        if (dx !== 0 && document.getFlag(MODULE_ID, 'autoFlipX')) {
+          if (dx < 0 && document.getFlag(MODULE_ID, 'flippedX')) {
+            transformer.mirrorX();
+            update[`flags.${MODULE_ID}.-=flippedX`] = null;
+          } else if (dx > 0 && !document.getFlag(MODULE_ID, 'flippedX')) {
+            transformer.mirrorX();
+            update[`flags.${MODULE_ID}.flippedX`] = true;
+          }
         }
-      } else {
-        const deltaScale = nParams.scale / params.scale;
 
-        update.width = size.width * deltaScale;
-        update.height = size.height * deltaScale;
-
-        update.x = nBottom.x - update.width / 2;
-        update.y = nBottom.y - update.height;
+        if (dy !== 0 && document.getFlag(MODULE_ID, 'autoFlipY')) {
+          if (dy < 0 && document.getFlag(MODULE_ID, 'flippedY')) {
+            transformer.mirrorY();
+            update[`flags.${MODULE_ID}.-=flippedY`] = null;
+          } else if (dy > 0 && !document.getFlag(MODULE_ID, 'flippedY')) {
+            transformer.mirrorY();
+            update[`flags.${MODULE_ID}.flippedY`] = true;
+          }
+        }
       }
 
-      update.elevation = nParams.elevation;
+      // If we're doing an auto-flip lets ignore position changes
+      if (!foundry.utils.isEmpty(update)) await document.update(update);
+      else transformer.pivot(PIVOTS.BOTTOM).position(nBottom);
 
-      return update;
-    });
+      await transformer.update({ teleport: true, ignoreLinks: true, animate: false });
+    }
 
-    await canvas.scene.updateEmbeddedDocuments(documentName, updateData, { teleport: true });
     return objects;
   }
 
@@ -355,6 +358,65 @@ export class ScenescapeControls {
       graphics.endHole();
 
       canvas.primary.addChild(bars);
+    }
+  }
+}
+
+/**
+ * Modified FoundryVTT `OutlineOverlayFilter` filter to not knockout the mesh
+ */
+class OutlineFilter extends OutlineOverlayFilter {
+  /** @inheritdoc */
+  static createFragmentShader() {
+    return `
+    varying vec2 vTextureCoord;
+    varying vec2 vFilterCoord;
+    uniform sampler2D uSampler;
+    
+    uniform vec2 thickness;
+    uniform vec4 outlineColor;
+    uniform vec4 filterClamp;
+    uniform float alphaThreshold;
+    uniform float time;
+    uniform bool knockout;
+    uniform bool wave;
+    
+    ${this.CONSTANTS}
+    ${this.WAVE()}
+    
+    void main(void) {
+        float dist = distance(vFilterCoord, vec2(0.5)) * 2.0;
+        vec4 ownColor = texture2D(uSampler, vTextureCoord);
+        vec4 wColor = wave ? outlineColor * 
+                             wcos(0.0, 1.0, dist * 75.0, 
+                                  -time * 0.01 + 3.0 * dot(vec4(1.0), ownColor)) 
+                             * 0.33 * (1.0 - dist) : vec4(0.0);
+        float texAlpha = smoothstep(alphaThreshold, 1.0, ownColor.a);
+        vec4 curColor;
+        float maxAlpha = 0.;
+        vec2 displaced;
+        for ( float angle = 0.0; angle <= TWOPI; angle += ${this.#quality.toFixed(7)} ) {
+            displaced.x = vTextureCoord.x + thickness.x * cos(angle);
+            displaced.y = vTextureCoord.y + thickness.y * sin(angle);
+            curColor = texture2D(uSampler, clamp(displaced, filterClamp.xy, filterClamp.zw));
+            curColor.a = clamp((curColor.a - 0.6) * 2.5, 0.0, 1.0);
+            maxAlpha = max(maxAlpha, curColor.a);
+        }
+        float resultAlpha = max(maxAlpha, texAlpha);
+        vec3 result = (ownColor.rgb + outlineColor.rgb * (1.0 - texAlpha)) * resultAlpha;
+        gl_FragColor = vec4((ownColor.rgb + outlineColor.rgb * (1. - ownColor.a)) * resultAlpha, resultAlpha);
+    }
+    `;
+  }
+
+  static get #quality() {
+    switch (canvas.performance.mode) {
+      case CONST.CANVAS_PERFORMANCE_MODES.LOW:
+        return (Math.PI * 2) / 10;
+      case CONST.CANVAS_PERFORMANCE_MODES.MED:
+        return (Math.PI * 2) / 20;
+      default:
+        return (Math.PI * 2) / 30;
     }
   }
 }

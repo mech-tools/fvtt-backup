@@ -1,4 +1,4 @@
-import { FILE_EXTENSIONS, MODULE_ID } from '../constants.js';
+import { FILE_EXTENSIONS, IMAGE_EXTENSIONS, MODEL_EXTENSIONS, MODULE_ID } from '../constants.js';
 import { TagInput } from '../utils.js';
 import { PresetTree, VirtualFileFolder } from './collection.js';
 import { VirtualFilePreset } from './preset.js';
@@ -286,6 +286,7 @@ export class FileIndexer {
   static _cachePreset(preset) {
     const pDic = { name: encodeURIComponentSafely(preset.name) };
     if (preset.tags?.length) pDic.tags = preset.tags;
+    if (preset._thumb) pDic.thumb = preset._thumb;
     return pDic;
   }
 
@@ -341,6 +342,7 @@ export class FileIndexer {
           src: options.prePend + fullPath + '/' + file.name,
           tags: file.tags,
           folder: fileFolder.id,
+          thumb: file.thumb ? options.prePend + fullPath + '/' + file.thumb : null,
         });
         allPresets.push(preset);
         fileFolder.presets.push(preset);
@@ -403,21 +405,22 @@ export class FileIndexer {
       });
     }
 
+    let modelFiles = [];
+    let thumbnails = []; // Image files ending in _thumb
     for (let path of content.files) {
-      const fileName = path.split('\\').pop().split('/').pop();
-      if (settings.fileFilters.some((k) => fileName.includes(k))) continue;
+      const file = path.split('\\').pop().split('/').pop();
 
       // Special file processing
 
       // Cancel indexing if noscan.txt or cache file is present within the directory
-      if (fileName === 'noscan.txt') return null;
-      else if (fileName === CACHE_NAME && !settings.ignoreExternal) {
+      if (file === 'noscan.txt') return null;
+      else if (file === CACHE_NAME && !settings.ignoreExternal) {
         const cacheDir = settings.cacheDir;
         if (!(cacheDir.target === dir.target && cacheDir.source === source && cacheDir.bucket === bucket)) {
           foundCaches.push(path);
           return null;
         }
-      } else if (fileName === 'module.json') {
+      } else if (file === 'module.json') {
         // Read metadata from module's json file applying subtext to current folder
         // and tags to all files
         const author = await this._getAuthorFromModule(path);
@@ -431,17 +434,59 @@ export class FileIndexer {
             });
           }
         }
+
+        continue;
       }
 
       // Otherwise process the file
-      let ext = fileName.split('.');
-      ext = ext[ext.length - 1].toLowerCase();
+      let [fileName, ext] = file.split('.');
+      ext = ext.toLowerCase();
+
+      // If a file ends with _thumb, we assume it to be a thumbnail image and we will try to associate it to another file later
+      if (fileName.endsWith('_thumb') && IMAGE_EXTENSIONS.includes(ext)) {
+        thumbnails.push({ thumb: file, match: fileName.replace('_thumb', '') });
+        continue;
+      }
+
+      // Apply filters
+      if (settings.fileFilters.some((k) => file.includes(k))) continue;
 
       if (FILE_EXTENSIONS.includes(ext)) {
-        const f = { name: fileName };
+        const f = { name: file };
         if (tags.length) f.tags = tags;
         folder.files.push(f);
+        if (MODEL_EXTENSIONS.includes(ext)) {
+          f.tags = ['3d-model', ...(f.tags ?? [])];
+          modelFiles.push(f);
+        }
       }
+    }
+
+    // Lets try to matchup 3D Models with image files in the same directory
+    if (modelFiles.length) {
+      modelFiles.forEach((mFile) => {
+        const modelName = mFile.name.split('.')[0];
+        folder.files = folder.files.filter((f) => {
+          if (mFile == f) return true;
+
+          let ext = f.name.split('.');
+          ext = ext[ext.length - 1].toLowerCase();
+
+          if (IMAGE_EXTENSIONS.includes(ext) && f.name.split('.')[0] === modelName) {
+            mFile.thumb = f.name;
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+
+    // Lets try to match thumbnails (..._thumb) with image files in the same directory
+    if (thumbnails.length) {
+      thumbnails.forEach((t) => {
+        const matchedFile = folder.files.find((f) => f.name.split('.').shift() === t.match);
+        if (matchedFile) matchedFile.thumb = t.thumb;
+      });
     }
 
     for (let dir of content.dirs) {

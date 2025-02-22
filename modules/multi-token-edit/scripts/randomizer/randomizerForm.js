@@ -1,8 +1,8 @@
 import { MODULE_ID } from '../constants.js';
-import { SPECIES_GENERATORS } from '../generator/fantasticSpeciesGenerator.js';
-import { GROUP_GENERATORS } from '../generator/groupNamesGenerator.js';
-import { NAME_GENERATOR } from '../generator/nameGenerator.js';
-import { TAVERN_GENERATOR } from '../generator/tavernGenerator.js';
+import { SPECIES_GENERATORS } from '../libs/generator/fantasticSpeciesGenerator.js';
+import { GROUP_GENERATORS } from '../libs/generator/groupNamesGenerator.js';
+import { NAME_GENERATOR } from '../libs/generator/nameGenerator.js';
+import { TAVERN_GENERATOR } from '../libs/generator/tavernGenerator.js';
 import { isImage, isVideo, recursiveTraverse } from '../utils.js';
 import { deselectField, nearestStep, selectField } from './randomizerUtils.js';
 
@@ -300,16 +300,10 @@ export default class RandomizerForm extends FormApplication {
         if (position == null) return;
 
         const form = $(event.target).closest('form');
-
-        const minX = Math.min(position.start.x, position.end.x);
-        const maxX = Math.max(position.start.x, position.end.x);
-        const minY = Math.min(position.start.y, position.end.y);
-        const maxY = Math.max(position.start.y, position.end.y);
-
-        form.find('[name="minX"]').val(Math.floor(minX));
-        form.find('[name="maxX"]').val(Math.floor(maxX));
-        form.find('[name="minY"]').val(Math.floor(minY));
-        form.find('[name="maxY"]').val(Math.floor(maxY));
+        form.find('[name="minX"]').val(Math.floor(position.x1));
+        form.find('[name="maxX"]').val(Math.floor(position.x2));
+        form.find('[name="minY"]').val(Math.floor(position.y1));
+        form.find('[name="maxY"]').val(Math.floor(position.y2));
         t.maximize();
         t.configApp.maximize();
 

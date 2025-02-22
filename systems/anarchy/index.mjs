@@ -635,8 +635,8 @@ const Je = {
   }
 };
 I(p, "ENUMS"), I(p, "hbsAttributes"), I(p, "hbsItemTypes"), I(p, "hbsCapacities"), I(p, "hbsMonitors"), I(p, "hbsMonitorLetters"), I(p, "hbsShadowampCategories"), I(p, "hbsAreas"), I(p, "hbsRanges"), I(p, "sortedAttributeKeys");
-let H = p;
-const g = "anarchy", se = "Anarchy", xe = `system.${g}`, L = g, le = `systems/${g}`, yt = `${le}/style`, h = `systems/${g}/templates`, G = `${le}/icons`, k = `${G}/skills`, x = "Anarchy | ", kt = 3, wt = 2, Rt = 6, vt = 5, Mt = 4, pt = 8, c = {
+let S = p;
+const y = "anarchy", se = "Anarchy", xe = `system.${y}`, L = y, le = `systems/${y}`, yt = `${le}/style`, h = `systems/${y}/templates`, G = `${le}/icons`, k = `${G}/skills`, x = "Anarchy | ", kt = 3, wt = 2, vt = 6, Rt = 5, Mt = 4, pt = 8, c = {
   actorTypes: {
     character: "character",
     vehicle: "vehicle",
@@ -735,7 +735,7 @@ const g = "anarchy", se = "Anarchy", xe = `system.${g}`, L = g, le = `systems/${
   }
 };
 globalThis.ANARCHY_CONSTANTS = {
-  SYSTEM_NAME: g,
+  SYSTEM_NAME: y,
   SYSTEM_DESCRIPTION: se,
   SYSTEM_SOCKET: xe,
   SYSTEM_SCOPE: L,
@@ -747,8 +747,8 @@ globalThis.ANARCHY_CONSTANTS = {
   LOG_HEAD: x,
   ANARCHY_DICE_BONUS: kt,
   SPECIALIZATION_BONUS: wt,
-  PLAYER_MAX_ANARCHY: Rt,
-  TARGET_SUCCESS: vt,
+  PLAYER_MAX_ANARCHY: vt,
+  TARGET_SUCCESS: Rt,
   TARGET_SUCCESS_EDGE: Mt,
   BASE_MONITOR: pt,
   TEMPLATE: c,
@@ -919,7 +919,7 @@ class j {
       console.log(x + "RemoteCall: No callback registered for", e);
   }
 }
-const Pe = "parent-message-id", ne = "message-data", Fe = "can-use-edge", Ue = "owning-actor", tt = "ChatManager.removeChatMessage", at = "ChatManager.removeChatMessageFamily", Ht = [
+const Pe = "parent-message-id", ne = "message-data", Ue = "can-use-edge", Fe = "owning-actor", tt = "ChatManager.removeChatMessage", at = "ChatManager.removeChatMessageFamily", Ht = [
   { selector: ".anarchy-button.click-edge-reroll", controlVisibility: !0, handler: async (r, e) => await M.edgeReroll(r) },
   { selector: ".anarchy-button.click-defend-attack", controlVisibility: !0, handler: async (r, e) => await M.defendAttack(r) },
   { selector: ".anarchy-button.click-defend-pilot-attack", controlVisibility: !0, handler: async (r, e) => await M.defendPilotAttack(r) },
@@ -958,7 +958,7 @@ class M {
     return (n = game.actors.get(i)) == null ? void 0 : n.sheet.render(!0);
   }
   static async edgeReroll(e) {
-    if (e.getFlag(L, Fe)) {
+    if (e.getFlag(L, Ue)) {
       const t = e.getFlag(L, ne);
       await game.system.anarchy.rollManager.edgeReroll(t), M.removeFamily(e.id);
     } else
@@ -1012,7 +1012,7 @@ class M {
     };
   }
   static hasRight(e, t = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
-    const a = e.getFlag(L, Ue);
+    const a = e.getFlag(L, Fe);
     if (a) {
       const s = M.readActorRights(a);
       if (s)
@@ -1169,7 +1169,7 @@ const ee = o.actor.monitors, re = o.actor.counters, je = {
     iconUnchecked: u.fontAwesome("far fa-grimace"),
     resource: re.social.rumor
   }
-}, F = foundry.utils.mergeObject(je, {});
+}, U = foundry.utils.mergeObject(je, {});
 class d {
   static init() {
     Handlebars.registerHelper("iconCheckbar", d.iconCheckbar), Handlebars.registerHelper("iconCheckbarHit", d.iconHit);
@@ -1177,7 +1177,7 @@ class d {
   static hackCheckbars(e) {
     if (e) {
       const t = foundry.utils.mergeObject(je, {});
-      foundry.utils.mergeObject(t, e, { recursive: !0 }), foundry.utils.mergeObject(F, t, { overwrite: !0 });
+      foundry.utils.mergeObject(t, e, { recursive: !0 }), foundry.utils.mergeObject(U, t, { overwrite: !0 });
     }
   }
   static iconCheckbar(e, t) {
@@ -1185,33 +1185,33 @@ class d {
   }
   static iconChecked(e) {
     var t;
-    return (t = F[e]) == null ? void 0 : t.iconChecked;
+    return (t = U[e]) == null ? void 0 : t.iconChecked;
   }
   static iconUnchecked(e) {
     var t;
-    return (t = F[e]) == null ? void 0 : t.iconUnchecked;
+    return (t = U[e]) == null ? void 0 : t.iconUnchecked;
   }
   static iconHit(e) {
     var t, a;
-    return ((t = F[e]) == null ? void 0 : t.iconHit) ?? ((a = F[e]) == null ? void 0 : a.iconChecked);
+    return ((t = U[e]) == null ? void 0 : t.iconHit) ?? ((a = U[e]) == null ? void 0 : a.iconChecked);
   }
   static useArmor(e) {
     var t;
-    return (t = F[e]) == null ? void 0 : t.useArmor;
+    return (t = U[e]) == null ? void 0 : t.useArmor;
   }
   static max(e, t) {
     var s;
-    const a = (s = F[t]) == null ? void 0 : s.monitor(e);
+    const a = (s = U[t]) == null ? void 0 : s.monitor(e);
     return ((a == null ? void 0 : a.max) ?? 0) + ((a == null ? void 0 : a.maxBonus) ?? 0);
   }
   static value(e, t) {
     var s;
-    const a = (s = F[t]) == null ? void 0 : s.monitor(e);
+    const a = (s = U[t]) == null ? void 0 : s.monitor(e);
     return (a == null ? void 0 : a.value) ?? 0;
   }
   static resistance(e, t) {
     var s;
-    const a = (s = F[t]) == null ? void 0 : s.monitor(e);
+    const a = (s = U[t]) == null ? void 0 : s.monitor(e);
     return ((a == null ? void 0 : a.resistance) ?? 0) + ((a == null ? void 0 : a.resistanceBonus) ?? 0);
   }
   static newValue(e, t) {
@@ -1255,7 +1255,7 @@ class d {
   static async setCheckbar(e, t, a) {
     if (a == d.getCounterValue(e, t))
       return;
-    const s = F[t];
+    const s = U[t];
     if (s.path) {
       const i = d.max(e, t);
       if (i <= 0)
@@ -1328,7 +1328,7 @@ class d {
   static async setActorMarks(e, t, a, s = void 0) {
     if (e.canReceiveMarks()) {
       let i = deepClone(e.getMatrixMarks());
-      B.checkOutOfRange(F.marks.resource, t, 0, d.max(e, "marks"));
+      B.checkOutOfRange(U.marks.resource, t, 0, d.max(e, "marks"));
       const n = d._findActorMarks(i, a);
       n.marks == null && i.push(n), n.marks = Math.max(0, t), i = i.filter((l) => l.marks > 0), await e.setCheckbarValue("system.monitors.matrix.marks", i);
     }
@@ -1346,12 +1346,12 @@ class d {
 const Ee = "anarchy-gm", Nt = "scene-anarchy-gm", st = "GMAnarchy.addAnarchy";
 class Tt {
   constructor() {
-    game.settings.register(g, Ee, {
+    game.settings.register(y, Ee, {
       scope: "world",
       config: !1,
       default: 1,
       type: Number
-    }), game.settings.register(g, Nt, {
+    }), game.settings.register(y, Nt, {
       scope: "world",
       config: !1,
       default: 0,
@@ -1359,7 +1359,7 @@ class Tt {
     }), j.register(st, {
       callback: (e) => game.system.anarchy.gmAnarchy.addAnarchy(e),
       condition: (e) => e.isGM
-    }), this.anarchy = game.settings.get(g, Ee);
+    }), this.anarchy = game.settings.get(y, Ee);
   }
   getAnarchy() {
     return {
@@ -1389,7 +1389,7 @@ class Tt {
     j.call(st, e) || (B.checkSufficient(o.actor.counters.plot, -e, this.anarchy), await this.setAnarchy(this.anarchy + e));
   }
   async setAnarchy(e) {
-    this.anarchy = e, game.settings.set(g, Ee, e), await this._rebuild(), this._syncGMAnarchySheets();
+    this.anarchy = e, game.settings.set(y, Ee, e), await this._rebuild(), this._syncGMAnarchySheets();
   }
   async activateListeners(e) {
     this.toolbar = e.find(".gm-anarchy-bar"), await this._rebuild();
@@ -1491,13 +1491,13 @@ class Et {
     };
   }
 }
-const $e = "gm-difficulty-pools", Dt = `${g}.${$e}`;
+const $e = "gm-difficulty-pools", Dt = `${y}.${$e}`;
 class Yt {
   constructor() {
     Hooks.on("updateSetting", async (e, t, a, s) => this.onUpdateSetting(e, t, a, s)), Hooks.once("ready", () => this.onReady());
   }
   onReady() {
-    game.settings.register(g, $e, {
+    game.settings.register(y, $e, {
       scope: "world",
       name: game.i18n.localize(o.settings.gmDifficulty.name),
       hint: game.i18n.localize(o.settings.gmDifficulty.hint),
@@ -1510,7 +1510,7 @@ class Yt {
     game.user.isGM && e.key == Dt && (this.loadDifficultySettings(), this._rebuild(), game.system.anarchy.gmManager.render(!1));
   }
   loadDifficultySettings() {
-    const e = game.settings.get(g, $e);
+    const e = game.settings.get(y, $e);
     this.difficultyPools = e.split(",").map((t) => {
       const a = t.split(":");
       return a[1] ? { difficulty: a[0], pool: a[1] } : { pool: Number(a[0]) };
@@ -1550,11 +1550,28 @@ class Pt extends Application {
         initial: _t,
         maxPos: { left: 200, top: 100 },
         settings: {
-          system: g,
+          system: y,
           keyPosition: It
         }
       }
-    ), Hooks.once("ready", () => this.onReady());
+    ), Hooks.once("ready", () => this.onReady()), Hooks.on(
+      "renderChatLog",
+      async (a, s, i) => {
+        if (game.user.isGM) {
+          const n = "systems/anarchy/templates/app/gm-manager-chat.hbs", l = {
+            title: game.i18n.localize("ANARCHY.gmManager.title")
+          }, m = await renderTemplate(n, l), g = $(m);
+          g.css({
+            zIndex: 1e3,
+            flex: "0 0 28px",
+            margin: "0 8px 4px 8px",
+            width: "calc(100% - 16px)"
+          }), g.on("click", () => {
+            this._element ? this.close() : this.render(!0);
+          }), s.append(g);
+        }
+      }
+    );
   }
   onReady() {
     game.user.isGM && this.render(!0);
@@ -1579,7 +1596,7 @@ class Pt extends Application {
     };
   }
   async activateListeners(e) {
-    super.activateListeners(e), e.find(".app-title-bar").mousedown((t) => this.handleDrag.onMouseDown(t)), this.gmAnarchy.activateListeners(e), this.gmConvergence.activateListeners(e), this.gmDifficulty.activateListeners(e);
+    super.activateListeners(e), e.find(".app-title-bar").mousedown((t) => this.handleDrag.onMouseDown(t)), e.find(".gm-manager-hide-button").mousedown((t) => this.close()), this.gmAnarchy.activateListeners(e), this.gmConvergence.activateListeners(e), this.gmDifficulty.activateListeners(e);
   }
 }
 function V(r, e, t, a, s, i = (n) => !0) {
@@ -1716,7 +1733,7 @@ const rt = [c.itemType.shadowamp, c.itemType.weapon, c.itemType.cyberdeck];
 class A {
   constructor() {
     this.modifiers = {
-      groups: H.mapObjetToKeyValue(o.modifier.group, "key", "label"),
+      groups: S.mapObjetToKeyValue(o.modifier.group, "key", "label"),
       roll: A._buildGroupOptions("roll"),
       attribute: A._buildGroupOptions("attribute"),
       monitor: A._buildGroupOptions("monitor"),
@@ -1728,14 +1745,14 @@ class A {
       case "attribute":
         return {
           label: o.modifier.group[e],
-          effects: H.hbsAttributes.map((t) => ({ key: t.value, label: t.labelkey })),
+          effects: S.hbsAttributes.map((t) => ({ key: t.value, label: t.labelkey })),
           categories: []
         };
     }
     return {
       label: o.modifier.group[e],
-      effects: H.mapObjetToKeyValue(o.modifier[e].effect, "key", "label"),
-      categories: H.mapObjetToKeyValue(o.modifier[e].category, "key", "label")
+      effects: S.mapObjetToKeyValue(o.modifier[e].effect, "key", "label"),
+      categories: S.mapObjetToKeyValue(o.modifier[e].category, "key", "label")
     };
   }
   async onReady() {
@@ -1769,7 +1786,7 @@ class A {
   getSelectRollSubCategories(e) {
     switch (e) {
       case "attribute":
-        return H.getAttributes().map((a) => ({ key: a.value, label: a.labelkey }));
+        return S.getAttributes().map((a) => ({ key: a.value, label: a.labelkey }));
       case "skill":
         return game.system.anarchy.skills.getSkills().map((a) => ({ key: a.code, label: a.labelkey }));
       case "attributeAction":
@@ -1797,7 +1814,7 @@ class A {
     };
   }
   static computeRollModifiers(e, t, a) {
-    const s = A.buildRollModifiersFilter(t, a), i = (y) => y.group == "roll" && y.effect == a && s(y), n = A._activeItems(e).map((y) => A.itemModifiers(y, i)).reduce((y, q) => y.concat(q), []).sort(f.descending((y) => y.modifier.value)), l = A.$sumShadowampModifiers(n.filter((y) => rt.includes(y.item.type)).map((y) => y.modifier.value)), m = f.sumValues(n.filter((y) => !rt.includes(y.item.type)).map((y) => y.modifier.value));
+    const s = A.buildRollModifiersFilter(t, a), i = (g) => g.group == "roll" && g.effect == a && s(g), n = A._activeItems(e).map((g) => A.itemModifiers(g, i)).reduce((g, q) => g.concat(q), []).sort(f.descending((g) => g.modifier.value)), l = A.$sumShadowampModifiers(n.filter((g) => rt.includes(g.item.type)).map((g) => g.modifier.value)), m = f.sumValues(n.filter((g) => !rt.includes(g.item.type)).map((g) => g.modifier.value));
     return {
       value: l + m,
       sources: n
@@ -1808,7 +1825,7 @@ class A {
     return a + Math.max(s, t);
   }
   static computeModifiers(e, t, a = void 0, s = void 0) {
-    const i = A._createFilter(t, a, s), n = A._activeItems(e).map((m) => A.itemModifiers(m, i)).reduce((m, y) => m.concat(y), []);
+    const i = A._createFilter(t, a, s), n = A._activeItems(e).map((m) => A.itemModifiers(m, i)).reduce((m, g) => m.concat(g), []);
     return {
       value: f.sumValues(n, (m) => m.modifier.value),
       sources: n
@@ -1929,11 +1946,11 @@ const b = {
    * Hook allowing to provide alternate anarchy hack (TODO: document)
    */
   ANARCHY_HACK: "anarchy-hack"
-}, ft = `${g}.${b.ANARCHY_HACK}`, he = {
-  id: g,
+}, ft = `${y}.${b.ANARCHY_HACK}`, he = {
+  id: y,
   name: "Standard Shadowrun Anarchy",
   hack: {
-    checkbars: () => F
+    checkbars: () => U
   }
 };
 globalThis.ANARCHY_HOOKS = b;
@@ -1946,7 +1963,7 @@ class Z {
   async onReady() {
     Hooks.callAll(b.ANARCHY_HACK, (e) => {
       this.hacks[e.id] = e, this.hackNames[e.id] = e.name;
-    }), game.settings.register(g, b.ANARCHY_HACK, {
+    }), game.settings.register(y, b.ANARCHY_HACK, {
       scope: "world",
       name: game.i18n.localize(o.settings.anarchyHack.name),
       hint: game.i18n.localize(o.settings.anarchyHack.hint),
@@ -1972,7 +1989,7 @@ class Z {
     });
   }
   getSelectedHack() {
-    return this.hacks[game.settings.get(g, b.ANARCHY_HACK)];
+    return this.hacks[game.settings.get(y, b.ANARCHY_HACK)];
   }
   getHookMethod(e, t) {
     return this.hookMethods[e] ?? t;
@@ -1988,13 +2005,12 @@ class Z {
     Z.instance()._register(e);
   }
   _register(e) {
-    if (console.log(x + "HooksManager.register", e), !e.startsWith(g + "-"))
+    if (console.log(x + "HooksManager.register", e), !e.startsWith(y + "-"))
       throw "For safety Anarchy Hooks names must be prefixed by anarchy'-'";
     this.hooks.push(e);
   }
 }
 const C = {
-  title: "title",
   pool: "pool",
   reroll: "reroll",
   rerollForced: "rerollForced",
@@ -2025,7 +2041,7 @@ const C = {
         value: r.actor.getAttributeValue(e, r.activeItem),
         flags: { editable: r.skill },
         selected: e,
-        choices: H.getAttributes((a) => r.attributes.includes(a))
+        choices: S.getAttributes((a) => r.attributes.includes(a))
       };
     }
   },
@@ -2048,7 +2064,7 @@ const C = {
         value: r.actor.getAttributeValue(e, r.activeItem),
         flags: { editable: E.rollType.attribute == r.mode },
         selected: e,
-        choices: H.getAttributes((t) => r.attributes.includes(t))
+        choices: S.getAttributes((t) => r.attributes.includes(t))
       };
     }
   },
@@ -2467,7 +2483,7 @@ class ie {
     return A.computeRollModifiers(s, t, e);
   }
 }
-class v extends Dialog {
+class R extends Dialog {
   static init() {
     Hooks.once("ready", async () => await this.onReady());
   }
@@ -2494,39 +2510,39 @@ class v extends Dialog {
     };
   }
   static async rollAttribute(e, t) {
-    const a = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const a = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.attribute,
       attribute1: t
     });
-    await v.create(a);
+    await R.create(a);
   }
   static async rollAttributeAction(e, t) {
-    const a = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const a = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.attributeAction,
       attributeAction: t.code,
       attribute1: t.attributeFunction1(e),
       attribute2: t.attributeFunction2(e)
     });
-    await v.create(a);
+    await R.create(a);
   }
   static async rollAttribute(e, t) {
-    const a = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const a = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.attribute,
       attribute1: t
     });
-    await v.create(a);
+    await R.create(a);
   }
   static async rollSkill(e, t, a) {
-    const s = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const s = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.skill,
       skill: t,
       attribute1: (t == null ? void 0 : t.system.attribute) ?? c.attributes.agility,
       specialization: a
     });
-    await v.create(s);
+    await R.create(s);
   }
   static async rollWeapon(e, t, a, s) {
-    const i = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const i = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.weapon,
       weapon: a,
       skill: t,
@@ -2534,10 +2550,10 @@ class v extends Dialog {
       specialization: t == null ? void 0 : t.system.specialization,
       targeting: s
     });
-    await v.create(i);
+    await R.create(i);
   }
   static async rollDefense(e, t, a, s = void 0) {
-    const i = foundry.utils.mergeObject(v.prepareActorRoll(e), {
+    const i = foundry.utils.mergeObject(R.prepareActorRoll(e), {
       mode: E.rollType.defense,
       attribute1: t.attributeFunction1(e),
       attribute2: t.attributeFunction2(e),
@@ -2546,26 +2562,26 @@ class v extends Dialog {
       tokenId: a.defenderTokenId,
       choiceChatMessageId: a.choiceChatMessageId
     });
-    await v.create(i);
+    await R.create(i);
   }
   static async itemAttributeRoll(e, t) {
-    const a = foundry.utils.mergeObject(v.prepareActorRoll(e.actor), {
+    const a = foundry.utils.mergeObject(R.prepareActorRoll(e.actor), {
       mode: E.rollType.attribute,
       item: e,
       attribute1: t,
       attributes: e.actor.getUsableAttributes(e)
     });
-    await v.create(a);
+    await R.create(a);
   }
   static async create(e) {
     const t = game.system.anarchy.rollParameters.build(e).sort(f.ascending((i) => i.order ?? 200));
     foundry.utils.mergeObject(e, {
-      ENUMS: H.getEnums((i) => e.attributes.includes(i)),
+      ENUMS: S.getEnums((i) => e.attributes.includes(i)),
       ANARCHY: o,
       parameters: t
     });
     const a = await renderTemplate(`${h}/roll/roll-dialog-title.hbs`, e), s = await renderTemplate(`${h}/roll/roll-dialog.hbs`, e);
-    new v(a, s, e).render(!0);
+    new R(a, s, e).render(!0);
   }
   constructor(e, t, a) {
     const s = {
@@ -2635,7 +2651,7 @@ class v extends Dialog {
     return this.roll.parameters.find((a) => a.code == t);
   }
 }
-const be = "selected-skill-list", Gt = `${g}.${be}`, w = c.attributes, te = E.defenses, Ye = "shadowrun-anarchy-en", ot = { code: "knowledge", attribute: w.knowledge, icon: `${k}/knowledge.svg` }, ce = [
+const be = "selected-skill-list", Gt = `${y}.${be}`, w = c.attributes, te = E.defenses, Ye = "shadowrun-anarchy-en", ot = { code: "knowledge", attribute: w.knowledge, icon: `${k}/knowledge.svg` }, ce = [
   { code: "athletics", attribute: w.strength, icon: `${k}/athletics.svg` },
   { code: "acrobatics", attribute: w.agility, icon: `${k}/escape-artist.svg`, lang: "fr" },
   { code: "closeCombat", attribute: w.agility, icon: `${k}/close-combat.svg`, defense: te.physicalDefense },
@@ -2664,7 +2680,7 @@ const be = "selected-skill-list", Gt = `${g}.${be}`, w = c.attributes, te = E.de
   { code: "negotiation", attribute: w.charisma, isSocial: !0, icon: `${k}/negotiation.svg` },
   { code: "disguise", attribute: w.charisma, icon: `${k}/disguise.svg`, lang: "en" }
 ], Vt = ["tasking", "hacking"];
-class Ft {
+class Ut {
   constructor() {
     this.skillSets = {}, Z.register(b.PROVIDE_SKILL_SET), Hooks.on(
       b.PROVIDE_SKILL_SET,
@@ -2680,7 +2696,7 @@ class Ft {
       n && (this.skillSets[n.id] = n);
     });
     const e = Object.fromEntries(Object.values(this.skillSets).map((t) => [t.id, t.name]));
-    game.settings.register(g, be, {
+    game.settings.register(y, be, {
       scope: "world",
       name: game.i18n.localize(o.settings.skillSet.name),
       hint: game.i18n.localize(o.settings.skillSet.hint),
@@ -2688,10 +2704,10 @@ class Ft {
       default: Ye,
       choices: e,
       type: String
-    }), this.selectedSkills = game.settings.get(g, be);
+    }), this.selectedSkills = game.settings.get(y, be);
   }
   async onUpdateSetting(e, t, a, s) {
-    e.key == Gt && (this.selectedSkills = game.settings.get(g, be));
+    e.key == Gt && (this.selectedSkills = game.settings.get(y, be));
   }
   get(e) {
     return this.getSkills({ withKnowledge: !0 }).find((t) => t.code == e);
@@ -2731,20 +2747,20 @@ class Ft {
     }
   }
 }
-const Le = "damage-mode", Ut = `${g}.${Le}`, fe = {}, Oe = {};
-class R {
+const Le = "damage-mode", Ft = `${y}.${Le}`, fe = {}, Oe = {};
+class v {
   static init() {
-    Z.register(b.PROVIDE_DAMAGE_MODE), Hooks.on("updateSetting", async (e, t, a, s) => R.onUpdateSetting(e, t, a, s)), Hooks.on(b.PROVIDE_DAMAGE_MODE, (e) => {
-      e("resistanceArmorMonitor", o.settings.damageMode.values.resistanceArmorMonitor, R.sufferDamageResistanceArmorMonitor), e("armorResistanceMonitor", o.settings.damageMode.values.armorResistanceMonitor, R.sufferDamageArmorResistanceMonitor), e("armorGivesResistance", o.settings.damageMode.values.armorGivesResistance, R.sufferDamageArmorAsResistance_Earthdawn), e("armorGiveResistanceHitsAvoid", o.settings.damageMode.values.armorGiveResistanceHitsAvoid, R.sufferDamageArmorAsResistance_Cyberpunk);
-    }), Hooks.once("ready", () => R.onReady());
+    Z.register(b.PROVIDE_DAMAGE_MODE), Hooks.on("updateSetting", async (e, t, a, s) => v.onUpdateSetting(e, t, a, s)), Hooks.on(b.PROVIDE_DAMAGE_MODE, (e) => {
+      e("resistanceArmorMonitor", o.settings.damageMode.values.resistanceArmorMonitor, v.sufferDamageResistanceArmorMonitor), e("armorResistanceMonitor", o.settings.damageMode.values.armorResistanceMonitor, v.sufferDamageArmorResistanceMonitor), e("armorGivesResistance", o.settings.damageMode.values.armorGivesResistance, v.sufferDamageArmorAsResistance_Earthdawn), e("armorGiveResistanceHitsAvoid", o.settings.damageMode.values.armorGiveResistanceHitsAvoid, v.sufferDamageArmorAsResistance_Cyberpunk);
+    }), Hooks.once("ready", () => v.onReady());
   }
   static onReady() {
-    R._registerDamageModeSetting(), R._selectDamageMode();
+    v._registerDamageModeSetting(), v._selectDamageMode();
   }
   static _registerDamageModeSetting() {
     Hooks.callAll(b.PROVIDE_DAMAGE_MODE, (e, t, a) => {
       fe[e] = game.i18n.localize(t), Oe[e] = a;
-    }), game.settings.register(g, Le, {
+    }), game.settings.register(y, Le, {
       scope: "world",
       name: game.i18n.localize(o.settings.damageMode.name),
       hint: game.i18n.localize(o.settings.damageMode.hint),
@@ -2755,64 +2771,64 @@ class R {
     });
   }
   static async onUpdateSetting(e, t, a, s) {
-    e.key == Ut && R._selectDamageMode();
+    e.key == Ft && v._selectDamageMode();
   }
   static _selectDamageMode() {
-    let e = game.settings.get(g, Le);
-    Oe[e] || (e = Object.keys(fe)[0]), R.damageModeCode = e, R.damageModeMethod = Oe[e];
+    let e = game.settings.get(y, Le);
+    Oe[e] || (e = Object.keys(fe)[0]), v.damageModeCode = e, v.damageModeMethod = Oe[e];
   }
   static async sufferDamage(e, t, a, s, i, n, l) {
     const m = e.getDamageMonitor(t);
-    B.checkActorCanReceiveDamage(t, m, e), await (R.damageModeMethod ?? R.sufferDamageResistanceArmorMonitor)(e, m, a, s, i, n), await e.applyArmorDamage(t, A.sumModifiers([l], "other", "damageArmor"));
+    B.checkActorCanReceiveDamage(t, m, e), await (v.damageModeMethod ?? v.sufferDamageResistanceArmorMonitor)(e, m, a, s, i, n), await e.applyArmorDamage(t, A.sumModifiers([l], "other", "damageArmor"));
   }
   static async sufferMarks(e, t) {
     await d.addCounter(e, c.monitors.marks, 1, t.id);
   }
   static async sufferDamageResistanceArmorMonitor(e, t, a, s, i, n) {
     if (t == c.monitors.marks) {
-      await R.sufferMarks(e, n);
+      await v.sufferMarks(e, n);
       return;
     }
     const l = d.resistance(e, t);
     let m = 0;
     if (i) {
-      const y = Math.min(l, a), q = Math.min(l - y, s);
-      m = a - y, d.useArmor(t) && (m -= await R.damageToArmor(e, m)), m += s - q;
+      const g = Math.min(l, a), q = Math.min(l - g, s);
+      m = a - g, d.useArmor(t) && (m -= await v.damageToArmor(e, m)), m += s - q;
     } else
-      m = a + s - l, d.useArmor(t) && (m -= await R.damageToArmor(e, m));
+      m = a + s - l, d.useArmor(t) && (m -= await v.damageToArmor(e, m));
     m > 0 && await d.addCounter(e, t, m);
   }
   static async sufferDamageArmorResistanceMonitor(e, t, a, s, i, n) {
     if (t == c.monitors.marks) {
-      await R.sufferMarks(e, n);
+      await v.sufferMarks(e, n);
       return;
     }
     let l = 0;
-    return d.useArmor(t) ? i ? (a -= await R.damageToArmor(e, a), l = s + a) : (l = s + a, l -= await R.damageToArmor(e, l)) : l = a + s, l -= d.resistance(e, t), l > 0 && await d.addCounter(e, t, l), l;
+    return d.useArmor(t) ? i ? (a -= await v.damageToArmor(e, a), l = s + a) : (l = s + a, l -= await v.damageToArmor(e, l)) : l = a + s, l -= d.resistance(e, t), l > 0 && await d.addCounter(e, t, l), l;
   }
   static async sufferDamageArmorAsResistance_Cyberpunk(e, t, a, s, i, n) {
     if (t == c.monitors.marks) {
-      await R.sufferMarks(e, n);
+      await v.sufferMarks(e, n);
       return;
     }
     let l = a + s;
     if (d.useArmor(t) && l > 0) {
-      const m = i ? s : 0, y = Math.max(0, R._computeArmorResistance(e) - m);
-      y > 0 && (await d.addCounter(e, "armor", 1), l -= y);
+      const m = i ? s : 0, g = Math.max(0, v._computeArmorResistance(e) - m);
+      g > 0 && (await d.addCounter(e, "armor", 1), l -= g);
     }
     return l -= d.resistance(e, t), l > 0 && await d.addCounter(e, t, l), Math.max(l, 0);
   }
   static async sufferDamageArmorAsResistance_Earthdawn(e, t, a, s, i, n) {
     if (t == c.monitors.marks) {
-      await R.sufferMarks(e, n);
+      await v.sufferMarks(e, n);
       return;
     }
     let l = a + s;
     if (d.useArmor(t) && !i && l > 0) {
-      const m = R._computeArmorResistance(e);
+      const m = v._computeArmorResistance(e);
       m > 0 && (await d.addCounter(e, "armor", 1), l -= m);
     }
-    return l -= R._computeStrengthResistance(e, t), l -= d.resistance(e, t), l > 0 && await d.addCounter(e, t, l), l;
+    return l -= v._computeStrengthResistance(e, t), l -= d.resistance(e, t), l > 0 && await d.addCounter(e, t, l), l;
   }
   static async damageToArmor(e, t) {
     if (t > 0) {
@@ -2834,7 +2850,10 @@ class R {
     return Math.max(0, Math.floor(a / 4));
   }
 }
-class S extends Actor {
+class H extends Actor {
+  static init() {
+    Hooks.on("updateActor", async (e, t, a, s) => await e.onUpdateActor(t, a));
+  }
   constructor(e, t = {}) {
     var a;
     if (!((a = t.anarchy) != null && a.ready)) {
@@ -2907,7 +2926,7 @@ class S extends Actor {
       initiative: A.sumModifiers(this.items, "other", "initiative")
     }, Object.entries(this.system.monitors).forEach((e) => {
       e[1].maxBonus = A.sumMonitorModifiers(this.items, e[0], "max"), e[1].resistanceBonus = A.sumMonitorModifiers(this.items, e[0], "resistance");
-    }), this.system.attributes && Object.entries(this.system.attributes).forEach((e) => e[1].total = this.getAttributeValue(e[0]));
+    }), this.system.attributes && Object.entries(this.system.attributes).forEach((e) => e[1].total = this.getAttributeValue(e[0])), this.system.state = this.computeState();
   }
   getAttributes() {
     return [];
@@ -2921,6 +2940,26 @@ class S extends Actor {
   prepareMatrixMonitor() {
     const e = this.getMatrixDetails();
     e.hasMatrix && (this.system.monitors.matrix.max = this._getMonitorMax(e.logic), this.system.monitors.matrix.canMark = !0);
+  }
+  async onUpdateActor(e, t) {
+    var a, s;
+    ((a = e.system) == null ? void 0 : a.monitors) != null && ((s = e.system) == null ? void 0 : s.state) == null && this.update({ "system.state": this.computeState() });
+  }
+  computeState() {
+    return {
+      matrix: this.computeMatrixState(),
+      physical: this.computePhysicalState()
+    };
+  }
+  computePhysicalState() {
+    return { value: 0, max: 0 };
+  }
+  computeMatrixState() {
+    const e = this.getMatrixDetails();
+    return e.hasMatrix ? {
+      value: e.monitor.max - e.monitor.value,
+      max: e.monitor.max
+    } : { value: 0, max: 0 };
   }
   getMatrixDetails() {
     return {
@@ -2977,7 +3016,7 @@ class S extends Actor {
   }
   getUsableAttributes(e = void 0) {
     const t = (e ? [e] : this.items).map((s) => s.getUsableAttributes()).reduce((s, i) => s.concat(i), []), a = f.distinct(this.getAttributes().concat(t));
-    return a.sort(f.ascendingBySortedArray(H.sortedAttributeKeys)), a;
+    return a.sort(f.ascendingBySortedArray(S.sortedAttributeKeys)), a;
   }
   getAttributeValue(e, t = void 0) {
     let a = 0;
@@ -3010,34 +3049,34 @@ class S extends Actor {
     switch (e) {
       case c.monitors.physical:
       case c.monitors.stun:
-        await R.damageToArmor(this, t);
+        await v.damageToArmor(this, t);
     }
   }
   async rollAttribute(e) {
-    await v.rollAttribute(this, e);
+    await R.rollAttribute(this, e);
   }
   async rollAttributeAction(e) {
     const t = Y.getActorAction(this, e);
-    await v.rollAttributeAction(this, t);
+    await R.rollAttributeAction(this, t);
   }
   async rollSkill(e, t) {
-    await v.rollSkill(this, e, t);
+    await R.rollSkill(this, e, t);
   }
   async rollWeapon(e) {
     var i, n, l;
     B.checkWeaponDefense(e, this);
     const t = (i = e.validateTargets(this)) == null ? void 0 : i.map((m) => m.id), a = {
       attackerTokenId: (l = (n = game.scenes.current) == null ? void 0 : n.tokens.find((m) => {
-        var y;
-        return ((y = m.actor) == null ? void 0 : y.id) == this.id;
+        var g;
+        return ((g = m.actor) == null ? void 0 : g.id) == this.id;
       })) == null ? void 0 : l.id,
       targetedTokenIds: t
     }, s = this.items.find((m) => e.isWeaponSkill(m));
-    await v.rollWeapon(this, s, e, a);
+    await R.rollWeapon(this, s, e, a);
   }
   async rollDefense(e) {
     const t = e.attack.defense, a = Y.getActorDefense(this, t);
-    await v.rollDefense(this, a, e);
+    await R.rollDefense(this, a, e);
   }
   async rollPilotDefense(e) {
   }
@@ -3181,8 +3220,8 @@ class S extends Actor {
     return game.actors.filter((e) => e.system.ownerId == this.id);
   }
   hasFavorite(e, t) {
-    const a = S._prepareFavorite(e, t);
-    return !!this.system.favorites.find((s) => S._isSameFavorite(a, s));
+    const a = H._prepareFavorite(e, t);
+    return !!this.system.favorites.find((s) => H._isSameFavorite(a, s));
   }
   static _prepareFavorite(e, t) {
     return { type: e, id: t };
@@ -3191,7 +3230,7 @@ class S extends Actor {
     return e.id == t.id && e.type == t.type;
   }
   async switchFavorite(e, t, a) {
-    const s = S._prepareFavorite(t, a), i = this.system.favorites.filter((n) => !S._isSameFavorite(s, n));
+    const s = H._prepareFavorite(t, a), i = this.system.favorites.filter((n) => !H._isSameFavorite(s, n));
     e && i.push(s), this.update({ "system.favorites": i });
   }
   async cleanupFavorites() {
@@ -3206,7 +3245,7 @@ class S extends Actor {
   }
   getShortcut(e, t) {
     var s;
-    const a = S._prepareFavorite(e, t);
+    const a = H._prepareFavorite(e, t);
     if (e == "attributeAction") {
       const i = Y.prepareShortcut(this, t);
       if (i)
@@ -3353,7 +3392,7 @@ class ye extends ActorSheet {
           owner: this.document.isOwner,
           cssClass: this.isEditable ? "editable" : "locked"
         },
-        ENUMS: foundry.utils.mergeObject({ attributeAction: this.actor.getAttributeActions() }, H.getEnums()),
+        ENUMS: foundry.utils.mergeObject({ attributeAction: this.actor.getAttributeActions() }, S.getEnums()),
         ANARCHY: o
       }
     );
@@ -3575,10 +3614,10 @@ class Ge extends Se {
 }
 class jt {
   static monitor(e) {
-    return game.i18n.localize(H.getFromList(H.getMonitors(), e) ?? "");
+    return game.i18n.localize(S.getFromList(S.getMonitors(), e) ?? "");
   }
   static letter(e) {
-    return game.i18n.localize(H.getFromList(H.getMonitorLetters(), e) ?? "");
+    return game.i18n.localize(S.getFromList(S.getMonitorLetters(), e) ?? "");
   }
 }
 class Wt {
@@ -3651,7 +3690,7 @@ class K extends Item {
     return (t = (e = this.system.monitors) == null ? void 0 : e.matrix) == null ? void 0 : t.canMark;
   }
   async rollAttribute(e) {
-    this.parent && await v.itemAttributeRoll(this, e);
+    this.parent && await R.itemAttributeRoll(this, e);
   }
   async switchMonitorCheck(e, t, a, s = void 0) {
     await d.switchMonitorCheck(this.parent, e, t, a, s, this);
@@ -3887,7 +3926,7 @@ class Q extends K {
     return this.system.range.max != "short" && e.push(this._getRange("medium")), this.system.range.max == "long" && e.push(this._getRange("long")), e;
   }
   _getRange(e) {
-    return { value: this.system.range[e], labelkey: H.getFromList(H.getEnums().ranges, e) };
+    return { value: this.system.range[e], labelkey: S.getFromList(S.getEnums().ranges, e) };
   }
   prepareShortcut() {
     return {
@@ -4060,7 +4099,7 @@ const Kt = [
   "systems/anarchy/templates/app/gm-difficulty.hbs",
   "systems/anarchy/templates/app/gm-difficulty-buttons.hbs"
 ];
-class Re {
+class ve {
   constructor() {
     Hooks.once("ready", () => this.onReady());
   }
@@ -4068,7 +4107,7 @@ class Re {
     this.registerBasicHelpers(), await loadTemplates(f.distinct(Kt));
   }
   registerBasicHelpers() {
-    Handlebars.registerHelper("concat", (...e) => f.join(e.slice(0, -1))), Handlebars.registerHelper("substring", (e, t, a) => e == null ? void 0 : e.substring(t, a)), Handlebars.registerHelper("toUpperCase", Wt.toUpperCaseNoAccent), Handlebars.registerHelper("weaponDamageLetter", jt.letter), Handlebars.registerHelper("weaponDamageCode", Q.damageCode), Handlebars.registerHelper("weaponDamageValue", Q.damageValue), Handlebars.registerHelper("weaponArmorMode", Q.armorMode), Handlebars.registerHelper("skillValue", (e, t) => e.getSkillValue(t, !1)), Handlebars.registerHelper("specializationValue", (e, t) => e.getSkillValue(t, !0)), Handlebars.registerHelper("for", Re.hbsForLoop), Handlebars.registerHelper("modulo", (e, t) => e % t), Handlebars.registerHelper("divint", f.divint), Handlebars.registerHelper("divup", f.divup), Handlebars.registerHelper("sum", (e, t) => e + t), Handlebars.registerHelper("times", (e, t) => e * t), Handlebars.registerHelper("diff", (e, t) => e - t), Handlebars.registerHelper("min", (e, t) => Math.min(e, t)), Handlebars.registerHelper("max", (e, t) => Math.max(e, t)), Handlebars.registerHelper("either", (e, t) => e || t), Handlebars.registerHelper("isInteger", (e) => e !== void 0 && Number.isInteger(e)), Handlebars.registerHelper("actorAttribute", (e, t, a = void 0) => t.getAttributeValue(e, a)), Handlebars.registerHelper("localizeAttribute", H.localizeAttribute), Handlebars.registerHelper("iconFA", u.fontAwesome), Handlebars.registerHelper("iconSrc", u.iconSystemPath), Handlebars.registerHelper("iconPath", u.iconPath), Handlebars.registerHelper("iconD6", u.iconD6), Handlebars.registerHelper("getActor", (e) => game.actors.get(e)), Handlebars.registerHelper("actorHasFavorite", (e, t) => Re.checkHasFavorite(e, t)), Handlebars.registerHelper("padWordListToMin", S.padWordListToMin), Handlebars.registerHelper("sortSkills", S.sortSkills), Handlebars.registerHelper("sortShadowamps", S.sortShadowamps), Handlebars.registerHelper("sortQualities", S.sortQualities), Handlebars.registerHelper("sortAttributeButton", S.sortAttributeButton), Handlebars.registerHelper("range", function(e, t) {
+    Handlebars.registerHelper("concat", (...e) => f.join(e.slice(0, -1))), Handlebars.registerHelper("substring", (e, t, a) => e == null ? void 0 : e.substring(t, a)), Handlebars.registerHelper("toUpperCase", Wt.toUpperCaseNoAccent), Handlebars.registerHelper("weaponDamageLetter", jt.letter), Handlebars.registerHelper("weaponDamageCode", Q.damageCode), Handlebars.registerHelper("weaponDamageValue", Q.damageValue), Handlebars.registerHelper("weaponArmorMode", Q.armorMode), Handlebars.registerHelper("skillValue", (e, t) => e.getSkillValue(t, !1)), Handlebars.registerHelper("specializationValue", (e, t) => e.getSkillValue(t, !0)), Handlebars.registerHelper("for", ve.hbsForLoop), Handlebars.registerHelper("modulo", (e, t) => e % t), Handlebars.registerHelper("divint", f.divint), Handlebars.registerHelper("divup", f.divup), Handlebars.registerHelper("sum", (e, t) => e + t), Handlebars.registerHelper("times", (e, t) => e * t), Handlebars.registerHelper("diff", (e, t) => e - t), Handlebars.registerHelper("min", (e, t) => Math.min(e, t)), Handlebars.registerHelper("max", (e, t) => Math.max(e, t)), Handlebars.registerHelper("either", (e, t) => e || t), Handlebars.registerHelper("isInteger", (e) => e !== void 0 && Number.isInteger(e)), Handlebars.registerHelper("actorAttribute", (e, t, a = void 0) => t.getAttributeValue(e, a)), Handlebars.registerHelper("localizeAttribute", S.localizeAttribute), Handlebars.registerHelper("iconFA", u.fontAwesome), Handlebars.registerHelper("iconSrc", u.iconSystemPath), Handlebars.registerHelper("iconPath", u.iconPath), Handlebars.registerHelper("iconD6", u.iconD6), Handlebars.registerHelper("getActor", (e) => game.actors.get(e)), Handlebars.registerHelper("actorHasFavorite", (e, t) => ve.checkHasFavorite(e, t)), Handlebars.registerHelper("padWordListToMin", H.padWordListToMin), Handlebars.registerHelper("sortSkills", H.sortSkills), Handlebars.registerHelper("sortShadowamps", H.sortShadowamps), Handlebars.registerHelper("sortQualities", H.sortQualities), Handlebars.registerHelper("sortAttributeButton", H.sortAttributeButton), Handlebars.registerHelper("range", function(e, t) {
       let a = [];
       for (let s = e; s <= t; s++)
         a.push(s);
@@ -4100,7 +4139,7 @@ class Xt {
     this.availableStyles = {}, Z.register(b.REGISTER_STYLES), Hooks.once(b.REGISTER_STYLES, (e) => qt.forEach((t) => e(t.cssClass, t.name))), Hooks.once("ready", () => this.onReady());
   }
   async onReady() {
-    Hooks.callAll(b.REGISTER_STYLES, (e, t) => this.availableStyles[e] = t), console.log(x + "Loaded styles", this.availableStyles), game.settings.register(g, ct, {
+    Hooks.callAll(b.REGISTER_STYLES, (e, t) => this.availableStyles[e] = t), console.log(x + "Loaded styles", this.availableStyles), game.settings.register(y, ct, {
       scope: "world",
       name: game.i18n.localize(o.settings.defaultCssClass.name),
       hint: game.i18n.localize(o.settings.defaultCssClass.hint),
@@ -4111,11 +4150,11 @@ class Xt {
     });
   }
   selectCssClass() {
-    const e = game.settings.get(g, ct);
+    const e = game.settings.get(y, ct);
     return this.availableStyles[e] ? e : Ve;
   }
 }
-const ve = "glitch", ge = "risk", lt = "reroll", mt = "rerollRemoved", Qt = "removed", Me = `${le}/style/danger-point.webp`, Ae = `${le}/style/anarchy-point.webp`, X = class X {
+const Re = "glitch", ge = "risk", lt = "reroll", mt = "rerollRemoved", Qt = "removed", Me = `${le}/style/danger-point.webp`, Ae = `${le}/style/anarchy-point.webp`, X = class X {
   static init() {
     CONFIG.Dice.terms[Ce.DENOMINATION] = Ce, CONFIG.Dice.terms[ke.DENOMINATION] = ke, Hooks.once("diceSoNiceReady", (e) => X.diceSoNiceReady(e)), Hooks.once("ready", () => X.onReady());
   }
@@ -4140,8 +4179,8 @@ const ve = "glitch", ge = "risk", lt = "reroll", mt = "rerollRemoved", Qt = "rem
         description: game.i18n.localize(o.common.roll.rollTheme.rerollRemoved),
         category: se
       },
-      [ve]: {
-        name: ve,
+      [Re]: {
+        name: Re,
         description: game.i18n.localize(o.common.roll.rollTheme.glitch),
         category: se,
         foreground: "white",
@@ -4165,7 +4204,7 @@ const ve = "glitch", ge = "risk", lt = "reroll", mt = "rerollRemoved", Qt = "rem
     };
   }
   static diceSoNiceReady(e) {
-    X.dice3d = e, game.settings.set("dice-so-nice", "enabledSimultaneousRollForMessage", !1), e.addSystem({ id: g, name: se }), Object.values(X.COLORSETS).forEach((t) => e.addColorset(t)), e.addDicePreset(Ce.diceSoNiceData()), e.addDicePreset(ke.diceSoNiceData());
+    X.dice3d = e, game.settings.set("dice-so-nice", "enabledSimultaneousRollForMessage", !1), e.addSystem({ id: y, name: se }), Object.values(X.COLORSETS).forEach((t) => e.addColorset(t)), e.addDicePreset(Ce.diceSoNiceData()), e.addDicePreset(ke.diceSoNiceData());
   }
   static img(e) {
     return `<img src="${e}" />`;
@@ -4189,8 +4228,8 @@ class Ce extends Die {
     return {
       type: "dg",
       labels: [Me, "2", "3", "4", "5", "6"],
-      colorset: ve,
-      system: g
+      colorset: Re,
+      system: y
     };
   }
 }
@@ -4217,7 +4256,7 @@ class ke extends Die {
       type: "dr",
       labels: [Me, "2", "3", "4", Ae, Ae],
       colorset: ge,
-      system: g
+      system: y
     };
   }
 }
@@ -4270,7 +4309,7 @@ class Ne {
     e > 0 && (this.subrolls.removed = new Roll(`-${e}d1cf=1[${ae.removed}]`), await this.subrolls.removed.evaluate({ async: !0 }), this.subrolls.rerollForced = new Roll(`${e}d6cs>=${this.param.target}[${ae.rerollRemoved}]`), await this.subrolls.rerollForced.evaluate({ async: !0 }), this.total -= e, this.total += this.subrolls.rerollForced.total);
   }
   async rollGlitchDice() {
-    this.param.glitch > 0 && (this.subrolls.glitch = new Roll(`${this.param.glitch}d6cf=1[${ae.glitch}]`), await this.subrolls.glitch.evaluate({ async: !0 }), this.subrolls.glitch.dice[0].options.appearance = { colorset: ve }, this.glitch = this.subrolls.glitch.terms[0].results.filter((e) => e.result == 1).length, this.glitchOutcome = this.glitch > 0 ? "glitch" : "nothing", this.totalGlitch += this.glitch);
+    this.param.glitch > 0 && (this.subrolls.glitch = new Roll(`${this.param.glitch}d6cf=1[${ae.glitch}]`), await this.subrolls.glitch.evaluate({ async: !0 }), this.subrolls.glitch.dice[0].options.appearance = { colorset: Re }, this.glitch = this.subrolls.glitch.terms[0].results.filter((e) => e.result == 1).length, this.glitchOutcome = this.glitch > 0 ? "glitch" : "nothing", this.totalGlitch += this.glitch);
   }
   async rollAnarchyRisk() {
     this.param.risk > 0 && (this.subrolls.risk = new Roll(`${this.param.risk}drcs>=5[${ae.anarchyRisk}]`), await this.subrolls.risk.evaluate({ async: !0 }), this.subrolls.risk.dice[0].options.appearance = { colorset: ge }, this.riskGlitch = this.subrolls.risk.terms[0].results.filter((e) => e.result == 1).length, this.riskProwess += this.subrolls.risk.terms[0].results.filter((e) => e.result >= 5).length, this.subrolls.risk.total > 0 && this.total++, this.riskOutcome = this.riskProwess > 0 ? "prowess" : this.riskGlitch > 0 ? "glitch" : "nothing", this.totalGlitch += this.riskGlitch);
@@ -4298,7 +4337,7 @@ class Ne {
   }
 }
 const _e = "systemMigrationVersion";
-class U {
+class F {
   get code() {
     return "sample";
   }
@@ -4318,7 +4357,7 @@ class U {
     t.length > 0 && (console.log(this.code, "Applying updates on items", t), await Item.updateDocuments(t));
   }
 }
-class Jt extends U {
+class Jt extends F {
   get version() {
     return "0.3.1";
   }
@@ -4341,7 +4380,7 @@ class Jt extends U {
     return e instanceof String ? { word: e } : e;
   }
 }
-class ea extends U {
+class ea extends F {
   get version() {
     return "0.3.8";
   }
@@ -4357,7 +4396,7 @@ class ea extends U {
     this.applyItemsUpdates((a) => a.filter(e).map(t));
   }
 }
-class ta extends U {
+class ta extends F {
   get version() {
     return "0.3.14";
   }
@@ -4369,7 +4408,7 @@ class ta extends U {
     await this.applyItemsUpdates(l);
   }
 }
-class aa extends U {
+class aa extends F {
   get version() {
     return "0.4.0";
   }
@@ -4387,7 +4426,7 @@ class aa extends U {
     await this.applyItemsUpdates((a) => a.filter((s) => s.isWeapon()).filter(e).map(t));
   }
 }
-class sa extends U {
+class sa extends F {
   get version() {
     return "0.5.0";
   }
@@ -4406,7 +4445,7 @@ class sa extends U {
     ), t;
   }
 }
-class ra extends U {
+class ra extends F {
   get version() {
     return "0.6.0";
   }
@@ -4418,7 +4457,7 @@ class ra extends U {
     await this.applyItemsUpdates((s) => s.filter(t).map(a));
   }
 }
-class ia extends U {
+class ia extends F {
   get version() {
     return "11.1.0";
   }
@@ -4443,18 +4482,18 @@ class ia extends U {
     const i = {};
     return e.system.modifiers.forEach((n) => i[n.id] = duplicate(n)), Object.values(i).filter((n) => this.isDefenseModifier(n)).forEach((n) => {
       const l = duplicate(n);
-      let m = Object.values(i).filter((y) => this.isCorrespondingActionModifier(y, n));
+      let m = Object.values(i).filter((g) => this.isCorrespondingActionModifier(g, n));
       switch (m.length) {
         case 0: {
           n.category = E.rollType.attributeAction, s("Changed category", l, n);
           break;
         }
         case 1: {
-          const y = m[0];
-          foundry.utils.mergeObject(y, {
-            value: Math.max(n.value, y.value),
-            condition: y.condition ? y.condition + (n.condition ?? "") : n.condition
-          }, { overwrite: !0 }), delete i[n.id], s("Merged with existing", n, y);
+          const g = m[0];
+          foundry.utils.mergeObject(g, {
+            value: Math.max(n.value, g.value),
+            condition: g.condition ? g.condition + (n.condition ?? "") : n.condition
+          }, { overwrite: !0 }), delete i[n.id], s("Merged with existing", n, g);
           break;
         }
         default: {
@@ -4467,7 +4506,7 @@ class ia extends U {
         </li>`), { _id: e.id, "system.modifiers": Object.values(i) };
   }
 }
-class oa extends U {
+class oa extends F {
   get version() {
     return "11.1.9";
   }
@@ -4478,7 +4517,7 @@ class oa extends U {
     game.actors.filter((e) => e.isVehicle()).forEach(async (e) => await e._migrateHandlingToAttribute());
   }
 }
-class na extends U {
+class na extends F {
   get version() {
     return "11.1.12";
   }
@@ -4503,7 +4542,7 @@ class na extends U {
     return e;
   }
 }
-class ca extends U {
+class ca extends F {
   get version() {
     return "11.1.16";
   }
@@ -4518,7 +4557,7 @@ class ca extends U {
     })));
   }
 }
-class la extends U {
+class la extends F {
   get version() {
     return "12.0.1";
   }
@@ -4534,7 +4573,7 @@ class la extends U {
     );
   }
 }
-class ma extends U {
+class ma extends F {
   get version() {
     return "12.0.2";
   }
@@ -4563,7 +4602,7 @@ class da {
       new ca(),
       new la(),
       new ma()
-    )), game.settings.register(g, _e, {
+    )), game.settings.register(y, _e, {
       name: "System Migration Version",
       scope: "world",
       config: !1,
@@ -4572,7 +4611,7 @@ class da {
     });
   }
   migrate() {
-    const e = game.settings.get(g, _e);
+    const e = game.settings.get(y, _e);
     if (foundry.utils.isNewerVersion(game.system.version, e)) {
       let t = [];
       Hooks.callAll(
@@ -4581,7 +4620,7 @@ class da {
       ), Hooks.off(b.DECLARE_MIGRATIONS, () => {
       }), t.length > 0 ? (t.sort((a, s) => foundry.utils.isNewerVersion(a.version, s.version) ? 1 : foundry.utils.isNewerVersion(s.version, a.version) ? -1 : 0), t.forEach(async (a) => {
         ui.notifications.info(`Executing migration ${a.code}: version ${e} is lower than ${a.version}`), await a.migrate();
-      }), ui.notifications.info(`Migrations done, version will change to ${game.system.version}`)) : console.log(x + `No migration needeed, version will change to ${game.system.version}`), game.settings.set(g, _e, game.system.version);
+      }), ui.notifications.info(`Migrations done, version will change to ${game.system.version}`)) : console.log(x + `No migration needeed, version will change to ${game.system.version}`), game.settings.set(y, _e, game.system.version);
     } else
       console.log(x + "No system version changed");
   }
@@ -4672,15 +4711,22 @@ class He extends Dialog {
   // }
 }
 const ha = `${h}/chat/actor-drain.hbs`, ga = `${h}/chat/actor-say-word.hbs`;
-class ya extends S {
+class ya extends H {
   static get initiative() {
-    return S.initiative + " + max(@attributes.agility.value, @attributes.logic.value)";
+    return H.initiative + " + max(@attributes.agility.value, @attributes.logic.value)";
   }
   hasOwnAnarchy() {
     return this.hasPlayerOwner;
   }
   prepareDerivedData() {
     this.system.monitors.physical.max = this._getMonitorMax(c.attributes.strength), this.system.monitors.stun.max = this._getMonitorMax(c.attributes.willpower), super.prepareDerivedData(), this.system.ignoreWounds = A.sumModifiers(this.items, "other", "ignoreWounds");
+  }
+  computePhysicalState() {
+    const e = Math.max(this.system.monitors.physical.max, this.system.monitors.stun.max) + this.system.monitors.armor.max, t = this.system.monitors.physical.value == this.system.monitors.physical.max, a = this.system.monitors.stun.max == this.system.monitors.stun.value, s = t || a ? e : Math.max(this.system.monitors.physical.value, this.system.monitors.stun.value) + this.system.monitors.armor.value;
+    return {
+      max: e,
+      value: e - s
+    };
   }
   computeEssence() {
     const e = game.system.anarchy.hooks.callHookMethod(b.PROVIDE_BASE_ESSENCE, this), t = f.sumValues(this.items.filter((s) => s.type == "shadowamp").map((s) => Math.abs(s.system.essence))), a = A.sumModifiers(this.items, "other", "essenceAdjustment");
@@ -4873,12 +4919,12 @@ const pa = [
   c.attributes.system,
   c.attributes.firewall
 ];
-class fa extends S {
+class fa extends H {
   static get defaultIcon() {
     return `${G}/actors/cctv-camera.svg`;
   }
   static get initiative() {
-    return S.initiative + " + @attributes.system.value";
+    return H.initiative + " + @attributes.system.value";
   }
   getMatrixDetails() {
     return {
@@ -4899,15 +4945,21 @@ const Aa = [
   c.attributes.firewall,
   c.attributes.system
 ];
-class ba extends S {
+class ba extends H {
   static get defaultIcon() {
     return `${G}/shadowamps/drone.svg`;
   }
   static get initiative() {
-    return S.initiative + " + max(@attributes.system.value, @attributes.autopilot.value)";
+    return H.initiative + " + max(@attributes.system.value, @attributes.autopilot.value)";
   }
   prepareDerivedData() {
     this.system.monitors.matrix.max = this._getMonitorMax(c.attributes.system), super.prepareDerivedData();
+  }
+  computePhysicalState() {
+    return {
+      max: this.system.monitors.structure.max,
+      value: this.system.monitors.structure.max - this.system.monitors.structure.value
+    };
   }
   getMatrixDetails() {
     return {
@@ -5003,7 +5055,7 @@ class wa extends ye {
     super.activateListeners(e);
   }
 }
-class Ra extends Se {
+class va extends Se {
   get template() {
     return `${h}/actor/npc-sheet.hbs`;
   }
@@ -5018,7 +5070,7 @@ class Ra extends Se {
     return t.options.classes.push("npc-sheet"), t;
   }
 }
-class va extends K {
+class Ra extends K {
   static get defaultIcon() {
     return `${G}/vitruvian-man.svg`;
   }
@@ -5092,7 +5144,7 @@ class J extends ItemSheet {
           editable: this.isEditable,
           cssClass: this.isEditable ? "editable" : "locked"
         },
-        ENUMS: foundry.utils.mergeObject(H.getEnums(a, s), game.system.anarchy.modifiers.getEnums()),
+        ENUMS: foundry.utils.mergeObject(S.getEnums(a, s), game.system.anarchy.modifiers.getEnums()),
         ANARCHY: o
       }
     );
@@ -5241,10 +5293,10 @@ class Pa extends K {
     return `${G}/shadowamps/other.svg`;
   }
 }
-const we = "convergences", $a = `${g}.${we}`, dt = "GMConvergence.rollConvergence", La = `${h}/app/gm-convergence.hbs`, ut = `${h}/app/gm-convergence-actors.hbs`;
+const we = "convergences", $a = `${y}.${we}`, dt = "GMConvergence.rollConvergence", La = `${h}/app/gm-convergence.hbs`, ut = `${h}/app/gm-convergence-actors.hbs`;
 class Ga {
   constructor() {
-    game.settings.register(g, we, {
+    game.settings.register(y, we, {
       scope: "world",
       config: !1,
       default: [],
@@ -5255,7 +5307,7 @@ class Ga {
     await loadTemplates([
       La,
       ut
-    ]), this.convergences = game.settings.get(g, we).filter((e) => game.actors.get(e.actorId)), await j.register(dt, {
+    ]), this.convergences = game.settings.get(y, we).filter((e) => game.actors.get(e.actorId)), await j.register(dt, {
       callback: (e) => this.rollConvergence(e.actorId, e.convergence),
       condition: (e) => e.isGM
     });
@@ -5284,7 +5336,7 @@ class Ga {
   }
   async setActorConvergence(e, t) {
     let a = this.convergences.find((s) => s.actorId == e.id);
-    a || (a = { actorId: e.id }, this.convergences.push(a)), a.convergence = t, this.convergences = this.convergences.filter((s) => s.convergence > 0), game.settings.set(g, we, this.convergences);
+    a || (a = { actorId: e.id }, this.convergences.push(a)), a.convergence = t, this.convergences = this.convergences.filter((s) => s.convergence > 0), game.settings.set(y, we, this.convergences);
   }
   async activateListeners(e) {
     this.toolbar = e.find(".gm-convergence-bar"), await this._rebuild();
@@ -5320,8 +5372,8 @@ class ht extends Combat {
   async rollInitiative(e, t) {
     const a = e.map((i) => this.combatants.find((n) => n.id == i)), s = f.classify(a, (i) => i.actor.type);
     Object.entries(s).forEach(async ([i, n]) => {
-      const l = game.system.anarchy.actorClasses[i], m = n.map((q) => q.id), y = foundry.utils.mergeObject({ formula: l.initiative }, t ?? {});
-      await super.rollInitiative(m, y);
+      const l = game.system.anarchy.actorClasses[i], m = n.map((q) => q.id), g = foundry.utils.mergeObject({ formula: l.initiative }, t ?? {});
+      await super.rollInitiative(m, g);
     });
   }
   async onCreateCombatant(e, t, a) {
@@ -5356,7 +5408,7 @@ class Va extends ye {
     super.activateListeners(e);
   }
 }
-class Fa extends ye {
+class Ua extends ye {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       width: 450,
@@ -5373,16 +5425,16 @@ class Fa extends ye {
     super.activateListeners(e);
   }
 }
-const Ua = [
+const Fa = [
   c.attributes.logic,
   c.attributes.edge
 ];
-class ja extends S {
+class ja extends H {
   static get defaultIcon() {
     return `${G}/misc/rss.svg`;
   }
   static get initiative() {
-    return S.initiative + " + @attributes.logic.value";
+    return H.initiative + " + @attributes.logic.value";
   }
   getMatrixDetails() {
     return {
@@ -5394,7 +5446,7 @@ class ja extends S {
     };
   }
   getAttributes() {
-    return Ua;
+    return Fa;
   }
   isEmerged() {
     return !0;
@@ -5404,12 +5456,12 @@ const Wa = [
   c.attributes.logic,
   c.attributes.firewall
 ];
-class za extends S {
+class za extends H {
   static get defaultIcon() {
     return `${G}/misc/rub-el-hizb.svg`;
   }
   static get initiative() {
-    return S.initiative + " + @attributes.logic.value";
+    return H.initiative + " + @attributes.logic.value";
   }
   getMatrixDetails() {
     return {
@@ -5457,8 +5509,8 @@ class Ba {
     return this._toggleHudActive(i, n), i.find(".anarchy-shortcuts-toggle").click((l) => {
       this._toggleHudActive(i, n);
     }), n.find(".anarchy-shortcut-button").click((l) => {
-      const m = $(l.currentTarget).closest(".anarchy-shortcuts-list").attr("data-token-id"), y = $(l.currentTarget).attr("data-shortcut-type"), q = $(l.currentTarget).attr("data-shortcut-id");
-      this.onClickShortcutButton(m, y, q);
+      const m = $(l.currentTarget).closest(".anarchy-shortcuts-list").attr("data-token-id"), g = $(l.currentTarget).attr("data-shortcut-type"), q = $(l.currentTarget).attr("data-shortcut-id");
+      this.onClickShortcutButton(m, g, q);
     }), i;
   }
   onClickShortcutButton(e, t, a) {
@@ -5523,7 +5575,7 @@ class T {
   async _displayRollInChat(e) {
     e.options.classes = [game.system.anarchy.styles.selectCssClass()];
     const t = {};
-    M.prepareFlag(t, ne, T.deflateAnarchyRoll(e)), M.prepareFlag(t, Fe, e.options.canUseEdge), M.prepareFlag(t, Ue, M.messageActorRights(e.actor));
+    M.prepareFlag(t, ne, T.deflateAnarchyRoll(e)), M.prepareFlag(t, Ue, e.options.canUseEdge), M.prepareFlag(t, Fe, M.messageActorRights(e.actor));
     const a = await renderTemplate(qa, e), s = await e.roll.toMessage({ flavor: a, flags: t });
     e.chatMessageId = s.id;
   }
@@ -5531,7 +5583,7 @@ class T {
     return e && (e = deepClone(e), e.actor = T._reduceToId(e.actor), e.skill = T._reduceToId(e.skill), e.skill = T._reduceToId(e.skill), e.weapon = T._reduceToId(e.weapon), e.item = T._reduceToId(e.item), e.parameters = T._reduceParameters(e.parameters), e.attackData = void 0, e.attributes = void 0, e.ANARCHY = void 0, e.ENUMS = void 0), e;
   }
   static inflateAnarchyRoll(e) {
-    return e && (e = deepClone(e), e.actor = T._reloadActorFromId(e.actor, e.tokenId), e.skill = T._reloadItemFromId(e.actor, e.skill), e.item = T._reloadItemFromId(e.actor, e.item), e.weapon = T._reloadItemFromId(e.actor, e.weapon), e.attributes = e.actor.getUsableAttributes(e.item), e.parameters = T._reloadParameters(e, e.parameters), e.ANARCHY = o, e.ENUMS = H.getEnums()), e;
+    return e && (e = deepClone(e), e.actor = T._reloadActorFromId(e.actor, e.tokenId), e.skill = T._reloadItemFromId(e.actor, e.skill), e.item = T._reloadItemFromId(e.actor, e.item), e.weapon = T._reloadItemFromId(e.actor, e.weapon), e.attributes = e.actor.getUsableAttributes(e.item), e.parameters = T._reloadParameters(e, e.parameters), e.ANARCHY = o, e.ENUMS = S.getEnums()), e;
   }
   static _reduceToId(e) {
     return e ? { id: e.id } : void 0;
@@ -5585,7 +5637,7 @@ class Za {
   }
   async displayDefenseChoice(e, t, a = void 0, s = void 0) {
     var Xe, Qe, Ze;
-    const i = (Xe = t.targeting) == null ? void 0 : Xe.attackerTokenId, n = this.getTokenActor(e), l = t.roll.total, m = (a == null ? void 0 : a.roll.total) ?? (s == null ? void 0 : s.roll.total) ?? 0, y = {
+    const i = (Xe = t.targeting) == null ? void 0 : Xe.attackerTokenId, n = this.getTokenActor(e), l = t.roll.total, m = (a == null ? void 0 : a.roll.total) ?? (s == null ? void 0 : s.roll.total) ?? 0, g = {
       attackerTokenId: i,
       defenderTokenId: e,
       attackRoll: T.deflateAnarchyRoll(t),
@@ -5599,11 +5651,11 @@ class Za {
         damage: t.weapon.getDamage()
       }
     }, q = [
-      (Qe = y.defenseRoll) == null ? void 0 : Qe.chatMessageId,
-      (Ze = y.defensePilotRoll) == null ? void 0 : Ze.chatMessageId,
-      y.attackRoll.chatMessageId
+      (Qe = g.defenseRoll) == null ? void 0 : Qe.chatMessageId,
+      (Ze = g.defensePilotRoll) == null ? void 0 : Ze.chatMessageId,
+      g.attackRoll.chatMessageId
     ], Te = {};
-    M.prepareFlag(Te, Ue, M.messageActorRights(n, n.getRightToDefend())), M.prepareFlag(Te, Pe, q.find((At) => At != null));
+    M.prepareFlag(Te, Fe, M.messageActorRights(n, n.getRightToDefend())), M.prepareFlag(Te, Pe, q.find((At) => At != null));
     const qe = await ChatMessage.create({
       user: game.user.id,
       whisper: n.getAllowedUserIds(n.getRightToDefend()),
@@ -5611,15 +5663,15 @@ class Za {
         {
           ANARCHY: o,
           options: { classes: [game.system.anarchy.styles.selectCssClass()] },
-          attacker: this.getTokenActor(y.attackerTokenId),
+          attacker: this.getTokenActor(g.attackerTokenId),
           defender: n,
-          weapon: y.attackRoll.weapon
+          weapon: g.attackRoll.weapon
         },
-        y
+        g
       )),
       flags: Te
     });
-    y.choiceChatMessageId = qe.id, qe.setFlag(L, ne, y);
+    g.choiceChatMessageId = qe.id, qe.setFlag(L, ne, g);
   }
   async onDefense(e) {
     this._preventObsoleteChoices(e);
@@ -5635,7 +5687,7 @@ class Za {
     const t = game.messages.get(e.choiceChatMessageId);
     if (t) {
       const a = t.getFlag(L, Pe) ?? "", s = game.messages.get(a);
-      s == null || s.setFlag(L, Fe, !1), M.removeChatMessage(e.choiceChatMessageId);
+      s == null || s.setFlag(L, Ue, !1), M.removeChatMessage(e.choiceChatMessageId);
     }
   }
   async onClickDefendAttack(e) {
@@ -5646,7 +5698,7 @@ class Za {
   }
   async onClickApplyAttackDamage(e) {
     const t = this.getTokenActor(e.attackerTokenId), a = this.getTokenActor(e.defenderTokenId), s = T.inflateAnarchyRoll(e.attackRoll);
-    await R.sufferDamage(
+    await v.sufferDamage(
       a,
       e.attack.damage.monitor,
       e.attack.damage.value,
@@ -5694,53 +5746,53 @@ class Ke {
       contact: Ia,
       cyberdeck: Ma,
       gear: _a,
-      metatype: va,
+      metatype: Ra,
       quality: xa,
       shadowamp: Pa,
       skill: Be,
       weapon: Q
-    }, this.hooks = new Z(), this.styles = new Xt(), this.handlebarsManager = new Re(), this.gmAnarchy = new Tt(), this.gmConvergence = new Ga(), H.init(), this.skills = new Ft(), this.modifiers = new A(), this.rollParameters = new ie(), this.rollManager = new T(), this.hudShortcuts = new Ba(), this.combatManager = new Za(), console.log(x + "AnarchySystem.onInit | loading system"), CONFIG.ANARCHY = o, CONFIG.Combat.documentClass = ht, CONFIG.Combat.initiative = { formula: "2d6" }, CONFIG.Actor.documentClass = S, CONFIG.Item.documentClass = K, d.init(), this.loadActorSheets(), this.loadItemSheets(), Q.init(), z.init(), v.init(), Y.init(), ht.init(), P.init(), oe.init(), Ne.init(), K.init(), R.init(), M.init(), this.gmManager = new Pt(this.gmAnarchy, this.gmConvergence), console.log(x + "AnarchySystem.onInit | done"), Hooks.once("ready", () => this.onReady());
+    }, this.hooks = new Z(), this.styles = new Xt(), this.handlebarsManager = new ve(), this.gmAnarchy = new Tt(), this.gmConvergence = new Ga(), S.init(), this.skills = new Ut(), this.modifiers = new A(), this.rollParameters = new ie(), this.rollManager = new T(), this.hudShortcuts = new Ba(), this.combatManager = new Za(), console.log(x + "AnarchySystem.onInit | loading system"), CONFIG.ANARCHY = o, CONFIG.Combat.documentClass = ht, CONFIG.Combat.initiative = { formula: "2d6" }, CONFIG.Actor.documentClass = H, CONFIG.Item.documentClass = K, d.init(), this.loadActorSheets(), this.loadItemSheets(), Q.init(), z.init(), R.init(), Y.init(), ht.init(), P.init(), oe.init(), Ne.init(), K.init(), H.init(), v.init(), M.init(), this.gmManager = new Pt(this.gmAnarchy, this.gmConvergence), console.log(x + "AnarchySystem.onInit | done"), Hooks.once("ready", () => this.onReady());
   }
   async onReady() {
     console.log(x + "AnarchySystem.onReady"), game.user.isGM && new da().migrate();
   }
   loadActorSheets() {
-    Actors.unregisterSheet("core", ActorSheet), Actors.registerSheet(g, Ca, {
+    Actors.unregisterSheet("core", ActorSheet), Actors.registerSheet(y, Ca, {
       label: game.i18n.localize(o.actor.characterSheet),
       makeDefault: !1,
       types: ["character"]
-    }), Actors.registerSheet(g, Ra, {
+    }), Actors.registerSheet(y, va, {
       label: game.i18n.localize(o.actor.characterNPCSheet),
       makeDefault: !1,
       types: ["character"]
-    }), Actors.registerSheet(g, Ja, {
+    }), Actors.registerSheet(y, Ja, {
       label: game.i18n.localize(o.actor.characterTabbedSheet),
       makeDefault: !1,
       types: ["character"]
-    }), Actors.registerSheet(g, Ge, {
+    }), Actors.registerSheet(y, Ge, {
       label: game.i18n.localize(o.actor.characterEnhancedSheet),
       makeDefault: !0,
       types: ["character"]
-    }), Actors.registerSheet(g, wa, {
+    }), Actors.registerSheet(y, wa, {
       label: game.i18n.localize(o.actor.vehicleSheet),
       makeDefault: !0,
       types: ["vehicle"]
-    }), Actors.registerSheet(g, ka, {
+    }), Actors.registerSheet(y, ka, {
       label: game.i18n.localize(o.actor.deviceSheet),
       makeDefault: !0,
       types: ["device"]
-    }), Actors.registerSheet(g, Fa, {
+    }), Actors.registerSheet(y, Ua, {
       label: game.i18n.localize(o.actor.spriteSheet),
       makeDefault: !0,
       types: ["sprite"]
-    }), Actors.registerSheet(g, Va, {
+    }), Actors.registerSheet(y, Va, {
       label: game.i18n.localize(o.actor.icSheet),
       makeDefault: !0,
       types: ["ic"]
     });
   }
   loadItemSheets() {
-    Items.unregisterSheet("core", ItemSheet), Items.registerSheet(g, Ha, { types: ["contact"], makeDefault: !0 }), Items.registerSheet(g, Sa, { types: ["cyberdeck"], makeDefault: !0 }), Items.registerSheet(g, Na, { types: ["gear"], makeDefault: !0 }), Items.registerSheet(g, Ta, { types: ["metatype"], makeDefault: !0 }), Items.registerSheet(g, Ea, { types: ["quality"], makeDefault: !0 }), Items.registerSheet(g, Da, { types: ["shadowamp"], makeDefault: !0 }), Items.registerSheet(g, Ya, { types: ["skill"], makeDefault: !0 }), Items.registerSheet(g, Oa, { types: ["weapon"], makeDefault: !0 });
+    Items.unregisterSheet("core", ItemSheet), Items.registerSheet(y, Ha, { types: ["contact"], makeDefault: !0 }), Items.registerSheet(y, Sa, { types: ["cyberdeck"], makeDefault: !0 }), Items.registerSheet(y, Na, { types: ["gear"], makeDefault: !0 }), Items.registerSheet(y, Ta, { types: ["metatype"], makeDefault: !0 }), Items.registerSheet(y, Ea, { types: ["quality"], makeDefault: !0 }), Items.registerSheet(y, Da, { types: ["shadowamp"], makeDefault: !0 }), Items.registerSheet(y, Ya, { types: ["skill"], makeDefault: !0 }), Items.registerSheet(y, Oa, { types: ["weapon"], makeDefault: !0 });
   }
 }
 Ke.start();

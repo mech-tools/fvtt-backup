@@ -17,7 +17,8 @@ export const SUPPORTED_COLLECTIONS = ['Item', 'Cards', 'RollTable', 'Actor', 'Jo
 export const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png', 'svg', 'apng', 'avif', 'bmp', 'gif', 'tif'];
 export const VIDEO_EXTENSIONS = ['mp4', 'ogv', 'webm', 'm4v'];
 export const AUDIO_EXTENSIONS = ['aac', 'flac', 'm4a', 'mid', 'mp3', 'ogg', 'opus', 'wav'];
-export const FILE_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS];
+export const MODEL_EXTENSIONS = ['glb', 'gltf', 'fbx'];
+export const FILE_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS, ...MODEL_EXTENSIONS];
 
 export const LINKER_DOC_ICONS = {
   Token: 'modules/multi-token-edit/images/linker/person-fill.svg',
@@ -44,15 +45,15 @@ export const LINKER_DOC_COLORS = {
 };
 
 export const PIVOTS = {
-  TOP_LEFT: 0,
-  TOP: 1,
-  TOP_RIGHT: 2,
-  LEFT: 3,
-  CENTER: 4,
-  RIGHT: 5,
-  BOTTOM_LEFT: 6,
-  BOTTOM: 7,
-  BOTTOM_RIGHT: 8,
+  TOP_LEFT: 'TOP_LEFT',
+  TOP: 'TOP',
+  TOP_RIGHT: 'TOP_RIGHT',
+  LEFT: 'LEFT',
+  CENTER: 'CENTER',
+  RIGHT: 'RIGHT',
+  BOTTOM_LEFT: 'BOTTOM_LEFT',
+  BOTTOM: 'BOTTOM',
+  BOTTOM_RIGHT: 'BOTTOM_RIGHT',
 };
 
 export const THRESHOLDS = {

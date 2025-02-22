@@ -1,4 +1,11 @@
-import { AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, MODULE_ID, SUPPORTED_PLACEABLES, VIDEO_EXTENSIONS } from './constants.js';
+import {
+  AUDIO_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  MODEL_EXTENSIONS,
+  MODULE_ID,
+  SUPPORTED_PLACEABLES,
+  VIDEO_EXTENSIONS,
+} from './constants.js';
 import { Picker } from './picker.js';
 import { PresetBrowser } from './presets/browser/browserApp.js';
 import { Preset } from './presets/preset.js';
@@ -34,6 +41,12 @@ export function isAudio(path) {
   var extension = path.split('.');
   extension = extension[extension.length - 1].toLowerCase();
   return AUDIO_EXTENSIONS.includes(extension);
+}
+
+export function is3DModel(path) {
+  var extension = path.split('.');
+  extension = extension[extension.length - 1].toLowerCase();
+  return MODEL_EXTENSIONS.includes(extension);
 }
 
 export async function recursiveTraverse(path, source, bucket, files = []) {
@@ -651,12 +664,7 @@ export async function pickerSelectMultiLayerDocuments() {
   if (!coords) return [];
 
   // Selects placeables within the bounding box
-  const selectionRect = new PIXI.Rectangle(
-    coords.start.x,
-    coords.start.y,
-    coords.end.x - coords.start.x,
-    coords.end.y - coords.start.y
-  );
+  const selectionRect = new PIXI.Rectangle(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
 
   let selected = [];
   SUPPORTED_PLACEABLES.forEach((documentName) => {

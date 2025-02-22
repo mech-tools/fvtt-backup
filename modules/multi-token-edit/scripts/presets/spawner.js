@@ -1,16 +1,18 @@
 import { checkApplySpecialFields } from '../../applications/formUtils.js';
 import { showGenericForm } from '../../applications/multiConfig.js';
+import { Brush } from '../brush.js';
 import { MODULE_ID, PIVOTS } from '../constants.js';
 import { DataTransformer } from '../data/transformer.js';
-import { Picker } from '../picker.js';
 import { applyRandomization } from '../randomizer/randomizerUtils.js';
 import { Scenescape } from '../scenescape/scenescape.js';
+import { MassTransformer } from '../transformer.js';
 import { createDocuments, executeScript } from '../utils.js';
 import { PresetAPI } from './collection.js';
 import { Preset } from './preset.js';
 import {
   applyTaggerTagRules,
   getPivotOffset,
+  getPivotPoint,
   getPresetDataBounds,
   getTransformToOrigin,
   mergePresetDataToDefaultDoc,
@@ -36,7 +38,6 @@ export class Spawner {
    * @param {Boolean} [options.scaleToGrid]              If 'true' Tiles, Drawings, and Walls will be scaled relative to grid size.
    * @param {Boolean} [options.modifyPrompt]             If 'true' a field modification prompt will be shown if configured via `Preset Edit > Modify` form
    * @param {Boolean} [options.preview]                  If 'true' a preview will be shown allowing spawn position to be picked
-   * @param {String} [options.previewLabel]               Label displayed above crosshair when `preview` is enabled
    * @returns {Array[Document]}
    */
   static async spawnPreset({
@@ -51,7 +52,6 @@ export class Spawner {
     y,
     z,
     preview = false,
-    previewLabel,
     previewRestrictedDocuments = null,
     sceneId = canvas.scene.id,
     snapToGrid = true,
@@ -61,7 +61,7 @@ export class Spawner {
     modifyPrompt = true,
     pivot = PIVOTS.TOP_LEFT,
     transform = {},
-    previewOnly = false,
+    brushPreview = false,
     flags,
   } = {}) {
     if (!canvas.ready) throw Error("Canvas need to be 'ready' for a preset to be spawned.");
@@ -74,7 +74,12 @@ export class Spawner {
     preset = preset ?? (await PresetAPI.getPreset({ uuid, name, type, folder, tags, random }));
     if (!preset) throw Error(`No preset could be found matching: { uuid: "${uuid}", name: "${name}", type: "${type}"}`);
 
-    let presetData = foundry.utils.deepClone(preset.data);
+    // Lets clone the preset so that any modifications made to it will not affect the original
+    preset = preset.clone();
+
+    if (!Hooks.call('MassEdit.spawnPreset', preset)) return [];
+
+    let presetData = preset.data;
 
     // Instead of using the entire data group use only one random one
     if (preset.spawnRandom && presetData.length) {
@@ -135,16 +140,12 @@ export class Spawner {
       if (Scenescape.active) {
         const size = preset.scenescapeSizeOverride();
         if (size) scale = ((100 / 6) * size) / getPresetDataBounds(docToData).height;
-
-        if (!preview) {
-          const params = Scenescape.getParallaxParameters({ x, y });
-          scale *= params.scale;
-        }
+        const bottom = getPivotPoint(PIVOTS.BOTTOM, docToData);
+        scale *= Scenescape.getParallaxParameters(preview ? bottom : { x, y }).scale;
+        DataTransformer.applyToMap(docToData, bottom, { scale });
       } else {
-        scale = canvas.grid.size / (preset.gridSize || 100);
+        DataTransformer.applyToMap(docToData, { x: 0, y: 0 }, { scale: canvas.grid.size / (preset.gridSize || 100) });
       }
-
-      DataTransformer.applyToMap(docToData, { x: 0, y: 0 }, { scale });
     }
 
     // Handle positioning of data around the spawn location
@@ -167,20 +168,20 @@ export class Spawner {
       DataTransformer.applyToMap(docToData, { x: 0, y: 0 }, posTransform);
     } else {
       // Display preview of the preset
-      const coords = await new Promise(async (resolve) => {
-        Picker.activate(resolve, {
-          documentName: preset.documentName,
-          previewData: docToData,
+      const confirm = await new Promise(async (resolve) => {
+        const transformer = new MassTransformer({
+          docToData,
           snap: snapToGrid,
-          label: previewLabel,
           restrict: previewRestrictedDocuments,
           pivot,
-          previewOnly,
+          preview: true,
+          crosshair: !brushPreview,
           ...transform,
-          spawner: true,
+          callback: resolve,
         });
+        if (brushPreview) Brush.spawnPresetTransformer(transformer);
       });
-      if (coords == null) return [];
+      if (!confirm) return [];
     }
 
     // ================================
