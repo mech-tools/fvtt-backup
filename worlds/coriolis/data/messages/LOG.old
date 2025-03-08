@@ -1,8 +1,15 @@
-2025/02/06-09:51:02.532831 7ff00bfff700 Recovering log #390
-2025/02/06-09:51:02.535408 7ff00bfff700 Delete type=0 #390
-2025/02/06-09:51:02.535431 7ff00bfff700 Delete type=3 #387
-2025/02/21-11:04:42.761290 7feb0b4e0700 Level-0 table #397: started
-2025/02/21-11:04:42.761492 7feb0b4e0700 Level-0 table #397: 0 bytes OK
-2025/02/21-11:04:42.762457 7feb0b4e0700 Delete type=0 #395
-2025/02/21-11:04:42.764181 7feb0b4e0700 Manual compaction at level-0 from '!messages!0F7vT0FYjk1w8FWa' @ 72057594037927935 : 1 .. '!messages!x06ByAsXPWQ07pyI' @ 0 : 0; will stop at (end)
-2025/02/21-11:04:42.766613 7feb0b4e0700 Manual compaction at level-1 from '!messages!0F7vT0FYjk1w8FWa' @ 72057594037927935 : 1 .. '!messages!x06ByAsXPWQ07pyI' @ 0 : 0; will stop at (end)
+2025/02/21-11:07:06.101552 7ff041942700 Recovering log #396
+2025/02/21-11:07:06.104700 7ff041942700 Delete type=0 #396
+2025/02/21-11:07:06.104726 7ff041942700 Delete type=3 #394
+2025/03/07-17:13:57.267983 7feb0b4e0700 Level-0 table #401: started
+2025/03/07-17:13:57.270944 7feb0b4e0700 Level-0 table #401: 105103 bytes OK
+2025/03/07-17:13:57.271917 7feb0b4e0700 Delete type=0 #399
+2025/03/07-17:13:57.274132 7feb0b4e0700 Manual compaction at level-0 from '!messages!01OB5gdVcIP87fXj' @ 72057594037927935 : 1 .. '!messages!xssJZUGBnD3ixiP7' @ 0 : 0; will stop at (end)
+2025/03/07-17:13:57.318379 7feb0b4e0700 Manual compaction at level-1 from '!messages!01OB5gdVcIP87fXj' @ 72057594037927935 : 1 .. '!messages!xssJZUGBnD3ixiP7' @ 0 : 0; will stop at '!messages!xssJZUGBnD3ixiP7' @ 5852 : 1
+2025/03/07-17:13:57.318386 7feb0b4e0700 Compacting 1@1 + 1@2 files
+2025/03/07-17:13:57.320779 7feb0b4e0700 Generated table #402@1: 52 keys, 63862 bytes
+2025/03/07-17:13:57.320801 7feb0b4e0700 Compacted 1@1 + 1@2 files => 63862 bytes
+2025/03/07-17:13:57.321618 7feb0b4e0700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/03/07-17:13:57.321683 7feb0b4e0700 Delete type=2 #401
+2025/03/07-17:13:57.321745 7feb0b4e0700 Delete type=2 #393
+2025/03/07-17:13:57.322526 7feb0b4e0700 Manual compaction at level-1 from '!messages!xssJZUGBnD3ixiP7' @ 5852 : 1 .. '!messages!xssJZUGBnD3ixiP7' @ 0 : 0; will stop at (end)
