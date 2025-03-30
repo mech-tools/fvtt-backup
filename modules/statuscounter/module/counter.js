@@ -1,6 +1,6 @@
 import CounterConfig from "./counterConfig.js";
 import { DurationType } from "./durationType.js";
-import { createDuration } from "./effectUtils.js";
+import { createDuration, getRemainingDuration } from "./effectUtils.js";
 
 export default class StatusCounter {
     /**
@@ -74,19 +74,18 @@ export default class StatusCounter {
      */
     static create(document, data) {
         // Apply duration instead of value.
-        if (document instanceof ActiveEffect) {
-            if (document.duration.remaining && !data.config.hasOwnProperty("durationType")) {
-                data.config.durationType = DurationType.Round;
-            }
+        const remaining = getRemainingDuration(document);
+        if (remaining > 0 && remaining < 1000 && !data.config.hasOwnProperty("durationType")) {
+            data.config.durationType = DurationType.Round;
+        }
 
-            if (data.config.modifyDuration) {
-                const durationType = data.config.durationType ?? DurationType.None;
-                if (durationType !== DurationType.None) {
-                    const duration = createDuration(data.value, durationType);
-                    document.updateSource({ duration });
-                    data.value = 1;
-                    data.visible = false;
-                }
+        if (data.config.modifyDuration) {
+            const durationType = data.config.durationType ?? DurationType.None;
+            if (durationType !== DurationType.None) {
+                const durationUpdate = createDuration(document, data.value, durationType);
+                document.updateSource(durationUpdate);
+                data.value = 1;
+                data.visible = false;
             }
         }
 
@@ -206,9 +205,9 @@ export default class StatusCounter {
      */
     get displayDuration() {
         switch (this.durationType) {
-            case DurationType.Round: return Math.ceil(this.parent.duration.remaining ?? 0);
+            case DurationType.Round: return Math.ceil(getRemainingDuration(this.parent));
             case DurationType.Turn:
-                const remaining = this.parent.duration.remaining ?? 0;
+                const remaining = this.parent.duration?.remaining ?? 0;
                 const rounds = Math.floor(remaining);
                 const turnsPerRound = game.combat?.turns.length ?? 1;
                 return Math.round(rounds * turnsPerRound + (remaining - rounds) * 100);
@@ -225,8 +224,8 @@ export default class StatusCounter {
         if (this.durationType === DurationType.None) return Promise.resolve();
         if (this._isOver(value)) return this._deleteParent();
 
-        const duration = createDuration(value, this.durationType);
-        return this.parent.update({ duration });
+        const durationUpdate = createDuration(this.parent, value, this.durationType);
+        return this.parent.update(durationUpdate);
     }
 
     /**

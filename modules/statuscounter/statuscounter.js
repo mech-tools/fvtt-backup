@@ -33,7 +33,6 @@ Hooks.once('init', function () {
     initializeCounters();
 
     if (game.modules.get("visual-active-effects")?.active) registerVisualActiveEffects();
-    // TODO reintegrate with DAE
 });
 
 /** Hook to extend the status effect rendering. */

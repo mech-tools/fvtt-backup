@@ -1,5 +1,6 @@
 import { getCounterTypes } from "./counterTypes.js";
 import { DurationType } from "./durationType.js";
+import { getEffectId } from "./effectUtils.js";
 
 /**
  * Form application that implements counter configuration options.
@@ -40,12 +41,11 @@ export default class CounterConfig extends FormApplication {
             return types;
         }, {});
 
-        const counterData = this.object._source.flags.statuscounter ?? {};
+        const counterData = this.object._source.flags.statuscounter ?? { config: {} };
         counterData.config.dataSource ??= "flags.statuscounter.value";
 
         return {
             name: this.object.name,
-            isStatus: this.object.statuses.size > 0,
             data: counterData,
             value: this.object.statusCounter._sourceValue ?? 1,
             durationTypes: Object.entries(DurationType).reduce((durationTypes, [key, value]) => {
@@ -85,12 +85,12 @@ export default class CounterConfig extends FormApplication {
      * @returns {Promise} A promise representing the settings update.
      */
     async _updateDefaults() {
-        const [statusId] = this.object.statuses;
-        if (!statusId) return;
+        const id = getEffectId(this.object);
+        if (!id) return;
 
         const data = foundry.utils.expandObject(this._getSubmitData()).flags.statuscounter.config;
         const defaults = game.settings.get("statuscounter", "counterDefaults");
-        defaults[statusId] = data;
+        defaults[id] = data;
         await game.settings.set("statuscounter", "counterDefaults", defaults);
         return this.submit();
     }

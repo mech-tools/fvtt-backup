@@ -10,7 +10,7 @@ import { PresetBrowser } from './browser/browserApp.js';
 import { Preset } from './preset.js';
 import { Spawner } from './spawner.js';
 import { FolderState, isVideo } from './utils.js';
-import { FileIndexer } from './fileIndexer.js';
+import { FileIndexer, IndexerForm } from './fileIndexer.js';
 
 export async function registerPresetHandlebarPartials() {
   await getTemplate(`modules/${MODULE_ID}/templates/preset/partials/preset.html`, 'me-preset');
@@ -54,7 +54,7 @@ export class PresetContainer extends FormApplication {
       this._playPreview(event);
     });
     html.on('mouseleave', '.item', (event) => {
-      this._endPreview(event);
+      this._endPreview();
     });
 
     html.on('dragstart', '.item', (event) => {
@@ -314,6 +314,14 @@ export class PresetContainer extends FormApplication {
     this._setInteractivityState(false);
     await this._onSpawnPreset(preset);
     this._setInteractivityState(true);
+  }
+
+  async _onOpenIndexer() {
+    if (FileIndexer._buildingIndex) {
+      ui.notifications.warn('Index Build In-Progress. Wait for it to finish before attempting it again.');
+      return;
+    }
+    new IndexerForm().render(true);
   }
 
   async _onSpawnPreset(preset, options = {}) {
@@ -723,6 +731,11 @@ export class PresetContainer extends FormApplication {
     }
   }
 
+  async close(options = {}) {
+    this._endPreview();
+    return super.close(options);
+  }
+
   async _onPresetDragOut(event) {
     const uuid = $(event.originalEvent.target).closest('.item').data('uuid');
     const preset = await PresetCollection.get(uuid);
@@ -869,6 +882,34 @@ export class PresetContainer extends FormApplication {
     }
   }
 
+  /** @override */
+  async _renderOuter() {
+    const html = await super._renderOuter();
+
+    const headerButtons = this._getHeaderButtons();
+    setTimeout(() => {
+      html.find('.header-button').each(function () {
+        const button = headerButtons.find((b) => this.classList.contains(b.class));
+        const el = $(this);
+
+        // Add header button tooltips
+        if (button.tooltip) el.data('tooltip', tooltip);
+
+        // Configure buttons as toggles
+        if (button.toggle) {
+          el.on('click', () => {
+            setTimeout(() => {
+              el.css('color', button.active?.() ? button.color : '');
+            }, 250);
+          });
+          el.css('color', button.active?.() ? button.color : '');
+        }
+      });
+    }, 500);
+
+    return html;
+  }
+
   /**
    * @override
    * Application.setPosition(...) has been modified to use css transform for window translation across the screen
@@ -892,7 +933,7 @@ export class PresetContainer extends FormApplication {
     // Update width if an explicit value is passed, or if no width value is set on the element
     if (!el.style.width || width) {
       const tarW = width || el.offsetWidth;
-      const minW = parseInt(styles.minWidth) || (pop ? MIN_WINDOW_WIDTH : 0);
+      const minW = parseInt(styles.minWidth) || (pop ? 200 : 0);
       const maxW = el.style.maxWidth || window.innerWidth / scale;
       currentPosition.width = width = Math.clamp
         ? Math.clamp(tarW, minW, maxW) // v12
@@ -905,7 +946,7 @@ export class PresetContainer extends FormApplication {
     // Update height if an explicit value is passed, or if no height value is set on the element
     if (!el.style.height || height) {
       const tarH = height || el.offsetHeight + 1;
-      const minH = parseInt(styles.minHeight) || (pop ? MIN_WINDOW_HEIGHT : 0);
+      const minH = parseInt(styles.minHeight) || (pop ? 50 : 0);
       const maxH = el.style.maxHeight || window.innerHeight / scale;
       currentPosition.height = height = Math.clamp
         ? Math.clamp(tarH, minH, maxH) // v12

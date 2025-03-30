@@ -1,5 +1,6 @@
 import StatusCounter from "./counter.js";
 import { DurationType } from "./durationType.js";
+import { getEffectId } from "./effectUtils.js";
 
 /**
  * Map of registered counter types and their implementation class.
@@ -41,8 +42,7 @@ export function initializeCounters() {
 
     // Register hook to create default data on effect creation.
     Hooks.on("preCreateActiveEffect", effect => {
-        const [statusId] = effect.statuses;
-        _createDocumentCounter(effect, statusId);
+        _createDocumentCounter(effect, getEffectId(effect));
     });
 
     if (game.system.id === "sfrpg") {
@@ -75,18 +75,23 @@ export function initializeCounters() {
         if (!(changes.hasOwnProperty("round") || changes.hasOwnProperty("turn"))) return;
 
         for (const combatant of combat.combatants) {
+            const { actor, token } = combatant;
+            if (!actor || !token?.object) continue;
+
             let hasDuration = false;
-            for (const effect of combatant.actor?.effects ?? []) {
+            for (const effect of actor.appliedEffects) {
                 const duration = effect.statusCounter.displayDuration;
                 if (duration === null) continue;
                 if (effect.statusCounter._isOver(duration)) {
                     if (game.user.id === userId && game.user.isGM) effect.statusCounter._deleteParent();
                 } else {
                     hasDuration = true;
+                    break;
                 }
             }
 
-            if (hasDuration) combatant.token?.object?.renderFlags.set({ refreshEffects: true });
+            if (game.system.id === "sfrpg") hasDuration ||= (actor.system.timedEffects?.size ?? 0) > 0;
+            if (hasDuration) token.object.renderFlags.set({ refreshEffects: true });
         }
     });
 

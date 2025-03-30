@@ -5,7 +5,6 @@ import { importPresetFromJSONDialog } from '../../dialogs.js';
 import { SortingHelpersFixed } from '../../fixedSort.js';
 import { localFormat, localize, spawnSceneAsPreset } from '../../utils.js';
 import { META_INDEX_ID, PresetAPI, PresetCollection, PresetPackFolder } from '../collection.js';
-import { FileIndexer, IndexerForm } from '../fileIndexer.js';
 import { LinkerAPI } from '../../linker/linker.js';
 import { DOC_ICONS, Preset } from '../preset.js';
 import { exportPresets, FolderState, matchPreset, parseSearchQuery, placeableToData } from '../utils.js';
@@ -782,7 +781,6 @@ export class PresetBrowser extends PresetContainer {
   async close(options = {}) {
     PresetBrowser.objectHover = false;
     this._tagSelector?.close();
-    this._endPreview();
     return super.close(options);
   }
 
@@ -907,34 +905,49 @@ export class PresetBrowser extends PresetContainer {
     buttons.unshift({
       label: '',
       class: 'mass-edit-settings-config',
+      tooltip: 'Configure browser settings.',
       icon: 'fas fa-gear',
       onclick: this._onSettingConfig.bind(this),
     });
     buttons.unshift({
       label: '',
       class: 'mass-edit-change-compendium',
+      tooltip: 'Change working compendium.',
       icon: 'fas fa-atlas',
       onclick: this._onWorkingPackChange.bind(this),
     });
     buttons.unshift({
       label: '',
       class: 'mass-edit-indexer',
+      tooltip: 'Perform directory indexing.',
       icon: 'fas fa-archive',
       onclick: this._onOpenIndexer.bind(this),
     });
 
     buttons.unshift({
       label: '',
+      tooltip: 'Export presets as a JSON file.',
       class: 'mass-edit-export',
       icon: 'fas fa-file-export',
       onclick: this._onExport.bind(this),
     });
     buttons.unshift({
       label: '',
+      tooltip: 'Import presets exported as a JSON file.',
       class: 'mass-edit-import',
       icon: 'fas fa-file-import',
       onclick: this._onImport.bind(this),
     });
+
+    if (game.packs.get(PresetCollection.workingPack)?.locked) {
+      buttons.unshift({
+        label: '',
+        tooltip: 'Un-lock working compendium.',
+        class: 'mass-edit-toggle-lock',
+        icon: 'fas fa-lock fa-fw',
+        onclick: this._onToggleCompendiumLock.bind(this),
+      });
+    }
 
     if (game.settings.get(MODULE_ID, 'debug')) {
       buttons.unshift({
@@ -965,12 +978,12 @@ export class PresetBrowser extends PresetContainer {
     new PresetBrowserSettings(this).render(true);
   }
 
-  async _onOpenIndexer() {
-    if (FileIndexer._buildingIndex) {
-      ui.notifications.warn('Index Build In-Progress. Wait for it to finish before attempting it again.');
-      return;
+  async _onToggleCompendiumLock(event) {
+    const pack = game.packs.get(PresetCollection.workingPack);
+    if (pack) {
+      await pack.configure({ locked: false });
+      $(event.currentTarget).remove();
     }
-    new IndexerForm().render(true);
   }
 
   /**

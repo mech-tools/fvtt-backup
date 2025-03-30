@@ -46,9 +46,8 @@ function onEffectClick(event) {
     if (event.shiftKey) {
         toggleOverlay(this.object, getUniqueSelectedTokens(this.object), statusId);
     } else if (event.ctrlKey || event.metaKey) {
-        this.object.actor?.effects
-            .find(effect => effect.statuses.has(statusId))?.statusCounter
-            .configure();
+        if (!this.object.actor) return;
+        findEffectById(this.object.actor, statusId)?.statusCounter.configure();
     } else {
         for (const token of getUniqueSelectedTokens(this.object)) {
             const effect = findEffectById(token.actor, statusId);
