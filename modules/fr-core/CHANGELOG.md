@@ -1,3 +1,6 @@
+12.331.7
+- Traduction de quelques clés manquantes sur le combat tracker (traqueur de combat) et dans la configuration des tuiles de superposition.
+
 12.331.6
 - Ajout des traductions pour EFFECT.StatusHover, EFFECT.StatusBurrow, HUD.OpenConfig, CONTROLS.DrawingRole, HUD.ToggleTargetState, HUD.WarningEffectNoActor
 

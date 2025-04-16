@@ -10,6 +10,7 @@ Out of the box, the following are available:
 
 | System | Sources |
 |--------|---------|
+| CoC7 | Torch, Lamp, Lantern, Candle, Flare 
 | dnd5e | Candle, Torch, Lamp, Bullseye Lantern, Hooded Lantern, Light, Dancing Lights
 | swade | Candle, Flashlight, Lantern, Torch
 | pf1 | Candle, Lamp, Lantern, Bullseye Lantern, Hooded Lantern, Miner's Lantern, Torch
@@ -227,7 +228,7 @@ The following is the current status of translation. Some features have arrived, 
 | -------- | ---------- | ------------ |
 | de    | `[########################]` 24/24 (100%) | ToGreedy, Beff42, MKBraun |
 | en    | `[########################]` 24/24 (100%) | deuce, lupestro |
-| es    | `[################--------]` 16/24 (67%) | lozanoje, WallaceMcGregor |
+| es    | `[########################]` 24/24 (100%) | lozanoje, WallaceMcGregor |
 | fr    | `[############------------]` 12/24 (50%) | Aymeeric |
 | it    | `[################--------]` 16/24 (67%) | GregoryWarn |
 | ja    | `[################--------]` 16/24 (67%) | doumoku |

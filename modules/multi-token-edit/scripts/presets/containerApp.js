@@ -9,7 +9,7 @@ import { PresetConfig } from './editApp.js';
 import { PresetBrowser } from './browser/browserApp.js';
 import { Preset } from './preset.js';
 import { Spawner } from './spawner.js';
-import { FolderState, isVideo } from './utils.js';
+import { exportPresets, FolderState, isVideo, sceneNotFoundError } from './utils.js';
 import { FileIndexer, IndexerForm } from './fileIndexer.js';
 
 export async function registerPresetHandlebarPartials() {
@@ -303,7 +303,8 @@ export class PresetContainer extends FormApplication {
       this._onOpenBag(preset.uuid);
     } else if (preset.documentName === 'FauxScene') {
       const scene = await fromUuid(preset.data[0].uuid);
-      scene.sheet.render(true);
+      if (scene) scene.sheet.render(true);
+      else sceneNotFoundError(preset);
     }
 
     if (!SUPPORTED_PLACEABLES.includes(preset.documentName)) return;
@@ -487,13 +488,15 @@ export class PresetContainer extends FormApplication {
   async _onImportFauxScene(item) {
     const preset = await PresetAPI.getPreset({ uuid: item.data('uuid') });
     const scene = await fromUuid(preset.data[0].uuid);
-    return game.scenes.importFromCompendium(scene.compendium, scene.id, {}, { renderSheet: true });
+    if (scene) game.scenes.importFromCompendium(scene.compendium, scene.id, {}, { renderSheet: true });
+    else sceneNotFoundError(preset);
   }
 
   async _onSpawnScene(item) {
     const preset = await PresetAPI.getPreset({ uuid: item.data('uuid') });
     const scene = await fromUuid(preset.data[0].uuid);
-    return spawnSceneAsPreset(scene);
+    if (scene) return spawnSceneAsPreset(scene);
+    else sceneNotFoundError(preset);
   }
 
   _getFolderContextOptions() {
@@ -856,6 +859,11 @@ export class PresetContainer extends FormApplication {
 
   async _onFolderDelete(uuid, { render = true, deleteAll = false } = {}) {
     throw new Error('A subclass of the PresetContainer must implement the _onFolderDelete method.');
+  }
+
+  async _onExportSelectedPresets() {
+    const [selected, _] = await this._getSelectedPresets();
+    exportPresets(selected);
   }
 
   async _onExportSelectedPresetsToComp() {

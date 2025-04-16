@@ -368,11 +368,6 @@ export class PresetBrowser extends PresetContainer {
     if (selected.length) copyToClipboard(selected[0]);
   }
 
-  async _onExportSelectedPresets() {
-    const [selected, _] = await this._getSelectedPresets();
-    exportPresets(selected);
-  }
-
   async _onDeleteSelectedPresets(item) {
     const [selected, items] = await this._getSelectedPresets({
       editableOnly: true,
@@ -1283,6 +1278,14 @@ export function registerPresetBrowserHooks() {
       new PresetBrowser(null, null, documentName, {
         left: presetControl.position().left + presetControl.width() + 40,
       }).render(true);
+    });
+
+    presetControl.on('contextmenu', async () => {
+      const macroUuuid =
+        game.settings.get(MODULE_ID, 'browserContextMacroUuid') ||
+        'Compendium.baileywiki-nuts-and-bolts.macros.Macro.Ds6je9mUwVkEnb9f';
+      const macro = await fromUuid(macroUuuid);
+      macro?.execute();
     });
 
     html.find('.control-tools').find('.scene-control').last().after(presetControl);
