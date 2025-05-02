@@ -1,3 +1,7 @@
 2025/02/07-06:35:16.150821 7f8d0a7bf700 Recovering log #280
 2025/02/07-06:35:16.154792 7f8d0a7bf700 Delete type=0 #280
 2025/02/07-06:35:16.154817 7f8d0a7bf700 Delete type=3 #279
+2025/05/01-20:54:39.371193 7f87ebe8d700 Level-0 table #284: started
+2025/05/01-20:54:39.371419 7f87ebe8d700 Level-0 table #284: 0 bytes OK
+2025/05/01-20:54:39.373700 7f87ebe8d700 Delete type=0 #282
+2025/05/01-20:54:39.380841 7f87ebe8d700 Manual compaction at level-0 from '!adventures!5LfWGbONpEx9rj1y' @ 72057594037927935 : 1 .. '!adventures!5LfWGbONpEx9rj1y' @ 0 : 0; will stop at (end)
