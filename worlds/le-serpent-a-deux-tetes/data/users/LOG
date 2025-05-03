@@ -1,24 +1,3 @@
-2025/02/07-06:35:13.134279 7f8d0a7bf700 Recovering log #294
-2025/02/07-06:35:13.134890 7f8d0a7bf700 Level-0 table #296: started
-2025/02/07-06:35:13.136244 7f8d0a7bf700 Level-0 table #296: 6077 bytes OK
-2025/02/07-06:35:13.140880 7f8d0a7bf700 Delete type=3 #293
-2025/02/07-06:35:13.140906 7f8d0a7bf700 Delete type=0 #294
-2025/05/01-20:54:39.458044 7f87ebe8d700 Level-0 table #299: started
-2025/05/01-20:54:39.459662 7f87ebe8d700 Level-0 table #299: 3246 bytes OK
-2025/05/01-20:54:39.460827 7f87ebe8d700 Delete type=0 #297
-2025/05/01-20:54:39.464074 7f87ebe8d700 Manual compaction at level-0 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at '!users!Y5jNoeB4JS4fjnj4' @ 903 : 1
-2025/05/01-20:54:39.464083 7f87ebe8d700 Compacting 2@0 + 0@1 files
-2025/05/01-20:54:39.465335 7f87ebe8d700 Generated table #300@0: 1 keys, 1534 bytes
-2025/05/01-20:54:39.465363 7f87ebe8d700 Compacted 2@0 + 0@1 files => 1534 bytes
-2025/05/01-20:54:39.466227 7f87ebe8d700 compacted to: files[ 0 1 1 0 0 0 0 ]
-2025/05/01-20:54:39.466305 7f87ebe8d700 Delete type=2 #296
-2025/05/01-20:54:39.466395 7f87ebe8d700 Delete type=2 #299
-2025/05/01-20:54:39.469688 7f87ebe8d700 Manual compaction at level-0 from '!users!Y5jNoeB4JS4fjnj4' @ 903 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
-2025/05/01-20:54:39.500548 7f87ebe8d700 Manual compaction at level-1 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at '!users!Y5jNoeB4JS4fjnj4' @ 913 : 1
-2025/05/01-20:54:39.500564 7f87ebe8d700 Compacting 1@1 + 1@2 files
-2025/05/01-20:54:39.501916 7f87ebe8d700 Generated table #301@1: 2 keys, 1872 bytes
-2025/05/01-20:54:39.501935 7f87ebe8d700 Compacted 1@1 + 1@2 files => 1872 bytes
-2025/05/01-20:54:39.502902 7f87ebe8d700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/05/01-20:54:39.502954 7f87ebe8d700 Delete type=2 #288
-2025/05/01-20:54:39.503002 7f87ebe8d700 Delete type=2 #300
-2025/05/01-20:54:39.505041 7f87ebe8d700 Manual compaction at level-1 from '!users!Y5jNoeB4JS4fjnj4' @ 913 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
+2025/05/02-16:51:53.438209 7feaef7fe700 Recovering log #298
+2025/05/02-16:51:53.444843 7feaef7fe700 Delete type=3 #295
+2025/05/02-16:51:53.444878 7feaef7fe700 Delete type=0 #298
