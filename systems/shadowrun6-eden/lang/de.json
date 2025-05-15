@@ -1,0 +1,1683 @@
+{
+  "SYSTEM": {
+    "Sidebar": {
+      "readme": "README",
+      "bugs": "Bug melden",
+      "feature": "Feature anfragen"
+    }
+  },
+  "ACTOR": {
+    "TypeCritter": "Critter",
+    "TypeNpc"    : "Scherge/NSC",
+    "TypePlayer": "Spieler-Charakter",
+    "TypeSpirit": "Geist",
+    "TypeVehicle": "Fahrzeug/Drohne"
+  },
+  "ITEM": {
+    "TypeAdeptpower": "Adeptenkraft",
+    "TypeComplexform": "Komplexe Form",
+    "TypeCritterPower": "Critterkraft",
+    "TypeContact": "Connection",
+    "TypeEcho": "Echo",
+    "TypeGear": "Ausrüstung",
+    "TypeLifestyle": "Lebensstil",
+    "TypeMartialartstyle": "Kampfkunststil",
+    "TypeMartialarttech": "Kampfkunstechnik",
+    "TypeMetamagic": "Metamagie",
+    "TypeQuality": "Vor-/Nachteil",
+    "TypeRitual": "Ritual",
+    "TypeSin": "SIN",
+    "TypeSkill": "Sprach-/Wissensfertigkeit",
+    "TypeSpell": "Zauber",
+    "TypeWeapon": "Waffe"
+  },
+  "QUALITY_CATEGORIES": {
+    "ADVANTAGE": "Vorteil",
+    "DISADVANTAGE": "Nachteil"
+  },
+  "TYPES": {
+  		"Actor": {
+    		"Critter": "Critter",
+    		"NPC"    : "Scherge/NSC",
+    		"Player": "Spieler-Charakter",
+    		"Spirit": "Geist",
+    		"Vehicle": "Fahrzeug/Drohne"
+  		},
+	  "Item": {
+   		"adeptPower": "Adeptenkraft",
+      "complexform": "Komplexe Form",
+      "critterPower": "Critterkraft",
+      "contact": "Connection",
+      "echo": "Echo",
+      "focus": "Fokus",
+      "gear": "Ausrüstung",
+      "lifestyle": "Lebensstil",
+      "martialartstyle": "Kampfkunststil",
+      "martialarttech": "Kampfkunstechnik",
+      "metamagic": "Metamagie",
+      "quality": "Vor-/Nachteil",
+      "ritual": "Ritual",
+      "sin": "SIN",
+      "skill": "Sprach-/Wissensfertigkeit",
+      "software": "Software",
+      "spell": "Zauber",
+      "weapon": "Waffe"
+	  }
+  },
+  "attrib": {
+    "agi": "Geschicklichkeit",
+    "agi_short": "GES",
+    "bod": "Konstitution",
+    "bod_short": "KON",
+    "cha": "Charisma",
+    "cha_short": "CHA",
+    "dr": "Verteidigung",
+    "dr_short": "DR",
+    "edg": "Edge",
+    "edg_short": "EDG",
+    "ess": "Essenz",
+    "ess_short": "ESS",
+    "ini": "Initiative",
+    "ini_short": "INI",
+    "inia": "Astrale Initiative",
+    "inia_short": "A.INI",
+    "inim": "Matrix Initiative",
+    "inim_short": "M.INI",
+    "int": "Intuition",
+    "int_short": "INT",
+    "log": "Logik",
+    "log_short": "LOG",
+    "mag": "Magie",
+    "mag_short": "MAG",
+    "rea": "Reaktion",
+    "rea_short": "REA",
+    "res": "Resonanz",
+    "res_short": "RES",
+    "str": "Stärke",
+    "str_short": "STÄ",
+    "wil": "Willenskraft",
+    "wil_short": "WIL"
+  },
+  "label.skill": "Fertigkeit",
+  "section.attributes": "Attribute",
+  "shadowrun6": {
+    "actor": {
+      "actions": "Handlungen",
+      "actions_major": "Haupt",
+      "actions_minor": "Neben",
+      "editable": "Editierbar",
+      "initiative": "Initiative",
+      "initiative_astral": "Astrale Initiative",
+      "metatype": "Metatyp",
+      "name": "Name",
+      "nav": {
+        "basics": "Allgemein",
+        "biography": "Biographie",
+        "combat": "Kampf",
+        "description": "Beschreibung",
+        "equip": "Ausrüstung",
+        "input": "Eingabe",
+        "magic": "Magie",
+        "matrix": "Matrix",
+        "overview": "Übersicht",
+        "skills": "Fertigkeiten",
+        "vehicles": "Fahrzeuge"
+      },
+      "skills": "Fertigkeiten",
+      "spells": "Zauber"
+    },
+    "adeptpower": {
+      "activation": "Aktivierung",
+      "activation_major": "Haupthandlung",
+      "activation_minor": "Nebenhandlung",
+      "activation_passive": "Passiv",
+      "cost": "Kosten",
+      "haslevel": "Hat Stufe",
+      "pp": "KP",
+      "perLevel": "pro Stufe"
+    },
+    "autosoft_types": {
+      "clearsight": "Clearsight", 
+      "electronic_warfare": "Elektronische Kriegsführung", 
+      "evasion": "Ausweichen", 
+      "maneuver": "Manövrieren", 
+      "stealth": "Stealth", 
+      "targeting": "Zielerfassung"
+    },
+	 "critterpower": {
+		"actiontitle": "Aktion",
+		"action": {
+			"auto": "Auto",
+			"major": "Haupt",
+			"minor": "Neben"
+	  }
+	 },
+    "attack_rating": {
+      "astral": "Mana Angriffswert",
+      "matrix": "Matrix Angriffswert",
+      "physical": "Physisch Angriffswert",
+      "social": "Sozial Angriffswert",
+      "vehicle": "Fahrzeug Angriffswert"
+    },
+    "combat": {
+		"togglePhysical": "Verwende physische Initiative",
+		"toggleMatrix": "Verwende Matrix Initiative",
+		"toggleAstral": "Verwende astrale Initiative"
+	},
+    "complexform": {
+      "duration": "Dauer",
+      "fading": "Schwund",
+      "oppAttr1": "Widerstands-Attr. 1",
+      "oppAttr2": "Widerstands-Attr. 2",
+      "skill": "Fertigkeit",
+      "threshold": "Schwellenwert"
+    },
+    "contact": {
+      "rating": "Stufe",
+      "rating_short": "St",
+      "loyalty": "Loyalität",
+      "loyalty_short": "Loy",
+      "favors": "Gefallen",
+      "favors_short": "Gef.",
+      "type": "Art"
+    },
+    "defense": {
+      "astral": "Astralkampf",
+      "drain": "Entzug widerstehen",
+      "fading": "Schwund widerstehen",
+      "damage_astral": "Schadenswiderstand Astral",
+      "damage_physical": "Schadenswiderstand",
+      "physical": "Angriffe",
+      "spells_direct": "Direkte Zauber",
+      "spells_indirect": "Indirekte Zauber",
+      "spells_other": "Sonstige Zauber",
+      "toxin": "Toxinwiderstand"
+    },
+    "defense_rating": {
+      "astral": "Mana Verteidigungswert",
+      "label": "Verteidigungswert",
+      "matrix": "Matrix Verteidigungswert",
+      "physical": "Physisch Verteidigungswert",
+      "social": "Sozial Verteidigungswert",
+      "vehicle": "Fahrzeug Verteidigungswert"
+    },
+    "derived": {
+      "composure": "Sebstbeherrschung",
+      "defense_rating": "Verteidigungswert",
+      "judge_intentions": "Menschenkenntnis",
+      "lift_carry": "Heben / Tragen",
+      "memory": "Erinnerungsvermögen",
+      "matrix_perception": "Matrixwahrnehmung",
+      "heal": {
+        "physical": "Körperliches Heilen",
+        "stun": "Geistiges Heilen"
+      }
+    },
+    "edge_action": {
+      "anticipation": "Vorausschau",
+      "big_speech": "Große Rede",
+      "bring_the_drama": "Dramaqueen",
+      "called_shot_disarm": "Anges. Ziel - Entwaffnen",
+      "called_shot_vitals": "Anges. Ziel - Lebensw. Organe",
+      "fire_from_cover": "Aus Deckung feuern",
+      "knockout_blow": "K.o.-Schlag",
+      "shank": "Umwerfen"
+    },
+    "edge_boost": {
+      "add_edge_pool": "Füge dein Edge-Attribut zum Pool dazu",
+      "buy_auto_hit": "Kaufe einen automatischen Erfolg",
+      "count_2_glitch": "2en zählen als Patzer für den Gegner",
+      "create_special": "Rufe spez. Effekt hervor",
+      "edge_action": "Edge Handlung - (1-5)",
+      "give_ally_1_edge": "Gibt einem Verbündeten 1 Edge",
+      "heal_1_physic": "Heile 1 körperlichen Schaden",
+      "heal_1_stun": "Heile 1 Betäubungsschaden",
+      "negate_1_edge": "Negiere 1 Edge eines Gegners",
+      "plus_1_roll": "+1 zu einem einzelnen Würfelwurf",
+      "plus_3_ini": "Add 3 zu deinem Initiativeergebnis",
+      "reroll_failed": "Würfle alle Nicht-Erfolge neu",
+      "reroll_one": "Würfel 1 Würfel neu"
+    },
+    "gear": {
+      "subtype": {
+        "ACCESSORY": "Einbauten",
+        "AMMUNITION": "Munition",
+        "ARMOR_BODY": "Panzerung",
+        "ARMOR_SOCIAL": "Gepanzerte Kleidung",
+        "ARMOR_CLOTHES": "Normale Kleidung",
+        "ARMOR_HELMET": "Helme",
+        "ARMOR_SHIELD": "Schilde",
+        "ASSAULT_CANNON": "Sturmkanonen",
+        "ATVS": "Quads",
+        "AUDIO": "Audiogeräte",
+        "AUDIO_ENHANCEMENT": "Audioverstärkungen",
+        "BIKES": "Motorräder",
+        "BIOTECH": "Biotech",
+        "BIOWARE_COSMETICS": "Kosmetische Bioware",
+        "BIOWARE_CULTURED": "Kultivierte Bioware",
+        "BIOWARE_STANDARD": "Standard Bioware",
+        "BIOWARE_IMPLANT_WEAPON": "Bioimplantatwaffen",
+        "BLADES": "Klingenwaffen/Äxte",
+        "BOATS": "Boote",
+        "BOWS": "Bögen",
+        "BREAKING": "Einbruchswerkzeuge",
+        "BTL": "BTLs",
+        "CANNONS_LAUNCHERS": "Sturmkanonen & Werfer",
+        "CARS": "Autos",
+        "CLOSE_COMBAT": "Nahkampf",
+        "CLUBS": "Knüppel",
+        "COMMLINK": "Kommlink",
+        "COMMUNICATION": "Kommunikation und Stören",
+        "CROSSBOWS": "Armbrüste ",
+        "CYBER_BODYWARE": "Cyber Bodyware",
+        "CYBER_COSMETICS": "Kosmetische Cyberware",
+        "CYBER_EARWARE": "Ohren-Cyberware",
+        "CYBER_EYEWARE": "Augen-Cyberware",
+        "CYBER_HEADWARE": "Headware",
+        "CYBER_IMPLANT_WEAPON": "Cyberimplantatwaffen",
+        "CYBER_LIMB_ACCESSORY": "Cybergliedmaßen-Zubehör",
+        "CYBER_LIMB_ENHANCEMENT": "Cybergliedverstärkungen",
+        "CYBER_LIMBS": "Cybergliedmaße",
+        "CYBERDECK": "Cyberdeck",
+        "CYBERJACK": "Cyberbuchse",
+        "DRUGS": "Drogen",
+        "ELECTRONIC_ACCESSORIES": "Elektronikzubehör",
+        "EXPLOSIVES": "Sprengstoffe",
+        "FIREARMS": "Schußwaffen",
+        "FIREARMS_ACCESSORY": "Waffenzubehör",
+        "FIXED_WING": "Starrflügler",
+        "FOCI_ENCHANTING": "Verzauberungsfoki",
+        "FOCI_METAMAGIC": "Metamagiefoki",
+        "FOCI_POWER": "Kraftfoki",
+        "FOCI_QI": "Qi-Foki",
+        "FOCI_SPELL": "Zauberfoki",
+        "FOCI_SPIRIT": "Geisterfoki",
+        "FOCI_WEAPON": "Waffenfoki",
+        "GENOM_CHANGES": "Genomveränderungen",
+        "EXOTIC_METAGENETICS": "Exotische Metagenetik",
+        "MICRO_ENVIRONADAPT": "Mikro-Umweltanpassung",
+        "COMPLEMENTAL_GENETICS": "Komplementärgenetik",
+        "GRAPPLE_GUN": "Enterhakenkanone",
+        "GRAV": "Schwerkraftantrieb-Fahrzeuge",
+        "GRENADES": "Granaten",
+        "GRENADES_MINI": "Mini-Granaten",
+        "HOLDOUTS": "Holdouts",
+        "HOVERCRAFT": "Luftkissenboote",
+        "ID_CREDIT": "ID und Credsticks",
+        "IMAGING": "Sichtgeräte",
+        "INDUSTRIAL_CHEMICALS": "Industriechemikalien",
+        "INSTRUMENT": "Instrumente",
+        "INSTRUMENT_ACCESSORY": "Instrument-Zubehör",
+        "LARGE_DRONES": "Große Drohnen",
+        "LAUNCHERS": "Granatwerfer",
+        "LAV": "Bodeneffekt-Vektorschubfahrzeuge",
+        "LTAV": "Luftschiffe",
+        "LIVING_PERSONA": "Lebende Persona",
+        "MACHINE_GUNS": "Maschinengewehre",
+        "MACHINE_PISTOLS": "Automatikpistolen",
+        "MAGICAL_FORMULA": "Magische Formeln",
+        "MAGIC_SUPPLIES": "Magische Vorräte",
+        "MICRODRONES": "Mikrodrohnen",
+        "MINIDRONES": "Minidrohnen",
+        "MEDIUM_DRONES": "Mittlere Drohnen",
+        "PREPARATION": "Erzeugnisse",
+        "PREPARATION_EXTENDED": "Erzeugnisse (verlängerte Haltbarkeit)",
+        "MISSILES": "Lenkraketen",
+        "MODIFICATION": "Modifikationen",
+        "MOD_LAYOUT": "Layout Mods",
+        "MOD_CORE": "Core Mods",
+        "MOD_TIRES": "Reifen",
+        "MOD_HANDLING": "Handling Mods",
+        "MOD_TRAILER": "Trailers and Sidecars",
+        "MOD_INTERIOR": "Seating and Cargo Mods",
+        "MOD_CARGO": "CF Mods",
+        "MOD_FORM": "Forms",
+        "MOD_ARMOR": "Foundations",
+        "MOD_ELEMENTS": "Elements",
+        "MOD_ACC": "Acceleration Mods",
+        "MOD_EFFICIENCY": "Efficiency Mods",
+        "MOD_SPEED": "Speed Mods",
+        "MOD_COAT": "Electronic Skin Coatings",
+        "MOD_MISC": "Miscellaneous Electronic Mods",
+        "MOD_PILOT": "Pilot Mods",
+        "MOD_MOUNT": "Weapon Mounts",
+        "MOD_RACK": "Drone Racks",
+        "MOD_OTHERS": "Other Hardpoint Mods",
+        "MOD_PROPULSION": "Secondary Propulsion Systems",
+        "NANOWARE_HARD": "Harte Nanoware-Systeme",
+        "NANOWARE_SOFT": "Weiche Nanoware-Systeme",
+        "NANO_CYBERWARE": "Nano-Cyberware",
+        "NANOTECH_EQUIPMENT": "Nanotech-Ausrüstung",
+        "OPTICAL": "Optische Geräte",
+        "OTHER_PROGRAMS": "Sonstige Programme",
+        "OTHER_CLOSE": "Sonstige Nahkampfwaffen",
+        "OTHER_SPECIAL": "Sonstige Spezialwaffen",
+        "PISTOLS_HEAVY": "Schwere Pistolen",
+        "PISTOLS_LIGHT": "Leichte Pistolen",
+        "PROJECTILES": "Projektil-/Wurfwaffen",
+        "RFID": "RFID",
+        "#RIFLES": "Gewehre",
+        "RIFLE_ASSAULT": "Sturmgewehre",
+        "RIFLE_HUNTING": "Jagdgewehre",
+        "RIFLE_SNIPER": "Scharfschützengewehre",
+        "RIGGER_CONSOLE": "Riggerkonsole",
+        "ROCKETS": "Raketen",
+        "ROTORCRAFT": "Rotormaschinen",
+        "SECURITY": "Sicherheitsgeräte",
+        "SENSOR": "Sensoren",
+        "SENSOR_HOUSING": "Sensoren-Gehäuse",
+        "SHOTGUNS": "Schrotflinten",
+        "SKILLSOFT": "Talentsoft",
+        "SLAP_PATCHES": "Slap-Patches",
+        "SNIPER_RIFLES": "Scharfschützengewehre",
+		  "SMALL_DRONES": "Kleine Drohnen",
+        "SOFTWARE": "Software",
+        "SPACECRAFT": "Raumschiffe",
+        "SPECIAL_WEAPONS": "Spezielle Waffen",
+        "SUBMACHINE_GUNS": "Maschinenpistolen",
+        "SUBMARINES": "U-Boote",
+        "SURVIVAL_GEAR": "Überlebensausrüstung",
+        "SYMBIONTS": "Symbionten",
+        "TAC_NET": "Taktisches Netzwerk",
+        "TASERS": "Taser",
+        "THROWERS": "Werfer/Sprüher",
+        "THROWING": "Wurfwaffen",
+        "TRANSGENETICS": "Transgenetik",
+        "TACNET_PROGRAM": "M-TOC Programm",
+        "TOOLS": "Werkzeuge",
+        "PLACEHOLDERS": "Standardwaren",
+        "TOXINS": "Gifte",
+        "TRUCKS": "Pickups",
+        "TRACKED": "Kettenfahrzeuge",
+        "SPECIAL_VEHICLES": "Spezialfahrzeuge",
+        "UNARMED": "Handgemenge",
+        "VANS": "Vans und LKW",
+        "VEHICLE_ACCESSORY": "Fahrzeugzubehör",
+        "VISION_ENHANCEMENT": "Sichtverstärkungen",
+        "VTOL": "VTOL/VSTOL",
+        "WALKER": "Läufer",
+        "WEAPON_SECURITY": "Waffensicherheit Option",
+        "WHIPS": "Peitschen",
+        "LMG": "Leichte Maschinengewehre",
+        "MMG": "Mittlere Maschinengewehre",
+        "HMG": "Schwere Maschinengewehre",
+        "HACKING_PROGRAM": "Hacking-Programme",
+        "BASIC_PROGRAM": "Standardprogramme",
+        "RIGGER_PROGRAM": "Riggerprogramme",
+        "AUTOSOFT": "Autosofts",
+        "DATASOFT": "Datensoft",
+        "MAPSOFT": "Kartensoft",
+        "SHOPSOFT": "Shopsoft",
+        "TALENTSOFT": "Talentsoft",
+        "TEACHSOFT": "Lehrsoft",
+        "GROUND": "Bodendrohnen",
+        "ANTHRO": "Antropomorphe Drohnen",
+        "AIR": "Luftdrohnen",
+        "AQUATIC": "Aquatische Drohnen",
+        "AMMO_TASER": "Taser",
+        "AMMO_LIGHT": "Holdout/Leichte Pistols/Automatikp.",
+        "AMMO_HEAVY": "Schw. Pistole/Maschinenpistole",
+        "AMMO_RIFLES": "Gewehr",
+        "AMMO_DARTS": "Injektionspfeil",
+        "AMMO_CANNONS": "Sturmkanone",
+        "AMMO_DMSO": "DMSO-Gelpack",
+        "AMMO_MACHINE_GUN": "Maschinengewehr",
+        "AMMO_INJECTION_BOLT": "Injektionsbolzen",
+        "AMMO_BOLT": "Bolzen"
+      }
+    },
+    "initiative": {
+      "astral": "Astral",
+      "matrix": "Matrix",
+      "physical": "Physisch"
+    },
+    "item": {
+      "accessories": "Einbauten",
+      "strWeapon": "verw. Stärke",
+      "ammunition": "Munition",
+      "attackvalues": "Angriffswerte",
+      "availability": "Verfüg.",
+      "capacity": "Kapazität",
+      "category": "Kategorie",
+      "damage": "Schaden",
+      "defencerating": "Verteidigungswert",
+      "description": "Beschreibung",
+      "essence": "Essenz",
+      "feature": "Merkmale",
+      "firemode": {
+        "SS": "Einzelschuss",
+        "SA": "Halbautomatisch",
+        "BF": "Salvenmodus",
+        "FA": "Vollautomatisch"
+      },
+      "mastyle": {
+        "category": {
+          "grappling": "Ringen",
+          "mobility": "Mobilität",
+          "ranged": "Fernkampf",
+          "striking": "Schlag",
+          "weapon": "Waffen"
+        }
+      },
+      "mode": "Modus",
+      "mode_ss": "EM",
+      "mode_sa": "HM",
+      "mode_bf": "SM",
+      "mode_fa": "AM",
+      "mode_fa_1m": "1m Radius",
+      "mode_fa_2m": "2m Radius",
+      "mode_fa_3m": "3m Radius",
+      "mode_fa_4m": "4m Radius",
+      "mode_fa_5m": "5m Radius",
+      "mode_fa_6m": "6m Radius",
+      "natural": "Nat. Panzerung",
+      "physical_damage": "K",
+      "physical_special_damage": "S",
+      "price": "Preis",
+      "skill": "Fertigkeit",
+      "skillspec": "Spezialisierung",
+      "social": "Sozial",
+      "stun_damage": "B",
+      "subtype": "Unterart",
+      "type": "Art",
+      "vehicle": {
+        "armor.long": "Panz",
+        "armor.short": "P",
+        "rigRating.long": "Riggerkontrolle",
+        "sensor.long": "Sensor",
+        "sensor.short": "S"
+      }
+    },
+    "itemtype": {
+      "ACCESSORY": "Zubehör",
+      "AMMUNITION": "Munition",
+      "ARMOR": "Rüstung",
+      "ARMOR_ADDITION": "Rüstungszubehör",
+      "BIOLOGY": "Biologie",
+      "BIOWARE": "Bodyware",
+      "CHEMICALS": "Drogen",
+      "CYBERWARE": "Cyberware",
+      "DRONES": "Drohnen",
+      "ELECTRONICS": "Elektronik",
+      "GENETICS": "Genetisch",
+      "MAGICAL": "Magisch",
+      "NANOWARE": "Nanoware",
+      "SOFTWARE": "Software",
+      "SURVIVAL": "Überlebensausrüstung",
+      "TOOLS": "Werkzeuge",
+      "VEHICLES": "Fahrzeuge",
+      "WEAPON_CLOSE_COMBAT": "Nahkampfwaffen",
+      "WEAPON_FIREARMS": "Feuerwaffen",
+      "WEAPON_RANGED": "Projektilwaffen",
+      "WEAPON_SPECIAL": "Spezialwaffen"
+    },
+    "label": {
+      "accessories": "Zubehör",
+      "adepts": "Adepten",
+      "action": "Aktion",
+      "actionduration": {
+        "minor.short": "H",
+        "major.short": "N"
+      },
+      "attack_rating": "Angriffswert",
+      "attack_rating_short": "AW",
+      "attack_rating_using_vehicle": "Angriffswert (Fahrzeug als Waffe)",
+      "attribute": "Attribut",
+      "base": "Basis",
+      "belongs_to": "Gehört zu:",
+      "column": {
+        "action": "Aktion",
+        "count": "#",
+        "name": "Name",
+        "nameAnimate": "Name",
+        "rating": "Stufe"
+      },
+      "attack.short": "A",
+      "attack.long": "Angriff",
+      "sleaze.short": "S",
+      "sleaze.long": "Schleicher",
+      "dataproc.short": "D",
+      "dataproc.long": "Datenverarbeitung",
+      "firewall.short": "F",
+      "firewall.long": "Firewall",
+      "devicerating.short": "DR",
+      "devicerating.long": "Geräte-Stufe",
+      "d6": "W6",
+      "damage": "Schaden",
+      "damage_short": "Sch",
+      "defense": "Verteidigung",
+      "defense_against": "Verteidigung gegen",
+      "defense_rating": "Verteidigungswert",
+      "delete": "Löschen",
+      "details": "Details...",
+      "device_mode": "Gerätemodus",
+      "devRating": "Geräte-Stufe",
+      "dual_hand": "Beidhändig",
+      "dice": "Würfel",
+      "edit": "Bearbeiten",
+      "extended_test": "Ausgedehnte Probe",
+      "expertise": "Expertise",
+      "faster": "Beschleunigen",
+      "features": "Merkmale",
+      "firemode_current": "Akt. Feuermodus",
+      "firemodes": "Feuermodi",
+      "force": "Kraftstufe",
+      "gender": "Geschlecht",
+      "legality.illegal.short": "I",
+      "legality.illegal.long": "Illegal",
+      "legality.legal.short": "L",
+      "legality.legal.long": "Legal",
+      "level": "Hat Stufen",
+      "mages": "Magier",
+      "matrixMonitor": "Matrix Monitor",
+      "max": "Maximum",
+      "mode_of_operation": "Betriebsart",
+      "modifications": "Modifikationen",
+      "modifier": "Modifikator",
+      "name": "Name",
+      "none": "-",
+      "not_present": "nicht vorhanden",
+      "offroad": "Off-Road",
+      "onroad": "Straßen",
+      "points": "Punkte",
+      "pool": "Pool",
+      "poolmod": "Pool-Modifikator",
+      "programs.short": "P",
+      "progSlots": "Programm-Plätze",
+      "rating": "Stufe",
+      "rating1": "Stufe 1",
+      "rating2": "Stufe 2",
+      "rating3": "Stufe 3",
+	    "slower": "Verlangsamen",
+      "soaked": "{soaked} von {threshold} Schaden widerstanden",
+      "specialization": "Spezialisierung",
+      "speed_detail": "Du bewegst dich mit {speed} km/h ({speedPerTurn} Meter pro Runde). Der Modifikator für Proben beträgt {modifier}.",
+      "threshold": "Schwellenwert",
+      "trait": "Eigenschaft",
+      "trait_pool": "Eigenschaft / Pool",
+      "type": "Art",
+      "value": "Wert",
+      "wilddie": "Schicksalswürfel"
+    },
+    "lifestyle": {
+      "cost": "Kosten",
+      "paid": "Bezahlt",
+      "type": "Art",
+      "sin": "Verkn. SIN",
+      "street": "Straße",
+      "squatter": "Squatter",
+      "low": "Unterschicht",
+      "middle": "Mittelschicht",
+      "high": "Oberschicht",
+      "luxury": "Luxus"
+    },
+    "matrix": {
+      "accessLevel": {
+        "outsider": "GAST",
+        "user": "USER",
+        "admin": "ADMIN"
+      }
+    },
+    "matrixaction": {
+      "backdoor_entry": {
+        "name": "Hintertür benutzen",
+        "hint": "Bekomme auf leise Art Admin Zugriff auf einen Host oder ein Gerät. Führe zuerst erfolgreich eine Sondieren-Aktion aus und addiere dann deine Nettoerfolge als Würfelpoolbonus auf diese Probe."
+      },
+      "brute_force": {
+        "name": "Brute Force",
+        "hint": "Die Brecheisen-Variante für schnellen Zugriff auf ein Ziel. Wenn du direkt von Gast auf Admin-Zugang wechseln willst, bekommt die Gegenseite zwei Bonuswürfel und plus vier auf den Verteidigungswert - In jedem Fall wird ein Alarm beim Besitzer ausgelöst."
+      },
+      "calibration": {
+        "name": "Kalibrierung",
+        "hint": "Addiere eins auf das Matrix-Initiativeergebnis von dir und deinen Teammitgliedern (Die einen AR-Feed mit deinem PAN teilen) für je zwei Erfolge. Das Maximum einer Persona ist dein Wert auf Datenverarbeitung."
+      },
+      "change_icon": {
+        "name": "Icon verändern",
+        "hint": "Ersetze ein Icon mit einem anderen. Das hilft allerdings nicht dabei dein eigenes Icon zu verschleiern, wenn jemand gezielt nach dir sucht."
+      },
+      "check_os": {
+        "name": "Overwatch-Wert bestimmen",
+        "hint": "Wirf einen Blick auf deinen Overwatch-Wert. Ironischerweise steigt durch diese Handlung dein OW."
+      },
+      "control_device": {
+        "name": "Gerät steuern",
+        "hint": "Übernimm die Kontrolle über ein Gerät als wärest du der Besitzer, bis du es aus freien Stücken abgibst, es ausschaltest oder jemand anderes dich herauswirft."
+      },
+      "crack_file": {
+        "name": "Datei cracken",
+        "hint": "Mache mit dieser Aktion eine verschlüsselte Datei wieder lesbar."
+      },
+      "crash_program": {
+        "name": "Programm abstürzen lassen",
+        "hint": "Nutze eine Matrixwahrnehmung um herauszufinden, welche Programme dein Gegner laufen hat. Dann nutze diese Aktion um es gezielt zum Absturz zu bringen."
+      },
+      "data_spike": {
+        "name": "Datenspike",
+        "hint": "Die Standardattacke, um Matrixschaden an einem Gerät oder einer Persona zu machen."
+      },
+      "disarm_data_bomb": {
+        "name": "Datenbombe entschärfen",
+        "hint": "Hiermit kannst du mit Matrixwahrnehmung gefundene Datenbomben entschärfen. Ohne einen Nettoerfolg fliegt dir das Ding um die Ohren."
+      },
+      "device_lock": {
+        "name": "Gerätesperre",
+        "hint": "Für soviele Kampfrunden wie du Nettoerfolge hattest, kann der Besitzer das Gerät nicht von der Matrix trennen. Kann einmalig durch Abgabe einer Nebenhandlung um eine Kampfrunde verlängert werden."
+      },
+      "denial_of_service": {
+        "name": "Dienstverweigerung",
+        "hint": "Alle Proben, die mit diesem Wifi-fähigen Gerät ausgeführt werden, bekommen einen Würfelpoolmalus von [Nettoerfolge] mal zwei."
+      },
+      "delayed_command": {
+        "name": "Verzögerter Befehl",
+        "hint": "Sende einen Befehl mitsamt einer Zeitangabe an ein Gerät. Bei Erfolg sieht es den Befehl als legitim an. Nach Ablauf der Zeit wird der Befehl ausgeführt, auch wenn das Gerät von der Matrix getrennt wurde. Ein vorheriger Neustart löscht den Befehl allerdings."
+      },
+      "edit_file": {
+        "name": "Datei editieren",
+        "hint": "Erstelle, editiere, kopiere oder lösche eine Datei. Während eines Kampfes kann pro ausgeführter Aktion nur ein Detail geändert werden. Verschlüsselte Dateien können nicht kopiert werden."
+      },
+      "encrypt_file": {
+        "name": "Datei verschlüsseln",
+        "hint": "Diese Handlung macht eine Datei unlesbar, ohne sie vorherig zu entschlüsseln. Die Verschlüsselungsstufe entspricht der Erfolge bei diesem Wurf."
+      },
+      "enter_host": {
+        "name": "Host betreten/verlassen",
+        "hint": "Host betreten oder verlassen."
+      },
+      "erase_matrix_signature": {
+        "name": "Matrixsignatur löschen",
+        "hint": "Wenn du das Attribut Ressonanz hast, kannst du hiermit Matrixspuren eines Technomancers oder Sprites löschen."
+      },
+      "format_device": {
+        "name": "Gerät formatieren",
+        "hint": "Du ersetzt den Bootsektoreines Geräts mit deinem eigenen Code, sodass es bei einem Neustart nicht mehr hochfährt."
+      },
+      "full_matrix_defense": {
+        "name": "Volle Matrixabwehr",
+        "hint": "Addiere deinen Wert auf Firewall zu allen Verteidigungsproben in der Matrix."
+      },
+      "garbage_in_out": {
+        "name": "Garbage In/Garbage Out",
+        "hint": "Spiele mit den Funktionen eines Gerätes herum. Zum Beispiel wird wenn der Benutzer ein Programm starten will stattdessen das zuletzt gemachte Bild gelöscht."
+      },
+      "hash_check": {
+        "name": "Prüfsummensuche",
+        "hint": "Suche auf einem Host oder Gerät nach einer verschlüsselten Datei mit einem bestimmten Inhalt. Die Chancen steigen nicht unerheblich, wenn du im Vorfeld dafür eine valide Prüfsumme gestellt bekommen hast."
+      },
+      "hide": {
+        "name": "Verstecken",
+        "hint": "Versuche, einen Verfolger in der Matrix abzuschütteln. Funktioniert nicht, wenn dieser User- oder Adminrechte auf einem deiner Geräte hat."
+      },
+      "jack_out": {
+        "name": "Ausstöpseln",
+        "hint": "Entkoppel dich von der Matrix durch einen Neustart deines Geräts. Bei einer Linksperre ist es eine vergleichende Probe. Bist du vorher nicht auf AR gewechselt, erleidest du Auswurfschock."
+      },
+      "jam_signals": {
+        "name": "Signal stören",
+        "hint": "Solange du dein Gerät nicht anderweitig nutzt, sendet es ein Rauschen in der Höhe deiner Erfolge innerhalb 100 Metern aus."
+      },
+      "jump_rigged": {
+        "name": "Hineinspringen",
+        "hint": "Das Fahrzeug oder die Drone braucht ein Riggerinterface, niemand anders darf bereits hineingesprungen sein und du brauchst eine Riggerkonsole. Abhängig davon ob du der Besitzer bist und welche Zugangsberechtigungen du hast, musst du eventuell würfeln."
+      },
+      "known_exploit": {
+        "name": "Hintertür mit bekanntem Exploit benutzen",
+        "hint": "Du versuchst, bekannte Fehler zu Nutzen um Admin zu werden. Deine Chancen sinken auf gut gewarteten Hosts und Geräten. Dies kombiniert die Sondieren- und Hintertür benutzen Aktionen, du kannst allerdings hierfür kein Edge erhalten oder ausgeben während die Gegenseite gratis ein temporäres Edge bekommt."
+      },
+      "masquerade": {
+        "name": "Maskerade",
+        "hint": "Gib für [Nettoerfolge] Kampfrunden aus, in der Matrix jemand anders zu sein. Die Matrix lässt sich allerdings nicht einfach überlisten, sodass du damit nicht einfach der Eigentümer von Geräten werden oder Banking betreiben kannst."
+      },
+      "matrix_perception": {
+        "name": "Matrixwahrnehmung",
+        "hint": "Finde ein Icon auf Schleichfahrt oder sammel Informationen über ein Ziel, sein Icon und Gerätestufe, laufende Geräte, Programme sowie speziellere Informationen."
+      },
+      "matrix_search": {
+        "name": "Matrixsuche",
+        "hint": "Scanne die öffentliche Matrix nach Informationen über ein Subjekt."
+      },
+      "metahuman_middle": {
+        "name": "Mittelsmetamensch",
+        "hint": "Die gesamte Kommunikation und Matrixhandlungen des Ziels laufen für [Nettoerfolge] Runden über dein Gerät."
+      },
+      "modify_icon": {
+        "name": "Icon modifizieren",
+        "hint": "Modeliere ein Icon, zu dem du Adminzugriff hast, um zu etwas, das es nicht repräsentiert. Zum Beispiel sieht danach das Icon deiner Waffe aus wie Blumen."
+      },
+      "probe": {
+        "name": "Sondieren",
+        "hint": "Versuche, Schwachstellen zu finden um sie später als Hintertür zu benutzen. Dies braucht seine Zeit, alarmiert im Gegensatz zu Brute Force allerdings nicht das Ziel."
+      },
+      "pop_up": {
+        "name": "Pop-Up",
+        "hint": "Überschwämme dein Gegenüber mit ARO Fenstern, sodass er für [Nettoerfolge] Runden kein Edge ausgeben kann."
+      },
+      "reboot_device": {
+        "name": "Gerät neu starten",
+        "hint": "Schneide ein Gerät vom Zugang zur Matrix ab, indem es neu startet. Am Ende der folgenden Kampfrunde ist es wieder online."
+      },
+      "reconfigure": {
+        "name": "Matrixattribute austauschen",
+        "hint": "Vertausche zwei Matrixattribute deiner Matrix Persona, egal von welcher Quelle (Kommlink, Cyberbuchse, ...) sie kommen."
+      },
+      "send_message": {
+        "name": "Nachricht übermitteln",
+        "hint": "Versende eine Audio oder Textnachricht oder starte eine Live-Übertragung."
+      },
+      "set_data_bomb": {
+        "name": "Datenbombe legen",
+        "hint": "Klebe eine Datenbombe an eine Datei, um sorglose Hacker virtuell in die Luft zu jagen. Die Stufe kann maximal deinen Nettoerfolgen entsprechen. Wähle dann, ob die Bombe auch die Datei zerstört oder nicht."
+      },
+      "snoop": {
+        "name": "Übertragung abfangen",
+        "hint": "Bekomme Zugriff auf den Datenverkehr zwischen dem Ziel und der Matrix."
+      },
+      "spoof_command": {
+        "name": "Befehl vortäuschen",
+        "hint": "Sende einen Befehl an ein Gerät, der vorgibt vom Besitzer verschickt worden zu sein."
+      },
+      "squelch": {
+        "name": "Ersticken",
+        "hint": "Verhindere, dass das Ziel für [Nettoerfolge] Kampfrunden Nachrichten verschicken oder jemanden anrufen kann."
+      },
+      "subvert_infrastructure": {
+        "name": "Infrastruktur unterwandern",
+        "hint": "Versetze dich durch diese Handlung in die Lage einer Gruppe ähnlicher, einfacher Wifigeräte eines Hosts einfache Befehle zu schicken. Damit kannst du zum Beispiel Straßenlaternen ausschalten oder alle Sicherheitskameras nach links drehen."
+      },
+      "switch_ifmode": {
+        "name": "Interfacemodus wechseln",
+        "hint": "Wechsel zwischen dem AR und dem VR Modus deines Interfaces."
+      },
+      "tarpit": {
+        "name": "Teergrube",
+        "hint": "Verlangsame dein Ziel, indem du ihm etwas Schaden machst und seine Datenverarbeitung senkst."
+      },
+      "threat_analysis": {
+        "name": "Bedrohungsanalyse",
+        "hint": "Markiere schädliche Ziele und teile diese per AR Feed mit deinen Kumpanen, sodass diese deine Erfolge als Würfelpoolbonus bei ihren Verteidigungswürfen bekommen. Funktioniert sowohl in der physischen Welt wie in der Matrix."
+      },
+      "trace_icon": {
+        "name": "Icon aufspüren",
+        "hint": "Mache den physischen Ort eines Gerätes oder einer Persona ausfindig."
+      },
+      "virtual_aim": {
+        "name": "Virtuelles Zielen",
+        "hint": "Gibt dir einen Bonuswürfel für Angriffe wie Datenspike oder Teergrube. Einmal pro Runde ausführbar, addiert aber jede Runde auf, bis du keine Aktion Virtuelles Zielen mehr in einer Runde ausführst oder attackierst. Der Maximale Bonus entspricht deiner Willenskraft."
+      },
+      "watchdog": {
+        "name": "Stalking",
+        "hint": "Erlaubt dir, während [Nettoerfolge] Runden die Handlungen einer Matrix Persona oder einem Gerät zu verfolgen, antizipieren und unterbechen. Außerdem kannst du, während Stalking läuft, eine Bedrohungsanalyse als Nebenhandlung ausführen."
+      }
+    },
+    "matrixini": {
+			"ar": "AR",
+			"vrcold": "VR, kalte SIM",
+			"vrhot": "VR, heiße SIM"
+	   },
+    "monitor": {
+      "label": "Monitor",
+      "matrix": "Matrix",
+      "physical": "Körperlich",
+      "stun": "Geistig",
+      "overflow": "Überzählig"
+    },
+    "mortype": {
+      "adept": "Adept",
+      "aspectedmagician": "Aspektmagier",
+      "magician": "Magier",
+      "mundane": "Mundan",
+      "mysticadept": "Magieradept",
+      "technomancer": "Technomancer"
+    },
+    "newitem": {
+      "adeptpower": "Wie heisst die Kraft",
+      "accessory": "Glänzendes etwas",
+      "ammunition": "Coole Munition",
+      "armor": "Das kleine Schwarze",
+      "armor_addition": "Dein Anzug benötigt ein paar Updates",
+      "biology": "Biozeugs",
+      "bodyware": "Was cooles zum Einbauen",
+      "chemicals": "Das gute Zeug",
+      "complexform": "Wie komplex ist es denn?",
+      "contact": "Na, wen kennst du?",
+      "critterpower": "Was ist so besonders an dem Viech?",
+      "cyberware": "Was cooles zum Einbauen",
+      "drones": "Allsehendes Auge",
+	 	  "echo": "Echooooooo",
+      "electronics": "Technikspielzeug",
+      "genetics": "Jeder möchte blaue Augen",
+      "focus": "Jeder sollte einen Focus haben",
+      "lifestyle": "Lebst du noch oder wohnst du schon?",
+      "magical": "Hex Hex!",
+      "martialartstyle": "Was ist dein Stil?",
+      "martialarttech": "Was für eine Technik hast du drauf?",
+      "matrix": "Schau Dir mein Deck an!",
+      "rcc": "Minion Dominator X2000",
+      "metamagic": "Was hast du gelernt?",
+      "nanoware": "Sieben oder auch neun kleine Maschinen",
+      "quality": "Was macht dich besonders?",
+      "ritual": "Ringelpiez mit Anfassen",
+      "sin": "Wer willst du heute sein?",
+      "skill": {
+        "knowledge": "Worin bist Du Nerd?",
+        "language": "Unverständliches Gemurmel"
+      },
+      "spell": "Abrakadabra",
+      "software": "Zwielichtige Raubkopie",      
+      "survival": "Das Schweizer Taschenmesser",
+      "tools": "Das eine Lieblingswerkzeug",
+      "vehicles": "Geile Karre",
+      "weapon": "Was mit viel Wumms",
+      "weaponclose": "Etwas fürs Grobe",
+      "weaponspecial": "Das ist doch keine Waffe?"
+    },
+    "npc": {
+    	"subtype": {
+      	"npc": "NSC",
+      	"critter": "Critter",
+      	"spirit": "Geist",
+      	"sprite": "Sprite"
+      },
+      "gruntrules": "Nutze Schergenregeln",
+      "mortype": "Magie/Resonanz"
+    },
+    "numerical": {
+      "base": "Basis",
+      "baseString": "Grundwert",
+      "max": "Max",
+      "mod": "Mod"
+    },
+    "programtype": {
+      "basic": "Standardprogramme",
+      "hacking": "Hackingprogramme"
+    },
+    "program": {
+      "baby_monitor": {
+        "name": "Babymonitor",
+        "desc": "Gibt dir deinen gegenwärtigen Overwatch-Wert an, ohne dass dafür eine Handlung nötig ist."
+      },
+      "browse": {
+        "name": "Schmöker",
+        "desc": "Wenn du eine Handlung Matrixsuche durchführst, erhältst du 1 Edge; dieser Punkt muss sofort für diese Handlung ausgegeben werden, sonst verfällt er."
+      },
+      "configurator": {
+        "name": "Konfigurator",
+        "desc": "Du kannst eine alternative Attributanordnung für dein PAN abspeichern und zu dieser wechseln, statt nur zwei Attribute auszutauschen."
+      },
+      "edit": {
+        "name": "Editieren",
+        "desc": "Wenn du eine Handlung <em>Datei editieren</em> durchführst, erhältst du 1 Edge; dieser Punkt muss sofort für diese Handlung ausgegeben werden, sonst verfällt er."
+      },
+      "encryption": {
+        "name": "Verschlüsselung",
+        "desc": "+2 Würfel für die Handlung <em>Datei verschlüsseln</em>."
+      },
+      "signal_scrubber": {
+        "name": "Signalreinigerr",
+        "desc": "Senkt den Rauschenwert um 2."
+      },
+      "toolbox": {
+        "name": "Toolbox",
+        "desc": "+1 auf Datenververbeitung"
+      },
+      "virtual_machine": {
+        "name": "Virtuelle Maschine",
+        "desc": "2 zusätzliche Programmslots; bei Angriffen erleidest du 1 zusätzliches Kästchen Matrixschaden, gegen das kein Widerstand geleistet werden kann."
+      },
+      "armor": {
+        "name": "Panzerung",
+        "desc": "+2 zum Verteidigungswert."
+      },
+      "biofeedback": {
+        "name": "Biofeedback",
+        "desc": "Verursacht bei einem Matrixangriff Betäubungsschaden (gegen ein Ziel in der VR mit kaltem Sim) bzw. Körperlichen Schaden (gegen ein Ziel in der VR mit heißem Sim) statt Matrixschaden."
+      },
+      "biofeedback_filter": {
+        "name": "Biofeedbackfilter",
+        "desc": "Du kannst Biofeedback-Schaden mit Gerätestufe oder Konstitution statt mit Willenskraft widerstehen."
+      },
+      "blackout": {
+        "name": "Blackout",
+        "desc": "Ähnlich wie das Programm Biofeedback, kann aber nur Betäubungsschaden verursachen."
+      },
+      "decryption": {
+        "name": "Entschüsselung",
+        "desc": "+2 Würfel für die Handlung <em>Datei cracken</em>."
+      },
+      "defuse": {
+        "name": "Splitterschutz",
+        "desc": "Du kannst Schaden durch eine Datenbombe mit Gerätestufe oder Konstitution statt mit Firewall widerstehen."
+      },
+      "exploit": {
+        "name": "Ausnutzen",
+        "desc": "Der Verteidigungswert der Gegenseite sinkt bei deinen Hacking-Versuchen um 2."
+      },
+      "fork": {
+        "name": "Gabel",
+        "desc": "Du kannst zwei Ziele mit einer einzelnen Matrixhandlung treffen, ohne den Würfelpool aufzuteilen. Jedes Ziel verteidigt sich mit einem eigenen Würfelpool; die Auswirkungen werden separat bestimmt."
+      },
+      "lockdown": {
+        "name": "Fessel",
+        "desc": "Wenn du einem Ziel Matrixschaden zufügst, belegst du es zusätzlich mit einer Linksperre."
+      },
+      "overclock": {
+        "name": "Übertakten",
+        "desc": "+2 Würfel für eine Matrixhandlung. Einer der Würfel muss der Schicksalswürfel sein."
+      },
+      "stealth": {
+        "name": "Tarnkappe",
+        "desc": "Wenn du die Handlung Verstecken durchführst, erhältst du 1 Edge; dieser Punkt muss sofort für diese Handlung ausgegeben werden, sonst verfällt er."
+      },
+      "trace": {
+        "name": "Aufspüren",
+        "desc": "Wenn du die Handlung Icon aufspüren durchführst, erhältst du 1 Edge; dieser Punkt muss sofort für diese Handlung ausgegeben werden, sonst verfällt er."
+      }
+    },
+    "qualityedit": {
+      "category": "Art",
+      "description": "Beschreibung",
+      "explain": "Erklärung",
+      "name": "Name",
+      "new": "Neu"
+    },
+    "ritualfeatures": {
+      "anchored": "Verankert",
+      "material_link": "Materielle Verbindung",
+      "minion": "Diener",
+      "spell": "Zauber",
+      "spotter": "Späher"
+    },
+    "roll": {
+      "accumulated": "Gesamt",
+      "actionText": {
+        "attack_target_multiple": "Greift mehre Ziele mit {name} an",
+        "attack_target_none": "Greift Ziel mit {name} an",
+        "attack_target_one": "Greift {target} mit {name} an",
+        "cast_target_multiple": "zaubert {name} auf mehrere Ziele",
+        "cast_target_none": "zaubert {name}",
+        "cast_target_one": "zaubert {name} auf {target}",
+        "skill": "Fertigkeitswurf",
+        "thread": "Webe {name}",
+        "defense": {
+          "physical": "Verteidigung g. physischen Angriff",
+          "spells_direct": "Verteidigung g. dir. Kampfzauber",
+          "spells_indirect": "Verteidigung g. ind. Kampfzauber"
+        },
+        "soak": {
+          "drain": "Widerstehe {damage} Entzug",
+          "fading": "Widerstehe {damage} Schwund",
+          "damage_phys": "Widerstehe {damage} körperl. Schaden",
+          "damage_stun": "Widerstehe {damage} Betäubungsschaden"
+        }
+      },
+      "apply_damage": "Schaden anwenden",
+      "damage_applied": "Schaden angewendet",
+      "damage_revert": "Schaden rückgängig machen?",
+      "ar_0": "Sehr nah",
+      "ar_1": "Nah",
+      "ar_2": "Mittel",
+      "ar_3": "Weit",
+      "ar_4": "Sehr weit",
+      "attack": "Angriff gegen ",
+      "attackRating": "Angriffswert",
+      "bf_type": "Art",
+      "bf": {
+        "narrow_burst": "Enge Salve",
+        "wide_burst": "Weite Salve"
+      },
+      "button": {
+			"defense": "Verteidigen",
+			"drain"  : "Entzug widerstehen",
+			"soak"   : "Schaden widerstehen"
+		},
+      "cantDodgeBullets": "Setze den Schwellenwert entsprechend der Gegebenheiten bis zum Ziel",
+      "configure": "Justiere deinen Wurf",
+      "wound-modifier": "Verwende Wundabzug",
+      "sustained-spell-modifier": "Abzug durch aufr. Zauber",
+      "criticalglitch": "Kritischer Patzer",
+      "heal_apply": "Heilung wirken",
+      "damage": "Schaden: ",
+      "damage_apply": "Schaden zufügen",
+      "defRating": "Verteidigungswert",
+      "edge": {
+        "add_manually_to_target": "(Manuell eintragen) Ziel",
+        "gain_player": "{name} erhält {value} Edge",
+        "gain_player_capped": "{name} würde {value} Edge, can aber nicht mehr als {capped} bekommen.",
+        "getting": "Edge erhalten",
+        "no_gain": "Niemand bekommt Edge",
+        "situational": "Situatives Edge",
+        "spending": "Edge ausgeben",
+        "spend_edge": "Edge ausgeben",
+        "edge_spent": "Edge ausgegeben: {boostTitle}",
+        "spend": "Ausgeben!"
+      },
+      "edge_perform": "Ausführen",
+      "edgegain": "Edge-Erhalt (max): ",
+      "edgegain_player": " (Player)",
+      "exp": "Expertise",
+      "explode": "Explodiert",
+      "fa_area": "Fläche",
+      "firemode": "Feuermodus",
+      "failure": "Fehlschlag",
+      "failedDefense": "Du wurdest getroffen.",
+      "failedSoak": "Du erleidest Schaden",
+      "glitch": "Patzer",
+      "hits_bought": "Erfolge gekauft",
+      "hits": "Erfolge",
+      "mode": "Modus",
+      "modifier": "Pool Modifikator",
+      "noedgegain": "Kein Edge-Gewinn",
+      "nosuccess": "Erfolge bei Schwellenwert ",
+      "notarget": "Kein Ziel ausgewählt",
+      "pool": "Würfel/Pool",
+      "range": "Distanz",
+      "spec": "Spezialiszierung",
+      "spell": {
+        "ampUp": {
+          "1": "Schaden+1 / Entzug+2",
+          "2": "Schaden+2 / Entzug+4",
+          "3": "Schaden+3 / Entzug+6",
+          "4": "Schaden+4 / Entzug+8",
+          "title": "Hochdrehen"
+        },
+        "incArea": {
+          "1": "Radius +2m / Entzug+1",
+          "2": "Radius +4m / Entzug+2",
+          "3": "Radius +6m / Entzug+3",
+          "4": "Radius +8m / Entzug+4",
+          "5": "Radius +10m / Entzug+6",
+          "6": "Radius +12m / Entzug+8",
+          "title": "Fläche vergrößern"
+        },
+        "title": "Den Zauber anpassen"
+      },
+      "subject": "Chat-Nachricht",
+      "success": "Erfolgreich",
+      "successes": "Erfolge",
+      "netHits": "Nettoerfolge",
+      "successfulDefense": "Du konntest ausweichen",
+      "successfulSoak"   : "Du hast dem Schaden wiederstanden",
+      "missedAttack"   : "Daneben, Chummer!",
+      "succesfulHit"   : "Volltreffer, Chummer!",
+      "target": "Ziel",
+      "threshold": "Schwellenwert",
+      "weapon": "Wie greifst Du an?",
+      "wilddie": "Schicksalswürfel verwenden",
+      "with": "mit "
+    },
+    "rollType": {
+      "bought": "Erfolge kaufen",
+      "normal": "Würfeln"
+    },
+    "section": {
+      "adeptpowers": {
+        "add": "Adeptenkraft hinzufügen",
+        "column.points": "KP",
+        "title": "Adeptenkräfte"
+      },
+      "ammo": "Munition",
+      "ammo_add": "Munition hinzufügen",
+      "armor": {
+        "add": "Panzerung hinzufügen",
+        "column": {
+          "action": "Aktion",
+          "defense": "Panz",
+          "name": "Name",
+          "social": "Sozial"
+        },
+        "title": "Panzerung"
+      },
+      "armor_adds": "Panzerung Mods",
+      "biology": "Biologie",
+      "bodyware": {
+        "add": "Body- oder Cyberware hinzufügen",
+        "column.capacity": "Kap.",
+        "column.essence": "Ess.",
+        "footer.total_essence": "Verbleibende Essenz",
+        "title": "Bodyware"
+      },
+      "chemicals": "Drogen",
+      "complexforms": {
+        "add": "Neue komplex Form hinzufügen",
+        "column.duration": "Dau",
+        "column.fade": "Schw",
+        "title": "Komplexe Formen"
+      },
+      "contacts": {
+        "add": "Neue Connection hinzufügen",
+        "title": "Connections"
+      },
+      "critterpowers": {
+        "add": "Critterkraft hinzufügen",
+        "title": "Critterkräfte"
+      },
+      "defense": "Verteidigung & Widerstände",
+      "derived": "Abgeleitete Werte",
+      "drones": {
+        "add": "Neue Drohne hinzufügen",
+        "title": "Drohnen"
+      },
+      "electronics": "Elektronik",
+      "echo": {
+        "add": "Neues Echo hinzufügen",
+        "title": "Echos"
+      },
+      "initiative": "Initiative",
+      "martialarts": {
+        "add": "Neuen Kampfstil hinzufügen",
+        "tech_add": "Neue Technik hinzufügen",
+        "title": "Kampfkünste"
+      },
+      "focus": {
+        "add": "Focus hinzufügen",
+        "column.rating": "Kraft",
+        "title": "Foci"
+      },
+      "gear" : {
+        "add": "Neue Ausrüstung hinzufügen",
+        "title" : "Ausrüstung"
+      },
+      "karma" : {
+        "title" : "Karma, Fahndungsstufe, Ruf",
+        "karma" : "Karma",
+        "heat"  : "Fahndungsstufe",
+        "reputation": "Ruf",
+        "total": "Gesamt"
+      },
+      "lifestyles": {
+        "add": "Neuen Lebensstil hinzufügen",
+        "title": "Lebensstile"
+      },
+      "magical": "Magisch",
+      "matrix_base": {
+        "overwatch": "Overwatch"
+      },
+      "matrix_actions": {
+        "title": "Matrixhandlungen"
+      },
+      "matrix_combat": {
+        "title": "Matrixkampf"
+      },
+      "matrix_devices": {
+        "add": "Neues Matrixgerät",
+        "add_rcc": "Neue Riggerkonsole hinzufügen",
+        "column": {
+          "action": "Aktion",
+          "devRating": "Geräte-Stufe",
+          "name": "Name"
+        },
+        "title": "Matrixgeräte",
+        "title_rcc": "RCC"
+      },
+      "metamagic": {
+        "add": "Metamagie hinzufügen",
+        "title": "Metamagie"
+      },
+      "notes": {
+        "title": "Notizen"
+      },
+      "persona": {
+        "distribute": "Verteile",
+        "title": "Persona"
+      },
+      "qualities": "Vor/Nachteile",
+      "qualities_add": "Hinzufügen",
+      "rigging": {
+        "title": "Rigging"
+      },
+      "rituals": {
+        "add": "Neues Ritual hinzufügen",
+        "column.threshold": "Schwellenwert",
+        "title": "Rituale"
+      },
+      "sins": {
+        "add": "Neue SIN hinzufügen",
+        "title": "SINS"
+      },
+      "skills.action": "Fertigkeiten",
+      "skills.knowledge": "Wissensfertigkeiten",
+      "skills.knowledge_add": "Neue Wissensfertigket hinzufügen",
+      "skills.language": "Sprachen",
+      "skills.language-level": {
+        "expert": "Experte",
+        "native": "Muttersprache",
+        "normal": "Normal",
+        "special": "Spezialist"
+      },
+      "skills.language_add": "Neue Sprache hinzufügen",
+      "software": {
+        "add": "Software hinzufügen",
+        "title": "Software"
+      },
+      "spells": {
+        "add": "Zauber hinzufügen",
+        "column.alchemic": "Alch.",
+        "column.drain": "Entzug",
+        "column.range": "Reichw",
+        "column.sustained": "Aufr.",
+        "title": "Zauber"
+      },
+      "sustained": {
+        "add": "Zauber ergänzen",
+        "title": "Aufrechterhaltene Zauber"
+      },
+      "survival": "Überlebensausrüstung",
+      "vehicles": {
+        "add": "Fahrzeug hinzufügen",
+        "column": {
+          "handling": "Han",
+          "acc": "Bes",
+          "spdi": "Int",
+          "tspd": "Geschw",
+          "bod": "Rumpf",
+          "arm": "Panz.",
+          "pil": "Pil.",
+          "sen": "Sen.",
+          "sea": "Sitze",
+          "vtype": "Art"
+        },
+        "title": "Fahrzeuge"
+      },
+      "vehicleskills": {
+		  		"brain": "Elektronisches Gehirn",
+				"operations": "Handlungen"
+	   },
+      "weapon": {
+        "add": "Neue Waffe hinzufügen",
+        "close": "Nahkampf",
+        "ranged": "Fernkampf",
+        "special": "Spezielle Waffen",
+		    "title": "Waffen"
+      }
+    },
+    "settings": {
+      "maxEdgePerRound": {
+        "hint": "Definiert wieviel Edge jemand pro Kampfrunde maximal erhalten kann",
+        "name": "Maximal sammelbares Edge pro Runde"
+      },
+      "importToCompendium": {
+        "hint": "Sollen NSCs in das Kompendium (statt in die Actor-Liste) importiert werden?",
+        "name": "In das Kompendium importieren"
+      },
+      "defaultThreshold": {
+        "hint": "Definiert den Standard-Schwellenwert für Fertigkeitsproben",
+        "name": "Standard-Schwellenwert"
+      },
+      "hardDiceCap": {
+        "hint": "Im Standardspiel gibt es ein Maximum von 20 Würfeln für jede Probe. Keine Kombination von Fähigkeiten, Fertigkeiten, Effekten oder Modifikationen kann dieses Limit bei einem Wurf überschreiten. Ausnahme: Durch Pre-Edging kannst du die 20-Würfel-Grenze mit den durch das Edge gewährten Bonuswürfeln überschreiten.",
+        "name": "Feste Würfelpoolbegrenzung"
+      },
+      "bleeding": {
+        "hint": "Aktiviere diese Regel um laufenden Schaden von schweren Verletzungen zu abzubilden. (Schattenkompendium, S. 158)",
+        "name": "Blutungen"
+      },
+      "hackSlashMatrix": {
+        "hint": "Aktiviere die Matrixhandlungen aus dem Auswurfschock-Regelbuch. (Auswurfschock, S.29)",
+        "name": "Auswurfschock-Matrixhandlungen"
+      },
+      "armorLessensDmg": {
+        "hint": "Nutze diese Regel um den körperlichen Schaden zu reduzieren, den du erleidest. Nachdem du dem Schaden wiederstanden hast (ausgenommen von Toxinen oder Status), wandelst du für jeden 8ten Punkt Verteidigungswert ein Kästchen körperlichen Schaden in Betäubungsschaden um. (Schattenkompendium S.163)",
+        "name": "Panzerung senkt körperlichen Schaden"
+      },
+      "rollStrengthCombat": {
+        "hint": "Nahkampfangriffe können mit Stärke statt Agilität gewürfelt werden, sofern die Waffe auf Masse und Wucht basiert. Nutze Agilität statt Stärke für den Angriffswert. Die Waffe muss in beiden Händen gehalten werden. (Schattenkompendium S.163)",
+        "name": "Stärke statt Geschicklichkeit im Nahkampf"
+      },
+      "highStrengthAddsDamage": {
+        "hint": "Wenn deine Stärke mindestens 7 beträgt, erhöhe deinen Nahkampfschaden um 1. Wenn deine Stärke 10 oder höher ist, erhöhe deinen Nahkampfschaden um 2. Waffen, die nicht von hoher Stärke profitieren, erhöhen den Schaden nicht. (Schattenkompendium S.164)",
+        "name": "Hohe Stärke erhöht den Schaden"
+      },
+      "highStrengthReducesRecoil": {
+        "hint": "Der Angriffswertmalus für Feuerwaffenangriffe ist um 1 verringert, wenn die Stärke des Angreifers 7 oder höher ist und um 2, sobald die Stärke 10 oder höher beträgt. Beide Hände müssen verwendet werden, um die Schusswaffe zu kontrollieren. (Schattenkompendium S.164)",
+        "name": "Rückstossdämpfung durch hohe Stärke"
+      },
+      "cantDodgeBullets": {
+        "hint": "Jede Vergleichsprobe für einen Angriff ist stattdessen eine einfache Probe gegen einen Schwellenwert, der durch die Entfernung und die Größe des Verteidigungspools des Ziels festgelegt wird. Das Ziel des Angriffs kann immer noch Edge-Boosts gegen die Würfel des Angreifers verwenden. (Schattenkompendium S.165)",
+        "name": "Man kann Kugeln nicht ausweichen"
+      }
+    },
+    "sin": {
+      "quality": "Qualität",
+      "real_sin": "Echte SIN",
+      "anyone": "Irgendjemand",
+      "rough_match": "Grobe Übereinstimmung",
+      "good_match": "Gute Übereinstimmung",
+      "superficially_plausible": "Oberflächlich Plausibel",
+      "highly_plausible": "Hohe Plausibilität",
+      "second_life": "Zweites Leben"
+    },
+    "softwareedit": {
+      "description": "Beschreibung",
+      "category": "Kategorie",
+      "basic": "Standard",
+      "hacking": "Hacking"
+    },
+    "special": {
+      "astral": {
+        "astral_combat": "Astralkampf",
+        "astral_signatures": "Astrale Signaturen",
+        "emotional_stress": "Gefühlszustände",
+        "spirit_types": "Geisterarten"
+      },
+      "athletics": {
+        "archery": "Projektilwaffen",
+        "climbing": "Klettern",
+        "flying": "Fliegen",
+        "free_fall": "Freier Fall",
+        "gymnastics": "Akrobatik",
+        "sprinting": "Sprinten",
+        "swimming": "Schwimmen",
+        "throwing": "Werfen"
+      },
+      "biotech": {
+        "biotechnology": "Biotechnologie",
+        "cybertechnology": "Cybertechnologie",
+        "first_aid": "Erste Hilfe",
+        "medicine": "Medizin"
+      },
+      "close_combat": {
+        "blades": "Klingenwaffen",
+        "clubs": "Knüppel",
+        "unarmed": "Waffenloser Kampf"
+      },
+      "con": {
+        "acting": "Schauspielerei",
+        "disguise": "Verkleiden",
+        "impersonation": "Verkörpern",
+        "performance": "Vorführen"
+      },
+      "conjuring": {
+        "banishing": "Verbannen",
+        "summoning": "Herbeirufen"
+      },
+      "cracking": {
+        "cybercombat": "Matrixkampf",
+        "electronic_warfare": "Elektronische Kriegsführung",
+        "hacking": "Hacken"
+      },
+      "electronics": {
+        "computer": "Computer",
+        "hardware": "Hardware",
+        "software": "Software",
+        "complex_forms": "Komplexe Formen"
+      },
+      "enchanting": {
+        "alchemy": "Alchemie",
+        "artificing": "Fokusherstellung",
+        "disenchanting": "Entzaubern"
+      },
+      "engineering": {
+        "aeronautics_mechanic": "Luftfahrzeugmechanik",
+        "armorer": "Waffenbau",
+        "automotive_mechanic": "Fahrzeugmechanik",
+        "demolitions": "Sprengstoffe",
+        "gunnery": "Geschütze",
+        "industrial_mechanic": "Industriemechanik",
+        "lockpicking": "Schlösserknacken",
+        "nautical_mechanic": "Seefahrtmechanik"
+      },
+      "exotic_weapons": {
+        "chainsaws": "Ketensägen",
+        "brawling": "Nahkampf",
+        "air": "Druckluftwaffen",
+        "emitter": "Energiewaffen",
+        "laser": "Laserwaffen",
+        "launchers": "Werfer",
+        "spray": "Sprüher",
+        "whips": "Peitschen",
+        "other": "Sonstige"
+      },
+      "firearms": {
+        "assault_cannons": "Sturmgewehre",
+        "holdouts": "Holdouts",
+        "machine_pistols": "Automatikpistolen",
+        "pistols_heavy": "Schwere Pistolen",
+        "pistols_light": "Leichte Pistolen",
+        "rifles": "Gewehre",
+        "shotguns": "Schrotflinten",
+        "submachine_guns": "Maschinenpistolen",
+        "machine_guns": "Maschinengewehre",
+        "tasers": "Taser"
+      },
+      "influence": {
+        "etiquette": "Gebräuche",
+        "instruction": "Unterrichten",
+        "intimidation": "Einschüchtern",
+        "leadership": "Führen",
+        "negotiation": "Verhandeln"
+      },
+      "outdoors": {
+        "navigation": "Navigation",
+        "survival": "Survival",
+        "tracking_desert": "Umgebung Wüste",
+        "tracking_other": "Umgebung Sonstige",
+        "tracking_urban": "Umgebung Stadt",
+        "tracking_woods": "Umgebung Wald"
+      },
+      "perception": {
+        "aural": "Hören",
+        "perception_desert": "Umgebung Wüste",
+        "perception_other": "Umgebung Sonstige",
+        "perception_urban": "Umgebung Stadt",
+        "perception_woods": "Umgebung Wald",
+        "scent": "Riechen",
+        "tactile": "Tasten",
+        "taste": "Schmecken",
+        "visual": "Sehen"
+      },
+      "piloting": {
+        "aircraft": "Luftfahrzeuge",
+        "ground_craft": "Bodenfahrzeuge",
+        "watercraft": "Wasserfahrzeuge"
+      },
+      "sorcery": {
+        "counterspelling": "Antimagie",
+        "ritual_spellcasting": "Ritualzauberei",
+        "spellcasting": "Spruchzauberei"
+      },
+      "stealth": {
+        "camouflage": "Tarnung",
+        "disguise": "Verkleiden",
+        "palming": "Fingerfertigkeit",
+        "sneaking": "Schleichen"
+      },
+      "tasking": {
+        "compiling": "Kompilieren",
+        "decompiling": "Dekompilieren",
+        "registering": "Registrieren"
+      }
+    },
+    "spell": {
+		  "area": "Fläche",
+      "category": "Kategorie",
+      "category_combat": "Kampf",
+      "category_detection": "Wahrnehmung",
+      "category_health": "Heilung",
+      "category_illusion": "Illusion",
+      "category_manipulation": "Manipulation",
+      "damage": "Schaden",
+      "damage_physical": "Körperlich",
+      "damage_physical_short": "K",
+      "damage_physical_special": "Körperl., Speziell",
+      "damage_physical_special_short": "K, Speziell",
+      "damage_short": "Sch",
+      "damage_stun": "Betäubt",
+      "damage_stun_short": "B",
+      "damage_stun_special": "Betäubt, Speziell",
+      "damage_stun_special_short": "B, Speziell",
+      "direct": "Direkt",
+      "drain": "Entzug",
+      "drain_short": "Entz",
+      "duration": "Dauer",
+      "duration_always": "Immer",
+      "duration_always_short": "I",
+      "duration_instantaneous": "Sofort",
+      "duration_instantaneous_short": "S",
+      "duration_immediate": "Sofort",
+      "duration_immediate_short": "S",
+      "duration_limited": "Begrenzt",
+      "duration_permanent": "Permanent",
+      "duration_permanent_short": "P",
+      "duration_short": "Dauer",
+      "duration_special": "Speziell",
+      "duration_special_short": "Spez",
+      "duration_sustained": "Aufrechterhalten",
+      "duration_sustained_short": "A",
+      "isOpposed": "Vergleichend",
+      "range": "Reichweite",
+      "range_line_of_sight": "Blickfeld",
+      "range_line_of_sight_area": "Blickfeld (Fläche)",
+      "range_line_of_sight_area_short": "BF(F)",
+      "range_line_of_sight_short": "BF",
+      "range_self": "Selbst",
+      "range_self_area": "Selbst (Fläche)",
+      "range_self_area_short": "S(F)",
+      "range_self_short": "S",
+      "range_touch": "Berührung",
+      "range_touch_short": "B",
+      "type": "Art",
+      "type_mana": "Mana",
+      "type_mana_short": "Mana",
+      "type_physical": "Physisch",
+      "type_physical_short": "K",
+      "withEssence": "Gegen Essenz"
+    },
+    "spellfeatures": {
+      "area": "Flächenwirkung",
+      "direct": "Direkter Kampfzauber",
+      "indirect": "Indirekter Kampfzauber",
+      "sense_multi": "Vollsensorisch",
+      "sense_single": "Monosensorisch"
+    },
+    "spirittype": {
+      "air": "Luft",
+      "beasts": "Beasts",
+      "earth": "Erde",
+      "fire": "Feuer",
+      "kin": "Menschen",
+      "plant": "Pflanzen",
+      "water": "Wasser"
+    },
+    "tradition": {
+      "attribute": "Traditionsattribut"
+    },
+    "vehicle": {
+      "action_label": "Handling / Fahrzeug",
+      "initiative": "Fahrzeug-Initiative",
+      "mode_label": "Mode",
+      "mode": {
+        "manual": "Manuell",
+        "riggedAR": "Reingesprungen (AR)",
+        "riggedVR": "Reingesprungen (VR)",
+        "rcc": "via RCC (To Do)",
+        "autonomous": "Autonom"
+      },
+      "skill": {
+        "cracking": "Cracken",
+        "evasion": "Ausweichen",
+        "perception": "Wahrnehmung",
+        "piloting": "Steuern",
+        "stealth": "Heimlichkeit"
+      },
+      "type": {
+        "groundcraft": "Bodenfahrzeuge",
+        "watercraft": "Wasserfahrzeuge",
+        "aircraft": "Luftfahrzeuge"
+      }
+    },
+    "weapon": {
+      "damage": "Schaden",
+      "attackRating":"Angriffswert",
+      "firemodes": "Feuermodi",
+      "ammo": "Schuss"
+    },
+    "ui": {
+      "notifications": {
+        "You_are_not_owner_of_the_target": "Du bist nicht der Besitzer des Ziels.",
+        "You_can_only_choose_Wide_Burst_when_you_target_two_tokens": "Wenn du zwei Tokens anvisierst, kannst du nur \"Breite Salve\" auswählen.",
+        "Target_or_select_a_token_before_rolling": "Markiere (T) ein Ziel oder wähle ein Token vor dem Wurf.",
+        "Target_a_token_before_rolling": "Markiere (T) ein Token vor dem Wurf.",
+        "Dice_roll_evaluation_failed": "Auswertung des Würfelwurfs fehlgeschlagen.",
+        "two_targets_but_wrong_fire_mode": "Du hast zwei Ziele markiert, daher kannst du nur mit \"Breite Salve\" oder \"Vollautomatik\" feuern.",
+        "many_targets_but_not_autofire_fire_mode": "Du hast mehr als zwei Ziele markiert, daher kannst du nur im \"Vollautomatik\"-Modus feuern.",
+        "attack_with_no_AR": "Du versuchst anzugreifen, obwohl dein Angriffswert bei 0 liegt, bspw. aufgrund der Entfernung",
+        "apply_manually": "Schaden manuell anwenden.",
+        "Target_is_not_a_life_form": "Ziel ist kein Lebewesen.",
+        "do_not_revert_damage": "Überlauf in den physischen Monitor. Drehe den Schaden nicht über den Chat-Button zurück, da er nicht korrekt berechnet wird.",
+        "No_actor_or_tokens_selected": "Weise dir einen Charakter zu, oder wähle einen Token, bevor du würfelst.",
+        "You_are_not_owner_of_the_tokens": "Du bist nicht der Besitzer des ausgewählten Tokens.",
+        "no_weapon_skill_set": "Bitte bearbeite die Waffe, um die verknüpfte Fertigkeit für den Wurf zu hinterlegen.",
+        "vehicle_has_no_owner": "Fahrzeug hat keinen Besitzer.",
+        "only_owner_is_allowed_to_spend_edge": "Nur der Besitzer des Charakters darf diese Aktion durchführen.",
+        "edge_boost_is_not_post_edge": "'{boostTitle}' ist keine Handlung, die nach einem Wurf durchgeführt werden kann.",
+        "you_require_more_edge": "Du benötigst noch {edge} Edge für diese Handlung.",
+        "no_die_with_a_4": "Dein Wurf enthält keine 4.",
+        "cant_increase_die": "Du kannst den Würfel nicht erhöhen.",
+        "all_dice_are_successes": "Alle Würfel sind bereits Erfolge.",
+        "character_has_spent_edge": "{actor} hat {edge} Edge ausgegeben.",
+        "reduce_edge_from_actor": "Bitte ziehe {edge} Edge vom Charakter ab",
+        "reroll_failed_requires_index": "Ziehe den Würfel auf den `Einsetzen`-Button."
+      }
+    },
+    "EFFECT": {
+      "chilled": "Unterkühlt",
+      "confused": "Verwirrt",
+      "corrosive": "Verätzt",
+      "cover": "Deckung",
+      "dazed": "Benommen",
+      "deafened": "Ertaubt",
+      "fatigued": "Erschöpft",
+      "frightened": "Verängstigt",
+      "hazed": "Verschleiert",
+      "hobbled": "Humpelnd",
+      "immobilized": "Bewegungsunfähig",
+      "invisible_improved": "Unsichtbar (Verbessert)",
+      "nauseated": "Übelkeit",
+      "panicked": "Panisch",
+      "petrified": "Versteinert",
+      "poisoned": "Vergiftet",
+      "silent": "Geräuschlos",
+      "silent_improved": "Geräuschlos (Verbessert)",
+      "stilled": "Erstarrt",
+      "wet": "Nass",
+      "zapped": "Gebrutzelt",
+      "sensorLock": "Erfasst",
+      "cerebropathy": "Matrix: Zerebropathie",
+      "cybervirus": "Matrix: Cybervirus",
+      "psychotropic": "Matrix: Psychotrope Konditionierung",
+      "bleeding": "Blutend",
+      "disabled": "Gelähmt",
+      "muted": "Verstummt",
+      "offbalance": "Ausser Balance",
+      "aceinthehand": "Social: Ace in the Hand",
+      "fishoutofwater": "Social: Fish out of Water",
+      "misdirected": "Social: Misdirected",
+      "follower": "Social: Follower",
+      "smitten": "Social: Smitten",
+      "suckered": "Social: Suckered",
+      "irradiated": "Irradiated"
+    }
+  },
+  "shadowrun6-eden.Shadowrun6ActorSheetNPC": "Scherge in rotem Hemd",
+  "Shadowrun6ActorSheetNPC": "Scherge",
+  "skill": {
+    "astral": "Astral",
+    "athletics": "Athletik",
+    "biotech": "Biotech",
+    "close_combat": "Nahkampf",
+    "con": "Überreden",
+    "conjuring": "Beschwören",
+    "cracking": "Cracken",
+    "electronics": "Elektronik",
+    "enchanting": "Verzaubern",
+    "engineering": "Mechanik",
+    "exotic_weapons": "Exotische Waffen",
+    "firearms": "Feuerwaffen",
+    "influence": "Einfluss",
+    "outdoors": "Natur",
+    "perception": "Wahrnehmung",
+    "piloting": "Steuern",
+    "sorcery": "Hexerei",
+    "stealth": "Heimlichkeit",
+    "tasking": "Tasken"
+  }
+}

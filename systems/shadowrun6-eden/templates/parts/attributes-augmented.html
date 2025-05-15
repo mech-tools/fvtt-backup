@@ -1,0 +1,21 @@
+    {{#each attributes as |attribute id|}}
+    {{#ifIn id ../config.PRIMARY_ATTRIBUTES}}
+    <div class="attribute" augmented-ui="b-clip-x exe">
+         <p>
+				<a class="attributeonly-roll attribute-poolmod" data-pool="{{attribute.pool}}" data-roll-id="{{id}}">
+               {{localize (concat "attrib." id )}}
+            </a>
+         </p>
+         <span>{{attribute.pool}}</span>
+         <input name="attributesPool{{id}}" type="hidden" data-dtype="Number" data-field="system.attributes.{{id}}.pool" value="8" />
+         <div class="field {{id}}Changed">
+            <label>{{localize 'shadowrun6.numerical.base'}}</label>
+            <input name="attributesBase{{id}}" type="number" data-dtype="Number" data-field="system.attributes.{{id}}.base" value="{{attribute.base}}" placeholder="base" title="{{localize 'shadowrun6.numerical.baseString'}}" min="1" max="6" />
+         </div>
+         <div class="field {{id}}Changed">
+            <label>{{localize 'shadowrun6.numerical.mod'}}</label>
+            <input name="attributesMod{{id}}" type="number" data-dtype="Number" data-field="system.attributes.{{id}}.mod" value="{{attribute.mod}}" placeholder="±adj" title="{{attribute.modString}}" />
+         </div>
+      </div>
+    {{/ifIn}}
+    {{/each}}
