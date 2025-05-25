@@ -1,8 +1,15 @@
-2025/05/14-12:50:12.054598 7fc4e3fff700 Recovering log #406
-2025/05/14-12:50:12.057299 7fc4e3fff700 Delete type=3 #404
-2025/05/14-12:50:12.057331 7fc4e3fff700 Delete type=0 #406
-2025/05/19-14:25:28.529726 7fc4e36a4700 Level-0 table #412: started
-2025/05/19-14:25:28.529984 7fc4e36a4700 Level-0 table #412: 0 bytes OK
-2025/05/19-14:25:28.531287 7fc4e36a4700 Delete type=0 #410
-2025/05/19-14:25:28.538099 7fc4e36a4700 Manual compaction at level-0 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)
-2025/05/19-14:25:28.538164 7fc4e36a4700 Manual compaction at level-1 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)
+2025/05/19-14:25:55.260357 7fc4f1fbf700 Recovering log #411
+2025/05/19-14:25:55.262732 7fc4f1fbf700 Delete type=0 #411
+2025/05/19-14:25:55.262760 7fc4f1fbf700 Delete type=3 #409
+2025/05/24-22:14:32.719028 7fc4e36a4700 Level-0 table #416: started
+2025/05/24-22:14:32.720712 7fc4e36a4700 Level-0 table #416: 11397 bytes OK
+2025/05/24-22:14:32.721615 7fc4e36a4700 Delete type=0 #414
+2025/05/24-22:14:32.729290 7fc4e36a4700 Manual compaction at level-0 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)
+2025/05/24-22:14:32.766396 7fc4e36a4700 Manual compaction at level-1 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at '!folders!z5IBYcYozlnsVh3c' @ 918 : 1
+2025/05/24-22:14:32.766403 7fc4e36a4700 Compacting 1@1 + 1@2 files
+2025/05/24-22:14:32.768797 7fc4e36a4700 Generated table #417@1: 311 keys, 40070 bytes
+2025/05/24-22:14:32.768809 7fc4e36a4700 Compacted 1@1 + 1@2 files => 40070 bytes
+2025/05/24-22:14:32.769386 7fc4e36a4700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/05/24-22:14:32.769434 7fc4e36a4700 Delete type=2 #416
+2025/05/24-22:14:32.769485 7fc4e36a4700 Delete type=2 #408
+2025/05/24-22:14:32.782482 7fc4e36a4700 Manual compaction at level-1 from '!folders!z5IBYcYozlnsVh3c' @ 918 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)
