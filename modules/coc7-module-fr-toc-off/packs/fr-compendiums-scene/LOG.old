@@ -1,16 +1,7 @@
-2025/02/07-06:35:15.955365 7f8d08fbc700 Recovering log #938
-2025/02/07-06:35:15.955994 7f8d08fbc700 Level-0 table #940: started
-2025/02/07-06:35:15.957388 7f8d08fbc700 Level-0 table #940: 18593 bytes OK
-2025/02/07-06:35:15.959858 7f8d08fbc700 Delete type=3 #937
-2025/02/07-06:35:15.959901 7f8d08fbc700 Delete type=0 #938
-2025/05/01-20:54:39.145988 7f87ebe8d700 Level-0 table #943: started
-2025/05/01-20:54:39.146255 7f87ebe8d700 Level-0 table #943: 0 bytes OK
-2025/05/01-20:54:39.147435 7f87ebe8d700 Delete type=0 #941
-2025/05/01-20:54:39.148110 7f87ebe8d700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.walls!uBecPzKLdc3I8TWW.zpHMiaNrPCW9otWJ' @ 0 : 0; will stop at '!scenes.walls!uBecPzKLdc3I8TWW.zpHMiaNrPCW9otWJ' @ 1922 : 1
-2025/05/01-20:54:39.148127 7f87ebe8d700 Compacting 1@0 + 1@1 files
-2025/05/01-20:54:39.150612 7f87ebe8d700 Generated table #944@0: 154 keys, 18754 bytes
-2025/05/01-20:54:39.150633 7f87ebe8d700 Compacted 1@0 + 1@1 files => 18754 bytes
-2025/05/01-20:54:39.151664 7f87ebe8d700 compacted to: files[ 0 1 0 0 0 0 0 ]
-2025/05/01-20:54:39.151721 7f87ebe8d700 Delete type=2 #940
-2025/05/01-20:54:39.151772 7f87ebe8d700 Delete type=2 #936
-2025/05/01-20:54:39.159134 7f87ebe8d700 Manual compaction at level-0 from '!scenes.walls!uBecPzKLdc3I8TWW.zpHMiaNrPCW9otWJ' @ 1922 : 1 .. '!scenes.walls!uBecPzKLdc3I8TWW.zpHMiaNrPCW9otWJ' @ 0 : 0; will stop at (end)
+2025/05/29-00:02:54.247542 7fdcd8c76700 Recovering log #946
+2025/05/29-00:02:54.251621 7fdcd8c76700 Delete type=0 #946
+2025/05/29-00:02:54.251658 7fdcd8c76700 Delete type=3 #945
+2025/05/29-00:03:02.855430 7fd7a30f3700 Level-0 table #950: started
+2025/05/29-00:03:02.855454 7fd7a30f3700 Level-0 table #950: 0 bytes OK
+2025/05/29-00:03:02.856507 7fd7a30f3700 Delete type=0 #948
+2025/05/29-00:03:02.859430 7fd7a30f3700 Manual compaction at level-0 from '!folders!YsZ0S5GqVanLqkYn' @ 72057594037927935 : 1 .. '!scenes.walls!uBecPzKLdc3I8TWW.zpHMiaNrPCW9otWJ' @ 0 : 0; will stop at (end)
