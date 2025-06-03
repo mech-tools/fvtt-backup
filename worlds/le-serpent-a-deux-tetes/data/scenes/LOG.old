@@ -1,8 +1,15 @@
-2025/05/30-09:50:38.030882 7fbe167bf700 Recovering log #452
-2025/05/30-09:50:38.034872 7fbe167bf700 Delete type=0 #452
-2025/05/30-09:50:38.034913 7fbe167bf700 Delete type=3 #451
-2025/05/30-09:50:49.532547 7fb8f6e60700 Level-0 table #456: started
-2025/05/30-09:50:49.532568 7fb8f6e60700 Level-0 table #456: 0 bytes OK
-2025/05/30-09:50:49.533550 7fb8f6e60700 Delete type=0 #454
-2025/05/30-09:50:49.539616 7fb8f6e60700 Manual compaction at level-0 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
-2025/05/30-09:50:49.549958 7fb8f6e60700 Manual compaction at level-1 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2025/05/30-09:51:05.921472 7fbe167bf700 Recovering log #455
+2025/05/30-09:51:05.924142 7fbe167bf700 Delete type=3 #453
+2025/05/30-09:51:05.924174 7fbe167bf700 Delete type=0 #455
+2025/05/30-10:00:40.296630 7fb8f6e60700 Level-0 table #460: started
+2025/05/30-10:00:40.297883 7fb8f6e60700 Level-0 table #460: 3570 bytes OK
+2025/05/30-10:00:40.298823 7fb8f6e60700 Delete type=0 #458
+2025/05/30-10:00:40.303274 7fb8f6e60700 Manual compaction at level-0 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2025/05/30-10:00:40.304485 7fb8f6e60700 Manual compaction at level-1 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at '!scenes.tokens.delta!XRLV3KSUvHYgsLHj.h93GXP33NtBGKdXJ.BTRDnb8AOEe1KjK2' @ 183453 : 1
+2025/05/30-10:00:40.304492 7fb8f6e60700 Compacting 1@1 + 1@2 files
+2025/05/30-10:00:40.332896 7fb8f6e60700 Generated table #461@1: 12122 keys, 1514736 bytes
+2025/05/30-10:00:40.332916 7fb8f6e60700 Compacted 1@1 + 1@2 files => 1514736 bytes
+2025/05/30-10:00:40.333692 7fb8f6e60700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/05/30-10:00:40.333751 7fb8f6e60700 Delete type=2 #460
+2025/05/30-10:00:40.333864 7fb8f6e60700 Delete type=2 #448
+2025/05/30-10:00:40.342540 7fb8f6e60700 Manual compaction at level-1 from '!scenes.tokens.delta!XRLV3KSUvHYgsLHj.h93GXP33NtBGKdXJ.BTRDnb8AOEe1KjK2' @ 183453 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
