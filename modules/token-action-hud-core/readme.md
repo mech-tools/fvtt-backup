@@ -18,7 +18,7 @@ Token Action HUD is a repositionable HUD of actions for a selected token.
 ## Method 1
 1. In Foundry VTT's **Configuration and Setup** screen, click **Add-on Modules**
 2. Click **Install Module**
-3. Search for **Token Action HUD Core** 
+3. Search for **Token Action HUD Core**
 4. Click **Install** next to the module listing
 
 ## Method 2
@@ -45,15 +45,18 @@ Token Action HUD Core requires a companion Token Action HUD system module to be 
 - [Token Action HUD for Coriolis](https://foundryvtt.com/packages/token-action-hud-coriolis)
 - [Token Action HUD Crucible](https://foundryvtt.com/packages/token-action-hud-crucible)
 - [Token Action HUD CypherSystem](https://foundryvtt.com/packages/token-action-hud-cyphersystem)
+- [Token Action HUD Cyberpunk RED](https://foundryvtt.com/packages/token-action-hud-cyberpunk-red)
 - [Token Action HUD DC20 RPG](https://foundryvtt.com/packages/token-action-hud-dc20rpg)
 - [Token Action HUD Delta Green](https://foundryvtt.com/packages/token-action-hud-dg)
 - [Token Action HUD D&D 5e](https://foundryvtt.com/packages/token-action-hud-dnd5e)
 - [Token Action HUD for Dungeon Crawl Classics](https://foundryvtt.com/packages/token-action-hud-dcc)
+- [Token Action HUD DS4](https://foundryvtt.com/packages/token-action-hud-ds4)
 - [Token Action HUD Earthdawn](https://foundryvtt.com/packages/token-action-hud-ed4e)
 - [Token Action HUD Exalted Third Edition](https://foundryvtt.com/packages/token-action-hud-exaltedthird)
 - [Token Action HUD for FFG Star Wars](https://foundryvtt.com/packages/token-action-hud-ffgsw)
 - [Token Action HUD for Forbidden Lands](https://foundryvtt.com/packages/token-action-hud-forbidden-lands)
 - [Token Action HUD Ghostbusters](https://foundryvtt.com/packages/token-action-hud-gb)
+- [Token Action HUD GURPS](https://foundryvtt.com/packages/token-action-hud-gurps)
 - [Token Action HUD Ironsworn](https://foundryvtt.com/packages/token-action-hud-ironsworn)
 - [Token Action HUD L5R 5e](https://foundryvtt.com/packages/token-action-hud-l5r5e)
 - [Token Action HUD LANCER](https://foundryvtt.com/packages/token-action-hud-lancer)

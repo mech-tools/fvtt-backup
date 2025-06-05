@@ -1,15 +1,8 @@
-2025/05/19-14:25:55.419235 7fc4f17be700 Recovering log #425
-2025/05/19-14:25:55.421378 7fc4f17be700 Delete type=3 #423
-2025/05/19-14:25:55.421408 7fc4f17be700 Delete type=0 #425
-2025/05/24-22:14:32.838102 7fc4e36a4700 Level-0 table #430: started
-2025/05/24-22:14:32.840225 7fc4e36a4700 Level-0 table #430: 10966 bytes OK
-2025/05/24-22:14:32.841459 7fc4e36a4700 Delete type=0 #428
-2025/05/24-22:14:32.842260 7fc4e36a4700 Manual compaction at level-0 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)
-2025/05/24-22:14:32.844158 7fc4e36a4700 Manual compaction at level-1 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at '!users!fuzzHojJrfguk9dA' @ 683 : 1
-2025/05/24-22:14:32.844165 7fc4e36a4700 Compacting 1@1 + 1@2 files
-2025/05/24-22:14:32.845596 7fc4e36a4700 Generated table #431@1: 5 keys, 4886 bytes
-2025/05/24-22:14:32.845613 7fc4e36a4700 Compacted 1@1 + 1@2 files => 4886 bytes
-2025/05/24-22:14:32.846653 7fc4e36a4700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/05/24-22:14:32.846703 7fc4e36a4700 Delete type=2 #422
-2025/05/24-22:14:32.846756 7fc4e36a4700 Delete type=2 #430
-2025/05/24-22:14:32.858220 7fc4e36a4700 Manual compaction at level-1 from '!users!fuzzHojJrfguk9dA' @ 683 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)
+2025/05/24-22:18:47.109928 7fc4f17be700 Recovering log #429
+2025/05/24-22:18:47.112369 7fc4f17be700 Delete type=0 #429
+2025/05/24-22:18:47.112395 7fc4f17be700 Delete type=3 #427
+2025/06/04-17:05:01.060274 7fc4e36a4700 Level-0 table #435: started
+2025/06/04-17:05:01.060568 7fc4e36a4700 Level-0 table #435: 0 bytes OK
+2025/06/04-17:05:01.061794 7fc4e36a4700 Delete type=0 #433
+2025/06/04-17:05:01.065270 7fc4e36a4700 Manual compaction at level-0 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)
+2025/06/04-17:05:01.109169 7fc4e36a4700 Manual compaction at level-1 from '!users!6Di8yMnm3jtdNeRI' @ 72057594037927935 : 1 .. '!users!fuzzHojJrfguk9dA' @ 0 : 0; will stop at (end)

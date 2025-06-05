@@ -1,22 +1,7 @@
-2025/05/19-14:25:55.232372 7fc4e3fff700 Recovering log #429
-2025/05/19-14:25:55.234586 7fc4e3fff700 Delete type=0 #429
-2025/05/19-14:25:55.234612 7fc4e3fff700 Delete type=3 #427
-2025/05/24-22:14:32.784029 7fc4e36a4700 Level-0 table #434: started
-2025/05/24-22:14:32.786294 7fc4e36a4700 Level-0 table #434: 94603 bytes OK
-2025/05/24-22:14:32.787418 7fc4e36a4700 Delete type=0 #432
-2025/05/24-22:14:32.789536 7fc4e36a4700 Manual compaction at level-0 from '!messages!0bymjpd0qD6sW4Sd' @ 72057594037927935 : 1 .. '!messages!xu5lPX5L7HmC6sRp' @ 0 : 0; will stop at '!messages!xu5lPX5L7HmC6sRp' @ 6868 : 1
-2025/05/24-22:14:32.789542 7fc4e36a4700 Compacting 1@0 + 1@1 files
-2025/05/24-22:14:32.792019 7fc4e36a4700 Generated table #435@0: 189 keys, 62916 bytes
-2025/05/24-22:14:32.792035 7fc4e36a4700 Compacted 1@0 + 1@1 files => 62916 bytes
-2025/05/24-22:14:32.792670 7fc4e36a4700 compacted to: files[ 0 1 1 0 0 0 0 ]
-2025/05/24-22:14:32.792726 7fc4e36a4700 Delete type=2 #434
-2025/05/24-22:14:32.792811 7fc4e36a4700 Delete type=2 #430
-2025/05/24-22:14:32.798097 7fc4e36a4700 Manual compaction at level-0 from '!messages!xu5lPX5L7HmC6sRp' @ 6868 : 1 .. '!messages!xu5lPX5L7HmC6sRp' @ 0 : 0; will stop at (end)
-2025/05/24-22:14:32.800382 7fc4e36a4700 Manual compaction at level-1 from '!messages!0bymjpd0qD6sW4Sd' @ 72057594037927935 : 1 .. '!messages!xu5lPX5L7HmC6sRp' @ 0 : 0; will stop at '!messages!zsByyFDATnHlDq2c' @ 6649 : 0
-2025/05/24-22:14:32.800394 7fc4e36a4700 Compacting 1@1 + 1@2 files
-2025/05/24-22:14:32.804275 7fc4e36a4700 Generated table #436@1: 53 keys, 59726 bytes
-2025/05/24-22:14:32.804287 7fc4e36a4700 Compacted 1@1 + 1@2 files => 59726 bytes
-2025/05/24-22:14:32.805192 7fc4e36a4700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/05/24-22:14:32.805245 7fc4e36a4700 Delete type=2 #435
-2025/05/24-22:14:32.805302 7fc4e36a4700 Delete type=2 #426
-2025/05/24-22:14:32.841886 7fc4e36a4700 Manual compaction at level-1 from '!messages!zsByyFDATnHlDq2c' @ 6649 : 0 .. '!messages!xu5lPX5L7HmC6sRp' @ 0 : 0; will stop at (end)
+2025/05/24-22:18:46.894955 7fc4f17be700 Recovering log #433
+2025/05/24-22:18:46.898133 7fc4f17be700 Delete type=3 #431
+2025/05/24-22:18:46.898182 7fc4f17be700 Delete type=0 #433
+2025/06/04-17:05:00.985767 7fc4e36a4700 Level-0 table #440: started
+2025/06/04-17:05:00.987513 7fc4e36a4700 Level-0 table #440: 1441 bytes OK
+2025/06/04-17:05:00.988642 7fc4e36a4700 Delete type=0 #438
+2025/06/04-17:05:00.989484 7fc4e36a4700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
