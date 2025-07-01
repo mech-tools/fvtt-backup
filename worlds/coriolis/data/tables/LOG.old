@@ -1,8 +1,15 @@
-2025/05/24-22:18:47.004930 7fc4f0fbd700 Recovering log #389
-2025/05/24-22:18:47.007646 7fc4f0fbd700 Delete type=3 #387
-2025/05/24-22:18:47.007694 7fc4f0fbd700 Delete type=0 #389
-2025/06/04-17:05:01.005926 7fc4e36a4700 Level-0 table #394: started
-2025/06/04-17:05:01.006228 7fc4e36a4700 Level-0 table #394: 0 bytes OK
-2025/06/04-17:05:01.007518 7fc4e36a4700 Delete type=0 #392
-2025/06/04-17:05:01.009517 7fc4e36a4700 Manual compaction at level-0 from '!tables!0048a1d67c705ebc' @ 72057594037927935 : 1 .. '!tables.results!yUlI75bswWxCumY2.eccbc87e4b5ce2fe' @ 0 : 0; will stop at (end)
-2025/06/04-17:05:01.051975 7fc4e36a4700 Manual compaction at level-1 from '!tables!0048a1d67c705ebc' @ 72057594037927935 : 1 .. '!tables.results!yUlI75bswWxCumY2.eccbc87e4b5ce2fe' @ 0 : 0; will stop at (end)
+2025/06/04-17:05:49.927151 7fc4f0fbd700 Recovering log #393
+2025/06/04-17:05:49.930164 7fc4f0fbd700 Delete type=0 #393
+2025/06/04-17:05:49.930196 7fc4f0fbd700 Delete type=3 #391
+2025/06/30-10:10:43.098510 7fc4e36a4700 Level-0 table #398: started
+2025/06/30-10:10:43.101394 7fc4e36a4700 Level-0 table #398: 54093 bytes OK
+2025/06/30-10:10:43.102510 7fc4e36a4700 Delete type=0 #396
+2025/06/30-10:10:43.109756 7fc4e36a4700 Manual compaction at level-0 from '!tables!0048a1d67c705ebc' @ 72057594037927935 : 1 .. '!tables.results!yUlI75bswWxCumY2.eccbc87e4b5ce2fe' @ 0 : 0; will stop at (end)
+2025/06/30-10:10:43.109903 7fc4e36a4700 Manual compaction at level-1 from '!tables!0048a1d67c705ebc' @ 72057594037927935 : 1 .. '!tables.results!yUlI75bswWxCumY2.eccbc87e4b5ce2fe' @ 0 : 0; will stop at '!tables.results!e9eff56f07af2b2d.eccbc87e4b5ce2fe' @ 4985 : 0
+2025/06/30-10:10:43.109909 7fc4e36a4700 Compacting 1@1 + 1@2 files
+2025/06/30-10:10:43.115410 7fc4e36a4700 Generated table #399@1: 1612 keys, 245415 bytes
+2025/06/30-10:10:43.115422 7fc4e36a4700 Compacted 1@1 + 1@2 files => 245415 bytes
+2025/06/30-10:10:43.116115 7fc4e36a4700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/06/30-10:10:43.116173 7fc4e36a4700 Delete type=2 #398
+2025/06/30-10:10:43.116231 7fc4e36a4700 Delete type=2 #382
+2025/06/30-10:10:43.140979 7fc4e36a4700 Manual compaction at level-1 from '!tables.results!e9eff56f07af2b2d.eccbc87e4b5ce2fe' @ 4985 : 0 .. '!tables.results!yUlI75bswWxCumY2.eccbc87e4b5ce2fe' @ 0 : 0; will stop at (end)

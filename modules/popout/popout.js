@@ -6,485 +6,11 @@ class PopoutModule {
     this.TIMEOUT_INTERVAL = 50; // ms
     this.MAX_TIMEOUT = 1000; // ms
     // Random id to prevent collision with other modules;
-    this.ID = randomID(24); // eslint-disable-line no-undef
-
-    this.TOOLTIP_CODE = `
-class TooltipManager {
-
-  /**
-    * A cached reference to the global tooltip element
-    * @type {HTMLElement}
-    */
-  tooltip = document.getElementById("tooltip");
-
-  /**
-    * A reference to the HTML element which is currently tool-tipped, if any.
-    * @type {HTMLElement|null}
-    */
-  element = null;
-
-  /**
-    * An amount of margin which is used to offset tooltips from their anchored element.
-    * @type {number}
-    */
-  static TOOLTIP_MARGIN_PX = 5;
-
-  /**
-    * The number of milliseconds delay which activates a tooltip on a "long hover".
-    * @type {number}
-    */
-  static TOOLTIP_ACTIVATION_MS = 500;
-
-  /**
-    * The directions in which a tooltip can extend, relative to its tool-tipped element.
-    * @enum {string}
-    */
-  static TOOLTIP_DIRECTIONS = {
-    UP: "UP",
-    DOWN: "DOWN",
-    LEFT: "LEFT",
-    RIGHT: "RIGHT",
-    CENTER: "CENTER"
-  };
-
-  /**
-    * The number of pixels buffer around a locked tooltip zone before they should be dismissed.
-    * @type {number}
-    */
-  static LOCKED_TOOLTIP_BUFFER_PX = 50;
-
-  /**
-    * Is the tooltip currently active?
-    * @type {boolean}
-    */
-  #active = false;
-
-  /**
-    * A reference to a window timeout function when an element is activated.
-    */
-  #activationTimeout;
-
-  /**
-    * A reference to a window timeout function when an element is deactivated.
-    */
-  #deactivationTimeout;
-
-  /**
-    * An element which is pending tooltip activation if hover is sustained
-    * @type {HTMLElement|null}
-    */
-  #pending;
-
-  /**
-    * Maintain state about active locked tooltips in order to perform appropriate automatic dismissal.
-    * @type {{elements: Set<HTMLElement>, boundingBox: Rectangle}}
-    */
-  #locked = {
-    elements: new Set(),
-    boundingBox: {}
-  };
-
-  /* -------------------------------------------- */
-
-  /**
-    * Activate interactivity by listening for hover events on HTML elements which have a data-tooltip defined.
-    */
-  activateEventListeners() {
-    console.log(document.body.NAME);
-    document.body.addEventListener("pointerenter", this.#onActivate.bind(this), true);
-    document.body.addEventListener("pointerleave", this.#onDeactivate.bind(this), true);
-    document.body.addEventListener("pointerup", this._onLockTooltip.bind(this), true);
-    document.body.addEventListener("pointermove", this.#testLockedTooltipProximity.bind(this), {
-      capture: true,
-      passive: true
-    });
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Handle hover events which activate a tooltipped element.
-    * @param {PointerEvent} event    The initiating pointerenter event
-    */
-  #onActivate(event) {
-    // if ( Tour.tourInProgress ) return; // Don't activate tooltips during a tour
-    const element = event.target;
-    if ( element.closest(".editor-content.ProseMirror") ) return; // Don't activate tooltips inside text editors.
-    if ( !element.dataset.tooltip ) {
-      // Check if the element has moved out from underneath the cursor and pointerenter has fired on a non-child of the
-      // tooltipped element.
-      if ( this.#active && !this.element.contains(element) ) this.#startDeactivation();
-      return;
-    }
-
-    // Don't activate tooltips if the element contains an active context menu or is in a matching link tooltip
-    if ( element.matches("#context-menu") || element.querySelector("#context-menu") ) return;
-
-    // If the tooltip is currently active, we can move it to a new element immediately
-    if ( this.#active ) {
-      this.activate(element);
-      return;
-    }
-
-    // Clear any existing deactivation workflow
-    this.#clearDeactivation();
-
-    // Delay activation to determine user intent
-    this.#pending = element;
-    this.#activationTimeout = window.setTimeout(() => {
-      this.#activationTimeout = null;
-      if ( this.#pending ) this.activate(this.#pending);
-    }, this.constructor.TOOLTIP_ACTIVATION_MS);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Handle hover events which deactivate a tooltipped element.
-    * @param {PointerEvent} event    The initiating pointerleave event
-    */
-  #onDeactivate(event) {
-    if ( event.target !== (this.element ?? this.#pending) ) return;
-    const parent = event.target.parentElement.closest("[data-tooltip]");
-    if ( parent ) this.activate(parent);
-    else this.#startDeactivation();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Start the deactivation process.
-    */
-  #startDeactivation() {
-    if ( this.#deactivationTimeout ) return;
-
-    // Clear any existing activation workflow
-    this.clearPending();
-
-    // Delay deactivation to confirm whether some new element is now pending
-    this.#deactivationTimeout = window.setTimeout(() => {
-      this.#deactivationTimeout = null;
-      if ( !this.#pending ) this.deactivate();
-    }, this.constructor.TOOLTIP_ACTIVATION_MS);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Clear any existing deactivation workflow.
-    */
-  #clearDeactivation() {
-    window.clearTimeout(this.#deactivationTimeout);
-    this.#deactivationTimeout = null;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Activate the tooltip for a hovered HTML element which defines a tooltip localization key.
-    * @param {HTMLElement} element         The HTML element being hovered.
-    * @param {object} [options={}]         Additional options which can override tooltip behavior.
-    * @param {string} [options.text]       Explicit tooltip text to display. If this is not provided the tooltip text is
-    *                                      acquired from the elements data-tooltip attribute. This text will be
-    *                                      automatically localized
-    * @param {TooltipManager.TOOLTIP_DIRECTIONS} [options.direction]  An explicit tooltip expansion direction. If this
-    *                                      is not provided the direction is acquired from the data-tooltip-direction
-    *                                      attribute of the element or one of its parents.
-    * @param {string} [options.cssClass]   An optional, space-separated list of CSS classes to apply to the activated
-    *                                      tooltip. If this is not provided, the CSS classes are acquired from the
-    *                                      data-tooltip-class attribute of the element or one of its parents.
-    * @param {boolean} [options.locked]    An optional boolean to lock the tooltip after creation. Defaults to false.
-    * @param {HTMLElement} [options.content]  Explicit HTML content to inject into the tooltip rather than using tooltip
-    *                                         text.
-    */
-  activate(element, {text, direction, cssClass, locked=false, content}={}) {
-    if ( text && content ) throw new Error("Cannot provide both text and content options to TooltipManager#activate.");
-    // Deactivate currently active element
-    this.deactivate();
-    // Check if the element still exists in the DOM.
-    if ( !document.body.contains(element) ) return;
-    // Mark the new element as active
-    this.#active = true;
-    this.element = element;
-    element.setAttribute("aria-describedby", "tooltip");
-    if ( content ) {
-      this.tooltip.innerHTML = ""; // Clear existing content.
-      this.tooltip.appendChild(content);
-    }
-    else this.tooltip.innerHTML = text || game.i18n.localize(element.dataset.tooltip);
-
-    // Activate display of the tooltip
-    this.tooltip.removeAttribute("class");
-    this.tooltip.classList.add("active");
-    cssClass ??= element.closest("[data-tooltip-class]")?.dataset.tooltipClass;
-    if ( cssClass ) this.tooltip.classList.add(...cssClass.split(" "));
-
-    // Set tooltip position
-    direction ??= element.closest("[data-tooltip-direction]")?.dataset.tooltipDirection;
-    if ( !direction ) direction = this._determineDirection();
-    this._setAnchor(direction);
-
-    if ( locked || element.dataset.hasOwnProperty("locked") ) this.lockTooltip();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Deactivate the tooltip from a previously hovered HTML element.
-    */
-  deactivate() {
-    // Deactivate display of the tooltip
-    this.#active = false;
-    this.tooltip.classList.remove("active");
-
-    // Clear any existing (de)activation workflow
-    this.clearPending();
-    this.#clearDeactivation();
-
-    // Update the tooltipped element
-    if ( !this.element ) return;
-    this.element.removeAttribute("aria-describedby");
-    this.element = null;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Clear any pending activation workflow.
-    * @internal
-    */
-  clearPending() {
-    window.clearTimeout(this.#activationTimeout);
-    this.#pending = this.#activationTimeout = null;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Lock the current tooltip.
-    * @returns {HTMLElement}
-    */
-  lockTooltip() {
-    const clone = this.tooltip.cloneNode(false);
-    // Steal the content from the original tooltip rather than cloning it, so that listeners are preserved.
-    while ( this.tooltip.firstChild ) clone.appendChild(this.tooltip.firstChild);
-    clone.removeAttribute("id");
-    clone.classList.add("locked-tooltip", "active");
-    document.body.appendChild(clone);
-    this.deactivate();
-    clone.addEventListener("contextmenu", this._onLockedTooltipDismiss.bind(this));
-    this.#locked.elements.add(clone);
-
-    // If the tooltip's contents were injected via setting innerHTML, then immediately requesting the bounding box will
-    // return incorrect values as the browser has not had a chance to reflow yet. For that reason we defer computing the
-    // bounding box until the next frame.
-    requestAnimationFrame(() => this.#computeLockedBoundingBox());
-    return clone;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Handle a request to lock the current tooltip.
-    * @param {MouseEvent} event  The click event.
-    * @protected
-    */
-  _onLockTooltip(event) {
-    if ( (event.button !== 1) || !this.#active) return; // || Tour.tourInProgress ) return;
-    event.preventDefault();
-    this.lockTooltip();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Handle dismissing a locked tooltip.
-    * @param {MouseEvent} event  The click event.
-    * @protected
-    */
-  _onLockedTooltipDismiss(event) {
-    event.preventDefault();
-    const target = event.currentTarget;
-    this.dismissLockedTooltip(target);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Dismiss a given locked tooltip.
-    * @param {HTMLElement} element  The locked tooltip to dismiss.
-    */
-  dismissLockedTooltip(element) {
-    this.#locked.elements.delete(element);
-    element.remove();
-    this.#computeLockedBoundingBox();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Compute the unified bounding box from the set of locked tooltip elements.
-    */
-  #computeLockedBoundingBox() {
-    let bb = null;
-    for ( const element of this.#locked.elements.values() ) {
-      const {x, y, width, height} = element.getBoundingClientRect();
-      const rect = new PIXI.Rectangle(x, y, width, height);
-      if ( bb ) bb.enlarge(rect);
-      else bb = rect;
-    }
-    this.#locked.boundingBox = bb;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Check whether the user is moving away from the locked tooltips and dismiss them if so.
-    * @param {MouseEvent} event  The mouse move event.
-    */
-  #testLockedTooltipProximity(event) {
-    if ( !this.#locked.elements.size ) return;
-    const {clientX: x, clientY: y} = event;
-    const buffer = this.#locked.boundingBox?.clone?.().pad(this.constructor.LOCKED_TOOLTIP_BUFFER_PX);
-    if ( buffer && !buffer.contains(x, y) ) this.dismissLockedTooltips();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Dismiss the set of active locked tooltips.
-    */
-  dismissLockedTooltips() {
-    for ( const element of this.#locked.elements.values() ) {
-      element.remove();
-    }
-    this.#locked.elements = new Set();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Create a locked tooltip at the given position.
-    * @param {object} position             A position object with coordinates for where the tooltip should be placed
-    * @param {string} position.top         Explicit top position for the tooltip
-    * @param {string} position.right       Explicit right position for the tooltip
-    * @param {string} position.bottom      Explicit bottom position for the tooltip
-    * @param {string} position.left        Explicit left position for the tooltip
-    * @param {string} text                 Explicit tooltip text or HTML to display.
-    * @param {object} [options={}]         Additional options which can override tooltip behavior.
-    * @param {array} [options.cssClass]    An optional, space-separated list of CSS classes to apply to the activated
-    *                                      tooltip.
-    * @returns {HTMLElement}
-    */
-  createLockedTooltip(position, text, {cssClass}={}) {
-    this.#clearDeactivation();
-    this.tooltip.innerHTML = text;
-    this.tooltip.style.top = position.top || "";
-    this.tooltip.style.right = position.right || "";
-    this.tooltip.style.bottom = position.bottom || "";
-    this.tooltip.style.left = position.left || "";
-
-    const clone = this.lockTooltip();
-    if ( cssClass ) clone.classList.add(...cssClass.split(" "));
-    return clone;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * If an explicit tooltip expansion direction was not specified, figure out a valid direction based on the bounds
-    * of the target element and the screen.
-    * @protected
-    */
-  _determineDirection() {
-    const pos = this.element.getBoundingClientRect();
-    const dirs = this.constructor.TOOLTIP_DIRECTIONS;
-    return dirs[pos.y + this.tooltip.offsetHeight > window.innerHeight ? "UP" : "DOWN"];
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Set tooltip position relative to an HTML element using an explicitly provided data-tooltip-direction.
-    * @param {TooltipManager.TOOLTIP_DIRECTIONS} direction  The tooltip expansion direction specified by the element
-    *                                                        or a parent element.
-    * @protected
-    */
-  _setAnchor(direction) {
-    const directions = this.constructor.TOOLTIP_DIRECTIONS;
-    const pad = this.constructor.TOOLTIP_MARGIN_PX;
-    const pos = this.element.getBoundingClientRect();
-    let style = {};
-    switch ( direction ) {
-      case directions.DOWN:
-        style.textAlign = "center";
-        style.left = pos.left - (this.tooltip.offsetWidth / 2) + (pos.width / 2);
-        style.top = pos.bottom + pad;
-        break;
-      case directions.LEFT:
-        style.textAlign = "left";
-        style.right = window.innerWidth - pos.left + pad;
-        style.top = pos.top + (pos.height / 2) - (this.tooltip.offsetHeight / 2);
-        break;
-      case directions.RIGHT:
-        style.textAlign = "right";
-        style.left = pos.right + pad;
-        style.top = pos.top + (pos.height / 2) - (this.tooltip.offsetHeight / 2);
-        break;
-      case directions.UP:
-        style.textAlign = "center";
-        style.left = pos.left - (this.tooltip.offsetWidth / 2) + (pos.width / 2);
-        style.bottom = window.innerHeight - pos.top + pad;
-        break;
-      case directions.CENTER:
-        style.textAlign = "center";
-        style.left = pos.left - (this.tooltip.offsetWidth / 2) + (pos.width / 2);
-        style.top = pos.top + (pos.height / 2) - (this.tooltip.offsetHeight / 2);
-        break;
-    }
-    return this._setStyle(style);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-    * Apply inline styling rules to the tooltip for positioning and text alignment.
-    * @param {object} [position={}]  An object of positioning data, supporting top, right, bottom, left, and textAlign
-    * @protected
-    */
-  _setStyle(position={}) {
-    const pad = this.constructor.TOOLTIP_MARGIN_PX;
-    position = {top: null, right: null, bottom: null, left: null, textAlign: "left", ...position};
-    const style = this.tooltip.style;
-
-    // Left or Right
-    const maxW = window.innerWidth - this.tooltip.offsetWidth;
-    if ( position.left ) position.left = Math.clamped(position.left, pad, maxW - pad);
-    if ( position.right ) position.right = Math.clamped(position.right, pad, maxW - pad);
-
-    // Top or Bottom
-    const maxH = window.innerHeight - this.tooltip.offsetHeight;
-    if ( position.top ) position.top = Math.clamped(position.top, pad, maxH - pad);
-    if ( position.bottom ) position.bottom = Math.clamped(position.bottom, pad, maxH - pad);
-
-    // Assign styles
-    for ( let k of ["top", "right", "bottom", "left"] ) {
-      const v = position[k];
-      style[k] = v ? v + "px" : null;
-    }
-
-    this.tooltip.classList.remove(...["center", "left", "right"].map(dir => "text-" + dir));
-    this.tooltip.classList.add("text-" + position.textAlign);
-  }
-}
-      
-window.tooltip_manager = new TooltipManager();
-console.log("#------>", window.tooltip_manager.tooltip);
-`;
+    // Use the new v12+ API if available, fallback to global for older versions
+    this.ID = (foundry?.utils?.randomID || randomID)(24);
   }
 
   log(msg, ...args) {
-    // eslint-disable-next-line no-undef
     if (game && game.settings.get("popout", "verboseLogs")) {
       const color = "background: #6699ff; color: #000; font-size: larger;";
       console.debug(`%c PopoutModule: ${msg}`, color, ...args);
@@ -527,7 +53,6 @@ console.log("#------>", window.tooltip_manager.tooltip);
   }
 
   async init() {
-    /* eslint-disable no-undef */
     game.settings.register("popout", "showButton", {
       name: game.i18n.localize("POPOUT.showButton"),
       scope: "client",
@@ -566,7 +91,6 @@ console.log("#------>", window.tooltip_manager.tooltip);
       default: false,
       type: Boolean,
     });
-    /* eslint-enable no-undef */
 
     // We replace the games window registry with a proxy object so we can intercept
     // every new application window creation event.
@@ -577,6 +101,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
           if (!isNaN(appId)) {
             return !this.poppedOut.has(appId);
           }
+          return true;
         });
       },
       set: (obj, prop, value) => {
@@ -593,15 +118,17 @@ console.log("#------>", window.tooltip_manager.tooltip);
         return result;
       },
     };
-    ui.windows = new Proxy(ui.windows, handler); // eslint-disable-line no-undef
-    this.log("Installed window interceptor", ui.windows); // eslint-disable-line no-undef
+    ui.windows = new Proxy(ui.windows, handler);
+    this.log("Installed window interceptor", ui.windows);
+
+    // ApplicationV2 hooks will be registered after init in the ready hook below
 
     // COMPAT(posnet: 2022-09-24) v10 prosemirror
     // This is very stupid and bad, but people seem unaware that getElementById is not good.
     // In theory this might have performance issues, but I don't care at this point.
     // And it does fix the problem with prosemirror, and will help with any other modules making
     // the same mistake.
-    // eslint-disable-next-line no-undef
+
     if (game.release.generation >= 10) {
       const oldGetElementById = document.getElementById.bind(document);
       document.getElementById = function (id) {
@@ -619,44 +146,75 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
     // NOTE(posnet: 2022-03-13): We need to overwrite the behavior of the hasFocus method of
     // the game keyboard class since it does not check all documents.
-    // eslint-disable-next-line no-undef
-    libWrapper.register(
-      "popout",
-      "game.keyboard.hasFocus",
-      () => {
-        const formElements = [
-          "input",
-          "select",
-          "textarea",
-          "option",
-          "button",
-          "[contenteditable]",
-        ];
-        const selector = formElements.map((el) => `${el}:focus`).join(", ");
-        var hasFocus = document.querySelectorAll(selector).length > 0;
+
+    // Define the override function that checks all windows including popouts
+    const overrideHasFocus = () => {
+      if (!game.keyboard || typeof game.keyboard.hasFocus !== "function")
+        return false;
+
+      // Store the original hasFocus method
+      const originalHasFocus = game.keyboard.hasFocus.bind(game.keyboard);
+
+      // Check if we're on v13 or later
+      const isV13 =
+        game.release?.generation >= 13 ||
+        (foundry.utils?.isNewerVersion &&
+          foundry.utils.isNewerVersion(game.version, "13.0.0"));
+
+      // Override the hasFocus method to check popped out windows too
+      game.keyboard.hasFocus = () => {
+        // Helper function to check if an element has focus based on version
+        const checkElementFocus = (element) => {
+          if (!(element instanceof HTMLElement)) return false;
+
+          if (isV13) {
+            // v13 logic with dataset and specific checks
+            if (["", "true"].includes(element.dataset.keyboardFocus))
+              return true;
+            if (element.dataset.keyboardFocus === "false") return false;
+            if (["INPUT", "SELECT", "TEXTAREA"].includes(element.tagName))
+              return true;
+            if (element.isContentEditable) return true;
+            if (element.tagName === "BUTTON" && element.form) return true;
+            return false;
+          } else {
+            // v12 logic - any focused HTMLElement counts
+            return true;
+          }
+        };
+
+        // Check main document
+        if (checkElementFocus(document.activeElement)) return true;
+
+        // Check all popped out windows
         for (const val of this.poppedOut.values()) {
-          hasFocus =
-            hasFocus ||
-            val.window.document.querySelectorAll(selector).length > 0;
+          if (!val.window || val.window.closed) continue;
+          if (checkElementFocus(val.window.document.activeElement)) return true;
         }
-        return hasFocus;
-      },
-      "OVERRIDE"
-    );
+
+        return false;
+      };
+
+      return true;
+    };
+
+    // Try to override immediately, or defer until ready
+    if (!overrideHasFocus()) {
+      Hooks.once("ready", overrideHasFocus);
+    }
 
     // NOTE(posnet: 2020-07-12): we need to initialize TinyMCE to ensure its plugins,
     // are loaded into the frame. Otherwise our popouts will not be able to access
     // the lazy loaded JavaScript mce plugins.
     // This will affect any module that lazy loads JavaScript. And require special handling.
-    /* eslint-disable no-undef */
+
     const elem = $(
-      `<div style="display: none;"><p id="mce_init"> foo </p></div>`
+      `<div style="display: none;"><p id="mce_init"> foo </p></div>`,
     );
     $("body").append(elem);
     const config = { target: elem[0], plugins: CONFIG.TinyMCE.plugins };
     const editor = await tinyMCE.init(config);
     editor[0].remove();
-    /* eslint-enable no-undef */
   }
 
   async addPopout(app) {
@@ -667,21 +225,52 @@ console.log("#------>", window.tooltip_manager.tooltip);
       this.log("Ignoring app marked as do not popout", app);
       return;
     }
-    if (this.poppedOut.has(app.appId)) {
+    const appIdentifier = app.appId || app.id;
+    if (this.poppedOut.has(appIdentifier)) {
       this.log("Already popped out");
-      this.poppedOut.get(app.appId).window.focus();
+      this.poppedOut.get(appIdentifier).window.focus();
       return;
     }
 
     let waitRender = Math.floor(this.MAX_TIMEOUT / this.TIMEOUT_INTERVAL);
-    while (
-      app._state !== Application.RENDER_STATES.RENDERED && // eslint-disable-line no-undef
-      waitRender-- > 0
-    ) {
+
+    // Check render state for both v1 and v2 apps
+    const isV1App = app._state !== undefined;
+    const isV2App =
+      app.state !== undefined && foundry?.applications?.ApplicationV2;
+
+    while (waitRender-- > 0) {
+      let isRendered = false;
+
+      if (isV1App) {
+        isRendered = app._state === Application.RENDER_STATES.RENDERED;
+      } else if (isV2App) {
+        isRendered =
+          app.state ===
+          foundry.applications.ApplicationV2.RENDER_STATES.RENDERED;
+      } else {
+        // For apps that don't have clear state, check if they have an element
+        isRendered = !!(app.element || app._element);
+      }
+
+      if (isRendered) break;
+
       await new Promise((r) => setTimeout(r, this.TIMEOUT_INTERVAL));
     }
-    // eslint-disable-next-line no-undef
-    if (app._state !== Application.RENDER_STATES.RENDERED) {
+
+    // Check final render state
+    let isRendered = false;
+    if (isV1App) {
+      isRendered = app._state === Application.RENDER_STATES.RENDERED;
+    } else if (isV2App) {
+      isRendered =
+        app.state === foundry.applications.ApplicationV2.RENDER_STATES.RENDERED;
+    } else {
+      // For apps that don't have clear state, check if they have an element
+      isRendered = !!(app.element || app._element);
+    }
+
+    if (!isRendered) {
       this.log("Timeout out waiting for app to render");
       return;
     }
@@ -693,7 +282,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
     let domID = this.appToID(app);
     if (!document.getElementById(domID)) {
       // Don't create a second link on re-renders;
-      /* eslint-disable no-undef */
+
       // class "header-button" is for compatibility with 🦋 Monarch
       let buttonText = game.i18n.localize("POPOUT.PopOut");
       if (game && game.settings.get("popout", "iconOnly")) {
@@ -701,23 +290,119 @@ console.log("#------>", window.tooltip_manager.tooltip);
       }
       const link = $(
         `<a id="${domID}" class="popout-module-button"><i class="fas fa-external-link-alt" title="${game.i18n.localize(
-          "POPOUT.PopOut"
-        )}"></i>${buttonText}</a>`
+          "POPOUT.PopOut",
+        )}"></i>${buttonText}</a>`,
       );
-      /* eslint-enable no-undef */
 
       link.on("click", () => this.onPopoutClicked(app));
-      // eslint-disable-next-line no-undef
+
+      // Handle both ApplicationV1 and ApplicationV2
+
       if (game && game.settings.get("popout", "showButton")) {
-        app.element.find(".window-title").after(link);
+        let attached = false;
+
+        if (app.element && app.element.find) {
+          // ApplicationV1 - has jQuery element
+          app.element.find(".window-title").after(link);
+          attached = true;
+        } else {
+          // ApplicationV2 - try to find element by ID in DOM
+          const appId = app.id || app.appId;
+          let appElement = null;
+
+          // Try different ways to find the element
+          if (appId) {
+            appElement = document.getElementById(appId);
+          }
+          if (!appElement && app._element) {
+            appElement =
+              app._element instanceof jQuery ? app._element[0] : app._element;
+          }
+          if (!appElement && app.element) {
+            appElement =
+              app.element instanceof jQuery ? app.element[0] : app.element;
+          }
+
+          if (appElement) {
+            // For ApplicationV2, add to header controls area
+            const header = appElement.querySelector(".window-header");
+            const closeButton = header?.querySelector('[data-action="close"]');
+            if (closeButton) {
+              // Create header control button (always icon-only for ApplicationV2)
+              const headerButton = document.createElement("button");
+              headerButton.id = domID;
+              headerButton.className =
+                "header-control icon popout-module-button";
+              headerButton.type = "button";
+              headerButton.innerHTML =
+                '<i class="fas fa-external-link-alt"></i>';
+              headerButton.setAttribute(
+                "data-tooltip",
+                game.i18n.localize("POPOUT.PopOut"),
+              );
+
+              // Add click handler
+              headerButton.addEventListener("click", () =>
+                this.onPopoutClicked(app),
+              );
+
+              closeButton.parentNode.insertBefore(headerButton, closeButton);
+              attached = true;
+            }
+          }
+        }
       }
-      this.log("Attached", app);
     }
   }
 
   appToID(app) {
-    const domID = `popout_${this.ID}_${app.appId}`;
+    const appIdentifier = app.appId || app.id;
+    const domID = `popout_${this.ID}_${appIdentifier}`;
     return domID;
+  }
+
+  getAppElement(app) {
+    const isV2App = app.id && !app.appId; // V2 apps use 'id', V1 apps use 'appId'
+
+    if (isV2App) {
+      // ApplicationV2 - use ID to find the element
+      const appId = app.id;
+      if (appId) {
+        const element = document.getElementById(appId);
+        if (element) {
+          return element;
+        }
+      }
+
+      // Fallback for ApplicationV2
+      if (app._element) {
+        const element =
+          app._element instanceof jQuery ? app._element[0] : app._element;
+        return element;
+      }
+    } else {
+      // ApplicationV1 - use jQuery element
+      if (app.element && app.element[0]) {
+        return app.element[0];
+      }
+
+      // Fallback for ApplicationV1 using appId
+      const appId = app.appId;
+      if (appId) {
+        const element = document.getElementById(appId);
+        if (element) {
+          return element;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  attachApplicationV2Events(app, clonedNode, popout) {
+    this.log(
+      "Skipping ApplicationV2 event re-attachment - events should survive adoptNode",
+    );
   }
   handleChildDialog(app) {
     // This handler attempts to make behavior less confusing for modal/dialog like interactions
@@ -733,7 +418,8 @@ console.log("#------>", window.tooltip_manager.tooltip);
       const keys = Object.keys(app.actor.apps);
       if (keys.length == 1) {
         const parent = app.actor.apps[keys[0]];
-        if (this.poppedOut.has(parent.appId)) {
+        const parentId = parent.appId || parent.id;
+        if (this.poppedOut.has(parentId)) {
           this.log("Intercepting dialog of popped out window.");
           this.moveDialog(app, parent);
           return true;
@@ -748,7 +434,8 @@ console.log("#------>", window.tooltip_manager.tooltip);
       const keys = Object.keys(app.object.apps);
       if (keys.length == 1) {
         const parent = app.object.apps[keys[0]];
-        if (this.poppedOut.has(parent.appId)) {
+        const parentId = parent.appId || parent.id;
+        if (this.poppedOut.has(parentId)) {
           this.log("Intercepting dialog of popped out window.");
           this.moveDialog(app, parent);
           return true;
@@ -761,10 +448,20 @@ console.log("#------>", window.tooltip_manager.tooltip);
     const deadline = Date.now() - 1000; // Last click happened within the last second
     for (let state of this.poppedOut.values()) {
       if (state.window._popout_last_click > deadline) {
-        // We only nest popout intercepted application if they extend the Dialog class.
-        // eslint-disable-next-line no-undef
-        if (app instanceof Dialog) {
-          this.log("Intercepting likely dialog of popped out window.", app);
+        // Check for both v1 Dialog class and v2 dialog apps
+        const isV1Dialog = app instanceof Dialog;
+        const isV2Dialog =
+          app.id &&
+          !app.appId && // Must be ApplicationV2
+          (app.constructor.name.includes("Dialog") ||
+            app.constructor.name.includes("Config") ||
+            app.constructor.name.includes("Roll")); // Common dialog patterns
+
+        if (isV1Dialog || isV2Dialog) {
+          this.log(
+            "Intercepting likely dialog of popped out window:",
+            app.constructor.name,
+          );
           this.moveDialog(app, state.app);
           return true;
         }
@@ -775,8 +472,9 @@ console.log("#------>", window.tooltip_manager.tooltip);
   }
 
   moveDialog(app, parentApp) {
-    const parent = this.poppedOut.get(parentApp.appId);
-    const dialogNode = app.element[0];
+    const parentId = parentApp.appId || parentApp.id;
+    const parent = this.poppedOut.get(parentId);
+    const dialogNode = this.getAppElement(app);
 
     // Hide element
     const setDisplay = dialogNode.style.display;
@@ -795,12 +493,14 @@ console.log("#------>", window.tooltip_manager.tooltip);
     node.style.top = "50%";
     node.style.left = "50%";
     node.style.transform = "translate(-50%, -50%)";
-    parentApp.element[0].style.zIndex = 0;
+    const parentElement = this.getAppElement(parentApp);
+    if (parentElement) {
+      parentElement.style.zIndex = 0;
+    }
 
     // We manually intercept the setPosition function of the dialog app in
     // order to handle re-renders that change the position.
     // In particular the FilePicker application.
-    // eslint-disable-next-line no-unused-vars
 
     const oldClose = app.close.bind(app);
     const oldSetPosition = app.setPosition.bind(app);
@@ -819,7 +519,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
     parent.node.parentNode.insertBefore(node, parent.node.nextSibling);
     node.style.display = setDisplay;
     parent.children.push(app);
-    Hooks.callAll("PopOut:dialog", app, parent); // eslint-disable-line no-undef
+    Hooks.callAll("PopOut:dialog", app, parent);
   }
 
   createDocument() {
@@ -836,11 +536,11 @@ console.log("#------>", window.tooltip_manager.tooltip);
     html.style.cssText = document.documentElement.style.cssText;
     const head = document.importNode(
       document.getElementsByTagName("head")[0],
-      true
+      true,
     );
     const body = document.importNode(
       document.getElementsByTagName("body")[0],
-      false
+      false,
     );
 
     for (const child of [...head.children]) {
@@ -862,20 +562,23 @@ console.log("#------>", window.tooltip_manager.tooltip);
     cssFix.appendChild(document.createTextNode(cssFixContent));
     head.appendChild(cssFix);
 
-    // COMPAT(posnet: 2022-05-05):
-    // Last ditch effort to support tooltips. By far the worst hack I've needed to do.
-    // Basically I have just embedded a copy of the TooltipManager class from the base game directly
-    // into the popped out window because all other attempts to hack arround it have failed,
-    // either because it's extensive use of window and document methods, or the fact that it uses
-    // private js members. If this breaks again, I will most likely just leave it broken.
-    const tooltipNode = document.createElement("aside");
-    tooltipNode.id = "tooltip";
-    tooltipNode.role = "tooltip";
-    body.appendChild(tooltipNode);
+    // BROKEN(posnet: 2024-08-19): Giving up on tooltips for the moment
+    // I have a branch with a sort of viable solution, but it will be even more
+    // brittle, and I am very hesitant to commit to supporting it.
+    // // COMPAT(posnet: 2022-05-05):
+    // // Last ditch effort to support tooltips. By far the worst hack I've needed to do.
+    // // Basically I have just embedded a copy of the TooltipManager class from the base game directly
+    // // into the popped out window because all other attempts to hack arround it have failed,
+    // // either because it's extensive use of window and document methods, or the fact that it uses
+    // // private js members. If this breaks again, I will most likely just leave it broken.
+    // const tooltipNode = document.createElement("aside");
+    // tooltipNode.id = "tooltip";
+    // tooltipNode.role = "tooltip";
+    // body.appendChild(tooltipNode);
 
-    const tooltipFix = document.createElement("script");
-    tooltipFix.appendChild(document.createTextNode(this.TOOLTIP_CODE));
-    head.append(tooltipFix);
+    // const tooltipFix = document.createElement("script");
+    // tooltipFix.appendChild(document.createTextNode(this.TOOLTIP_CODE));
+    // head.append(tooltipFix);
 
     html.appendChild(head);
     html.appendChild(body);
@@ -891,17 +594,40 @@ console.log("#------>", window.tooltip_manager.tooltip);
       height: "100%",
     };
 
-    // eslint-disable-next-line no-undef
     if (game.settings.get("popout", "useWindows")) {
-      const position = app.element.position(); // JQuery position function.
-      let width = app.element.innerWidth();
-      let height = app.element.innerHeight();
-      let left = position.left;
-      let top = position.top;
-      // eslint-disable-next-line no-undef
-      if (game && game.settings.get("popout", "trueBoundingBox")) {
-        // eslint-disable-line no-undef
-        const bounding = this.recursiveBoundingBox(app.element[0]);
+      let position, width, height, left, top, element;
+
+      // Handle both ApplicationV1 (jQuery) and ApplicationV2 (native DOM)
+      if (app.element && app.element.position) {
+        // ApplicationV1 with jQuery element
+        position = app.element.position();
+        width = app.element.innerWidth();
+        height = app.element.innerHeight();
+        left = position.left;
+        top = position.top;
+        element = app.element[0];
+      } else {
+        // ApplicationV2 with native DOM element
+        const nativeElement = this.getAppElement(app);
+        if (nativeElement) {
+          const rect = nativeElement.getBoundingClientRect();
+          left = rect.left + window.scrollX;
+          top = rect.top + window.scrollY;
+          width = rect.width;
+          height = rect.height;
+          element = nativeElement;
+        } else {
+          // Fallback values if no element found
+          left = 100;
+          top = 100;
+          width = 800;
+          height = 600;
+          element = null;
+        }
+      }
+
+      if (element && game && game.settings.get("popout", "trueBoundingBox")) {
+        const bounding = this.recursiveBoundingBox(element);
         if (bounding.x < left) {
           offsets.left = `${left - bounding.x}`;
           left = bounding.x;
@@ -958,19 +684,23 @@ console.log("#------>", window.tooltip_manager.tooltip);
   onPopoutClicked(app) {
     // Check if popout in Electron window
     if (navigator.userAgent.toLowerCase().indexOf(" electron/") !== -1) {
-      ui.notifications.warn(game.i18n.localize("POPOUT.electronWarning")); // eslint-disable-line no-undef
+      ui.notifications.warn(game.i18n.localize("POPOUT.electronWarning"));
       return;
     }
 
-    if (window.ui.windows[app.appId] === undefined) {
-      // eslint-disable-line no-undef
+    // Check both v1 and v2 applications
+    const appIdentifier = app.appId || app.id;
+    const isV1App = window.ui.windows[app.appId] !== undefined;
+    const isV2App = foundry?.applications?.instances?.has(app.id);
+
+    if (!isV1App && !isV2App) {
       this.log("Attempt to open not a user interface window.");
       return;
     }
 
-    if (this.poppedOut.has(app.appId)) {
+    if (this.poppedOut.has(appIdentifier)) {
       // This check is to ensure PopOut is idempotent to popout calls.
-      let currentState = this.poppedOut.get(app.appId);
+      let currentState = this.poppedOut.get(appIdentifier);
       if (currentState && currentState.window && !currentState.window.closed) {
         currentState.window.focus();
         return;
@@ -979,7 +709,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
         currentState.window &&
         currentState.window.closed
       ) {
-        this.poppedOut.delete(app.appId);
+        this.poppedOut.delete(appIdentifier);
       }
     }
 
@@ -987,13 +717,21 @@ console.log("#------>", window.tooltip_manager.tooltip);
     this.log("Features", windowFeatures, offsets);
 
     // -------------------- Obtain application --------------------
+    const appElement = this.getAppElement(app);
+    if (!appElement) {
+      this.log("Could not find element for app");
+      return;
+    }
+
     const state = {
       app: app,
-      node: app.element[0],
-      position: duplicate(app.position), // eslint-disable-line no-undef
+      node: appElement,
+      position: foundry?.utils?.duplicate
+        ? foundry.utils.duplicate(app.position)
+        : duplicate(app.position),
       minimized: app._minimized,
-      display: app.element[0].style.display,
-      css: app.element[0].style.cssText,
+      display: appElement.style.display,
+      css: appElement.style.cssText,
       children: [],
     };
 
@@ -1010,15 +748,26 @@ console.log("#------>", window.tooltip_manager.tooltip);
       this.log("Failed to open window", popout);
       state.node.style.display = state.display;
       state.node._minimized = false;
-      ui.notifications.warn(game.i18n.localize("POPOUT.failureWarning")); // eslint-disable-line no-undef
+      ui.notifications.warn(game.i18n.localize("POPOUT.failureWarning"));
       return;
     }
 
     // This is fiddly and probably not that robust to other modules.
     // But does provide behavior closer to the vanilla fvtt iterations.
-    state.header = state.node.querySelector(".window-header");
+    // Try multiple selectors for different application types
+    state.header =
+      state.node.querySelector(".window-header") ||
+      state.node.querySelector("header.window-header") ||
+      state.node.querySelector(".application-header");
+
+    // For ApplicationV2, also store the controls dropdown if it exists
+    state.controlsDropdown = state.node.querySelector(".controls-dropdown");
+
     if (state.header) {
       state.header.remove();
+    }
+    if (state.controlsDropdown) {
+      state.controlsDropdown.remove();
     }
 
     state.handle = state.node.querySelector(".window-resizable-handle");
@@ -1030,36 +779,40 @@ console.log("#------>", window.tooltip_manager.tooltip);
     // into it to ensure that the drag behavior is ignored.
     // however we have to manually move the actual controls over,
     // so that their event handlers are preserved.
-    const shallowHeader = state.header.cloneNode(false);
-    shallowHeader.classList.remove("draggable");
-    let domID = this.appToID(app);
-    for (const child of [...state.header.children]) {
-      if (child.id == domID) {
-        // Change Close button
-        /* eslint-disable no-unused-vars, no-undef */
+    if (state.header) {
+      const shallowHeader = state.header.cloneNode(false);
+      shallowHeader.classList.remove("draggable");
+      let domID = this.appToID(app);
+      for (const child of [...state.header.children]) {
+        if (child.id == domID) {
+          // Change Close button
 
-        let buttonText = game.i18n.localize("POPOUT.PopIn");
-        if (game && game.settings.get("popout", "iconOnly")) {
-          buttonText = "";
+          let buttonText = game.i18n.localize("POPOUT.PopIn");
+          // ApplicationV2 apps always use icon-only buttons
+          const isV2App = app.id && !app.appId; // V2 apps use 'id', V1 apps use 'appId'
+          if ((game && game.settings.get("popout", "iconOnly")) || isV2App) {
+            buttonText = "";
+          }
+
+          $(child)
+            .html(
+              `<i class="fas fa-sign-in-alt" title="${game.i18n.localize(
+                "POPOUT.PopIn",
+              )}"></i>${buttonText}`,
+            )
+            .off("click")
+            .on("click", (event) => {
+              popout._popout_dont_close = true;
+              popout.close();
+            });
         }
-
-        $(child)
-          .html(
-            `<i class="fas fa-sign-in-alt" title="${game.i18n.localize(
-              "POPOUT.PopIn"
-            )}"></i>${buttonText}`
-          )
-          .off("click")
-          .on("click", (event) => {
-            popout._popout_dont_close = true;
-            popout.close();
-          });
-        /* eslint-enable no-unused-vars, no-undef */
+        shallowHeader.appendChild(child);
       }
-      shallowHeader.appendChild(child);
+      // re-parent the new shallow header to the app node.
+      state.node.insertBefore(shallowHeader, state.node.children[0]);
+    } else {
+      this.log("No header found for application, skipping header manipulation");
     }
-    // re-parent the new shallow header to the app node.
-    state.node.insertBefore(shallowHeader, state.node.children[0]);
 
     // -------------------- Write document --------------------
 
@@ -1077,11 +830,11 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
     // -------------------- Add unload handlers --------------------
 
-    Hooks.callAll("PopOut:loading", app, popout); // eslint-disable-line no-undef
+    Hooks.callAll("PopOut:loading", app, popout);
 
     window.addEventListener("unload", async (event) => {
       this.log("Unload event", event);
-      const appId = app.appId;
+      const appId = app.appId || app.id;
       if (this.poppedOut.has(appId)) {
         await popout.close();
       }
@@ -1090,7 +843,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
     popout.addEventListener("unload", async (event) => {
       this.log("Unload event", event);
-      const appId = app.appId;
+      const appId = app.appId || app.id;
       if (this.poppedOut.has(appId)) {
         const poppedOut = this.poppedOut.get(appId);
         this.log("Closing popout", app.title);
@@ -1106,20 +859,42 @@ console.log("#------>", window.tooltip_manager.tooltip);
         const node = poppedOut.node;
         node.style.cssText = poppedOut.css;
         if (poppedOut.header) {
-          const header = node.querySelector(".window-header");
-          for (const child of [...header.children]) {
-            // Remove popin button so we can re-add it properly later
-            if (child.id !== domID) {
-              poppedOut.header.appendChild(child);
+          const header =
+            node.querySelector(".window-header") ||
+            node.querySelector("header.window-header") ||
+            node.querySelector(".application-header");
+          if (header) {
+            for (const child of [...header.children]) {
+              // Remove popin button so we can re-add it properly later
+              const popinButtonId = this.appToID(app);
+              if (child.id !== popinButtonId) {
+                poppedOut.header.appendChild(child);
+              }
             }
           }
 
           node.insertBefore(poppedOut.header, node.children[0]);
-          header.remove();
+          if (header) {
+            header.remove();
+          }
         }
 
         if (poppedOut.handle) {
           node.appendChild(poppedOut.handle);
+        }
+
+        // Restore controls dropdown for ApplicationV2
+        if (poppedOut.controlsDropdown) {
+          // Insert after header
+          if (poppedOut.header) {
+            poppedOut.header.insertAdjacentElement(
+              "afterend",
+              poppedOut.controlsDropdown,
+            );
+          } else {
+            // Fallback: add at the beginning of the node
+            node.insertBefore(poppedOut.controlsDropdown, node.children[0]);
+          }
         }
 
         window.document.body.append(window.document.adoptNode(node));
@@ -1137,11 +912,11 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
         // Force a re-render or close it
         if (popout._popout_dont_close) {
-          Hooks.callAll("PopOut:popin", app); // eslint-disable-line no-undef
+          Hooks.callAll("PopOut:popin", app);
           await app.render(true);
           this.addPopout(app);
         } else {
-          Hooks.callAll("PopOut:close", app, node); // eslint-disable-line no-undef
+          Hooks.callAll("PopOut:close", app, node);
           await app.close();
         }
         await popout.close();
@@ -1180,7 +955,7 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
       const opened = window.open(a.href, "_blank");
       if (!opened) {
-        ui.notifications.warn(game.i18n.localize("POPOUT.failureWarning")); // eslint-disable-line no-undef
+        ui.notifications.warn(game.i18n.localize("POPOUT.failureWarning"));
       }
     });
 
@@ -1194,9 +969,10 @@ console.log("#------>", window.tooltip_manager.tooltip);
         popout.moveTo(50, 50);
       }
 
-      // eslint-disable-next-line no-undef
       if (game.release.generation >= 10) {
-        const allFonts = FontConfig._collectDefinitions(); // eslint-disable-line no-undef
+        const FontConfigClass =
+          foundry?.applications?.settings?.menus?.FontConfig || FontConfig;
+        const allFonts = FontConfigClass._collectDefinitions();
         const families = new Set();
         for (const definitions of allFonts) {
           for (const [family] of Object.entries(definitions)) {
@@ -1207,15 +983,56 @@ console.log("#------>", window.tooltip_manager.tooltip);
           if (families.has(font.family)) {
             try {
               popout.document.fonts.add(font);
-            } catch {} // eslint-disable-line no-empty
+            } catch {}
           }
         });
       }
 
       const body = event.target.getElementsByTagName("body")[0];
-      const node = targetDoc.adoptNode(state.node);
-      body.style.overflow = "auto";
-      body.append(state.node);
+
+      // Handle ApplicationV2 which uses different DOM adoption
+      const isApplicationV2 = app.id && !app.appId; // V2 apps use 'id', V1 apps use 'appId'
+
+      if (isApplicationV2) {
+        // FIXME(aposney: 2025-06-16) Not convinced this is an issue, it does cause errors in logs, but leaving
+        // // Monkey-patch D&D5e custom elements to handle adoptedStyleSheets gracefully
+        const customElements = state.node.querySelectorAll(
+          "slide-toggle, dnd5e-checkbox, proficiency-cycle, dnd5e-icon",
+        );
+        customElements.forEach((element) => {
+          if (element._adoptStyleSheet) {
+            const original_adoptStyleSheet = element._adoptStyleSheet;
+            element._adoptStyleSheet = function (sheet) {
+              try {
+                return original_adoptStyleSheet.call(this, sheet);
+              } catch (error) {
+                PopoutModule.singleton.log(
+                  "Caught adoptedStyleSheets error for",
+                  this.tagName,
+                  "- continuing without styles",
+                );
+                // Fail silently to prevent breaking the popout
+              }
+            };
+          }
+        });
+
+        try {
+          const adoptedNode = targetDoc.adoptNode(state.node);
+          body.style.overflow = "auto";
+          body.append(adoptedNode);
+          // Update state to reference the adopted node
+          state.node = adoptedNode;
+        } catch (error) {
+          this.log("Error adopting ApplicationV2 node:", error);
+          throw error;
+        }
+      } else {
+        // ApplicationV1 - use the original adoption method
+        const adoptedNode = targetDoc.adoptNode(state.node);
+        body.style.overflow = "auto";
+        body.append(state.node);
+      }
 
       state.node.style.cssText = `
                 display: flex;
@@ -1236,22 +1053,38 @@ console.log("#------>", window.tooltip_manager.tooltip);
       });
       // Disable right-click
       popout.document.addEventListener("contextmenu", (ev) =>
-        ev.preventDefault()
+        ev.preventDefault(),
       );
       // Disable mouse 3, 4, and 5
       popout.document.addEventListener("pointerdown", (ev) => {
         if ([3, 4, 5].includes(ev.button)) ev.preventDefault();
       });
 
-      popout.addEventListener("keydown", (event) =>
-        window.keyboard._handleKeyboardEvent(event, false)
-      );
-      popout.addEventListener("keyup", (event) =>
-        window.keyboard._handleKeyboardEvent(event, true)
-      );
+      // Forward keyboard events to main window for keybinding support
+      // NOTE: v13 changed the keyboard API, _handleKeyboardEvent is private/removed
+      popout.addEventListener("keydown", (event) => {
+        if (window.keyboard && window.keyboard._handleKeyboardEvent) {
+          // v12 and earlier - use private method
+          window.keyboard._handleKeyboardEvent(event, false);
+        } else if (game.keyboard && game.keyboard.onKeyDown) {
+          // v13+ - try public API
+          game.keyboard.onKeyDown(event);
+        }
+        // For v13, if no API available, let the event bubble normally
+      });
+      popout.addEventListener("keyup", (event) => {
+        if (window.keyboard && window.keyboard._handleKeyboardEvent) {
+          // v12 and earlier - use private method
+          window.keyboard._handleKeyboardEvent(event, true);
+        } else if (game.keyboard && game.keyboard.onKeyUp) {
+          // v13+ - try public API
+          game.keyboard.onKeyUp(event);
+        }
+        // For v13, if no API available, let the event bubble normally
+      });
 
       // COMPAT(posnet: 2022-09-17) v9
-      // eslint-disable-next-line no-undef
+
       if (game.release.generation < 10) {
         // From: TextEditor.activateListeners();
         // These event listeners don't get migrated because they are attached to a jQuery
@@ -1259,23 +1092,23 @@ console.log("#------>", window.tooltip_manager.tooltip);
         // event handler will also fail. But that is bad practice.
         // The following regex will find examples of delegated event handlers in foundry.js
         // `on\(("|')[^'"]+("|'), *("|')`
-        const jBody = $(body); // eslint-disable-line no-undef
+        const jBody = $(body);
         jBody.on(
           "click",
           "a.entity-link",
           window.TextEditor._onClickEntityLink !== undefined
             ? window.TextEditor._onClickEntityLink
-            : window.TextEditor._onClickContentLink
+            : window.TextEditor._onClickContentLink,
         );
         jBody.on(
           "dragstart",
           "a.entity-link",
-          window.TextEditor._onDragEntityLink
+          window.TextEditor._onDragEntityLink,
         );
         jBody.on(
           "click",
           "a.inline-roll",
-          window.TextEditor._onClickInlineRoll
+          window.TextEditor._onClickInlineRoll,
         );
       } else {
         // From: TextEditor.activateListeners();
@@ -1284,35 +1117,43 @@ console.log("#------>", window.tooltip_manager.tooltip);
         // event handler will also fail. But that is bad practice.
         // The following regex will find examples of delegated event handlers in foundry.js
         // `on\(("|')[^'"]+("|'), *("|')`
-        const jBody = $(body); // eslint-disable-line no-undef
-        jBody.on(
-          "click",
-          "a.content-link",
-          window.TextEditor._onClickEntityLink !== undefined
-            ? window.TextEditor._onClickEntityLink
-            : window.TextEditor._onClickContentLink
-        );
-        jBody.on(
-          "dragstart",
-          "a.content-link",
-          window.TextEditor._onDragEntityLink !== undefined
-            ? window.TextEditor._onDragEntityLink
-            : window.TextEditor._onDragContentLink
-        );
-        jBody.on(
-          "click",
-          "a.inline-roll",
-          window.TextEditor._onClickInlineRoll
-        );
+        // Only attach jQuery delegated events for ApplicationV1
+        if (!isApplicationV2) {
+          const jBody = $(body);
+          if (game.release.generation < 13) {
+            jBody.on(
+              "click",
+              "a.content-link",
+              window.TextEditor._onClickEntityLink !== undefined
+                ? window.TextEditor._onClickEntityLink
+                : window.TextEditor._onClickContentLink,
+            );
+            jBody.on(
+              "dragstart",
+              "a.content-link",
+              window.TextEditor._onDragEntityLink !== undefined
+                ? window.TextEditor._onDragEntityLink
+                : window.TextEditor._onDragContentLink,
+            );
+          }
+          jBody.on(
+            "click",
+            "a.inline-roll",
+            window.TextEditor._onClickInlineRoll,
+          );
+        }
       }
 
-      popout.game = game; // eslint-disable-line no-undef
-      popout.tooltip_manager.tooltip =
-        popout.document.getElementById("tooltip");
-      popout.tooltip_manager.activateEventListeners();
+      popout.game = game;
 
-      this.log("Final node", node, app);
-      Hooks.callAll("PopOut:loaded", app, node); // eslint-disable-line no-undef
+      // Only try to setup tooltip manager if it exists
+      if (popout.tooltip_manager && popout.document.getElementById("tooltip")) {
+        popout.tooltip_manager.tooltip =
+          popout.document.getElementById("tooltip");
+        popout.tooltip_manager.activateEventListeners();
+      }
+
+      Hooks.callAll("PopOut:loaded", app, state.node);
     });
 
     // -------------------- Install intercept methods ----------------
@@ -1323,7 +1164,10 @@ console.log("#------>", window.tooltip_manager.tooltip);
       popout.focus();
       const result = oldBringToTop.apply(app, args);
       // In a popout we always want the base sheet to be at the back.
-      app.element[0].style.zIndex = 0;
+      const appElement = this.getAppElement(app);
+      if (appElement) {
+        appElement.style.zIndex = 0;
+      }
       return result;
     };
 
@@ -1337,12 +1181,12 @@ console.log("#------>", window.tooltip_manager.tooltip);
     app.close = (...args) => {
       this.log("Intercepted popout close.", app);
       // Prevent closing of popped out windows with ESC in main page
-      // eslint-disable-next-line no-undef
+
       if (game.keyboard.isDown !== undefined) {
         // COMPAT(posnet: 2022-09-17) v9 compat
-        if (game.keyboard.isDown("Escape")) return; // eslint-disable-line no-undef
+        if (game.keyboard.isDown("Escape")) return;
       } else {
-        if (game.keyboard.downKeys.has("Escape")) return; // eslint-disable-line no-undef
+        if (game.keyboard.downKeys.has("Escape")) return;
       }
       popout.close();
       return oldClose.apply(app, args);
@@ -1350,27 +1194,33 @@ console.log("#------>", window.tooltip_manager.tooltip);
 
     const oldMinimize = app.minimize.bind(app);
     app.minimize = (...args) => {
-      this.log("Trying to focus main window.", app); // Doesn't appear to work due to popout blockers.
-      popout._rootWindow.focus();
-      if (popout._rootWindow.getAttention) {
-        popout._rootWindow.getAttention();
-      }
-      return oldMinimize.apply(app, args);
+      this.log(
+        "Intercepted minimize on popped out app - ignoring:",
+        app.constructor.name,
+      );
+      // Don't minimize popped out applications (e.g., during template placement)
+      // Just return without calling the original minimize
+      return;
     };
 
     const oldMaximize = app.maximize.bind(app);
     app.maximize = (...args) => {
+      this.log(
+        "Intercepted maximize on popped out app - focusing popout instead:",
+        app.constructor.name,
+      );
+      // Don't maximize popped out applications, just focus the popout window
       popout.focus();
-      this.log("Trying to focus popout.", popout);
-      return oldMaximize.apply(app, args);
+      return;
     };
 
     const oldSetPosition = app.setPosition.bind(app);
     app.setPosition = (...args) => {
-      if (this.poppedOut.has(app.appId)) {
+      const appId = app.appId || app.id;
+      if (this.poppedOut.has(appId)) {
         this.log(
           "Intercepted application setting position",
-          app.constructor.name
+          app.constructor.name,
         );
         return {};
       }
@@ -1383,8 +1233,9 @@ console.log("#------>", window.tooltip_manager.tooltip);
     state.minimize = oldMinimize;
     state.maximize = oldMaximize;
     state.close = oldClose;
-    this.poppedOut.set(app.appId, state);
-    Hooks.callAll("PopOut:popout", app, popout); // eslint-disable-line no-undef
+    const finalAppId = app.appId || app.id;
+    this.poppedOut.set(finalAppId, state);
+    Hooks.callAll("PopOut:popout", app, popout);
   }
 
   // Public API
@@ -1395,12 +1246,62 @@ console.log("#------>", window.tooltip_manager.tooltip);
   }
 }
 
-/* eslint-disable no-undef */
 Hooks.on("ready", () => {
   PopoutModule.singleton = new PopoutModule();
   PopoutModule.singleton.init();
 
-  // eslint-disable-next-line no-unused-vars
+  // Add ApplicationV2 support for v13 using instance interception
+  if (foundry?.applications?.instances) {
+    const instances = foundry.applications.instances;
+    const originalSet = instances.set.bind(instances);
+    const originalDelete = instances.delete.bind(instances);
+
+    instances.set = function (id, app) {
+      // Call the original set method
+      const result = originalSet(id, app);
+
+      // Check if this is a popout-able application
+
+      // Only process apps that have popOut capability
+      // Note: popOut defaults to true if undefined in ApplicationV2
+      if (
+        app &&
+        app.options &&
+        app.options.popOut !== false && // Allow undefined (defaults to true)
+        !app.options.popOutModuleDisable
+      ) {
+        // Defer to ensure the app is rendered
+        setTimeout(() => {
+          PopoutModule.singleton
+            .addPopout(app)
+            .catch((err) =>
+              PopoutModule.singleton.log(
+                "Error adding popout to ApplicationV2:",
+                err,
+              ),
+            );
+        }, 100);
+      }
+
+      return result;
+    };
+
+    instances.delete = function (id) {
+      // Clean up our poppedOut map if the app is deleted
+      if (PopoutModule.singleton.poppedOut.has(id)) {
+        const state = PopoutModule.singleton.poppedOut.get(id);
+        if (state && state.window && !state.window.closed) {
+          state.window.close();
+        }
+        PopoutModule.singleton.poppedOut.delete(id);
+      }
+
+      // Call the original delete method
+      return originalDelete(id);
+    };
+    PopoutModule.singleton.log("ApplicationV2 interception initialized");
+  }
+
   Hooks.on("PopOut:loaded", async (app, node) => {
     // PDFoundry
     if (window.ui.PDFoundry !== undefined) {
@@ -1408,7 +1309,7 @@ Hooks.on("ready", () => {
       if (app.pdfData && app.pdfData.url !== undefined) {
         app.open(
           new URL(app.pdfData.url, window.location).href,
-          app.pdfData.offset
+          app.pdfData.offset,
         );
       }
       if (app.onViewerReady !== undefined) {
@@ -1418,7 +1319,6 @@ Hooks.on("ready", () => {
     return;
   });
 
-  // eslint-disable-next-line no-unused-vars
   Hooks.on("PopOut:close", async (app, node) => {
     // PDFoundry
     if (app.pdfData !== undefined) {
@@ -1429,4 +1329,3 @@ Hooks.on("ready", () => {
     return;
   });
 });
-/* eslint-enable no-undef */

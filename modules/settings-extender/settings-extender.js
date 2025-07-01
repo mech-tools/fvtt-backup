@@ -2,7 +2,7 @@
 // window.Azzu.ExtendedSettingsConfig is guaranteed to be initialized after Hooks->ready
 
 const SETTINGS_EXTENDER_VERSION = {
-	version: `1.2.3`,
+	version: `2.0.0`,
 	get major() {
 		return this.version.split(`.`)[0];
 	},
@@ -90,6 +90,32 @@ class Compatibility {
 	 */
 	static mergeObject(obj1, obj2) {
 		return (foundry?.utils?.mergeObject || window.mergeObject)(obj1, obj2);
+	}
+
+	/**
+	 * Compatibilty for v13, SettingsConfig has been migrated to ApplicationV2
+	 * @returns {boolean}
+	 */
+	static isSettingsApplicationV1() {
+		return !this.getSettingsConfig().prototype._onRender;
+	}
+
+	/**
+	 * Compatibility for v15, namespace changed
+	 * 
+	 * @returns Foundry SettingsConfig class
+	 */
+	static getSettingsConfig() {
+		return foundry?.applications?.settings?.SettingsConfig || SettingsConfig;
+	}
+	
+	/**
+	 * Compatibility for v15, namespace changed
+	 * 
+	 * @returns Foundry FilePicker class
+	 */
+	static getFilePicker() {
+		return foundry?.applications?.apps?.FilePicker?.implementation || FilePicker;
 	}
 }
 
@@ -293,7 +319,7 @@ function createExtraInputTypes() {
 		FilePicker.format = (val) => val;
 	});
 
-	class DirPicker extends FilePicker {
+	class DirPicker extends Compatibility.getFilePicker() {
 		constructor(options) {
 			super(options);
 
@@ -379,64 +405,94 @@ function isNewestVersionEnabled() {
 		|| oldVersion.patch < curVersion.patch
 }
 
+
+
+
+function extendSettingsPreV13() {
+	class ExtendedSettingsConfig extends Compatibility.getSettingsConfig() {
+
+		static get settingsExtenderVersion() {
+			return SETTINGS_EXTENDER_VERSION;
+		}
+
+		static get defaultOptions() {
+			return Compatibility.mergeObject(super.defaultOptions, {
+				baseApplication: 'SettingsConfig'
+			});
+		}
+
+		getData() {
+			const data = super.getData();
+			const modules = Compatibility.getSettingsConfigModules(data);
+			if (!modules) {
+				throw new Error(`settings-extender: Unsupported foundry version, file an issue at ` +
+					`https://gitlab.com/foundry-azzurite/settings-extender/-/issues/`)
+			}
+			modules.flatMap(m => m.settings).forEach(setting => {
+				const key = Compatibility.getModuleSettingKey(setting);
+				const type = Compatibility.getGameSetting(key).type;
+				if (typeof type === 'function') {
+					setting.type = type.name;
+				} else {
+					setting.type = 'unknown'
+				}
+			});
+			return data;
+		}
+
+		activateListeners($html) {
+			let extraTypes = window.Azzu.SettingsTypes;
+			// before super.activateListeners as FormApplication.activateListeners
+			// initialises FilePickers
+			Object.values(extraTypes).forEach(type => type._init && type._init($html));
+
+			super.activateListeners($html);
+
+			Object.entries(extraTypes).forEach(([name, type]) => {
+				if (!type._eventHandlers) return;
+				const $inputs = $html.find(`[data-dtype="${name}"`);
+				Object.entries(type._eventHandlers).forEach(([eventType, handler]) => {
+					$inputs.on(eventType, handler);
+				});
+			});
+		}
+	}
+	
+	game.settings._sheet = new ExtendedSettingsConfig(game.settings.settings);
+}
+
+function extendSettingsPostV13() {
+	libWrapper.register(`settings-extender`, 'foundry.applications.settings.SettingsConfig.prototype._onRender', function (wrapped, ...args) {
+		wrapped(...args);
+
+		for (const input of this.element.querySelectorAll(`input`)) {
+			const definition = game.settings.settings.get(input.name);
+			if (!definition) continue;
+
+			for (const type of Object.values(window.Azzu.SettingsTypes)) {
+				if (definition.type === type) {
+					if (!type._eventHandlers) return;
+					Object.entries(type._eventHandlers).forEach(([eventType, handler]) => {
+						input.addEventListener(eventType, handler);
+					});
+				}
+			}
+		}
+	}, 'MIXED');
+}
+
 function extendSettingsWindow() {
 	Hooks.once('ready', () => {
 		if (isNewestVersionEnabled()) return;
 
-		window.Azzu.ExtendedSettingsConfig = ExtendedSettingsConfig;
-		game.settings._sheet = new ExtendedSettingsConfig(game.settings.settings);
+		window.Azzu.ExtendedSettingsConfig = { settingsExtenderVersion: SETTINGS_EXTENDER_VERSION };
+		if (Compatibility.isSettingsApplicationV1()) {
+			extendSettingsPreV13();
+		} else {
+			extendSettingsPostV13()
+		}
 	});
 }
-
-class ExtendedSettingsConfig extends SettingsConfig {
-
-	static get settingsExtenderVersion() {
-		return SETTINGS_EXTENDER_VERSION;
-	}
-
-	static get defaultOptions() {
-		return Compatibility.mergeObject(super.defaultOptions, {
-			baseApplication: 'SettingsConfig'
-		});
-	}
-
-	getData() {
-		const data = super.getData();
-		const modules = Compatibility.getSettingsConfigModules(data);
-		if (!modules) {
-			throw new Error(`settings-extender: Unsupported foundry version, file an issue at ` +
-				`https://gitlab.com/foundry-azzurite/settings-extender/-/issues/`)
-		}
-		modules.flatMap(m => m.settings).forEach(setting => {
-			const key = Compatibility.getModuleSettingKey(setting);
-			const type = Compatibility.getGameSetting(key).type;
-			if (typeof type === 'function') {
-				setting.type = type.name;
-			} else {
-				setting.type = 'unknown'
-			}
-		});
-		return data;
-	}
-
-	activateListeners($html) {
-		let extraTypes = window.Azzu.SettingsTypes;
-		// before super.activateListeners as FormApplication.activateListeners
-		// initialises FilePickers
-		Object.values(extraTypes).forEach(type => type._init && type._init($html));
-
-		super.activateListeners($html);
-
-		Object.entries(extraTypes).forEach(([name, type]) => {
-			if (!type._eventHandlers) return;
-			const $inputs = $html.find(`[data-dtype="${name}"`);
-			Object.entries(type._eventHandlers).forEach(([eventType, handler]) => {
-				$inputs.on(eventType, handler);
-			});
-		});
-	}
-}
-
 
 window.Azzu = window.Azzu || {};
 const settingsTypes = registerSettingsTypes();

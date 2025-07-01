@@ -71,6 +71,63 @@ export class SettingsForm extends FormApplication {
     }
 
     /**
+     * Handles editor resizing.
+     * 
+     * @param {element} element - The drag handle element.
+     * @param {string} direction - The direction of the drag handle.
+     * @memberof SettingsForm
+     */
+    dragElement(element, direction) {
+        var md;
+        const first = document.getElementById("ccss-top");
+        const second = document.getElementById("ccss-bottom");
+        const splitter = document.getElementById("ccss-container");
+    
+        element.onmousedown = onMouseDown;
+    
+        function onMouseDown(e) {
+            md = {
+                e,
+                offsetLeft: element.offsetLeft,
+                offsetTop: element.offsetTop,
+                offsetBottom: element.offsetBottom,
+                firstWidth: first.offsetWidth,
+                secondWidth: second.offsetWidth,
+                firstHeight: first.offsetHeight,
+                secondHeight: (splitter.offsetHeight - first.offsetHeight)
+            };
+            document.onmousemove = onMouseMove;
+    
+            document.onmouseup = () => {
+                document.onmousemove = document.onmouseup = null;
+            }
+        }
+    
+        function onMouseMove(e) {
+    
+            var delta = {
+                x: e.clientX - md.e.x,
+                y: e.clientY - md.e.y
+            };
+    
+            if (direction === "H") {
+                delta.x = Math.min(Math.max(delta.x, -md.firstWidth),
+                    md.secondWidth);
+                element.style.left = md.offsetLeft + delta.x + "px";
+                first.style.width = (md.firstWidth + delta.x) + "px";
+                second.style.width = (md.secondWidth - delta.x) + "px";
+            }
+    
+            if (direction === "V") {
+                delta.y = Math.min(Math.max(delta.y, -md.firstHeight), md.secondHeight);
+                element.style.top = md.offsetTop + delta.y + "px";
+                first.style.height = (md.firstHeight + delta.y) + "px";
+                second.style.height = (md.secondHeight - delta.y) + "px";
+            }
+        }
+    }
+
+    /**
      * Activates all event listeners related to this form.
      *
      * @override Activates the CodeMirror code editor.
@@ -91,8 +148,10 @@ export class SettingsForm extends FormApplication {
             extraKeys: { "Ctrl-Space": "autocomplete" }
         }
 
-        if (game.user.isGM)
+        if (game.user.isGM) {
             this.codeEditors.push(CodeMirror.fromTextArea(html.find(".stylesheet")[0], options));
+            this.dragElement(document.getElementById("ccss-sep"), "V");
+        }
 
         this.codeEditors.push(CodeMirror.fromTextArea(html.find(".userStylesheet")[0], options));
     } 
