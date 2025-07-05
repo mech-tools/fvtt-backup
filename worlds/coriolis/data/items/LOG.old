@@ -1,15 +1,8 @@
-2025/06/04-17:05:49.849283 7fc4f17be700 Recovering log #418
-2025/06/04-17:05:49.852623 7fc4f17be700 Delete type=3 #416
-2025/06/04-17:05:49.852669 7fc4f17be700 Delete type=0 #418
-2025/06/30-10:10:43.080353 7fc4e36a4700 Level-0 table #424: started
-2025/06/30-10:10:43.082367 7fc4e36a4700 Level-0 table #424: 8973 bytes OK
-2025/06/30-10:10:43.083589 7fc4e36a4700 Delete type=0 #422
-2025/06/30-10:10:43.084394 7fc4e36a4700 Manual compaction at level-0 from '!items!00F1nUiAcGlz13mr' @ 72057594037927935 : 1 .. '!items!zxxChozwhjVFhdND' @ 0 : 0; will stop at (end)
-2025/06/30-10:10:43.084887 7fc4e36a4700 Manual compaction at level-1 from '!items!00F1nUiAcGlz13mr' @ 72057594037927935 : 1 .. '!items!zxxChozwhjVFhdND' @ 0 : 0; will stop at '!items!yP5CiNqb1tcv99lx' @ 10227 : 1
-2025/06/30-10:10:43.084901 7fc4e36a4700 Compacting 1@1 + 1@2 files
-2025/06/30-10:10:43.097497 7fc4e36a4700 Generated table #425@1: 982 keys, 559256 bytes
-2025/06/30-10:10:43.097511 7fc4e36a4700 Compacted 1@1 + 1@2 files => 559256 bytes
-2025/06/30-10:10:43.098265 7fc4e36a4700 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/06/30-10:10:43.098338 7fc4e36a4700 Delete type=2 #424
-2025/06/30-10:10:43.098415 7fc4e36a4700 Delete type=2 #420
-2025/06/30-10:10:43.109550 7fc4e36a4700 Manual compaction at level-1 from '!items!yP5CiNqb1tcv99lx' @ 10227 : 1 .. '!items!zxxChozwhjVFhdND' @ 0 : 0; will stop at (end)
+2025/07/04-15:32:56.615738 7fc4f17be700 Recovering log #436
+2025/07/04-15:32:56.617887 7fc4f17be700 Delete type=0 #436
+2025/07/04-15:32:56.617911 7fc4f17be700 Delete type=3 #434
+2025/07/04-15:33:05.483980 7fc4e36a4700 Level-0 table #442: started
+2025/07/04-15:33:05.484010 7fc4e36a4700 Level-0 table #442: 0 bytes OK
+2025/07/04-15:33:05.485264 7fc4e36a4700 Delete type=0 #440
+2025/07/04-15:33:05.487637 7fc4e36a4700 Manual compaction at level-0 from '!items!00F1nUiAcGlz13mr' @ 72057594037927935 : 1 .. '!items!zxxChozwhjVFhdND' @ 0 : 0; will stop at (end)
+2025/07/04-15:33:05.488715 7fc4e36a4700 Manual compaction at level-1 from '!items!00F1nUiAcGlz13mr' @ 72057594037927935 : 1 .. '!items!zxxChozwhjVFhdND' @ 0 : 0; will stop at (end)

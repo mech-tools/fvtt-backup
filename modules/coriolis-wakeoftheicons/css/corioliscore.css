@@ -1,0 +1,490 @@
+:root {
+  --journal-element-color: #8cb8c7;
+  --radius: 10px;
+  --blue-primary: #4f9cc0;
+}
+
+/* Font classes */
+@font-face {
+  font-family: DINBlack;
+  src: url("fonts/DIN-Black.ttf");
+}
+
+@font-face {
+  font-family: DINBold;
+  src: url("fonts/DIN Bold.otf");
+}
+
+@font-face {
+  font-family: DIN-Medium-Regular;
+  src: url("fonts/DIN Medium Regular.ttf");
+}
+
+@font-face {
+  font-family: ChaparralPro-SemiBoldIt;
+  src: url("fonts/ChaparralPro-SemiboldIt.otf");
+}
+
+@font-face {
+  font-family: FoundryGridnik-Medium;
+  src: url("fonts/FoundryGridnik Medium.otf");
+}
+@font-face {
+  font-family: FoundryGridnik-Bold;
+  src: url("fonts/FoundryGridnik Bold.otf");
+}
+
+@font-face {
+  font-family: NexusSansOT;
+  src: url("fonts/NexusSansOT.otf");
+  font-style: normal;
+}
+
+.entryContent {
+  font-variant-ligatures: none;
+}
+
+.quoteAuthor {
+  font-family: DINBlack;
+  text-align: center;
+}
+
+.quote {
+  font-family: ChaparralPro-SemiBoldIt;
+  text-align: center;
+}
+
+/* used at the beginning of chapters, usually around the scarab*/
+.chapter-title {
+  text-align: center;
+}
+
+/* used to mimic what a chapter-title is but w/o the use of h1's so that ToC can work. */
+.fake-title {
+  text-align: center;
+  font-family: FoundryGridnik-Medium;
+  font-size: xxx-large;
+  margin-bottom: 0px;
+  text-transform: uppercase;
+  font-weight: 700;
+  border: none;
+}
+/* used for intro paragraphs at beginning of chapters */
+.intro-p {
+  font-family: FoundryGridnik-Medium;
+  font-size: 1.17em;
+  margin: 18px 0px;
+  font-weight: 400;
+  border-bottom: none;
+}
+
+.coriolis-sidebar.coriolis-sidebar h5 {
+  font-family: DINBold;
+  font-size: 0.93em;
+  background-color: black;
+  padding: 5px;
+}
+
+.coriolis-sidebar.coriolis-sidebar h4 {
+  font-family: DINBold;
+  font-size: 0.93em;
+  background-color: var(--journal-element-color);
+  padding: 5px;
+  color: black;
+  text-transform: uppercase;
+}
+
+.coriolis-sidebar.coriolis-sidebar a {
+  color: black;
+}
+
+.coriolis-sidebar {
+  font-family: DIN-Medium-Regular;
+  background-image: url("images/sidebar_bg.png");
+  background-position: center;
+  background-size: cover;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: var(--radius);
+}
+
+/* Styling the sidebar Table of Contents */
+.sheet.journal-entry aside.journal-sidebar.sidebar {
+  background-image: linear-gradient(to right, rgb(0 0 0 / 0%), rgb(0 0 0)),
+    url(images/sidebar_bg.png);
+  background-position: center;
+  background-size: cover;
+  color: white;
+}
+
+.coriolis-sidebar.coriolis-sidebar-alt {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),
+    url(images/Rymd.jpg);
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+.coriolis-sidebar.coriolis-sidebar ul li:after {
+  background: white;
+}
+
+.entryContent h3 {
+  font-family: FoundryGridnik-Medium;
+  text-transform: uppercase;
+  font-size: 1.17em;
+  margin: 18px 0px;
+  font-weight: 700;
+  border-bottom: none;
+}
+
+/* This is no longer used in newer content but kept around for legacy purposes
+*/
+.entryContent h5 {
+  font-family: FoundryGridnik-Medium;
+  text-transform: uppercase;
+  font-size: 1.17em;
+  margin: 18px 0px;
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.entryContent h1 {
+  font-family: FoundryGridnik-Medium;
+  font-size: xxx-large;
+  margin-bottom: 0px;
+  text-transform: uppercase;
+  font-weight: 700;
+  border: none;
+}
+
+.entryContent h2 {
+  font-family: FoundryGridnik-Bold;
+  margin-bottom: 5px;
+  margin-top: 15px;
+  font-size: x-large;
+  text-transform: uppercase;
+  border-bottom: none;
+}
+
+.entryContent p {
+  font-family: NexusSansOT;
+  margin: 0;
+  margin-bottom: 20px;
+}
+
+.entryContent ol {
+  margin-bottom: 40px;
+}
+.entryContent ol li {
+  font-family: NexusSansOT;
+  margin: 0;
+}
+
+.entryContent ul li {
+  font-family: NexusSansOT;
+  margin: 0;
+}
+
+/* used exclusively for the bullet icon */
+.entryContent .cli {
+  position: relative;
+  margin-right: 25px;
+}
+
+/* used exclusively for the bullet icon */
+.entryContent .cli:before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  display: block;
+  background: url("images/bulleticon.png");
+  background-size: contain;
+  position: absolute;
+  top: 0px;
+  left: 0;
+}
+/* used exclusively for the bullet icon */
+.entryContent .cli-white {
+  position: relative;
+  margin-right: 25px;
+}
+
+/* used exclusively for the bullet icon */
+.entryContent .cli-white:before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  display: block;
+  background: url("images/bulleticon_white.png");
+  background-size: contain;
+  position: absolute;
+  top: 0px;
+  left: 0;
+}
+
+.entryContent .shift-marker {
+  position: relative;
+  margin-right: 25px;
+}
+
+.entryContent .shift-marker:before {
+  content: "";
+  width: 30px;
+  height: 30px;
+  display: block;
+  background: url("images/shift_marker.png");
+  background-size: contain;
+  position: absolute;
+  top: -6px;
+  left: 0;
+}
+.entryContent .shift-marker-white {
+  position: relative;
+  margin-right: 25px;
+}
+
+.entryContent .shift-marker-white:before {
+  content: "";
+  width: 30px;
+  height: 30px;
+  display: block;
+  background: url("images/shift_marker_white.png");
+  background-size: contain;
+  position: absolute;
+  top: -6px;
+  left: 0;
+}
+
+hr {
+  background: url("images/hr.png");
+  background-size: 2 8;
+  border: 0;
+  height: 8px;
+}
+
+.coreCenteredImageContainer {
+  width: 100%;
+  text-align: center;
+}
+
+.sizedCenteredImageContainer {
+  width: 100%;
+  text-align: center;
+}
+.sizedCenteredImageContainer img {
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.centerJournalText {
+  text-align: center;
+}
+
+.leftImageContainer {
+  width: 50%;
+  text-align: center;
+  float: left; /* ugh */
+  padding: 10px;
+}
+
+.leftImageContainer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.coreCenteredImageContainer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.blueheader {
+  font-family: DINBold;
+  background: var(--blue-primary);
+  color: white;
+  padding: 5px 10px;
+  margin: 15px -5px;
+  text-transform: uppercase;
+}
+/* HTML only class that mimics a Journal's BG*/
+.entryBG {
+  background-image: url("images/Rymd.jpg");
+  background-size: cover;
+  padding: 30px;
+}
+
+/* VTT only class that bridges diff between HTML and vtt*/
+.entryBGVTT {
+  padding: 10px;
+}
+
+.entryContainer {
+  border-image: url("images/border.png") round;
+  border-image-slice: 376 285 210 285;
+  border-image-width: 120px 120px 120px 120px;
+  border-image-outset: 0px 0px 0px 0px;
+  border-image-repeat: stretch stretch;
+  border-style: solid;
+  padding-top: 75px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+}
+
+.entryContent {
+  background-image: url("images/bakground_bok1.jpg");
+  background-repeat: repeat;
+  border-radius: var(--radius);
+  padding: 25px;
+}
+
+.entryContent img {
+  border: none;
+}
+
+/* coriolis-core is what gets added to journal entries that come from an
+official module. This let's us style it. */
+
+/* FVTT Specific overrides */
+/* The background of all journal entries in this module */
+.sheet.journal-entry .journal-entry-content.coriolis-core {
+  background-image: url("images/Rymd.jpg");
+  background-size: cover;
+  padding: 30px;
+  /* make it flush with ToC */
+  border-radius: 0px;
+}
+
+.intro-dialog .window-content {
+  background-image: url("images/Rymd.jpg");
+  background-size: cover;
+}
+.intro-dialog .dialog-buttons button {
+  background-color: var(--blue-primary) !important;
+  border: none;
+}
+
+.intro-dialog h1 {
+  text-align: center;
+}
+
+.sheet.journal-entry .journal-entry-content.coriolis-core input[name="name"],
+.sheet.journal-entry .journal-entry-content.coriolis-core select,
+.sheet.journal-entry
+  .journal-entry-content.coriolis-core
+  button[type="submit"] {
+  background: var(--journal-element-color);
+  border: none;
+}
+
+/* lists */
+.entryContent ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 40px;
+}
+.entryContent ul li {
+  margin: 0;
+  margin-bottom: 0.5em;
+  padding-left: 1.5em;
+  position: relative;
+}
+
+.entryContent ul li:after {
+  content: "";
+  height: 0.4em;
+  width: 0.4em;
+  background: black;
+  display: block;
+  position: absolute;
+  transform: rotate(45deg);
+  top: 0.5em;
+  left: 0;
+}
+
+/* grid data */
+.grid2col {
+  display: grid;
+  grid-template-areas: "left right";
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.leftColumn {
+  grid-area: left;
+}
+.rightColumn {
+  grid-area: right;
+}
+
+/* table styling */
+.entryContent table {
+  font-family: NexusSansOT;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: none;
+  border-bottom: none;
+}
+
+.entryContent tr {
+  border-top: none;
+  border-bottom: 1px solid #006ca3;
+}
+
+.entryContent thead {
+  border: none;
+}
+
+.entryContent thead tr {
+  border: none;
+  background-color: transparent;
+}
+
+.entryContent tr:nth-child(odd) {
+  background-color: rgba(162, 194, 205, 1);
+}
+.entryContent td {
+  padding-right: 20px;
+}
+
+.coriolis-sidebar-alt table {
+  width: 100%;
+}
+
+.coriolis-sidebar-alt th {
+  text-align: left;
+}
+/* tables in alt sidebars */
+.coriolis-sidebar-alt.coriolis-sidebar-alt tr {
+  border-bottom: none;
+}
+
+.coriolis-sidebar-alt.coriolis-sidebar-alt thead tr:nth-child(odd) {
+  border-bottom: none;
+  background-color: transparent;
+}
+
+.coriolis-sidebar-alt.coriolis-sidebar-alt tr:nth-child(odd) {
+  border: none;
+  background-color: rgba(162, 194, 205, 0.5);
+}
+
+.coriolis-sidebar-alt.coriolis-sidebar-alt tr:nth-child(even) {
+  border: none;
+  background-color: transparent;
+}
+
+.coriolis-sidebar-alt td,
+.coriolis-sidebar td:first-child {
+  min-width: 30px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-top: 5px;
+}
