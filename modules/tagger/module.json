@@ -10,10 +10,11 @@
             "website": "http://fantasycomputer.works/"
         }
     ],
-    "version": "1.5.1",
+    "version": "1.5.3",
     "compatibility": {
         "minimum": "12",
-        "verified": "12"
+        "verified": "13",
+        "maximum": "13"
     },
     "scripts": [],
     "esmodules": [
@@ -25,7 +26,7 @@
     "library": true,
     "url": "https://github.com/fantasycalendar/FoundryVTT-Tagger",
     "manifest": "https://github.com/fantasycalendar/FoundryVTT-Tagger/releases/latest/download/module.json",
-    "download": "https://github.com/fantasycalendar/FoundryVTT-Tagger/releases/download/1.5.1/module.zip",
+    "download": "https://github.com/fantasycalendar/FoundryVTT-Tagger/releases/download/1.5.3/module.zip",
     "readme": "https://github.com/fantasycalendar/FoundryVTT-Tagger/blob/master/README.md",
     "bugs": "https://github.com/fantasycalendar/FoundryVTT-Tagger/issues"
 }

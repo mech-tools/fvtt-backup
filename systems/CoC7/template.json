@@ -108,7 +108,8 @@
             "max": null,
             "short": "MOV",
             "label": "Movement rate",
-            "auto": true
+            "auto": true,
+            "type": "walk"
           },
           "db": {
             "value": null,
@@ -259,7 +260,8 @@
       "development": {
         "personal": null,
         "occupation": null,
-        "archetype": null
+        "archetype": null,
+        "experiencePackage": null
       },
       "biography": [],
       "sanityLossEvents": [],
@@ -283,7 +285,9 @@
           "checkPassed": null,
           "checkFailled": null
         },
-        "attacksPerRound": 1
+        "attacksPerRound": 1,
+        "movement": [],
+        "macros": []
       },
       "infos": {
         "occupation": "",
@@ -318,7 +322,9 @@
           "checkPassed": null,
           "checkFailled": null
         },
-        "attacksPerRound": 1
+        "attacksPerRound": 1,
+        "movement": [],
+        "macros": []
       },
       "infos": {
         "type": null
@@ -377,7 +383,9 @@
       "spell",
       "talent",
       "status",
-      "chase"
+      "chase",
+      "armor",
+      "experiencePackage"
     ],
     "item": {
       "description": {
@@ -386,6 +394,7 @@
       },
       "quantity": 1,
       "weight": 0,
+      "price": {},
       "attributes": {}
     },
     "weapon": {
@@ -451,6 +460,7 @@
         "personal": null,
         "occupation": null,
         "archetype": null,
+        "experiencePackage": null,
         "experience": null
       },
       "value": -1,
@@ -697,7 +707,8 @@
       "description": {
         "chat": "",
         "value": "",
-        "keeper": ""
+        "keeper": "",
+        "alternativeNames": ""
       },
       "effects": [],
       "source": "",
@@ -804,6 +815,35 @@
       "started": false,
       "vehicle": false,
       "participants": []
+    },
+    "armor": {
+      "description": {
+        "value": "",
+        "keeper": ""
+      }
+    },
+    "experiencePackage": {
+      "description": {
+        "value": "",
+        "keeper": ""
+      },
+      "age": "",
+      "properties": {
+        "cthulhuGain": false,
+        "sanityLoss": false,
+        "sanitySame": false
+      },
+      "cthulhuGain": "",
+      "sanityLoss": "",
+      "backgroundQty": 1,
+      "backgroundInjury": false,
+      "backgroundStatus": false,
+      "backgroundEncounter": false,
+      "immunity": [],
+      "addSpells": false,
+      "points": 0,
+      "skills": [],
+      "groups": []
     }
   }
 }

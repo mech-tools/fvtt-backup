@@ -1,7 +1,5 @@
 # Call of Cthulhu 7th French (Unofficial)
 
-[Manuel d'utilisation](manuel/manuelcoc7fr.md) 📖
-
 ![](images/fvtt-coc7-mod-toc-off01.jpg)
 
 Bonjour.

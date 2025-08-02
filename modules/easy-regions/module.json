@@ -1,0 +1,48 @@
+{
+  "id": "easy-regions",
+  "title": "Easy Regions",
+  "description": "Provides some quality-of-life improvements for managing Regions",
+  "version": "1.0.1",
+  "compatibility": {
+    "minimum": 13,
+    "verified": 13.345
+  },
+  "authors": [
+    {
+      "name": "Farling",
+      "url": "https://github.com/farling42",
+      "email": "foundryvtt@amusingtime.uk",
+      "discord": "farling",
+      "ko-fi": "farling",
+      "patreon": "amusingtime",
+      "twitter": "@shambles42"
+    }
+  ],
+  "relationships": {
+    "recommended": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/easy-regions.js"
+  ],
+  "styles": [
+    "styles/easy-regions.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "languages/en.json"
+    }
+  ],
+  "url": "https://github.com/farling42/fvtt-easy-regions",
+  "manifest": "https://github.com/farling42/fvtt-easy-regions/releases/latest/download/module.json",
+  "download": "https://github.com/farling42/fvtt-easy-regions/releases/download/1.0.1/module.zip",
+  "license": "LICENSE",
+  "readme": "README.md"
+}
