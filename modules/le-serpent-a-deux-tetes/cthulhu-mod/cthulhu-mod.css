@@ -343,8 +343,8 @@
   }
 
   .journal-sheet .journal-page-content img:not(.centered) {
-    margin-left: .125rem;
-    margin-right: .125rem;
+    margin-left: .15rem;
+    margin-right: .15rem;
   }
 
   .journal-sheet .journal-page-content img.float-left, .journal-sheet .journal-page-content img.float-right {
@@ -355,6 +355,11 @@
     display: block;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .journal-sheet .journal-page-content img:has( + img), .journal-sheet .journal-page-content img + img {
+    display: inline;
+    max-width: calc(50% - .3rem);
   }
 }
 
