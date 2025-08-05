@@ -49,47 +49,6 @@
 .fr-basic .flex1 {
   flex: 1;
 }
-.flexrow {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-.flexrow > * {
-  flex: 1;
-}
-.flexrow .flex1 {
-  flex: 1;
-}
-.flexrow .flex2 {
-  flex: 2;
-}
-.flexrow .flex3 {
-  flex: 3;
-}
-.flexrow .flex4 {
-  flex: 4;
-}
-.flexcol {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-}
-.flexcol > * {
-  flex: 1;
-}
-.flexcol .flex1 {
-  flex: 1;
-}
-.flexcol .flex2 {
-  flex: 2;
-}
-.flexcol .flex3 {
-  flex: 3;
-}
-.flexcol .flex4 {
-  flex: 4;
-}
 .debug {
   border: 1px solid red;
 }
@@ -98,35 +57,38 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/martel/v10/PN_xRfK9oXHga0XtYQ.ttf) format('truetype');
+  src: url(https://fonts.gstatic.com/s/martel/v11/PN_xRfK9oXHga0XtYQ.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Martel';
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/martel/v10/PN_yRfK9oXHga0XVwe4ahQ.ttf) format('truetype');
+  src: url(https://fonts.gstatic.com/s/martel/v11/PN_yRfK9oXHga0XVwe4ahQ.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 300;
+  font-stretch: normal;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmSU5vAw.ttf) format('truetype');
+  src: url(https://fonts.gstatic.com/s/roboto/v48/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuaabWmT.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 400;
+  font-stretch: normal;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5Q.ttf) format('truetype');
+  src: url(https://fonts.gstatic.com/s/roboto/v48/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmT.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 500;
+  font-stretch: normal;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9vAw.ttf) format('truetype');
+  src: url(https://fonts.gstatic.com/s/roboto/v48/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWub2bWmT.ttf) format('truetype');
 }
 .resource-label {
   font-weight: bold;
@@ -214,6 +176,18 @@
   color: #000;
   text-shadow: 0 0 10px red;
   cursor: pointer;
+}
+/*
+amending some classes to help official modules work in v13
+*/
+.sizedCenteredImageContainer img {
+  display: inline-block;
+}
+.entryContent h5 {
+  color: white;
+}
+.entryContent .coriolis-sidebar aaaaaa h2 {
+  color: white;
 }
 .yzecoriolis.sheet.actor .display-grid {
   display: grid;
@@ -2246,7 +2220,7 @@
   height: 25px;
   padding: 0px 35px 0px 10px;
   border: none;
-  background: url("icons/drop-down-arrow.svg") 96% / 15% no-repeat rgba(113, 130, 190, 0.44);
+  background: url("icons/drop-down-arrow.svg") 6.4% no-repeat rgba(113, 130, 190, 0.44);
   background-position: right 0.7em top 50%;
 }
 .yzecoriolis.sheet.actor .sheet-body .bio-stats .bio-block select:focus {
@@ -2824,6 +2798,47 @@
 }
 .yzecoriolis.chat-item strong {
   text-transform: uppercase;
+}
+.yzecoriolis.sheet .window-content .flexcol {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.yzecoriolis.sheet .window-content .flexcol > * {
+  flex: 1;
+}
+.yzecoriolis.sheet .window-content .flexcol .flex1 {
+  flex: 1;
+}
+.yzecoriolis.sheet .window-content .flexcol .flex2 {
+  flex: 2;
+}
+.yzecoriolis.sheet .window-content .flexcol .flex3 {
+  flex: 3;
+}
+.yzecoriolis.sheet .window-content .flexcol .flex4 {
+  flex: 4;
+}
+.yzecoriolis.sheet .window-content .flexrow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.yzecoriolis.sheet .window-content .flexrow > * {
+  flex: 1;
+}
+.yzecoriolis.sheet .window-content .flexrow .flex1 {
+  flex: 1;
+}
+.yzecoriolis.sheet .window-content .flexrow .flex2 {
+  flex: 2;
+}
+.yzecoriolis.sheet .window-content .flexrow .flex3 {
+  flex: 3;
+}
+.yzecoriolis.sheet .window-content .flexrow .flex4 {
+  flex: 4;
 }
 .chat-item-img {
   border: none;

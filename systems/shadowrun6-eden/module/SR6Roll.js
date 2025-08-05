@@ -214,8 +214,8 @@ export default class SR6Roll extends Roll {
         this.finished.targets = this.configured.targetIds;
         console.log("SR6E | targetIds in Chat message: ", this.finished.targets);
         if (this.configured.rollType == RollType.Defense) {
-            console.log("SR6E | _evaluateTotal: calculate remaining damage");
-            this.finished.damage = Math.max(0, this.configured.damage + (this.configured.threshold - this.total));
+            console.log("SR6E | _evaluateTotal: calculating remaining damage", this.configured.damage??0, this.configured.threshold, this.total);
+            this.finished.damage = Math.max(0, this.configured.damage??0 + (this.configured.threshold - this.total));
             console.log("SR6E | _evaluateTotal: remaining damage = " + this.finished.damage);
         }
     }
@@ -448,23 +448,25 @@ export default class SR6Roll extends Roll {
                 this.finished.actionText = isPrivate ? "" : this.configured.actionText;
                 this.finished.allowSoak = this.configured.allowSoak;
                 if (this.configured.extended) {
+                    const pluralRules = new Intl.PluralRules(game.i18n.lang);
+                    const localizedIntervalScale = game.i18n.localize( `shadowrun6.dice.extended.intervalScale.${this.configured.intervalScale}_long_${pluralRules.select(this.configured.timePassed)}`);
                     if (this.configured.threshold === 0) {
                         this.finished.extendedResultMsg = game.i18n.format("shadowrun6.dice.extended.desc", { 
                             timePassed: this.configured.timePassed, 
-                            intervalScale: game.i18n.localize( `shadowrun6.dice.extended.intervalScale.${this.configured.intervalScale}_long${this.configured.timePassed==1?'':'_plural'}` ),
+                            intervalScale: localizedIntervalScale,
                             hits: this.configured.extendedTotal
                         });
                     } 
                     else if (this.finished.success) {
                         this.finished.extendedResultMsg = game.i18n.format("shadowrun6.dice.extended_success", { 
                             timePassed: this.configured.timePassed, 
-                            intervalScale: game.i18n.localize( `shadowrun6.dice.extended.intervalScale.${this.configured.intervalScale}_long${this.configured.timePassed==1?'':'_plural'}` ),
+                            intervalScale: localizedIntervalScale
                         });
                     }
                     else {
                         this.finished.extendedResultMsg = game.i18n.format("shadowrun6.dice.extended_failure", { 
                             timePassed: this.configured.timePassed, 
-                            intervalScale: game.i18n.localize( `shadowrun6.dice.extended.intervalScale.${this.configured.intervalScale}_long${this.configured.timePassed==1?'':'_plural'}` ),
+                            intervalScale: localizedIntervalScale
                         });
                     }
                 }

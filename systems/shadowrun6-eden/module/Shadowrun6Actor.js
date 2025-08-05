@@ -422,7 +422,7 @@ export class Shadowrun6Actor extends Actor {
             CONFIG.SR6.ATTRIBUTES.forEach((attr) => {
                 if (!(system.attributes[attr].base) || system.attributes[attr].base < 1)
                     system.attributes[attr].base = 1;
-                if (!(system.attributes[attr].mod) || (system.attributes[attr].mod < 0 && !isSpiritOrSprite(system)))
+                if (!(system.attributes[attr].mod)) //Allow negative mods OLD: //  || (system.attributes[attr].mod < 0 && !isSpiritOrSprite(system))
                     system.attributes[attr].mod = 0;
 
                 system.attributes[attr].pool = Math.max(1, system.attributes[attr].base + parseInt(system.attributes[attr].mod));
@@ -453,6 +453,7 @@ export class Shadowrun6Actor extends Actor {
         // Don't calculate monitors and initiative for spirits
         if (actorData.type != "Spirit") {
             if (data.physical) {
+                data.physical.mod = data.physical.mod ?? 0;
                 data.physical.base = 8 + Math.round(data.attributes["bod"].pool / 2);
                 data.physical.max = data.physical.base + data.physical.mod;
                 data.physical.value = data.physical.max - data.physical.dmg;
@@ -460,6 +461,7 @@ export class Shadowrun6Actor extends Actor {
                 data.overflow.value = 100-Math.round(data.overflow.dmg / data.overflow.max * 100);
             }
             if (data.stun) {
+                data.stun.mod = data.stun.mod ?? 0;
                 data.stun.base = 8 + Math.round(data.attributes["wil"].pool / 2);
                 data.stun.max = data.stun.base + data.stun.mod;
                 data.stun.value = data.stun.max - data.stun.dmg;
@@ -913,7 +915,7 @@ export class Shadowrun6Actor extends Actor {
                         system.stun = true;
                     }
                 }
-                let suffix = system.stun
+                let suffix = (item.calculated.stun ?? system.stun)
                     ? game.i18n.localize("shadowrun6.item.stun_damage")
                     : game.i18n.localize("shadowrun6.item.physical_damage");
                 system.dmgDef = item.calculated.dmg + suffix;
@@ -1703,7 +1705,7 @@ export class Shadowrun6Actor extends Actor {
         // Prepare check text
         let checkText = this._getSkillCheckText(roll);
         roll.targets = Array.from(game.user.targets.values(), token => new TokenData(token));
-        console.log("SR6E | ääääääääääääääääää targets ", roll.targets);
+        console.log("SR6E | Roll targets ", roll.targets);
         let highestDefenseRating = this._getHighestDefenseRating((a) => {
             console.log("SR6E | Determine defense rating of ", a);
             return a.system.defenserating.physical.pool;
@@ -1769,13 +1771,12 @@ export class Shadowrun6Actor extends Actor {
         roll.canAmpUpSpell = roll.spell.category === "combat";
         roll.canIncreaseArea = roll.spell.range === "line_of_sight_area" || roll.spell.range === "self_area";
 
+        roll.targets = Array.from(game.user.targets.values(), token => new TokenData(token));
+        console.log("SR6E | Roll targets ", roll.targets);
+
         if (roll.spell.category === "combat") {
-            if (roll.spell.type == "mana") {
-                roll.defendWith = Defense.SPELL_DIRECT;
-            }
-            else {
-                roll.defendWith = Defense.SPELL_INDIRECT;
-            }
+               roll.defendWith = roll.spell.combatSpellType;
+               roll.monitor = roll.item.system.damage;
         }
         else if (roll.spell.category === "manipulation") {
             roll.defendWith = Defense.SPELL_OTHER;
@@ -2170,12 +2171,13 @@ export class Shadowrun6Actor extends Actor {
     //-------------------------------------------------------------
     async importFromJSON(json) {
         console.log("SR6E | importFromJSON");
-        const data = JSON.parse(json);
-        // If Genesis-JSON-Export
-        if (data.jsonExporterVersion && data.system === "SHADOWRUN6") {
-            let newData = this.toObject();
-            newData.data.sex = data.gender;
+        const sourceData = JSON.parse(json);
+        // Checking if user is trying to import GENESIS or COMMLINK data
+        if (sourceData.system === "SHADOWRUN6") {
+            ui.notifications.error("shadowrun6.ui.notifications.wrong_import_file", { localize: true });
+            return;
         }
-        return super.importFromJSON(json);
+
+        return super.importFromJSON(JSON.stringify(sourceData));
     }
 }

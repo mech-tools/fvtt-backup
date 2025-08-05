@@ -1,0 +1,167 @@
+:root {
+  --lancer-initiative-icon-size: 1rem;
+  --lancer-initiative-done-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant .token-initiative {
+  flex-direction: row;
+}
+.lancer-initiative.combat-sidebar li.combatant .token-initiative button {
+  font-size: var(--lancer-initiative-icon-size);
+}
+.lancer-initiative.combat-sidebar li.combatant.active .token-initiative button[data-action=deactivateCombatantTurn] {
+  color: var(--lancer-initiative-done-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.player {
+  border-left: 3px solid var(--lancer-initiative-player-color);
+  border-right: 3px solid var(--lancer-initiative-player-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.player .token-initiative button {
+  color: var(--lancer-initiative-player-color);
+  background: unset;
+  filter: none;
+}
+.lancer-initiative.combat-sidebar li.combatant.player .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.lancer-initiative.combat-sidebar li.combatant.player::before {
+  border-color: var(--lancer-initiative-player-color);
+}
+:root {
+  --lancer-initiative-player-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant.friendly {
+  border-left: 3px solid var(--lancer-initiative-friendly-color);
+  border-right: 3px solid var(--lancer-initiative-friendly-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.friendly .token-initiative button {
+  color: var(--lancer-initiative-friendly-color);
+  background: unset;
+  filter: none;
+}
+.lancer-initiative.combat-sidebar li.combatant.friendly .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.lancer-initiative.combat-sidebar li.combatant.friendly::before {
+  border-color: var(--lancer-initiative-friendly-color);
+}
+:root {
+  --lancer-initiative-friendly-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant.neutral {
+  border-left: 3px solid var(--lancer-initiative-neutral-color);
+  border-right: 3px solid var(--lancer-initiative-neutral-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.neutral .token-initiative button {
+  color: var(--lancer-initiative-neutral-color);
+  background: unset;
+  filter: none;
+}
+.lancer-initiative.combat-sidebar li.combatant.neutral .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.lancer-initiative.combat-sidebar li.combatant.neutral::before {
+  border-color: var(--lancer-initiative-neutral-color);
+}
+:root {
+  --lancer-initiative-neutral-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant.enemy {
+  border-left: 3px solid var(--lancer-initiative-enemy-color);
+  border-right: 3px solid var(--lancer-initiative-enemy-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.enemy .token-initiative button {
+  color: var(--lancer-initiative-enemy-color);
+  background: unset;
+  filter: none;
+}
+.lancer-initiative.combat-sidebar li.combatant.enemy .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.lancer-initiative.combat-sidebar li.combatant.enemy::before {
+  border-color: var(--lancer-initiative-enemy-color);
+}
+:root {
+  --lancer-initiative-enemy-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant.secret {
+  border-left: 3px solid var(--lancer-initiative-secret-color);
+  border-right: 3px solid var(--lancer-initiative-secret-color);
+}
+.lancer-initiative.combat-sidebar li.combatant.secret .token-initiative button {
+  color: var(--lancer-initiative-secret-color);
+  background: unset;
+  filter: none;
+}
+.lancer-initiative.combat-sidebar li.combatant.secret .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+.lancer-initiative.combat-sidebar li.combatant.secret::before {
+  border-color: var(--lancer-initiative-secret-color);
+}
+:root {
+  --lancer-initiative-secret-color: #000000;
+}
+
+.lancer-initiative.combat-sidebar li.combatant .combatant-controls span {
+  color: var(--color-text-subtle);
+}
+.lancer-initiative.combat-sidebar .combat-controls .inline-control[data-action=nextTurn], .lancer-initiative.combat-sidebar .combat-controls .inline-control[data-action=previousTurn] {
+  display: none;
+}
+
+#lancer-initiative-settings #preview-combat {
+  max-height: min-content;
+  border-radius: 4px;
+}
+#lancer-initiative-settings #preview-combat .token-image {
+  height: var(--sidebar-item-height);
+  width: var(--sidebar-item-height);
+  max-width: var(--sidebar-item-height);
+  border: 0px;
+}
+#lancer-initiative-settings #preview-combat .fake-combatant {
+  padding: 8px;
+  color: var(--color-text-primary);
+}
+#lancer-initiative-settings #preview-combat .fake-combatant.fake {
+  border-left: 3px solid var(--lancer-initiative-fake-color);
+  border-right: 3px solid var(--lancer-initiative-fake-color);
+}
+#lancer-initiative-settings #preview-combat .fake-combatant.fake .token-initiative button {
+  color: var(--lancer-initiative-fake-color);
+  background: unset;
+  filter: none;
+}
+#lancer-initiative-settings #preview-combat .fake-combatant.fake .token-initiative button:hover {
+  background: var(--button-hover-background-color);
+  color: var(--button-hover-text-color);
+  transition: background-color 0.5s, border-color 0.5s;
+}
+#lancer-initiative-settings #preview-combat .fake-combatant.fake::before {
+  border-color: var(--lancer-initiative-fake-color);
+}
+:root {
+  --lancer-initiative-fake-color: #000000;
+}
+
+#lancer-initiative-settings .window-content {
+  gap: 0.5rem;
+}
+#lancer-initiative-settings footer button {
+  min-width: unset;
+}

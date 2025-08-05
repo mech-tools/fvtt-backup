@@ -61,7 +61,7 @@
                 "hint": "Multiplica as modificações do efeito pela quantidade do contador. Isso se aplica apenas a modificadores aditivos e multiplicativos."
             },
             "save": "Salvar",
-            "saveDefault": "Salvar como padrão para <strong>{status}</strong>"
+            "saveDefault": "Salvar como padrão para {status}"
         }
     }
 }

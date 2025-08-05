@@ -5,10 +5,10 @@
   "authors": [{
     "name": "Alex Okafor"
   }],
-  "version": "5.0.0",
+  "version": "6.0.0",
   "compatibility": {
-    "minimum": 10,
-    "verified": 12
+    "minimum": "13",
+    "verified": "13"
   },
   "scripts": [],
   "esmodules": ["modules/coriolis.js"],

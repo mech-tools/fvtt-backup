@@ -1,5 +1,5 @@
 import CSSEdit, { STYLES } from '../applications/cssEdit.js';
-import { copyToClipboard } from '../applications/formUtils.js';
+import { copyToClipboard, deleteFromClipboard } from '../applications/formUtils.js';
 import { MassEditGenericForm } from '../applications/generic/genericForm.js';
 import {
   getMassEditForm,
@@ -16,8 +16,9 @@ import { openPresetBrowser, PresetBrowser } from './presets/browser/browserApp.j
 import { Preset } from './presets/preset.js';
 import { Scenescape } from './scenescape/scenescape.js';
 import { enablePixelPerfectSelect } from './tools/selectTool.js';
-import { activeEffectPresetSelect, getDocumentName, localize, TagInput } from './utils.js';
+import { getDocumentName, localize } from './utils.js';
 import { editPreviewPlaceables, TransformBus } from './transformer.js';
+import { DragUploadSettingsApp } from './auxilaryFeatures/dragUpload.js';
 
 export function registerSettings() {
   // Register Settings
@@ -27,6 +28,29 @@ export function registerSettings() {
     config: false,
     type: Boolean,
     default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'dragUpload', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {
+      enabled: true,
+      target: 'drag_uploads',
+      source: 'data',
+      bucket: '',
+      presets: {},
+    },
+  });
+
+  game.settings.registerMenu(MODULE_ID, 'dragUpload', {
+    name: 'Drag Upload',
+    label: '',
+    scope: 'world',
+    label: 'Configure',
+    icon: 'fa-solid fa-folder-arrow-up',
+    type: DragUploadSettingsApp,
+    restricted: true,
   });
 
   game.settings.register(MODULE_ID, 'cssStyle', {
@@ -44,11 +68,10 @@ export function registerSettings() {
   });
 
   game.settings.registerMenu(MODULE_ID, 'cssEdit', {
-    name: localize('settings.cssEdit.name'),
-    hint: localize('settings.cssEdit.hint'),
-    label: '',
+    name: 'CSS',
+    label: 'Configure',
     scope: 'world',
-    icon: 'fas fa-cog',
+    icon: 'fa-solid fa-palette',
     type: CSSEdit,
     restricted: true,
   });
@@ -158,12 +181,14 @@ export function registerSettings() {
       documentLock: '',
       dropdownDocuments: ['MeasuredTemplate', 'Note', 'Region'],
       autoSaveFolders: [],
+      searchLimit: 1001,
     },
     onChange: (val) => {
       PresetBrowser.CONFIG = val;
     },
   });
   PresetBrowser.CONFIG = game.settings.get(MODULE_ID, 'presetBrowser');
+  if (!PresetBrowser.CONFIG.searchLimit) PresetBrowser.CONFIG.searchLimit = 1001;
 
   // end of Preset Settings
   // ======================
@@ -282,13 +307,15 @@ export function registerSettings() {
 }
 
 export function registerKeybinds() {
+  const { SHIFT, CONTROL, ALT } = foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS;
+
   game.keybindings.register(MODULE_ID, 'linker', {
     name: localize('keybindings.linkerMenu.name'),
     hint: localize('keybindings.linkerMenu.hint'),
     editable: [
       {
         key: 'KeyQ',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -336,7 +363,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'Delete',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -357,7 +384,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyD',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: async (event) => {
@@ -413,7 +440,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyE',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -434,13 +461,13 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyC',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
       // Check if a Mass Config form is open and if so copy data from there
       if (window.getSelection().toString() === '') {
-        const app = Object.values(ui.windows).find((app) => app.meObjects != null);
+        const app = Array.from(foundry.applications.instances.values()).find((app) => app.meObjects != null);
         if (app) return app.performMassCopy();
       }
 
@@ -471,7 +498,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyV',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -487,7 +514,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyF',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -503,20 +530,13 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyX',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
-      const app = Object.values(ui.windows).find((w) => w instanceof PresetBrowser);
-      if (app) {
-        app.close(true);
-        return;
-      }
-
-      // Special logic for populating Active Effect
-      const aeConfig = Object.values(ui.windows).find((x) => x instanceof ActiveEffectConfig);
-      if (aeConfig) {
-        activeEffectPresetSelect(aeConfig);
+      const presetBrowser = foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id);
+      if (presetBrowser) {
+        presetBrowser.close(true);
         return;
       }
 
@@ -533,9 +553,9 @@ export function registerKeybinds() {
     hint: localize('keybindings.presetApplyScene.hint'),
     editable: [],
     onDown: () => {
-      const app = Object.values(ui.windows).find((w) => w instanceof PresetBrowser);
-      if (app) {
-        app.close(true);
+      const presetBrowser = foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id);
+      if (presetBrowser) {
+        presetBrowser.close(true);
         return;
       }
       openPresetBrowser('Scene');
@@ -550,7 +570,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyR',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -575,7 +595,7 @@ export function registerKeybinds() {
     editable: [
       {
         key: 'KeyZ',
-        modifiers: ['Shift'],
+        modifiers: [SHIFT],
       },
     ],
     onDown: () => {
@@ -586,5 +606,31 @@ export function registerKeybinds() {
     },
     restricted: true,
     precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+  });
+
+  // Mass Edit form Copy/Paste
+  // May override core functions
+  game.keybindings.register(MODULE_ID, 'onCopy', {
+    name: 'KEYBINDINGS.Copy',
+    uneditable: [{ key: 'KeyC', modifiers: [CONTROL] }],
+    precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY,
+    onDown: () => {
+      if (window.getSelection().toString() === '') {
+        // Check if a Mass Config form is open and if so copy data from there
+        const meForm = getMassEditForm();
+        if (meForm?.performMassCopy()) return true;
+      }
+
+      deleteFromClipboard(canvas.activeLayer.constructor.documentName);
+    },
+  });
+  game.keybindings.register(MODULE_ID, 'onPaste', {
+    name: 'KEYBINDINGS.Paste',
+    uneditable: [{ key: 'KeyV', modifiers: [CONTROL] }],
+    precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY,
+    onDown: () => {
+      if (pasteData()) return true;
+    },
+    reservedModifiers: [ALT, SHIFT],
   });
 }

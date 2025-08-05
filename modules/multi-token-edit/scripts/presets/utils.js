@@ -215,11 +215,14 @@ export async function randomizeChildrenFolderColors(uuid, tree, callback) {
   const children = folder.children;
   if (!children.length) return;
 
-  const colorTemp = await renderTemplate(`modules/${MODULE_ID}/templates/randomizer/color.html`, {
-    method: 'interpolateReverse',
-    space: 'srgb',
-    hue: 'longer',
-  });
+  const colorTemp = await foundry.applications.handlebars.renderTemplate(
+    `modules/${MODULE_ID}/templates/randomizer/color.html`,
+    {
+      method: 'interpolateReverse',
+      space: 'srgb',
+      hue: 'longer',
+    }
+  );
 
   let colorSlider;
 
@@ -361,7 +364,6 @@ export function getDataBounds(documentName, data) {
         y2 = Math.max(y2, shape.y + (shape.radiusY ?? shape.height));
       }
     });
-    return { x1, y1, x2, y2, z1, z2 };
   } else {
     x1 = data.x || 0;
     y1 = data.y || 0;
@@ -442,6 +444,9 @@ export async function readJSONFile(url) {
  * Handle dropping of AmbientSound presets onto the sidebar playlists
  */
 export function registerSideBarPresetDropListener() {
+  // TODO v13
+  return;
+
   Hooks.on('renderSidebar', (sidebar, html) => {
     if (!game.user.isGM) return;
     html.on('drop', async (event) => {
@@ -550,7 +555,11 @@ export async function exportPresets(presets, fileName) {
     return preset;
   });
 
-  saveDataToFile(JSON.stringify(presets, null, 2), 'text/json', (fileName ?? 'mass-edit-presets') + '.json');
+  foundry.utils.saveDataToFile(
+    JSON.stringify(presets, null, 2),
+    'text/json',
+    (fileName ?? 'mass-edit-presets') + '.json'
+  );
 }
 
 /**
@@ -631,20 +640,16 @@ export function matchPreset(preset, search, negativeSearch) {
   return match;
 }
 
-export async function importSceneCompendium(pack) {
-  const compendium = game.packs.get(pack) ?? game.packs.getName(pack);
-  if (!compendium) throw Error('Invalid pack: ' + pack);
+export async function importSceneCompendium(scenePack, presetPack) {
+  const compendium = game.packs.get(scenePack) ?? game.packs.getName(scenePack);
+  if (!compendium) throw Error('Invalid scene pack: ' + pack);
   if (compendium.documentName !== 'Scene') throw Error('Pack provided is not a Scene compendium: ' + pack);
 
   const presets = [];
 
-  const workingPackTree = await PresetCollection.getTree('SceneP', {
-    externalCompendiums: false,
-    virtualDirectory: false,
-    setFormVisibility: false,
-  });
   // const index = workingPackTree.metaDoc?.flags[MODULE_ID].index;
-  const packIndex = workingPackTree.pack.index;
+  const packIndex = (game.packs.get(presetPack) ?? game.packs.getName(presetPack))?.index;
+  if (!packIndex) throw Error('Invalid preset pack: ' + presetPack);
 
   let alreadyImportedCount = 0;
   let nameUpdatedCount = 0;
@@ -677,7 +682,7 @@ export async function importSceneCompendium(pack) {
     }
   }
 
-  await PresetCollection.set(presets);
+  await PresetCollection.set(presets, presetPack);
 
   ui.notifications.info(`Imported scenes: ${presets.length}/${alreadyImportedCount + presets.length}`);
   if (nameUpdatedCount) {

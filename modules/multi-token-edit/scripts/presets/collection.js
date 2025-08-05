@@ -64,7 +64,7 @@ export class PresetCollection {
           name: 'VIRTUAL DIRECTORY',
           children: vTree.folders,
           uuid: 'virtual_directory',
-          color: '#1c5fa385',
+          color: '#00739f',
         });
         extFolders.push(topFolder);
 
@@ -130,7 +130,7 @@ export class PresetCollection {
     if (!foundry.utils.isEmpty(update)) {
       if (CONFIG.debug.MassEdit) console.log('Mass Edit - Index Cleanup', update);
       metaDoc.setFlag(MODULE_ID, 'index', update);
-      delete PresetTree._packTrees[pack.metadata.name];
+      delete PresetTree._packTrees[pack.metadata.id];
     }
   }
 
@@ -185,7 +185,7 @@ export class PresetCollection {
     });
 
     await metaDoc.setFlag(MODULE_ID, 'index', { [preset.id]: update });
-    delete PresetTree._packTrees[compendium.metadata.name];
+    delete PresetTree._packTrees[compendium.metadata.id];
   }
 
   /**
@@ -371,7 +371,7 @@ export class PresetCollection {
       opts.ids = deleteIds; // v12 fix
       await JournalEntry.deleteDocuments(deleteIds, opts);
       await metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
-      delete PresetTree._packTrees[compendium.metadata.name];
+      delete PresetTree._packTrees[compendium.metadata.id];
     }
   }
 
@@ -434,7 +434,7 @@ export class PresetCollection {
       metaDoc.setFlag(MODULE_ID, 'index', metaUpdate);
     }
 
-    delete PresetTree._packTrees[folderDoc.compendium.metadata.name];
+    delete PresetTree._packTrees[folderDoc.compendium.metadata.id];
     return await folderDoc.delete({ deleteSubfolders: deleteAll, deleteContents: deleteAll });
   }
 
@@ -635,37 +635,36 @@ export class PresetAPI {
     full = true,
     presets,
   } = {}) {
-    let results;
     if (uuid) {
-      results = [];
       const uuids = Array.isArray(uuid) ? uuid : [uuid];
-      return await PresetCollection.getBatch(uuids, { full });
+      presets = await PresetCollection.getBatch(uuids, { full });
     } else if (!name && !types && !folder && !tags && !query)
       throw Error('UUID, Name, Type, Folder, Tags, and/or Query required to retrieve Presets.');
     else if (query && (types || folder || tags || name))
       throw console.warn(`When 'query' is provided 'types', 'folder', 'tags', and 'name' arguments are ignored.`);
+    else {
+      let search, negativeSearch;
+      if (query) {
+        ({ search, negativeSearch } = parseSearchQuery(query, { matchAny }));
+      } else {
+        if (tags) {
+          if (Array.isArray(tags)) tags = { tags, matchAny };
+          else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
+        }
 
-    let search, negativeSearch;
-    if (query) {
-      ({ search, negativeSearch } = parseSearchQuery(query, { matchAny }));
-    } else {
-      if (tags) {
-        if (Array.isArray(tags)) tags = { tags, matchAny };
-        else if (typeof tags === 'string') tags = { tags: tags.split(','), matchAny };
+        search = { name, types, folder, tags };
       }
+      if (!search && !negativeSearch) return [];
 
-      search = { name, types, folder, tags };
-    }
-    if (!search && !negativeSearch) return [];
-
-    if (presets) {
-      presets = PresetCollection._searchPresets(presets, search, negativeSearch);
-    } else {
-      presets = PresetCollection._searchPresetTree(
-        await PresetCollection.getTree(null, { externalCompendiums, virtualDirectory }),
-        search,
-        negativeSearch
-      );
+      if (presets) {
+        presets = PresetCollection._searchPresets(presets, search, negativeSearch);
+      } else {
+        presets = PresetCollection._searchPresetTree(
+          await PresetCollection.getTree(null, { externalCompendiums, virtualDirectory }),
+          search,
+          negativeSearch
+        );
+      }
     }
 
     // Incase these presets are to be rendered, we set the _render and _visible flags to true
@@ -675,6 +674,8 @@ export class PresetAPI {
       p._render = true;
       p._visible = true;
     });
+
+    if (full) await PresetCollection.batchLoadPresets(presets);
 
     return presets;
   }
@@ -904,8 +905,8 @@ export class PresetTree {
     if (CONFIG.debug.MassEdit) console.time(pack.title);
 
     // Re-use tree if already parsed
-    if (!forceLoad && PresetTree._packTrees[pack.metadata.name]) {
-      const tree = PresetTree._packTrees[pack.metadata.name];
+    if (!forceLoad && PresetTree._packTrees[pack.metadata.id]) {
+      const tree = PresetTree._packTrees[pack.metadata.id];
       if (setFormVisibility) tree.setVisibility(type);
       if (CONFIG.debug.MassEdit) console.timeEnd(pack.title);
       return tree;
@@ -1005,7 +1006,8 @@ export class PresetTree {
     });
 
     if (setFormVisibility) tree.setVisibility(type);
-    PresetTree._packTrees[pack.metadata.name] = tree;
+
+    PresetTree._packTrees[pack.metadata.id] = tree;
 
     return tree;
   }

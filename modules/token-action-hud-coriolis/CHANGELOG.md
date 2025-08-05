@@ -1,4 +1,12 @@
 # CHANGELOG
+
+## 1.4.1
+Small bug fixing (additional console output) + v 13 foundry support
+
+
+## 1.4
+Token Action Hud 2.0 finally working
+
 ## 1.3.3
 forcing back TAH 1.5.7 dependency, module needs large overhaul to work with TAH 2.0
 

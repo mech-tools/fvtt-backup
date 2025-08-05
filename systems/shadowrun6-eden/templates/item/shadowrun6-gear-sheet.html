@@ -1,9 +1,8 @@
+{{> "systems/shadowrun6-eden/templates/item/item-sheet-header.hbs" }}
+
 <form class="flexcol {{cssClass}}" autocomplete="off" style="min-width: 605px; min-width: fit-content;">
     {{!-- Sheet Body --}}
     <section class="sheet-body">
-        <h2><input name="name" type="text" value="{{item.name}}" data-field="name" /></h2>
-        <img src="{{item.img}}" data-edit="img" title="{{item.name}}"
-            style="background-color: var(--color-light-2);" />
         <div class="section">
             <table>
                 <tr>
@@ -63,7 +62,7 @@
                     </td>
 					<td style="width: 4em; text-align: center">
                         <span style="vertical-align: middle;">{{localize 'shadowrun6.item.mode_ss'}}</span>
-                        <input name="modesSS" style="vertical-align: middle;" type="checkbox" {{checked item.system.modes.SS}} data-field="system.modes.SS" " />
+                        <input name="modesSS" style="vertical-align: middle;" type="checkbox" {{checked item.system.modes.SS}} data-field="system.modes.SS" />
                     </td>
                     <td style="width: 4em; text-align: center">
                         <span style="vertical-align: middle;">{{localize 'shadowrun6.item.mode_sa'}}</span>
@@ -89,7 +88,7 @@
                 <tr>
                     <th>{{localize 'shadowrun6.item.skill'}}</th>
                     <th>{{localize 'shadowrun6.item.skillspec'}}</th>
-                    
+
                     <th>
                         {{#if (or (eq item.system.skill "close_combat") (eq item.system.skillSpec "brawling")) }}
                         {{#if rollStrengthCombat}}
@@ -99,6 +98,11 @@
                             {{localize 'shadowrun6.item.ammunition'}}
                         {{/if}}
                     </th>
+                    {{#if (and (ne item.system.skill "close_combat") (ne item.system.skillSpec "brawling")) }}
+                    <th>
+                        {{localize 'shadowrun6.weapon.ammo_loaded'}}
+                    </th>
+                    {{/if}}
                     {{#if highStrengthReducesRecoil}}
                     <th>
                         {{localize 'shadowrun6.label.dual_hand'}}
@@ -108,7 +112,6 @@
                 <tr>
                     <td style="text-align: center">
                         <select name="gearSkill" data-field="system.skill" data-field="system.skill">
-                            <option value="">-</option>
                             {{selectOptions config.SKILLS_WEAPON selected=item.system.skill localize=true}}
                         </select>
                     </td>
@@ -128,6 +131,13 @@
                             <input name="ammocap" type="text" value="{{item.system.ammocap}}" data-field="system.ammocap" class="box centered" style="width: 3.4em" />
                         {{/if}}
                     </td>
+                    {{#if (and (ne item.system.skill "close_combat") (ne item.system.skillSpec "brawling")) }}
+                    <td style="text-align: center">
+                        <select name="ammoLoaded" data-field="system.ammoLoaded">
+                            {{selectOptions config.AMMO_TYPES selected=item.system.ammoLoaded localize=true}}
+                        </select>
+                    </td>
+                    {{/if}}
                     {{#if highStrengthReducesRecoil}}
                     <td style="text-align: center">
                         <input name="dualHand" style="vertical-align: middle;" type="checkbox" {{checked item.system.dualHand}} data-field="system.dualHand" />
@@ -146,16 +156,18 @@
                     <th>{{localize 'shadowrun6.item.natural'}}</th>
                 </tr>
                 <tr>
-                    <td><input name="defense" type="number" value="{{item.system.defense}}" data-field="system.defense"
-                            class="box centered" />
+                    <td class="centered">
+                        <input name="defense" type="number" value="{{item.system.defense}}" data-field="system.defense" class="box centered" style="width: 3em" />
                     </td>
-                    <td><input name="capacity" type="number" value="{{item.system.capacity}}" data-field="system.capacity"
-                            class="box centered" /></td>
-                    <td><input name="social" type="number" value="{{item.system.social}}" data-field="system.social"
-                            class="box centered" />
+                    <td class="centered">
+                        <input name="capacity" type="number" value="{{item.system.capacity}}" data-field="system.capacity" class="box centered" style="width: 3em" />
                     </td>
-                    <td><input name="natural" style="vertical-align: middle;" type="checkbox" {{checked item.system.natural}}
-                            data-field="system.natural" /></td>
+                    <td class="centered">
+                        <input name="social" type="number" value="{{item.system.social}}" data-field="system.social" class="box centered" style="width: 3em" />
+                    </td>
+                    <td class="centered">
+                        <input name="natural" type="checkbox" {{checked item.system.natural}} data-field="system.natural" />
+                    </td>
                 </tr>
             </table>
             {{/if}}
@@ -198,21 +210,21 @@
                     <th>{{localize 'shadowrun6.label.firewall.short'}}</th>
                 </tr>
                 <tr>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="dmg" type="number" value="{{item.system.dmg}}" data-field="system.dmg" class="box centered" style="width:2em" />
-                         / 
+                         /
                         <input type="number" value="{{item.maxtrixMonitor}}" class="box centered" style="width:2em" disabled>
                     </td>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="devRating" type="number" value="{{item.system.devRating}}" data-field="system.devRating" class="box centered" style="width:2em" />
                     </td>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="progSlots" type="number" value="{{item.system.progSlots}}" data-field="system.progSlots" class="box centered" style="width:2em" />
                     </td>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="matrixD" type="number" value="{{item.system.d}}" data-field="system.d" class="box centered" style="width:2em" />
                     </td>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="matrixF" type="number" value="{{item.system.f}}" data-field="system.f" class="box centered" style="width:2em" />
                     </td>
                 </tr>
@@ -229,9 +241,9 @@
                     <th>{{localize 'shadowrun6.label.sleaze.short'}}</th>
                 </tr>
                 <tr>
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="dmg" type="number" value="{{item.system.dmg}}" data-field="system.dmg" class="box centered" style="width:2em" />
-                         / 
+                         /
                         <input type="number" value="{{item.maxtrixMonitor}}" class="box centered" style="width:2em" disabled>
                     </td>
                     <td class="box centered"> <input name="devRatingDeck" type="number" value="{{item.system.devRating}}"
@@ -303,9 +315,9 @@
                     {{else}}
                     <td></td>
                     {{/if}}
-                    <td class="box centered"> 
+                    <td class="box centered">
                         <input name="dmg" type="number" value="{{item.system.dmg}}" data-field="system.dmg" class="box centered" style="width:2em" />
-                         / 
+                         /
                         <input type="number" value="{{item.maxtrixMonitor}}" class="box centered" style="width:2em" disabled>
                     </td>
 
@@ -313,10 +325,9 @@
             </table>
             {{/if}}
             <h3>{{localize 'shadowrun6.item.accessories'}}</h3>
-            <textarea name="accessories" class="box" type="text" data-field="system.accessories" cols="60" rows="4">{{item.system.accessories}}</textarea>
+            {{editor item.system.accessories target="system.accessories" button=true owner=owner editable=editable engine="prosemirror"}}
             <!-- ********** Beschreibung ********** -->
             <h3>{{localize 'shadowrun6.item.description'}}</h3>
-            <textarea name="description" class="box" type="text" data-field="system.description" cols="60" rows="6">{{item.system.description}}</textarea>
-        </div>
+            {{editor item.system.description target="system.description" button=true owner=owner editable=editable engine="prosemirror"}}
     </section>
 </form>

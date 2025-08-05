@@ -34,11 +34,9 @@ export class ScenescapeControls {
   static _checkActivateControls() {
     if (Scenescape.active) {
       ScenescapeControls._register();
-      this.displayBlackBars(Scenescape.blackBars);
       enablePixelPerfectSelect(Scenescape.pixelPerfect);
     } else {
       ScenescapeControls._unregister();
-      this.displayBlackBars(false);
       enablePixelPerfectSelect();
     }
   }
@@ -65,10 +63,13 @@ export class ScenescapeControls {
     let id;
 
     id = Hooks.on('renderTokenConfig', async (app, html, options) => {
-      const formGroup = await renderTemplate(`modules/${MODULE_ID}/templates/scenescapes/autoFlipFormGroup.html`, {
-        autoFlipX: app.object.getFlag(MODULE_ID, 'autoFlipX'),
-        autoFlipY: app.object.getFlag(MODULE_ID, 'autoFlipY'),
-      });
+      const formGroup = await foundry.applications.handlebars.renderTemplate(
+        `modules/${MODULE_ID}/templates/scenescapes/autoFlipFormGroup.html`,
+        {
+          autoFlipX: app.object.getFlag(MODULE_ID, 'autoFlipX'),
+          autoFlipY: app.object.getFlag(MODULE_ID, 'autoFlipY'),
+        }
+      );
       $(html).find('[name="mirrorX"]').closest('.form-group').after(formGroup);
     });
     this._hooks.push({ hook: 'renderTokenConfig', id });
@@ -138,7 +139,7 @@ export class ScenescapeControls {
     // Hide token elevation tooltip
     id = libWrapper.register(
       MODULE_ID,
-      'Token.prototype._getTooltipText',
+      'foundry.canvas.placeables.Token.prototype._getTooltipText',
       function (wrapped, ...args) {
         wrapped(...args);
         return '';
@@ -150,7 +151,7 @@ export class ScenescapeControls {
     // Instead of token border, show a filter outline
     id = libWrapper.register(
       MODULE_ID,
-      'Token.prototype._refreshState',
+      'foundry.canvas.placeables.Token.prototype._refreshState',
       function (wrapped, ...args) {
         const result = wrapped(...args);
         this.border.visible = false;
@@ -179,7 +180,7 @@ export class ScenescapeControls {
     // Hide AmbientLight warning on drag
     id = libWrapper.register(
       MODULE_ID,
-      'AmbientLight.prototype._canDragLeftStart',
+      'foundry.canvas.placeables.AmbientLight.prototype._canDragLeftStart',
       function (wrapped, ...args) {
         if (this.layer?.preview?.children.length) return false;
         return wrapped(...args);
@@ -188,15 +189,25 @@ export class ScenescapeControls {
     );
     this._wrapperIds.push(id);
 
-    id = libWrapper.register(MODULE_ID, 'TokenLayer.prototype.moveMany', this._moveMany, 'OVERRIDE');
-    this._wrapperIds.push(id);
-
-    id = libWrapper.register(MODULE_ID, 'TilesLayer.prototype.moveMany', this._moveMany, 'OVERRIDE');
+    id = libWrapper.register(
+      MODULE_ID,
+      'foundry.canvas.layers.TokenLayer.prototype.moveMany',
+      this._moveMany,
+      'OVERRIDE'
+    );
     this._wrapperIds.push(id);
 
     id = libWrapper.register(
       MODULE_ID,
-      'Token.prototype.getSize',
+      'foundry.canvas.layers.TilesLayer.prototype.moveMany',
+      this._moveMany,
+      'OVERRIDE'
+    );
+    this._wrapperIds.push(id);
+
+    id = libWrapper.register(
+      MODULE_ID,
+      'foundry.canvas.placeables.Token.prototype.getSize',
       function (...args) {
         let { width, height } = ScenescapeControls._getTokenDimensions(this.document);
 
@@ -211,7 +222,7 @@ export class ScenescapeControls {
 
     id = libWrapper.register(
       MODULE_ID,
-      'Token.prototype._onUpdate',
+      'foundry.canvas.placeables.Token.prototype._onUpdate',
       function (wrapped, changed, options, userId) {
         if (
           foundry.utils.getProperty(changed, `flags.${MODULE_ID}.width`) != null ||
@@ -230,7 +241,7 @@ export class ScenescapeControls {
      */
     id = libWrapper.register(
       MODULE_ID,
-      'PlaceableObject.prototype._onDragLeftStart',
+      'foundry.canvas.placeables.PlaceableObject.prototype._onDragLeftStart',
       function (event) {
         let objects = this.layer.options.controllableObjects ? this.layer.controlled : [this];
 
@@ -254,7 +265,7 @@ export class ScenescapeControls {
 
     id = libWrapper.register(
       MODULE_ID,
-      'PlaceableObject.prototype._canDragLeftStart',
+      'foundry.canvas.placeables.PlaceableObject.prototype._canDragLeftStart',
       function (wrapped, user, event) {
         if (TransformBus.active() || !this._canDrag(game.user, event)) return false;
 
@@ -284,7 +295,11 @@ export class ScenescapeControls {
     this.hud?.clear();
 
     const documentName = this.constructor.documentName;
-    const incrementScale = game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT) ? 0.5 : 1.0;
+    const incrementScale = game.keyboard.isModifierActive(
+      foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT
+    )
+      ? 0.5
+      : 1.0;
 
     for (const obj of objects) {
       const bottom = getDataPivotPoint(documentName, obj.document, PIVOTS.BOTTOM);
@@ -332,42 +347,12 @@ export class ScenescapeControls {
 
     return objects;
   }
-
-  static displayBlackBars(display) {
-    let bars = canvas.primary.getChildByName('scenescapeBlackBars');
-    if (!display && bars) {
-      canvas.primary.removeChild(bars)?.destroy(true);
-    } else if (display) {
-      if (bars) canvas.primary.removeChild(bars)?.destroy(true);
-
-      bars = new PIXI.Container();
-      bars.name = 'scenescapeBlackBars';
-      bars.sortLayer = PrimaryCanvasGroup.SORT_LAYERS.DRAWINGS;
-      bars.elevation = 99999999;
-      bars.restrictsLight = true;
-
-      const graphics = new PIXI.Graphics();
-      bars.addChild(graphics);
-
-      const dimensions = canvas.scene.dimensions;
-
-      graphics.beginFill(0x000000);
-      graphics.drawRect(0, 0, dimensions.width, dimensions.height);
-      graphics.endFill();
-
-      graphics.beginHole();
-      graphics.drawRect(dimensions.sceneX, dimensions.sceneY, dimensions.sceneWidth, dimensions.sceneHeight);
-      graphics.endHole();
-
-      canvas.primary.addChild(bars);
-    }
-  }
 }
 
 /**
  * Modified FoundryVTT `OutlineOverlayFilter` filter to not knockout the mesh
  */
-class OutlineFilter extends OutlineOverlayFilter {
+class OutlineFilter extends foundry.canvas.rendering.filters.OutlineOverlayFilter {
   /** @inheritdoc */
   static createFragmentShader() {
     return `

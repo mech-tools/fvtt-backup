@@ -450,6 +450,10 @@ export class SR6Config {
         physical: "shadowrun6.spell.type_physical",
         mana: "shadowrun6.spell.type_mana"
     };
+    combat_spell_type = {
+        spells_direct: "shadowrun6.spellfeatures.direct",
+        spells_indirect: "shadowrun6.spellfeatures.indirect"
+    };
     spell_duration = {
         instantaneous: "shadowrun6.spell.duration_instantaneous",
         sustained: "shadowrun6.spell.duration_sustained",
@@ -767,10 +771,19 @@ export class SR6Config {
         SECOND_LIFE: "shadowrun6.sin.second_life"
     };
     EXTENDED_INTERVALS = {
+        round: "shadowrun6.dice.extended.intervalScale.round_short",
         minute: "shadowrun6.dice.extended.intervalScale.minute_short",
         hour: "shadowrun6.dice.extended.intervalScale.hour_short",
         day: "shadowrun6.dice.extended.intervalScale.day_short",
         week: "shadowrun6.dice.extended.intervalScale.week_short",
         month: "shadowrun6.dice.extended.intervalScale.month_short",
+    };
+    AMMO_TYPES = {
+        regular: "shadowrun6.ammotypes.regular",
+        apds: "shadowrun6.ammotypes.apds",
+        explosive: "shadowrun6.ammotypes.explosive",
+        flechette: "shadowrun6.ammotypes.flechette",
+        gel: "shadowrun6.ammotypes.gel",
+        sticknshock: "shadowrun6.ammotypes.sticknshock"
     };
 }

@@ -22,7 +22,7 @@ export function enablePixelPerfectSelect(force = false) {
   } else if (!pixelPerfectTileWrapper) {
     pixelPerfectTileWrapper = libWrapper.register(
       MODULE_ID,
-      'Tile.prototype._draw',
+      'foundry.canvas.placeables.Tile.prototype._draw',
       async function (wrapped, ...args) {
         const result = await wrapped(...args);
 
@@ -54,7 +54,7 @@ export function enablePixelPerfectSelect(force = false) {
   } else if (!pixelPerfectTokenWrapper) {
     pixelPerfectTokenWrapper = libWrapper.register(
       MODULE_ID,
-      'Token.prototype.getShape',
+      'foundry.canvas.placeables.Token.prototype.getShape',
       function (wrapped, ...args) {
         const shape = wrapped(...args);
 
@@ -107,20 +107,6 @@ export function enableUniversalSelectTool() {
     setTimeout(() => _placeableRefresh(note), 10);
   });
 
-  // To avoid race conditions between multiple AmbientLight _onDragLeftCancel calls we'll defer the
-  // canvas.perception update within 'updateSource' via a 'defer' argument
-  libWrapper.register(
-    MODULE_ID,
-    'AmbientLight.prototype._onDragLeftCancel',
-    function (...args) {
-      Object.getPrototypeOf(AmbientLight).prototype._onDragLeftCancel.apply(this, args);
-      // V12
-      if (this.initializeLightSource) this.initializeLightSource({ defer: true });
-      else this.updateSource({ defer: true });
-    },
-    'OVERRIDE'
-  );
-
   if (foundry.utils.isNewerVersion(game.version, 12)) registerRegionWrappers();
 }
 
@@ -128,47 +114,40 @@ export function enableUniversalSelectTool() {
  * Insert select tools if missing
  */
 function _getControlButtons(controls) {
-  for (const control of controls) {
-    if (['lighting', 'sounds', 'measure'].includes(control.name)) {
-      if (!control.tools.find((t) => t.name === 'select')) {
-        control.tools.unshift({
-          name: 'select',
-          title: 'CONTROLS.CommonSelect',
-          icon: 'fas fa-expand',
-        });
-        control.activeTool = 'select';
-      }
-    }
-  }
+  ['lighting', 'sounds', 'templates'].forEach((layer) => {
+    controls[layer].tools.select = {
+      name: 'select',
+      order: 0,
+      title: 'CONTROLS.CommonSelect',
+      icon: 'fas fa-expand',
+      active: true,
+    };
+  });
 
   if (!game.settings.get(MODULE_ID, 'disablePixelPerfectHoverButton')) {
-    for (const control of controls) {
-      if (control.name === 'tiles') {
-        control.tools.push({
-          name: 'pixelPerfect',
-          title: 'Pixel Perfect Hover',
-          icon: 'fa-solid fa-bullseye-pointer',
-          visible: true,
-          active: game.settings.get(MODULE_ID, 'pixelPerfectTile'),
-          toggle: true,
-          onClick: () => {
-            game.settings.set(MODULE_ID, 'pixelPerfectTile', !game.settings.get(MODULE_ID, 'pixelPerfectTile'));
-          },
-        });
-      } else if (control.name === 'token') {
-        control.tools.push({
-          name: 'pixelPerfect',
-          title: 'Pixel Perfect Hover',
-          icon: 'fa-solid fa-bullseye-pointer',
-          visible: true,
-          active: game.settings.get(MODULE_ID, 'pixelPerfectToken'),
-          toggle: true,
-          onClick: () => {
-            game.settings.set(MODULE_ID, 'pixelPerfectToken', !game.settings.get(MODULE_ID, 'pixelPerfectToken'));
-          },
-        });
-      }
-    }
+    controls.tiles.tools.pixelPerfect = {
+      name: 'pixelPerfect',
+      title: 'Pixel Perfect Hover',
+      icon: 'fa-solid fa-bullseye-pointer',
+      visible: true,
+      active: game.settings.get(MODULE_ID, 'pixelPerfectTile'),
+      toggle: true,
+      onClick: () => {
+        game.settings.set(MODULE_ID, 'pixelPerfectTile', !game.settings.get(MODULE_ID, 'pixelPerfectTile'));
+      },
+    };
+
+    controls.tokens.tools.pixelPerfect = {
+      name: 'pixelPerfect',
+      title: 'Pixel Perfect Hover',
+      icon: 'fa-solid fa-bullseye-pointer',
+      visible: true,
+      active: game.settings.get(MODULE_ID, 'pixelPerfectToken'),
+      toggle: true,
+      onClick: () => {
+        game.settings.set(MODULE_ID, 'pixelPerfectToken', !game.settings.get(MODULE_ID, 'pixelPerfectToken'));
+      },
+    };
   }
 }
 
@@ -180,35 +159,36 @@ function registerRegionWrappers() {
   // Enable drag
   libWrapper.register(
     MODULE_ID,
-    'Region.prototype._canDrag',
-    function () {
-      return game.user.isGM;
+    'foundry.canvas.placeables.Region.prototype._canDrag',
+    function (user, event) {
+      return user.isGM;
     },
     'OVERRIDE'
   );
 
   libWrapper.register(
     MODULE_ID,
-    'Region.prototype._onDragLeftMove',
+    'foundry.canvas.placeables.Region.prototype._onDragLeftMove',
     function (event) {
       canvas._onDragCanvasPan(event);
       const { clones, destination, origin } = event.interactionData;
-      const { x1, y1 } = getDataBounds('Region', this.document);
+      const { x, y } = getDataBounds('Region', this.document);
 
       // Calculate the (snapped) position of the dragged object
       let position = {
-        x: x1 + (destination.x - origin.x),
-        y: y1 + (destination.y - origin.y),
+        x: x + (destination.x - origin.x),
+        y: y + (destination.y - origin.y),
       };
 
       if (!event.shiftKey) position = this.layer.getSnappedPoint(position);
 
-      const dx = position.x - x1;
-      const dy = position.y - y1;
+      const dx = position.x - x;
+      const dy = position.y - y;
       for (const c of clones || []) {
-        DataTransformer.apply('Region', c.document.toObject(), { x: 0, y: 0 }, { x: dx, y: dy }, c);
+        const data = c.document.toObject();
+        DataTransformer.apply('Region', data, { x: 0, y: 0 }, { x: dx, y: dy }, c);
         c.visible = true;
-        c._onUpdate({ shapes: null });
+        c.document._onUpdate({ shapes: null }, { preview: true });
       }
     },
     'OVERRIDE'
@@ -216,7 +196,7 @@ function registerRegionWrappers() {
 
   libWrapper.register(
     MODULE_ID,
-    'Region.prototype._prepareDragLeftDropUpdates',
+    'foundry.canvas.placeables.Region.prototype._prepareDragLeftDropUpdates',
     function (event) {
       const updates = [];
       for (const clone of event.interactionData.clones) {
@@ -230,7 +210,7 @@ function registerRegionWrappers() {
   // Enable rotation
   libWrapper.register(
     MODULE_ID,
-    'Region.prototype.rotate',
+    'foundry.canvas.placeables.Region.prototype.rotate',
     async function (delta, snap) {
       if (game.paused && !game.user.isGM) {
         ui.notifications.warn('GAME.PausedWarning', { localize: true });
@@ -253,7 +233,7 @@ function registerRegionWrappers() {
 
   libWrapper.register(
     MODULE_ID,
-    'RegionLayer.prototype._onMouseWheel',
+    'foundry.canvas.layers.RegionLayer.prototype._onMouseWheel',
     function (event) {
       // Identify the hovered light source
       const region = this.hover;

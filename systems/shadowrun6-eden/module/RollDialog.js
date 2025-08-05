@@ -1,5 +1,6 @@
 import { SYSTEM_NAME } from "./constants.js";
 import { SR6ChatMessageData } from "./dice/RollTypes.js";
+import { MonitorType } from "./config.js";
 function isLifeform(obj) {
     return obj.attributes != undefined;
 }
@@ -50,6 +51,7 @@ export class RollDialog extends Dialog {
     dialogResult;
     /** Edge after applying gain and boost cost */
     edge = 0;
+    edgeSpending = 0;
     /** Dice added or substracted to the pool */
     modifier = 0;
     constructor(data, options) {
@@ -73,6 +75,7 @@ export class RollDialog extends Dialog {
         html.find("select[name='fireMode']").change(this._onFiringModeChange.bind(this));
         html.find("select[name='bfType']").change(this._onBurstModeChange.bind(this));
         html.find("select[name='fullAutoArea']").change(this._onAreaChange.bind(this));
+        html.find("select[name='ammoLoaded']").change(this._onAmmoChange.bind(this));
         /*
         if (!this.data.target) {
         html.find('.calc-edge').show(this._onNoTarget.bind(this));
@@ -126,6 +129,7 @@ export class RollDialog extends Dialog {
      * HTML form
      */
     _onCalcEdge(event) {
+        console.log("SR6E | RollDialog._onCalcEdge");
         let configured = this.dialogResult;
         let prepared = this.prepared;
         if (!configured.actor)
@@ -245,6 +249,7 @@ export class RollDialog extends Dialog {
     }
     //-------------------------------------------------------------
     _updateEdgeBoosts(elem, available) {
+        console.log("SR6E | RollDialog._updateEdgeBoosts");
         let newEdgeBoosts = CONFIG.SR6.EDGE_BOOSTS.filter((boost) => boost.when == "PRE" && boost.cost <= available);
         // Node for inserting new data before
         let insertBeforeElem;
@@ -270,15 +275,14 @@ export class RollDialog extends Dialog {
     }
     //-------------------------------------------------------------
     _updateEdgeActions(elem, available) {
+        console.log("SR6E | RollDialog._updateEdgeActions");
         let newEdgeActions = CONFIG.SR6.EDGE_ACTIONS.filter((action) => action.cost <= available);
         // Remove previous data
         var array = Array.from(elem.children);
         array.forEach((child) => {
-            /*
-            if (child.value!="none") {
+            if (child.value != "none") {
                 elem.removeChild(child)
             }
-                    */
         });
         // Add new data
         newEdgeActions.forEach((action) => {
@@ -401,10 +405,16 @@ export class RollDialog extends Dialog {
         const boostSelected = CONFIG.SR6.EDGE_BOOSTS.find((boost) => boost.id == boostOrActionId);
         const actionSelected = CONFIG.SR6.EDGE_ACTIONS.find((action) => action.id == boostOrActionId);
         console.log("SR6E | Selected Edge Boost: `" + game.i18n.localize("shadowrun6.edge_boost." + boostOrActionId) + "`, that costs " + boostSelected?.cost);
+
+        this.edge += this.edgeSpending; // Add old edge spend back to the edge counter in the dialog
         if (boostSelected && boostSelected?.cost) {
             this.edge = this.edge - boostSelected.cost;
+            this.edgeSpending = boostSelected.cost;
         } else if (actionSelected && actionSelected?.cost) {
             this.edge = this.edge - actionSelected.cost;
+            this.edgeSpending = actionSelected.cost;
+        } else {
+            this.edgeSpending = 0;
         }
         $("label[name='edgePool']")[0].innerText = this.edge.toString();
 
@@ -542,12 +552,10 @@ export class RollDialog extends Dialog {
             console.log('SR6E | _prepareFireModeAR: dual handedness, changing arMod to', arMod);
         }
 
-        // Calculate reduced attack rating
+        // Calculate changed attack rating
         prepared.calcAttackRating = [...prepared.item.calculated.attackRating];
         prepared.calcAttackRating.forEach((element, index) => {
-            prepared.calcAttackRating[index] = parseInt(element) + parseInt(arMod);
-            if (prepared.calcAttackRating[index] <= 0)
-                prepared.calcAttackRating[index] = 0;
+            prepared.calcAttackRating[index] = Math.max(0, parseInt(element) + parseInt(arMod) );
         });
         this.html.find("td[name='calcAR']").text(attackRatingToString(prepared.calcAttackRating));
         // Update the range selector for attack rating
@@ -566,7 +574,7 @@ export class RollDialog extends Dialog {
         this.html.find("span[name='calcDamage']").text(prepared.calcDamage.toString());
         // Calculate modified pool
         prepared.calcPool = prepared.pool + poolMod;
-        prepared.calcRounds = rounds;
+        prepared.calcRounds = rounds ?? prepared.calcRounds;
         this.html.find("td[name='calcRounds']").text(prepared.calcRounds.toString());
     }
     //-------------------------------------------------------------
@@ -585,6 +593,42 @@ export class RollDialog extends Dialog {
         prepared.faArea = fullAutoElement.value;
         this._prepareFireModeAR(arMod, dmgMod, rounds);
         this._recalculateBaseAR();
+    }
+    //-------------------------------------------------------------
+    async _onAmmoChange(event) {
+        console.log("SR6E | _onAmmoChange | updating item calculcated attributes");
+        const prepared = this.options.prepared;   // WeaponRoll
+        const ammoLoadedElement = document.getElementById("ammoLoaded");
+        if (!ammoLoadedElement)
+            return;
+
+        // Update the weapon
+        await this.prepared.item.update({"system.ammoLoaded": ammoLoadedElement.value})
+        
+        // Recalculate firing modes
+        const fireModeElement = document.getElementById("fireMode");
+        if (!fireModeElement)
+            return;
+
+        switch (fireModeElement.value) {
+            case "SS":
+                this._onFiringModeChange();
+                break;
+            case "SA":
+                this._onFiringModeChange();
+                break;
+            case "BF":
+                this._onBurstModeChange();
+                break;
+            case "FA":
+                this._onAreaChange();
+                break;
+        }
+
+        // Updating DV type
+        this.html.find("span[name='calcDamagedMonitor']").text( prepared.item.calculated.stun?'S':'P' );
+        prepared.monitor = prepared.item.calculated.stun ? MonitorType.STUN : MonitorType.PHYSICAL ;
+
     }
     //-------------------------------------------------------------
     _onAttribChange(event) {

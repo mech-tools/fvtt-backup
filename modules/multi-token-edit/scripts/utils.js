@@ -7,7 +7,6 @@ import {
   VIDEO_EXTENSIONS,
 } from './constants.js';
 import { Picker } from './picker.js';
-import { PresetBrowser } from './presets/browser/browserApp.js';
 import { Preset } from './presets/preset.js';
 import { Spawner } from './presets/spawner.js';
 import { applyRandomization } from './randomizer/randomizerUtils.js';
@@ -50,7 +49,7 @@ export function is3DModel(path) {
 }
 
 export async function recursiveTraverse(path, source, bucket, files = []) {
-  const result = await FilePicker.browse(source, path, {
+  const result = await foundry.applications.apps.FilePicker.browse(source, path, {
     bucket: bucket,
   });
 
@@ -275,86 +274,6 @@ export function flattenToDepth(obj, d = 0) {
   return flat;
 }
 
-export function activeEffectPresetSelect(aeConfig) {
-  const showPresetGeneric = function (documentName) {
-    new PresetBrowser(
-      aeConfig,
-      async (preset) => {
-        if (!foundry.utils.isEmpty(preset.randomize)) {
-          await applyRandomization(preset.data, null, preset.randomize);
-        }
-
-        const changes = aeConfig.object.changes ?? [];
-        let nChanges = [];
-
-        Object.keys(preset.data[0]).forEach((k) => {
-          let value;
-          if (foundry.utils.getType(preset.data[0][k]) === 'string') value = preset.data[0][k];
-          else value = JSON.stringify(preset.data[0][k]);
-
-          nChanges.push({
-            key: documentName === 'Token' ? 'ATL.' + k : k,
-            mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
-            priority: 20,
-            value,
-          });
-        });
-
-        for (let i = changes.length - 1; i >= 0; i--) {
-          if (!nChanges.find((nc) => nc.key === changes[i].key)) nChanges.unshift(changes[i]);
-        }
-
-        aeConfig.object.update({ changes: nChanges });
-      },
-      documentName
-    ).render(true);
-  };
-
-  const showPresetActiveEffect = function () {
-    new PresetBrowser(
-      aeConfig,
-      (preset) => {
-        const changes = aeConfig.object.changes ?? [];
-        let nChanges = [];
-
-        preset.data[0].changes?.forEach((change) => {
-          if (change.key) {
-            nChanges.push(
-              foundry.utils.mergeObject({ mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, priority: 20 }, change)
-            );
-          }
-        });
-
-        for (let i = changes.length - 1; i >= 0; i--) {
-          if (!nChanges.find((nc) => nc.key === changes[i].key)) nChanges.unshift(changes[i]);
-        }
-
-        aeConfig.object.update({ changes: nChanges });
-      },
-      'ActiveEffect'
-    ).render(true);
-  };
-
-  new Dialog({
-    title: localize('common.presets'),
-    content: ``,
-    buttons: {
-      activeEffect: {
-        label: 'ActiveEffect',
-        callback: () => showPresetActiveEffect(),
-      },
-      token: {
-        label: 'Token',
-        callback: () => showPresetGeneric('Token'),
-      },
-      actor: {
-        label: 'Actor',
-        callback: () => showPresetGeneric('Actor'),
-      },
-    },
-  }).render(true);
-}
-
 export function getDocumentName(doc) {
   const documentName = doc.document ? doc.document.documentName : doc.documentName;
   return documentName ?? 'NONE';
@@ -549,11 +468,11 @@ export class SeededRandom {
   }
 }
 
+/**
+ * TODO:
+ * Is currently used just for the Brush TMFX field. Explore replacing it with foundry's StringTag input
+ */
 export class TagInput {
-  static simplifyString(str) {
-    return str.replace(/[^0-9a-zA-Z_\- ]/gi, '').toLowerCase();
-  }
-
   static registerHandlebarsHelper() {
     Handlebars.registerHelper('tagInput', (options) => {
       const name = options.hash.name;
@@ -612,7 +531,7 @@ export class TagInput {
         .split(',')
         .map((t) => {
           t = t.trim();
-          if (simplifyTags) t = this.simplifyString(t);
+          if (simplifyTags) t = t.slugify({ strict: true });
           return t;
         })
         .filter(Boolean);
@@ -652,6 +571,23 @@ export class TagInput {
   }
 }
 
+export class DragHoverOverlay {
+  static attachListeners(html, { condition = null, hoverOutCallback = null } = {}) {
+    const overlay = $(html);
+
+    overlay
+      .closest('.window-content')
+      .on('mouseover', () => {
+        if (condition?.()) overlay.show();
+        else overlay.hide();
+      })
+      .on('mouseout', () => {
+        overlay.hide();
+        hoverOutCallback?.();
+      });
+  }
+}
+
 /**
  * Activates Picker allowing drag selection of document across all placeables layers
  * @returns {Array[CanvasDocumentMixin]}
@@ -686,7 +622,7 @@ export async function loadImageVideoDimensions(src) {
   let width, height;
 
   try {
-    const baseTexture = (await loadTexture(src)).baseTexture;
+    const baseTexture = (await foundry.canvas.loadTexture(src)).baseTexture;
     width = baseTexture.width;
     height = baseTexture.height;
   } catch (e) {}
@@ -741,17 +677,17 @@ export async function spawnSceneAsPreset(scene) {
     if (!presetData) presetData = attached.shift();
   }
 
+  if (!presetData) {
+    ui.notifications.warn('Attempting to spawn an empty scene.');
+    return;
+  }
+
   const preset = new Preset({ documentName: presetData.documentName, data: [presetData.data], attached });
 
-  const documents = await Spawner.spawnPreset({
+  await Spawner.spawnPreset({
     preset,
     preview: true,
     previewRestrictedDocuments: preset.documentName === 'AmbientLight' ? null : ['AmbientLight'],
     pivot: MassEdit.PIVOTS.CENTER,
   });
-
-  // const linkId = foundry.utils.randomID();
-  // documents.forEach((d) => {
-  //   LinkerAPI.addLink(d, linkId);
-  // });
 }

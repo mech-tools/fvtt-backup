@@ -63,16 +63,6 @@
     transform: translateY(-100%);
 }
 
-.token-sheet .tab[data-tab="resources"] label,
-.brawlbar-configuration label {
-    white-space: nowrap;
-}
-
-.token-sheet .tab[data-tab="resources"] .form-fields label,
-.brawlbar-configuration .form-fields label {
-    display: flex;
-}
-
 input.indent-input {
     text-align: right;
     width: 32px;
@@ -107,26 +97,38 @@ div.indent-details {
     flex-wrap: nowrap;
 }
 
-.token-resources .bar-container {
+.token-resources .bb-bar-container {
     min-height: 130px;
     max-height: 700px;
     overflow-y: auto;
     overflow-x: visible;
 }
-.bar-controls {
-    margin-top: auto;
-        display: flex;
+
+.token-resources label {
+    white-space: nowrap;
+}
+
+.token-resources .sep {
+    margin: 0;
+    flex: 0;
+}
+
+.bb-form-field-col > label {
+    display: inline-block;
+    width: 100%;
 }
 
 button.brawlbar-add {
     width: 80%;
     align-self: center;
+    margin-bottom: calc(-16px + 0.5rem); /* Negative row gap + footer gap */
 }
 
 .bar-controls #context-menu {
     text-align: left;
     bottom: calc(100% + 2px);
     top: unset;
+    pointer-events: all;
 }
 
 .bar-controls #context-menu .context-item {

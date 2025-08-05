@@ -1,0 +1,67 @@
+{
+    "id": "yze-combat",
+    "title": "Year Zero Engine: ⚔️ Combat",
+    "description": "Adds YZE combat mechanics to a game system: Card initiative, slow & fast actions, groups, and more!",
+    "version": "1.4.0",
+    "compatibility": {
+        "minimum": 13.341,
+        "verified": 13.345,
+        "maximum": 13
+    },
+    "authors": [
+        {
+            "name": "Stefouch",
+            "discord": "Stefouch#5202",
+            "url": "https://stefouch.be"
+        },
+        {
+            "name": "aMediocreDad",
+            "url": "https://github.com/aMediocreDad"
+        },
+        {
+            "name": "DrOgres",
+            "url": "https://github.com/DrOgres"
+        },
+        {
+            "name": "FloRad",
+            "url": "https://gitlab.com/florad92"
+        }
+    ],
+    "bugs": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt/issues",
+    "media": [],
+    "scripts": [],
+    "esmodules": [
+        "yze-combat.js"
+    ],
+    "styles": [
+        "yze-combat.css"
+    ],
+    "packs": [],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        },
+        {
+            "lang": "fr",
+            "name": "Français",
+            "path": "lang/fr.json"
+        },
+        {
+            "lang": "sv",
+            "name": "Svenska",
+            "path": "lang/sv.json"
+        }
+    ],
+    "url": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt",
+    "readme": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt/blob/main/README.md",
+    "changelog": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt/blob/main/CHANGELOG.md",
+    "license": "LICENSE.txt",
+    "socket": true,
+    "manifest": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt/releases/latest/download/module.json",
+    "download": "https://github.com/fvtt-fria-ligan/yearzero-combat-fvtt/releases/download/1.4.0/module.zip",
+    "flags": {
+        "allowBugReporter": true
+    }
+}

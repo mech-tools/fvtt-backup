@@ -13,11 +13,7 @@ import {
 } from "./item/item.js";
 import * as migrations from "./migration.js";
 import { preloadHandlerbarsTemplates } from "./templates.js";
-import {
-  addDarknessPoints,
-  spendDarknessPoints,
-  displayDarknessPoints,
-} from "./darkness-points.js";
+import { displayDarknessPoints } from "./darkness-points.js";
 import { getActorDataById } from "./util.js";
 import {
   importShipSheetTutorial,
@@ -39,8 +35,10 @@ Hooks.once("init", async function () {
   // Setup TinyMCE stylings
   CONFIG.TinyMCE.content_css = "systems/yzecoriolis/css/yzecoriolismce.css";
 
+  // foundry.appv1.sheets.JournalSheet;
+  // JournalEntry
   DocumentSheetConfig.registerSheet(
-    JournalEntry,
+    foundry.appv1.sheets.JournalSheet,
     "yzecoriolis",
     coriolisJournalSheet,
     { makeDefault: true }
@@ -134,7 +132,7 @@ Hooks.once("init", async function () {
   });
 
   Handlebars.registerHelper("if_objectNotEmpty", function (obj, opts) {
-    if (typeof obj === 'object' && obj !== null) {
+    if (typeof obj === "object" && obj !== null) {
       if (Object.keys(obj).length > 0) {
         return opts.fn(this);
       } else {
@@ -143,7 +141,6 @@ Hooks.once("init", async function () {
     } else {
       return opts.inverse(this);
     }
-    
   });
 
   Handlebars.registerHelper("getSkillName", function (skillkey) {
@@ -291,7 +288,7 @@ Hooks.once("init", async function () {
   });
 
   Handlebars.registerHelper("subtract", function (a, b) {
-    return parseInt(a)-parseInt(b);
+    return parseInt(a) - parseInt(b);
   });
 });
 
@@ -341,70 +338,49 @@ Hooks.once("setup", function () {
   }
 });
 
-// Activate chat listeners for coriolis
 // eslint-disable-next-line no-unused-vars
-Hooks.on("renderChatLog", (log, html, data) => {
-  coriolisChatListeners(html);
-});
-
-Hooks.on("renderChatMessage", (app, html, msg) => {
+Hooks.on("renderChatMessageHTML", (msg, html, context) => {
+  coriolisChatListeners($(html));
   // Do not display "Blind" chat cards to non-gm
-  if (html.hasClass("blind") && !game.user.isGM) {
+  if ($(html).hasClass("blind") && !game.user.isGM) {
     // since the header has timestamp content we'll remove the content instead.
     // this avoids an NPE when foundry tries to update the timestamps.
-    html.find(".message-content").remove();
+    $(html).find(".message-content").remove();
   }
   // remove push option from non-authors
   if (!game.user.isGM && msg.message.user !== game.user.id) {
-    html.find(".dice-push").remove();
+    $(html).find(".dice-push").remove();
   }
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {
-  let group = controls.find((b) => b.name == "token");
-  group.tools.push(
-    {
-      name: "add",
-      title: "YZECORIOLIS.DarknessPointsAdd",
-      icon: "fas fa-plus",
-      buttons: true,
-      visible: game.user.isGM,
-      onClick: () => {
-        addDarknessPoints(1);
-      },
-    },
-    {
-      name: "substract",
-      title: "YZECORIOLIS.DarknessPointsRemove",
-      icon: "fas fa-minus",
-      buttons: true,
-      visible: game.user.isGM,
-      onClick: () => {
-        spendDarknessPoints(1);
-      },
-    },
-    {
+  let dpControls = {
+    inspect: {
       name: "inspect",
       title: "YZECORIOLIS.DarknessPoints",
       icon: "fas fa-question",
-      buttons: true,
+      button: true,
       visible: game.user.isGM,
-      onClick: () => {
+      onChange: () => {
         displayDarknessPoints();
       },
     },
-    {
+    display: {
       name: "display",
       title: "YZECORIOLIS.DarknessPointsControls",
       icon: "fas fa-moon",
-      buttons: true,
+      button: true,
       visible: game.settings.get("yzecoriolis", "DarknessPointsVisibility")
         ? true
         : game.user.isGM,
-      onClick: () => {
+      onChange: () => {
         DarknessPointDisplay.render();
       },
-    }
+    },
+  };
+  controls.tokens.tools = foundry.utils.mergeObject(
+    controls.tokens.tools,
+    dpControls
   );
 });
 

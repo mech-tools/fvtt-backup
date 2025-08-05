@@ -1,0 +1,45 @@
+# Quality of Life improvements!
+*We've got a new release chummers!*
+
+With this release, we released multiple quality of life improvements. You can now copy/paste statblocks from a PDF into Foundry again! (was a lost feature from old V10 code) Note: you do need to use a proper PDF reader to copy/paste.
+Direct/Indirect combat spells are now working correctly, and you get proper error messages when importing the wrong GENESIS/COMMLINK file. A personal pain was deleting items on accident, so a confirmation dialog was added to prevent such a thing. For the chummers who are already using FoundryVTT V13, Initiative types was fixed as well.
+
+I'd also like to introduce a new contributor! Welcome to Zakarik, who has brought our French translations up to speed.
+
+#### 3.2.2
+Shortly after the 3.2.1 QoL release, we found out layout problems caused by some of the changes. These are now resolved together with some further minor layout improvements and extra (error) notifications for the PDF NPC importer.
+
+-yeroon
+
+### System Improvements
+- Add NPC importer from PDF: Pasting a statblock into FoundryVTT will automatically create a new NPC Actor (rework from V10 by raketenhunddev)
+- Improvement: Show error message if user is trying to import GENESIS or COMMLINK save file instead of FoundryVTT Export
+- Feature: Confirmation dialog on deleting items (#106)
+- Add Combat Spell Type field in spell item for direct/indirect spells (#98)
+- Feature: Allow Critters to be magic users or technomancers (#97)
+- Add # rounds as an option for Extended Tests (#95)
+- Localization improvements for plurals (#89)
+- Add description field to Items (Zakarik)
+- Allow reordering of equipment items on the actor sheet (Zakarik)
+
+### Bug Fixes 3.2.1
+- Fix Initiative types [physical/matrix/astral] in Foundry V13 (#105)
+- Fix monitor values on imported characters from GENESIS & Commlink (#100)
+- Fix Edge Boost&Action Spending in the Roll Dialog (#90)
+- Fix defense rolls for Stun damage to apply physical damage (#94)
+- Fix spell roll chat messages to use Targets selected for the Roll Defense button
+- Allow negative Attribute modifiers (#91)
+- Fix Focus item description field (Zakarik)
+- Various CSS layout improvements on the actor sheet
+
+### Bug Fixes 3.2.2
+- Fix journal layouts in v12/v13 (#111)
+- Bugfix item layout caused by Description editor field (#109)
+- Actor/Item css layout improvements for v12/v13
+- UI notifications & errors for the NPC Importer
+- Bugfix so you can now import English PDF statblocks while running a different FoundryVTT language (#114)
+
+### Data Updates
+- French translation updates (Zakarik)
+- German translation updates (raketenhunddev)
+- Russian translation updates (TheFokin)

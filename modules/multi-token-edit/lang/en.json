@@ -52,12 +52,12 @@
     },
     "keybindings": {
       "presetApply": {
-        "name": "Open Presets",
-        "hint": "Opens placeable preset window."
+        "name": "Open Preset Browser",
+        "hint": "Opens placeable, bag, and scene configuration browser."
       },
       "presetApplyScene": {
-        "name": "Open Scene Presets",
-        "hint": "Opens scene preset window."
+        "name": "Open Scene Preset Browser",
+        "hint": "Opens scene configuration preset browser."
       },
       "selectKey": {
         "name": "Open Placeable Search and Select",
@@ -104,10 +104,6 @@
       "singleDocDefaultConfig": {
         "name": "Single placeable: Default Config",
         "hint": "When a single placeable is selected or hovered over, open the default configuration window instead of the modified Mass Edit config."
-      },
-      "cssEdit": {
-        "name": "Configure CSS",
-        "hint": "Change the look of the modified configuration window."
       }
     },
     "randomizer": {
@@ -135,6 +131,8 @@
       "drag-over-message": "CREATE PRESET",
       "default-name": "New Preset",
       "spawning": "Spawning",
+      "main": "Main",
+      "tags": "Tags",
       "warn-no-fields": "No fields selected, unable to update.",
       "imported": "Imported {count} presets.",
       "import": "Import Presets",
@@ -163,12 +161,17 @@
       "export-to-compendium": "Export to Compendium",
       "copy-to-clipboard": "Copy to Clipboard",
       "copy-source-to-clipboard": "Copy Source to Clipboard",
-      "keep-ids": "Keep Preset and Folder IDs",
+      "keep-ids": "Keep IDs",
       "keep-ids-hint": "Presets and Folders with the same IDs will be overridden at the destination.",
       "search-presets": "Search Presets",
       "search-presets-folders": "Search Presets & Folders",
       "delete-presets-warn": "You are about to permanently delete [ {count} ] presets.",
-      "spawn-random": "Instead of the entire group, spawn a random placeable."
+      "spawn-random": "Instead of the entire group, spawn a random placeable.",
+      "bag": {
+        "search": "Search",
+        "appearance": "Appearance",
+        "misc": "Misc."
+      }
     },
     "css": {
       "pick": "Pick a style:"

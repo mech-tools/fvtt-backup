@@ -61,7 +61,7 @@
                 "hint": "Multiplies the modifications of the effect with the amount of the counter. This only applies to additive and multiplicative modifiers."
             },
             "save": "Save",
-            "saveDefault": "Save as default for <strong>{status}</strong>"
+            "saveDefault": "Save as default for {status}"
         }
     }
 }

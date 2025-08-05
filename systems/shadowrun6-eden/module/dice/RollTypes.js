@@ -217,7 +217,7 @@ export class SpellRoll extends SkillRoll {
     canAmpUpSpell;
     ampUp = 0;
     canIncreaseArea;
-    defenseRating;
+    defenseRating = 0; // Default targeted Defense Rating
     attackRating;
     /**
      * @param skill {Skill}   The skill to roll upon
@@ -231,12 +231,9 @@ export class SpellRoll extends SkillRoll {
         this.canAmpUpSpell = spellItem.category === "combat";
         this.canIncreaseArea = spellItem.range === "line_of_sight_area" || spellItem.range === "self_area";
         if (spellItem.category === "combat") {
-            if (spellItem.type == "mana") {
-                this.defendWith = Defense.SPELL_DIRECT;
+            this.defendWith = spellItem.combatSpellType;
+            if (spellItem.combatSpellType == Defense.SPELL_DIRECT) {
                 this.allowSoak = false;
-            }
-            else {
-                this.defendWith = Defense.SPELL_INDIRECT;
             }
         }
         else if (spellItem.category === "manipulation") {
@@ -275,7 +272,7 @@ export class RitualRoll extends SkillRoll {
 
     calcDrain;
 
-    defenseRating;
+    defenseRating = 0; // Default targeted Defense Rating
     attackRating;
     /**
      * @param skill {Skill}   The skill to roll upon
@@ -300,7 +297,7 @@ export class ComplexFormRoll extends SkillRoll {
     formSrc;
     form;
     calcFade;
-    defenseRating;
+    defenseRating = 0; // Default targeted Defense Rating
     attackRating;
     /**
      * @param skill {Skill}   The skill to roll upon
@@ -337,7 +334,7 @@ export class WeaponRoll extends SkillRoll {
     gear;
     weapon;
     targets;
-    defenseRating;
+    defenseRating = 0; // Default targeted Defense Rating
     attackRating;
     /** Effective attack rating after applying firing mode */
     calcAttackRating = [0, 0, 0, 0, 0];
@@ -359,7 +356,7 @@ export class WeaponRoll extends SkillRoll {
             this.weapon = gear;
             this.rollType = RollType.Weapon;
             this.defendWith = Defense.PHYSICAL;
-            this.monitor = item.system.stun ? MonitorType.STUN : MonitorType.PHYSICAL;
+            this.monitor = (item.calculated.stun ?? item.system.stun) ? MonitorType.STUN : MonitorType.PHYSICAL;
             // this.fireMode = 'SS';
         }
         this.pool = gear.pool;
@@ -371,7 +368,6 @@ export class WeaponRoll extends SkillRoll {
                 modes[modeName] = mode.loc;
             }
         }
-        console.log('SR6E | Retrieving weapon modes', modes)
         return modes;
     }
     
@@ -414,7 +410,7 @@ export class VehicleRoll extends PreparedRoll {
     }
 }
 export class ConfiguredWeaponRollData {
-    defenseRating;
+    defenseRating = 0; // Default targeted Defense Rating
     attackRating;
     /** Effective attack rating after applying firing mode */
     calcAttackRating = [0, 0, 0, 0, 0];
@@ -454,7 +450,7 @@ export class ConfiguredRoll extends CommonRollData {
         // In case this was a WeaponRoll
         console.log("SR6E | Copy WeaponRoll data to ConfiguredRoll", copy.calcDamage, copy.damage);
         this.calcAttackRating = copy.calcAttackRating;
-        this.calcDamage = copy.calcDamage ? copy.calcDamage : copy.damage;
+        this.calcDamage = isNaN(copy.calcDamage) ? copy.damage : copy.calcDamage;
         this.calcRounds = copy.calcRounds;
         this.fireMode = copy.fireMode;
         this.burstMode = copy.burstMode;
@@ -557,7 +553,7 @@ export class SR6ChatMessageData {
         this.edgeAction = copy.edgeAction;
         this.targets = copy.targetIds;
         this.soakType = copy.soakType;
-        this.monitor = copy.monitor;
+        this.monitor = copy.monitor ?? (copy.soakType === SoakType.DAMAGE_STUN ? MonitorType.STUN : MonitorType.PHYSICAL);
         if (copy.legwork) this.legwork = copy.legwork;
         console.log("SR6E | ####SR6ChatMessageData####2###", this);
     }

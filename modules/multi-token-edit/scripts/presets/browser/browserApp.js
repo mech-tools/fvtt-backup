@@ -3,26 +3,19 @@ import { copyToClipboard } from '../../../applications/formUtils.js';
 import { countFolderItems, trackProgress } from '../../../applications/progressDialog.js';
 import { importPresetFromJSONDialog } from '../../dialogs.js';
 import { SortingHelpersFixed } from '../../fixedSort.js';
-import { localFormat, localize, spawnSceneAsPreset } from '../../utils.js';
+import { DragHoverOverlay, localFormat, localize, spawnSceneAsPreset } from '../../utils.js';
 import { META_INDEX_ID, PresetAPI, PresetCollection, PresetPackFolder } from '../collection.js';
 import { LinkerAPI } from '../../linker/linker.js';
 import { DOC_ICONS, Preset } from '../preset.js';
 import { exportPresets, FolderState, matchPreset, parseSearchQuery, placeableToData } from '../utils.js';
 import { MODULE_ID, SUPPORTED_PLACEABLES, UI_DOCS } from '../../constants.js';
-import { PresetContainer } from '../containerApp.js';
-import { PresetConfig } from '../editApp.js';
 import { TagSelector } from '../tagSelector.js';
 import PresetBrowserSettings from './settingsApp.js';
+import { PresetConfig } from '../editApp.js';
+import { PresetContainerV2 } from '../containerAppV2.js';
+import { uploadFiles } from '../../auxilaryFeatures/utils.js';
 
 const SEARCH_MIN_CHAR = 2;
-const SEARCH_FOUND_MAX_COUNT = 1001;
-
-// const FLAG_DATA = {
-//   documentName: null,
-//   data: null,
-//   addSubtract: null,
-//   randomize: null,
-// };
 
 const SORT_MODES = {
   manual: {
@@ -58,7 +51,7 @@ export function openPresetBrowser(documentName) {
   new PresetBrowser(null, null, documentName).render(true);
 }
 
-export class PresetBrowser extends PresetContainer {
+export class PresetBrowser extends PresetContainerV2 {
   static objectHover = false;
   static lastSearch;
   static CONFIG;
@@ -77,11 +70,6 @@ export class PresetBrowser extends PresetContainer {
   }
 
   constructor(configApp, callback, documentName, options = {}) {
-    // Restore position and dimensions the previously closed window
-    if (!options.preventPositionOverride && PresetBrowser.previousPosition) {
-      options = { ...options, ...PresetBrowser.previousPosition };
-    }
-
     super({}, { ...options, sortable: true, duplicatable: true });
     this.callback = callback;
 
@@ -95,18 +83,50 @@ export class PresetBrowser extends PresetContainer {
     this.lastSearch = PresetBrowser.CONFIG.persistentSearch ? PresetBrowser.lastSearch : '';
   }
 
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'mass-edit-presets',
-      classes: ['sheet', 'mass-edit-dark-window', 'mass-edit-window-fill'],
-      template: `modules/${MODULE_ID}/templates/preset/browser.html`,
+  static DEFAULT_OPTIONS = {
+    id: 'mass-edit-presets',
+    tag: 'form',
+    classes: ['mass-edit-window-fill'],
+    form: {
+      handler: undefined,
+      submitOnChange: true,
+      closeOnSubmit: false,
+    },
+    window: {
+      contentClasses: ['standard-form'],
       resizable: true,
       minimizable: true,
+    },
+    position: {
       width: 377,
       height: 900,
-      scrollY: ['.item-list'],
-    });
-  }
+    },
+    actions: {
+      documentChange: PresetBrowser._onDocumentChange,
+      toggleSetting: PresetBrowser._onToggleSetting,
+      toggleLock: PresetBrowser._onToggleLock,
+      toggleTagSelector: PresetBrowser._onToggleTagSelector,
+      toggleSearchMode: PresetBrowser._onToggleSearchMode,
+      toggleSortMode: PresetBrowser._onToggleSortMode,
+      createFolder: PresetBrowser._onCreateFolder,
+      createPreset: PresetBrowser._onCreatePreset,
+      openSettingConfig: PresetBrowser._onOpenSettingConfig,
+      workingPackChange: PresetBrowser._onWorkingPackChange,
+      exportPresets: PresetBrowser._onExportPresets,
+      importPresets: PresetBrowser._onImportPresets,
+      toggleCompendiumLock: PresetBrowser._onToggleCompendiumLock,
+      createBag: PresetBrowser._onCreateBag,
+      presetCreate: PresetBrowser._onPresetCreate,
+      presetUpdate: PresetBrowser._onPresetUpdate,
+      applyPreset: PresetBrowser._onApplyPreset,
+    },
+  };
+
+  /** @override */
+  static PARTS = {
+    overlay: { template: `modules/${MODULE_ID}/templates/drag-hover-overlay.hbs` },
+    main: { template: `modules/${MODULE_ID}/templates/preset/browser.hbs` },
+  };
 
   get title() {
     let title = localize('presets.preset-browser');
@@ -114,104 +134,91 @@ export class PresetBrowser extends PresetContainer {
     return title;
   }
 
-  async getData(options) {
-    const data = await super.getData(options);
-
+  async _refreshTree() {
     this.tree = await PresetCollection.getTree(this.documentName, {
       externalCompendiums: PresetBrowser.CONFIG.externalCompendiums,
       virtualDirectory: PresetBrowser.CONFIG.virtualDirectory,
       setFormVisibility: true,
     });
+  }
+
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+
+    await this._refreshTree();
     this._tagSelector?.render(true);
 
     if (PresetBrowser.CONFIG.persistentSearch && this.lastSearch) {
       this._onSearch(this.lastSearch, { render: false });
-      data.lastSearch = this.lastSearch;
-    } else data.lastSearch = '';
+      context.lastSearch = this.lastSearch;
+    } else context.lastSearch = '';
 
-    data.presets = this.tree.presets;
-    data.folders = this.tree.folders;
-    data.extFolders = this.tree.extFolders.length ? this.tree.extFolders : null;
+    context.presets = this.tree.presets;
+    context.folders = this.tree.folders;
+    context.extFolders = this.tree.extFolders.length ? this.tree.extFolders : null;
 
-    data.createEnabled = Boolean(this.configApp);
-    data.isPlaceable = SUPPORTED_PLACEABLES.includes(this.documentName) || this.documentName === 'ALL';
-    data.allowDocumentSwap = UI_DOCS.includes(this.documentName) && !this.configApp;
-    data.docLockActive = PresetBrowser.CONFIG.documentLock === this.documentName;
-    data.layerSwitchActive = PresetBrowser.CONFIG.switchLayer;
-    data.autoScale = PresetBrowser.CONFIG.autoScale;
-    data.externalCompendiums = PresetBrowser.CONFIG.externalCompendiums;
-    data.virtualDirectory = PresetBrowser.CONFIG.virtualDirectory;
-    data.sortMode = SORT_MODES[PresetBrowser.CONFIG.sortMode];
-    data.searchMode = SEARCH_MODES[PresetBrowser.CONFIG.searchMode];
-    data.displayDragDropMessage =
-      data.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length || data.extFolders);
+    context.createEnabled = Boolean(this.configApp);
+    context.isPlaceable = SUPPORTED_PLACEABLES.includes(this.documentName) || this.documentName === 'ALL';
+    context.allowDocumentSwap = UI_DOCS.includes(this.documentName) && !this.configApp;
+    context.docLockActive = PresetBrowser.CONFIG.documentLock === this.documentName;
+    context.layerSwitchActive = PresetBrowser.CONFIG.switchLayer;
+    context.autoScale = PresetBrowser.CONFIG.autoScale;
+    context.externalCompendiums = PresetBrowser.CONFIG.externalCompendiums;
+    context.virtualDirectory = PresetBrowser.CONFIG.virtualDirectory;
+    context.sortMode = SORT_MODES[PresetBrowser.CONFIG.sortMode];
+    context.searchMode = SEARCH_MODES[PresetBrowser.CONFIG.searchMode];
+    context.displayDragDropMessage =
+      context.allowDocumentSwap && !(this.tree.presets.length || this.tree.folders.length || context.extFolders);
 
-    data.docs = [];
-    data.docsDropdown = PresetBrowser.CONFIG.dropdownDocuments.length ? [] : null;
+    context.docs = [];
+    context.docsDropdown = PresetBrowser.CONFIG.dropdownDocuments.length ? [] : null;
     UI_DOCS.forEach((name) => {
       const doc = { name, icon: DOC_ICONS[name], tooltip: name === 'ALL' ? 'Placeables' : name };
-      if (PresetBrowser.CONFIG.dropdownDocuments.includes(name)) data.docsDropdown.push(doc);
-      else data.docs.push(doc);
+      if (PresetBrowser.CONFIG.dropdownDocuments.includes(name)) context.docsDropdown.push(doc);
+      else context.docs.push(doc);
     });
 
-    data.documents = UI_DOCS;
-    data.currentDocument = this.documentName;
+    context.documents = UI_DOCS;
+    context.currentDocument = this.documentName;
 
-    data.callback = Boolean(this.callback);
+    context.callback = Boolean(this.callback);
 
-    return data;
+    return context;
   }
 
-  /**
-   * @param {JQuery} html
-   */
-  activateListeners(html) {
-    super.activateListeners(html);
+  /** @override */
+  async _preparePartContext(partId, context, options) {
+    await super._preparePartContext(partId, context, options);
 
-    const hoverOverlay = html.closest('.window-content').find('.drag-drop-overlay');
-    html
-      .closest('.window-content')
-      .on('mouseover', (event) => {
-        if (canvas.activeLayer?.preview?.children.some((c) => c._original?.mouseInteractionManager?.isDragging)) {
-          hoverOverlay.show();
-          PresetBrowser.objectHover = true;
-        } else {
-          hoverOverlay.hide();
-          PresetBrowser.objectHover = false;
-        }
-      })
-      .on('mouseout', () => {
-        hoverOverlay.hide();
-        PresetBrowser.objectHover = false;
-      });
+    switch (partId) {
+      case 'overlay':
+        context.dragHoverOverlay = localize('presets.drag-over-message');
+        break;
+    }
 
-    // Create Preset from Selected
-    html.find('.create-preset').on('click', () => {
-      const controlled = canvas.activeLayer.controlled;
-      if (controlled.length && SUPPORTED_PLACEABLES.includes(controlled[0].document.documentName)) {
-        this.dropPlaceable(controlled);
-      }
-    });
+    return context;
+  }
 
-    // Create a Preset Bag
-    html.find('.create-bag').on('click', this._createNewBag.bind(this));
-
-    html.on('click', '.toggle-sort', this._onToggleSort.bind(this));
-    html.on('click', '.toggle-doc-lock', this._onToggleLock.bind(this));
-    html.on('click', '.toggle-setting', this._onToggleSetting.bind(this));
-    html.on('click', '.document-select', this._onDocumentChange.bind(this));
-    html.on('click', '.create-folder', this._onCreateFolder.bind(this));
-    html.on('click', '.preset-create', this._onPresetCreate.bind(this));
-    html.on('click', '.preset-update a', this._onPresetUpdate.bind(this));
-    html.on('click', '.preset-callback', this._onApplyPreset.bind(this));
-    html.on('click', '.tagSelector', this._onToggleTagSelector.bind(this));
-
-    const headerSearch = html.find('.header-search input');
-    headerSearch.on('input', (event) => this._onSearchInput(event));
-
-    html.on('click', '.toggle-search-mode', (event) => {
-      this._onToggleSearch(event, headerSearch);
-    });
+  /** @override */
+  _attachPartListeners(partId, element, options) {
+    super._attachPartListeners(partId, element, options);
+    switch (partId) {
+      case 'overlay':
+        DragHoverOverlay.attachListeners(element, {
+          condition: () => {
+            PresetBrowser.objectHover = canvas.activeLayer?.preview?.children.some(
+              (c) => c._original?.mouseInteractionManager?.isDragging
+            );
+            return PresetBrowser.objectHover;
+          },
+          hoverOutCallback: () => (PresetBrowser.objectHover = false),
+        });
+        break;
+      case 'main':
+        $(element).find('.header-search input').on('input', this._onSearchInput.bind(this));
+        break;
+    }
   }
 
   /**
@@ -249,6 +256,31 @@ export class PresetBrowser extends PresetContainer {
       return false;
     }
     return false;
+  }
+
+  /**
+   * Process files being dropped into the container.
+   * @param {DropEvent} event
+   */
+  async _fileDrop(event) {
+    const files = event.dataTransfer.files;
+    if (!files?.length) return {};
+
+    let multiPreset = true;
+    if (files.length > 1) {
+      multiPreset = await foundry.applications.api.DialogV2.confirm({
+        window: { title: 'Should a preset be created for each file?' },
+        content: '',
+        yes: { label: 'Multiple Presets', default: false, icon: 'fa-solid fa-layer-group' },
+        no: { label: 'Single Preset', default: true, icon: 'fa-solid fa-rectangle' },
+      });
+    }
+
+    const presets = await uploadFiles(files, 'presets', !multiPreset);
+    await PresetCollection.set(presets);
+    await this._refreshTree();
+
+    return { type: 'preset', uuids: presets.map((p) => p.uuid), sortable: true };
   }
 
   async _importActorFolder(folder, parentFolder = null, options = {}) {
@@ -294,9 +326,8 @@ export class PresetBrowser extends PresetContainer {
   }
 
   async _onExportFolder(uuid) {
-    let { pack, keepId } = await new Promise((resolve) =>
-      getCompendiumDialog(resolve, { exportTo: true, keepIdSelect: true })
-    );
+    let { pack, keepId } = await getCompendiumDialog({ exportTo: true, keepIdSelect: true });
+
     if (pack && !this._importTracker?.active) {
       const folder = this.tree.allFolders.get(uuid);
       if (folder) {
@@ -357,9 +388,7 @@ export class PresetBrowser extends PresetContainer {
   }
 
   async _onExportSelectedPresetsToComp() {
-    let { pack, keepId } = await new Promise((resolve) =>
-      getCompendiumDialog(resolve, { exportTo: true, keepIdSelect: true })
-    );
+    let { pack, keepId } = await getCompendiumDialog({ exportTo: true, keepIdSelect: true });
     if (pack) this._onCopySelectedPresets(pack, { keepId });
   }
 
@@ -368,30 +397,7 @@ export class PresetBrowser extends PresetContainer {
     if (selected.length) copyToClipboard(selected[0]);
   }
 
-  async _onDeleteSelectedPresets(item) {
-    const [selected, items] = await this._getSelectedPresets({
-      editableOnly: true,
-      full: false,
-    });
-    if (selected.length) {
-      const confirm =
-        selected.length === 0
-          ? true
-          : await Dialog.confirm({
-              title: `${localize('common.delete')} [ ${selected.length} ]`,
-              content: `<p>${localize('AreYouSure', false)}</p><p>${localFormat('presets.delete-presets-warn', {
-                count: selected.length,
-              })}</p>`,
-            });
-
-      if (confirm) {
-        await PresetCollection.delete(selected);
-        items.remove();
-      }
-    }
-  }
-
-  async _onCreateFolder(event) {
+  static async _onCreateFolder() {
     const types = [];
     if (SUPPORTED_PLACEABLES.includes(this.documentName)) {
       types.push('ALL', this.documentName);
@@ -410,13 +416,14 @@ export class PresetBrowser extends PresetContainer {
     );
 
     await new Promise((resolve) => {
-      new PresetFolderConfig(folder, { resolve }).render(true);
+      new PresetFolderConfig({ resolve, document: folder }).render(true);
     });
 
     this.render(true);
   }
 
   async _onFolderEdit(header) {
+    header = $(header);
     const uuid = $(header).closest('.folder').data('uuid');
     const pFolder = this.tree.allFolders.get(uuid);
 
@@ -434,14 +441,13 @@ export class PresetBrowser extends PresetContainer {
         { pack: pFolder.uuid }
       );
     } else {
-      folder = await fromUuid($(header).closest('.folder').data('uuid'));
+      folder = await fromUuid(header.closest('.folder').data('uuid'));
     }
 
     new Promise((resolve) => {
-      const options = { resolve, ...header.offset(), folder: pFolder };
+      const options = { resolve, ...header.offset(), folder: pFolder, document: folder };
       options.top += header.height();
-
-      new PresetFolderConfig(folder, options).render(true);
+      new PresetFolderConfig(options).render(true);
     }).then(() => this.render(true));
   }
 
@@ -519,8 +525,8 @@ export class PresetBrowser extends PresetContainer {
 
     this._searchFoundPresets = [];
     this.tree.folders.forEach((f) => this._searchFolder(f, search, negativeSearch));
-    this.tree.extFolders.forEach((f) => this._searchFolder(f, search, negativeSearch));
     this.tree.presets.forEach((p) => this._searchPreset(p, search, negativeSearch));
+    this.tree.extFolders.forEach((f) => this._searchFolder(f, search, negativeSearch));
 
     if (render) this._renderContent();
   }
@@ -552,7 +558,7 @@ export class PresetBrowser extends PresetContainer {
 
     let matched = true;
 
-    if (this._searchFoundPresets.length > SEARCH_FOUND_MAX_COUNT) matched = false;
+    if (this._searchFoundPresets.length > PresetBrowser.CONFIG.searchLimit) matched = false;
     else matched = matchPreset(preset, search, negativeSearch);
 
     if (matched) {
@@ -689,13 +695,13 @@ export class PresetBrowser extends PresetContainer {
     this.render(true);
   }
 
-  async _onToggleSort(event) {
+  static async _onToggleSortMode() {
     await PresetBrowser.setSetting('sortMode', PresetBrowser.CONFIG.sortMode === 'manual' ? 'alphabetical' : 'manual');
     this.render(true);
   }
 
-  async _onToggleSearch(event, headerSearch) {
-    const searchControl = $(event.target).closest('.toggle-search-mode');
+  static async _onToggleSearchMode(event, target) {
+    const searchControl = $(target);
 
     const currentMode = PresetBrowser.CONFIG.searchMode;
     const newMode = currentMode === 'p' ? 'pf' : 'p';
@@ -704,11 +710,11 @@ export class PresetBrowser extends PresetContainer {
     const mode = SEARCH_MODES[newMode];
     searchControl.attr('data-tooltip', mode.tooltip).html(mode.icon);
 
-    if (this.lastSearch) headerSearch.trigger('input');
+    if (this.lastSearch) searchControl.closest('.header-search').find('input').trigger('input');
   }
 
-  _onToggleLock(event) {
-    const lockControl = $(event.target).closest('.toggle-doc-lock');
+  static _onToggleLock(event, target) {
+    const lockControl = $(target);
 
     let newLock = this.documentName;
     if (newLock !== PresetBrowser.CONFIG.documentLock) lockControl.addClass('active');
@@ -720,16 +726,20 @@ export class PresetBrowser extends PresetContainer {
     PresetBrowser.setSetting('documentLock', newLock);
   }
 
-  async _onToggleSetting(event) {
-    const setting = $(event.currentTarget).data('setting');
+  static async _onToggleSetting(event, element) {
+    const setting = element.dataset.setting;
     await PresetBrowser.setSetting(setting, !PresetBrowser.CONFIG[setting]);
     this.render(true);
   }
 
-  _onDocumentChange(event) {
-    const newDocumentName = $(event.target).closest('.document-select').data('name');
-    if (newDocumentName != this.documentName) {
-      this.documentName = newDocumentName;
+  /**
+   * Change currently selected document category
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   */
+  static _onDocumentChange(event, target) {
+    if (target.dataset.name != this.documentName) {
+      this.documentName = target.dataset.name;
 
       if (PresetBrowser.CONFIG.switchLayer)
         canvas.getLayerByEmbeddedName(this.documentName === 'Actor' ? 'Token' : this.documentName)?.activate();
@@ -738,14 +748,14 @@ export class PresetBrowser extends PresetContainer {
     }
   }
 
-  async _onApplyPreset(event) {
+  static async _onApplyPreset(event) {
     if (this.callback) {
       const uuid = $(event.target).closest('.item').data('uuid');
       this.callback(await PresetCollection.get(uuid));
     }
   }
 
-  async _onToggleTagSelector(event) {
+  static async _onToggleTagSelector(event) {
     if (this._tagSelector) {
       this._tagSelector.close(true);
       this._tagSelector = null;
@@ -755,36 +765,17 @@ export class PresetBrowser extends PresetContainer {
     }
   }
 
-  /**
-   * @override
-   * Application.setPosition(...) has been modified to use css transform for window translation across the screen
-   * instead of top/left css properties which force full-window style recomputation
-   */
-  setPosition(...args) {
-    const position = super.setPosition(...args);
-
-    // Track position post window close
-    if (!this.options.preventPositionOverride) {
-      const { left, top, width, height } = position;
-      PresetBrowser.previousPosition = { left, top, width, height };
-    }
-
-    // Return the updated position object
-    return position;
-  }
-
   async close(options = {}) {
     PresetBrowser.objectHover = false;
     this._tagSelector?.close();
     return super.close(options);
   }
 
-  async _onPresetUpdate(event) {
+  static async _onPresetUpdate(event) {
     const preset = await PresetCollection.get($(event.target).closest('.item').data('uuid'));
     if (!preset) return;
 
-    const selectedFields =
-      this.configApp instanceof ActiveEffectConfig ? this._getActiveEffectFields() : this.configApp.getSelectedFields();
+    const selectedFields = this.configApp.getSelectedFields();
     if (!selectedFields || foundry.utils.isEmpty(selectedFields)) {
       ui.notifications.warn(localize('presets.warn-no-fields'));
       return;
@@ -804,9 +795,8 @@ export class PresetBrowser extends PresetContainer {
     ui.notifications.info(`Preset "${preset.name}" updated`);
   }
 
-  async _onPresetCreate(event) {
-    const selectedFields =
-      this.configApp instanceof ActiveEffectConfig ? this._getActiveEffectFields() : this.configApp.getSelectedFields();
+  static async _onPresetCreate(event) {
+    const selectedFields = this.configApp.getSelectedFields();
     if (!selectedFields || foundry.utils.isEmpty(selectedFields)) {
       ui.notifications.warn(localize('presets.warn-no-fields'));
       return;
@@ -826,7 +816,7 @@ export class PresetBrowser extends PresetContainer {
     this._editPresets([preset], { isCreate: true }, event);
   }
 
-  async _createNewBag() {
+  static async _onCreateBag() {
     const presetBag = new Preset({
       name: 'New Bag',
       documentName: 'Bag',
@@ -844,6 +834,17 @@ export class PresetBrowser extends PresetContainer {
     });
     await PresetCollection.set(presetBag);
     this.render(true);
+  }
+
+  /**
+   * Handle creation of a new preset from the selected placeables
+   */
+  static _onCreatePreset() {
+    // Create Preset from Selected
+    const controlled = canvas.activeLayer.controlled;
+    if (controlled.length && SUPPORTED_PLACEABLES.includes(controlled[0].document.documentName)) {
+      this.dropPlaceable(controlled);
+    }
   }
 
   /**
@@ -894,104 +895,84 @@ export class PresetBrowser extends PresetContainer {
     };
   }
 
-  _getHeaderButtons() {
-    const buttons = super._getHeaderButtons();
-
-    buttons.unshift({
-      label: '',
-      class: 'mass-edit-settings-config',
-      tooltip: 'Configure browser settings.',
-      icon: 'fas fa-gear',
-      onclick: this._onSettingConfig.bind(this),
-    });
-    buttons.unshift({
-      label: '',
-      class: 'mass-edit-change-compendium',
-      tooltip: 'Change working compendium.',
-      icon: 'fas fa-atlas',
-      onclick: this._onWorkingPackChange.bind(this),
-    });
-    buttons.unshift({
-      label: '',
-      class: 'mass-edit-indexer',
-      tooltip: 'Perform directory indexing.',
-      icon: 'fas fa-archive',
-      onclick: this._onOpenIndexer.bind(this),
-    });
-
-    buttons.unshift({
-      label: '',
-      tooltip: 'Export presets as a JSON file.',
-      class: 'mass-edit-export',
-      icon: 'fas fa-file-export',
-      onclick: this._onExport.bind(this),
-    });
-    buttons.unshift({
-      label: '',
-      tooltip: 'Import presets exported as a JSON file.',
-      class: 'mass-edit-import',
-      icon: 'fas fa-file-import',
-      onclick: this._onImport.bind(this),
-    });
+  _getHeaderControls() {
+    const controls = super._getHeaderControls();
 
     if (game.packs.get(PresetCollection.workingPack)?.locked) {
-      buttons.unshift({
-        label: '',
-        tooltip: 'Un-lock working compendium.',
-        class: 'mass-edit-toggle-lock',
+      controls.push({
+        label: 'Un-Lock Working Compendium',
         icon: 'fas fa-lock fa-fw',
-        onclick: this._onToggleCompendiumLock.bind(this),
+        action: 'toggleCompendiumLock',
       });
     }
 
-    if (game.settings.get(MODULE_ID, 'debug')) {
-      buttons.unshift({
-        label: 'Debug',
-        class: 'mass-edit-debug',
-        icon: 'fas fa-bug',
-        onclick: (ev) => {
-          console.log({
-            index: game.packs.get(PresetCollection.workingPack).get(META_INDEX_ID)?.flags[MODULE_ID]?.index,
-            tree: this.tree,
-          });
-        },
-      });
-    }
+    controls.push({
+      label: 'Compendium',
+      icon: 'fas fa-atlas',
+      action: 'workingPackChange',
+    });
 
-    return buttons;
+    controls.push({
+      label: 'Directory Indexer',
+      icon: 'fas fa-archive',
+      action: 'openIndexer',
+    });
+
+    controls.push({
+      label: 'Import Presets',
+      icon: 'fas fa-file-import',
+      action: 'importPresets',
+    });
+
+    controls.push({
+      label: 'Export Presets',
+      icon: 'fas fa-file-export',
+      action: 'exportPresets',
+    });
+
+    controls.push({
+      label: 'Browser Settings',
+      icon: 'fas fa-gear',
+      action: 'openSettingConfig',
+    });
+
+    return controls;
   }
 
-  async _onWorkingPackChange() {
-    let pack = await new Promise((resolve) => getCompendiumDialog(resolve, {}));
+  static async _onWorkingPackChange() {
+    let { pack } = await getCompendiumDialog();
     if (pack && pack !== PresetCollection.workingPack) {
       await game.settings.set(MODULE_ID, 'workingPack', pack);
       this.render(true);
     }
   }
 
-  _onSettingConfig() {
+  /**
+   * Render PresetBrowser setting configuration form
+   */
+  static _onOpenSettingConfig() {
     new PresetBrowserSettings(this).render(true);
   }
 
-  async _onToggleCompendiumLock(event) {
+  static async _onToggleCompendiumLock() {
     const pack = game.packs.get(PresetCollection.workingPack);
     if (pack) {
       await pack.configure({ locked: false });
-      $(event.currentTarget).remove();
+      this.render(true);
     }
   }
 
   /**
    * Export all working pack presets as as JSON file
    */
-  async _onExport() {
+  static async _onExportPresets() {
     const pack = game.packs.get(PresetCollection.workingPack);
     await pack.getDocuments();
     const tree = await PresetCollection.getTree(null, { externalCompendiums: false, virtualDirectory: false });
     exportPresets(tree.allPresets);
   }
 
-  async _onImport() {
+  static async _onImportPresets() {
     const json = await importPresetFromJSONDialog();
     if (!json) return;
 
@@ -1031,36 +1012,37 @@ export class PresetBrowser extends PresetContainer {
   }
 }
 
-class PresetFolderConfig extends FolderConfig {
-  static name = 'PresetFolderConfig';
-
-  /** @inheritdoc */
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ['sheet', 'folder-edit'],
-      template: `modules/${MODULE_ID}/templates/preset/presetFolderEdit.html`,
-      width: 360,
-    });
+class PresetFolderConfig extends foundry.applications.sheets.FolderConfig {
+  constructor(options = {}) {
+    options.classes = ['folder-edit'];
+    super(options);
   }
+
+  /** @override */
+  static PARTS = {
+    body: { template: `modules/${MODULE_ID}/templates/preset/presetFolderEdit.hbs` },
+    footer: { template: 'templates/generic/form-footer.hbs' },
+  };
 
   /* -------------------------------------------- */
 
   /** @override */
   get id() {
-    return this.object.id ? super.id : 'folder-create';
+    return this.document.id ? super.id : 'folder-create';
   }
 
   /* -------------------------------------------- */
 
   /** @override */
   get title() {
-    if (this.object.id) return `${localize('FOLDER.Update', false)}: ${this.object.name}`;
-    return localize('FOLDER.Create', false);
+    if (this.document.id) return `${localize('FOLDER.Update', false)}: ${this.document.name}`;
+    return localize('SIDEBAR.ACTIONS.CREATE.Folder', false);
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
-    html.find('.document-select').on('click', this._onDocumentChange.bind(this));
+  /** @override */
+  _attachPartListeners(partId, htmlElement, options) {
+    super._attachPartListeners(partId, htmlElement, options);
+    if (partId === 'body') $(htmlElement).find('.document-select').on('click', this._onDocumentChange.bind(this));
   }
 
   _onDocumentChange(event) {
@@ -1077,16 +1059,18 @@ class PresetFolderConfig extends FolderConfig {
 
   /* -------------------------------------------- */
 
-  /** @override */
-  async getData(options = {}) {
-    const folder = this.document.toObject();
-    const label = localize(Folder.implementation.metadata.label, false);
+  /** @inheritDoc */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const folder = context.document;
+    context.namePlaceholder = folder.constructor.defaultName({ pack: folder.pack });
+    const submitText = localize(folder._id ? 'FOLDER.Update' : 'SIDEBAR.ACTIONS.CREATE.Folder', false);
+    context.buttons = [{ type: 'submit', icon: 'fa-solid fa-floppy-disk', label: submitText }];
 
     let folderDocs = folder.flags[MODULE_ID]?.types ?? ['ALL'];
 
-    let docs;
-
     // This is a non-placeable folder type, so we will not display controls to change types
+    let docs;
     if (
       this.options?.folder instanceof PresetPackFolder ||
       (folderDocs.length === 1 && (folderDocs[0] === 'Bag' || !UI_DOCS.includes(folderDocs[0])))
@@ -1103,63 +1087,55 @@ class PresetFolderConfig extends FolderConfig {
         });
       });
     }
+    context.docs = docs;
+    context.virtualPackFolder = this.options.folder instanceof PresetPackFolder;
+    context.group = this.options.folder?.group;
 
-    return {
-      folder: folder,
-      name: folder._id ? folder.name : '',
-      newName: localFormat('DOCUMENT.New', { type: label }, false),
-      safeColor: folder.color ?? '#000000',
-      sortingModes: { a: 'FOLDER.SortAlphabetical', m: 'FOLDER.SortManual' },
-      submitText: localize(folder._id ? 'FOLDER.Update' : 'FOLDER.Create', false),
-      docs,
-      virtualPackFolder: this.options.folder instanceof PresetPackFolder,
-      group: this.options.folder?.group,
-    };
+    return context;
   }
 
   /* -------------------------------------------- */
 
   /** @override */
-  async _updateObject(event, formData) {
+  async _processSubmitData(event, form, submitData, options) {
     if (this.displayTypes) {
       let visibleTypes = [];
-      $(this.form)
+      $(form)
         .find('.document-select.active')
         .each(function () {
-          visibleTypes.push($(this).data('name'));
+          visibleTypes.push(this.dataset.name);
         });
       if (!visibleTypes.length) visibleTypes.push('ALL');
 
-      formData[`flags.${MODULE_ID}.types`] = visibleTypes;
+      submitData[`flags.${MODULE_ID}.types`] = visibleTypes;
     }
 
-    let document = this.object;
+    let document = this.document;
     if (this.options.folder instanceof PresetPackFolder) {
-      // This is a virtual folder used to store Compendium contents within
-      // Update using the provided interface
+      // This is a virtual folder used to store Compendium contents,
+      // update using the provided interface
       let update = {};
       ['name', 'color', 'group'].forEach((k) => {
-        if (!formData[k]?.trim()) update['-=' + k] = null;
-        else update[k] = formData[k].trim();
+        if (!submitData[k]?.trim()) update['-=' + k] = null;
+        else update[k] = submitData[k].trim();
       });
 
       await this.options.folder.update(update);
     } else {
       // This is a real folder, update/create it
-      if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
-      if (this.object.id) await this.object.update(formData);
+      if (!submitData.name?.trim()) submitData.name = Folder.implementation.defaultName();
+      if (document.id) await document.update(submitData);
       else {
-        this.object.updateSource(formData);
-        document = await Folder.create(this.object, { pack: this.object.pack });
+        document.updateSource(submitData);
+        document = await Folder.create(document, { pack: document.pack });
       }
     }
 
     this.options.resolve?.(document);
-    return document;
   }
 }
 
-function getCompendiumDialog(resolve, { excludePack, exportTo = false, keepIdSelect = false } = {}) {
+async function getCompendiumDialog({ excludePack, exportTo = false, keepIdSelect = false } = {}) {
   let config;
   if (exportTo) {
     config = {
@@ -1184,48 +1160,53 @@ function getCompendiumDialog(resolve, { excludePack, exportTo = false, keepIdSel
     }
   }
 
-  let content = `
+  let html = `
   <p style="color: orangered;">${config.message}</p>
   <div class="form-group">
     <label>${localize('PACKAGE.TagCompendium', false)}</label>
     <div class="form-fields">
-      <select style="width: 100%; margin-bottom: 10px;">${options}</select>
+      <select style="width: 100%; margin-bottom: 10px;" name="pack">${options}</select>
     </div>
   </div>`;
 
   if (keepIdSelect) {
-    content += `
+    html += `
 <div class="form-group">
     <label>${localize('presets.keep-ids')}</label>
     <input type="checkbox" name="keepId" checked>
-    <p style="font-size: smaller;">${localize('presets.keep-ids-hint')}</p>
+    <p class="hint">${localize('presets.keep-ids-hint')}</p>
 </div>`;
   }
 
-  new Dialog({
-    title: config.title,
-    content: content,
-    buttons: {
-      export: {
+  const content = document.createElement('div');
+  content.innerHTML = html;
+
+  let result = {};
+  await foundry.applications.api.DialogV2.wait({
+    window: { title: config.title, icon: 'fas fa-atlas' },
+    content,
+    position: { width: 400 },
+    buttons: [
+      {
+        action: 'ok',
         label: config.buttonLabel,
-        callback: (html) => {
-          const pack = $(html).find('select').val();
-          if (keepIdSelect)
-            resolve({
-              pack,
-              keepId: $(html).find('[name="keepId"]').is(':checked'),
-            });
-          else resolve(pack);
+        icon: '',
+        callback: (event, button) => {
+          const fd = new foundry.applications.ux.FormDataExtended(button.form);
+          result = {
+            pack: fd.object.pack,
+            keepId: fd.object.keepId,
+          };
         },
       },
-      cancel: {
-        label: localize('Cancel', false),
-        callback: () => resolve(keepIdSelect ? {} : null),
+      {
+        action: 'cancel',
+        label: 'Cancel',
       },
-    },
-    close: () => resolve(keepIdSelect ? {} : null),
-    default: 'cancel',
-  }).render(true);
+    ],
+  });
+
+  return result;
 }
 
 export function registerPresetBrowserHooks() {
@@ -1234,15 +1215,16 @@ export function registerPresetBrowserHooks() {
   const dragDropHandler = function (wrapped, ...args) {
     if (PresetBrowser.objectHover || PresetConfig.objectHover) {
       this.mouseInteractionManager.cancel(...args);
-      const app = Object.values(ui.windows).find(
-        (x) =>
-          (PresetBrowser.objectHover && x instanceof PresetBrowser) ||
-          (PresetConfig.objectHover && x instanceof PresetConfig)
-      );
+      let app;
+
+      if (PresetBrowser.objectHover) app = foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id);
+      else if (PresetConfig.objectHover) app = foundry.applications.instances.get('mass-edit-preset-edit');
+
       if (app) {
         const placeables = canvas.activeLayer.controlled.length ? [...canvas.activeLayer.controlled] : [this];
         app.dropPlaceable(placeables, ...args);
       }
+
       // Pass in a fake event that hopefully is enough to allow other modules to function
       this._onDragLeftCancel(...args);
     } else {
@@ -1251,25 +1233,32 @@ export function registerPresetBrowserHooks() {
   };
 
   SUPPORTED_PLACEABLES.forEach((name) => {
-    libWrapper.register(MODULE_ID, `${name}.prototype._onDragLeftDrop`, dragDropHandler, 'MIXED');
+    libWrapper.register(
+      MODULE_ID,
+      `foundry.canvas.placeables.${name}.prototype._onDragLeftDrop`,
+      dragDropHandler,
+      'MIXED'
+    );
   });
 
   // Scene Control to open preset browser
-  Hooks.on('renderSceneControls', (sceneControls, html, options) => {
+  Hooks.on('renderSceneControls', (sceneControls, html, data, options) => {
     if (!game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'presetSceneControl')) return;
 
-    const presetControl = $(`
-<li class="scene-control mass-edit-scene-control" data-control="me-presets" aria-label="Mass Edit: Presets" role="tab" data-tooltip="Mass Edit: Presets">
-  <i class="fa-solid fa-books"></i>
-</li>
-  `);
+    if ($(html).find('.mass-edit-scene-control').length) return;
+
+    const presetControl = $(
+      `<li>
+       <button type="button" class="control ui-control layer icon mass-edit-scene-control fa-solid fa-books" role="tab"  data-control="me-presets" data-tooltip="" aria-pressed="false" aria-label="Mass Edit: Presets" aria-controls="scene-controls-tools"></button>
+   </li>`
+    );
 
     presetControl.on('click', () => {
       let documentName = canvas.activeLayer.constructor.documentName;
       if (!SUPPORTED_PLACEABLES.includes(documentName)) documentName = 'ALL';
 
-      const presetForm = Object.values(ui.windows).find((app) => app instanceof PresetBrowser);
+      const presetForm = foundry.applications.instances.get('mass-edit-presets');
       if (presetForm) {
         presetForm.close();
         return;
@@ -1281,31 +1270,31 @@ export function registerPresetBrowserHooks() {
     });
 
     presetControl.on('contextmenu', async () => {
-      const macroUuuid =
+      const macroUuid =
         game.settings.get(MODULE_ID, 'browserContextMacroUuid') ||
-        'Compendium.baileywiki-nuts-and-bolts.macros.Macro.Ds6je9mUwVkEnb9f';
-      const macro = await fromUuid(macroUuuid);
+        'Compendium.baileywiki-nuts-and-bolts.macros.Macro.gjVoFJiIoKerEcB2';
+      const macro = await fromUuid(macroUuid);
       macro?.execute();
     });
 
-    html.find('.control-tools').find('.scene-control').last().after(presetControl);
+    $(html).find('#scene-controls-layers').append(presetControl);
   });
 
   // Change default behavior of JournalEntry click and context menu within the CompendiumDirectory
   libWrapper.register(
     MODULE_ID,
-    'CompendiumDirectory.prototype._getEntryContextOptions',
+    'foundry.applications.sidebar.tabs.CompendiumDirectory.prototype._getEntryContextOptions',
     function (wrapped, ...args) {
       const options = wrapped(...args);
       options.push({
         name: 'Open Journal Compendium',
         icon: '<i class="fas fa-book-open"></i>',
         condition: (li) => {
-          const pack = game.packs.get(li.data('pack'));
+          const pack = game.packs.get(li.dataset.pack);
           return pack.metadata.type === 'JournalEntry' && pack.index.get(META_INDEX_ID);
         },
         callback: (li) => {
-          const pack = game.packs.get(li.data('pack'));
+          const pack = game.packs.get(li.dataset.pack);
           pack.render(true);
         },
       });
@@ -1316,7 +1305,7 @@ export function registerPresetBrowserHooks() {
 
   libWrapper.register(
     MODULE_ID,
-    'Compendium.prototype._getEntryContextOptions',
+    'foundry.applications.sidebar.apps.Compendium.prototype._getEntryContextOptions',
     function (wrapped, ...args) {
       const options = wrapped(...args);
 
@@ -1326,7 +1315,7 @@ export function registerPresetBrowserHooks() {
         name: 'Spawn as Preset',
         icon: '<i class="fa-solid fa-books"></i>',
         callback: async (li) => {
-          spawnSceneAsPreset(await this.collection.getDocument(li.data('document-id')));
+          spawnSceneAsPreset(await this.collection.getDocument($(li).data('entryId')));
         },
       });
       return options;
@@ -1336,15 +1325,15 @@ export function registerPresetBrowserHooks() {
 
   libWrapper.register(
     MODULE_ID,
-    'SceneDirectory.prototype._getEntryContextOptions',
+    'foundry.applications.sidebar.tabs.SceneDirectory.prototype._getEntryContextOptions',
     function (wrapped, ...args) {
       const options = wrapped(...args);
       options.push({
         name: 'Spawn as Preset',
         icon: '<i class="fa-solid fa-books"></i>',
-        condition: (li) => game.user.isGM && canvas.ready && li.data('documentId') !== canvas.scene?.id,
+        condition: (li) => game.user.isGM && canvas.ready && $(li).data('entryId') !== canvas.scene?.id,
         callback: (li) => {
-          spawnSceneAsPreset(game.scenes.get(li.data('documentId')));
+          spawnSceneAsPreset(game.scenes.get($(li).data('entryId')));
         },
       });
       return options;
@@ -1354,16 +1343,16 @@ export function registerPresetBrowserHooks() {
 
   libWrapper.register(
     MODULE_ID,
-    'CompendiumDirectory.prototype._onClickEntryName',
-    async function (wrapped, event) {
-      const element = event.currentTarget;
-      const packId = element.closest('[data-pack]').dataset.pack;
+    'foundry.applications.sidebar.tabs.CompendiumDirectory.prototype._onClickEntry',
+    async function (wrapped, ...args) {
+      const target = args[1];
+      const packId = target.closest('[data-pack]').dataset.pack;
       const pack = game.packs.get(packId);
       if (pack.metadata.type === 'JournalEntry' && pack.index.get(META_INDEX_ID)) {
         openPresetBrowser('ALL');
         return;
       }
-      return wrapped(event);
+      return wrapped(...args);
     },
     'MIXED'
   );

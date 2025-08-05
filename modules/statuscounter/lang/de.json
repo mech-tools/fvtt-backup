@@ -61,7 +61,7 @@
                 "hint": "Multipliziert die Auswirkungen des Effekts mit der Anzahl des Zählers. Dies wirkt sich nur auf additive und multiplikative Effekte aus."
             },
             "save": "Speichern",
-            "saveDefault": "Speichern als Standard für <strong>{status}</strong>"
+            "saveDefault": "Speichern als Standard für {status}"
         }
     }
 }

@@ -248,7 +248,7 @@ export const getDefaultBar = function (id, attribute, defaultVisibility = CONST.
  */
 function getBarVisibility(token, bar) {
     if (!bar.hasOwnProperty("otherVisibility")) convertBarVisibility(bar);
-    if (token instanceof Token) token = token.document;
+    if (token instanceof foundry.canvas.placeables.Token) token = token.document;
 
     if (game.user.isGM && (bar.gmVisibility ?? -1) !== BAR_VISIBILITY.INHERIT) return bar.gmVisibility;
     if (token.isOwner) {
@@ -276,8 +276,8 @@ export const isBarVisible = function (token, bar, ignoreTransient = false) {
         return true;
     } else {
         if ((bar.hideFull || bar.hideEmpty) && bar.value === undefined) refreshBarValues(token.document, bar);
-        if (bar.hideFull && bar.value === bar.max) return false;
-        if (bar.hideEmpty && bar.value === 0) return false;
+        if (bar.hideFull && bar.value >= bar.max) return false;
+        if (bar.hideEmpty && bar.value <= 0) return false;
     }
 
     const inCombat = token.inCombat;

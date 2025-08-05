@@ -112,20 +112,24 @@ function getMousePos(){
 }
 
 function hideCanvasCursor(userId) {
-	const cursor = canvas.controls._cursors[userId];
-	if (cursor) {
-		cursor.visible = false;
-	}
+	canvas.controls.cursors.removeChildren();
+	canvas.controls.draw();
 }
 
 function patchControlsLayer(hiddenUsers) {
-	libWrapper.register(Const.MODULE_NAME, 'ControlsLayer.prototype.updateCursor', (wrapped, ...args) => {
+	libWrapper.register(Const.MODULE_NAME, 'foundry.canvas.layers.ControlsLayer.prototype.updateCursor', (wrapped, ...args) => {
 		const user = args[0];
 		if (hiddenUsers.has(user.id)) return;
 		wrapped(...args);
 	}, 'MIXED');
 
-	libWrapper.register(Const.MODULE_NAME, 'ControlsLayer.prototype._onMouseMove', (wrapped, ...args) => {
+	libWrapper.register(Const.MODULE_NAME, 'foundry.canvas.layers.ControlsLayer.prototype.updateRuler', (wrapped, ...args) => {
+		const user = args[0];
+		if (hiddenUsers.has(user.id)) return;
+		wrapped(...args);
+	}, 'MIXED');
+
+	libWrapper.register(Const.MODULE_NAME, 'foundry.canvas.layers.ControlsLayer.prototype._onMouseMove', (wrapped, ...args) => {
 		if (hiddenUsers.has(game.user.id)) return;
 		wrapped(...args);
 	}, 'MIXED')

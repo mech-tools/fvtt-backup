@@ -13,14 +13,13 @@ let activeEffectHud, activeEffectHudIcon;
 const creationState = new Set();
 
 /**
- * Applies keybinds to the given entity to change status counters. Which 
- *  methods are used depends on the configuration. Previously registered 
- *  handlers are unregistered wherever necessary.
+ * Applies keybinds to the given entity to change status counters. Which methods are used depends on the configuration.
+ *  Previously registered handlers are unregistered wherever necessary.
  * @param {TokenHUD} entity The Foundry entity associated with the element.
- * @param {jQuery} html The HTML code of the element.
+ * @param {HTMLElement} html The element of the HUD.
  */
 export const registerKeybinds = function (entity, html) {
-    let effectHud = html[0].querySelector(".status-effects");
+    let effectHud = html.querySelector(".status-effects");
     if (!effectHud) return;
 
     if (game.settings.get("statuscounter", "rebindMouseButtons")) {
@@ -112,7 +111,10 @@ function onEffectMouseOut() {
  * @param {jQuery.Event} event The key down event triggered by jQuery.
  */
 export const onEffectKeyDown = function (event) {
-    if (!activeEffectHud || !activeEffectHud.object.visible || creationState.has(this.object)) return;
+    if (!activeEffectHud || !activeEffectHud.object?.visible // Nothing hovered
+        || creationState.has(this.object) // Effect already updating
+        || document.activeElement?.tagName === "INPUT") // Input element in focus
+        return;
 
     let keyValue = parseInt(event.key);
     if (Number.isNaN(keyValue)) return;

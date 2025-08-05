@@ -1,11 +1,23 @@
 function skill_to_skill_id(skill) {
     skill = skill.toLowerCase();
+    skill = skill.replace(/-\s+/g, ''); // Cleanup word breaks caused by line breaks
     let SKILL_MAP = game.i18n.translations.skill;
     for (const id in SKILL_MAP) {
         if (SKILL_MAP[id].toLowerCase() == skill) {
             return id;
         }
     }
+    // Fallback to English check
+    if (game.i18n.lang !== 'en' && game.i18n._fallback.skill) {
+        console.log('SR6E | NPC Importer | Fallback check if skill is English');
+        SKILL_MAP = game.i18n._fallback.skill;
+        for (const id in SKILL_MAP) {
+            if (SKILL_MAP[id].toLowerCase() == skill) {
+                return id;
+            }
+        }
+    }
+
     throw new Error("Skill not found: " + skill);
 }
 function spec_to_spec_id(skill, spec) {
@@ -19,8 +31,7 @@ function spec_to_spec_id(skill, spec) {
                 }
             }
         }
-    }
-    else {
+    } else {
         for (const skill in SPECIALIZATION_MAP) {
             for (const id in SPECIALIZATION_MAP[skill]) {
                 for (const spec_id in SPECIALIZATION_MAP[skill]) {
@@ -31,6 +42,31 @@ function spec_to_spec_id(skill, spec) {
             }
         }
     }
+    
+    // Fallback to English check
+    if (game.i18n.lang !== 'en' && game.i18n._fallback.shadowrun6) {
+        SPECIALIZATION_MAP = game.i18n._fallback.shadowrun6.special;
+            if (skill != null) {
+                for (const id in SPECIALIZATION_MAP[skill]) {
+                    for (const spec_id in SPECIALIZATION_MAP[skill]) {
+                        if (SPECIALIZATION_MAP[skill][spec_id].toLowerCase() == spec) {
+                            return spec_id;
+                        }
+                    }
+                }
+            } else {
+                for (const skill in SPECIALIZATION_MAP) {
+                    for (const id in SPECIALIZATION_MAP[skill]) {
+                        for (const spec_id in SPECIALIZATION_MAP[skill]) {
+                            if (SPECIALIZATION_MAP[skill][spec_id].toLowerCase() == spec) {
+                                return spec_id;
+                            }
+                        }
+                    }
+                }
+            }
+    }
+    
     return undefined;
 }
 function pool_to_skill_lvl(attrs, skill, pool) {
@@ -102,9 +138,7 @@ var SectionType;
     SectionType[SectionType["Meta"] = 1] = "Meta";
     SectionType[SectionType["Stats"] = 2] = "Stats";
     SectionType[SectionType["DRStats"] = 3] = "DRStats";
-    SectionType[SectionType["StatsWithMagic"] = 4] = "StatsWithMagic";
-    SectionType[SectionType["StatsWithResonance"] = 5] = "StatsWithResonance";
-    SectionType[SectionType["StatsAlternate"] = 6] = "StatsAlternate";
+    SectionType[SectionType["Knowledge"] = 4] = "Knowledge";
     SectionType[SectionType["Status"] = 7] = "Status";
     SectionType[SectionType["Initiative"] = 8] = "Initiative";
     SectionType[SectionType["Actions"] = 9] = "Actions";
@@ -129,19 +163,29 @@ var SectionType;
     SectionType[SectionType["Programs"] = 28] = "Programs";
     SectionType[SectionType["Description"] = 29] = "Description";
 })(SectionType || (SectionType = {}));
-const STATS_LINES = ["K G R S W L I C ESS", "K G R S W L I C EDG ESS", "B A R S W L I C ESS", "CON AGI RÉA FOR VOL LOG INT CHA ESS"];
-const ALTERNATE_STATS_LNIE = ["K", "B"];
-const STATS_MAGIC_LINES = ["K G R S W L I C M ESS", "K G R S W L I C EDG M ESS", "B A R S W L I C M ESS", "CON AGI RÉA FOR VOL LOG INT CHA MAG ESS"];
-const STATS_RES_LINES = ["K G R S W L I C RES ESS", "K G R S W L I C EDG R ESS", "B A R S W L I C RS ESS", "CON AGI RÉA FOR VOL LOG INT CHA RES ESS"];
+const STATS_LINES = [
+    // DE specific
+    /^K$/g,
+    /^K G R$/g,    // Netzgewitter
+    /^K G R S W L I C/g, 
+
+    // EN specific
+    /^B$/g,
+    /^B A R S W L I C/g, 
+
+    // FR specific
+    /^CON AGI RÉA FOR VOL LOG INT CHA.*/g
+];
 const DR_LINES = ["DR I/ID AC CM MOVE", "I/ID AC CM MOVE", "SD I/DI PA ME DÉPLACEMENT", "SD I/DI PA ME DÉPLACEMENT DRAIN", "SD I/DI PA ME DÉPLA. DRAIN", "SD I/DI PA ME DÉPLA.", "SD I/DI PA ME DÉPLA. TECHNO."]; // the french books are inconsistent
 const INIT_LINES = ["Initiative:"]; // DE specific
 const INIT_ASTRAL_LINES = ["Astrale Initiative:"]; // DE specific
 const ACTIONS_LINE = ["Handlungen:"]; // DE specific
 const STATUS_LINES = ["Zustandsmonitor:"]; // DE specific
 const DEFENSE_LINES = ["Verteidigungswert:"]; // DE specific
-const SKILLS_LINES = ["Fertigkeiten:", "Skills:", "Compétences :"];
+const SKILLS_LINES = ["Fertigkeiten:", "Aktionsfertigkeiten:", "Skills:", "Compétences :"];
 const SKILLS_POOLED_LINES = ["Fertigkeiten (Würfelpools):"]; // DE specific extra books
 const LANG_LINES = ["Sprachfertigkeiten:"]; // DE specific extra books
+const KNOWLEDGE_LINES = ["Wissensfertigkeiten:"]; // DE (Netzgewitter)
 const GEAR_LINES = ["Ausrüstung:", "Gear:", "Équipement :"];
 const CYBERWARE_LINES = ["Bodytech:", "Augmentations:", "Augmentations :", "Augmentations (alphaware) :"]; // FR specific alphaware
 const WEAPON_LINES = ["Waffen:", "Weapons:", "Armes :"];
@@ -161,17 +205,8 @@ function isSectionStart(line) {
     if (line.match(/^(.*?\s+)?(Mensch|Zwerg|Ork|Troll|Elfe|Elf|Drache|Drachin|Geist)(in)?$/)) {
         return SectionType.Meta;
     }
-    else if (ALTERNATE_STATS_LNIE.find((l) => line == l)) { // Note we check for equality here since this is an alternate table representation
-        return SectionType.StatsAlternate;
-    }
-    else if (STATS_LINES.find((l) => line.startsWith(l))) {
+    else if (STATS_LINES.find((l) => line.match(l))) {
         return SectionType.Stats;
-    }
-    else if (STATS_MAGIC_LINES.find((l) => line.startsWith(l))) {
-        return SectionType.StatsWithMagic;
-    }
-    else if (STATS_RES_LINES.find((l) => line.startsWith(l))) {
-        return SectionType.StatsWithResonance;
     }
     else if (DR_LINES.find((l) => line.startsWith(l))) {
         return SectionType.DRStats;
@@ -199,6 +234,9 @@ function isSectionStart(line) {
     }
     else if (LANG_LINES.find((l) => line.startsWith(l))) {
         return SectionType.Languages;
+    }
+    else if (KNOWLEDGE_LINES.find((l) => line.startsWith(l))) {
+        return SectionType.Knowledge;
     }
     else if (GEAR_LINES.find((l) => line.startsWith(l))) {
         return SectionType.Equipment;
@@ -252,13 +290,13 @@ function isSectionStart(line) {
 function nextSection(lines, i) {
     let type = isSectionStart(lines[i]);
     let content = "";
-    if (type == SectionType.Meta || type == SectionType.Age || type == SectionType.StatsAlternate) {
+    if (type == SectionType.Meta || type == SectionType.Age || type == SectionType.Stats) {
         content = lines[i].trim();
     }
     else if (type == SectionType.Description) {
         content = lines[i] + "\n";
     }
-    else if (type != SectionType.Stats && type != SectionType.StatsWithMagic && type != SectionType.StatsWithResonance && type != SectionType.DRStats) {
+    else if (type != SectionType.Stats && type != SectionType.DRStats) {
         content = lines[i].split(":", 2)[1].trim();
     }
     i++;
@@ -271,22 +309,7 @@ function nextSection(lines, i) {
         }
         i++;
     }
-    if (type == SectionType.StatsAlternate) {
-        let header = content.replace(/[^A-Z]+/g, " ").replace(/\s+/g, " ").trim();
-        content = content.replace(/[A-Z]+/g, " ").replace(/\s+/g, " ").trim();
-        if (STATS_LINES.find((l) => header.startsWith(l))) {
-            type = SectionType.Stats;
-        }
-        else if (STATS_MAGIC_LINES.find((l) => header.startsWith(l))) {
-            type = SectionType.StatsWithMagic;
-        }
-        else if (STATS_RES_LINES.find((l) => header.startsWith(l))) {
-            type = SectionType.StatsWithResonance;
-        }
-        else {
-            throw new Error("Invalid stats line: " + header);
-        }
-    }
+
     return new Section(type, i, content.trim());
 }
 class Skill {
@@ -387,6 +410,39 @@ export class Attibute {
         return this.modified_value || this.value;
     }
 }
+
+
+/**
+ * Language patterns to detect the language of the attribute header.
+ */
+const languagePatterns = {
+            'de': /^KGRSWLIC/,
+            'en': /^BARSWLIC/,
+            'fr': /^CONAGIRÉAFORVOLLOGINTCHA/
+        };
+
+/**
+ * Mapping of attribute headers to their respective english equivalents.
+ * Only those attribute headers that differ from english are required.
+ */
+const attribute_language_mapping = {
+    de: {
+        "K": "B",
+        "G": "A",
+    },
+    fr: {
+        "CON": "B",
+        "AGI": "A",
+        "RÉA": "R",
+        "FOR": "S",
+        "VOL": "W",
+        "LOG": "L",
+        "INT": "I",
+        "CHA": "C",
+        "MAG": "M",
+    }
+};
+
 class Attributes {
     constitution;
     agility;
@@ -397,50 +453,77 @@ class Attributes {
     intuition;
     charisma;
     essence;
-    special;
     edge;
-    constructor(def, has_special = false) {
-        def = def.replace(/\s+\(/g, "(");
-        let parts = def.split(" ").map(def => {
-            return new Attibute(def);
-        });
-        if (parts.length >= 9) {
-            this.constitution = parts[0];
-            this.agility = parts[1];
-            this.reaction = parts[2];
-            this.strength = parts[3];
-            this.willpower = parts[4];
-            this.logic = parts[5];
-            this.intuition = parts[6];
-            this.charisma = parts[7];
-            if (parts.length == 9 && !has_special) {
-                this.essence = parts[8];
-            }
-            else if (parts.length == 10 && !has_special) {
-                this.edge = parts[8];
-                this.essence = parts[9];
-            }
-            else if (parts.length == 10) {
-                this.special = parts[8];
-                this.essence = parts[9];
-            }
-            else if (parts.length == 11 && has_special) {
-                this.edge = parts[8];
-                this.special = parts[9];
-                this.essence = parts[10];
-            }
-            else {
-                throw new Error("Invalid attributes: " + def);
-            }
+    magic;
+    resonance;
+    constructor(def) {
+        // Separate header from values and convert whitespace charactes into simple spaces.
+        let header = def.replace(/[^A-Z]+/g, " ").replace(/\s+/g, " ").trim();
+        let valuesString = def.replace(/[A-Z]+/g, " ").replace(/\s+/g, " ").trim();
+
+        // Normalize header to english
+        const keys = this.normalizeHeader(header);
+
+        // Merge header + values into a dictionary
+        const values = valuesString.split(" ");
+        const dict = {};
+        for (let i = 0; i < keys.length; i++) {
+            dict[keys[i]] = values[i];
         }
-        else {
-            throw new Error("Invalid attributes: " + def);
+
+        this.constitution = dict["B"] ? new Attibute(dict["B"]) : undefined;
+        this.agility = dict["A"] ? new Attibute(dict["A"]) : undefined;
+        this.reaction = dict["R"] ? new Attibute(dict["R"]) : undefined;
+        this.strength = dict["S"] ? new Attibute(dict["S"]) : undefined;
+        this.willpower = dict["W"] ? new Attibute(dict["W"]) : undefined;
+        this.logic = dict["L"] ? new Attibute(dict["L"]) : undefined;
+        this.intuition = dict["I"] ? new Attibute(dict["I"]) : undefined;
+        this.charisma = dict["C"] ? new Attibute(dict["C"]) : undefined;
+        if(dict["M"] !== undefined) {
+            this.magic = new Attibute(dict["M"]);
+        } else if(dict["RES"] !== undefined) {
+            this.resonance = new Attibute(dict["RES"]);
         }
+        this.essence = dict["ESS"] ? new Attibute(dict["ESS"]) : undefined;
+        this.edge = dict["EDG"] ? new Attibute(dict["EDG"]) : undefined;
     }
+
+    /**
+     * Detect the language of the attribute header.
+     * @param {string} header The header of the untranslated attribute stats block.
+     * @returns The detected language of the attribute header.
+     */
+    detectLanguage(header) {
+        const normalizedHeader = header.replace(/\s+/g, "").toUpperCase();
+        
+        for (const [language, pattern] of Object.entries(languagePatterns)) {
+            if (pattern.test(normalizedHeader)) {
+                return language;
+            }
+        }
+
+        throw new Error("Unknown attribute language | header:" + header, "| normalizedHeader:", normalizedHeader);
+    }
+
+    /**
+     * Converts the untranslated attribute header to a list of english attributes titles.
+     * @param {string} header The untranslated header string of the attribute stats block.
+     * @returns A translated attribute header list.
+     */
+    normalizeHeader(header) {
+        const language = this.detectLanguage(header);
+        const headerList = header.trim().split(" ");
+        const map = attribute_language_mapping[language] ?? {};
+
+        const normalized = headerList.map(h => map[h] ?? h);
+        return normalized;
+    }
+
     /*
      * to_vtt
      */
-    to_vtt(mortype) {
+    to_vtt() {
+        const nullAtribute = new Attibute("0").to_vtt();;
         let res = {
             "bod": this.constitution.to_vtt(),
             "agi": this.agility.to_vtt(),
@@ -450,17 +533,9 @@ class Attributes {
             "log": this.logic.to_vtt(),
             "int": this.intuition.to_vtt(),
             "cha": this.charisma.to_vtt(),
+            "mag": this.magic?.to_vtt() || nullAtribute,
+            "res": this.resonance?.to_vtt() || nullAtribute,
         };
-        switch (mortype) {
-            case Special.Magic: {
-                res["mag"] = this.special?.to_vtt();
-                break;
-            }
-            case Special.Resonance: {
-                res["res"] = this.special?.to_vtt();
-                break;
-            }
-        }
         return res;
     }
 }
@@ -504,7 +579,7 @@ class Cyberware {
         return {
             "name": this.name,
             "type": "gear",
-            "data": {
+            "system": {
                 "type": "CYBERWARE",
                 "accessories": this.mods?.join(", ") || "",
             },
@@ -531,7 +606,7 @@ class Item {
         return this.guess_type({
             "name": this.name,
             "type": "gear",
-            "data": {
+            "system": {
                 "accessories": this.mods?.join(", ") || "",
             },
             "effects": []
@@ -540,20 +615,20 @@ class Item {
     // Some minimal heuristics to group the items
     guess_type(res) {
         if (this.name.match(/kommlink|commlink/i)) {
-            res.data.type = "ELECTRONICS";
-            res.data.subtype = "COMMLINK";
+            res.system.type = "ELECTRONICS";
+            res.system.subtype = "COMMLINK";
         }
         else if (this.name.match(/deck/i)) {
-            res.data.type = "ELECTRONICS";
-            res.data.subtype = "CYBERDECK";
+            res.system.type = "ELECTRONICS";
+            res.system.subtype = "CYBERDECK";
         }
         else if (this.name.match(/panzer|armor/i)) {
-            res.data.type = "ARMOR";
-            res.data.subtype = "ARMOR_BODY";
+            res.system.type = "ARMOR";
+            res.system.subtype = "ARMOR_BODY";
         }
         else if (this.name.match(/helm|helmet/i)) {
-            res.data.type = "ARMOR";
-            res.data.subtype = "ARMOR_HELMET";
+            res.system.type = "ARMOR";
+            res.system.subtype = "ARMOR_HELMET";
         }
         return res;
     }
@@ -697,7 +772,7 @@ class Weapon {
         return {
             "name": this.name,
             "type": "gear",
-            "data": {
+            "system": {
                 "dmgDef": this.damage.toString() + this.damage_type,
                 "dmg": this.damage,
                 "stun": this.damage_type != "S",
@@ -745,7 +820,7 @@ class Program {
         return {
             "name": this.name,
             "type": "gear",
-            "data": {
+            "system": {
                 // FIXME: we don't have a type/subtype for programs
                 "type": "ELECTRONICS",
                 "subtype": "ELECTRONIC_ACCESSORIES",
@@ -771,7 +846,7 @@ class AdeptPower {
         return {
             "name": this.name,
             "type": "quality",
-            "data": {
+            "system": {
                 "category": "ADEPT_WAY",
                 "level": false,
                 "value": 1,
@@ -805,8 +880,29 @@ class Language {
         return {
             "name": this.name,
             "type": "skill",
-            "data": {
+            "system": {
                 "genesisID": "language",
+                "points": 1,
+                "modifier": 0
+            },
+            "effects": []
+        };
+    }
+}
+class KnowledgeSkill {
+    name;
+    constructor(name) {
+        this.name = name;
+    }
+    /**
+     * to_vtt
+     */
+    to_vtt() {
+        return {
+            "name": this.name,
+            "type": "skill",
+            "system": {
+                "genesisID": "knowledge",
                 "points": 1,
                 "modifier": 0
             },
@@ -911,6 +1007,7 @@ class Section {
 }
 export class NPC {
     name;
+    biography;
     meta_type;
     age;
     size;
@@ -918,7 +1015,6 @@ export class NPC {
     influence;
     desc;
     attributes;
-    special = Special.None;
     initiative = new Initiative("0");
     astralInitiative;
     status = new Status("0");
@@ -926,6 +1022,7 @@ export class NPC {
     skills = [];
     powers;
     languageskills;
+    knowledgeSkills;
     persona;
     complexForms;
     initiation;
@@ -940,14 +1037,16 @@ export class NPC {
     constructor(data) {
         let lines = data.trim().split("\n");
         this.name = lines[0];
+        this.biography = "";
         let i = 1;
         while (i < lines.length && isSectionStart(lines[i]) == SectionType.None) {
-            this.name += " " + lines[i].trim();
+            this.biography += lines[i].trim() + "\n";
             i++;
         }
         while (i < lines.length) {
             let section = nextSection(lines, i);
             i = section.end;
+            console.log("SR6E | NPC Importer | Processing section", SectionType[section.type], section);
             switch (section.type) {
                 case SectionType.Meta: {
                     this.meta_type = new MetaType(section.content);
@@ -973,18 +1072,8 @@ export class NPC {
                     this.desc = section.content;
                     break;
                 }
-                case SectionType.StatsWithMagic: {
-                    this.special = Special.Magic;
-                    this.attributes = new Attributes(section.content, true);
-                    break;
-                }
-                case SectionType.StatsWithResonance: {
-                    this.special = Special.Resonance;
-                    this.attributes = new Attributes(section.content, true);
-                    break;
-                }
                 case SectionType.Stats: {
-                    this.attributes = new Attributes(section.content, false);
+                    this.attributes = new Attributes(section.content);
                     break;
                 }
                 case SectionType.DRStats: {
@@ -997,20 +1086,21 @@ export class NPC {
                     // 9 12/1 (physique) 10/2 (astrale) MAJ 1, MIN 2 (physique) MAJ 1, MIN 3 (astrale) 11 10/15/+1 12
                     let matches_fr = section.content.match(/^(\d+)\s+(\d+)\/(\d+)(?:\s*\([^)]+\))?(?:\s*[^\/]+?\/.+?\s*\([^)]+\))*\s+MAJ\s+\d+,\s*MIN\s+\d+(?:\s*\([^)]+\))?(?:\s*MAJ\s*\d+,\s*MIN\s*\d+\s*\([^)]+\))*\s+(\d+)(?:\s+\([^)]+\))?(?:\s+\d+\s+\([^)]+\))*\s+\d+\/\s*\d+\/\s*\+\d(?:\s+\d+)?$/);
                     if (matches_en) {
-                        console.log("SR6E | Test 1");
+                        console.log("SR6E | NPC Importer | Matches English");
                         this.defense = parseInt(matches_en[2]) || parseInt(matches_en[1]) || 0;
                         // This is a bit of a cheat)
                         this.initiative = new Initiative(matches_en[3] + " + " + matches_en[4] + "W6");
                         this.status = new Status(matches_en[5]);
                     }
                     else if (matches_enCritter) {
-                        console.log("SR6E | Test 2");
+                        console.log("SR6E | NPC Importer | Matches English Critter");
                         this.defense = 0;
                         // This is a bit of a cheat
                         this.initiative = new Initiative(matches_enCritter[1] + " + " + matches_enCritter[2] + "W6");
                         this.status = new Status(matches_enCritter[3]);
                     }
                     else if (matches_fr) {
+                        console.log("SR6E | NPC Importer | Matches French");
                         this.defense = parseInt(matches_fr[1]);
                         // This is a bit of a cheat
                         this.initiative = new Initiative(matches_fr[2] + " + " + matches_fr[3] + "W6");
@@ -1076,6 +1166,10 @@ export class NPC {
                     this.languageskills = section.content.split(",").map(x => x.trim()).map(x => new Language(x));
                     break;
                 }
+                case SectionType.Knowledge: {
+                    this.knowledgeSkills = section.content.split(",").map(x => x.trim()).map(x => new KnowledgeSkill(x));
+                    break;
+                }
                 case SectionType.Equipment: {
                     let j = 0;
                     let in_brackets = false;
@@ -1123,6 +1217,12 @@ export class NPC {
                     let attrs = "";
                     while (j < section.content.length) {
                         let c = section.content[j];
+                        // Bracket check is causing issues e.g. with
+                        //   "Nagelmesser (einziehbar) [Klingenwaffe | Schaden 2K | 6/–/–/–/–]"
+                        //   "Bogen (Stufe 5) [Bogen | Schaden 3K | 3/5/2/–/– | 20Pfeile]"
+                        //      (see Netzgewitter, p. 174, #Daemonika / p. 184 #Feral)
+                        // Logic thinks the first ')' is the end of the weapon definition.
+                        // Why an additional check for '(' and ')'?
                         switch (c) {
                             case "[": {
                                 if (!in_brackets) {
@@ -1211,22 +1311,20 @@ export class NPC {
         return {};
     }
     mortype() {
-        switch (this.special) {
-            case Special.Magic:
-                if (this.spells != undefined && this.adeptPowers != undefined) {
-                    return "mysticadept";
-                }
-                else if (this.adeptPowers != undefined) {
-                    return "adept";
-                }
-                else {
-                    return "magician";
-                }
-            case Special.Resonance:
-                return "technomancer";
-            default:
-                return "mundane";
-        }
+        if(this.attributes.magic) {
+            if (this.spells != undefined && this.adeptPowers != undefined) {
+                return "mysticadept";
+            }
+            else if (this.adeptPowers != undefined) {
+                return "adept";
+            }
+            else {
+                return "magician";
+            }
+        } else if (this.attributes.resonance) {
+            return "technomancer";
+        } else
+            return "mundane";
     }
     /**
      * to_vtt
@@ -1241,17 +1339,17 @@ export class NPC {
             "value": this.status.will,
         };
         let edge = {
-            "value": this.attributes.edge || 0,
-            "max": this.attributes.edge || 0,
+            "value": this.attributes.edge?.value || 0,
+            "max": this.attributes.edge?.value || 0,
         };
         let initiative = {
             "physical": this.initiative.to_vtt(this.attributes.reaction.pool() + this.attributes.intuition.pool()),
         };
-        if (this.astralInitiative && this.attributes.special) {
-            initiative.astral = this.astralInitiative.to_vtt(this.attributes.special.pool());
+        if (this.astralInitiative && this.attributes.magic) {
+            initiative.astral = this.astralInitiative.to_vtt(this.attributes.magic.pool());
         }
         let data = {
-            "attributes": this.attributes.to_vtt(this.special),
+            "attributes": this.attributes.to_vtt(),
             "metatype": this.meta_type,
             "gender": "",
             "physical": physical,
@@ -1274,9 +1372,11 @@ export class NPC {
                     "mod": 0
                 }
             },
+            "notes": this.biography.replace(/-\s+/g, ""),  // Cleanup word breaks caused by line breaks
         };
         let items = [];
         items = items.concat(this.languageskills?.map(x => x.to_vtt()) || []);
+        items = items.concat(this.knowledgeSkills?.map(x => x.to_vtt()) || []);
         items = items.concat(this.adeptPowers?.map(x => x.to_vtt()) || []);
         items = items.concat(this.items?.map(x => x.to_vtt()) || []);
         items = items.concat(this.weapons?.map(x => x.to_vtt()) || []);
@@ -1286,7 +1386,7 @@ export class NPC {
             "name": this.name,
             "type": "NPC",
             "items": items,
-            "data": data,
+            "system": data,
         };
     }
 }

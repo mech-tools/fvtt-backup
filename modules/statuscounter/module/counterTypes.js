@@ -51,7 +51,7 @@ export function initializeCounters() {
                 if (this.type !== "effect") return null;
                 if (!this._statusCounter) {
                     const data = this.getFlag("statuscounter", "config") ?? {};
-                    const cls = counterTypes[data.type ?? statusTypes[statusId] ?? "default"]?.cls ?? StatusCounter;
+                    const cls = counterTypes[data.type ?? "default"]?.cls ?? StatusCounter;
                     this._statusCounter = new cls(this, data);
                 }
 
@@ -157,9 +157,9 @@ export function queueCreation(token, statusId, value, alt) {
  */
 export function unqueueCreation(document, statusId) {
     const statusKey = `${document.parent?.uuid}-${statusId}`;
-    const entry = creationQueue.get(statusKey) ?? { value: 1, alt: false };
+    const entry = creationQueue.get(statusKey);
     creationQueue.delete(statusKey);
-    return entry;
+    return entry ?? document.flags?.statuscounter ?? { value: 1, alt: false };
 }
 
 /**

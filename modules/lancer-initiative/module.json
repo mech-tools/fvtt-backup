@@ -1,0 +1,49 @@
+{
+  "id": "lancer-initiative",
+  "title": "Lancer Initiative",
+  "description": "Implements Lancer's popcorn style initiative for other game systems",
+  "authors": [
+    {
+      "name": "Bolts"
+    }
+  ],
+  "version": "34",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "esmodules": [
+    "./lancer-initiative.js"
+  ],
+  "styles": [
+    "./lancer-initiative.css"
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module"
+      }
+    ]
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json"
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português",
+      "path": "lang/pt-BR.json"
+    }
+  ],
+  "url": "https://codeberg.org/bolts/lancer-initiative",
+  "manifest": "https://codeberg.org/Bolts/lancer-initiative/releases/download/latest/module.json",
+  "download": "https://codeberg.org/Bolts/lancer-initiative/releases/download/v34/lancer-initiative.zip"
+}

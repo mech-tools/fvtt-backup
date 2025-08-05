@@ -30,10 +30,7 @@ export const WithBaseMassEditForm = (cls) => {
 
       BaseMassEditForm._setMEActions(options);
 
-      if (
-        foundry.utils.isNewerVersion(game.version, 12) &&
-        (documentName === 'AmbientSound' || documentName === 'AmbientLight' || documentName === 'Region')
-      ) {
+      if (SUPPORTED_PLACEABLES.includes(documentName) || documentName === 'Scene') {
         options.document = doc;
         super(options);
       } else {
@@ -858,7 +855,7 @@ export const WithBaseMassEditForm = (cls) => {
     }
 
     static _setMEActions(options) {
-      const actions = options.action ?? {};
+      const actions = options.actions ?? {};
       actions.meMacroGen = this._openMacroForm;
       actions.meBrush = this._activateBrushTool;
       actions.meEditPermissions = this._openEditPermissions;
@@ -998,6 +995,11 @@ export const WithMassEditFormApplicationV2 = (cls) => {
   class MassEditForm extends cls {
     _attachFrameListeners() {
       super._attachFrameListeners();
+      $(this.element).on('drop', async (event) => {
+        const dragData = foundry.applications.ux.TextEditor.implementation.getDragEventData(event.originalEvent);
+        if (dragData.type !== 'preset') return;
+        this._applyPreset(await MassEdit.getPreset({ uuid: dragData.uuids[0], full: true }));
+      });
     }
 
     _onRender() {
@@ -1026,7 +1028,7 @@ export const WithMassEditFormApplicationV2 = (cls) => {
 
     _getSubmitData() {
       const form = this.element;
-      const formData = new FormDataExtended(form);
+      const formData = new foundry.applications.ux.FormDataExtended(form);
       const submitData = this._prepareSubmitData(null, form, formData);
       return submitData;
     }

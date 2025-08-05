@@ -634,6 +634,7 @@
 			"avail": 0,
 			"ammocap": 0,
 			"ammocount": 0,
+			"ammoLoaded": "regular",
 			"priceDef": "",
 			"price": 0,
 			"customName": "",
@@ -780,7 +781,8 @@
 			"isOpposed": true,
 			"withEssence": false,
 			"wildDie": false,
-			"isSustained": false
+			"isSustained": false,
+			"combatSpellType": "spells_indirect"
 		}
 	}
 }

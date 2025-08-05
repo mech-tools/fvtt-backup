@@ -24,7 +24,7 @@ export class V12Migrator {
       }
 
       try {
-        this.migratePack({ pack, migrateFunc, transformFunc, coreMigration });
+        await this.migratePack({ pack, migrateFunc, transformFunc, coreMigration });
       } catch (e) {
         console.warn(`Mass Edit - Ran into an issue while migrating ${pack.metadata.label}`);
         console.error(e);
@@ -143,10 +143,8 @@ export class V12Migrator {
       ui.notifications.notify('Mass Edit - Migrated ' + updates.length + ' presets within "' + pack.metadata.label);
 
       setTimeout(() => {
-        delete PresetTree._packTrees[pack.metadata.name];
-        Object.values(ui.windows)
-          .find((app) => app instanceof PresetBrowser)
-          ?.render(true);
+        delete PresetTree._packTrees[pack.metadata.id];
+        foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id)?.render(true);
       }, 500);
     }
 

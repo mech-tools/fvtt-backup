@@ -82,7 +82,10 @@ export default class RandomizerForm extends FormApplication {
     foundry.utils.mergeObject(data, this.configuration);
 
     // Cache partials
-    await getTemplate(`modules/${MODULE_ID}/templates/randomizer/color.html`, 'me-color');
+    await foundry.applications.handlebars.getTemplate(
+      `modules/${MODULE_ID}/templates/randomizer/color.html`,
+      'me-color'
+    );
 
     if (data.step != null) {
       if (data.step === 'any' || data.step === '') {
@@ -195,7 +198,7 @@ export default class RandomizerForm extends FormApplication {
     $(html)
       .find('.folder-picker')
       .click(() => {
-        new FilePicker({
+        new foundry.applications.apps.FilePicker({
           type: 'folder',
           callback: async (path, fp) => {
             let files = [];
@@ -503,7 +506,10 @@ function _processInput(nodeName, input, configApp, label, singleInput) {
     _showRandomBoolDialog(input, configApp, label, singleInput);
   } else if (nodeName === 'COLOR-PICKER' || (type === 'text' && input.hasClass('color'))) {
     _showRandomColorDialog(input, configApp, label);
-  } else if ((nodeName === 'FILE-PICKER' && type.startsWith('image')) || (type === 'text' && input.hasClass('image'))) {
+  } else if (
+    (nodeName === 'FILE-PICKER' && (type.startsWith('image') || type === 'any')) ||
+    (type === 'text' && input.hasClass('image'))
+  ) {
     _showRandomImageDialog(input, configApp, label);
   } else if (type === 'text') {
     _showRandomTextDialog(input, configApp, label);

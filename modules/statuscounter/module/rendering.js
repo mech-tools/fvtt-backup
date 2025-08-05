@@ -14,17 +14,18 @@ const fontCache = new Map();
 export const extendEffectRenderer = function () {
     if(game.modules.get("lib-wrapper")?.active) {
         // Override using libWrapper: https://github.com/ruipin/fvtt-lib-wrapper
-        libWrapper.register("statuscounter", "Token.prototype._refreshEffects", async function (wrapped, ...args) {
+        libWrapper.register("statuscounter", "foundry.canvas.placeables.Token.prototype._refreshEffects", async function (wrapped, ...args) {
             wrapped(...args);
             drawEffectCounters(this);
         }, "WRAPPER");
-        libWrapper.register("statuscounter", "Token.prototype._drawEffect", async function (wrapped, src, ...args) {
+        libWrapper.register("statuscounter", "foundry.canvas.placeables.Token.prototype._drawEffect", async function (wrapped, src, ...args) {
             const icon = await wrapped(src, ...args);
             if (icon) icon.name = src;
             return icon;
         }, "WRAPPER");
     } else {
         // Manual override
+        const { Token } = foundry.canvas.placeables;
         const originalDrawEffects = Token.prototype._refreshEffects;
         Token.prototype._refreshEffects = function () {
             originalDrawEffects.apply(this, arguments);
@@ -44,13 +45,13 @@ export const extendEffectRenderer = function () {
  * Modifies the given HTML to draw effect counters on top of each token's
  *  status effects. The font color is determined by the type. Other font
  *  attributes are ignored.
- * @param {jQuery.Element} html The JQuery element of the combat tracker.
+ * @param {HTMLElement} html The element of the combat tracker.
  */
 export const extendCombatTracker = function (html) {
     const counterColor = game.settings.get("statuscounter", "counterColor").replace("#", "");
     const durationColor = game.settings.get("statuscounter", "countdownColor").replace("#", "");
 
-    html[0].querySelectorAll("li.combatant").forEach(combatantEl => {
+    html.querySelectorAll("li.combatant").forEach(combatantEl => {
         const actor = game.combat?.combatants.get(combatantEl.dataset.combatantId)?.token?.actor;
         if (!actor) return;
 

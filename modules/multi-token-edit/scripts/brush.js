@@ -733,7 +733,9 @@ export class BrushMenu extends FormApplication {
     const subMenu = this._toggleSubMenu('colorize');
     if (!subMenu) return;
 
-    const template = await getTemplate(`modules/${MODULE_ID}/templates/preset/brush/colorize.html`);
+    const template = await foundry.applications.handlebars.getTemplate(
+      `modules/${MODULE_ID}/templates/preset/brush/colorize.html`
+    );
     let content = template(await this.getData({}), {
       allowProtoMethodsByDefault: true,
       allowProtoPropertiesByDefault: true,
@@ -763,12 +765,15 @@ export class BrushMenu extends FormApplication {
 
   async _onRandomizeColor() {
     const randomColor = this._settings.randomColor ?? {};
-    const colorTemp = await renderTemplate(`modules/${MODULE_ID}/templates/randomizer/color.html`, {
-      method: 'random',
-      lockMethod: true,
-      space: randomColor.space,
-      hue: randomColor.hue,
-    });
+    const colorTemp = await foundry.applications.handlebars.renderTemplate(
+      `modules/${MODULE_ID}/templates/randomizer/color.html`,
+      {
+        method: 'random',
+        lockMethod: true,
+        space: randomColor.space,
+        hue: randomColor.hue,
+      }
+    );
 
     let colorSlider;
     let dialog = new Dialog({

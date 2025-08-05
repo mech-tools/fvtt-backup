@@ -240,7 +240,7 @@ export default class StatusCounter {
             return Promise.resolve();
         }
 
-        return new CounterConfig(this.parent).render(true);
+        return new CounterConfig({ document: this.parent }).render(true);
     }
 
     /**

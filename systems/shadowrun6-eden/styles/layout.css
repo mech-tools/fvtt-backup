@@ -17,10 +17,10 @@
 }
 
 .game .system-links {
-  display: inline;  
+  display: inline;
 }
 .game .system-links a {
-  margin-right: 10px;  
+  margin-right: 10px;
 }
 
 line {
@@ -43,7 +43,7 @@ line {
 	flex-direction: row;
 	justify-content: space-between;
 	align-items: center;
-	border-bottom: 1px solid var(--highlight-color);
+	border-bottom: 2px solid var(--highlight-color);
 	margin: 0 0 0.5rem 0;
 }
 .section-head h2 {
@@ -81,7 +81,7 @@ line {
 }
 
 .shadowrun6 th {
-	text-shadow: none; 
+	text-shadow: none;
 }
 table td {
 	padding: 1px;
@@ -112,7 +112,7 @@ tfoot th {
         border: 0px solid black;
         background: none;
         color: var(--input-color);
-        
+
 
         padding: 2px;
         padding-bottom: 2px;
@@ -123,7 +123,7 @@ tfoot th {
         display: inline-block;
         height: 100%;
         border-radius: 4px;
- 
+
  }
  .shadowrun6 .input-symbol-nuyen {
   position: relative;
@@ -142,8 +142,8 @@ dt {
   font-weight: bold;
   margin-right: 0.5em;
 }
-dt::after { 
-  content: ": "; 
+dt::after {
+  content: ": ";
 }
 dd::after {
   clear: left;
@@ -182,25 +182,25 @@ dd::after {
   text-align: center;
   color: black;
   text-shadow: 1px 1px 4px #fff, -1px -1px 4px #fff, -1px 1px 5px #fff, 1px -1px 5px #fff;
-  display: flex; 
-  flex-direction: row-reverse; 
-  z-index: 2; 
-  position: absolute; 
-  top: 0em; 
+  display: flex;
+  flex-direction: row-reverse;
+  z-index: 2;
+  position: absolute;
+  top: 0em;
   width: 100%;
 
   flex-wrap: wrap;
 }
 .monitors .monitor hr {
   /* width: 100%; */
-  flex-basis: 100%; 
-  height: 4px; 
-  margin: 0; 
+  flex-basis: 100%;
+  height: 4px;
+  margin: 0;
   border: 0;
 }
 
 .monitors .monitor .monitorBox {
-  flex: 1; 
+  flex: 1;
   border-left: solid black 0px;
   container-type: inline-size;
 }
@@ -220,22 +220,22 @@ dd::after {
   padding-left: 0;
 }
 .skill-name {
-	width: 10em; 
-	flex-grow:6; 
+	width: 10em;
+	flex-grow:6;
 	align-self: center;
 	justify-content: center;
 }
 
 .skill-attrib {
-	flex-grow:1.5; 
+	flex-grow:1.5;
 	align-self: center;
 	justify-content: center;
 	padding: 0em;
 }
 
 .skill-pool {
-	width: 2em; 
-	flex-grow:1; 
+	width: 2em;
+	flex-grow:1;
 	align-self: center;
 	text-align:center;
 	font-size: 150%;
@@ -246,11 +246,18 @@ dd::after {
 	text-align:right;
 }
 .item-controls a, .item-controls span {
-	font-size: 120%;
 	margin: 0 10px 0;
 }
 .item-control {
 	color: var(--highlight-color);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.item-control h2 {
+  font-size: 13px;
+}
+.item-control .fa-dice-six {
+  font-size: 20px;
 }
 .middle-column {
 	margin: 0 5px 0;
@@ -379,7 +386,7 @@ dd::after {
 
 .shadowrun6-slider.round:before {
   border-radius: 50%;
-} 
+}
 
 h3.highlight, h4.highlight {
 	color: var(--highlight-color)
@@ -396,4 +403,51 @@ table.spell-table td {
     align-self: stretch;
     height: 100%;
     min-height: 200px;
+}
+
+.shadowrun6.item div.editor {
+  min-height: 100px;
+  max-width: 550px;
+}
+.shadowrun6.item div.editor-container {
+  min-height: 100px;
+  max-width: 550px;
+}
+.shadowrun6.item dd.specialDescription {
+  margin-top: 20px;
+  padding: 0px;
+}
+
+.shadowrun6 .sheet-editor-readonly {
+  min-height: 50px;
+  padding: 5px; 
+  background: rgba(0, 0, 0, 0.05); 
+  border: 1px solid var(--color-border-dark); 
+  border-radius: 3px; 
+}
+
+.shadowrun6.item .item-sheet-header {
+  display: flex;
+  justify-content: space-between;
+}
+.shadowrun6.item .item-sheet-header h2 {
+  flex-grow: 1;
+  margin-right: 10px;
+  align-self: baseline;
+}
+.shadowrun6.item .item-sheet-header img {
+  background-color: var(--highlight-color);
+  margin-right: 5px;
+  border-radius: 4px;
+}
+.shadowrun6 h1 input, .shadowrun6 h2 input {
+  font-weight: inherit;
+}
+.shadowrun6 nav.tabs [data-tab].active {
+  text-shadow: .25px 0px .1px, 
+              -.25px 0px .1px,
+              0 0 10px var(--color-shadow-primary);
+}
+body.game .app.shadowrun6 .tabs.sheet-tabs [data-tab] {
+  text-transform: uppercase;
 }

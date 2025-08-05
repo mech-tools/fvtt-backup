@@ -1,5 +1,4 @@
 import { FILE_EXTENSIONS, IMAGE_EXTENSIONS, MODEL_EXTENSIONS, MODULE_ID } from '../constants.js';
-import { TagInput } from '../utils.js';
 import { PresetTree, VirtualFileFolder } from './collection.js';
 import { VirtualFilePreset } from './preset.js';
 import { encodeURIComponentSafely, readJSONFile } from './utils.js';
@@ -276,7 +275,7 @@ export class FileIndexer {
     const str = JSON.stringify(index);
 
     const tFile = await StringCompress.compress(str);
-    await FilePicker.upload(source, path, tFile, {}, { notify });
+    await foundry.applications.apps.FilePicker.upload(source, path, tFile, {}, { notify });
   }
 
   static async saveFolderToCache(folder, notify = true) {
@@ -427,7 +426,7 @@ export class FileIndexer {
 
     if (opts.tags) {
       tags = opts.tags
-        .map((t) => TagInput.simplifyString(t))
+        .map((t) => t.slugify({ strict: true }))
         .filter(Boolean)
         .concat(tags);
     }
@@ -465,7 +464,7 @@ export class FileIndexer {
         const author = await this._getAuthorFromModule(path);
         if (author) {
           folder.subtext = opts.subtext ?? author;
-          const tag = TagInput.simplifyString(author.split(/[ ,\-_@]+/)[0] ?? '');
+          const tag = (author.split(/[ ,\-_@]+/)[0] ?? '').slugify({ strict: true });
           if (tag && tag.length >= 3) {
             tags = [...tags, tag];
             folder.files.forEach((f) => {
@@ -545,7 +544,7 @@ export class FileIndexer {
     if (source === 'forge-bazaar' || source === 'forgevtt') {
       return this._fauxForgeBrowser?.get(dir) ?? { dirs: [], files: [] };
     } else {
-      return await FilePicker.browse(source, dir, options);
+      return await foundry.applications.apps.FilePicker.implementation.FilePicker.browse(source, dir, options);
     }
   }
 
@@ -570,7 +569,7 @@ export class FileIndexer {
     if (source === 'forgevtt' || !['modules', 'systems', 'worlds', 'assets'].includes(dir.replaceAll(/[\/\\]/g, ''))) {
       paths = [dir];
     } else {
-      const contents = await FilePicker.browse(source, dir, { recursive: false });
+      const contents = await foundry.applications.apps.FilePicker.browse(source, dir, { recursive: false });
       paths = contents.dirs;
     }
 
@@ -590,7 +589,7 @@ export class FileIndexer {
     };
 
     for (const path of paths) {
-      const contents = await FilePicker.browse(source, path, { recursive: true });
+      const contents = await foundry.applications.apps.FilePicker.browse(source, path, { recursive: true });
       for (const file of contents.files) {
         const pathname = new URL(file).pathname;
         const components = pathname.split('/');

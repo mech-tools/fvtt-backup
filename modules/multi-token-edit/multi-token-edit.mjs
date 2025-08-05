@@ -1,11 +1,5 @@
-import { pasteData, showMassEdit, showGenericForm, getMassEditForm } from './applications/multiConfig.js';
-import {
-  activeEffectPresetSelect,
-  createDocuments,
-  isResponsibleGM,
-  resolveCreateDocumentRequest,
-  TagInput,
-} from './scripts/utils.js';
+import { showMassEdit, showGenericForm } from './applications/multiConfig.js';
+import { createDocuments, isResponsibleGM, resolveCreateDocumentRequest, TagInput } from './scripts/utils.js';
 import { libWrapper } from './scripts/libs/shim/shim.js';
 import { enableUniversalSelectTool } from './scripts/tools/selectTool.js';
 import { META_INDEX_ID, PresetAPI, PresetCollection } from './scripts/presets/collection.js';
@@ -13,7 +7,7 @@ import { openPresetBrowser, registerPresetBrowserHooks } from './scripts/presets
 import { registerKeybinds, registerSettings } from './scripts/settings.js';
 import { BrushMenu, activateBrush, deactivateBush, openBrushMenu } from './scripts/brush.js';
 import { V12Migrator } from './scripts/presets/migration.js';
-import { deleteFromClipboard, performMassSearch, performMassUpdate } from './applications/formUtils.js';
+import { performMassSearch, performMassUpdate } from './applications/formUtils.js';
 import { importSceneCompendium, registerSideBarPresetDropListener } from './scripts/presets/utils.js';
 import { LinkerAPI, registerLinkerHooks } from './scripts/linker/linker.js';
 import { MODULE_ID, PIVOTS } from './scripts/constants.js';
@@ -22,9 +16,12 @@ import { Spawner } from './scripts/presets/spawner.js';
 import { registerBehaviors } from './scripts/behaviors/behaviors.js';
 import { openBag } from './scripts/presets/bagApp.js';
 import { openCategoryBrowser } from './scripts/presets/categoryBrowserApp.js';
-import { PresetContainer, registerPresetHandlebarPartials } from './scripts/presets/containerApp.js';
+import { registerPresetDragDropHooks, registerPresetHandlebarPartials } from './scripts/presets/containerAppV2.js';
 import { FileIndexerAPI } from './scripts/presets/fileIndexer.js';
 import { TransformBus, MassTransformer } from './scripts/transformer.js';
+import { registerBlackBarHooks } from './scripts/auxilaryFeatures/blackbars.js';
+import { registerSceneConfigHooks } from './scripts/auxilaryFeatures/sceneConfig.js';
+import { registerDragUploadHooks } from './scripts/auxilaryFeatures/dragUpload.js';
 
 globalThis.MassTransformer = MassTransformer;
 
@@ -46,7 +43,6 @@ globalThis.MassEdit = {
   migrateAllPacks: (options = {}) => V12Migrator.migrateAllPacks(options),
   linker: LinkerAPI,
   PIVOTS: PIVOTS,
-  PresetContainer,
   importSceneCompendium,
   openPresetBrowser,
   FileIndexer: FileIndexerAPI,
@@ -65,10 +61,12 @@ Hooks.once('init', () => {
   // Allow users to drop AmbientSound presets onto playlists
   registerSideBarPresetDropListener();
 
+  // Handle preset drag drop onto canvas
+  registerPresetDragDropHooks();
+
   // Linker related hooks
   registerLinkerHooks();
 
-  // TODO: Replace with core v12 implementation of tag HTML element
   TagInput.registerHandlebarsHelper();
 
   // Partials used for Preset rendering
@@ -84,82 +82,63 @@ Hooks.once('init', () => {
   // Scenescapes
   registerScenescapeHooks();
 
-  // Register copy-paste wrappers
-  libWrapper.register(
-    MODULE_ID,
-    'ClientKeybindings._onCopy',
-    function (wrapped, ...args) {
-      if (window.getSelection().toString() === '') {
-        // Check if a Mass Config form is open and if so copy data from there
-        const meForm = getMassEditForm();
-        if (meForm?.performMassCopy()) return true;
-      }
+  // Drag Upload
+  registerDragUploadHooks();
 
-      const result = wrapped(...args);
-      // Clear Mass Edit clipboard to allows core pasting again
-      if (result) deleteFromClipboard(canvas.activeLayer.constructor.documentName);
-      return result;
-    },
-    'MIXED'
-  );
+  // Register mouse wheel listener by inserting it just before the Foundry's MouseManager
+  // If we're in some kind of placeable preview we want to handle preview transformations and
+  // stop propagation to other wheel related functions
   libWrapper.register(
     MODULE_ID,
-    'ClientKeybindings._onPaste',
+    'foundry.helpers.interaction.MouseManager.prototype._activateListeners',
     function (wrapped, ...args) {
-      if (pasteData()) return true;
+      window.addEventListener(
+        'wheel',
+        (event) => {
+          if (
+            (TransformBus.active() || BrushMenu.isActive()) &&
+            (event.ctrlKey ||
+              event.shiftKey ||
+              event.metaKey ||
+              event.altKey ||
+              game.keyboard.downKeys.has('KeyZ') ||
+              game.keyboard.downKeys.has('Space'))
+          ) {
+            // Prevent zooming the entire browser window
+            if (event.ctrlKey || event.altKey) event.preventDefault();
+
+            let dy = (event.delta = event.deltaY);
+            if (event.shiftKey && dy === 0) {
+              dy = event.delta = event.deltaX;
+            }
+            if (dy === 0) return;
+
+            if (event.altKey || game.keyboard.downKeys.has('Space'))
+              TransformBus.addScaling(event.delta < 0 ? 0.05 : -0.05);
+            else if ((event.ctrlKey || event.metaKey) && event.shiftKey) BrushMenu.iterate(event.delta >= 0, true);
+            else if (event.ctrlKey || event.metaKey) TransformBus.addRotation(event.delta < 0 ? 2.5 : -2.5);
+            else if (event.shiftKey) TransformBus.addRotation(event.delta < 0 ? 15 : -15);
+            else if (game.keyboard.downKeys.has('KeyZ')) {
+              let delta = event.delta < 0 ? 1 : -1;
+              if (Scenescape.active) delta = delta * Scenescape.depth * 0.01;
+              TransformBus.addElevation(delta);
+            }
+
+            event.stopImmediatePropagation();
+          }
+        },
+        { passive: false }
+      );
+
       return wrapped(...args);
     },
-    'MIXED'
-  );
-
-  // Register mouse wheel wrapper to scale/rotate preset previews
-  libWrapper.register(
-    MODULE_ID,
-    'MouseManager.prototype._onWheel',
-    function (wrapped, ...args) {
-      const event = args[0];
-
-      if (
-        (TransformBus.active() || BrushMenu.isActive()) &&
-        (event.ctrlKey ||
-          event.shiftKey ||
-          event.metaKey ||
-          event.altKey ||
-          game.keyboard.downKeys.has('KeyZ') ||
-          game.keyboard.downKeys.has('Space'))
-      ) {
-        // Prevent zooming the entire browser window
-        if (event.ctrlKey || event.altKey) event.preventDefault();
-
-        let dy = (event.delta = event.deltaY);
-        if (event.shiftKey && dy === 0) {
-          dy = event.delta = event.deltaX;
-        }
-        if (dy === 0) return;
-
-        if (event.altKey || game.keyboard.downKeys.has('Space'))
-          TransformBus.addScaling(event.delta < 0 ? 0.05 : -0.05);
-        else if ((event.ctrlKey || event.metaKey) && event.shiftKey) BrushMenu.iterate(event.delta >= 0, true);
-        else if (event.ctrlKey || event.metaKey) TransformBus.addRotation(event.delta < 0 ? 2.5 : -2.5);
-        else if (event.shiftKey) TransformBus.addRotation(event.delta < 0 ? 15 : -15);
-        else if (game.keyboard.downKeys.has('KeyZ')) {
-          let delta = event.delta < 0 ? 1 : -1;
-          if (Scenescape.active) delta = delta * Scenescape.depth * 0.01;
-          TransformBus.addElevation(delta);
-        }
-        return;
-      }
-
-      const result = wrapped(...args);
-      return result;
-    },
-    'MIXED'
+    'WRAPPER'
   );
 
   // Prevent placeable highlighting if a preview transformer is active
   libWrapper.register(
     MODULE_ID,
-    'Canvas.prototype.highlightObjects',
+    'foundry.canvas.Canvas.prototype.highlightObjects',
     function (wrapped, ...args) {
       if (MassTransformer.active()) return;
       return wrapped(...args);
@@ -171,7 +150,7 @@ Hooks.once('init', () => {
   if (game.settings.get(MODULE_ID, 'presetSceneControl')) {
     libWrapper.register(
       MODULE_ID,
-      'SceneNavigation.prototype._getContextMenuOptions',
+      'foundry.applications.ui.SceneNavigation.prototype._getContextMenuOptions',
       function (wrapped, ...args) {
         const options = wrapped(...args);
         options.push({
@@ -179,7 +158,7 @@ Hooks.once('init', () => {
           icon: '<i class="fa-solid fa-pen-to-square"></i>',
           condition: game.user.isGM,
           callback: (li) => {
-            const sceneId = li.attr('data-scene-id');
+            const sceneId = $(li).attr('data-scene-id');
             showMassEdit(game.scenes.get(sceneId));
           },
         });
@@ -190,6 +169,8 @@ Hooks.once('init', () => {
   }
 
   registerPresetBrowserHooks();
+  registerBlackBarHooks();
+  registerSceneConfigHooks();
 
   // Handle broadcasts
   // Needed to allow players to spawn Presets by delegating create document request to GMs
@@ -282,14 +263,5 @@ Hooks.on('renderTileHUD', (hud, html, tileData) => {
     $(html).on('click', '[data-action="massConfig"]', () => {
       showMassEdit();
     });
-  }
-});
-
-Hooks.on('renderActiveEffectConfig', (app) => {
-  const el = $(app.form).find('.effects-header .key');
-  if (el.length) {
-    const me = $('<i title="Apply \'Mass Edit\' preset" style="font-size:smaller;color:brown;"> <a>[ME]</a></i>');
-    me.on('click', () => activeEffectPresetSelect(app));
-    el.append(me);
   }
 });

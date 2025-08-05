@@ -2,7 +2,7 @@ import { MODULE_ID } from '../constants.js';
 import { localize } from '../utils.js';
 import { PresetBrowser } from './browser/browserApp.js';
 import { PresetAPI } from './collection.js';
-import { PresetContainer } from './containerApp.js';
+import { PresetContainerV2 } from './containerAppV2.js';
 
 /**
  * Constructs and opens a menu for browsing through Mass Edit presets
@@ -20,12 +20,14 @@ export async function openCategoryBrowser(
     globalSearch = false,
     globalQuery = '',
     editEnabled = false,
+    disableDelete = true,
     width,
     height,
   } = {}
 ) {
   // // If category browser is already open close it
-  const app = Object.values(ui.windows).find((w) => w._browserId === name);
+  const id = 'mass-edit-category-browser-' + (name?.slugify() ?? foundry.utils.randomID());
+  const app = foundry.applications.instances.get(id);
   if (app) {
     app.close(true);
     return;
@@ -39,8 +41,10 @@ export async function openCategoryBrowser(
     globalSearch,
     globalQuery,
     editEnabled,
+    disableDelete,
     width,
     height,
+    id,
   }).render(true);
 }
 
@@ -84,81 +88,109 @@ class CategoryList {
   }
 }
 
-class CategoryBrowserApplication extends PresetContainer {
+class CategoryBrowserApplication extends PresetContainerV2 {
+  static DEFAULT_OPTIONS = {
+    tag: 'form',
+    classes: ['mass-edit-window-fill'],
+    form: {
+      handler: undefined,
+      submitOnChange: true,
+      closeOnSubmit: false,
+    },
+    window: {
+      contentClasses: ['standard-form', 'mass-edit-category-browser'],
+      resizable: true,
+      minimizable: true,
+    },
+    position: {
+      width: 450,
+      height: 450,
+    },
+    actions: {
+      categorySelect: CategoryBrowserApplication._onCategorySelect,
+      generateMacro: CategoryBrowserApplication._onGenerateMacro,
+      toggleSetting: CategoryBrowserApplication._onToggleSetting,
+      globalSearchToggle: CategoryBrowserApplication._onGlobalSearchToggle,
+    },
+  };
+
+  /** @override */
+  static PARTS = {
+    main: { template: `modules/${MODULE_ID}/templates/preset/categoryBrowser.hbs` },
+  };
+
   static oldMenuStates = {};
 
   _menus = [];
   _categories = new Map();
 
-  // Track positions of previously opened apps
-  static previousPositions = {};
-
   constructor(menu, options = {}) {
-    const id = options.name ?? foundry.utils.randomID();
-    let positionOpts = CategoryBrowserApplication.previousPositions[id] ?? {};
-    super({}, { ...options, disableDelete: true, ...positionOpts });
-    this._browserId = id;
+    if (options.retainState && CategoryBrowserApplication.oldMenuStates[options.id]) {
+      const { globalSearch } = CategoryBrowserApplication.oldMenuStates[options.id];
+      options.globalSearch = globalSearch;
+    }
+
+    super({}, options);
 
     // If the state of the window was set to be retained we retrieve it now
     // and run the necessary queries to get the results
-    if (options.retainState && CategoryBrowserApplication.oldMenuStates[this._browserId]) {
-      const { menus, categories, lastSearch, globalSearch } = CategoryBrowserApplication.oldMenuStates[this._browserId];
+    if (options.retainState && CategoryBrowserApplication.oldMenuStates[options.id]) {
+      const { menus, categories, lastSearch } = CategoryBrowserApplication.oldMenuStates[options.id];
       this._menus = menus;
       this._categories = categories;
       this._lastSearch = lastSearch;
-      this.options.globalSearch = globalSearch;
-      this._runQueryTree();
+      this._forceQueryRun = true;
     } else {
       // Otherwise we process the fed in JSON menu structure
       this._processMenu(menu)._topMenu = true;
     }
-  }
 
-  /** @inheritdoc */
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ['sheet', 'mass-edit-dark-window', 'mass-edit-category-browser'],
-      template: `modules/${MODULE_ID}/templates/preset/categoryBrowser.html`,
-      width: 450,
-      height: 450,
-      resizable: true,
-      minimizable: true,
-      scrollY: ['.item-list', '.category-list'],
-    });
+    this._globalSearch = this.options.globalSearch;
   }
-
-  /* -------------------------------------------- */
 
   /** @override */
-  get id() {
-    return 'mass-edit-category-browser-' + this._browserId;
+  _initializeApplicationOptions(options) {
+    options = super._initializeApplicationOptions(options);
+    options.uniqueId = 'mass-edit-category-browser:' + options.name;
+    return options;
   }
 
   get title() {
     return this.options.name ?? 'Category Browser';
   }
 
-  async getData(options) {
-    return {
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+
+    if (this._forceQueryRun) {
+      this._forceQueryRun = false;
+      await this._runQueryTree(true);
+    }
+
+    return Object.assign(context, {
       menus: this._menus.filter((menu) => menu.active),
       presets: this._presetResults,
-      alignment: options.alignment,
-      searchBar: options.searchBar,
-      globalSearch: options.globalSearch,
+      alignment: this.options.alignment,
+      searchBar: this.options.searchBar,
+      globalSearch: this._globalSearch,
       lastSearch: this._lastSearch,
-      editEnabled: options.editEnabled,
-    };
+      editEnabled: this.options.editEnabled,
+    });
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
-
-    html.find('.category').on('click', this._onClickCategory.bind(this));
-    if (this.options.editEnabled) {
-      html.find('.category').on('contextmenu', this._onRightClickCategory.bind(this));
+  /** @override */
+  _attachPartListeners(partId, element, options) {
+    super._attachPartListeners(partId, element, options);
+    switch (partId) {
+      case 'main':
+        let html = $(element);
+        if (this.options.editEnabled) {
+          html.find('.category').on('contextmenu', this._onRightClickCategory.bind(this));
+        }
+        html.find('.header-search input').on('input', this._onSearchInput.bind(this));
+        break;
     }
-    html.find('.header-search input').on('input', this._onSearchInput.bind(this));
-    html.find('.globalSearchToggle').on('click', this._onGlobalSearchToggle.bind(this));
   }
 
   async _onSearchInput(event) {
@@ -171,11 +203,13 @@ class CategoryBrowserApplication extends PresetContainer {
     if (this._lastSearch || !search) this._runQueryTree();
   }
 
-  _onGlobalSearchToggle(event) {
-    this.options.globalSearch = !this.options.globalSearch;
+  static _onGlobalSearchToggle(event) {
+    this._globalSearch = !this._globalSearch;
 
-    if (this.options.globalSearch) $(event.currentTarget).addClass('active');
-    else $(event.currentTarget).removeClass('active');
+    const element = event.target.closest('.globalSearchToggle');
+
+    if (!this._globalSearch) element.classList.remove('active');
+    else element.classList.add('active');
 
     this._runQueryTree();
   }
@@ -205,8 +239,8 @@ class CategoryBrowserApplication extends PresetContainer {
    * Handle category click event
    * @param {*} event
    */
-  async _onClickCategory(event) {
-    const category = this._categories.get($(event.currentTarget).data('id'));
+  static async _onCategorySelect(event, element) {
+    const category = this._categories.get(element.dataset.id);
 
     this._menus.forEach((menu) => (menu.active = false));
     if (category.active) this._setCategoryInactive(category);
@@ -265,7 +299,7 @@ class CategoryBrowserApplication extends PresetContainer {
    * @param {Boolean} global
    * @returns
    */
-  async _runQueryTree() {
+  async _runQueryTree(resultsOnly = false) {
     const runTime = new Date().getTime();
     this._queryRunTime = runTime;
     this._presetResults = null;
@@ -274,7 +308,7 @@ class CategoryBrowserApplication extends PresetContainer {
 
     const queries = [];
 
-    if (this._lastSearch && this.options.globalSearch) {
+    if (this._lastSearch && this._globalSearch) {
       queries.push(this._lastSearch);
     } else {
       let lastCategory;
@@ -307,7 +341,7 @@ class CategoryBrowserApplication extends PresetContainer {
     if (this._queryRunTime !== runTime) return;
     this._presetResults = results;
 
-    return this._renderContent();
+    if (!resultsOnly) return this._renderContent();
   }
 
   /**
@@ -317,11 +351,13 @@ class CategoryBrowserApplication extends PresetContainer {
    */
   async _renderContent(loading = false) {
     if (loading) {
-      this.element.find('.item-list').html(
-        `<div style="width: 100%; height: 100%; text-align: center; font-size: xxx-large;">
+      $(this.form)
+        .find('.item-list')
+        .html(
+          `<div style="width: 100%; height: 100%; text-align: center; font-size: xxx-large;">
             <i class="fa-duotone fa-solid fa-spinner fa-spin-pulse" style="position: relative; top: 30%;"></i>
            </div>`
-      );
+        );
     } else {
       return super._renderContent({ presets: this._presetResults });
     }
@@ -345,94 +381,73 @@ class CategoryBrowserApplication extends PresetContainer {
     });
   }
 
-  /** @override */
-  setPosition(...args) {
-    super.setPosition(...args);
-
-    const { left, top, width, height } = this.position;
-    CategoryBrowserApplication.previousPositions[this._browserId] = { left, top, width, height };
-  }
-
   async close(options = {}) {
     if (this.options.retainState) {
-      CategoryBrowserApplication.oldMenuStates[this._browserId] = {
+      CategoryBrowserApplication.oldMenuStates[this.id] = {
         menus: this._menus,
         categories: this._categories,
         lastSearch: this._lastSearch,
-        globalSearch: this.options.globalSearch,
+        globalSearch: this._globalSearch,
       };
     }
 
     return super.close(options);
   }
 
-  async _toggleSetting(setting, runQueryTree = false) {
+  static async _onToggleSetting(event, target) {
+    const setting = target.dataset.setting;
+    if (!setting) return;
     await PresetBrowser.setSetting(setting, !PresetBrowser.CONFIG[setting]);
-    if (runQueryTree) return this._runQueryTree();
+    $(target).css('color', PresetBrowser.CONFIG[setting] ? 'darkorange' : '');
+    if (setting === 'virtualDirectory' || setting === 'externalCompendiums') return this._runQueryTree();
   }
 
   _getHeaderButtons() {
-    const buttons = super._getHeaderButtons();
+    const buttons = [];
 
     if (game.user.isGM) {
       buttons.unshift({
-        label: '',
-        class: 'mass-edit-indexer',
-        tooltip: 'Perform directory indexing.',
         icon: 'fas fa-archive',
-        onclick: this._onOpenIndexer.bind(this),
+        action: 'openIndexer',
+        tooltip: 'Open Directory Indexer',
       });
 
       buttons.unshift({
-        label: '',
-        class: 'mass-edit-category-browser-virtual',
         icon: 'fas fa-file-search',
         tooltip: localize('presets.controls.virtual-directory'),
-        onclick: () => this._toggleSetting('virtualDirectory', true),
-        toggle: true,
+        action: 'toggleSetting',
+        setting: 'virtualDirectory',
         active: () => PresetBrowser.CONFIG.virtualDirectory,
-        color: 'darkorange',
       });
 
       buttons.unshift({
-        label: '',
-        class: 'mass-edit-category-browser-external',
         icon: 'fa-solid fa-books',
         tooltip: localize('presets.controls.external-compendiums'),
-        onclick: () => this._toggleSetting('externalCompendiums', true),
-        toggle: true,
+        action: 'toggleSetting',
+        setting: 'externalCompendiums',
         active: () => PresetBrowser.CONFIG.externalCompendiums,
-        color: 'darkorange',
       });
 
       buttons.unshift({
-        label: '',
-        class: 'mass-edit-category-browser-scale',
         icon: 'fa-solid fa-arrow-down-big-small',
         tooltip: localize('presets.controls.scale-to-grid'),
-        onclick: () => this._toggleSetting('autoScale'),
-        toggle: true,
+        action: 'toggleSetting',
+        setting: 'autoScale',
         active: () => PresetBrowser.CONFIG.autoScale,
-        color: 'darkorange',
       });
 
       buttons.unshift({
-        label: '',
-        class: 'mass-edit-category-browser-switch',
         icon: 'fa-solid fa-arrows-cross',
         tooltip: localize('presets.controls.layer-switch'),
-        onclick: () => this._toggleSetting('switchLayer'),
-        toggle: true,
+        action: 'toggleSetting',
+        setting: 'switchLayer',
         active: () => PresetBrowser.CONFIG.switchLayer,
-        color: 'darkorange',
       });
 
       if (this.options.editEnabled) {
         buttons.unshift({
-          label: '',
-          class: 'mass-edit-category-browser-gen-macro',
           icon: 'fa-solid fa-dice-d20',
-          onclick: this._generateMacro.bind(this),
+          action: 'generateMacro',
         });
       }
     }
@@ -440,7 +455,26 @@ class CategoryBrowserApplication extends PresetContainer {
     return buttons;
   }
 
-  _generateMacro() {
+  /** @override */
+  async _renderFrame(options) {
+    const frame = await super._renderFrame(options);
+    if (!this.hasFrame) return frame;
+
+    const headerButtons = this._getHeaderButtons();
+    let html = '';
+    headerButtons.forEach((button) => {
+      html += `
+        <button ${button.active?.() ? 'style="color: darkorange"' : ''} type="button"
+        class="header-control icon ${button.icon}" data-action="${button.action}" data-setting="${button.setting}"
+                data-tooltip="${button.tooltip}" aria-label="${button.tooltip}"></button>
+      `;
+    });
+    this.window.close.insertAdjacentHTML('beforebegin', html);
+
+    return frame;
+  }
+
+  static _onGenerateMacro() {
     const options = this.options;
 
     let macro = `
@@ -449,9 +483,10 @@ const options = {
   alignment: "${options.alignment}",
   retainState: ${options.retainState},
   searchBar: ${options.searchBar},
-  globalSearch: ${options.globalSearch},
+  globalSearch: ${this._globalSearch},
   globalQuery: "${options.globalQuery}",
   editEnabled: ${options.editEnabled},
+  disableDelete: ${options.disableDelete}
 };
 
 const menu = ${JSON.stringify(this._menuToJson(this._menus[0]), null, 2)};

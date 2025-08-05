@@ -1,5 +1,106 @@
 # Changelog
 
+## [v6.0.9] - 2025-07-21
+- Resolved FXMaster+ effects not showing up in region config
+- Enabled proper masking for the firefly effect
+- Updated pt-br and pl translations, thanks Kharmans and Lioheart!
+
+## [v6.0.8] - 2025-07-19
+- Updated regions Suppress Weather functionality to allow scene level particle effects to play in areas marked as a hole within a Suppress Weather region
+- Added a few localization keys for July's new FXMaster+ effects
+- Updated pt-br and pl translations, thanks Kharmans and Lioheart!
+
+## [v6.0.7] - 2025-07-16
+- Updated Clear Particle and Filter Effects button dialog to dialogV2. Now clears Particle and Filter Sidebar controls buttons highlighting immediately.
+- Resolve issue with region masking on one scene applying across multiple scenes even if no region was present on other scenes
+- Updated the onUpdateParticleEffects api to allow the particle effects app window buttons to end effects when relevant
+- Added additional logging to animation effects to give clearer direction if no animation files are found
+- Additional localization keys added
+
+## [v6.0.6] - 2025-07-09
+- Resolve issue with region initialization being done too late causing an issue where tokens were unable to move
+- Resolve issue with the 'Suppress Weather' region behavior not working for ellipse and polygon region types
+- Couple small bugfixes for css button color assignment
+
+## [v6.0.5] - 2025-07-08
+- Resolve doubling up of the initial Animation Module scan when switching scenes
+- Removed thumbnail scan on first Animation Module scan. The process can take quite a while, especially on hosted services, so it will only be run when done manually through the Module settings page.
+
+## [v6.0.4] - 2025-07-07
+- Resolve Particle Effects window not auto-adjusting size based on dropdown expansion
+- Removed !important css tags that were unnecessary
+- Added updated pt-BR and pl translations from Kharmans and Lioheart. Thanks!
+- Resolved update chat message displaying on every refresh in V12
+- Resolve Suppress Weather masking not applying consistently
+
+## [v6.0.3] - 2025-07-06
+- Resolve module.zip not including the parent fxmaster folder
+- Remove test css line left in effecting all buttons
+- Add UI notification error if attempting to open the Animation Effects window without the Animations DB being properly built
+
+## [v6.0.2] - 2025-07-06
+- Resolve module.zip not including the parent fxmaster folder
+- Remove test css line left in effecting all buttons
+- Add UI notification error if attempting to open the Animation Effects window without the Animations DB being properly built
+
+## [v6.0.2] - 2025-07-06
+- Resolve module.zip not including the parent fxmaster folder
+- Remove test css line left in effecting all buttons
+- Add UI notification error if attempting to open the Animation Effects window without the Animations DB being properly built
+
+## [v6.0.2] - 2025-07-06
+- Resolve module.zip not including the parent fxmaster folder
+- Remove test css line left in effecting all buttons
+- Add UI notification error if attempting to open the Animation Effects window without the Animations DB being properly built
+
+## [v6.0.1] - 2025-07-06
+FXMaster Version 6! Big visual and functional overhaul. V12 & V13 compatible. Removed all previously deprecated code. To reduce module size - removed individual animation assets hosted within the module and converted all module image assets to webp from png. Added and updated a number of localization keys. Changed module name to Gambit's FXMaster to align with my other modules, identifiers remains unchanged. Overview of the updates below, although I'm sure there will be some stuff I missed!
+- Filter Effects
+  - Re-wrote the menu for application v2!
+  - Toggles can now be enabled and disabled individually. Toggle parameters will be updated in real time when making a change, and parameters will remember the last set value. 
+  - Window position will be saved based off last placement.
+- Particle Effects
+  - Re-wrote the menu for application v2!
+  - Toggles can now be enabled and disabled individually.
+  - Toggle parameters will be updated in real time when making a change, and parameters will remember the last set value.
+  - Window position will be saved based off last placement, along with window width.
+  - App updated for a 3 column layout. This can be adjusted by re-sizing the app window, single column width is still supported.
+  - NEW: Region support! You can now add particle effects to a region with the 'FXMaster: Particle Effects' region behavior.
+  - NEW: Regions now support masking scene level particle effects, which can be applied with the 'Suppress Weather' region behavior. This respects FXMasters invert particle effect mask scene tool as well.
+- Animation Effects (Previously Special Effects)
+  - Complete overhaul. The goal of this re-work was to remove seldom used features and focus on giving this window an identity. In my mind that was a tool that allows flexible previewing and searching of animations.
+  - FXMaster no longer supports features that overlapped with Sequencer, Sequencer is just better (much better) at those things. Placing animations via drag-drop as a tile is still supported, and the scale and anchor parameters can still be set on each animation.
+  - App now displays animations in a grid. The window can be re-sized to change animation sizes for large previews on hover.
+  - Animation details can be viewed and include file name, file path, and sequencer db path where relevant.
+  - NEW: Added search functionality with more advanced query support via AND, OR, and NOT. As an example, this will allow searching for any animation with eldritch in the name but not blast - ex: eldritch AND NOT blast
+  - NEW: Added support for all major animation modules. Animations db will be built on first load after update based off modules present. The Animations db can be re-built at any time through the FXMaster settings page if animation modules are added, updated, or removed.
+  - NEW: Added support for custom animation folders. This can be specified in the FXMaster settings page.
+  - NEW: Added the ability to favorite animations, these will be accessible as a dropdown filter tag along with the major animation authors and custom folder
+
+## [v6.0.0] - 2025-07-06
+FXMaster Version 6! Big visual and functional overhaul. V12 & V13 compatible. Removed all previously deprecated code. To reduce module size - removed individual animation assets hosted within the module and converted all module image assets to webp from png. Added and updated a number of localization keys. Changed module name to Gambit's FXMaster to align with my other modules, identifiers remains unchanged. Overview of the updates below, although I'm sure there will be some stuff I missed!
+- Filter Effects
+  - Re-wrote the menu for application v2!
+  - Toggles can now be enabled and disabled individually. Toggle parameters will be updated in real time when making a change, and parameters will remember the last set value. 
+  - Window position will be saved based off last placement.
+- Particle Effects
+  - Re-wrote the menu for application v2!
+  - Toggles can now be enabled and disabled individually.
+  - Toggle parameters will be updated in real time when making a change, and parameters will remember the last set value.
+  - Window position will be saved based off last placement, along with window width.
+  - App updated for a 3 column layout. This can be adjusted by re-sizing the app window, single column width is still supported.
+  - NEW: Region support! You can now add particle effects to a region with the 'FXMaster: Particle Effects' region behavior.
+  - NEW: Regions now support masking scene level particle effects, which can be applied with the 'Suppress Weather' region behavior. This respects FXMasters invert particle effect mask scene tool as well.
+- Animation Effects (Previously Special Effects)
+  - Complete overhaul. The goal of this re-work was to remove seldom used features and focus on giving this window an identity. In my mind that was a tool that allows flexible previewing and searching of animations.
+  - FXMaster no longer supports features that overlapped with Sequencer, Sequencer is just better (much better) at those things. Placing animations via drag-drop as a tile is still supported, and the scale and anchor parameters can still be set on each animation.
+  - App now displays animations in a grid. The window can be re-sized to change animation sizes for large previews on hover.
+  - Animation details can be viewed and include file name, file path, and sequencer db path where relevant.
+  - NEW: Added search functionality with more advanced query support via AND, OR, and NOT. As an example, this will allow searching for any animation with eldritch in the name but not blast - ex: eldritch AND NOT blast
+  - NEW: Added support for all major animation modules. Animations db will be built on first load after update based off modules present. The Animations db can be re-built at any time through the FXMaster settings page if animation modules are added, updated, or removed.
+  - NEW: Added support for custom animation folders. This can be specified in the FXMaster settings page.
+  - NEW: Added the ability to favorite animations, these will be accessible as a dropdown filter tag along with the major animation authors and custom folder
+
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ### [5.0.1](https://github.com/ghost-fvtt/fxmaster/compare/v5.0.0...v5.0.1) (2025-05-21)
