@@ -17,9 +17,9 @@
   },
   "systemVersion": "4.0.0",
   "resetKeys": false,
-  "background": "modules/coriolis-corerules/images/ch11/Kap4_coriolis_start.webp",
-  "lastPlayed": "Mon Aug 04 2025 18:35:56 GMT+0200 (Central European Summer Time)",
-  "playtime": 44965170,
+  "background": "worlds/coriolis/img/ship/pj/source-2856398998.jpg",
+  "lastPlayed": "Tue Aug 05 2025 13:52:17 GMT+0200 (Central European Summer Time)",
+  "playtime": 45033564,
   "safeMode": false,
   "packs": [
     {

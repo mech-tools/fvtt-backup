@@ -1,8 +1,8 @@
-2025/08/04-18:33:50.962288 7f3049f3e700 Recovering log #481
-2025/08/04-18:33:50.965074 7f3049f3e700 Delete type=0 #481
-2025/08/04-18:33:50.965099 7f3049f3e700 Delete type=3 #479
-2025/08/04-18:35:46.180902 7f2b33af4700 Level-0 table #487: started
-2025/08/04-18:35:46.181154 7f2b33af4700 Level-0 table #487: 0 bytes OK
-2025/08/04-18:35:46.182274 7f2b33af4700 Delete type=0 #485
-2025/08/04-18:35:46.185107 7f2b33af4700 Manual compaction at level-0 from '!messages!4G1OE13W78171pyT' @ 72057594037927935 : 1 .. '!messages!zPoC6wfX6Mucp66U' @ 0 : 0; will stop at (end)
-2025/08/04-18:35:46.185199 7f2b33af4700 Manual compaction at level-1 from '!messages!4G1OE13W78171pyT' @ 72057594037927935 : 1 .. '!messages!zPoC6wfX6Mucp66U' @ 0 : 0; will stop at (end)
+2025/08/05-13:39:13.897677 7f304a73f700 Recovering log #498
+2025/08/05-13:39:13.900636 7f304a73f700 Delete type=3 #496
+2025/08/05-13:39:13.900670 7f304a73f700 Delete type=0 #498
+2025/08/05-13:50:43.089272 7f2b33af4700 Level-0 table #503: started
+2025/08/05-13:50:43.089499 7f2b33af4700 Level-0 table #503: 0 bytes OK
+2025/08/05-13:50:43.090825 7f2b33af4700 Delete type=0 #501
+2025/08/05-13:50:43.092418 7f2b33af4700 Manual compaction at level-0 from '!messages!4G1OE13W78171pyT' @ 72057594037927935 : 1 .. '!messages!zPoC6wfX6Mucp66U' @ 0 : 0; will stop at (end)
+2025/08/05-13:50:43.092531 7f2b33af4700 Manual compaction at level-1 from '!messages!4G1OE13W78171pyT' @ 72057594037927935 : 1 .. '!messages!zPoC6wfX6Mucp66U' @ 0 : 0; will stop at (end)
