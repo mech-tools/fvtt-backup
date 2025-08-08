@@ -1,7 +1,23 @@
-2025/08/04-15:00:33.879350 7f8076ffd700 Recovering log #1343
-2025/08/04-15:00:33.882896 7f8076ffd700 Delete type=3 #1341
-2025/08/04-15:00:33.882982 7f8076ffd700 Delete type=0 #1343
-2025/08/04-18:30:22.076360 7f7df5aa4700 Level-0 table #1348: started
-2025/08/04-18:30:22.076563 7f7df5aa4700 Level-0 table #1348: 0 bytes OK
-2025/08/04-18:30:22.077756 7f7df5aa4700 Delete type=0 #1346
-2025/08/04-18:30:22.081846 7f7df5aa4700 Manual compaction at level-0 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)
+2025/08/07-21:32:59.463829 7f8f7ef080 Recovering log #1355
+2025/08/07-21:32:59.482681 7f8f7ef080 Delete type=2 #1284
+2025/08/07-21:32:59.485257 7f8f7ef080 Delete type=0 #1303
+2025/08/07-21:32:59.489113 7f8f7ef080 Delete type=0 #1306
+2025/08/07-21:32:59.492930 7f8f7ef080 Delete type=0 #1307
+2025/08/07-21:32:59.496679 7f8f7ef080 Delete type=0 #1341
+2025/08/07-21:32:59.500419 7f8f7ef080 Delete type=2 #1343
+2025/08/07-21:32:59.504346 7f8f7ef080 Delete type=0 #1355
+2025/08/07-21:32:59.508264 7f8f7ef080 Delete type=3 #1301
+2025/08/07-21:32:59.512033 7f8f7ef080 Delete type=3 #1305
+2025/08/07-21:32:59.515811 7f8f7ef080 Delete type=3 #1339
+2025/08/07-21:32:59.519633 7f8f7ef080 Delete type=3 #1353
+2025/08/07-21:38:35.554706 7e6bfff080 Level-0 table #1360: started
+2025/08/07-21:38:35.565173 7e6bfff080 Level-0 table #1360: 94202 bytes OK
+2025/08/07-21:38:35.568965 7e6bfff080 Delete type=0 #1358
+2025/08/07-21:38:35.592655 7e6bfff080 Manual compaction at level-0 from '!folders!c59jZ0QhAWYSsHdV' @ 72057594037927935 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 40224 : 1
+2025/08/07-21:38:35.592673 7e6bfff080 Compacting 1@0 + 1@1 files
+2025/08/07-21:38:35.607939 7e6bfff080 Generated table #1361@0: 478 keys, 93535 bytes
+2025/08/07-21:38:35.607981 7e6bfff080 Compacted 1@0 + 1@1 files => 93535 bytes
+2025/08/07-21:38:35.608850 7e6bfff080 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/08/07-21:38:35.612234 7e6bfff080 Delete type=2 #1360
+2025/08/07-21:38:35.615440 7e6bfff080 Delete type=2 #1348
+2025/08/07-21:38:35.657281 7e6bfff080 Manual compaction at level-0 from '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 40224 : 1 .. '!tables.results!z67JoxW5zzn0Kjg8.tLAxbSn0LfPjS4I5' @ 0 : 0; will stop at (end)

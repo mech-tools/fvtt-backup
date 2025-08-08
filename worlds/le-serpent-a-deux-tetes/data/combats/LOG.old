@@ -1,7 +1,7 @@
-2025/08/04-15:00:32.766535 7f80767fc700 Recovering log #349
-2025/08/04-15:00:32.769723 7f80767fc700 Delete type=0 #349
-2025/08/04-15:00:32.769750 7f80767fc700 Delete type=3 #347
-2025/08/04-18:30:22.087925 7f7df5aa4700 Level-0 table #354: started
-2025/08/04-18:30:22.088269 7f7df5aa4700 Level-0 table #354: 0 bytes OK
-2025/08/04-18:30:22.089524 7f7df5aa4700 Delete type=0 #352
-2025/08/04-18:30:22.089884 7f7df5aa4700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2025/08/04-18:33:48.881050 7f80767fc700 Recovering log #353
+2025/08/04-18:33:48.883510 7f80767fc700 Delete type=0 #353
+2025/08/04-18:33:48.883536 7f80767fc700 Delete type=3 #351
+2025/08/07-10:55:36.874542 7f7df5aa4700 Level-0 table #358: started
+2025/08/07-10:55:36.874831 7f7df5aa4700 Level-0 table #358: 0 bytes OK
+2025/08/07-10:55:36.883060 7f7df5aa4700 Delete type=0 #356
+2025/08/07-10:55:36.889905 7f7df5aa4700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)

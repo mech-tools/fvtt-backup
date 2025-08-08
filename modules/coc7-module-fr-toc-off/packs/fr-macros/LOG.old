@@ -1,7 +1,23 @@
-2025/08/04-15:00:33.910972 7f80767fc700 Recovering log #1295
-2025/08/04-15:00:33.913887 7f80767fc700 Delete type=3 #1293
-2025/08/04-15:00:33.913933 7f80767fc700 Delete type=0 #1295
-2025/08/04-18:30:22.080597 7f7df5aa4700 Level-0 table #1300: started
-2025/08/04-18:30:22.080821 7f7df5aa4700 Level-0 table #1300: 0 bytes OK
-2025/08/04-18:30:22.081810 7f7df5aa4700 Delete type=0 #1298
-2025/08/04-18:30:22.082470 7f7df5aa4700 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
+2025/08/07-21:32:59.748810 7f8ffff080 Recovering log #1307
+2025/08/07-21:32:59.767477 7f8ffff080 Delete type=2 #1236
+2025/08/07-21:32:59.770018 7f8ffff080 Delete type=0 #1255
+2025/08/07-21:32:59.773859 7f8ffff080 Delete type=0 #1258
+2025/08/07-21:32:59.777564 7f8ffff080 Delete type=0 #1259
+2025/08/07-21:32:59.781382 7f8ffff080 Delete type=0 #1293
+2025/08/07-21:32:59.785251 7f8ffff080 Delete type=2 #1295
+2025/08/07-21:32:59.789059 7f8ffff080 Delete type=0 #1307
+2025/08/07-21:32:59.792837 7f8ffff080 Delete type=3 #1253
+2025/08/07-21:32:59.796643 7f8ffff080 Delete type=3 #1257
+2025/08/07-21:32:59.800394 7f8ffff080 Delete type=3 #1291
+2025/08/07-21:32:59.804129 7f8ffff080 Delete type=3 #1305
+2025/08/07-21:38:35.645300 7e6bfff080 Level-0 table #1312: started
+2025/08/07-21:38:35.651304 7e6bfff080 Level-0 table #1312: 1151 bytes OK
+2025/08/07-21:38:35.654647 7e6bfff080 Delete type=0 #1310
+2025/08/07-21:38:35.674311 7e6bfff080 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at '!macros!IeRnp7Tqb8MxNtxT' @ 85 : 1
+2025/08/07-21:38:35.674326 7e6bfff080 Compacting 1@0 + 1@1 files
+2025/08/07-21:38:35.684905 7e6bfff080 Generated table #1313@0: 1 keys, 1151 bytes
+2025/08/07-21:38:35.684931 7e6bfff080 Compacted 1@0 + 1@1 files => 1151 bytes
+2025/08/07-21:38:35.685664 7e6bfff080 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/08/07-21:38:35.688834 7e6bfff080 Delete type=2 #1312
+2025/08/07-21:38:35.691935 7e6bfff080 Delete type=2 #1300
+2025/08/07-21:38:35.748883 7e6bfff080 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 85 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
