@@ -2,10 +2,11 @@
     "id": "custom-css",
     "title": "Custom CSS",
     "description": "Add custom CSS to your world",
-    "version": "2.3.1",
+    "version": "2.4.3",
     "compatibility": {
-        "minimum": 10,
-        "verified": 12
+        "minimum": 13,
+        "verified": 13,
+        "maximum": 13
     },
     "authors": [
         {
@@ -32,25 +33,26 @@
     "styles": [
         "./custom-css.css"
     ],
-    "relationships": {
-        "dependencies": [
-            {
-                "name": "_CodeMirror",
-                "type": "module",
-                "manifest": "https://raw.githubusercontent.com/League-of-Foundry-Developers/codemirror-lib/master/module.json"
-            }
-        ]
-    },
     "languages": [
         {
             "lang": "en",
             "name": "English",
             "path": "languages/en.json"
+        },
+        {
+            "lang": "pt",
+            "name": "Português (Brasil)",
+            "path": "languages/pt-BR.json"
+        },
+        {
+            "lang": "ja",
+            "name": "日本語",
+            "path": "languages/ja.json"
         }
     ],
     "manifest": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/latest/download/module.json",
     "url": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS",
-    "download": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/download/2.3.1/custom-css.zip",
+    "download": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/download/2.4.3/custom-css.zip",
     "readme": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/blob/master/readme.md",
     "bugs": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/issues",
     "changelog": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases",
