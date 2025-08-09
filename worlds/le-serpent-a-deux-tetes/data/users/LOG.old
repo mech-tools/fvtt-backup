@@ -1,8 +1,15 @@
-2025/08/04-18:33:49.051015 7f8076ffd700 Recovering log #397
-2025/08/04-18:33:49.053585 7f8076ffd700 Delete type=3 #395
-2025/08/04-18:33:49.053617 7f8076ffd700 Delete type=0 #397
-2025/08/07-10:55:36.929101 7f7df5aa4700 Level-0 table #402: started
-2025/08/07-10:55:36.929368 7f7df5aa4700 Level-0 table #402: 0 bytes OK
-2025/08/07-10:55:36.930490 7f7df5aa4700 Delete type=0 #400
-2025/08/07-10:55:36.935826 7f7df5aa4700 Manual compaction at level-0 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
-2025/08/07-10:55:36.935992 7f7df5aa4700 Manual compaction at level-1 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
+2025/08/08-10:42:33.721556 7fe990fbd700 Recovering log #404
+2025/08/08-10:42:33.724014 7fe990fbd700 Delete type=3 #403
+2025/08/08-10:42:33.724066 7fe990fbd700 Delete type=0 #404
+2025/08/08-18:12:48.425387 7fe98284b700 Level-0 table #408: started
+2025/08/08-18:12:48.426610 7fe98284b700 Level-0 table #408: 816 bytes OK
+2025/08/08-18:12:48.427628 7fe98284b700 Delete type=0 #406
+2025/08/08-18:12:48.460047 7fe98284b700 Manual compaction at level-0 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)
+2025/08/08-18:12:48.461140 7fe98284b700 Manual compaction at level-1 from '!users!Aexss42shc296v4f' @ 72057594037927935 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at '!users!Aexss42shc296v4f' @ 979 : 1
+2025/08/08-18:12:48.461147 7fe98284b700 Compacting 1@1 + 1@2 files
+2025/08/08-18:12:48.462520 7fe98284b700 Generated table #409@1: 2 keys, 1878 bytes
+2025/08/08-18:12:48.462533 7fe98284b700 Compacted 1@1 + 1@2 files => 1878 bytes
+2025/08/08-18:12:48.463968 7fe98284b700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/08/08-18:12:48.464023 7fe98284b700 Delete type=2 #408
+2025/08/08-18:12:48.464076 7fe98284b700 Delete type=2 #368
+2025/08/08-18:12:48.466795 7fe98284b700 Manual compaction at level-1 from '!users!Aexss42shc296v4f' @ 979 : 1 .. '!users!Y5jNoeB4JS4fjnj4' @ 0 : 0; will stop at (end)

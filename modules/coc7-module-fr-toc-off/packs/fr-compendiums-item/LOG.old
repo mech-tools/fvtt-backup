@@ -1,23 +1,7 @@
-2025/08/07-21:32:59.078558 7f8f7ef080 Recovering log #1376
-2025/08/07-21:32:59.101404 7f8f7ef080 Delete type=0 #1323
-2025/08/07-21:32:59.103945 7f8f7ef080 Delete type=2 #1325
-2025/08/07-21:32:59.107882 7f8f7ef080 Delete type=0 #1327
-2025/08/07-21:32:59.111637 7f8f7ef080 Delete type=0 #1328
-2025/08/07-21:32:59.115363 7f8f7ef080 Delete type=0 #1362
-2025/08/07-21:32:59.119068 7f8f7ef080 Delete type=2 #1364
-2025/08/07-21:32:59.123114 7f8f7ef080 Delete type=0 #1376
-2025/08/07-21:32:59.126894 7f8f7ef080 Delete type=3 #1321
-2025/08/07-21:32:59.130572 7f8f7ef080 Delete type=3 #1326
-2025/08/07-21:32:59.134367 7f8f7ef080 Delete type=3 #1360
-2025/08/07-21:32:59.138091 7f8f7ef080 Delete type=3 #1374
-2025/08/07-21:38:34.690093 7e6bfff080 Level-0 table #1382: started
-2025/08/07-21:38:34.730553 7e6bfff080 Level-0 table #1382: 935322 bytes OK
-2025/08/07-21:38:34.734638 7e6bfff080 Delete type=0 #1380
-2025/08/07-21:38:35.173606 7e6bfff080 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at '!items!zuesiHrVyGX2GDA7' @ 60131 : 1
-2025/08/07-21:38:35.173629 7e6bfff080 Compacting 1@0 + 1@1 files
-2025/08/07-21:38:35.224519 7e6bfff080 Generated table #1383@0: 731 keys, 940966 bytes
-2025/08/07-21:38:35.224575 7e6bfff080 Compacted 1@0 + 1@1 files => 940966 bytes
-2025/08/07-21:38:35.225694 7e6bfff080 compacted to: files[ 0 1 0 0 0 0 0 ]
-2025/08/07-21:38:35.229049 7e6bfff080 Delete type=2 #1382
-2025/08/07-21:38:35.232487 7e6bfff080 Delete type=2 #1378
-2025/08/07-21:38:35.352326 7e6bfff080 Manual compaction at level-0 from '!items!zuesiHrVyGX2GDA7' @ 60131 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
+2025/08/07-21:38:45.555972 7f8ffff080 Recovering log #1381
+2025/08/07-21:38:45.616575 7f8ffff080 Delete type=0 #1381
+2025/08/07-21:38:45.620117 7f8ffff080 Delete type=3 #1379
+2025/08/07-21:39:09.567824 7e6bfff080 Level-0 table #1387: started
+2025/08/07-21:39:09.569280 7e6bfff080 Level-0 table #1387: 0 bytes OK
+2025/08/07-21:39:09.572854 7e6bfff080 Delete type=0 #1385
+2025/08/07-21:39:09.575922 7e6bfff080 Manual compaction at level-0 from '!folders!1EKWASO6lyOeBcPJ' @ 72057594037927935 : 1 .. '!items!zuesiHrVyGX2GDA7' @ 0 : 0; will stop at (end)
