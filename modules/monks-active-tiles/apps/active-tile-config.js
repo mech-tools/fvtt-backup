@@ -472,7 +472,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             const contextOptions = this._getContextOptions();
             Hooks.call(`getActiveTileConfigContext`, this.element, contextOptions);
-            new foundry.applications.ux.ContextMenu(this.element, ".action-items .action", contextOptions, { fixed: true, jQuery: false });
+            new foundry.applications.ux.ContextMenu(this.element, ".action-list .action", contextOptions, { fixed: true, jQuery: false });
 
             $('.record-history', this.element).click(this.checkRecordHistory.bind(this));
             $('.per-token', this.element).click(this.checkPerToken.bind(this));
@@ -521,7 +521,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             // if this item is already in the list, then remove it, otherwise add it
 
             let id = $(event.currentTarget).attr("value");
-            let triggers = $('input[name="flags.monks-active-tiles.trigger"]', this.element).val().split(",");
+            let triggers = $('input[name="flags.monks-active-tiles.trigger"]', this.element).val().split(",").filter(t => !!t);
             if (triggers.includes(id)) {
                 // remove trigger
                 triggers.findSplice(t => t === id);
@@ -546,7 +546,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             event.stopPropagation();
             // remove trigger from the list
             let li = event.currentTarget.closest(".multiple-dropdown-option");
-            let id = li.dataset.actionId;
+            let id = li.dataset.id;
             let triggers = $('input[name="flags.monks-active-tiles.trigger"]', this.element).val().split(",");
             triggers.findSplice(t => t === id);
             $('input[name="flags.monks-active-tiles.trigger"]', this.element).val(triggers.join(","));
@@ -754,7 +754,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     callback: elem => {
                         let li = $(elem).closest('.action');
                         let idx = li.index();
-                        this._createAction.call(this, null, li, idx);
+                        ActiveTileConfig._createAction.call(this, null, li, idx);
                     }
                 },
                 {
@@ -764,7 +764,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     callback: elem => {
                         let li = $(elem).closest('.action');
                         let idx = li.index();
-                        this._createAction.call(this, null, li, idx + 1);
+                        ActiveTileConfig._createAction.call(this, null, li, idx + 1);
                     }
                 },
                 {
@@ -772,7 +772,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     icon: '<i class="far fa-copy"></i>',
                     condition: () => game.user.isGM,
                     callback: elem => {
-                        let li = $(elem).closest('.action');
+                        let li = elem.closest('.action');
                         const id = li.dataset.actionId;
                         return this.cloneAction(id);
                     }
@@ -782,16 +782,18 @@ export const WithActiveTileConfig = (TileConfig) => {
                     icon: '<i class="fas fa-trash"></i>',
                     condition: () => game.user.isGM,
                     callback: elem => {
-                        let li = $(elem).closest('.action');
+                        let li = elem.closest('.action');
                         const id = li.dataset.actionId;;
                         foundry.applications.api.DialogV2.confirm({
-                            title: `${game.i18n.localize("SIDEBAR.Delete")} action`,
+                            window: {
+                                title: `${game.i18n.localize("SIDEBAR.Delete")} action`,
+                            },
                             content: game.i18n.format("SIDEBAR.DeleteWarning", { type: 'action' }),
                             yes: {
                                 callback: this.deleteAction.bind(this, id)
                             },
                             options: {
-                                top: Math.min(li[0].offsetTop, window.innerHeight - 350),
+                                top: Math.min(li.offsetTop, window.innerHeight - 350),
                                 left: window.innerWidth - 720
                             }
                         });

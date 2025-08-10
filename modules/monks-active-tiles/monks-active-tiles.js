@@ -488,7 +488,7 @@ export class MonksActiveTiles {
                 return owners;
             }
         }
-        let players = forId instanceof Array ? forId : typeof forId == "string" ? forId.split(",") : [];
+        let players = forId instanceof Array ? forId : (typeof forId == "string" ? forId.split(",") : [forId]);
         return players.map(p => p.id || p);
     }
 
@@ -512,7 +512,7 @@ export class MonksActiveTiles {
             case "owner":
                 return i18n("MonksActiveTiles.for.owner");
             default:
-                let users = entity instanceof Array ? entity : typeof entity == "string" ? entity.split(",") : [];
+                let users = entity instanceof Array ? entity : (typeof entity == "string" ? entity.split(",") : [entity]);
                 if (users.length > 1)
                     return i18n("MonksActiveTiles.MultiplePlayers", { players: users.length });
                 else if (users.length == 1)
@@ -987,7 +987,7 @@ export class MonksActiveTiles {
         }
 
         // Lastly test special detection modes for vision sources
-        if (!(object instanceof Token)) return false;   // Special detection modes can only detect tokens
+        if (!(object instanceof foundry.canvas.placeables.Token)) return false;   // Special detection modes can only detect tokens
         for (const visionSource of canvas.effects.visionSources.values()) {
             if (!visionSource.active) continue;
             // Skip sources that are not both inside the scene or both inside the buffer
@@ -1505,7 +1505,7 @@ export class MonksActiveTiles {
             alpha: (entity.document.hidden ? (game.user.isGM ? 0.5 : 0) : entity.document.alpha ?? 1),
             hidden: entity.document.hidden
         };
-        if (entity instanceof Drawing || entity instanceof Tile) {
+        if (entity instanceof foundry.canvas.placeables.Drawing || entity instanceof foundry.canvas.placeables.Tile) {
             to.x += ((entity.document.width || entity.document.shape?.width || 0) / 2);
             to.y += ((entity.document.height || entity.document.shape?.height || 0) / 2);
         }
@@ -1569,7 +1569,7 @@ export class MonksActiveTiles {
                         foundry.utils.setProperty(entity, `_animationAttributes.${attribute.attribute}`, realval)
                         if (attribute.attribute == "alpha" && to.hidden === true && !game.user.isGM && !attribute.parent.visible)
                             attribute.parent.object.visible = true;
-                        if (attribute.parent instanceof AmbientLight) {
+                        if (attribute.parent instanceof foundry.canvas.placeables.AmbientLight) {
                             attribute.parent.document[attribute.attribute] = realval;
                             attribute.parent.initializeLightSource({ deleted: false });
                             //attribute.parent.updateSource();
@@ -2117,12 +2117,13 @@ export class MonksActiveTiles {
         let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
         if (waitingType == 'location' || waitingType == 'either' || waitingType == 'position') {
             let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
-            if (restrict && !restrict(canvas.scene)) {
+            let tileDocument = MonksActiveTiles.waitingInput.options.parent.options.document;
+            if (restrict && !restrict(canvas.scene, tileDocument)) {
                 ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-location"));
                 return;
             }
             let pos = canvas.activeLayer.toLocal(event);
-            let update = { x: parseInt(pos.x), y: parseInt(pos.y), sceneId: (canvas.scene.id != MonksActiveTiles.waitingInput.options.parent.object.parent.id ? canvas.scene.id : null) };
+            let update = { x: parseInt(pos.x), y: parseInt(pos.y), sceneId: (canvas.scene.id != tileDocument.parent.id ? canvas.scene.id : null) };
             ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, update, event);
         }
     }
@@ -2239,6 +2240,14 @@ export class MonksActiveTiles {
             "monks-active-tiles.triggerTile": TriggerTileRegionBehavior,
         });
 
+        patchFunc("foundry.applications.sheets.WallConfig.prototype._prepareSubmitData", function (wrapped, ...args) {
+            let submitData = wrapped(...args);
+            let value = $('[name="flags.monks-active-tiles.entity"]', this.element).data("value");
+            foundry.utils.setProperty(submitData, "flags.monks-active-tiles.entity", value);
+
+            return submitData;
+        });
+
         patchFunc("foundry.applications.ux.TextEditor.prototype.constructor.truncateText", function (wrapped, ...args) {
             let [text, options] = args;
             if (text == undefined) {
@@ -2256,13 +2265,13 @@ export class MonksActiveTiles {
                         if (game.modules.get('tagger')?.active) {
                             let tags = Tagger.getTags(document);
                             if (tags.length)
-                                name = tags[0];
+                                label = tags[0];
                         }
 
-                        if (!name)
-                            name = document.documentName + ": " + document.id;
+                        if (!label)
+                            label = document.documentName + ": " + document.id;
 
-                        args[1] = name;
+                        args[1] = label;
                     }
                 } catch { }
             }
@@ -2282,17 +2291,17 @@ export class MonksActiveTiles {
         //MonksActiveTiles.triggerActions = Object.assign(otherTriggers, MonksActiveTiles.triggerActions);
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "ItemDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "JournalDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "ActorDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "RollTableDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "SceneDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "MacroDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "foundry.applications.sidebar.tabs.JournalDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.ItemDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.JournalDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.ActorDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.RollTableDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.SceneDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.tabs.MacroDirectory.prototype._onClickEntry");
             libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "foundry.applications.sidebar.apps.Compendium.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-common-display", "ActorDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "SceneDirectory.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "df-scene-enhance", "SceneDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-common-display", "foundry.applications.sidebar.tabs.ActorDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "foundry.applications.sidebar.tabs.SceneDirectory.prototype._onClickEntry");
+            libWrapper.ignore_conflicts("monks-active-tiles", "df-scene-enhance", "foundry.applications.sidebar.tabs.SceneDirectory.prototype._onClickEntry");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "foundry.applications.sidebar.apps.Compendium.prototype._onClickEntry");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-little-details", "foundry.canvas.layers.TilesLayer.prototype._onDropData");
         }
@@ -2471,23 +2480,30 @@ export class MonksActiveTiles {
             }
         }
 
-        let clickMacro = function (wrapped, ...args) {
+        foundry.applications.ui.Hotbar.prototype.constructor.DEFAULT_OPTIONS.actions.execute = async function (event) {
+            let getMacroForSlot = (element) => {
+                const slot = element.dataset.slot;
+                const macroId = game.user.hotbar[slot];
+                if (!macroId) return null;
+                return game.macros.get(macroId) ?? null;
+            }
+            const macro = getMacroForSlot(event.target);
+
             let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
             if (waitingType == 'entity') {
-                let event = args[0];
-                const macroId = $(event.currentTarget).closest('.macro').data('macroId');
-                let macro = game.macros.get(macroId);
-                MonksActiveTiles.controlEntity(macro);
-            } else
-                return wrapped(...args);
-        }
+                if (macro)
+                    MonksActiveTiles.controlEntity(macro);
+            } else {
+                // Execute a Macro
+                if (macro) await macro?.execute();
 
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "foundry.applications.ui.Hotbar.prototype._onClickMacro", clickMacro, "MIXED");
-        } else {
-            const oldClickMacro = foundry.applications.ui.Hotbar.prototype._onClickMacro;
-            foundry.applications.ui.Hotbar.prototype._onClickMacro = function (event) {
-                return clickMacro.call(this, oldClickMacro.bind(this), ...arguments);
+                // Create a temporary Macro
+                else {
+                    const cls = getDocumentClass$1("Macro");
+                    const macro = new cls({ name: cls.defaultName({ type: "chat" }), type: "chat", scope: "global" });
+                    const hotbarSlot = event.target.dataset.slot;
+                    await macro.sheet.render({ force: true, hotbarSlot });
+                }
             }
         }
 
@@ -2855,7 +2871,8 @@ export class MonksActiveTiles {
                 const document = this.collection.get(documentId);
 
                 let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
-                if (restrict && !restrict(document))
+                let tileDocument = MonksActiveTiles.waitingInput.options.parent.options.document;
+                if (restrict && !restrict(document, tileDocument))
                     return wrapped(...args);
 
                 ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, { id: document.uuid, name: document.name }, event);
@@ -2875,8 +2892,10 @@ export class MonksActiveTiles {
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 const documentId = event.target.closest(".document").dataset.entryId;
                 const document = await this.collection.getDocument(documentId);
+                let tileDocument = MonksActiveTiles.waitingInput.options.parent.options.document;
                 let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
-                if (restrict && !restrict(document))
+
+                if (restrict && !restrict(document, tileDocument))
                     return wrapped(...args);
 
                 ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, { id: document.uuid, name: document.name }, event);
@@ -2884,7 +2903,7 @@ export class MonksActiveTiles {
                 wrapped(...args);
         }
 
-        patchFunc("ClientKeybindings.prototype._registerCoreKeybindings", function (wrapped, ...args) {
+        patchFunc("foundry.helpers.interaction.ClientKeybindings.prototype._registerCoreKeybindings", function (wrapped, ...args) {
             let result = wrapped(...args);
 
             game.keybindings.actions.get("core.dismiss").onDown = async function (context) {
@@ -3608,8 +3627,11 @@ export class MonksActiveTiles {
             } break;
             case 'showimage': {
                 if (data.users.includes(game.user.id)) {
-                    new ImagePopout(data.src, {
-                        title: data.title
+                    new foundry.applications.apps.ImagePopout({
+                        src: data.src,
+                        window: {
+                            title: data.title
+                        }
                     }).render(true);
                 }
             } break;
@@ -3661,7 +3683,7 @@ export class MonksActiveTiles {
                     }
 
                     if (data.asimage && !!entity.src) {
-                        new ImagePopout(entity.src).render(true);
+                        new foundry.applications.apps.ImagePopout({ src: entity.src }).render(true);
                     } else {
                         if (data.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !data.permission })) {
                             /*if (!data.permission && (!entity.testUserPermission(game.user, "OBSERVER") || (entity.parent && !entity.parent.testUserPermission(game.user, "OBSERVER")))) {
@@ -3720,7 +3742,7 @@ export class MonksActiveTiles {
             case 'target': {
                 if (data.users.includes(game.user.id)) {
                     if(data.target == "target")
-                        game.user.updateTokenTargets(data.tokens);
+                        game.user._onUpdateTokenTargets(data.tokens);
                     else {
                         data.tokens.forEach(id => {
                             let token = canvas.tokens.get(id);
@@ -5665,10 +5687,10 @@ Hooks.once('ready', () => {
         
 
         //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-        if (((update.x != undefined && update.x != document.x) || (update.y != undefined && update.y != document.y) || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && (options.animate !== false || options.teleport)) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
+        if (((update.x != undefined && update.x != document.x) || (update.y != undefined && update.y != document.y) || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && (options.animate !== false || options.tileTeleport)) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
             let token = document.object;
 
-            if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.teleport) {
+            if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.tileTeleport) {
                 //do not update x/y if the token is under a cool down period, or if it is teleporting.
                 delete update.x;
                 delete update.y;
@@ -6261,7 +6283,8 @@ Hooks.on("canvasReady", async () => {
 Hooks.on("openJournalEntry", (document, options, userId) => {
     if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') {
         let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
-        if (!restrict || restrict(document)) {
+        let tileDocument = MonksActiveTiles.waitingInput.options.parent.options.document;
+        if (!restrict || restrict(document, tileDocument)) {
             return false;
         }
     }
@@ -6392,7 +6415,7 @@ Hooks.on("updateScene", async (scene, data, options) => {
     }
 });
 
-Hooks.on("lightingRefresh", async (lightinEffect) => {
+Hooks.on("lightingRefresh", async (lightingEffect) => {
     let tiles = MonksActiveTiles.tileTriggerCache.lighting.map(tile => {
         let triggerData = tile.flags["monks-active-tiles"];
 
@@ -6480,7 +6503,7 @@ Hooks.on("clickPlaylistSound", (sound) => {
     }
 });
 
-Hooks.on("renderPlayerList", (app, html, options) => {
+Hooks.on("renderPlayers", (app, html, data, options) => {
     $('.player', html).click(function (event) {
         let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
         if (waitingType == 'for') {
@@ -6489,10 +6512,11 @@ Hooks.on("renderPlayerList", (app, html, options) => {
             const user = game.users.get(userId);
 
             let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
-            if (restrict && !restrict(user))
+            let tileDocument = MonksActiveTiles.waitingInput.options.parent.options.document;
+            if (restrict && !restrict(user, tileDocument))
                 return;
 
-            ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, user.id, event);
+            ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, { id: user.id, name: user.name }, event);
         }
     });
 });

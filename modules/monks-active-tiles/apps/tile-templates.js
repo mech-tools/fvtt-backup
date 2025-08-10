@@ -396,11 +396,11 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
         new TemplateConfig({ document }).render(true);
     }
 
-    async _onCreateEntry(event) {
+    async _onCreateEntry(event, target ){
         event.preventDefault();
         event.stopPropagation();
-        const button = event.currentTarget;
-        const data = { folder: button.dataset.folder };
+        const button = target;
+        let data = { folder: target.closest(".directory-item")?.dataset.folderId };
         const options = { width: 320, left: window.innerWidth - 630, top: button.offsetTop };
         return TileTemplates.createDialog(data, options).then(() => {
             if (MonksActiveTiles.tile_directory)
@@ -414,10 +414,14 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
         const folders = parent ? [] : this.folders;
         const title = (data.id ? game.i18n.format("DOCUMENT.Update", { type: documentName }) : game.i18n.format("DOCUMENT.Create", { type: documentName }));
 
+        let cls = TileDocument.implementation;
+
         // Render the document creation form
         const html = await foundry.applications.handlebars.renderTemplate("templates/sidebar/document-create.html", {
             folders,
-            name: data.name || game.i18n.format("DOCUMENT.New", { type: documentName }),
+            type: documentName,
+            name: data.name || "", //game.i18n.format("DOCUMENT.New", { type: documentName }),
+            defaultName: game.i18n.format("DOCUMENT.New", { type: documentName }), //cls.defaultName({ type: documentName, parent, pack }),
             folder: data.folder,
             hasFolders: folders.length >= 1,
             hasTypes: false
@@ -425,7 +429,9 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
 
         // Render the confirmation dialog window
         return await foundry.applications.api.DialogV2.prompt({
-            title: title,
+            window: {
+                title,
+            },
             content: html,
             ok: {
                 label: title,
@@ -502,7 +508,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
             submitData.visible = true;
             submitData.folder = submitData.folder == "" ? null : submitData.folder;
             folders.push(submitData);
-            game.settings.set("monks-active-tiles", "tile-template-folders", folders);
+            await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
             this.render(true);
         }
     }
@@ -530,7 +536,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
 
             // Match documents by name
             for (let d of this.documents) {
-                if (rgx.test(SearchFilter.cleanQuery(d.name))) {
+                if (rgx.test(foundry.applications.ux.SearchFilter.cleanQuery(d.name))) {
                     documentIds.add(d.id);
                     includeFolder(d.folder);
                 }
@@ -538,7 +544,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
 
             // Match folders by name
             for (let f of this.folders) {
-                if (rgx.test(SearchFilter.cleanQuery(f.name))) {
+                if (rgx.test(foundry.applications.ux.SearchFilter.cleanQuery(f.name))) {
                     includeFolder(f, false);
                     for (let d of this.documents.filter(x => x.folder === f)) {
                         documentIds.add(d.id);
@@ -619,7 +625,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
 
         let { updateData = {}, ...sortOptions } = sortData;
 
-        const sorting = SortingHelpers.performIntegerSort(document, sortOptions);
+        const sorting = foundry.utils.performIntegerSort(document, sortOptions);
         for (let s of sorting) {
             let doc = collection.find(d => d._id == s.target.id);
             foundry.utils.mergeObject(doc, s.update);
@@ -682,7 +688,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
 
         let { updateData = {}, ...sortOptions } = sortData;
 
-        const sorting = SortingHelpers.performIntegerSort(folder, sortOptions);
+        const sorting = foundry.utils.performIntegerSort(folder, sortOptions);
         for (let s of sorting) {
             let fold = folders.find(f => f._id == s.target.id);
             foundry.utils.mergeObject(fold, s.update);
@@ -765,7 +771,8 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                         if (submitData.folder == "") submitData.folder = null;
                         folder = foundry.utils.mergeObject(folder, submitData);
                         await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
-                        this.render();
+                        if (MonksActiveTiles.tile_directory)
+                            MonksActiveTiles.tile_directory.render(true);
                     }
                 }
             },
@@ -778,14 +785,17 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                     const folders = foundry.utils.duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return foundry.applications.api.DialogV2.confirm({
-                        title: `${game.i18n.localize("FOLDER.Remove")} ${folder.name}`,
+                        window: {
+                            title: `${game.i18n.localize("FOLDER.Remove")} ${folder.name}`,
+                        },
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.localize("FOLDER.RemoveWarning")}</p>`,
                         yes: {
                             callback: async () => {
                                 await this.deleteFolder(folders, folder, { deleteSubfolders: false, deleteContents: false });
                                 folders.findSplice(t => t._id == folder._id);
                                 await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
-                                this.render();
+                                if (MonksActiveTiles.tile_directory)
+                                    MonksActiveTiles.tile_directory.render(true);
                             }
                         },
                         options: {
@@ -805,14 +815,17 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                     const folders = foundry.utils.duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return foundry.applications.api.DialogV2.confirm({
-                        title: `${game.i18n.localize("FOLDER.Delete")} ${folder.name}`,
+                        window: {
+                            title: `${game.i18n.localize("FOLDER.Delete")} ${folder.name}`,
+                        },
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.localize("FOLDER.DeleteWarning")}</p>`,
                         yes: {
                             callback: async () => {
                                 await this.deleteFolder(folders, folder, { deleteSubfolders: true, deleteContents: true })
                                 folders.findSplice(t => t._id == folder._id);
                                 await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
-                                this.render();
+                                if (MonksActiveTiles.tile_directory)
+                                    MonksActiveTiles.tile_directory.render(true);
                             }
                         },
                         options: {
@@ -835,11 +848,14 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                     const document = this.collection.find(t => t._id == li.dataset.entryId);
                     return game.user.isGM && !!document?.folder;
                 },
-                callback: li => {
+                callback: async (li) => {
                     const templates = foundry.utils.duplicate(this.collection);
                     const document = templates.find(t => t._id == li.dataset.entryId);
                     document.folder = null;
-                    game.settings.set("monks-active-tiles", "tile-templates", templates);
+                    await game.settings.set("monks-active-tiles", "tile-templates", templates);
+
+                    if (MonksActiveTiles.tile_directory)
+                        MonksActiveTiles.tile_directory.render(true);
                 }
             },
             {
@@ -852,7 +868,9 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                     const document = templates.find(t => t._id == id || (t._id == undefined && id == ""));
                     if (!document) return;
                     return foundry.applications.api.DialogV2.confirm({
-                        title: `${game.i18n.format("DOCUMENT.Delete", { type: "Tile Template" })}: ${document.name}`,
+                        window: {
+                            title: `${game.i18n.format("DOCUMENT.Delete", { type: "Tile Template" })}: ${document.name}`,
+                        },
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.format("SIDEBAR.DeleteWarning", { type: "Tile Template" })}</p>`,
                         yes: {
                             callback: async () => {
@@ -902,11 +920,11 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
                     const document = templates.find(t => t._id == replaceId);
                     if (!document) return;
                     await foundry.applications.api.DialogV2.wait({
-                        window: { title: `${game.i18n.localize("DOCUMENT.ImportData")}: ${this.name}` }, // FIXME: double localization
+                        window: { title: `${game.i18n.localize("DOCUMENT.ImportData")}: ${document.name}` }, // FIXME: double localization
                         position: { width: 400 },
                         content: await foundry.applications.handlebars.renderTemplate("templates/apps/import-data.hbs", {
                             hint1: game.i18n.format("DOCUMENT.ImportDataHint1", { document: this.documentName }),
-                            hint2: game.i18n.format("DOCUMENT.ImportDataHint2", { name: this.name })
+                            hint2: game.i18n.format("DOCUMENT.ImportDataHint2", { name: document.name })
                         }),
                         buttons: [{
                             action: "import",

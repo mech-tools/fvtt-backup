@@ -353,7 +353,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             if (append)
                 li.appendTo($(`.action-list`, this.options.parent.element));
             else
-                $(`.action-list .action li`, this.options.parent.element).eq(this.options.index).before(li);
+                $(`.action-list .action`, this.options.parent.element).eq(this.options.index).before(li);
 
             $(".name", li)[0].addEventListener("dragstart", this.options.parent._onDragStart.bind(this.options.parent));
         } else {
@@ -464,13 +464,13 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
         if (data.type == "Macro" && action == "runmacro") {
             $('input[name="data.entity"]', this.element).data("value", { id: data.uuid });
-            ActionConfig.onValueChange({ currentTarget: $('input[name="data.entity"]', this.element).get(0), originalEvent: event });
+            ActionConfig.onValueChange.call(this, { currentTarget: $('input[name="data.entity"]', this.element).get(0), originalEvent: event });
         } else if (data.type == "Scene" && action == "scene") {
             $('input[name="data.sceneid"]', this.element).data("value", { id: data.uuid });
-            ActionConfig.onValueChange({ currentTarget: $('input[name="data.sceneid"]', this.element).get(0), originalEvent: event });
+            ActionConfig.onValueChange.call(this, { currentTarget: $('input[name="data.sceneid"]', this.element).get(0), originalEvent: event });
         } else if (data.type == "RollTable" && action == "rolltable") {
             $('input[name="data.rolltableid"]', this.element).data("value", { id: data.uuid });
-            ActionConfig.onValueChange({ currentTarget: $('input[name="data.rolltableid"]', this.element).get(0), originalEvent: event });
+            ActionConfig.onValueChange.call(this, { currentTarget: $('input[name="data.rolltableid"]', this.element).get(0), originalEvent: event });
         } else if (data.type == "Actor" && action == "attack") {
             let field = $('input[name="data.actor"]', this.element);
             if (field.length == 0)
@@ -748,7 +748,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                     }
 
                     field.data("value", buttons);
-                    ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event });
+                    ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event });
                 }
             }
         })
@@ -762,7 +762,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         let buttons = field.data("value");
         buttons.findSplice((b) => { return b.id == buttonId });
         field.data("value", buttons);
-        ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event });
+        ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event });
     }
 
     static async selectEntity(event, target) {
@@ -852,18 +852,27 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                 if (tool) {
                     if (tool.name !== ui.controls.control.name) {
                         MonksActiveTiles.lasttool = ui.controls.control.name;
-                        canvas[tool.layer].activate();
+                        let layer = canvas[tool.layer] ?? canvas[tool.name];
+                        if (layer) {
+                            MonksActiveTiles.lasttool = ui.controls.control.name;
+                            layer.activate();
+                        }
                     }
                 }
                 break;
         }
 
-        ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event });
+        ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event });
     }
 
     static async updateSelection(selection, event) {
+        delete MonksActiveTiles.waitingInput;
+
         if (!this.waitingfield)
             return;
+
+        let waitingField = this.waitingfield;
+        delete this.waitingfield;
 
         await this.maximize();
         if (this.options.parent)
@@ -887,7 +896,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                 await game.scenes.get(this.options.parent.document.parent.id).view();
         }
 
-        if (this.waitingfield.attr('name') == 'data.actor') {
+        if (waitingField && waitingField.attr('name') == 'data.actor') {
             let select = $('select[name="data.attack"]', this.element);
             select.empty();
             if (selection.id) {
@@ -901,15 +910,15 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             }
         }
 
-        if (selection) {
+        if (waitingField && selection) {
             let entityName = "";
-            let entityType = this.waitingfield.data('type');
+            let entityType = waitingField.data('type');
             if (entityType == 'for') {
                 entityName = MonksActiveTiles.forPlayersName(selection);
-                let custom = $("option[custom='true']", this.waitingfield);
+                let custom = $("option[custom='true']", waitingField);
                 if (custom.length == 0) {
-                    custom = $('<option>').attr({ value: JSON.stringify(selection), 'custom': 'true' }).data({ "value": selection }).html(entityName);
-                    this.waitingfield.prepend(custom);
+                    custom = $('<option>').attr({ value: JSON.stringify(selection), 'custom': 'true' }).prop("selected", true).data({ "value": selection }).html(entityName);
+                    waitingField.prepend(custom);
                 } else
                     custom.attr('value', JSON.stringify(selection)).data({ "value": selection }).prop("selected", true).html(entityName);
             } else if (["entity", "location", "either", "position"].includes(entityType)) {
@@ -918,14 +927,12 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                 else
                     entityName = await MonksActiveTiles.entityName(selection);                      
 
-                let displayField = this.waitingfield.closest(".action-field").find('.display-value');
+                let displayField = waitingField.closest(".action-field").find('.display-value');
                 displayField.html(entityName);
             }
-            this.waitingfield.val(JSON.stringify(selection)).data("value", selection).trigger('change');
+            waitingField.data("value", selection);
+            ActionConfig.onValueChange.call(this, { currentTarget: waitingField.get(0), originalEvent: event });
         }
-
-        delete this.waitingfield;
-        delete MonksActiveTiles.waitingInput;
     }
 
     static async selectPosition(event, target) {
@@ -939,7 +946,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
         field.data("value", { x, y, scale });
         displayField.html(`x:${x}, y:${y}, scale:${scale}`);
-        ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event });
+        ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event });
     }
 
     static async addTag(event) {
@@ -1035,6 +1042,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         let document = this.options.parent?.document || this.options.document;
         const theme = foundry.applications.apps.DocumentSheetConfig.getSheetThemeForDocument(document);
         if (theme) classes.push("themed", `theme-${theme}`);
+        let btn = $(event.currentTarget);
         return foundry.applications.api.DialogV2.prompt({
             window: {
                 title: "Enter tag",
@@ -1043,18 +1051,19 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             content: html,
             ok: {
                 label: i18n("MonksActiveTiles.Save"),
-                callback: async (html) => {
-                    let tagName = $('input[name="tag-name"]', html).data("value");
-                    let match = $('select[name="match"]', html).val();
-                    let scene = $('select[name="scene"]', html).val();
-                    let btn = $(event.currentTarget);
+                callback: async (event, button) => {
+                    let form = button.form;
+                    let tagName = $('input[name="tag-name"]', form).val();
+                    let match = $('select[name="match"]', form).val();
+                    let scene = $('select[name="scene"]', form).val();
+
                     let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
                     let displayField = field.closest(".action-field").find('.display-value');
                     let entity = { id: `tagger:${tagName}`, match: match, scene: scene };
                     entity.name = await MonksActiveTiles.entityName(entity);
                     field.data("value", entity);
                     displayField.html(entity.name);
-                    field.trigger('change');
+                    ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event.originalEvent });
                 }
             },
             rejectClose: false,
@@ -1119,7 +1128,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                     let value = !entityId ? null : { id: entityId };
 
                     field.data("value", value);
-                    ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event.originalEvent });
+                    ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event.originalEvent });
                 }
             },
             rejectClose: false,
@@ -1174,7 +1183,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                     location.name = await MonksActiveTiles.locationName(location);
                     let field = $(event.currentTarget).prev();
                     field.data("value", location);
-                    ActionConfig.onValueChange({ currentTarget: field.get(0), originalEvent: event.originalEvent });
+                    ActionConfig.onValueChange.call(this, { currentTarget: field.get(0), originalEvent: event.originalEvent });
                 }
             },
             rejectClose: false,
@@ -1272,7 +1281,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                                 let types = ["trigger", "token", "owner", "previous", "everyone", "players", "gm"];
                                 if (!types.includes(data[ctrl.id]) && data[ctrl.id] != undefined) {
                                     //if the current value is not in the list, it's a specific player, add it
-                                    fieldData.datavalue = { value: data[ctrl.id] };
+                                    fieldData.datavalue.value = data[ctrl.id];
                                     fieldData.options.unshift({
                                         value: JSON.stringify(data[ctrl.id]),
                                         custom: "true",
@@ -1283,6 +1292,8 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                             }
                         }
                         if (ctrl.subtype == 'for') {
+                            fieldData.datavalue.type = 'for';
+                            fieldData.datavalue.restrict = ctrl.restrict;
                             if (!options.hide.includes('select')) {
                                 fieldData.buttons.push(
                                     {

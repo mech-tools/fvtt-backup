@@ -524,6 +524,14 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     text-align: left;
 }
 
+.tile-config.monks-active-tiles .tab.triggers ol,
+#tile-history .history-group ol,
+#trigger-variables .variable-group ol,
+#trigger-action .file-list ol,
+#trigger-action .buttons-list ol {
+    max-height: 400px;
+}
+
 .tile-config.monks-active-tiles .tab.triggers header .controls,
 .tile-config.monks-active-tiles .tab.triggers ol .controls,
 #trigger-action .file-list ol .controls,

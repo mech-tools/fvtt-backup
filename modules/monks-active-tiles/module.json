@@ -66,8 +66,8 @@
 	"bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
 	"id": "monks-active-tiles",
 	"compatibility": {
-		"minimum": "12",
-		"verified": "12"
+		"minimum": "13",
+		"verified": "13"
 	},
 	"documentTypes": {
 		"RegionBehavior": {
