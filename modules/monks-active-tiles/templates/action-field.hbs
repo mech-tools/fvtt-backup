@@ -42,17 +42,7 @@
 
         {{else if (eq type "list")}}
         <select id="{{id}}" name="{{id}}" data-dtype="String" class="{{#if required}}required{{/if}}" data-change-action="selectChanged">
-            {{#each options as |option|}}
-            {{#if option.group}}
-            <optgroup label="{{option.label}}">
-                {{#each option.items as |item|}}
-                <option value="{{item.value}}" {{#if item.selected}} selected{{/if}}{{#if item.custom}} custom="true" {{/if}}>{{item.label}}</option>
-                {{/each}}
-            </optgroup>
-            {{else}}
-            <option value="{{option.value}}" {{#if option.selected}} selected{{/if}}{{#if option.custom}} custom="true" {{/if}}>{{option.label}}</option>
-            {{/if}}
-            {{/each}}
+            {{> "modules/monks-active-tiles/templates/list-partial.hbs" }}
         </select>
 
         {{else if (eq type "select")}}

@@ -487,7 +487,7 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
         };
         folderData.toObject = () => { return folderData; };
         folderData.getFlag = () => { return null; };
-        const button = event.currentTarget;
+        const button = event.target;
         const li = button.closest(".directory-item");
         folderData.folder = li?.dataset?.folderId || null;
         let folder = new Folder(folderData);
@@ -741,8 +741,8 @@ export class TileTemplates extends foundry.applications.sidebar.DocumentDirector
         await game.settings.set("monks-active-tiles", "tile-templates", templates);
     }
 
-    close(options = {}) {
-        super.close(options);
+    async close(options = {}) {
+        await super.close(options);
         MonksActiveTiles.tile_directory = null;
     }
 

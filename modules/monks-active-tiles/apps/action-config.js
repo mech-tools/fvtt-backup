@@ -586,52 +586,14 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         return attributes;
     }
 
-    fillList(list, id) {
+    async fillList(list, select, selectedId) {
         if (!list)
             return;
 
-        if (list instanceof Array) {
-            return list
-                .map(g => {
-                    if (g.groups) {
-                        let gtext = g.label ?? g.text ?? g.id;
-                        if (game.i18n.has(gtext))
-                            gtext = i18n(gtext);
-                        return $('<optgroup>')
-                            .attr('label', gtext)
-                            .append(Object.entries(g.groups)
-                                .map(([k, v]) => {
-                                    let gid = (g.id ? g.id + ":" : '') + (g.groups instanceof Array ? v.id : k);
-                                    let text = typeof v == "string" ? v : v.label ?? v.name;
-                                    if (game.i18n.has(text))
-                                        text = i18n(text);
-                                    return $('<option>')
-                                        .attr('value', gid)
-                                        .html(text)
-                                        .prop('selected', gid == id)
-                                }))
-                    } else {
-                        let gid = g.id ?? g;
-                        let text = typeof g == "string" ? g : g.label ?? g.name;
-                        if (game.i18n.has(text))
-                            text = i18n(text);
-                        return $('<option>').attr('value', gid).html(text).prop('selected', gid == id)
-                    }
-                });
-        } else {
-            return Object.entries(list)
-                .map(([k, v]) => {
-                    if (!v) return null;
-                    let text = typeof v == "string" ? v : v?.label ?? v?.name;
-                    if (game.i18n.has(text))
-                        text = i18n(text);
+        let options = this.getListFieldData(list, selectedId);
 
-                    return $('<option>')
-                        .attr('value', k)
-                        .html(text)
-                        .prop('selected', k == id)
-                }).filter(o => !!o);
-        }
+        let html = await foundry.applications.handlebars.renderTemplate("modules/monks-active-tiles/templates/list-partial.hbs", { options });
+        select.append(html);
     }
 
     getListFieldData(list, selectedId) {
@@ -837,6 +799,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                 MonksActiveTiles.waitingInput = this;
 
                 MonksActiveTiles.lasttab = null;
+                MonksActiveTiles.collapsesidebar = false;
                 if (defType == 'rolltables')
                     defType = 'tables';
 
@@ -844,6 +807,11 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
                     if (ui.sidebar.tabGroups.primary != defType) {
                         MonksActiveTiles.lasttab = ui.sidebar.tabGroups.primary;
                         ui.sidebar.changeTab(defType, "primary");
+
+                        if (!ui.sidebar.expanded) {
+                            MonksActiveTiles.collapsesidebar = true;
+                            ui.sidebar.toggleExpanded(true);
+                        }
                     }
                 }
 
@@ -881,12 +849,19 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         if (MonksActiveTiles.lasttab) {
             ui.sidebar.changeTab(MonksActiveTiles.lasttab, "primary");
             delete MonksActiveTiles.lasttab;
+            if (MonksActiveTiles.collapsesidebar) {
+                ui.sidebar.toggleExpanded(false);
+                delete MonksActiveTiles.collapsesidebar;
+            }
         }
 
         if (MonksActiveTiles.lasttool) {
             let tool = ui.controls.controls[MonksActiveTiles.lasttool];
             if (tool) {
-                canvas[tool.layer].activate();
+                let layer = canvas[tool.layer] ?? canvas[tool.name];
+                if (layer) {
+                    layer.activate();
+                }
             }
             delete MonksActiveTiles.lasttool;
         }
@@ -900,13 +875,12 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             let select = $('select[name="data.attack"]', this.element);
             select.empty();
             if (selection.id) {
-                let ctrl = select.parent().data('ctrl');
+                let elem = select.closest(".action-field");
+                let ctrl = elem.data("ctrl");
 
-                //this, this, action, data
-                //let list = await ctrl.list.call(ctrl, { actor: { id: selection.id } });
                 let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } }) || [];
 
-                select.append(this.fillList(list, ''));
+                await this.fillList(list, select, '');
             }
         }
 
@@ -1444,6 +1418,7 @@ export class ActionConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             */
 
             await foundry.applications.handlebars.loadTemplates([
+                "modules/monks-active-tiles/templates/list-partial.hbs",
                 "modules/monks-active-tiles/templates/filelist-partial.hbs",
                 "modules/monks-active-tiles/templates/buttonlist-partial.hbs"
             ]);

@@ -1,6 +1,4 @@
-2025/08/09-10:32:27.627012 7fdd0bfff700 Delete type=2 #53
-2025/08/09-10:32:27.627079 7fdd0bfff700 Delete type=3 #1
-2025/08/09-10:32:27.638106 7fda88dbb700 Level-0 table #5: started
-2025/08/09-10:32:27.638139 7fda88dbb700 Level-0 table #5: 0 bytes OK
-2025/08/09-10:32:27.639430 7fda88dbb700 Delete type=0 #3
-2025/08/09-10:32:27.639493 7fda88dbb700 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2025/08/10-10:21:45.058155 7fd4311b7700 Log #465: 0 ops saved to Table #466 OK
+2025/08/10-10:21:45.058219 7fd4311b7700 Archiving /home/ubuntu/foundry/sadt/foundrydata/Data/modules/monks-active-tiles/packs/active-tile-macros/000465.log: OK
+2025/08/10-10:21:45.058275 7fd4311b7700 Archiving /home/ubuntu/foundry/sadt/foundrydata/Data/modules/monks-active-tiles/packs/active-tile-macros/MANIFEST-000463: OK
+2025/08/10-10:21:45.059623 7fd4311b7700 **** Repaired leveldb /home/ubuntu/foundry/sadt/foundrydata/Data/modules/monks-active-tiles/packs/active-tile-macros; recovered 0 files; 0 bytes. Some data may have been lost. ****

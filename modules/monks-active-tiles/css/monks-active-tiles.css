@@ -524,6 +524,10 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     text-align: left;
 }
 
+.tile-config.monks-active-tiles .tab.triggers ol {
+    gap: 0 0.25rem;
+}
+
 .tile-config.monks-active-tiles .tab.triggers ol,
 #tile-history .history-group ol,
 #trigger-variables .variable-group ol,
@@ -626,6 +630,10 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     display: contents;
 }
 
+.tile-config.monks-active-tiles .tab.triggers ol li:nth-child(even) {
+    background-color: rgba(1, 1, 1, 0.2);
+}
+
 .tile-config.monks-active-tiles .tab.triggers header .name,
 .tile-config.monks-active-tiles .tab.triggers ol .name,
 #tile-history .history-group header .name,
@@ -654,6 +662,7 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
 
 .tile-config.monks-active-tiles .tab.triggers ol .name {
     flex: 1 1 auto;
+    height: 100%;
 }
 
 .tile-config.monks-active-tiles .tab.triggers ol .name span {

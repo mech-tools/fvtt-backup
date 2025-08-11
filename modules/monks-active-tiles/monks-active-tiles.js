@@ -1969,7 +1969,7 @@ export class MonksActiveTiles {
 
         let wallCollide = function (ray) {
             for (let wall of scene.walls) {
-                if (lineSegmentIntersects(ray.A, ray.B, { x: wall.c[0], y: wall.c[1] }, { x: wall.c[2], y: wall.c[3] }))
+                if (foundry.utils.lineSegmentIntersects(ray.A, ray.B, { x: wall.c[0], y: wall.c[1] }, { x: wall.c[2], y: wall.c[3] }))
                     return true;
             }
             return false
@@ -5064,6 +5064,7 @@ export class MonksActiveTiles {
                 debug("Running action", action);
                 context.index = i;
                 context.action = action;
+                delete context.stopmovement;
                 if (resume != undefined)
                     context.tokens = resume.tokens || context.tokens;
                 let fn = trigger.fn;
@@ -5474,15 +5475,18 @@ export class MonksActiveTiles {
                     MonksActiveTiles.emit('cancelruler', { userId: userId });
                 }
             }
-            let animation = foundry.canvas.animation.CanvasAnimation.getAnimation(document._object?.animationName);
+            let animation = foundry.canvas.animation.CanvasAnimation.getAnimation(document._object?.animationName + "Movement");
             if (animation) {
+                foundry.canvas.animation.CanvasAnimation.terminateAnimation(document._object?.animationName + "Movement");
                 log("Found animation");
+                /*
                 let x = animation.attributes.find(a => a.attribute == "x");
                 if (x)
                     x.to = endPt.x;
                 let y = animation.attributes.find(a => a.attribute == "y");
                 if (y)
                     y.to = endPt.y;
+                */
             }
 
             endPt.x = Math.floor(endPt.x);

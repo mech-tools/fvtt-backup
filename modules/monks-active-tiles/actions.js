@@ -456,7 +456,7 @@ export class ActionManager {
  
                             let time = new Date().getTime() + duration;
 
-                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y }, { bypass: false, originaltile: tile.id, animate: true, animation: { duration, time } });
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y }, { isPaste: true, constrainOptions: { ignoreWalls: true, ignoreCost: true }, bypass: false, originaltile: tile.id, animate: true, animation: { duration, time } });
                             continue;
                         }
 
@@ -595,7 +595,7 @@ export class ActionManager {
 
                             newTokens.push({ x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height });
 
-                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass, animate: false, tileTeleport: true, animation: { duration: 0 } });
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { isPaste: true, constrainOptions: { ignoreWalls: true, ignoreCost: true }, bypass, animate: false, tileTeleport: true, animation: { duration: 0 } });
                             //await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false, tileTeleport: true });
                         } else {
                             result.tokens = [];
@@ -625,7 +625,7 @@ export class ActionManager {
                             if (newtoken) {
                                 batch.add("update", newtoken, (action.data.preservesettings ?
                                     { x: newPos.x, y: newPos.y, img: tokendoc.texture.src, hidden: tokendoc.hidden, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true } : td),
-                                    { bypass, animate: false, tileTeleport: true });
+                                    { isPaste: true, constrainOptions: { ignoreWalls: true, ignoreCost: true }, bypass, animate: false, tileTeleport: true });
                                 //await newtoken.update((action.data.preservesettings ? { x: newPos.x, y: newPos.y, hidden: tokendoc.hidden } : td), { bypass: true, animate: false, tileTeleport: true });
                             } else {
                                 batch.add("create", cls, td, { parent: scene });
@@ -941,7 +941,7 @@ export class ActionManager {
                             }
                             */
 
-                            batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
+                            batch.add("update", entity, { x: newPos.x, y: newPos.y }, { isPaste: true, bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
 
                             MonksActiveTiles.addToResult(entity, result);
                         }
@@ -3389,7 +3389,7 @@ export class ActionManager {
                                     resultData.results.push(r);
                                 }
 
-                                messageData.content = await foundry.applications.handlebars.renderTemplate(CONFIG.RollTable.resultTemplate,);
+                                messageData.content = await foundry.applications.handlebars.renderTemplate(CONFIG.RollTable.resultTemplate, resultData);
 
                                 if (action.data.rollmode != 'roll') {
                                     messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
