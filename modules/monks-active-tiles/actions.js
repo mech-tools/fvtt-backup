@@ -1435,6 +1435,9 @@ export class ActionManager {
                             const td = await actor.getTokenDocument();
                             foundry.utils.mergeObject(td, ad.data);
 
+                            if (game.system.id === "pf2e")
+                                td.detectionModes = [];
+
                             if (!ad.lockpos) {
                                 if (action.data.avoidtokens) {
                                     let dt = foundry.utils.mergeObject(ad.data, MonksActiveTiles.findVacantSpot(ad.data, { data: td }, scene, newTokens, ad.dest, action.data.snap));
@@ -1481,7 +1484,7 @@ export class ActionManager {
                         //        batch.add("update", token, { "hidden": true, "flags.monks-active-tiles.-=hidden": null });
                         //    }
                         //}
-                        await batch.execute();
+                        //await batch.execute();
 
                         result.tokens = result.tokens.concat(tokens);
 
