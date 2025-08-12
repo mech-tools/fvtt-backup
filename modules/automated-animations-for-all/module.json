@@ -1,0 +1,69 @@
+{
+  "title": "Automated Animations For All",
+  "description": "Trigger Automated Animations based on chat item names in any system.",
+  "version": "0.0.3",
+  "scripts": [
+    "scripts/main.js"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json",
+      "flags": {}
+    }
+  ],
+  "url": "https://gitlab.com/sir.sly/automated-animations-for-all",
+  "manifest": "https://gitlab.com/sir.sly/automated-animations-for-all/-/raw/main/module.json",
+  "download": "https://gitlab.com/sir.sly/foundryvtt-distribuition/-/raw/main/Packages/automated-animations-for-all-v0.0.3.zip",
+  "id": "automated-animations-for-all",
+  "relationships": {
+    "requires": [
+      {
+        "id": "autoanimations",
+        "type": "module",
+        "compatibility": {}
+      },
+      {
+        "id": "sequencer",
+        "type": "module",
+        "compatibility": {}
+      },
+      {
+        "id": "socketlib",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
+  "compatibility": {
+    "minimum": "11",
+    "verified": "12"
+  },
+  "authors": [
+    {
+      "name": "Sly",
+      "url": "https://gitlab.com/users/sir.sly/projects",
+      "flags": {}
+    }
+  ],
+  "packs": [
+    {
+      "name": "aafa-or-macros",
+      "label": "AAFA | Macros",
+      "path": "packs/aafa-or-macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ]
+}

@@ -1,8 +1,15 @@
-2025/08/08-11:41:38.307510 7f4be37fe700 Recovering log #479
-2025/08/08-11:41:38.310461 7f4be37fe700 Delete type=0 #479
-2025/08/08-11:41:38.310512 7f4be37fe700 Delete type=3 #477
-2025/08/09-12:30:40.144641 7f4961589700 Level-0 table #484: started
-2025/08/09-12:30:40.145025 7f4961589700 Level-0 table #484: 0 bytes OK
-2025/08/09-12:30:40.146665 7f4961589700 Delete type=0 #482
-2025/08/09-12:30:40.148457 7f4961589700 Manual compaction at level-0 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)
-2025/08/09-12:30:40.148791 7f4961589700 Manual compaction at level-1 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)
+2025/08/09-12:40:26.580188 7f4be2ffd700 Recovering log #483
+2025/08/09-12:40:26.583068 7f4be2ffd700 Delete type=0 #483
+2025/08/09-12:40:26.583095 7f4be2ffd700 Delete type=3 #481
+2025/08/11-11:02:36.010253 7f4961589700 Level-0 table #488: started
+2025/08/11-11:02:36.014518 7f4961589700 Level-0 table #488: 105434 bytes OK
+2025/08/11-11:02:36.015913 7f4961589700 Delete type=0 #486
+2025/08/11-11:02:36.024326 7f4961589700 Manual compaction at level-0 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)
+2025/08/11-11:02:36.027011 7f4961589700 Manual compaction at level-1 from '!fog!17UUM66wveozaBCq' @ 72057594037927935 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at '!fog!izHA94uxQ2OsyKkl' @ 441 : 1
+2025/08/11-11:02:36.027029 7f4961589700 Compacting 1@1 + 1@2 files
+2025/08/11-11:02:36.037306 7f4961589700 Generated table #489@1: 27 keys, 868196 bytes
+2025/08/11-11:02:36.037335 7f4961589700 Compacted 1@1 + 1@2 files => 868196 bytes
+2025/08/11-11:02:36.038469 7f4961589700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/08/11-11:02:36.038581 7f4961589700 Delete type=2 #488
+2025/08/11-11:02:36.038783 7f4961589700 Delete type=2 #442
+2025/08/11-11:02:36.042520 7f4961589700 Manual compaction at level-1 from '!fog!izHA94uxQ2OsyKkl' @ 441 : 1 .. '!fog!zKb8Y3KW31OnwNGk' @ 0 : 0; will stop at (end)
