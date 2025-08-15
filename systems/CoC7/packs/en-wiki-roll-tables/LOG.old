@@ -1,7 +1,7 @@
-2025/08/12-22:28:36.477222 7fd4311b7700 Recovering log #78
-2025/08/12-22:28:36.480499 7fd4311b7700 Delete type=3 #76
-2025/08/12-22:28:36.480530 7fd4311b7700 Delete type=0 #78
-2025/08/13-17:01:17.468623 7fd17a58d700 Level-0 table #83: started
-2025/08/13-17:01:17.468861 7fd17a58d700 Level-0 table #83: 0 bytes OK
-2025/08/13-17:01:17.470124 7fd17a58d700 Delete type=0 #81
-2025/08/13-17:01:17.471820 7fd17a58d700 Manual compaction at level-0 from '!tables!DGd9QwhMguct5kJr' @ 72057594037927935 : 1 .. '!tables.results!DGd9QwhMguct5kJr.z16tJQGOk23wTa4C' @ 0 : 0; will stop at (end)
+2025/08/13-17:01:35.136312 7fd3fbfff700 Recovering log #82
+2025/08/13-17:01:35.138646 7fd3fbfff700 Delete type=3 #80
+2025/08/13-17:01:35.138683 7fd3fbfff700 Delete type=0 #82
+2025/08/14-19:39:28.057678 7fd17a58d700 Level-0 table #87: started
+2025/08/14-19:39:28.057926 7fd17a58d700 Level-0 table #87: 0 bytes OK
+2025/08/14-19:39:28.059089 7fd17a58d700 Delete type=0 #85
+2025/08/14-19:39:28.060560 7fd17a58d700 Manual compaction at level-0 from '!tables!DGd9QwhMguct5kJr' @ 72057594037927935 : 1 .. '!tables.results!DGd9QwhMguct5kJr.z16tJQGOk23wTa4C' @ 0 : 0; will stop at (end)
