@@ -1,8 +1,15 @@
-2025/08/16-21:19:27.860199 7fd3fb7fe700 Recovering log #594
-2025/08/16-21:19:27.863498 7fd3fb7fe700 Delete type=0 #594
-2025/08/16-21:19:27.863523 7fd3fb7fe700 Delete type=3 #592
-2025/08/16-21:31:24.193381 7fd17a58d700 Level-0 table #599: started
-2025/08/16-21:31:24.193408 7fd17a58d700 Level-0 table #599: 0 bytes OK
-2025/08/16-21:31:24.194402 7fd17a58d700 Delete type=0 #597
-2025/08/16-21:31:24.202622 7fd17a58d700 Manual compaction at level-0 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
-2025/08/16-21:31:24.202689 7fd17a58d700 Manual compaction at level-1 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2025/08/16-21:31:39.861865 7fd4311b7700 Recovering log #598
+2025/08/16-21:31:39.865408 7fd4311b7700 Delete type=3 #596
+2025/08/16-21:31:39.865456 7fd4311b7700 Delete type=0 #598
+2025/08/18-18:56:45.512294 7fd17a58d700 Level-0 table #603: started
+2025/08/18-18:56:45.513756 7fd17a58d700 Level-0 table #603: 9450 bytes OK
+2025/08/18-18:56:45.514705 7fd17a58d700 Delete type=0 #601
+2025/08/18-18:56:45.514842 7fd17a58d700 Manual compaction at level-0 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2025/08/18-18:56:45.518960 7fd17a58d700 Manual compaction at level-1 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at '!scenes.tiles!XRLV3KSUvHYgsLHj.aOeSt1djJbByY57S' @ 196910 : 1
+2025/08/18-18:56:45.518973 7fd17a58d700 Compacting 1@1 + 1@2 files
+2025/08/18-18:56:45.549789 7fd17a58d700 Generated table #604@1: 12118 keys, 1547248 bytes
+2025/08/18-18:56:45.549812 7fd17a58d700 Compacted 1@1 + 1@2 files => 1547248 bytes
+2025/08/18-18:56:45.550567 7fd17a58d700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/08/18-18:56:45.550641 7fd17a58d700 Delete type=2 #603
+2025/08/18-18:56:45.550737 7fd17a58d700 Delete type=2 #591
+2025/08/18-18:56:45.554918 7fd17a58d700 Manual compaction at level-1 from '!scenes.tiles!XRLV3KSUvHYgsLHj.aOeSt1djJbByY57S' @ 196910 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)

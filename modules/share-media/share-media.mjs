@@ -135,6 +135,7 @@ var ICONS = {
   usersInfo: "fas fa-user",
   noUsers: "fas fa-user-slash",
   shareAgain: "fas fa-share",
+  shareLink: "fas fa-link",
   mediaLayer: "fas fa-images"
 };
 // scripts/common/utils.mjs
@@ -872,6 +873,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
       }
     },
     actions: {
+      shareLink: MediaSidebar.#onShareLink,
       clearHistory: MediaSidebar.#onClearHistory,
       clearMedia: MediaSidebar.#onClearMedia,
       showMedia: MediaSidebar.#onShowMedia,
@@ -1094,6 +1096,11 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
       icons: CONFIG.shareMedia.CONST.ICONS
     };
   }
+  static async#onShareLink(_event, _target) {
+    await new game.modules.shareMedia.shareables.apps.shareSelector({ link: true }).render({
+      force: true
+    });
+  }
   static async#onClearHistory(_event, _target) {
     if (!game.users.current.isGM)
       return;
@@ -1102,7 +1109,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
         title: "share-media.ui.sidebar.label",
         icon: CONFIG.shareMedia.CONST.ICONS.clear
       },
-      content: `<p>${game.i18n.localize("share-media.ui.sidebar.clear.history.description")}</p>`
+      content: `<p>${game.i18n.localize("share-media.ui.sidebar.header.clear.description")}</p>`
     });
     if (confirm) {
       this.deleteHistory();
@@ -1959,24 +1966,25 @@ var registerTileConfiguration = () => {
   Hooks.on("renderTileConfig", (application, element, _context, _option) => {
     if (!game.users.current.isGM)
       return;
-    const enabled = application.document.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_ENABLED) ?? false;
-    const name = application.document.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_NAME) || game.i18n.localize("share-media.canvas.layer.tile.name.default");
+    const { MEDIA_TILE_ENABLED, MEDIA_TILE_NAME } = game.modules.shareMedia.canvas.layer.constructor;
+    const enabled = application.document.getFlag("share-media", MEDIA_TILE_ENABLED) ?? false;
+    const name = application.document.getFlag("share-media", MEDIA_TILE_NAME) || game.i18n.localize("share-media.canvas.layer.tile.name.default");
     const html = `
       <fieldset>
         <legend>${game.i18n.localize("share-media.canvas.layer.tile.label")}</legend>
         <div class="form-group">
-          <label for="shm.enabled">${game.i18n.localize("share-media.canvas.layer.tile.enabled.label")}</label>
+          <label for="flags.share-media.${MEDIA_TILE_ENABLED}">${game.i18n.localize("share-media.canvas.layer.tile.enabled.label")}</label>
           <div class="shm form-fields">
-            <input type="checkbox" name="shm.enabled" id="shm.enabled" ${enabled ? "checked" : ""}>
+            <input type="checkbox" name="flags.share-media.${MEDIA_TILE_ENABLED}" id="flags.share-media.${MEDIA_TILE_ENABLED}" ${enabled ? "checked" : ""}>
           </div>
-          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.enabled.hint")}</p>
+          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.enabled.description")}</p>
         </div>
         <div class="form-group">
-          <label for="shm.name">${game.i18n.localize("share-media.canvas.layer.tile.name.label")}</label>
+          <label for="flags.share-media.${MEDIA_TILE_NAME}">${game.i18n.localize("share-media.canvas.layer.tile.name.label")}</label>
           <div class="form-fields">
-            <input type="text" name="shm.name" id="shm.name" value="${name}">
+            <input type="text" name="flags.share-media.${MEDIA_TILE_NAME}" id="flags.share-media.${MEDIA_TILE_NAME}" value="${name}">
           </div>
-          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.name.hint")}</p>
+          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.name.description")}</p>
         </div>
       </fieldset>
     `;
@@ -1984,12 +1992,6 @@ var registerTileConfiguration = () => {
     if (!tab)
       return;
     tab.insertAdjacentHTML("beforeend", html);
-    element.addEventListener("submit", async (event) => {
-      const formData = new foundry.applications.ux.FormDataExtended(event.target);
-      const object = foundry.utils.expandObject(formData.object);
-      await application.document.setFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_ENABLED, object.shm.enabled);
-      await application.document.setFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_NAME, object.shm.name);
-    });
   });
 };
 var registerMediaLayer = () => {
@@ -2813,11 +2815,11 @@ class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
 }
 // scripts/shareables/apps/share-selector.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin11, ApplicationV2: ApplicationV211 } = foundry.applications.api;
-var { isSubclass: isSubclass15 } = foundry.utils;
+var { isSubclass: isSubclass15, debounce } = foundry.utils;
 
 class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   constructor(options = {}) {
-    if (!options.src || typeof options.src !== "string")
+    if (!options.link && (!options.src || typeof options.src !== "string"))
       throw new Error('You may note create a ShareSelector application without or with a malformated "options.src" option.');
     super(options);
   }
@@ -2832,7 +2834,8 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
     },
     position: {
       width: 450,
-      height: "auto"
+      height: "auto",
+      top: 100
     },
     form: {
       handler: ShareSelector.#onSubmit
@@ -2842,22 +2845,35 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       configureSetting: ShareSelector.#onConfigureSetting
     },
     src: null,
+    link: false,
     settings: {}
   };
   static PARTS = {
+    link: { template: "modules/share-media/templates/shareables/share-selector-link.hbs" },
     media: { template: "modules/share-media/templates/partials/media.hbs" },
-    form: { template: "modules/share-media/templates/shareables/share-selector.hbs" }
+    form: { template: "modules/share-media/templates/shareables/share-selector-form.hbs" }
   };
   #shareOptions = {
+    src: null,
     mode: null,
     optionName: null,
     optionValue: null,
     settings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings)
   };
+  #linkElement = null;
+  #linkListener = null;
   _configureRenderOptions(options) {
     super._configureRenderOptions(options);
-    if (options.isFirstRender)
+    if (options.isFirstRender) {
+      if (this.options.link && !this.options.src)
+        options.parts = ["link"];
+      else
+        options.parts = ["media", "form"];
+      this.#shareOptions.src = this.options.src || null;
       game.modules.shareMedia.utils.applySettingsToMediaOptions(this.options.settings.mode, this.#shareOptions, this.options.settings);
+    }
+    if (options.src)
+      this.#shareOptions.src = options.src;
   }
   async _prepareContext(options) {
     return {
@@ -2868,8 +2884,8 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   async _preparePartContext(partId, context, _options) {
     switch (partId) {
       case "media":
-        context.src = this.options.src;
-        context.isVideo = game.modules.shareMedia.utils.isVideo(this.options.src);
+        context.src = this.#shareOptions.src;
+        context.isVideo = game.modules.shareMedia.utils.isVideo(this.#shareOptions.src);
         if (context.isVideo)
           context.videoIcon = CONFIG.shareMedia.CONST.ICONS.play;
         if (context.isVideo)
@@ -2900,7 +2916,7 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       const validator = CONFIG.shareMedia.CONST.MEDIA_SETTINGS_VALIDATORS[category];
       if (!validator)
         throw new Error(`Missing validator for setting "${category}".`);
-      const isVisible = validator(this.options.src) && (category === this.#shareOptions.mode || !Object.hasOwn(CONFIG.shareMedia.CONST.LAYERS_MODES, category));
+      const isVisible = validator(this.#shareOptions.src) && (category === this.#shareOptions.mode || !Object.hasOwn(CONFIG.shareMedia.CONST.LAYERS_MODES, category));
       acc[category] = {
         category,
         label: `categories.${category}`,
@@ -2915,6 +2931,25 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       }));
       return acc;
     }, {});
+  }
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (this.options.link)
+      this.#linkElement = this.element.querySelector("#link");
+  }
+  async _postRender(context, options) {
+    await super._postRender(context, options);
+    if (this.options.link) {
+      this.#linkListener = debounce(this.#parseMediaLink.bind(this), 300);
+      this.#linkElement.addEventListener("input", this.#linkListener);
+    }
+  }
+  async _onClose(options) {
+    super._onClose(options);
+    if (this.#linkListener)
+      this.#linkElement.removeEventListener("input", this.#linkListener);
+    this.#linkListener = null;
+    this.#linkElement = null;
   }
   static async#onConfigureMode(_event, target) {
     const { mode, optionName, optionValue } = target.dataset ?? {};
@@ -2933,10 +2968,10 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   static async#onSubmit(_event, _form, _formData) {
     if (!this.#shareOptions.mode || !this.#shareOptions.optionName || !this.#shareOptions.optionValue)
       return;
-    const optionsSettings = game.modules.shareMedia.utils.getMediaSettings(this.options.src, this.#shareOptions.mode, this.#shareOptions.settings);
+    const optionsSettings = game.modules.shareMedia.utils.getMediaSettings(this.#shareOptions.src, this.#shareOptions.mode, this.#shareOptions.settings);
     const { settings: _settings, ...shareOptions } = this.#shareOptions;
     const options = {
-      src: this.options.src,
+      src: this.#shareOptions.src,
       ...shareOptions,
       ...optionsSettings
     };
@@ -2944,6 +2979,15 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
     if (result)
       this.close();
     return result;
+  }
+  #parseMediaLink(event) {
+    const value = event.target.value;
+    try {
+      new URL(value);
+    } catch (_error) {
+      return;
+    }
+    this.render({ parts: ["media", "form"], src: value, force: true });
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.shareables.apps.ShareSelector;
