@@ -1,8 +1,4 @@
-<div class="tab" style="display: flex;">
-
-
-
-
+<div class="tab" style="display: flex; overflow: auto">
   <div class="form-group import">
     <label class="import-options">Scene Name</label>
     <div class="form-fields">
@@ -148,7 +144,6 @@
       <div class="form-group import">
         <label class="import-options">Bucket Name for S3 Storage</label>
         <div class="form-fields">
-
           <select name="bucket">
             {{selectOptions bucketOptions selected=s3Bucket}}
           </select>

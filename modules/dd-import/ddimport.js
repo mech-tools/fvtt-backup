@@ -67,6 +67,7 @@ class DDImporter extends  foundry.applications.api.HandlebarsApplicationMixin(fo
     static PARTS = {
       form: {
         template: "modules/dd-import/importer.hbs",
+        scrollable : [""]
       },
       footer : {
         template : "templates/generic/form-footer.hbs"
@@ -86,7 +87,11 @@ class DDImporter extends  foundry.applications.api.HandlebarsApplicationMixin(fo
 
     context.s3Bucket = settings.bucket || "";
     try {
-      context.bucketOptions = (await FilePicker.browse("s3", "")).dirs.unshift("");
+      context.bucketOptions = {"" : "-"};
+      for(let dir of  (await FilePicker.browse("s3", "")).dirs)
+      {
+        context.bucketOptions[dir] = dir
+      }
     }
     catch (e)
     {

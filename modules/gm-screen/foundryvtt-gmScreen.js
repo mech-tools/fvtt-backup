@@ -9,23 +9,23 @@ const l = "gm-screen", p = "GMSCR", C = {
     tableRow: `modules/${l}/templates/parts/settings-grid-config-table-row.hbs`
   }
 };
-var a = /* @__PURE__ */ ((g) => (g.columns = "columns", g.displayDrawer = "display-as-drawer", g.drawerHeight = "drawer-height", g.drawerOpacity = "drawer-opacity", g.drawerWidth = "drawer-width", g.gmScreenConfig = "gm-screen-config", g.migrated = "migrated", g.condensedButton = "condensedButton", g.reset = "reset", g.rightMargin = "right-margin", g.rows = "rows", g))(a || {});
-const D = /([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[eE]([+-]?\d+))?/;
+var a = /* @__PURE__ */ ((d) => (d.columns = "columns", d.displayDrawer = "display-as-drawer", d.drawerHeight = "drawer-height", d.drawerOpacity = "drawer-opacity", d.drawerWidth = "drawer-width", d.gmScreenConfig = "gm-screen-config", d.migrated = "migrated", d.condensedButton = "condensedButton", d.reset = "reset", d.rightMargin = "right-margin", d.rows = "rows", d))(a || {});
+const x = /([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[eE]([+-]?\d+))?/;
 function c() {
   if (!(game instanceof foundry.Game))
     throw new Error("game is not initialized yet!");
   return game;
 }
 function y() {
-  const { i18n: g } = c();
-  return g || {
+  const { i18n: d } = c();
+  return d || {
     localize: (t) => t
   };
 }
-function d(g, ...t) {
-  (g || c().modules.get("_dev-mode")?.api?.getPackageDebugValue(l)) && console.log(l, "|", ...t);
+function g(d, ...t) {
+  (d || c().modules.get("_dev-mode")?.api?.getPackageDebugValue(l)) && console.log(l, "|", ...t);
 }
-function I(g, t) {
+function j(d, t) {
   return new Promise((e, s) => {
     new foundry.applications.api.DialogV2({
       window: { title: y().localize(`${p}.cellConfigDialog.CellConfig`) },
@@ -33,11 +33,11 @@ function I(g, t) {
       content: `
     <div class="form-group">
       <label for="spanRows">${y().localize(`${p}.cellConfigDialog.RowSpan`)}</label>
-      <input type="number" step="1" name="spanRows" id="spanRows" min="1" max="${t.rows + 1 - g.y}" value="${g.spanRows || 1}">
+      <input type="number" step="1" name="spanRows" id="spanRows" min="1" max="${t.rows + 1 - d.y}" value="${d.spanRows || 1}">
     </div>
     <div class="form-group">
       <label for="spanCols">${y().localize(`${p}.cellConfigDialog.ColSpan`)}</label>
-      <input type="number" step="1" name="spanCols" id="spanCols" min="1" max="${t.columns + 1 - g.x}" value="${g.spanCols || 1}">
+      <input type="number" step="1" name="spanCols" id="spanCols" min="1" max="${t.columns + 1 - d.x}" value="${d.spanCols || 1}">
     </div>  
 `,
       buttons: [
@@ -58,7 +58,7 @@ function I(g, t) {
               newSpanRows: 1,
               newSpanCols: 1
             };
-            d(!1, "dialog formValues", n), e(n);
+            g(!1, "dialog formValues", n), e(n);
           }
         },
         {
@@ -71,17 +71,17 @@ function I(g, t) {
               newSpanRows: Number(o.find('[name="spanRows"]').val()),
               newSpanCols: Number(o.find('[name="spanCols"]').val())
             };
-            d(!1, "dialog formValues", u), e(u);
+            g(!1, "dialog formValues", u), e(u);
           }
         }
       ]
     }).render({ force: !0 });
   });
 }
-function x(g) {
-  const t = g.parents(".gm-screen-grid")[0], e = window.getComputedStyle(t);
-  d(!1, "getGridElementsPosition", {
-    element: g,
+function k(d) {
+  const t = d.parents(".gm-screen-grid")[0], e = window.getComputedStyle(t);
+  g(!1, "getGridElementsPosition", {
+    element: d,
     relevantGridElement: t,
     vanillaGridElementStyles: e,
     gap: e.gap,
@@ -89,36 +89,43 @@ function x(g) {
     gridRowGap: e["grid-row-gap"],
     gridColGap: e["grid-column-gap"]
   });
-  const s = Number(e["grid-row-gap"].match(D)[0]), n = e["grid-template-columns"].split(" "), i = Number(n[0].match(D)[0]), r = e["grid-template-rows"].split(" "), o = Number(r[0].match(D)[0]), u = g[0].getBoundingClientRect(), f = t.getBoundingClientRect(), h = Math.floor((u.left - (f.left - s)) / (i + s)) + 1, m = Math.floor((u.top - (f.top - s)) / (o + s)) + 1;
-  return d(!1, "getGridElementsPosition", {
+  const s = Number(e["grid-row-gap"].match(x)[0]), n = e["grid-template-columns"].split(" "), i = Number(n[0].match(x)[0]), r = e["grid-template-rows"].split(" "), o = Number(r[0].match(x)[0]), u = d[0].getBoundingClientRect(), m = t.getBoundingClientRect(), h = Math.floor((u.left - (m.left - s)) / (i + s)) + 1, f = Math.floor((u.top - (m.top - s)) / (o + s)) + 1;
+  return g(!1, "getGridElementsPosition", {
     setup: {
       gap: s,
       cols: n,
       rows: r,
       elementBounds: u,
-      gridBounds: f,
+      gridBounds: m,
       colWidth: i,
       rowHeight: o
     },
     results: {
       elementColumn: h,
-      elementRow: m
+      elementRow: f
     }
-  }), { y: m, x: h };
+  }), { y: f, x: h };
 }
-function E(g) {
-  return c().user?.isGM ? g.grids : Object.keys(g.grids).reduce((e, s) => (g.grids[s].isShared && (e[s] = g.grids[s]), e), {});
+function O(d) {
+  return c().user?.isGM ? d.grids : Object.keys(d.grids).reduce((e, s) => (d.grids[s].isShared && (e[s] = d.grids[s]), e), {});
 }
-function j(g, t, e, s) {
-  g.find(t).each((n, i) => {
+function V(d, t, e, s) {
+  d.find(t).each((n, i) => {
     const r = window.getComputedStyle(i)[e];
     i.style.setProperty(s, String(r));
   });
 }
-async function T() {
+function E(d) {
+  return async function() {
+    this.cellId = d, $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
+    const e = $(this.cellId).find(".gm-screen-grid-cell-content");
+    e.removeClass().addClass(["gm-screen-grid-cell-content"]), e.html(this.form), e.find(".window-header").css("visibility", "hidden");
+  };
+}
+async function R() {
   if (!c().user?.isGM) return;
-  const g = "2.0.1", t = c().settings.get(l, a.migrated);
-  if (t.status && (foundry.utils.isNewerVersion(c().modules.get(l)?.version ?? "0", g) || t.version === g))
+  const d = "2.0.1", t = c().settings.get(l, a.migrated);
+  if (t.status && (foundry.utils.isNewerVersion(c().modules.get(l)?.version ?? "0", d) || t.version === d))
     return;
   ui.notifications?.notify("GM Screen | Beginning Migration to updated schema.", "info");
   const e = c().settings.get(l, a.gmScreenConfig);
@@ -142,13 +149,13 @@ async function T() {
         }
       }
     };
-    d(!0, "migration output", {
+    g(!0, "migration output", {
       output: n
     }), await c().settings.set(l, a.gmScreenConfig, n);
   }
-  ui.notifications?.notify("GM Screen | Migration Complete.", "info"), await c().settings.set(l, a.migrated, { status: !0, version: g });
+  ui.notifications?.notify("GM Screen | Migration Complete.", "info"), await c().settings.set(l, a.migrated, { status: !0, version: d });
 }
-const k = {
+const T = {
   activeGridId: "default",
   grids: {
     default: {
@@ -172,11 +179,11 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
       restricted: !0,
       hint: `${p}.settings.${a.gmScreenConfig}.Hint`
     }), c().settings.register(l, a.gmScreenConfig, {
-      default: k,
+      default: T,
       scope: "world",
       config: !1,
       onChange(...t) {
-        d(!1, "gmScreenConfig changed", {
+        g(!1, "gmScreenConfig changed", {
           args: t,
           currentConfig: { ...c().settings.get(l, a.gmScreenConfig) }
         }), c().modules.get(l)?.api?.refreshGmScreen();
@@ -255,7 +262,7 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
       config: !0,
       hint: `${p}.settings.${a.reset}.Hint`,
       onChange: (t) => {
-        t && c().settings.set(l, a.gmScreenConfig, k);
+        t && c().settings.set(l, a.gmScreenConfig, T);
       }
     });
   }
@@ -288,7 +295,7 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
   }
   get settingsData() {
     const t = c().settings.get(l, a.gmScreenConfig);
-    return d(!1, "getSettingsData", {
+    return g(!1, "getSettingsData", {
       gmScreenConfig: t
     }), {
       grids: t.grids
@@ -300,7 +307,7 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
       defaultRows: this.rows,
       defaultColumns: this.columns
     });
-    return d(!1, e), e;
+    return g(!1, e), e;
   }
   _dragListeners(t) {
     let e;
@@ -320,11 +327,11 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
   }
   async _onRender() {
     const t = $(this.element);
-    d(!1, "activateListeners", {
+    g(!1, "activateListeners", {
       html: t
     });
     const e = async (n) => {
-      d(!1, "add row clicked", {
+      g(!1, "add row clicked", {
         data: n.data()
       });
       const { table: i } = n.data(), r = $(t).find("tbody"), o = {
@@ -341,7 +348,7 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
       );
       r.append(u), this.setPosition({});
     }, s = (n) => {
-      d(!1, "delete row clicked", {
+      g(!1, "delete row clicked", {
         currentTarget: n
       }), n.parentsUntil("tbody").remove(), this.setPosition({});
     };
@@ -350,7 +357,7 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
       if (!i)
         return;
       const r = $(i);
-      d(!1, "a button was clicked", { e: n, currentTarget: i }), r.hasClass("add-row") && e(r), r.hasClass("delete-row") && s(r);
+      g(!1, "a button was clicked", { e: n, currentTarget: i }), r.hasClass("add-row") && e(r), r.hasClass("delete-row") && s(r);
     });
   }
   // grids: {
@@ -362,37 +369,37 @@ class v extends foundry.applications.api.HandlebarsApplicationMixin(
   // },
   static async #e(t, e, s) {
     const n = c().settings.get(l, a.gmScreenConfig), i = foundry.utils.expandObject(s.object);
-    if (d(!1, {
+    if (g(!1, {
       formData: s,
       data: i
     }), Object.keys(i).length === 0)
       throw ui.notifications?.error(y().localize(`${p}.gridConfig.errors.empty`)), new Error("Cannot save the grid with no tabs.");
-    const r = Object.keys(i.grids), o = r.reduce((h, m) => {
-      const b = i.grids[m];
-      return Object.hasOwn(n.grids, m) ? (h[m] = {
-        ...n.grids[m],
+    const r = Object.keys(i.grids), o = r.reduce((h, f) => {
+      const b = i.grids[f];
+      return Object.hasOwn(n.grids, f) ? (h[f] = {
+        ...n.grids[f],
         ...b
-      }, h) : (h[m] = {
+      }, h) : (h[f] = {
         ...b,
         entries: {},
         name: b.name ?? "",
         isShared: b.isShared ?? !1,
-        id: m
+        id: f
       }, h);
-    }, {}), u = r.includes(n.activeGridId) ? n.activeGridId : r[0], f = {
+    }, {}), u = r.includes(n.activeGridId) ? n.activeGridId : r[0], m = {
       ...n,
       grids: o,
       activeGridId: u
     };
-    d(!0, "setting settings", {
-      newGmScreenConfig: f
-    }), await c().settings.set(l, a.gmScreenConfig, f), c().modules.get("gm-screen")?.api?.refreshGmScreen();
+    g(!0, "setting settings", {
+      newGmScreenConfig: m
+    }), await c().settings.set(l, a.gmScreenConfig, m), c().modules.get("gm-screen")?.api?.refreshGmScreen();
   }
 }
-class V extends foundry.applications.sheets.RollTableSheet {
+class P extends foundry.applications.sheets.RollTableSheet {
   cellId;
   constructor(t) {
-    super(t), d(!1, "CompactRollTableDisplay constructor", {
+    super(t), g(!1, "CompactRollTableDisplay constructor", {
       options: t
     }), this.cellId = t.cellId;
   }
@@ -416,8 +423,11 @@ class V extends foundry.applications.sheets.RollTableSheet {
   get id() {
     return `gmscreen-rolltable-${this.document.id}`;
   }
+  async close(...t) {
+    return t.length === 0 ? super.close(...t) : this;
+  }
 }
-class L extends foundry.applications.sheets.journal.JournalEntryPageHandlebarsSheet {
+class z extends foundry.applications.sheets.journal.JournalEntryPageHandlebarsSheet {
   cellId;
   constructor(t) {
     super(t), this.cellId = t.cellId;
@@ -456,8 +466,11 @@ class L extends foundry.applications.sheets.journal.JournalEntryPageHandlebarsSh
   get id() {
     return `gmscreen-journal-page-${this.document.id}`;
   }
+  async close(...t) {
+    return t.length === 0 ? super.close(...t) : this;
+  }
 }
-class P extends foundry.applications.sheets.journal.JournalEntrySheet {
+class L extends foundry.applications.sheets.journal.JournalEntrySheet {
   cellId;
   constructor(t) {
     super(t), this.cellId = t.cellId, this.options.position.width = "auto", this.options.position.height = "auto";
@@ -486,7 +499,7 @@ class P extends foundry.applications.sheets.journal.JournalEntrySheet {
     return t.length === 0 ? super.close(...t) : this;
   }
 }
-class S extends foundry.applications.api.HandlebarsApplicationMixin(
+class D extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
 ) {
   expanded;
@@ -528,7 +541,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
         ]
       }
     };
-    d(!1, {
+    g(!1, {
       displayDrawer: n,
       options: n ? i : o
     }), this.options = {
@@ -557,7 +570,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
     return c().settings.get(l, a.displayDrawer);
   }
   get userViewableGrids() {
-    return E(this.data);
+    return O(this.data);
   }
   get hasUserViewableGrids() {
     return !!Object.keys(this.userViewableGrids).length;
@@ -581,7 +594,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
   async setGridData(t) {
     const e = foundry.utils.deepClone(this.data);
     if (!foundry.utils.setProperty(e, `grids.${t.id}`, t)) {
-      d(!0, "error occurred trying to set a grid data");
+      g(!0, "error occurred trying to set a grid data");
       return;
     }
     await c().settings.set(l, a.gmScreenConfig, e);
@@ -601,7 +614,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
       ...this.activeGrid,
       entries: e
     };
-    d(!1, "addEntryToActiveGrid", {
+    g(!1, "addEntryToActiveGrid", {
       activeGridData: this.activeGrid,
       newEntries: e,
       newEntry: t,
@@ -646,7 +659,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
    * Double confirms Clearing the Active Grid
    */
   async handleClear() {
-    d(!1, "handleClear"), await foundry.applications.api.DialogV2.confirm({
+    g(!1, "handleClear"), await foundry.applications.api.DialogV2.confirm({
       title: y().localize(`${p}.warnings.clearConfirm.Title`),
       content: y().localize(`${p}.warnings.clearConfirm.Content`)
     }) && (this.apps = {}, this.setGridData({
@@ -677,7 +690,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
   async handleClickEvent(t) {
     t.preventDefault();
     const e = t.currentTarget.dataset.action, s = $(t.currentTarget).parents("[data-entity-uuid]")?.data()?.entityUuid, n = $(t.currentTarget).parents("[data-entry-id]")?.data()?.entryId, i = $(t.currentTarget).parents("[data-entry-id]")?.attr("id");
-    switch (d(!1, "handleClickEvent", {
+    switch (g(!1, "handleClickEvent", {
       e: t,
       action: e
     }), e) {
@@ -693,46 +706,46 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
       }
       case "configureCell": {
         try {
-          const { x: r, y: o } = x($(t.target).parent()), u = this.activeGrid.entries[n] || {
+          const { x: r, y: o } = k($(t.target).parent()), u = this.activeGrid.entries[n] || {
             x: r,
             y: o,
             entryId: `${r}-${o}`
           };
-          d(!1, "configureCell cellToConfigure", u);
-          const { newSpanRows: f, newSpanCols: h } = await I(u, {
+          g(!1, "configureCell cellToConfigure", u);
+          const { newSpanRows: m, newSpanCols: h } = await j(u, {
             rows: this.rows,
             columns: this.columns
           });
-          d(!1, "new span values from dialog", {
-            newSpanRows: f,
+          g(!1, "new span values from dialog", {
+            newSpanRows: m,
             newSpanCols: h
           });
-          const m = {
+          const f = {
             ...u,
-            spanRows: f,
+            spanRows: m,
             spanCols: h
           }, b = {
             ...this.activeGrid.entries,
-            [m.entryId]: m
-          }, O = [...Array(m.spanCols).keys()].map((G, N) => {
-            const M = m.x + N;
-            return [...Array(m.spanRows).keys()].map((F, A) => {
-              const _ = m.y + A;
-              return `${M}-${_}`;
+            [f.entryId]: f
+          }, G = [...Array(f.spanCols).keys()].map((S, A) => {
+            const M = f.x + A;
+            return [...Array(f.spanRows).keys()].map((U, _) => {
+              const I = f.y + _;
+              return `${M}-${I}`;
             });
           }).flat();
-          d(!1, {
-            problemCoordinates: O
-          }), Object.values(b).forEach((G) => {
-            O.includes(G.entryId) && G.entryId !== m.entryId && delete b[G.entryId];
-          }), d(!1, "newEntries", b);
-          const H = {
+          g(!1, {
+            problemCoordinates: G
+          }), Object.values(b).forEach((S) => {
+            G.includes(S.entryId) && S.entryId !== f.entryId && delete b[S.entryId];
+          }), g(!1, "newEntries", b);
+          const N = {
             ...this.activeGrid,
             entries: b
           };
-          this.setGridData(H);
+          this.setGridData(N);
         } catch (r) {
-          d(!1, "User exited configure cell Dialog.", r);
+          g(!1, "User exited configure cell Dialog.", r);
         }
         break;
       }
@@ -740,12 +753,24 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
         if (!s)
           return;
         try {
-          const o = (await this.getRelevantGmScreenDocument(s))?.sheet;
-          if (d(!1, "trying to edit entity", { relevantEntitySheet: o }), !o)
+          const r = await this.getRelevantGmScreenDocument(s), o = r?.sheet;
+          if (g(!1, "trying to edit entity", { relevantEntitySheet: o }), !o)
             return;
-          o.rendered ? (o.maximize(), o.bringToTop()) : o.render(!0);
+          if (o.rendered) {
+            o.maximize(), o.bringToTop();
+            return;
+          }
+          if (r instanceof JournalEntryPage && r.type === "image") {
+            new foundry.applications.apps.ImagePopout({
+              src: o.options.document.src,
+              uuid: s,
+              window: { title: r.name }
+            }).render({ force: !0 });
+            return;
+          }
+          o.render(!0);
         } catch (r) {
-          d(!0, "error opening entity sheet", r);
+          g(!0, "error opening entity sheet", r);
         }
         break;
       }
@@ -757,7 +782,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
         const r = t.currentTarget.dataset.tab;
         if (!c().user?.isGM || r === this.data.activeGridId || !r)
           return;
-        d(!1, "trying to set active grid", { newActiveGridId: r });
+        g(!1, "trying to set active grid", { newActiveGridId: r });
         try {
           const o = {
             ...this.data,
@@ -765,7 +790,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
           };
           await c().settings.set(l, a.gmScreenConfig, o);
         } catch (o) {
-          d(!0, "error setting active tab", o);
+          g(!0, "error setting active tab", o);
         }
         break;
       }
@@ -773,7 +798,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
         try {
           this.toggleGmScreenVisibility();
         } catch (r) {
-          d(!0, "error toggling GM Screen", r);
+          g(!0, "error toggling GM Screen", r);
         }
         break;
       }
@@ -804,25 +829,25 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
    */
   async refresh() {
     const t = c().settings.get(l, a.gmScreenConfig), e = foundry.utils.deepClone(this.data), s = foundry.utils.diffObject(e, t);
-    if (d(!1, "refreshing gm screen", {
+    if (g(!1, "refreshing gm screen", {
       newData: foundry.utils.deepClone(t),
       data: e,
       diffData: s
     }), this.data = t, Object.keys(s).length) {
       if (Object.keys(s).every((h) => h === "activeGridId")) {
-        d(!1, "not rerendering because only activeGridId changed");
+        g(!1, "not rerendering because only activeGridId changed");
         return;
       }
-      const n = Object.keys(s?.grids ?? {}), i = Object.keys(this.userViewableGrids), r = Object.keys(E(e)), o = !n.filter((h) => i.includes(h)).length, u = i.length === r.length && i.every((h) => r.includes(h)), f = o && u;
-      if (d(!1, "gridIdChecks", {
+      const n = Object.keys(s?.grids ?? {}), i = Object.keys(this.userViewableGrids), r = Object.keys(O(e)), o = !n.filter((h) => i.includes(h)).length, u = i.length === r.length && i.every((h) => r.includes(h)), m = o && u;
+      if (g(!1, "gridIdChecks", {
         diffGridIds: n,
         myOldGridIds: r,
         myNewGridIds: i,
         diffOverlapsNewGridIds: o,
         oldAndNewGridIdsAreEqual: u,
-        shouldNotRerender: f
-      }), f) {
-        d(!1, "not rerendering because none of my visible grids changed");
+        shouldNotRerender: m
+      }), m) {
+        g(!1, "not rerendering because none of my visible grids changed");
         return;
       }
     }
@@ -861,14 +886,7 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
   async _attachFrameListeners() {
     super._attachFrameListeners();
     const t = $(this.element);
-    c().user?.isGM && this._dragListeners(t), $(t).on("click", "button", this.handleClickEvent.bind(this)), $(t).on("click", "a", this.handleClickEvent.bind(this)), $(t).on("change", "select", async (e) => {
-      const s = x($(e.target).parent()), n = `${s.x}-${s.y}`, i = {
-        ...s,
-        entryId: n,
-        entityUuid: e.target.value
-      };
-      this.addEntryToActiveGrid(i);
-    });
+    c().user?.isGM && this._dragListeners(t), $(t).on("click", ".gm-screen-actions button", this.handleClickEvent.bind(this)), $(t).on("click", ".gm-screen-grid-cell-header a", this.handleClickEvent.bind(this));
   }
   /**
    * Utility method to help typescript understand that these are only
@@ -899,76 +917,106 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
     this.apps[e] && this.apps[e]?.document.uuid !== t && (await this.apps[e].close(), delete this.apps[e]);
     const { sheet: n } = s, i = n?.constructor;
     if (this.apps[e] && this.apps[e].constructor.name !== i?.name && (await this.apps[e].close(), delete this.apps[e]), this.apps[e] && this.apps[e].constructor.name === i?.name)
-      return d(!1, `using cached application instance for "${s.name}"`, {
+      return g(!1, `using cached application instance for "${s.name}"`, {
         entityUuid: t,
         app: this.apps[e]
       }), this.apps[e];
-    if (d(!1, "relevantEntity sheet", {
+    if (g(!1, "relevantEntity sheet", {
       sheet: n,
       name: i?.name
     }), !i) {
-      d(!0, "no sheet class found for relevantDocument", {
+      g(!0, "no sheet class found for relevantDocument", {
         relevantDocument: s,
         entityUuid: t
       });
       return;
     }
-    if (s instanceof JournalEntry)
-      d(!1, `creating compact journal entry for "${s.name}"`, {
-        cellId: e
-      }), this.apps[e] = new P({
-        document: s,
-        editable: !1,
-        cellId: e
-      });
-    else if (s instanceof JournalEntryPage)
-      d(!1, `creating compact JournalEntryPage for "${s.name}"`, {
-        cellId: e
-      }), this.apps[e] = new L({ document: s, cellId: e });
-    else if (s instanceof RollTable)
-      d(!1, `creating compact rollTableDisplay for "${s.name}"`, {
-        cellId: e
-      }), this.apps[e] = new V({ document: s, cellId: e });
-    else if (n instanceof foundry.applications.sheets.ActorSheetV2 && s instanceof Actor) {
-      d(!1, `creating ActorSheetV2 for "${s.name}"`, {
-        cellId: e
-      });
-      const r = new i({
-        document: s,
-        window: {
-          ...this.options.window,
-          frame: !1
-        }
-      });
-      r._replaceHTML = function() {
-        this.cellId = e, $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
-        const u = $(this.cellId).find(".gm-screen-grid-cell-content");
-        u.html(this.form), u.find(".window-header").remove(), u.children().wrap("<div class='window-content'></div>");
-      }, this.apps[e] = r;
-    } else {
-      d(!1, `creating compact generic for "${s.name}"`, {
-        cellId: e
-      });
-      const r = new i(s, {
-        width: "100%",
-        height: "100%"
-      });
-      r.options.editable = !1, r.options.popOut = !1, r.cellId = e, r._injectHTML = function(u) {
-        $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
-        const f = $(this.cellId).find(".gm-screen-grid-cell-content");
-        d(!1, "CompactEntitySheet overwritten _injectHTML", {
-          targetElement: f,
-          gridCellContent: f,
-          cellId: this.cellId,
-          html: u
-        }), f.append(u), f.children().wrap("<div class='window-content'></div>"), this._element = u;
-      }, r._replaceHTML = function(u, f) {
-        $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
-        const h = $(this.cellId).find(".gm-screen-grid-cell-content"), m = f.get(0);
-        m && (h.html(m), h.children().wrap("<div class='window-content'></div>"), this._element = f);
-      }, d(!1, `created compact generic for "${s.name}"`, {
-        sheet: r
-      }), this.apps[e] = r;
+    switch (!0) {
+      case s instanceof JournalEntry:
+        g(!1, `creating compact journal entry for "${s.name}"`, {
+          cellId: e
+        }), this.apps[e] = new L({
+          document: s,
+          editable: !1,
+          cellId: e
+        });
+        break;
+      case s instanceof JournalEntryPage:
+        g(!1, `creating compact JournalEntryPage for "${s.name}"`, {
+          cellId: e
+        }), this.apps[e] = new z({ document: s, cellId: e });
+        break;
+      case s instanceof RollTable:
+        g(!1, `creating compact rollTableDisplay for "${s.name}"`, {
+          cellId: e
+        }), this.apps[e] = new P({ document: s, cellId: e });
+        break;
+      case (n instanceof foundry.applications.sheets.ActorSheetV2 && s instanceof Actor):
+        g(!1, `creating ActorSheetV2 for "${s.name}"`, {
+          cellId: e
+        });
+        const r = new i({
+          ...n.options,
+          id: `gmscreen-actor-${n.document.id}`,
+          classes: [],
+          document: s,
+          window: {
+            ...n.options.window,
+            frame: !0,
+            positioned: !1,
+            resizable: !1
+          }
+        });
+        r._postRender = E(e), r.close = async function() {
+          return this;
+        }, this.apps[e] = r;
+        break;
+      case (n instanceof foundry.applications.api.DocumentSheetV2 && s instanceof Item):
+        g(!1, `creating ItemSheetV2 for "${s.name}"`, {
+          cellId: e
+        });
+        const o = new i({
+          ...n.options,
+          id: `gmscreen-item-${n.document.id}`,
+          document: s,
+          window: {
+            ...n.options.window,
+            frame: !0,
+            positioned: !1,
+            resizable: !1
+          }
+        });
+        o._postRender = E(e), o.close = async function() {
+          return this;
+        }, this.apps[e] = o;
+        break;
+      default:
+        g(!1, `creating compact generic for "${s.name}"`, {
+          cellId: e
+        });
+        const u = new i(s, {
+          ...n.options,
+          width: "100%",
+          height: "100%",
+          positioned: !1,
+          resizable: !1
+        });
+        u.options.editable = !1, u.options.popOut = !1, u.cellId = e, u._injectHTML = function(h) {
+          $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
+          const f = $(this.cellId).find(".gm-screen-grid-cell-content");
+          g(!1, "CompactEntitySheet overwritten _injectHTML", {
+            targetElement: f,
+            gridCellContent: f,
+            cellId: this.cellId,
+            html: h
+          }), f.append(h), f.children().wrap("<section class='window-content'></section>"), this._element = h;
+        }, u._replaceHTML = function(h, f) {
+          $(this.cellId).find(".gm-screen-grid-cell-title").text(this.title);
+          const b = $(this.cellId).find(".gm-screen-grid-cell-content"), G = f.get(0);
+          G && (b.html(G), b.children().wrap("<section class='window-content'></section>"), this._element = f);
+        }, g(!1, `created compact generic for "${s.name}"`, {
+          sheet: u
+        }), this.apps[e] = u;
     }
     return this.apps[e];
   }
@@ -979,15 +1027,15 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
         if (!n)
           return;
         const i = `#${s.id}`, { entryId: r } = s.dataset;
-        d(!1, "gridEntry with uuid defined found", { relevantUuid: n, cellId: i, gridEntry: s }), this.getCellApplicationClass(n, i).then(async (o) => {
-          if (d(!1, `got application for "${i}"`, {
+        g(!1, "gridEntry with uuid defined found", { relevantUuid: n, cellId: i, gridEntry: s }), this.getCellApplicationClass(n, i).then(async (o) => {
+          if (g(!1, `got application for "${i}"`, {
             application: o
           }), !o)
             throw r && await this.removeEntryFromActiveGrid(r, i.replace("#", "")), new Error("no application exists to render");
           const u = o.options.classes.join(" ");
           $(s).find(".gm-screen-grid-cell-content").addClass(u), o.render(!0);
         }).catch((o) => {
-          d(!0, "error trying to render a gridEntry", {
+          g(!0, "error trying to render a gridEntry", {
             gridEntry: s,
             cellId: i,
             relevantUuid: n,
@@ -995,20 +1043,20 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
           });
         });
       } catch (n) {
-        d(!1, "erroring", n, {
+        g(!1, "erroring", n, {
           gridEntry: s
         });
       }
-    }), j(t, ".gm-screen-grid-cell", "width", "--this-cell-width"), t;
+    }), V(t, ".gm-screen-grid-cell", "width", "--this-cell-width"), t;
   }
   /**
    * All grids with entries hydrated with empty cells
    */
   getHydratedGrids() {
-    return d(!1, "getHydratedGrids", {
+    return g(!1, "getHydratedGrids", {
       userViewableGrids: this.userViewableGrids
     }), Object.values(this.userViewableGrids).reduce((t, e) => {
-      const s = e.columnOverride ?? this.columns, n = e.rowOverride ?? this.rows, i = Number(s) * Number(n) - S.getNumOccupiedCells(e), r = i > 0 ? Array.from({ length: i }).map(() => ({})) : [];
+      const s = e.columnOverride ?? this.columns, n = e.rowOverride ?? this.rows, i = Number(s) * Number(n) - D.getNumOccupiedCells(e), r = i > 0 ? Array.from({ length: i }).map(() => ({})) : [];
       return t[e.id] = {
         grid: e,
         gridEntries: [...Object.values(e.entries), ...r]
@@ -1020,8 +1068,8 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
    */
   async _prepareContext(t) {
     const e = c().settings.get(l, a.rightMargin), s = c().settings.get(l, a.drawerWidth), n = c().settings.get(l, a.drawerHeight), i = c().settings.get(l, a.drawerOpacity), r = c().settings.get(l, a.condensedButton), o = this.getHydratedGrids();
-    this.tabGroups.primary = this.data.activeGridId || "default", Object.keys(o).forEach((f) => {
-      o[f].grid.cssClass = this.tabGroups.primary === o[f].grid.id ? "active" : "";
+    this.tabGroups.primary = this.data.activeGridId || "default", Object.keys(o).forEach((m) => {
+      o[m].grid.cssClass = this.tabGroups.primary === o[m].grid.id ? "active" : "";
     });
     const u = foundry.utils.mergeObject(t, {
       grids: o,
@@ -1038,12 +1086,12 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
       hidden: !this.hasUserViewableGrids,
       displayDrawer: this.displayDrawer
     });
-    return u.tabs = Object.keys(o).map((f) => ({
-      id: o[f].grid.id,
-      group: "primary",
-      label: o[f].grid.name,
-      cssClass: o[f].grid.cssClass
-    })), d(!1, "_prepareContext", {
+    return u.tabs = Object.keys(o).map((m) => ({
+      id: o[m].grid.id,
+      group: "gmScreen-primary",
+      label: o[m].grid.name,
+      cssClass: o[m].grid.cssClass
+    })), g(!1, "_prepareContext", {
       data: this.data,
       newAppData: u
     }), u;
@@ -1054,16 +1102,16 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
     try {
       e = JSON.parse(t.dataTransfer.getData("text/plain"));
     } catch (o) {
-      d(!1, "error parsing data from drag and drop", o);
+      g(!1, "error parsing data from drag and drop", o);
       return;
     }
-    if (d(!1, "onDrop", {
+    if (g(!1, "onDrop", {
       event: t,
       data: e,
       closestGridCell: $(t.currentTarget).closest(".gm-screen-grid-cell")
     }), !["JournalEntry", "JournalEntryPage", "RollTable", "Item", "Actor"].includes(e.type))
       return;
-    const s = e.pack ? `Compendium.${e.pack}.${e.uuid}` : e.uuid, n = x($(t.target).closest(".gm-screen-grid-cell")), i = `${n.x}-${n.y}`, r = {
+    const s = e.pack ? `Compendium.${e.pack}.${e.uuid}` : e.uuid, n = k($(t.target).closest(".gm-screen-grid-cell")), i = `${n.x}-${n.y}`, r = {
       ...n,
       entryId: i,
       entityUuid: s,
@@ -1073,25 +1121,25 @@ class S extends foundry.applications.api.HandlebarsApplicationMixin(
   }
 }
 let w;
-async function R(g) {
-  const t = c().settings.get(l, a.gmScreenConfig), e = E(t);
+async function H(d) {
+  const t = c().settings.get(l, a.gmScreenConfig), e = O(t);
   if (!Object.keys(e).length) {
     ui.notifications?.notify(y().localize(`${p}.warnings.noGrids`), "error");
     return;
   }
   if (c().settings.get(l, a.displayDrawer) && w) {
-    w.toggleGmScreenVisibility(g);
+    w.toggleGmScreenVisibility(d);
     return;
   }
-  w || (w = new S());
-  const n = g ?? w.state < 1, i = w.state < 1;
+  w || (w = new D());
+  const n = d ?? w.state < 1, i = w.state < 1;
   try {
     n ? (i && await w.render(!0), w.minimized && w.maximize(), w.bringToFront()) : w.close();
   } catch (r) {
-    d(!1, "error occurred trying to toggle the GM screen", r);
+    g(!1, "error occurred trying to toggle the GM screen", r);
   }
 }
-function z() {
+function B() {
   w && w.refresh();
 }
 Handlebars.registerHelper(`${p}-switch`, function(t, e) {
@@ -1102,31 +1150,31 @@ Handlebars.registerHelper(`${p}-case`, function(t, e) {
 });
 Handlebars.registerHelper(
   `${p}-enrich`,
-  (g) => foundry.applications.ux.TextEditor.implementation.enrichHTML(g)
+  (d) => foundry.applications.ux.TextEditor.implementation.enrichHTML(d)
 );
 Hooks.once("init", async () => {
-  d(!0, `Initializing ${l}`), v.init(), await foundry.applications.handlebars.loadTemplates(Object.values(foundry.utils.flattenObject(C)));
+  g(!0, `Initializing ${l}`), v.init(), await foundry.applications.handlebars.loadTemplates(Object.values(foundry.utils.flattenObject(C)));
 });
 Hooks.once("ready", async () => {
-  await T(), window[l] = { migration: T }, c().settings.get(l, a.displayDrawer) && (w = new S(), w.render(!0));
+  await R(), window[l] = { migration: R }, c().settings.get(l, a.displayDrawer) && (w = new D(), w.render(!0));
   const t = c().modules.get(l);
   t && (t.api = {
-    toggleGmScreenVisibility: R,
-    refreshGmScreen: z
+    toggleGmScreenVisibility: H,
+    refreshGmScreen: B
   }), c().user?.isGM && c().settings.set(l, a.reset, !1);
 });
-function B(g) {
-  const t = $(g), e = t.find(".header-actions"), s = `<button class="gm-screen-button">
+function F(d) {
+  const t = $(d), e = t.find(".header-actions"), s = `<button class="gm-screen-button">
           <i class="fas fa-book-reader"></i> ${y().localize(`${p}.gmScreen.Open`)}
       </button>`;
   e.append(s), t.find("button.gm-screen-button").on("click", (i) => {
-    i.preventDefault(), R(!0);
+    i.preventDefault(), H(!0);
   });
 }
-Hooks.on("renderJournalDirectory", (g, t) => {
-  c().settings.get(l, a.displayDrawer) || B(t);
+Hooks.on("renderJournalDirectory", (d, t) => {
+  c().settings.get(l, a.displayDrawer) || F(t);
 });
-Hooks.once("devModeReady", ({ registerPackageDebugFlag: g }) => {
-  g(l);
+Hooks.once("devModeReady", ({ registerPackageDebugFlag: d }) => {
+  d(l);
 });
 //# sourceMappingURL=foundryvtt-gmScreen.js.map

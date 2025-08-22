@@ -26308,7 +26308,7 @@ void main() {
     }
     class GrapeJuiceIsometrics extends Plugin {
       isIsometricActive(effect) {
-        return foundry.utils.getProperty(
+        return !(effect.data.screenSpace || effect.data.screenSpaceAboveUI) && foundry.utils.getProperty(
           game.scenes.get(effect.data.sceneId),
           `flags.${this.name}.is_isometric`
         );
@@ -26380,7 +26380,7 @@ void main() {
     }
     class IsometricPerspective extends GrapeJuiceIsometrics {
       isIsometricActive(effect) {
-        return foundry.utils.getProperty(
+        return !(effect.data.screenSpace || effect.data.screenSpaceAboveUI) && foundry.utils.getProperty(
           game.scenes.get(effect.data.sceneId),
           `flags.${this.name}.isometricEnabled`
         );
@@ -27674,7 +27674,7 @@ void main() {
         if (this.data.attachTo?.active && !this.data.stretchTo?.attachTo) {
           this._addToTicker(this._transformAttachedNoStretchSprite);
         }
-        if (this.rotateTowards && this.data.rotateTowards?.attachTo) {
+        if (this.data.rotateTowards && this.data.rotateTowards?.attachTo) {
           this._addToTicker(this._transformRotateTowardsAttachedSprite);
         }
         if (this.data.scaleToObject && this.data?.attachTo?.active && this.data?.attachTo?.bindScale) {
@@ -36678,7 +36678,8 @@ void main() {
           this.sequence._showWarning(
             this,
             "attachTo",
-            "inOptions.followRotation is deprecated, please use inOptions.bindRotation instead"
+            "inOptions.followRotation is deprecated, please use inOptions.bindRotation instead",
+            true
           );
         }
         if (typeof inOptions.bindRotation !== "boolean")
@@ -36962,7 +36963,8 @@ void main() {
         this.sequence._showWarning(
           this,
           "from",
-          ".from() is deprecated, please use .copySprite() instead"
+          ".from() is deprecated, please use .copySprite() instead",
+          true
         );
         return this.copySprite(...args);
       }
@@ -37836,7 +37838,8 @@ void main() {
         this.sequence._showWarning(
           this,
           "noLoop",
-          ".noLoop() is deprecated, please use .loopOptions({ loops: 1 }) instead"
+          ".noLoop() is deprecated, please use .loopOptions({ loops: 1 }) instead",
+          true
         );
         if (typeof inBool !== "boolean")
           throw this.sequence._customError(
@@ -38175,7 +38178,8 @@ void main() {
           this.sequence._showWarning(
             this,
             "file",
-            "passing a boolean as a second argument to .file() is deprecated, please softFail: true on the sequence itself instead"
+            "passing a boolean as a second argument to .file() is deprecated, please softFail: true on the sequence itself instead",
+            true
           );
         }
         if (typeof inOptions !== "object")
@@ -38363,7 +38367,7 @@ void main() {
         this._mirrorX = this._mirrorX || this._randomMirrorX && Math.random() < 0.5;
         this._mirrorY = this._mirrorY || this._randomMirrorY && Math.random() < 0.5;
         if (this._copySprite) {
-          this._file = this._file || this._copySprite.object?.texture?.src;
+          this._file = this._file || this._copySprite.object?.ring?.enabled ? this._copySprite.object?.ring?.subject?.texture || this._copySprite.object?.texture?.src : this._copySprite.object?.texture?.src;
           if (this._source === null) {
             this._source = this._validateLocation(this._copySprite.object);
           }
@@ -39811,7 +39815,7 @@ void main() {
             "inAnchor must be of type string (CONST.TEXT_ANCHOR_POINTS) or number"
           );
         }
-        if (typeof inAnchor === "string" && !CONST.TEXT_ANCHOR_POINTS[inAnchor] || is_real_number(inAnchor) && !Object.values(CONST.TEXT_ANCHOR_POINTS).includes(inAnchor)) {
+        if (typeof inAnchor === "string" && CONST.TEXT_ANCHOR_POINTS[inAnchor] === void 0 || is_real_number(inAnchor) && !Object.values(CONST.TEXT_ANCHOR_POINTS).includes(inAnchor)) {
           throw this.sequence._customError(
             this,
             "direction",

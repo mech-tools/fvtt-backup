@@ -135,6 +135,7 @@ var ICONS = {
   usersInfo: "fas fa-user",
   noUsers: "fas fa-user-slash",
   shareAgain: "fas fa-share",
+  shareLink: "fas fa-link",
   mediaLayer: "fas fa-images"
 };
 // scripts/common/utils.mjs
@@ -161,7 +162,7 @@ var nextAnimationFrames = async (count = 1) => {
 var getMediaSource = (element) => {
   if (!["IMG", "VIDEO"].includes(element?.tagName))
     return null;
-  return element.src || element.querySelector("source[src]")?.src || null;
+  return element.getAttribute("src") || element.querySelector("source[src]")?.getAttribute("src") || null;
 };
 var escapeSource = (url) => {
   const urlObj = new URL(url, "http://relative.url");
@@ -483,7 +484,7 @@ __export(exports__module2, {
 
 // scripts/ui/media-detector.mjs
 var { ApplicationV2: ApplicationV25 } = foundry.applications.api;
-var { isSubclass: isSubclass2 } = foundry.utils;
+var { isSubclass } = foundry.utils;
 
 class MediaDetector {
   constructor() {
@@ -551,7 +552,7 @@ class MediaDetector {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.ui.MediaDetector;
-    if (!isSubclass2(Class, MediaDetector)) {
+    if (!isSubclass(Class, MediaDetector)) {
       console.warn("Configured MediaDetector override must be a subclass of MediaDetector.");
       Class = MediaDetector;
     }
@@ -560,7 +561,7 @@ class MediaDetector {
 }
 // scripts/ui/media-overlay.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin5, ApplicationV2: ApplicationV26 } = foundry.applications.api;
-var { isSubclass: isSubclass3, getProperty, mergeObject } = foundry.utils;
+var { isSubclass: isSubclass2, getProperty, mergeObject } = foundry.utils;
 
 class MediaOverlay extends HandlebarsApplicationMixin5(ApplicationV26) {
   constructor(options = {}) {
@@ -839,7 +840,7 @@ class MediaOverlay extends HandlebarsApplicationMixin5(ApplicationV26) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.ui.MediaOverlay;
-    if (!isSubclass3(Class, MediaOverlay)) {
+    if (!isSubclass2(Class, MediaOverlay)) {
       console.warn("Configured MediaOverlay override must be a subclass of MediaOverlay.");
       Class = MediaOverlay;
     }
@@ -849,7 +850,7 @@ class MediaOverlay extends HandlebarsApplicationMixin5(ApplicationV26) {
 // scripts/ui/media-sidebar.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin6, DialogV2 } = foundry.applications.api;
 var { AbstractSidebarTab } = foundry.applications.sidebar;
-var { isSubclass: isSubclass4, Semaphore, timeSince, Collection } = foundry.utils;
+var { isSubclass: isSubclass3, Semaphore, timeSince, Collection } = foundry.utils;
 var { renderTemplate } = foundry.applications.handlebars;
 
 class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
@@ -872,6 +873,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
       }
     },
     actions: {
+      shareLink: MediaSidebar.#onShareLink,
       clearHistory: MediaSidebar.#onClearHistory,
       clearMedia: MediaSidebar.#onClearMedia,
       showMedia: MediaSidebar.#onShowMedia,
@@ -1094,6 +1096,11 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
       icons: CONFIG.shareMedia.CONST.ICONS
     };
   }
+  static async#onShareLink(_event, _target) {
+    await new game.modules.shareMedia.shareables.apps.shareSelector({ link: true }).render({
+      force: true
+    });
+  }
   static async#onClearHistory(_event, _target) {
     if (!game.users.current.isGM)
       return;
@@ -1102,7 +1109,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
         title: "share-media.ui.sidebar.label",
         icon: CONFIG.shareMedia.CONST.ICONS.clear
       },
-      content: `<p>${game.i18n.localize("share-media.ui.sidebar.clear.history.description")}</p>`
+      content: `<p>${game.i18n.localize("share-media.ui.sidebar.header.clear.description")}</p>`
     });
     if (confirm) {
       this.deleteHistory();
@@ -1261,7 +1268,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.ui.MediaSidebar;
-    if (!isSubclass4(Class, MediaSidebar)) {
+    if (!isSubclass3(Class, MediaSidebar)) {
       console.warn("Configured MediaSidebar override must be a subclass of MediaSidebar.");
       Class = MediaSidebar;
     }
@@ -1307,7 +1314,7 @@ __export(exports__module4, {
 
 // scripts/canvas/media-layer.mjs
 var { InteractionLayer } = foundry.canvas.layers;
-var { isSubclass: isSubclass5, fromUuid, mergeObject: mergeObject2 } = foundry.utils;
+var { isSubclass: isSubclass4, fromUuid, mergeObject: mergeObject2 } = foundry.utils;
 
 class MediaLayer extends InteractionLayer {
   constructor() {
@@ -1480,7 +1487,7 @@ class MediaLayer extends InteractionLayer {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.MediaLayer;
-    if (!isSubclass5(Class, MediaLayer)) {
+    if (!isSubclass4(Class, MediaLayer)) {
       console.warn("Configured MediaLayer override must be a subclass of MediaLayer.");
       Class = MediaLayer;
     }
@@ -1491,7 +1498,7 @@ class MediaLayer extends InteractionLayer {
 var { PrimarySpriteMesh } = foundry.canvas.primary;
 var { MouseInteractionManager } = foundry.canvas.interaction;
 var { loadTexture } = foundry.canvas;
-var { isSubclass: isSubclass6 } = foundry.utils;
+var { isSubclass: isSubclass5 } = foundry.utils;
 
 class MediaSprite {
   constructor(src, area, options) {
@@ -1739,7 +1746,7 @@ class MediaSprite {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.MediaSprite;
-    if (!isSubclass6(Class, MediaSprite)) {
+    if (!isSubclass5(Class, MediaSprite)) {
       console.warn("Configured MediaSprite override must be a subclass of MediaSprite.");
       Class = MediaSprite;
     }
@@ -1747,6 +1754,8 @@ class MediaSprite {
   }
 }
 // scripts/canvas/region-sprite.mjs
+var { isSubclass: isSubclass6 } = foundry.utils;
+
 class RegionSprite extends MediaSprite {
   _createMesh() {
     const { x, y, width, height } = this.area.bounds;
@@ -1791,7 +1800,7 @@ class RegionSprite extends MediaSprite {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.RegionSprite;
-    if (!isSubclass(Class, RegionSprite)) {
+    if (!isSubclass6(Class, RegionSprite)) {
       console.warn("Configured RegionSprite override must be a subclass of RegionSprite.");
       Class = RegionSprite;
     }
@@ -1799,6 +1808,8 @@ class RegionSprite extends MediaSprite {
   }
 }
 // scripts/canvas/tile-sprite.mjs
+var { isSubclass: isSubclass7 } = foundry.utils;
+
 class TileSprite extends MediaSprite {
   _createMesh() {
     const { x, y, width, height } = this.area;
@@ -1836,7 +1847,7 @@ class TileSprite extends MediaSprite {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.TileSprite;
-    if (!isSubclass(Class, TileSprite)) {
+    if (!isSubclass7(Class, TileSprite)) {
       console.warn("Configured TileSprite override must be a subclass of TileSprite.");
       Class = TileSprite;
     }
@@ -1845,7 +1856,7 @@ class TileSprite extends MediaSprite {
 }
 // scripts/canvas/share-region-behavior.mjs
 var { RegionBehaviorType } = foundry.data.regionBehaviors;
-var { isSubclass: isSubclass7 } = foundry.utils;
+var { isSubclass: isSubclass8 } = foundry.utils;
 
 class ShareRegionBehaviorType extends RegionBehaviorType {
   static type = "share-media.ShareRegion";
@@ -1854,7 +1865,7 @@ class ShareRegionBehaviorType extends RegionBehaviorType {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.ShareRegionBehaviorType;
-    if (!isSubclass7(Class, ShareRegionBehaviorType)) {
+    if (!isSubclass8(Class, ShareRegionBehaviorType)) {
       console.warn("Configured ShareRegionBehaviorType override must be a subclass of ShareRegionBehaviorType.");
       Class = ShareRegionBehaviorType;
     }
@@ -1869,7 +1880,7 @@ __export(exports__module3, {
 
 // scripts/canvas/apps/media-hud.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin7, ApplicationV2: ApplicationV27 } = foundry.applications.api;
-var { isSubclass: isSubclass8 } = foundry.utils;
+var { isSubclass: isSubclass9 } = foundry.utils;
 
 class MediaHUD extends HandlebarsApplicationMixin7(ApplicationV27) {
   static DEFAULT_OPTIONS = {
@@ -1937,7 +1948,7 @@ class MediaHUD extends HandlebarsApplicationMixin7(ApplicationV27) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.apps.MediaHUD;
-    if (!isSubclass8(Class, MediaHUD)) {
+    if (!isSubclass9(Class, MediaHUD)) {
       console.warn("Configured MediaHUD override must be a subclass of MediaHUD.");
       Class = MediaHUD;
     }
@@ -1955,24 +1966,25 @@ var registerTileConfiguration = () => {
   Hooks.on("renderTileConfig", (application, element, _context, _option) => {
     if (!game.users.current.isGM)
       return;
-    const enabled = application.document.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_ENABLED) ?? false;
-    const name = application.document.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_NAME) || game.i18n.localize("share-media.canvas.layer.tile.name.default");
+    const { MEDIA_TILE_ENABLED, MEDIA_TILE_NAME } = game.modules.shareMedia.canvas.layer.constructor;
+    const enabled = application.document.getFlag("share-media", MEDIA_TILE_ENABLED) ?? false;
+    const name = application.document.getFlag("share-media", MEDIA_TILE_NAME) || game.i18n.localize("share-media.canvas.layer.tile.name.default");
     const html = `
       <fieldset>
         <legend>${game.i18n.localize("share-media.canvas.layer.tile.label")}</legend>
         <div class="form-group">
-          <label for="shm.enabled">${game.i18n.localize("share-media.canvas.layer.tile.enabled.label")}</label>
+          <label for="flags.share-media.${MEDIA_TILE_ENABLED}">${game.i18n.localize("share-media.canvas.layer.tile.enabled.label")}</label>
           <div class="shm form-fields">
-            <input type="checkbox" name="shm.enabled" id="shm.enabled" ${enabled ? "checked" : ""}>
+            <input type="checkbox" name="flags.share-media.${MEDIA_TILE_ENABLED}" id="flags.share-media.${MEDIA_TILE_ENABLED}" ${enabled ? "checked" : ""}>
           </div>
-          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.enabled.hint")}</p>
+          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.enabled.description")}</p>
         </div>
         <div class="form-group">
-          <label for="shm.name">${game.i18n.localize("share-media.canvas.layer.tile.name.label")}</label>
+          <label for="flags.share-media.${MEDIA_TILE_NAME}">${game.i18n.localize("share-media.canvas.layer.tile.name.label")}</label>
           <div class="form-fields">
-            <input type="text" name="shm.name" id="shm.name" value="${name}">
+            <input type="text" name="flags.share-media.${MEDIA_TILE_NAME}" id="flags.share-media.${MEDIA_TILE_NAME}" value="${name}">
           </div>
-          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.name.hint")}</p>
+          <p class="hint">${game.i18n.localize("share-media.canvas.layer.tile.name.description")}</p>
         </div>
       </fieldset>
     `;
@@ -1980,12 +1992,6 @@ var registerTileConfiguration = () => {
     if (!tab)
       return;
     tab.insertAdjacentHTML("beforeend", html);
-    element.addEventListener("submit", async (event) => {
-      const formData = new foundry.applications.ux.FormDataExtended(event.target);
-      const object = foundry.utils.expandObject(formData.object);
-      await application.document.setFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_ENABLED, object.shm.enabled);
-      await application.document.setFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_NAME, object.shm.name);
-    });
   });
 };
 var registerMediaLayer = () => {
@@ -2030,7 +2036,7 @@ __export(exports__module6, {
 
 // scripts/layers/popout-layer.mjs
 var { ImagePopout } = foundry.applications.apps;
-var { isSubclass: isSubclass9 } = foundry.utils;
+var { isSubclass: isSubclass10 } = foundry.utils;
 
 class PopoutLayer extends ImagePopout {
   static DEFAULT_OPTIONS = {
@@ -2097,7 +2103,7 @@ class PopoutLayer extends ImagePopout {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.layers.PopoutLayer;
-    if (!isSubclass9(Class, PopoutLayer)) {
+    if (!isSubclass10(Class, PopoutLayer)) {
       console.warn("Configured PopoutLayer override must be a subclass of PopoutLayer.");
       Class = PopoutLayer;
     }
@@ -2107,7 +2113,7 @@ class PopoutLayer extends ImagePopout {
 }
 // scripts/layers/fullscreen-layer.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin8, ApplicationV2: ApplicationV28 } = foundry.applications.api;
-var { isSubclass: isSubclass10 } = foundry.utils;
+var { isSubclass: isSubclass11 } = foundry.utils;
 
 class FullscreenLayer extends HandlebarsApplicationMixin8(ApplicationV28) {
   constructor(options) {
@@ -2203,7 +2209,7 @@ class FullscreenLayer extends HandlebarsApplicationMixin8(ApplicationV28) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.layers.FullscreenLayer;
-    if (!isSubclass10(Class, FullscreenLayer)) {
+    if (!isSubclass11(Class, FullscreenLayer)) {
       console.warn("Configured FullscreenLayer override must be a subclass of FullscreenLayer.");
       Class = FullscreenLayer;
     }
@@ -2422,7 +2428,7 @@ __export(exports__module9, {
 });
 
 // scripts/shareables/shareables-manager.mjs
-var { isSubclass: isSubclass11 } = foundry.utils;
+var { isSubclass: isSubclass12 } = foundry.utils;
 
 class ShareablesManager {
   constructor() {
@@ -2588,7 +2594,7 @@ class ShareablesManager {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.shareables.ShareablesManager;
-    if (!isSubclass11(Class, ShareablesManager)) {
+    if (!isSubclass12(Class, ShareablesManager)) {
       console.warn("Configured ShareablesManager override must be a subclass of ShareablesManager.");
       Class = ShareablesManager;
     }
@@ -2605,7 +2611,7 @@ __export(exports__module7, {
 
 // scripts/shareables/apps/user-selector.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin9, ApplicationV2: ApplicationV29 } = foundry.applications.api;
-var { isSubclass: isSubclass12 } = foundry.utils;
+var { isSubclass: isSubclass13 } = foundry.utils;
 
 class UserSelector extends HandlebarsApplicationMixin9(ApplicationV29) {
   static DEFAULT_OPTIONS = {
@@ -2649,7 +2655,7 @@ class UserSelector extends HandlebarsApplicationMixin9(ApplicationV29) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.shareables.apps.UserSelector;
-    if (!isSubclass12(Class, UserSelector)) {
+    if (!isSubclass13(Class, UserSelector)) {
       console.warn("Configured UserSelector override must be a subclass of UserSelector.");
       Class = UserSelector;
     }
@@ -2659,7 +2665,7 @@ class UserSelector extends HandlebarsApplicationMixin9(ApplicationV29) {
 }
 // scripts/shareables/apps/area-selector.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin10, ApplicationV2: ApplicationV210 } = foundry.applications.api;
-var { isSubclass: isSubclass13, fromUuid: fromUuid2 } = foundry.utils;
+var { isSubclass: isSubclass14, fromUuid: fromUuid2 } = foundry.utils;
 
 class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
   static DEFAULT_OPTIONS = {
@@ -2799,7 +2805,7 @@ class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.shareables.apps.AreaSelector;
-    if (!isSubclass13(Class, AreaSelector)) {
+    if (!isSubclass14(Class, AreaSelector)) {
       console.warn("Configured AreaSelector override must be a subclass of AreaSelector.");
       Class = AreaSelector;
     }
@@ -2809,11 +2815,11 @@ class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
 }
 // scripts/shareables/apps/share-selector.mjs
 var { HandlebarsApplicationMixin: HandlebarsApplicationMixin11, ApplicationV2: ApplicationV211 } = foundry.applications.api;
-var { isSubclass: isSubclass14 } = foundry.utils;
+var { isSubclass: isSubclass15, debounce } = foundry.utils;
 
 class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   constructor(options = {}) {
-    if (!options.src || typeof options.src !== "string")
+    if (!options.link && (!options.src || typeof options.src !== "string"))
       throw new Error('You may note create a ShareSelector application without or with a malformated "options.src" option.');
     super(options);
   }
@@ -2828,7 +2834,8 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
     },
     position: {
       width: 450,
-      height: "auto"
+      height: "auto",
+      top: 100
     },
     form: {
       handler: ShareSelector.#onSubmit
@@ -2838,22 +2845,35 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       configureSetting: ShareSelector.#onConfigureSetting
     },
     src: null,
+    link: false,
     settings: {}
   };
   static PARTS = {
+    link: { template: "modules/share-media/templates/shareables/share-selector-link.hbs" },
     media: { template: "modules/share-media/templates/partials/media.hbs" },
-    form: { template: "modules/share-media/templates/shareables/share-selector.hbs" }
+    form: { template: "modules/share-media/templates/shareables/share-selector-form.hbs" }
   };
   #shareOptions = {
+    src: null,
     mode: null,
     optionName: null,
     optionValue: null,
     settings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings)
   };
+  #linkElement = null;
+  #linkListener = null;
   _configureRenderOptions(options) {
     super._configureRenderOptions(options);
-    if (options.isFirstRender)
+    if (options.isFirstRender) {
+      if (this.options.link && !this.options.src)
+        options.parts = ["link"];
+      else
+        options.parts = ["media", "form"];
+      this.#shareOptions.src = this.options.src || null;
       game.modules.shareMedia.utils.applySettingsToMediaOptions(this.options.settings.mode, this.#shareOptions, this.options.settings);
+    }
+    if (options.src)
+      this.#shareOptions.src = options.src;
   }
   async _prepareContext(options) {
     return {
@@ -2864,8 +2884,8 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   async _preparePartContext(partId, context, _options) {
     switch (partId) {
       case "media":
-        context.src = this.options.src;
-        context.isVideo = game.modules.shareMedia.utils.isVideo(this.options.src);
+        context.src = this.#shareOptions.src;
+        context.isVideo = game.modules.shareMedia.utils.isVideo(this.#shareOptions.src);
         if (context.isVideo)
           context.videoIcon = CONFIG.shareMedia.CONST.ICONS.play;
         if (context.isVideo)
@@ -2896,7 +2916,7 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       const validator = CONFIG.shareMedia.CONST.MEDIA_SETTINGS_VALIDATORS[category];
       if (!validator)
         throw new Error(`Missing validator for setting "${category}".`);
-      const isVisible = validator(this.options.src) && (category === this.#shareOptions.mode || !Object.hasOwn(CONFIG.shareMedia.CONST.LAYERS_MODES, category));
+      const isVisible = validator(this.#shareOptions.src) && (category === this.#shareOptions.mode || !Object.hasOwn(CONFIG.shareMedia.CONST.LAYERS_MODES, category));
       acc[category] = {
         category,
         label: `categories.${category}`,
@@ -2911,6 +2931,25 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       }));
       return acc;
     }, {});
+  }
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (this.options.link)
+      this.#linkElement = this.element.querySelector("#link");
+  }
+  async _postRender(context, options) {
+    await super._postRender(context, options);
+    if (this.options.link) {
+      this.#linkListener = debounce(this.#parseMediaLink.bind(this), 300);
+      this.#linkElement.addEventListener("input", this.#linkListener);
+    }
+  }
+  async _onClose(options) {
+    super._onClose(options);
+    if (this.#linkListener)
+      this.#linkElement.removeEventListener("input", this.#linkListener);
+    this.#linkListener = null;
+    this.#linkElement = null;
   }
   static async#onConfigureMode(_event, target) {
     const { mode, optionName, optionValue } = target.dataset ?? {};
@@ -2929,10 +2968,10 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
   static async#onSubmit(_event, _form, _formData) {
     if (!this.#shareOptions.mode || !this.#shareOptions.optionName || !this.#shareOptions.optionValue)
       return;
-    const optionsSettings = game.modules.shareMedia.utils.getMediaSettings(this.options.src, this.#shareOptions.mode, this.#shareOptions.settings);
+    const optionsSettings = game.modules.shareMedia.utils.getMediaSettings(this.#shareOptions.src, this.#shareOptions.mode, this.#shareOptions.settings);
     const { settings: _settings, ...shareOptions } = this.#shareOptions;
     const options = {
-      src: this.options.src,
+      src: this.#shareOptions.src,
       ...shareOptions,
       ...optionsSettings
     };
@@ -2941,9 +2980,18 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       this.close();
     return result;
   }
+  #parseMediaLink(event) {
+    const value = event.target.value;
+    try {
+      new URL(value);
+    } catch (_error) {
+      return;
+    }
+    this.render({ parts: ["media", "form"], src: value, force: true });
+  }
   static get implementation() {
     let Class = CONFIG.shareMedia.shareables.apps.ShareSelector;
-    if (!isSubclass14(Class, ShareSelector)) {
+    if (!isSubclass15(Class, ShareSelector)) {
       console.warn("Configured ShareSelector override must be a subclass of ShareSelector.");
       Class = ShareSelector;
     }

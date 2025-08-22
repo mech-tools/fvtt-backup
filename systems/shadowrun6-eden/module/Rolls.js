@@ -54,6 +54,8 @@ async function _showRollDialog(data) {
             data.interval = 1;
         if (!data.modifier)
             data.modifier = 0;
+        if (data.actor?.system.dicePoolMod)
+            data.modifier = data.actor.system.dicePoolMod;
         if (data.actor) {
             if (!isLifeform(getSystemData(data.actor))) {
                 console.log("SR6E | Actor is not a lifeform");
@@ -86,8 +88,24 @@ async function _showRollDialog(data) {
          */
         data.edgeBoosts = CONFIG.SR6.EDGE_BOOSTS.filter((boost) => boost.when == "PRE" && boost.cost <= data.edge);
         if (data.rollType == RollType.Weapon) {
-            data.calcPool = data.pool;
+            // data.calcPool = data.pool;   // Fix was overriding the wound/sustained modifiers line 80/81
             data.calcAttackRating = [...data.item.calculated.attackRating];
+
+            // Set checkbox default enabled if Actor's Token is in a Grunt Group
+            if (data.actor.gruntGroup.id) {
+                data.useGruntGroup = true;
+                const gruntDiceMod = data.actor.gruntGroup.diceMod;
+                const gruntArMod   = data.actor.gruntGroup.arMod;
+
+                data.calcPool += gruntDiceMod;
+                const newCalcAR = []
+                data.calcAttackRating.forEach((ar) => {
+                    if (ar > 0) newCalcAR.push(ar += gruntArMod);
+                    else newCalcAR.push(ar);
+                });
+                data.calcAttackRating = newCalcAR;
+            }
+
             data.calcDamage = data.item.calculated.dmg;
             if (game.settings.get(SYSTEM_NAME, "highStrengthReducesRecoil") ) {
                 data.dualHand = data.item.system.dualHand;
@@ -103,6 +121,10 @@ async function _showRollDialog(data) {
                 data.threshold += Math.floor( targetDefensePool / 6 );
                 data.cantDodgeBulletsBaseThreshold = data.threshold;
             }
+            
+            // Used for Item Mods like Smartgun System
+            data.modifier += data.item?.system?.modes?.dicePoolMod ?? 0;  // 0 by default
+
         }
         else if (data.RollType == RollType.ContinueExtendedTest) {
             // possible add things here? Currently they're in shadowrun6.js
@@ -117,7 +139,8 @@ async function _showRollDialog(data) {
             data.calculateSpellDamage();
         }
         
-        data.calcPool = (data.calcPool < 0 ) ? 0 : data.calcPool; 
+        data.calcPool += data.modifier;
+        data.calcPool = (data.calcPool < 0 ) ? 0 : data.calcPool;
         data.checkHardDiceCap();
 
         // Render modal dialog
@@ -240,11 +263,23 @@ async function _dialogClosed(type, form, prepared, dialog, configured) {
             if (configured.edgeBoost && configured.edgeBoost != "none") {
                 console.log("SR6E | Edge Boost selected: " + configured.edgeBoost);
                 if (configured.edgeBoost === "edge_action") {
-                    //TODO: handle edge action and costs on roll
-                    console.log("SR6E | ToDo: handle edge action");
+                    if (configured.edgeAction === undefined) {
+                        console.log("SR6E | Edge Action selected as boost, without an actual Action | Unsetting edgeBoost");
+                        configured.edgeBoost = undefined;
+                        configured.edge_use = undefined;
+                    }
+                    else {
+                        console.log("SR6E | Edge Action selected: ", configured.edgeAction);
+                        const action = CONFIG.SR6.EDGE_ACTIONS.find((action) => action.id == configured.edgeAction);
+                        console.log("SR6E | Pay " + action.cost + " edge for Edge Action: " + game.i18n.localize("shadowrun6.edge_action." + configured.edgeAction));
+                        system.edge.value = prepared.edge - action.cost;
+                        // Pay Edge cost
+                        console.log("SR6E | Update Edge to " + (prepared.edge - action.cost));
+                        await prepared.actor.update({ ["system.edge.value"]: system.edge.value });
+                    }
                 }
                 else {
-                    let boost = CONFIG.SR6.EDGE_BOOSTS.find((boost) => boost.id == configured.edgeBoost);
+                    const boost = CONFIG.SR6.EDGE_BOOSTS.find((boost) => boost.id == configured.edgeBoost);
                     console.log("SR6E | Pay " + boost.cost + " edge for Edge Boost: " + game.i18n.localize("shadowrun6.edge_boost." + configured.edgeBoost));
                     system.edge.value = prepared.edge - boost.cost;
                     // Pay Edge cost
@@ -259,6 +294,14 @@ async function _dialogClosed(type, form, prepared, dialog, configured) {
                 }
             }
         }
+
+        // Update Ammunition
+        if (prepared.calcRounds > 0 && prepared.item.system.ammocap > 0) {
+            const newAmmoCount = Math.max(0, prepared.item.system.ammocount - prepared.calcRounds )
+            console.log("SR6E | Updating ammocount of", prepared.item.name, "to", newAmmoCount);
+            await prepared.item.update({ "system.ammocount": newAmmoCount });
+        }
+
         //configured.edgeBoosts = CONFIG.SR6.EDGE_BOOSTS.filter(boost => boost.when=="POST");
         let formula = "";
         let isPrivate = false;

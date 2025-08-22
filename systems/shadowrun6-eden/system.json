@@ -2,7 +2,7 @@
     "id": "shadowrun6-eden",
     "title": "Shadowrun 6th Edition",
     "description": "Shadowrun Sixth World RPG system",
-    "version": "3.2.2",
+    "version": "3.3.0",
     "authors": [
         {
             "name": "YJeroen",
@@ -10,18 +10,14 @@
             "url": "https://www.patreon.com/DeepResonanceWare"
         },
         {
-            "name": "Stefan Prelle",
+            "name": "Stefan & Anja Prelle",
             "email": "stefan@rpgframework.de",
             "discord": "taranion#5388"
-        },
-        {
-            "name": "Anja Prelle",
-            "email": "anja@rpgframework.de"
         }
     ],
     "compatibility": {
         "minimum": "12",
-        "verified": "13.346",
+        "verified": "13.347",
         "maximum": "13"
     },
     "socket": true,
@@ -144,14 +140,41 @@
             "thumbnail": "systems/shadowrun6-eden/images/sr6-system.webp"
         }
     ],
+    "packs": [
+        {
+            "name": "gear_mods",
+            "label": "Gear Mods",
+            "type": "Item"
+        },
+        {
+            "name": "qualities",
+            "label": "Qualities",
+            "type": "Item"
+        }
+    ],
+    "packFolders": [
+        {
+            "name": "SR6 System",
+            "color": "#b8207f",
+            "packs": [
+                "gear_mods",
+                "qualities"
+            ]
+        }
+    ],
     "background": "systems/shadowrun6-eden/images/sr6-background.webp",
     "primaryTokenAttribute": "physical",
     "secondaryTokenAttribute": "stun",
     "url": "https://github.com/yjeroen/foundry-shadowrun6-eden",
     "bugs": "https://github.com/yjeroen/foundry-shadowrun6-eden/issues",
     "manifest": "https://github.com/yjeroen/foundry-shadowrun6-eden/releases/latest/download/system.json",
-    "download": "https://github.com/yjeroen/foundry-shadowrun6-eden/releases/download/release-3.2.2/shadowrun6-eden-release-3.2.2.zip",
+    "download": "https://github.com/yjeroen/foundry-shadowrun6-eden/releases/download/release-3.3.0/shadowrun6-eden-release-3.3.0.zip",
     "flags": {
         "hotReload": false
+    },
+    "documentTypes": {
+        "Item": {
+            "mod": {}
+        }
     }
 }
