@@ -81,6 +81,7 @@ export default class Shadowrun6Actor extends Actor {
     prepareBaseData() {
         this.system.dicePoolMod = 0;
         this.system.badLuck = false;
+        this.system.painTolerance = null;
     }
 
     /** @inheritDoc */
@@ -1522,6 +1523,9 @@ export default class Shadowrun6Actor extends Actor {
     getWoundModifier() {
         const data = getSystemData(this);
         let woundModifier = this._getWoundModifierPerMonitor(data.physical) + this._getWoundModifierPerMonitor(data.stun);
+        // Add High Pain Tolerance and Low Pain Tolerance support
+        if (this.system.painTolerance === "high") woundModifier = Math.max(0, woundModifier - 1);
+        if (this.system.painTolerance === "low") woundModifier = Math.max(0, woundModifier * 2);
         /* Return the combined penalties from physical and stun damage */
         console.log("SR6E | Current Wound Penalties: " + woundModifier);
         return woundModifier;
