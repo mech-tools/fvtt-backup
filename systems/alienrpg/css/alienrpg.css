@@ -4483,6 +4483,10 @@ combobox:focus {
   color: var(--alienchatlightblue);
 }
 
+.chat-message h1 {
+  color: var(--aliengreen);
+}
+
 .chat-message.whisper h2 {
   color: lightblue;
   border-bottom: 2px dotted lightsteelblue;
