@@ -14,13 +14,11 @@
         }
     ],
     "url": "https://github.com/theripper93/autoanimations",
-    "version": "6.2.4",
+    "version": "6.2.5",
     "compatibility": {
         "minimum": "13",
         "verified": "13"
     },
-    "minimumCoreVersion": "11",
-    "compatibleCoreVersion": "12",
     "scripts": [],
     "esmodules": [
         "dist/autoanimations.js"
@@ -110,5 +108,5 @@
     },
     "socket": true,
     "manifest": "https://github.com/theripper93/autoanimations/releases/latest/download/module.json",
-    "download": "https://github.com/theripper93/autoanimations/releases/download/6.2.4/module.zip"
+    "download": "https://github.com/theripper93/autoanimations/releases/download/6.2.5/module.zip"
 }

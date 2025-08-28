@@ -20471,7 +20471,7 @@ const autoRecMigration = {
         await game.settings.set("autoanimations", "aaAutorec-aefx", newAefx);
       }
       if (Object.keys(this.migrations).map((n) => Number(n)).reverse()[0] === 5) {
-        game.settings.set("autoanimations", "aaAutorec", { version: 5 });
+        await game.settings.set("autoanimations", "aaAutorec", { version: 5 });
       } else {
         let versionHandler = game.settings.get("autoanimations", "aaAutorec");
         versionHandler.version = Object.keys(this.migrations).map((n) => Number(n)).reverse()[0];
@@ -104874,6 +104874,7 @@ function handleTemplates() {
     }
   }
   function removeGridHighlightsOnLoad() {
+    if (!canvas.grid) return;
     let highlights = Object.keys(canvas.grid.highlightLayers);
     if (highlights.length) {
       highlights.forEach((e) => {

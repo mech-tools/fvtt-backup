@@ -1,0 +1,14 @@
+<section class="fullsearch-sidebar info flexcol">
+  <h1 class="title">Search and Highlight</h1>
+</section>
+
+{{#if showToUser}}
+  <section class="fullsearch system flexcol">
+    <h4 class="divider">{{localize "FULLSEARCH.button_search"}}</h4>
+
+    <button type="button" data-action="openDialog" data-tooltip="{{localize 'FULLSEARCH.button_search'}}">
+      <i class="fas fa-magnifying-glass" inert></i>
+    </button>
+  <input class="chatsearchtextbar" name="inputtext" type="text" placeholder="{{localize 'FULLSEARCH.dialog_input'}}"/>
+  </section>
+{{/if}}

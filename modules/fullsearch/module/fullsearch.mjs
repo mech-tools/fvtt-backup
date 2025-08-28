@@ -1,0 +1,65 @@
+import * as SETTINGS from "./constants.mjs";
+import { SearchChat } from "./search.mjs";
+import registerModuleSettings from "./settings.mjs";
+import * as applications from "./applications/_module.mjs"
+
+export default class FullsearchJournalSheet extends foundry.appv1.sheets.JournalSheet {}
+
+/*
+ * INIT HOOK
+ */
+Hooks.once("init", async () => {
+  console.log(SETTINGS.LOG_HEADER + "Module initialization");
+
+  foundry.documents.collections.Journal.registerSheet(game.system.id, FullsearchJournalSheet, { makeDefault: false });
+  registerModuleSettings();
+  preloadTemplates();
+
+  // Add a custom sidebar tab
+    CONFIG.ui.sidebar.TABS.fullsearch = {
+        icon: "fas fa-magnifying-glass",
+      tooltip: "Search and highlight",
+    }
+    CONFIG.ui.fullsearch = applications.FullsearchSidebarMenu
+
+  console.log(SETTINGS.LOG_HEADER + "Module initialization finished");
+});
+
+/*
+ * READY HOOK
+ */
+Hooks.on("ready", async () => {
+  const userSearchSetting = game.settings.get("fullsearch", "userSearch");
+  if (game.user.isGM || userSearchSetting) {
+    const searchMessages = game.messages.filter((m) => (m.flags.world?.type === "searchPage") && (m.isContentVisible));
+    for (const message of searchMessages) {
+      await SearchChat.updateMessage(message._id, true);
+    }
+  }
+  console.log(SETTINGS.LOG_HEADER + "Module ready !");
+});
+
+/*
+ * RENDER CHAT MESSAGE HOOK
+ */
+Hooks.on("renderChatMessage", (message, html, data) => {
+  const userSearchSetting = game.settings.get("fullsearch", "userSearch");
+  if (game.user.isGM || userSearchSetting) {
+    //console.debug("renderChatMessage", message, html, data);
+    const typeMessage = data.message.flags.world?.type;
+    if (typeMessage === "searchPage") {
+      const messageId = data.message._id;
+      html.find("#highlight").click(async (event) => await SearchChat.toggleEnricher(event, data.message.flags.world?.searchPattern, messageId));
+    }
+  }
+});
+
+async function preloadTemplates() {
+  const templatePaths = [
+    "modules/fullsearch/templates/chat/chatbar.hbs",
+    "modules/fullsearch/templates/chat/search-result.hbs",
+    "modules/fullsearch/templates/search/search-dialog.hbs",
+  ];
+
+  return foundry.applications.handlebars.loadTemplates(templatePaths);
+}
