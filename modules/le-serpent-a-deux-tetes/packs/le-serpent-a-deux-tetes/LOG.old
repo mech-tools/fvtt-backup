@@ -1,7 +1,3 @@
-2025/08/19-09:50:48.227320 7fd3fbfff700 Recovering log #417
-2025/08/19-09:50:48.230852 7fd3fbfff700 Delete type=0 #417
-2025/08/19-09:50:48.230917 7fd3fbfff700 Delete type=3 #415
-2025/08/20-12:51:56.015515 7fd17a58d700 Level-0 table #422: started
-2025/08/20-12:51:56.016288 7fd17a58d700 Level-0 table #422: 0 bytes OK
-2025/08/20-12:51:56.017983 7fd17a58d700 Delete type=0 #420
-2025/08/20-12:51:56.019073 7fd17a58d700 Manual compaction at level-0 from '!adventures!5LfWGbONpEx9rj1y' @ 72057594037927935 : 1 .. '!adventures!5LfWGbONpEx9rj1y' @ 0 : 0; will stop at (end)
+2025/08/20-12:52:12.947339 7fd4311b7700 Recovering log #421
+2025/08/20-12:52:12.949958 7fd4311b7700 Delete type=0 #421
+2025/08/20-12:52:12.949993 7fd4311b7700 Delete type=3 #419
