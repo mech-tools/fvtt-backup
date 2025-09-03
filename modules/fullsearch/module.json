@@ -4,37 +4,39 @@
   "description": "Module for searching a pattern in all journal pages and highlighting it",
   "version": "2.0.0",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13",
-    "maximum": "13"
+    "minimum": "11",
+    "verified": "13"
   },
-  "relationships": {},
   "authors": [
     {
-      "name": "Khaali"
+      "name": "Khaali",
+      "flags": {}
     }
   ],
   "esmodules": [
     "module/fullsearch.mjs"
   ],
   "styles": [
-    "css/fullsearch.css"
+    {
+      "src": "css/fullsearch.css"
+    }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "fr",
       "name": "French",
-      "path": "lang/fr.json"
+      "path": "lang/fr.json",
+      "flags": {}
     }
   ],
-  "packs": [],
   "manifest": "https://github.com/Khaali-dev/fullsearch/releases/latest/download/module.json",
   "url": "https://github.com/Khaali-dev/fullsearch",
   "download": "https://github.com/Khaali-dev/fullsearch/releases/download/2.0.0/module.zip",
-  "protected": false
+  "flags": {}
 }

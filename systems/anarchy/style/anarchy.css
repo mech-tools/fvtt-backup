@@ -445,6 +445,9 @@ img.checkbar-img:active {
   height: 100%;
   width: 100%;
 }
+.section-group.tab[data-tab]:not(.active) {
+    display: none;
+}
 
 .section-group.column {
   flex-direction: column;
