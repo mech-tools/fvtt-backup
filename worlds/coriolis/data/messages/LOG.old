@@ -1,3 +1,25 @@
-2025/08/27-16:18:22.775041 7f4be27fc700 Recovering log #548
-2025/08/27-16:18:22.778114 7f4be27fc700 Delete type=3 #546
-2025/08/27-16:18:22.778146 7f4be27fc700 Delete type=0 #548
+2025/09/02-13:41:31.237862 7f0d267bd700 Recovering log #551
+2025/09/02-13:41:31.237997 7f0d267bd700 Level-0 table #553: started
+2025/09/02-13:41:31.240081 7f0d267bd700 Level-0 table #553: 13280 bytes OK
+2025/09/02-13:41:31.243306 7f0d267bd700 Delete type=3 #550
+2025/09/02-13:41:31.243341 7f0d267bd700 Delete type=0 #551
+2025/09/03-12:50:11.465253 7f0d25081700 Level-0 table #556: started
+2025/09/03-12:50:11.467054 7f0d25081700 Level-0 table #556: 10639 bytes OK
+2025/09/03-12:50:11.468210 7f0d25081700 Delete type=0 #554
+2025/09/03-12:50:11.525461 7f0d25081700 Manual compaction at level-0 from '!messages!atLDnr9g0S0pURbm' @ 72057594037927935 : 1 .. '!messages!wreZaNwvrHhW6Gaq' @ 0 : 0; will stop at '!messages!x7Z0TcbxWurNDru9' @ 9049 : 1
+2025/09/03-12:50:11.525467 7f0d25081700 Compacting 2@0 + 1@1 files
+2025/09/03-12:50:11.526610 7f0d25081700 Generated table #557@0: 71 keys, 5875 bytes
+2025/09/03-12:50:11.526621 7f0d25081700 Compacted 2@0 + 1@1 files => 5875 bytes
+2025/09/03-12:50:11.527440 7f0d25081700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/09/03-12:50:11.527485 7f0d25081700 Delete type=2 #553
+2025/09/03-12:50:11.527524 7f0d25081700 Delete type=2 #545
+2025/09/03-12:50:11.527554 7f0d25081700 Delete type=2 #556
+2025/09/03-12:50:11.529970 7f0d25081700 Manual compaction at level-0 from '!messages!x7Z0TcbxWurNDru9' @ 9049 : 1 .. '!messages!wreZaNwvrHhW6Gaq' @ 0 : 0; will stop at (end)
+2025/09/03-12:50:11.574105 7f0d25081700 Manual compaction at level-1 from '!messages!atLDnr9g0S0pURbm' @ 72057594037927935 : 1 .. '!messages!wreZaNwvrHhW6Gaq' @ 0 : 0; will stop at '!messages!zkyRU3o2TP9KRskr' @ 9009 : 0
+2025/09/03-12:50:11.574118 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/03-12:50:11.576133 7f0d25081700 Generated table #558@1: 2 keys, 4556 bytes
+2025/09/03-12:50:11.576158 7f0d25081700 Compacted 1@1 + 1@2 files => 4556 bytes
+2025/09/03-12:50:11.577412 7f0d25081700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/03-12:50:11.577476 7f0d25081700 Delete type=2 #557
+2025/09/03-12:50:11.577551 7f0d25081700 Delete type=2 #537
+2025/09/03-12:50:11.605077 7f0d25081700 Manual compaction at level-1 from '!messages!zkyRU3o2TP9KRskr' @ 9009 : 0 .. '!messages!wreZaNwvrHhW6Gaq' @ 0 : 0; will stop at (end)

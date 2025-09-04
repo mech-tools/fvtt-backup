@@ -1,3 +1,23 @@
-2025/08/27-16:18:22.798754 7f4be2ffd700 Recovering log #519
-2025/08/27-16:18:22.801849 7f4be2ffd700 Delete type=0 #519
-2025/08/27-16:18:22.801873 7f4be2ffd700 Delete type=3 #517
+2025/09/02-13:41:31.275471 7f0d277bf700 Recovering log #522
+2025/09/02-13:41:31.275525 7f0d277bf700 Level-0 table #524: started
+2025/09/02-13:41:31.276865 7f0d277bf700 Level-0 table #524: 2411 bytes OK
+2025/09/02-13:41:31.279475 7f0d277bf700 Delete type=3 #521
+2025/09/02-13:41:31.279504 7f0d277bf700 Delete type=0 #522
+2025/09/03-12:50:11.572452 7f0d25081700 Level-0 table #527: started
+2025/09/03-12:50:11.572493 7f0d25081700 Level-0 table #527: 0 bytes OK
+2025/09/03-12:50:11.573576 7f0d25081700 Delete type=0 #525
+2025/09/03-12:50:11.601923 7f0d25081700 Manual compaction at level-0 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at '!folders!yHkVc1jYpLqBzCyr' @ 1370 : 1
+2025/09/03-12:50:11.601932 7f0d25081700 Compacting 1@0 + 0@1 files
+2025/09/03-12:50:11.603004 7f0d25081700 Generated table #528@0: 20 keys, 2321 bytes
+2025/09/03-12:50:11.603017 7f0d25081700 Compacted 1@0 + 0@1 files => 2321 bytes
+2025/09/03-12:50:11.603736 7f0d25081700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/09/03-12:50:11.603786 7f0d25081700 Delete type=2 #524
+2025/09/03-12:50:11.605372 7f0d25081700 Manual compaction at level-0 from '!folders!yHkVc1jYpLqBzCyr' @ 1370 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)
+2025/09/03-12:50:11.606859 7f0d25081700 Manual compaction at level-1 from '!folders!093r3LA7rlYhJIsQ' @ 72057594037927935 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at '!folders!yHkVc1jYpLqBzCyr' @ 1370 : 1
+2025/09/03-12:50:11.606866 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/03-12:50:11.609512 7f0d25081700 Generated table #529@1: 345 keys, 46325 bytes
+2025/09/03-12:50:11.609537 7f0d25081700 Compacted 1@1 + 1@2 files => 46325 bytes
+2025/09/03-12:50:11.610843 7f0d25081700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/03-12:50:11.610924 7f0d25081700 Delete type=2 #512
+2025/09/03-12:50:11.611067 7f0d25081700 Delete type=2 #528
+2025/09/03-12:50:11.612792 7f0d25081700 Manual compaction at level-1 from '!folders!yHkVc1jYpLqBzCyr' @ 1370 : 1 .. '!folders!zzcuAsajTh6vV9R6' @ 0 : 0; will stop at (end)

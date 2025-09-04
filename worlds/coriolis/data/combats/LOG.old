@@ -1,3 +1,24 @@
-2025/08/27-16:18:22.780879 7f4be37fe700 Recovering log #516
-2025/08/27-16:18:22.784163 7f4be37fe700 Delete type=0 #516
-2025/08/27-16:18:22.784189 7f4be37fe700 Delete type=3 #514
+2025/09/02-13:41:31.251779 7f0d277bf700 Recovering log #519
+2025/09/02-13:41:31.251818 7f0d277bf700 Level-0 table #521: started
+2025/09/02-13:41:31.253803 7f0d277bf700 Level-0 table #521: 238 bytes OK
+2025/09/02-13:41:31.257411 7f0d277bf700 Delete type=3 #518
+2025/09/02-13:41:31.257446 7f0d277bf700 Delete type=0 #519
+2025/09/03-12:50:11.407903 7f0d25081700 Level-0 table #524: started
+2025/09/03-12:50:11.409320 7f0d25081700 Level-0 table #524: 7930 bytes OK
+2025/09/03-12:50:11.410307 7f0d25081700 Delete type=0 #522
+2025/09/03-12:50:11.460530 7f0d25081700 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at '!combats.combatants!jkRfMJ5S9a3pQOIm.kAeJkW7ShTGrT8O1' @ 6596 : 0
+2025/09/03-12:50:11.460565 7f0d25081700 Compacting 2@0 + 0@1 files
+2025/09/03-12:50:11.462864 7f0d25081700 Generated table #525@0: 37 keys, 7922 bytes
+2025/09/03-12:50:11.462885 7f0d25081700 Compacted 2@0 + 0@1 files => 7922 bytes
+2025/09/03-12:50:11.464213 7f0d25081700 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/09/03-12:50:11.464301 7f0d25081700 Delete type=2 #521
+2025/09/03-12:50:11.465155 7f0d25081700 Delete type=2 #524
+2025/09/03-12:50:11.525434 7f0d25081700 Manual compaction at level-0 from '!combats.combatants!jkRfMJ5S9a3pQOIm.kAeJkW7ShTGrT8O1' @ 6596 : 0 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
+2025/09/03-12:50:11.527811 7f0d25081700 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 6626 : 1
+2025/09/03-12:50:11.527822 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/03-12:50:11.528978 7f0d25081700 Generated table #526@1: 35 keys, 7930 bytes
+2025/09/03-12:50:11.528998 7f0d25081700 Compacted 1@1 + 1@2 files => 7930 bytes
+2025/09/03-12:50:11.529635 7f0d25081700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/03-12:50:11.529677 7f0d25081700 Delete type=2 #505
+2025/09/03-12:50:11.529918 7f0d25081700 Delete type=2 #525
+2025/09/03-12:50:11.573659 7f0d25081700 Manual compaction at level-1 from '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 6626 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)

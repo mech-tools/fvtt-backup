@@ -1,3 +1,23 @@
-2025/08/27-16:18:22.822240 7f4be2ffd700 Recovering log #570
-2025/08/27-16:18:22.825366 7f4be2ffd700 Delete type=0 #570
-2025/08/27-16:18:22.825391 7f4be2ffd700 Delete type=3 #568
+2025/09/02-13:41:31.307522 7f0d277bf700 Recovering log #573
+2025/09/02-13:41:31.307598 7f0d277bf700 Level-0 table #575: started
+2025/09/02-13:41:31.309311 7f0d277bf700 Level-0 table #575: 12258 bytes OK
+2025/09/02-13:41:31.313182 7f0d277bf700 Delete type=3 #572
+2025/09/02-13:41:31.313251 7f0d277bf700 Delete type=0 #573
+2025/09/03-12:50:11.625056 7f0d25081700 Level-0 table #578: started
+2025/09/03-12:50:11.625083 7f0d25081700 Level-0 table #578: 0 bytes OK
+2025/09/03-12:50:11.625913 7f0d25081700 Delete type=0 #576
+2025/09/03-12:50:11.645126 7f0d25081700 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal!R4fPC75WuppzZAVR' @ 7250 : 1
+2025/09/03-12:50:11.645136 7f0d25081700 Compacting 1@0 + 0@1 files
+2025/09/03-12:50:11.646653 7f0d25081700 Generated table #579@0: 1 keys, 12258 bytes
+2025/09/03-12:50:11.646673 7f0d25081700 Compacted 1@0 + 0@1 files => 12258 bytes
+2025/09/03-12:50:11.647629 7f0d25081700 compacted to: files[ 0 1 2 0 0 0 0 ]
+2025/09/03-12:50:11.647678 7f0d25081700 Delete type=2 #575
+2025/09/03-12:50:11.648970 7f0d25081700 Manual compaction at level-0 from '!journal!R4fPC75WuppzZAVR' @ 7250 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2025/09/03-12:50:11.689117 7f0d25081700 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal!R4fPC75WuppzZAVR' @ 7250 : 1
+2025/09/03-12:50:11.689134 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/03-12:50:11.718586 7f0d25081700 Generated table #580@1: 1031 keys, 2115215 bytes
+2025/09/03-12:50:11.718619 7f0d25081700 Compacted 1@1 + 1@2 files => 2115215 bytes
+2025/09/03-12:50:11.719565 7f0d25081700 compacted to: files[ 0 0 2 0 0 0 0 ]
+2025/09/03-12:50:11.719699 7f0d25081700 Delete type=2 #579
+2025/09/03-12:50:11.719857 7f0d25081700 Delete type=2 #551
+2025/09/03-12:50:11.721612 7f0d25081700 Manual compaction at level-1 from '!journal!R4fPC75WuppzZAVR' @ 7250 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
