@@ -1,8 +1,15 @@
-2025/09/03-16:15:04.755808 7f0412fbf700 Recovering log #479
-2025/09/03-16:15:04.758625 7f0412fbf700 Delete type=0 #479
-2025/09/03-16:15:04.758674 7f0412fbf700 Delete type=3 #477
-2025/09/03-16:19:44.070880 7f0410b3f700 Level-0 table #484: started
-2025/09/03-16:19:44.071140 7f0410b3f700 Level-0 table #484: 0 bytes OK
-2025/09/03-16:19:44.072377 7f0410b3f700 Delete type=0 #482
-2025/09/03-16:19:44.073872 7f0410b3f700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
-2025/09/03-16:19:44.076590 7f0410b3f700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2025/09/05-17:30:56.245805 7f0411fbd700 Recovering log #487
+2025/09/05-17:30:56.249802 7f0411fbd700 Delete type=3 #485
+2025/09/05-17:30:56.249854 7f0411fbd700 Delete type=0 #487
+2025/09/06-03:08:03.640204 7f0410b3f700 Level-0 table #493: started
+2025/09/06-03:08:03.642375 7f0410b3f700 Level-0 table #493: 5972 bytes OK
+2025/09/06-03:08:03.643443 7f0410b3f700 Delete type=0 #491
+2025/09/06-03:08:03.644928 7f0410b3f700 Manual compaction at level-0 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)
+2025/09/06-03:08:03.646458 7f0410b3f700 Manual compaction at level-1 from '!actors!0IZe1FZVaZNCUaff' @ 72057594037927935 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at '!actors!uOoVwHl3i4V8WTEg' @ 17074 : 1
+2025/09/06-03:08:03.646469 7f0410b3f700 Compacting 1@1 + 1@2 files
+2025/09/06-03:08:03.669594 7f0410b3f700 Generated table #494@1: 1807 keys, 1809948 bytes
+2025/09/06-03:08:03.669611 7f0410b3f700 Compacted 1@1 + 1@2 files => 1809948 bytes
+2025/09/06-03:08:03.670350 7f0410b3f700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/06-03:08:03.670405 7f0410b3f700 Delete type=2 #493
+2025/09/06-03:08:03.670496 7f0410b3f700 Delete type=2 #489
+2025/09/06-03:08:03.676675 7f0410b3f700 Manual compaction at level-1 from '!actors!uOoVwHl3i4V8WTEg' @ 17074 : 1 .. '!actors.items!zAkhuFVF5nzrU8sa.z1tjpx0WzdM4F5Lm' @ 0 : 0; will stop at (end)

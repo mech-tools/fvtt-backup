@@ -1,8 +1,15 @@
-2025/09/03-16:15:04.835479 7f0412fbf700 Recovering log #449
-2025/09/03-16:15:04.837940 7f0412fbf700 Delete type=3 #447
-2025/09/03-16:15:04.837981 7f0412fbf700 Delete type=0 #449
-2025/09/03-16:19:44.078485 7f0410b3f700 Level-0 table #454: started
-2025/09/03-16:19:44.078702 7f0410b3f700 Level-0 table #454: 0 bytes OK
-2025/09/03-16:19:44.079901 7f0410b3f700 Delete type=0 #452
-2025/09/03-16:19:44.082951 7f0410b3f700 Manual compaction at level-0 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
-2025/09/03-16:19:44.083331 7f0410b3f700 Manual compaction at level-1 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
+2025/09/05-17:30:56.343979 7f0411fbd700 Recovering log #457
+2025/09/05-17:30:56.346904 7f0411fbd700 Delete type=3 #455
+2025/09/05-17:30:56.346938 7f0411fbd700 Delete type=0 #457
+2025/09/06-03:08:03.679826 7f0410b3f700 Level-0 table #462: started
+2025/09/06-03:08:03.681331 7f0410b3f700 Level-0 table #462: 5136 bytes OK
+2025/09/06-03:08:03.682613 7f0410b3f700 Delete type=0 #460
+2025/09/06-03:08:03.702361 7f0410b3f700 Manual compaction at level-0 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
+2025/09/06-03:08:03.702859 7f0410b3f700 Manual compaction at level-1 from '!journal!06l3GXUVXbDuY3aU' @ 72057594037927935 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at '!journal.pages!BvbuMgZasUtNUUOE.LRTMw72O8IOnqplv' @ 3302 : 1
+2025/09/06-03:08:03.702869 7f0410b3f700 Compacting 1@1 + 1@2 files
+2025/09/06-03:08:03.713621 7f0410b3f700 Generated table #463@1: 433 keys, 841634 bytes
+2025/09/06-03:08:03.713635 7f0410b3f700 Compacted 1@1 + 1@2 files => 841634 bytes
+2025/09/06-03:08:03.714592 7f0410b3f700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/06-03:08:03.714639 7f0410b3f700 Delete type=2 #462
+2025/09/06-03:08:03.714688 7f0410b3f700 Delete type=2 #436
+2025/09/06-03:08:03.718955 7f0410b3f700 Manual compaction at level-1 from '!journal.pages!BvbuMgZasUtNUUOE.LRTMw72O8IOnqplv' @ 3302 : 1 .. '!journal.pages!zfERjIW1HzxDDbwf.yOIBgGTMLfTOIse3' @ 0 : 0; will stop at (end)
