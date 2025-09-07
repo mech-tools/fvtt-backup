@@ -39,6 +39,7 @@
     }
   ],
   "flags": {
+    "canUpload": true,
     "hotReload": {
       "extensions": ["css"],
       "paths": ["./cthulhu-mod/cthulhu-mod.css"]
