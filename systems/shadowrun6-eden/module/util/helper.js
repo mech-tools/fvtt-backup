@@ -6,6 +6,23 @@ function deHTML(html) {
     html = html.replace(/<b>(.*?)<\/b>/gi, " $1");
     return html;
 }
+export function systemBasePath() {
+    const routePrefix = globalThis.ROUTE_PREFIX?.replace(/(^[/]+)|([/]+$)/g, "");
+    const basePath = routePrefix ? `${window.location.origin}/${routePrefix}` : window.location.origin;
+    return `${basePath}/systems/${game.system.id}/`;
+}
+export function loadCSS(url) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+}
+export function loadI18nCss() {
+    const langFlags = game.system.languages.find( obj => obj.lang === game.i18n.lang ).flags;
+    if (langFlags.style) {
+        loadCSS(`${systemBasePath()}${langFlags.style}`);
+    }
+}
 export function attackRatingToString(val) {
     if (!val)
         return "NULL";
@@ -30,6 +47,14 @@ export function fireModesToString(val) {
     if (val["FA"])
         list.push(game.i18n.localize("shadowrun6.item.mode_fa"));
     return list.join(', ');
+}
+export const redefineHandlebarLog = async function () {
+    Handlebars.unregisterHelper('log');
+    Handlebars.registerHelper('log', function (...params) {
+        const handlebarsContext = params.pop();
+        const systemTag = 'SR6E | Handlebars line:' + handlebarsContext.loc.start.line + ' |';
+        return console.log(systemTag, ...params);
+    });
 }
 export const defineHandlebarHelper = async function () {
     Handlebars.registerHelper("attackrating", function (val) {
@@ -92,6 +117,9 @@ export const defineHandlebarHelper = async function () {
     Handlebars.registerHelper("itemTypeInList", itemTypeInList);
     Handlebars.registerHelper("itemsOfType", itemsOfType);
     Handlebars.registerHelper("itemsOfGeartype", itemsOfGeartype);
+    Handlebars.registerHelper("itemsOfAugSubtype", itemsOfAugSubtype);
+    Handlebars.registerHelper("itemsOfGeartypeNoWeaponsOrAugs", itemsOfGeartypeNoWeaponsOrAugs);
+    Handlebars.registerHelper("itemsOfWeapontype", itemsOfWeapontype);
     Handlebars.registerHelper("skillPointsNotZero", skillPointsNotZero);
     Handlebars.registerHelper("sr6_description", function (itemData, type) {
         let fallback = itemData.description;
@@ -101,12 +129,6 @@ export const defineHandlebarHelper = async function () {
             return fallback;
         }
         return deHTML(name);
-    });
-
-    Handlebars.registerHelper('log', function (...params) {
-        const handlebarsContext = params.pop();
-        const systemTag = 'SR6E | Handlebars line:' + handlebarsContext.loc.start.line + ' |';
-        return console.log(systemTag, ...params);
     });
 
     Handlebars.registerHelper('subString', function(passedString, startstring, endstring) {
@@ -226,11 +248,39 @@ function getActorData(obj) {
         return obj;
     return obj.data;
 }
-function itemsOfType(items, type) {
-    return items.filter((elem) => getActorData(elem).type == type);
+function itemsOfType(items, type, sortOnSubtype = true) {
+    const filtered = items.filter((elem) => getActorData(elem).type == type)
+         .sort((a, b) => a.name.localeCompare(b.name));
+    if (filtered[0]?.system.type && sortOnSubtype) filtered.sort((a, b) => a.system?.type?.localeCompare(b.system?.type));
+    return filtered;
 }
 function itemsOfGeartype(items, geartype) {
-    return items.filter((elem) => getSystemData(elem).type == geartype);
+    return items.filter((elem) => getSystemData(elem).type == geartype)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => a.system?.type?.localeCompare(b.system?.type));
+}
+function itemsOfGeartypeNoWeaponsOrAugs(items) {
+    return items.filter((elem) => {
+        if (getSystemData(elem).type?.startsWith('WEAPON_')) return false;
+        else if (getSystemData(elem).type === 'BIOWARE') return false;
+        else if (getSystemData(elem).type === 'CYBERWARE') return false;
+        else if (elem.type === 'gear') return true;
+        else return false;
+    }).sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => a.system?.type?.localeCompare(b.system?.type));
+}
+function itemsOfAugSubtype(items) {
+    return items.filter((elem) => {
+        if (getSystemData(elem).type === 'BIOWARE') return true;
+        else if (getSystemData(elem).type === 'CYBERWARE') return true;
+        else return false;
+    }).sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => a.system?.type?.localeCompare(b.system?.type));
+}
+function itemsOfWeapontype(items) {
+    return items.filter((elem) => getSystemData(elem).type?.startsWith('WEAPON_'))
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => a.system?.type?.localeCompare(b.system?.type));
 }
 function skillPointsNotZero(skills) {
     return Object.keys(skills)

@@ -7,6 +7,7 @@ import Shadowrun6Combat from "./Shadowrun6Combat.js";
 import { SR6Config } from "./config.js";
 import { preloadHandlebarsTemplates } from "./templates.js";
 import { defineHandlebarHelper } from "./util/helper.js";
+import { redefineHandlebarLog } from "./util/helper.js";
 import { PreparedRoll, RollType } from "./dice/RollTypes.js";
 import { doRoll } from "./Rolls.js";
 import { SYSTEM_NAME } from "./constants.js";
@@ -56,15 +57,12 @@ Hooks.once("init", async function () {
     game.sr6.sockets = new SR6SocketHandler();
     game.sr6.releaseNotes = releaseNotes;
     registerSystemSettings();
+    defineHandlebarHelper();
 
     CONFIG.Combat.documentClass = Shadowrun6Combat;
     CONFIG.Combatant.documentClass = Shadowrun6Combatant;
     CONFIG.ui.combat = Shadowrun6CombatTracker;
     CONFIG.Dice.rolls = [SR6Roll];
-
-    if ( game.settings.get(SYSTEM_NAME, "hackSlashMatrix") ) {
-        CONFIG.SR6.MATRIX_ACTIONS = {...CONFIG.SR6.MATRIX_ACTIONS, ...CONFIG.SR6.MATRIX_ACTIONS_HS};
-    }
     
     CONFIG.statusEffects = statusEffects.map(status => ({...status, _id: utils.staticId(status.id) }));
     if ( !game.settings.get(SYSTEM_NAME, "bleeding") ) {
@@ -153,12 +151,13 @@ Hooks.once("init", async function () {
     if (game.release.generation >= 13) {
         document.body.classList.add('foundry-modern');
     }
+    utils.loadI18nCss();
 
     // Add System specific keybindings
     SR6Keybindings.initialize();
 
     preloadHandlebarsTemplates();
-    defineHandlebarHelper();
+    
 
     $('#pause img').attr('class', 'fa-beat-fade');
 
@@ -265,8 +264,13 @@ Hooks.once("init", async function () {
     });
 
     Hooks.on("ready", async () => {
+        redefineHandlebarLog();
+        
         // Reassign CONFIG so translations are run
-        game.sr6.config = CONFIG.SR6 = new SR6Config();
+        game.sr6.config = CONFIG.SR6 = new SR6Config();   
+        if ( game.settings.get(SYSTEM_NAME, "hackSlashMatrix") ) {
+            CONFIG.SR6.MATRIX_ACTIONS = {...CONFIG.SR6.MATRIX_ACTIONS, ...CONFIG.SR6.MATRIX_ACTIONS_HS};
+        }
         migrateWorld();
         game.sr6.releaseNotes();
 
@@ -661,13 +665,13 @@ Hooks.once("init", async function () {
      */
     Hooks.on("preCreateActor", (actor, createData, options, userId) => {
         actor.prototypeToken.updateSource({ 
+            'sight.enabled': true,
             displayName: CONST.TOKEN_DISPLAY_MODES.OWNER_HOVER,
             displayBars: CONST.TOKEN_DISPLAY_MODES.NONE
         });
         if (actor.type === "Player") {
             actor.prototypeToken.updateSource({
                 actorLink: true,
-                'sight.enabled': true,
                 disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY
             });
         } else if (actor.type === "NPC") {
@@ -676,13 +680,20 @@ Hooks.once("init", async function () {
             });
         } else if (actor.type === "Vehicle") {
             actor.prototypeToken.updateSource({
-                'sight.enabled': true,
                 disposition: CONST.TOKEN_DISPOSITIONS.NEUTRAL,
                 width: 2,
                 height: 3
             });
         }
 
+    });
+    /**
+     * If a token is created, change shape to circle Ellipse
+     */
+    Hooks.on("preCreateToken", (token, createData, options, userId) => {
+        token.updateSource({ 
+            shape: CONST.TOKEN_SHAPES.ELLIPSE_1
+        });
     });
     Hooks.once("dragRuler.ready", (SpeedProvider) => {
         class FictionalGameSystemSpeedProvider extends SpeedProvider {

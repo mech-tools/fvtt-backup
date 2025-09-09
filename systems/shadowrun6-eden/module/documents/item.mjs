@@ -21,7 +21,7 @@ export default class SR6Item extends Item {
     // preparation methods overridden (such as prepareBaseData()).
     super.prepareData();
     this._migrateCleanUp();
-    console.log("SR6E | SR6Item.prepareData()");
+    // console.log("SR6E | SR6Item.prepareData() DEBUG", this);
 
     // Ugly hack; Need to call _prepareAttributes() or else actors attributes wont be recalculated. This is necessary until a full Document rework
     if (this.actor?.type === "Spirit") {
@@ -144,7 +144,7 @@ export default class SR6Item extends Item {
     if (typeof source.system?.stun === 'string') source.system.stun = (source.system.stun === "true");
     if (typeof source.system?.ammocap === 'string') source.system.ammocap = parseInt(source.system.ammocap);
     if (typeof source.system?.ammocount === 'string') source.system.ammocount = parseInt(source.system.ammocount);
-    if (typeof source.system?.priceDef === 'string') source.system.priceDef = ( typeof parseInt(source.system.priceDef) === 'number' ? parseInt(source.system.priceDef) : parseInt(source.system.price) );
+    if (typeof source.system?.priceDef === 'string') source.system.priceDef = ( isNaN(parseInt(source.system.priceDef)) ? parseInt(source.system.price) : parseInt(source.system.priceDef) );
     if (typeof source.system?.dmg === 'string') source.system.dmg = parseInt(source.system.dmg);
     if (source.system?.attackRating && typeof source.system?.attackRating[0] === 'string') source.system.attackRating = source.system?.attackRating.map(ar => parseInt(ar));
     if (typeof source.system?.defense === 'string') source.system.defense = parseInt(source.system.defense);
@@ -175,7 +175,7 @@ export default class SR6Item extends Item {
   }
 
   calcAttackRating() {
-    if (this.system.attackRating === undefined) return;
+    if (this.system.attackRating === undefined || !this.actor) return;
 
     this.calculated.attackRating = foundry.utils.deepClone(this.system.attackRating);
     if (this.system.skill === "close_combat" || this.system.skillSpec === "brawling" || this.system.skillSpec === "whips") {
@@ -198,7 +198,7 @@ export default class SR6Item extends Item {
   }
 
   calcDamage() {
-    if (this.system?.dmg === undefined) return;
+    if (this.system?.dmg === undefined || !this.actor) return;
 
     this.calculated.dmg = parseInt(foundry.utils.deepClone(this.system.dmg));
     if (this.system.skill === "close_combat" || this.system.skillSpec === "brawling") {
@@ -313,7 +313,7 @@ export default class SR6Item extends Item {
    * Enable Active Effects on Item
    */
   prepareEmbeddedDocuments() {
-    console.log("SR6E | SR6Item.prepareEmbeddedDocuments()", this.uuid, this.name);
+    // console.log("SR6E | SR6Item.prepareEmbeddedDocuments() DEBUG", this.uuid, this.name);
     super.prepareEmbeddedDocuments();
     if ( this.actor && this.actor._embeddedPreparation ) this.applyActiveEffects();
   }
@@ -356,6 +356,10 @@ export default class SR6Item extends Item {
           ) {
         // Don't allow Gear Mods to upgrade a weapon's AR if its already 0
         continue;
+      }
+      if ( change.value.startsWith('@actor') && this.actor) {
+        const key = change.value.substring(7);
+        change.value = foundry.utils.getProperty(this.actor, key);
       }
 
       const changes = change.effect.apply(this, change);

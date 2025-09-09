@@ -179,7 +179,7 @@
 	  }
 	 },
     "attack_rating": {
-      "astral": "Mana Attack Rating",
+      "astral": "Magic Attack Rating",
       "matrix": "Matrix Attack Rating",
       "physical": "Physical Attack Rating",
       "social": "Social Attack Rating",
@@ -222,7 +222,7 @@
     },
     "defense_rating": {
 	   "label":  "Defense Rating",
-      "astral": "Mana Defense Rating",
+      "astral": "Astral Defense Rating",
       "matrix": "Matrix Defense Rating",
       "physical": "Physical Defense Rating",
       "social": "Social Defense Rating",
@@ -1352,7 +1352,8 @@
       },
       "sustained": {
         "add": "Add new spell",
-        "title": "Sustained Spells"
+        "title": "Sustained Spells",
+        "toggle": "Toggle Sustaining this"
       },
 		"survival": "Survival",
       "vehicles": {
@@ -1733,7 +1734,7 @@
         },
         "wrong_import_file": "Cannot import a GENESIS or COMMLINK save file! Use the FoundryVTT JSON Export instead.",
         "statblock_import": {
-          "error": "Something went wrong importing the NPC Statblock. Use a different PDF reader or your PDF might not be supported.",
+          "error": "Something went wrong importing the NPC Statblock. Use a different PDF reader or your statblock might not be supported.",
           "success": "Your `{actor}` statblock was imported into the ",
           "actor_tab": "Actor tab.",
           "npc_compendium": "NPC Compendium."
