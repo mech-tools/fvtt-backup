@@ -79,7 +79,7 @@ export class FileIndexer {
       } else if (source.source === 's3') {
         const s3 = game.data.files.s3;
         if (!s3 || !s3.buckets.includes(source.bucket)) continue;
-        prePend = `https://${source.bucket}.${s3.endpoint.host}`;
+        prePend = `https://${source.bucket}.${s3.endpoint.host}/`;
       } else if (source.source === 'sqyre') {
         if (typeof Sqyre === 'undefined' || !Sqyre.CLOUD_STORAGE_PREFIX) continue;
         prePend = `${Sqyre.CLOUD_STORAGE_PREFIX}/`;
@@ -360,7 +360,7 @@ export class FileIndexer {
   }
 
   static _indexToNode(cache, parentDirPath, options) {
-    const fullPath = parentDirPath + '/' + cache.dir;
+    const fullPath = parentDirPath + (parentDirPath ? '/' : '') + cache.dir;
 
     const node = {};
     node.children = cache.dirs?.map((dir) => this._indexToNode(dir, fullPath, options)) ?? [];

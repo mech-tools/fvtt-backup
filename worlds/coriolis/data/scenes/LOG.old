@@ -1,8 +1,15 @@
-2025/09/08-16:59:42.962815 7f0d277bf700 Recovering log #577
-2025/09/08-16:59:42.966084 7f0d277bf700 Delete type=3 #575
-2025/09/08-16:59:42.966120 7f0d277bf700 Delete type=0 #577
-2025/09/08-17:20:17.959447 7f0d25081700 Level-0 table #582: started
-2025/09/08-17:20:17.959685 7f0d25081700 Level-0 table #582: 0 bytes OK
-2025/09/08-17:20:17.960958 7f0d25081700 Delete type=0 #580
-2025/09/08-17:20:17.965186 7f0d25081700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
-2025/09/08-17:20:17.971011 7f0d25081700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2025/09/08-17:20:34.270899 7f0d25fbc700 Recovering log #581
+2025/09/08-17:20:34.273725 7f0d25fbc700 Delete type=0 #581
+2025/09/08-17:20:34.273751 7f0d25fbc700 Delete type=3 #579
+2025/09/12-11:39:26.813721 7f0d25081700 Level-0 table #586: started
+2025/09/12-11:39:26.815459 7f0d25081700 Level-0 table #586: 38853 bytes OK
+2025/09/12-11:39:26.816475 7f0d25081700 Delete type=0 #584
+2025/09/12-11:39:26.818456 7f0d25081700 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2025/09/12-11:39:26.862718 7f0d25081700 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.drawings!kykQc3wx6zEuBvng.KXAYlx5Keu83igMq' @ 46605 : 1
+2025/09/12-11:39:26.862729 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/12-11:39:26.898026 7f0d25081700 Generated table #587@1: 7186 keys, 1198811 bytes
+2025/09/12-11:39:26.898058 7f0d25081700 Compacted 1@1 + 1@2 files => 1198811 bytes
+2025/09/12-11:39:26.898957 7f0d25081700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/12-11:39:26.899058 7f0d25081700 Delete type=2 #570
+2025/09/12-11:39:26.899476 7f0d25081700 Delete type=2 #586
+2025/09/12-11:39:26.904959 7f0d25081700 Manual compaction at level-1 from '!scenes.drawings!kykQc3wx6zEuBvng.KXAYlx5Keu83igMq' @ 46605 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
