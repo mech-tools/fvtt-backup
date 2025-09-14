@@ -1,4 +1,4 @@
-import { fuzzysort, Fuse, writable, get, derived, append_styles, prop, template, slot, child, template_effect, set_class, append, push, first_child, sibling, if_block, bind_checked, store_get, pop, setup_stores, set_text, set_attribute, store_set, init_select, each, bind_this, event, get$1, derived$1, select_option, createEventDispatcher, user_effect, index, comment, clsx, stopPropagation, html, set_checked, preventDefault, bubble_event, state, text, bind_value, set, snippet, noop, delegate, proxy, user_pre_effect, onMount, component, transition, fade, blur, readable, set_value, set_selected, unmount, mount } from './vendor.js';
+import { fuzziersort_default, Fuse, writable, get, derived, append_styles, prop, template, slot, child, template_effect, set_class, append, push, first_child, sibling, if_block, bind_checked, store_get, pop, setup_stores, set_text, set_attribute, store_set, init_select, each, bind_this, event, get$1, derived$1, select_option, createEventDispatcher, user_effect, index, comment, clsx, stopPropagation, html, set_checked, preventDefault, bubble_event, state, text, bind_value, set, snippet, noop, delegate, proxy, user_pre_effect, onMount, component, transition, fade, blur, readable, set_value, set_selected, unmount, mount } from './vendor.js';
 
 const MODULE_NAME = "quick-insert";
 function registerSetting(setting, callback, { ...options }) {
@@ -53,6 +53,7 @@ var ModuleSetting;
     ModuleSetting["DEFAULT_ACTION_MACRO"] = "defaultActionMacro";
     ModuleSetting["SEARCH_TOOLTIPS"] = "searchTooltips";
     ModuleSetting["EMBEDDED_INDEXING"] = "embeddedIndexing";
+    ModuleSetting["TOC_INDEXING"] = "tocIndexing";
     ModuleSetting["SEARCH_DENSITY"] = "searchDensity";
     ModuleSetting["ENHANCED_TOOLTIPS"] = "enhancedTooltips";
     ModuleSetting["SEARCH_ENGINE"] = "searchEngine";
@@ -233,13 +234,22 @@ function extractEmbeddedIndex(item, pack) {
         }));
     }
 }
-function showDocument(doc) {
+function showDocument(doc, item) {
     if (!doc) {
         return;
     }
     if (doc.documentName === "JournalEntry" ||
         doc.documentName === "JournalEntryPage") {
-        const fakeTarget = { dataset: {}, getAttribute: () => undefined };
+        const fakeTarget = {
+            dataset: {
+                hash: item?.anchor?.slug,
+            },
+            getAttribute: (val) => {
+                if (val === "data-hash") {
+                    return item?.anchor?.slug;
+                }
+            },
+        };
         doc._onClickDocumentLink({
             //@ts-expect-error This is good enough for now
             currentTarget: fakeTarget,
@@ -253,6 +263,18 @@ function showDocument(doc) {
 }
 function getCollectionFromType(type) {
     return CONFIG[type].collection.instance;
+}
+function getLocationIcon(item) {
+    if (item.folder) {
+        return `<i class="fas fa-folder location-icon" data-tooltip="Folder"></i></span>`;
+    }
+    if (item.packageName) {
+        return `<i class="fas fa-atlas location-icon" data-tooltip="Compendium"></i></span>`;
+    }
+    if (item.__source !== "quick-insert:native") {
+        return `<i class="fas fa-cube location-icon" data-tooltip="External Module"></i></span>`;
+    }
+    return `<i class="fas fa-globe location-icon"></i></span>`;
 }
 const ignoredFolderNames = { _fql_quests: true };
 function directoryEnabled() {
@@ -278,7 +300,7 @@ function enabledEmbeddedDocumentTypes() {
 }
 function packEnabled(pack) {
     const disabled = getSetting(ModuleSetting.INDEXING_DISABLED);
-    // Pack entity type enabled?
+    // Pack document type enabled?
     const role = game.user?.role;
     if (role) {
         if (disabled?.entities?.[pack.metadata.type]?.includes(role)) {
@@ -298,16 +320,14 @@ function packEnabled(pack) {
 }
 function getDirectoryName(type) {
     const documentLabel = DocumentMeta[type].labelPlural;
-    return loc("SIDEBAR.DirectoryTitle", {
-        type: documentLabel ? loc(documentLabel) : type,
-    });
+    return documentLabel ? loc(documentLabel) : type;
 }
 function getSubTypeName(documentType, subType) {
     //@ts-expect-error typeLabels not in types yet
     return loc(CONFIG[documentType].typeLabels?.[subType]);
 }
 class SearchItem {
-    __source = "quick-insert";
+    __source = "quick-insert:native";
     id;
     uuid;
     name;
@@ -315,6 +335,9 @@ class SearchItem {
     subType;
     img;
     system;
+    packageName;
+    folder;
+    anchor;
     constructor(data) {
         this.id = data.id;
         this.uuid = data.uuid;
@@ -349,7 +372,7 @@ class SearchItem {
         const type = this.subType
             ? getSubTypeName(this.documentType, this.subType)
             : loc(DocumentMeta[this.documentType].label);
-        return `${type} - ${this.tagline}`;
+        return `${type} · ${this.tagline}`;
     }
     // Show the sheet or equivalent of this search result
     async show() {
@@ -364,24 +387,43 @@ class SearchItem {
     }
 }
 class EntitySearchItem extends SearchItem {
-    folder;
     static fromDocuments(documents) {
         return documents
             .filter((e) => {
             return (e.visible && !(e.folder?.name && ignoredFolderNames[e.folder.name]));
         })
-            .map((doc) => {
+            .map((document) => {
             let embedded;
-            if (EmbeddedDocumentTypes[doc.documentName] &&
-                enabledEmbeddedDocumentTypes().includes(EmbeddedDocumentTypes[doc.documentName])) {
+            if (EmbeddedDocumentTypes[document.documentName] &&
+                enabledEmbeddedDocumentTypes().includes(EmbeddedDocumentTypes[document.documentName])) {
                 const collection = 
                 //@ts-expect-error can't type this right now
-                doc[EmbeddedDocumentCollections[doc.documentName]];
-                embedded = collection.map(EmbeddedEntitySearchItem.fromDocument);
+                document[EmbeddedDocumentCollections[document.documentName]];
+                embedded = collection
+                    .map((embeddedDoc) => {
+                    if (!getSetting(ModuleSetting.TOC_INDEXING)) {
+                        return EmbeddedEntitySearchItem.fromDocument(embeddedDoc);
+                    }
+                    let tocItems = [];
+                    const toc = embeddedDoc.toc;
+                    if (toc) {
+                        tocItems = Object.values(toc).map((tocEntry) => EmbeddedEntitySearchItem.fromToc(embeddedDoc, tocEntry));
+                    }
+                    const pdfToc = embeddedDoc.flags["pdf-pager"]?.toc;
+                    if (pdfToc) {
+                        const toc = JSON.parse(pdfToc);
+                        tocItems = Object.values(toc).map((tocEntry) => EmbeddedEntitySearchItem.fromToc(embeddedDoc, tocEntry));
+                    }
+                    return [
+                        EmbeddedEntitySearchItem.fromDocument(embeddedDoc),
+                        ...tocItems,
+                    ];
+                })
+                    .flat();
             }
             return embedded
-                ? [...embedded, this.fromDocument(doc)]
-                : [this.fromDocument(doc)];
+                ? [this.fromDocument(document), ...embedded]
+                : [this.fromDocument(document)];
         })
             .flat();
     }
@@ -425,7 +467,7 @@ class EntitySearchItem extends SearchItem {
         return getDirectoryName(this.documentType);
     }
     async show() {
-        showDocument(await this.get());
+        showDocument(await this.get(), this);
     }
     async get() {
         return getCollectionFromType(this.documentType).get(this.id);
@@ -493,16 +535,16 @@ class CompendiumSearchItem extends SearchItem {
         return `${this.packageName}`;
     }
     async show() {
-        showDocument(await this.get());
+        showDocument(await this.get(), this);
     }
     async get() {
         return (await fromUuid(this.uuid));
     }
 }
 class EmbeddedEntitySearchItem extends SearchItem {
-    folder;
     #tagline;
     #embeddedName;
+    anchor;
     static fromDocument(document) {
         if (!document.parent || !document.id) {
             throw new Error("Not properly embedded");
@@ -513,7 +555,7 @@ class EmbeddedEntitySearchItem extends SearchItem {
         if (document.documentName === DocumentType.JOURNALENTRYPAGE) {
             tagline = `${document.parent.folder?.name ||
                 getDirectoryName(document.parent.documentName)}`;
-            name = `${document.name} | ${document.parent.name}`;
+            name = `${document.name} @ ${document.parent.name}`;
         }
         return new EmbeddedEntitySearchItem({
             id: document.id,
@@ -529,6 +571,34 @@ class EmbeddedEntitySearchItem extends SearchItem {
             tagline,
         });
     }
+    static fromToc(document, tocEntry) {
+        if (!document.parent || !document.id || !tocEntry.slug || !tocEntry.slug) {
+            throw new Error("Not properly embedded");
+        }
+        const text = tocEntry.text.trim();
+        let tagline = document.parent.name;
+        let name = `${text} @ ${document.name}`;
+        // Extend journal page data
+        if (document.documentName === DocumentType.JOURNALENTRYPAGE) {
+            tagline = `${document.parent.folder?.name ||
+                getDirectoryName(document.parent.documentName)}`;
+            name = `${text} · ${document.name} @ ${document.parent.name}`;
+        }
+        return new EmbeddedEntitySearchItem({
+            id: `${document.uuid}#${tocEntry.slug}`,
+            uuid: document.uuid,
+            name,
+            embeddedName: text,
+            documentType: document.documentName,
+            //@ts-expect-error data is merged wih doc
+            subType: document.type,
+            //@ts-expect-error data is merged wih doc
+            img: document.img,
+            folder: document.parent.folder || undefined,
+            tagline,
+            anchor: { name: text, slug: tocEntry.slug },
+        });
+    }
     constructor(data) {
         super(data);
         const folder = data.folder;
@@ -538,11 +608,19 @@ class EmbeddedEntitySearchItem extends SearchItem {
                 name: folder.name,
             };
         }
+        this.anchor = data.anchor;
         this.#embeddedName = data.embeddedName;
         this.#tagline = data.tagline;
     }
     // Get the drag data for drag operations
     get dragData() {
+        if (this.anchor) {
+            return {
+                anchor: this.anchor,
+                type: this.documentType,
+                uuid: this.uuid,
+            };
+        }
         return {
             type: this.documentType,
             uuid: this.uuid,
@@ -553,6 +631,9 @@ class EmbeddedEntitySearchItem extends SearchItem {
     }
     // Reference the entity in a journal, chat or other places that support it
     get journalLink() {
+        if (this.anchor) {
+            return `@UUID[${this.uuid}#${this.anchor.slug}]{${this.anchor.name}}`;
+        }
         return `@UUID[${this.uuid}]{${this.#embeddedName}}`;
     }
     // Reference the entity in a script
@@ -564,20 +645,13 @@ class EmbeddedEntitySearchItem extends SearchItem {
         return this.#tagline;
     }
     get tooltip() {
-        if (this.documentType === DocumentType.JOURNALENTRYPAGE) {
-            const type = this.subType
-                ? getSubTypeName(this.documentType, this.subType)
-                : loc(DocumentMeta[this.documentType]?.label);
-            const page = loc(CONFIG.JournalEntryPage.documentClass.metadata.label);
-            return `${page} (${type}) - ${this.#tagline}`;
-        }
         const type = this.subType
             ? getSubTypeName(this.documentType, this.subType)
             : loc(DocumentMeta[this.documentType].label);
-        return `${type} - ${this.tagline}`;
+        return `${type} · ${this.tagline}`;
     }
     async show() {
-        showDocument(await this.get());
+        showDocument(await this.get(), this);
     }
     async get() {
         return (await fromUuid(this.uuid));
@@ -614,7 +688,7 @@ class EmbeddedCompendiumSearchItem extends SearchItem {
         super({
             id: item._id,
             uuid,
-            name: `${item.embeddedName} | ${item.parentName}`,
+            name: `${item.embeddedName} @ ${item.parentName}`,
             documentType: item.documentType,
             subType: item.subType,
             img: item.img,
@@ -650,20 +724,13 @@ class EmbeddedCompendiumSearchItem extends SearchItem {
         return this.#tagline;
     }
     get tooltip() {
-        if (this.documentType === DocumentType.JOURNALENTRYPAGE) {
-            const type = this.subType
-                ? getSubTypeName(this.documentType, this.subType)
-                : loc(DocumentMeta[this.documentType]?.label);
-            const page = loc(CONFIG.JournalEntryPage.documentClass.metadata.label);
-            return `${page} (${type}) - ${this.#tagline}`;
-        }
         const type = this.subType
             ? getSubTypeName(this.documentType, this.subType)
             : loc(DocumentMeta[this.documentType].label);
-        return `${type} - ${this.tagline}`;
+        return `${type} · ${this.tagline}`;
     }
     async show() {
-        showDocument(await this.get());
+        showDocument(await this.get(), this);
     }
     async get() {
         return (await fromUuid(this.uuid));
@@ -785,7 +852,7 @@ class FuzzySortSearchIndex {
         if (query === "") {
             return this.everything.map((item) => ({ item }));
         }
-        return fuzzysort
+        return fuzziersort_default
             .go(query, this.everything, {
             key: "name",
             all: true,
@@ -845,8 +912,8 @@ class SearchLib {
     addItem(item) {
         this.index.add(item);
     }
-    removeItem(entityUuid) {
-        this.index.removeByUuid(entityUuid);
+    removeItem(uuid) {
+        this.index.removeByUuid(uuid);
     }
     replaceItem(item) {
         this.index.replaceItem(item);
@@ -1355,6 +1422,7 @@ const stores = {
     [ModuleSetting.DEFAULT_ACTION_SCENE]: createStore(ModuleSetting.DEFAULT_ACTION_SCENE),
     [ModuleSetting.SEARCH_TOOLTIPS]: createStore(ModuleSetting.SEARCH_TOOLTIPS),
     [ModuleSetting.EMBEDDED_INDEXING]: createStore(ModuleSetting.EMBEDDED_INDEXING),
+    [ModuleSetting.TOC_INDEXING]: createStore(ModuleSetting.TOC_INDEXING),
     [ModuleSetting.SEARCH_DENSITY]: createStore(ModuleSetting.SEARCH_DENSITY),
     [ModuleSetting.ENHANCED_TOOLTIPS]: createStore(ModuleSetting.ENHANCED_TOOLTIPS),
     [ModuleSetting.SEARCH_ENGINE]: createStore(ModuleSetting.SEARCH_ENGINE),
@@ -1647,6 +1715,9 @@ function isInFolder(parentFolder, targetFolder) {
     }
     return false;
 }
+function hasSystem(config) {
+    return config.system !== undefined && Object.keys(config.system).length !== 0;
+}
 function matchFilterConfig(config, resultItem) {
     let entityMatch = true;
     if (config.documentTypes.length) {
@@ -1687,15 +1758,28 @@ function matchFilterConfig(config, resultItem) {
         }
     }
     const fieldsToMatch = getSystemFields(resultItem.item.documentType);
-    const filterBySystemExtension = fieldsToMatch.length !== 0 &&
-        config.system &&
-        Object.keys(config.system).length;
+    const filterBySystemExtension = fieldsToMatch.length !== 0 && hasSystem(config);
     if (filterBySystemExtension && resultItem.item.system) {
         return fieldsToMatch.every((f) => {
             const field = f.indexName;
-            return (config.system?.[field] !== undefined &&
-                resultItem.item.system?.[field] !== undefined &&
-                resultItem.item.system?.[field] === config.system[field]);
+            const configValue = config.system[field];
+            const resultValue = resultItem.item.system?.[field];
+            if (configValue === undefined) {
+                return true;
+            }
+            if (resultValue === undefined) {
+                return false;
+            }
+            if (typeof configValue === "object") {
+                // Range filter
+                if (typeof resultValue !== "number") {
+                    return false;
+                }
+                return resultValue >= configValue.min && resultValue <= configValue.max;
+            }
+            else {
+                return resultValue === configValue;
+            }
         });
     }
     return true;
@@ -2030,7 +2114,7 @@ function SettingsGroup($$anchor, $$props) {
 	append($$anchor, fieldset);
 }
 
-var root_1$m = template(`<div class="options svelte-1kbg508"><!> <!> <!> <!> <!></div>`);
+var root_1$m = template(`<div class="options svelte-1kbg508"><!> <!> <!> <!> <!> <!></div>`);
 var root$q = template(`<div role="tabpanel"><p class="notes svelte-1kbg508"> </p> <!></div>`);
 
 const $$css$s = {
@@ -2131,6 +2215,22 @@ function GmTab($$anchor, $$props) {
 				},
 				get notes() {
 					return get$1(expression_9);
+				}
+			});
+
+			var node_6 = sibling(node_5, 2);
+			const expression_10 = derived$1(() => mloc("SettingsTocIndexing"));
+			const expression_11 = derived$1(() => mloc("SettingsTocIndexingHint"));
+
+			FormCheckbox(node_6, {
+				get label() {
+					return get$1(expression_10);
+				},
+				get setting() {
+					return ModuleSetting.TOC_INDEXING;
+				},
+				get notes() {
+					return get$1(expression_11);
 				}
 			});
 			append($$anchor, div_1);
@@ -2370,7 +2470,7 @@ function makeNew(base, insertContext = false) {
         img: null,
         ...base,
     });
-    item.__source = "fake";
+    item.__source = "quick-insert:native";
     return {
         item,
         actions: getActions(base.documentType, insertContext),
@@ -2389,8 +2489,8 @@ function fakeSearchResults(insertContext = false) {
 }
 
 var root_2$e = template(`<img class="doc-image" draggable="false">`);
-var root_4$4 = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"> </span></div>`);
-var root_5$2 = template(`<span class="title"><!></span> <span class="sub"> </span>`, 1);
+var root_4$4 = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"> <!></span></div>`);
+var root_5$2 = template(`<span class="title"><!></span> <span class="sub"> </span> <!>`, 1);
 var root_7$1 = template(`<i draggable="false" data-tooltip-direction="UP"><img></i>`);
 var root_8 = template(`<i data-tooltip-direction="UP"></i>`);
 var root_1$l = template(`<li role="option"><a draggable="true"><!> <!> <span class="action-icons"></span></a></li>`);
@@ -2467,7 +2567,7 @@ function SearchResults($$anchor, $$props) {
 				actions,
 				defaultAction
 			}
-		) => item.uuid,
+		) => item.id + item.uuid,
 		($$anchor, $$item, index$1) => {
 			let item = () => get$1($$item).item;
 			let formattedMatch = () => get$1($$item).formattedMatch;
@@ -2511,19 +2611,26 @@ function SearchResults($$anchor, $$props) {
 
 					var span_1 = sibling(span, 2);
 					var text_1 = child(span_1);
-					template_effect(() => set_text(text_1, item().tooltip));
+					var node_4 = sibling(text_1);
+
+					html(node_4, () => getLocationIcon(item()));
+					template_effect(() => set_text(text_1, `${item().tooltip ?? ''} `));
 					append($$anchor, div);
 				};
 
 				var alternate_1 = ($$anchor) => {
 					var fragment_1 = root_5$2();
 					var span_2 = first_child(fragment_1);
-					var node_4 = child(span_2);
+					var node_5 = child(span_2);
 
-					html(node_4, () => formattedMatch() || item().name);
+					html(node_5, () => formattedMatch() || item().name);
 
 					var span_3 = sibling(span_2, 2);
 					var text_2 = child(span_3);
+
+					var node_6 = sibling(span_3, 2);
+
+					html(node_6, () => getLocationIcon(item()));
 					template_effect(() => set_text(text_2, item().tagline));
 					append($$anchor, fragment_1);
 				};
@@ -2537,7 +2644,7 @@ function SearchResults($$anchor, $$props) {
 
 			each(span_4, 21, () => actions() || [], index, ($$anchor, action) => {
 				var fragment_2 = comment();
-				var node_5 = first_child(fragment_2);
+				var node_7 = first_child(fragment_2);
 
 				{
 					var consequent_2 = ($$anchor) => {
@@ -2584,7 +2691,7 @@ function SearchResults($$anchor, $$props) {
 						append($$anchor, i_1);
 					};
 
-					if_block(node_5, ($$render) => {
+					if_block(node_7, ($$render) => {
 						if (get$1(action).img) $$render(consequent_2); else $$render(alternate_2, false);
 					});
 				}
@@ -2596,9 +2703,10 @@ function SearchResults($$anchor, $$props) {
 				($0, $1) => {
 					set_attribute(li, 'aria-selected', get$1(index$1) === $$props.selectedIndex);
 					set_attribute(li, 'data-tooltip', $0);
-					classes = set_class(li, 1, clsx($enhancedTooltips() && item().__source === "quick-insert" ? "content-link" : undefined), null, classes, $1);
+					classes = set_class(li, 1, clsx($enhancedTooltips() ? "content-link" : undefined), null, classes, $1);
 					set_attribute(li, 'data-uuid', item().uuid);
-					set_attribute(li, 'id', `result_${item().uuid}`);
+					set_attribute(li, 'data-hash', item().anchor?.slug);
+					set_attribute(li, 'id', `result_${item().id}${item().uuid}`);
 					set_attribute(a, 'title', tooltipMode === "off" || tooltipMode === "image" ? `${item().name} - ${item().tooltip}` : undefined);
 				},
 				[
@@ -2619,7 +2727,7 @@ function SearchResults($$anchor, $$props) {
 	template_effect(() => {
 		set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`);
 		set_attribute(ul, 'data-tooltip-direction', tooltips());
-		set_attribute(ul, 'aria-activedescendant', `result_${results()[$$props.selectedIndex]?.item.uuid}`);
+		set_attribute(ul, 'aria-activedescendant', `result_${results()[$$props.selectedIndex]?.item.id}${results()[$$props.selectedIndex]?.item.uuid}`);
 	});
 
 	append($$anchor, ul);
@@ -3618,7 +3726,7 @@ function searchPlaylists(query) {
             item,
         }));
     }
-    return fuzzysort
+    return fuzziersort_default
         .go(query, getContents(), {
         key: (i) => i.instance.name,
         all: true,
@@ -4750,7 +4858,7 @@ function searchInventory(actors, query) {
             original: item,
         }));
     }
-    return fuzzysort
+    return fuzziersort_default
         .go(query, getInventory(actors), {
         key: (i) => i.name,
         all: true,
@@ -8120,6 +8228,14 @@ function getModuleSettings() {
             default: false,
             scope: "world",
         },
+        [ModuleSetting.TOC_INDEXING]: {
+            setting: ModuleSetting.TOC_INDEXING,
+            name: "QUICKINSERT.SettingsTocIndexing",
+            hint: "QUICKINSERT.SettingsTocIndexingHint",
+            type: Boolean,
+            default: false,
+            scope: "world",
+        },
         [ModuleSetting.INDEXING_DISABLED]: {
             name: "Things that have indexing disabled",
             type: Object,
@@ -8338,6 +8454,8 @@ async function reIndex() {
 Hooks.once("init", async function () {
     registerSettings({
         [ModuleSetting.INDEXING_DISABLED]: () => reIndex(),
+        [ModuleSetting.EMBEDDED_INDEXING]: () => reIndex(),
+        [ModuleSetting.TOC_INDEXING]: () => reIndex(),
         [ModuleSetting.SEARCH_ENGINE]: () => reIndex(),
     });
     game.keybindings.register("quick-insert", ModuleKeyBinds.TOGGLE_OPEN, {

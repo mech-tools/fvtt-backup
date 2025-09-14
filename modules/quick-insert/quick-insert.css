@@ -211,8 +211,12 @@ ul.quick-insert-result {
   text-align: end;
   flex-shrink: 1;
   flex-grow: 1;
-  padding-right: 4px;
   padding-left: 0;
+}
+
+.quick-insert-result li .location-icon {
+  color: #666;
+  margin-right: 0.4em;
 }
 
 .quick-insert-result li .two-line-item {
@@ -462,7 +466,8 @@ ul.quick-insert-result {
 }
 
 .dnd5e2 .quick-insert-link {
-  margin-left: 5em;
+  position: relative;
+  right: -140%;
 }
 
 .tidy5e.sheet.actor

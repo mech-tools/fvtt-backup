@@ -36,6 +36,8 @@
   "QUICKINSERT.SettingsEnhancedTooltipsHint": "Enables enhanced tooltips if they are implemented by the current system. Enhanced tooltips may increase server load",
   "QUICKINSERT.SettingsEmbeddedIndexing": "Index journal pages",
   "QUICKINSERT.SettingsEmbeddedIndexingHint": "Adds individual journal pages to the search index",
+  "QUICKINSERT.SettingsTocIndexing": "Index TOCs in journal pages (requires \"Index journal pages\")",
+  "QUICKINSERT.SettingsTocIndexingHint": "Adds headings from the table-of-contents inside journal pages to the index. Currently not available in compendia. Includes PDF headings collected by the PDF Pager module.",
   "QUICKINSERT.SettingsSearchDensity": "Search window density",
   "QUICKINSERT.SettingsSearchDensityHint": "Change the styling of the search window",
   "QUICKINSERT.SettingsSearchEngine": "Text search engine",

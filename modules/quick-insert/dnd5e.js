@@ -36,7 +36,27 @@ function sheetNew5eRenderHook(app) {
         const types = listTypeMap[listType] || itemTypeMap[itemType] || [itemType];
         let system;
         if (types.length === 1 && types[0] === "spell" && section.dataset.level) {
-            system = { level: parseInt(section.dataset.level, 10) };
+            if (section.dataset.preparationMode === "pact") {
+                // Legacy solution
+                system = {
+                    level: {
+                        min: 1,
+                        max: app.document.system.spells.pact.level,
+                    },
+                };
+            }
+            else if (section.dataset.method === "pact") {
+                // Updated dnd5e solution
+                system = {
+                    level: {
+                        min: 1,
+                        max: parseInt(section.dataset.level, 10),
+                    },
+                };
+            }
+            else {
+                system = { level: parseInt(section.dataset.level, 10) };
+            }
         }
         const linkEl = $(linkHtml);
         $(section).find(".items-header .item-controls").append(linkEl);
