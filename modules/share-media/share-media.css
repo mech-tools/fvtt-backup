@@ -201,6 +201,10 @@
     transition: color .25s, background-color .25s;
   }
 
+  :is(.shm menu, menu.shm) li:not(:last-child) {
+    border-bottom: 1px solid var(--buncss-light, rgba(var(--shm-gray) / 1)) var(--buncss-dark, rgba(var(--shm-warm-gray) / 1));
+  }
+
   :is(.shm menu, menu.shm) li:not([role="button"]):after {
     content: "";
     font-family: var(--font-awesome);
