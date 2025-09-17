@@ -282,6 +282,7 @@
 
   :is(.journal-sheet .journal-page-content ul, .journal-sheet .journal-page-content ol) li {
     margin-left: .5rem;
+    color: rgba(var(--ctm-black) / 1);
   }
 
   :is(.journal-sheet .journal-page-content ul, .journal-sheet .journal-page-content ol) li::marker {

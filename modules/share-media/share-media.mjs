@@ -2863,7 +2863,7 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       contentClasses: ["shm"]
     },
     position: {
-      width: 450,
+      width: 460,
       height: "auto",
       top: 100
     },

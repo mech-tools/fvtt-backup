@@ -106,7 +106,7 @@
     height: var(--shm-button-size);
     min-height: var(--shm-button-size);
     gap: .25rem;
-    padding: 0 2rem;
+    padding: 0 1rem;
     font-family: var(--font-sans);
     font-size: var(--font-size-14);
     line-height: normal;
@@ -553,8 +553,10 @@
   }
 
   [id^="shm-share-selector"] fieldset {
+    gap: 0;
     justify-content: space-around;
     flex-wrap: wrap;
+    padding: 1rem .5rem;
   }
 
   [id^="shm-share-selector"] fieldset .hint {
