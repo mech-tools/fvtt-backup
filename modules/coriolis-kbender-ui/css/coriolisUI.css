@@ -495,7 +495,7 @@ amending some classes to help official modules work in v13
   border-radius: 10px;
 }
 .yzecoriolis.sheet.actor .gradient-overlay {
-  background: linear-gradient(180deg, var(--color-coriolis-background2) 0%, var(--color-coriolis-background1) 28.12%, #000000 72.92%);
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--color-coriolis-background1) 28.12%, #000000 72.92%);
   grid-column-start: 1;
   grid-column-end: 2;
   grid-row-start: 2;
@@ -2552,6 +2552,11 @@ amending some classes to help official modules work in v13
 .yzecoriolis.dice-roll .coriolis-results .dice-rolls .roll {
   line-height: 24px;
   float: left;
+  border-style:solid;
+  border-color: var(--chat-message-border-color);
+  border-width: 1px;
+  border-radius: 5px;
+
 }
 .yzecoriolis.dice-roll .limitedSuccess {
   color: green;
@@ -2701,6 +2706,7 @@ h3 {
 
 body.game .sheet.app header.sheet-header h1 input {
   color: var(--color-chat-message-text);
+  background: var(--color-coriolis-header2);
 }
 
 body.game .app.window-app .window-content {
@@ -2757,8 +2763,8 @@ border-color: var(--color-coriolis-item-boarder1);
 
 
 a.button, button {
-  COLOR:VAR(--color-chat-message-border);
-  background:var(--color-coriolis-header1);
+  COLOR: VAR(--color-coriolis-push);
+  background: var(--color-coriolis-header1);
 }
 
 select option, select optgroup {
@@ -2768,8 +2774,8 @@ select option, select optgroup {
 
 /*coriolis core rulebook journals*/
 .sheet.journal-entry aside.journal-sidebar.sidebar {
-background: linear-gradient(var(--color-coriolis-header1), var(--color-coriolis-header2)),
-  var(--image-coriolis-journal-sidebar);
+background: linear-gradient(var(--color-coriolis-background1), var(--color-coriolis-background2)),
+  var(--image-coriolis-journal-sidebar)!important;
 background-repeat: repeat;
 background-position: 0px -12px;
 color: var(--color-coriolis-core-text-sidetext);

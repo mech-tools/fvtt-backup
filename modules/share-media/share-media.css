@@ -106,7 +106,7 @@
     height: var(--shm-button-size);
     min-height: var(--shm-button-size);
     gap: .25rem;
-    padding: 0 2rem;
+    padding: 0 1rem;
     font-family: var(--font-sans);
     font-size: var(--font-size-14);
     line-height: normal;
@@ -199,6 +199,10 @@
     color: var(--buncss-light, rgba(var(--shm-charcoal) / 1)) var(--buncss-dark, rgba(var(--shm-cream) / 1));
     background-color: var(--buncss-light, rgba(var(--shm-white) / .6)) var(--buncss-dark, rgba(var(--shm-purple) / .5));
     transition: color .25s, background-color .25s;
+  }
+
+  :is(.shm menu, menu.shm) li:not(:last-child) {
+    border-bottom: 1px solid var(--buncss-light, rgba(var(--shm-gray) / 1)) var(--buncss-dark, rgba(var(--shm-warm-gray) / 1));
   }
 
   :is(.shm menu, menu.shm) li:not([role="button"]):after {
@@ -549,8 +553,10 @@
   }
 
   [id^="shm-share-selector"] fieldset {
+    gap: 0;
     justify-content: space-around;
     flex-wrap: wrap;
+    padding: 1rem .5rem;
   }
 
   [id^="shm-share-selector"] fieldset .hint {

@@ -1,8 +1,15 @@
-2025/09/08-17:20:34.041387 7f0d25fbc700 Recovering log #537
-2025/09/08-17:20:34.043977 7f0d25fbc700 Delete type=0 #537
-2025/09/08-17:20:34.044001 7f0d25fbc700 Delete type=3 #535
-2025/09/12-11:39:26.801803 7f0d25081700 Level-0 table #542: started
-2025/09/12-11:39:26.802018 7f0d25081700 Level-0 table #542: 0 bytes OK
-2025/09/12-11:39:26.803103 7f0d25081700 Delete type=0 #540
-2025/09/12-11:39:26.804710 7f0d25081700 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
-2025/09/12-11:39:26.806144 7f0d25081700 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
+2025/09/12-11:39:51.845338 7f0d26fbe700 Recovering log #541
+2025/09/12-11:39:51.850433 7f0d26fbe700 Delete type=0 #541
+2025/09/12-11:39:51.850476 7f0d26fbe700 Delete type=3 #539
+2025/09/19-11:07:24.327713 7f0d25081700 Level-0 table #546: started
+2025/09/19-11:07:24.329785 7f0d25081700 Level-0 table #546: 3629 bytes OK
+2025/09/19-11:07:24.330787 7f0d25081700 Delete type=0 #544
+2025/09/19-11:07:24.391124 7f0d25081700 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
+2025/09/19-11:07:24.391475 7f0d25081700 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at '!combats.combatants!gzJkMnbzVqDrAzUf.qjnr1A6pBCnZHlgo' @ 6634 : 1
+2025/09/19-11:07:24.391480 7f0d25081700 Compacting 1@1 + 1@2 files
+2025/09/19-11:07:24.392807 7f0d25081700 Generated table #547@1: 35 keys, 7930 bytes
+2025/09/19-11:07:24.392822 7f0d25081700 Compacted 1@1 + 1@2 files => 7930 bytes
+2025/09/19-11:07:24.393563 7f0d25081700 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/09/19-11:07:24.393636 7f0d25081700 Delete type=2 #546
+2025/09/19-11:07:24.393687 7f0d25081700 Delete type=2 #526
+2025/09/19-11:07:24.395315 7f0d25081700 Manual compaction at level-1 from '!combats.combatants!gzJkMnbzVqDrAzUf.qjnr1A6pBCnZHlgo' @ 6634 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)

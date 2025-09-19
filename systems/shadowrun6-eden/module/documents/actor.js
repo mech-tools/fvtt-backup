@@ -88,9 +88,16 @@ export default class Shadowrun6Actor extends Actor {
      * @memberof ClientDocumentMixin#
      */
     prepareBaseData() {
+        //TODO move these to traits
         this.system.dicePoolMod = 0;
         this.system.badLuck = false;
         this.system.painTolerance = null;
+        this.traits = {};
+        this.traits.movementRate = 10;
+        this.traits.movementSprintBase = 15;
+        this.traits.movementSprintMultiplier = 1;
+        this.traits.hardenedArmor = 0;
+        this.traits.immunityNormalWeapons = false;
     }
 
     /** @inheritDoc */
@@ -203,12 +210,13 @@ export default class Shadowrun6Actor extends Actor {
             return;
         }
         
+        if (!this.isOwner) return false;
         const allowed = await super._preUpdate(changes, options, user);
-        console.log("SR6E | Shadowrun6Actor._preUpdate()");
+        console.log("SR6E | Shadowrun6Actor._preUpdate()", changes);
         if ( allowed === false ) return false;
 
         changes = this._tokenBarsToMonitorDmg(changes);
-
+        await this.updateGruntGroup(changes, options);
     }
     /**
      * Post-process an update operation for a single Document instance. Post-operation events occur for all connected
@@ -454,6 +462,11 @@ export default class Shadowrun6Actor extends Actor {
                     skill.points = force;
                 }
             });
+
+            // Spirits have Immunity to Normal Weapons which give a specialized Hardened Armor
+            this.traits.immunityNormalWeapons = true;
+            this.traits.hardenedArmor = force;
+
             // Magic rating
             system.attributes.mag.base = force;
             system.essence = force;
@@ -490,6 +503,7 @@ export default class Shadowrun6Actor extends Actor {
         const actor = this;
         // Only run on lifeforms
         if (isLifeform(system)) {
+            // TODO: This isnt modifying attributes.essense but that isnt used to no problem
             CONFIG.SR6.ATTRIBUTES.forEach((attr) => {
                 if (!(system.attributes[attr].base) || parseInt(system.attributes[attr].base) < 1)
                     system.attributes[attr].base = 1;
@@ -499,7 +513,7 @@ export default class Shadowrun6Actor extends Actor {
                 // Attribute Pool cannot be lower than 1 and cannot apply a Mod higher than 4
                 if (parseInt(system.attributes[attr].mod) > 4 ) 
                     system.attributes[attr].modString = game.i18n.localize("attrib.max_augment");
-                system.attributes[attr].pool = Math.max(1, parseInt(system.attributes[attr].base) + Math.min(4, parseInt(system.attributes[attr].mod)) );
+                system.attributes[attr].pool = Math.max(0, parseInt(system.attributes[attr].base) + Math.min(4, parseInt(system.attributes[attr].mod)) );
                 
                 // Supporting Pool Overrides
                 if (actor.overrides?.system?.attributes && actor.overrides?.system?.attributes[attr]?.pool !== undefined) system.attributes[attr].pool = actor.overrides.system.attributes[attr].pool;
@@ -721,6 +735,10 @@ export default class Shadowrun6Actor extends Actor {
         if (data.defenserating.physical.mod) {
             data.defenserating.physical.pool += data.defenserating.physical.mod;
             data.defenserating.physical.modString += " + " + data.defenserating.physical.mod;
+        }
+        if (this.traits.hardenedArmor !== 0) {
+            data.defenserating.physical.pool += this.traits.hardenedArmor;
+            data.defenserating.physical.modString += " + " + this.traits.hardenedArmor;
         }
         items.forEach((item) => {
             let itemSystem = getSystemData(item);
@@ -1390,6 +1408,7 @@ export default class Shadowrun6Actor extends Actor {
      *
      */
     async _checkPersonaChanges(changes) {
+        if (!this.isOwner) return false;
         console.log("SR6E | Shadowrun6Actor._checkPersonaChanges()", changes);
         if (this.system.mortype == "technomancer") {
             if (changes.system?.attributes !== undefined || changes.system?.persona?.living?.mod !== undefined) {
@@ -1545,14 +1564,14 @@ export default class Shadowrun6Actor extends Actor {
         return woundModifier;
     }
     //---------------------------------------------------------
-    getSustainedSpellsModifier() {
+    getSustainedModifier() {
         const actorData = getActorData(this);
         const items = actorData.items;
         let sustainedCount = 0;
         let sustainedModifier = 0;
         items.forEach((item) => {
             let itemSystem = getSystemData(item);
-            if (item.type == "spell" && itemSystem.duration == "sustained") {
+            if ((item.type === "spell" || item.type === "complexform" ) && itemSystem.duration === "sustained") {
                 if (itemSystem.isSustained) {
                     sustainedCount++;
                 }
@@ -1562,7 +1581,7 @@ export default class Shadowrun6Actor extends Actor {
         //     sustainedCount = sustainedCount - 1;
         // }
         sustainedModifier = sustainedCount * 2;
-        console.log("SR6E | Sustained Spells Modifier: " + sustainedModifier);
+        console.log("SR6E | Sustained Spells/ComplexForms Modifier: " + sustainedModifier);
         return sustainedModifier;
     }
     //---------------------------------------------------------
@@ -1953,6 +1972,7 @@ export default class Shadowrun6Actor extends Actor {
         rollData.allowBuyHits = false;
         rollData.pool = defensePool.pool;
         rollData.rollType = RollType.Defense;
+        rollData.defendedWith = defendWith;
         rollData.performer = data;
         rollData.speaker = ChatMessage.getSpeaker({ actor: this });
         console.log("SR6E | Defend roll config ", rollData);
@@ -2258,11 +2278,19 @@ export default class Shadowrun6Actor extends Actor {
     async importFromJSON(json) {
         console.log("SR6E | importFromJSON");
         const sourceData = JSON.parse(json);
-        // Checking if user is trying to import GENESIS or COMMLINK data
+        // Checking if user is trying to import GENESIS/COMMLINK save instead of a Foundry Print export
         if (sourceData.system === "SHADOWRUN6") {
             ui.notifications.error("shadowrun6.ui.notifications.wrong_import_file", { localize: true });
             return;
         }
+        // Modify imported GENESIS/COMMLINK items
+        sourceData.items?.forEach(item => {
+            if (item.data?.genesisID) {
+                if (item.data.type === "WEAPON_CLOSE_COMBAT") {
+                    item.data.attackRating[0] -= sourceData.data.attributes.str.pool;
+                }
+            }
+        })
 
         return super.importFromJSON(JSON.stringify(sourceData));
     }
@@ -2284,5 +2312,17 @@ export default class Shadowrun6Actor extends Actor {
         console.log("SR6E | Looked up gruntGroup", gruntGroup);
         return gruntGroup;
     }
+    
+    async updateGruntGroup(changes, options) {
+        const gruntGroupId = this.token?.getFlag(game.system.id, 'GruntGroupId');
+        if (!gruntGroupId || options.updatingGruntGroup) return;
 
+        canvas.tokens.ownedTokens.forEach(async (token) => {
+            if (token.document.getFlag(game.system.id, 'GruntGroupId') === gruntGroupId && token.actor.uuid !== this.uuid ) {
+                if (typeof changes.system?.edge?.value !== 'undefined') {
+                    await token.actor.update({'system.edge.value': changes.system.edge.value}, {updatingGruntGroup: true});
+                }
+            }
+        });
+    }
 }

@@ -176,7 +176,7 @@ Hooks.once('ready', async () => {
   document.documentElement.style.setProperty('--image-coriolis-checkbox', ` url("icons/checkbox-unchecked.svg")`);
   document.documentElement.style.setProperty('--image-coriolis-header', ` url("icons/back-gold-header.webp")`);
   document.documentElement.style.setProperty('--image-coriolis-background', ` url("icons/background_saadaal.webp")`);
-  document.documentElement.style.setProperty('--image-coriolis-journal-sidebar', `url("icons/background_header.webp")`);
+  document.documentElement.style.setProperty('--image-coriolis-journal-sidebar', `url("icons/background_saadaal.webp")`);
   document.documentElement.style.setProperty('--image-coriolis-default-background', ` url("icons/background_saadaal.webp")`);
   document.documentElement.style.setProperty('--image-chat-message', ` url("icons/background_saadaal.webp")`);
   document.documentElement.style.setProperty('--image-coriolis-background-char', ` url("icons/background_saadaal.webp")`);

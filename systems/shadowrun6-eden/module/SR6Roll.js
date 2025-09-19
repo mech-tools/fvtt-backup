@@ -165,6 +165,7 @@ export default class SR6Roll extends Roll {
         if (this.configured?.itemId) this.options.itemId = this.configured.itemId;  // Support for AA
         this.finished = new SR6ChatMessageData(this.configured);
         this.finished.badLuck = this.finished.actor?.system?.badLuck;
+        this.finished.actorTraits = this.finished.actor?.traits;
         this.finished.glitch = this.isGlitch();
         this.finished.criticalglitch = this.isCriticalGlitch();
         this.finished.success = this.isSuccess();
@@ -192,7 +193,8 @@ export default class SR6Roll extends Roll {
             this.finished.damage = Math.max(0, this.finished.threshold - this.finished.total);
 
             if (this.finished.monitor === MonitorType.PHYSICAL && this.finished.damage > 0 && game.settings.get(SYSTEM_NAME, "armorLessensDmg")) {
-                const armorLessensDmg = Math.floor(this.finished.actor.system.defenserating.physical.pool / 4);
+                // TODO for Blast Attacks, armorLessensDmg is /4 DR
+                const armorLessensDmg = Math.floor(this.finished.actor.system.defenserating.physical.pool / 8);
                 console.log("SR6E | armorLessensDmg, reducing damage by", armorLessensDmg);
                 const newDamage = Math.max(0, this.finished.damage - armorLessensDmg);
                 const convertedToStun = this.finished.damage - newDamage;
@@ -205,14 +207,18 @@ export default class SR6Roll extends Roll {
                 }
             }
 
-            if (this.finished.soakType === SoakType.FADING) {
+            if (this.finished.soakType === SoakType.DRAIN) {
+                if ((this.finished.threshold - this.result) > this.finished.actor.system.attributes.mag.pool) {
+                    this.finished.monitor = MonitorType.PHYSICAL;
+                }
+            }
+            else if (this.finished.soakType === SoakType.FADING) {
                 if ((this.finished.threshold - this.result) > this.finished.actor.system.attributes.res.pool) {
                     this.finished.monitor = MonitorType.PHYSICAL;
                 }
-                // TODO add drain daamge
             }
         }
-
+        
         this.finished.targets = this.configured.targetIds;
         console.log("SR6E | targetIds in Chat message: ", this.finished.targets);
         if (this.configured.rollType == RollType.Defense) {
@@ -494,6 +500,14 @@ export default class SR6Roll extends Roll {
                     // this.finished.total = Defender hits in this roll
                     if (this.finished.total <= this.finished.threshold) {
                         this.finished.damage = this.data.calcDamage + (this.finished.threshold - 1) - this.finished.total;
+
+                        // Hardened Armor
+                        if (this.finished.rollType === RollType.Defense && this.finished.soakType === SoakType.DAMAGE_PHYSICAL ) {
+                            if (!(this.finished.actorTraits.immunityNormalWeapons && this.configured.defendedWith === Defense.SPELL_INDIRECT)) {
+                                console.log("SR6E | Applying Hardened Armor", this.finished.actorTraits.hardenedArmor);
+                                this.finished.damage = Math.max(0, this.finished.damage- this.finished.actorTraits.hardenedArmor);
+                            }
+                        }
                     }
                     if (this.finished.allowSoak === false) {
                         this.finished.rollType = RollType.Soak;
@@ -535,6 +549,14 @@ export default class SR6Roll extends Roll {
 
             // Fixing rollMode
             this.finished.rollMode = this.data.rollMode;
+
+            // Setting Sprint text
+            if (this.finished.configured.skillSpec === "sprinting") {
+                this.finished.configured.sprintingResult = game.i18n.format("shadowrun6.derived.movement.sprint_result", { 
+                    name: this.finished.actor.name,
+                    metersSprinted: this.finished.actorTraits.movementSprintBase + ( this.finished.actorTraits.movementSprintMultiplier * this.finished.total )
+                });
+            }
 
             return renderTemplate(SR6Roll.CHAT_TEMPLATE, this.finished);
         }

@@ -109,22 +109,24 @@ tfoot th {
 	text-shadow: none;
 	border-bottom: 0px;
 }
-.game .centered {
+.game .centered,
+body.game .app table tr th.centered {
 	text-align: center;
 }
 .shadowrun6 input[type="text"]{
-        font-variant-numeric: lining-nums;
-        border: 0px solid black;
-        background: none;
-        color: var(--input-color);
-        padding: 2px;
-        padding-bottom: 2px;
-        margin: 0;
-        vertical-align: baseline;
-        display: inline-block;
-        height: 100%;
-        border-radius: 4px;
- }
+  font-variant-numeric: lining-nums;
+  border: 0px solid black;
+  background: none;
+  color: var(--input-color);
+  padding: 2px;
+  padding-bottom: 2px;
+  margin: 0;
+  vertical-align: baseline;
+  display: inline-block;
+  height: 100%;
+  border-radius: 4px;
+  box-shadow: none;
+}
  .shadowrun6 .input-symbol-nuyen {
   position: relative;
 }
@@ -272,6 +274,7 @@ dd::after {
 	flex-grow:6;
 	align-self: center;
 	justify-content: center;
+  font-weight: bold;
 }
 
 .skill-attrib {
@@ -282,16 +285,22 @@ dd::after {
 }
 
 .skill-pool {
-	width: 2em;
+	width: 42px;
 	flex-grow:1;
 	align-self: center;
-	text-align:center;
 	font-size: 150%;
+  text-align: right;
+}
+.skill-pool.skill span {
+  margin-right: 15px;
+}
+.skill-item .item-controls {
+  width: 44px;
 }
 .item-controls {
 	align-self: center;
 	padding: 0em;
-	text-align:right;
+	text-align: right;
 }
 .item-controls a, .item-controls span {
 	margin: 0 10px 0;
@@ -318,6 +327,12 @@ dd::after {
 }
 .shadowrun6 .sheet-tabs {
 	background-color: rgba(255,255,255,0.5);
+}
+.skill-no-specializations {
+  padding: 0 8px;
+  max-height: 5px;
+  overflow: hidden;
+  visibility: hidden;
 }
 .collapsible-content {
   padding: 0 8px;
@@ -708,4 +723,67 @@ li.folder > .folder-header .folder-name {
 }
 .item-desc {
   cursor: pointer;
+}
+
+section.sr6-tab {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px; /* space between left and right columns */
+  align-items: flex-start; /* top-align the columns */
+}
+
+/* Each column stacks its items vertically */
+.column-left,
+.column-right {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* each column gets equal width */
+  gap: 4px; /* spacing between items inside the column */
+}
+
+/* Styling for each section block */
+.sr6-tab .section {
+  min-width: 330px;
+}
+.sr6-tab .section.magic-base {
+  display: flex;
+  border: none;
+  background: none;
+  padding: 0
+}
+.sr6-tab .section.magic-base .attributes,
+.sr6-tab .section.magic-base .section {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+body.game .shadowrun6.sheet .window-content {
+  container-type: inline-size; /* enables container queries based on width */
+}
+/* Responsive: collapse into a single column on smaller screens */
+@container (max-width: 798px) {
+  .sr6-tab {
+    flex-direction: column;
+    align-items: stretch;          /* <-- stretch columns across width */
+  }
+  .sr6-tab > .column-left,
+  .sr6-tab > .column-right {
+    width: 100%;                  /* optional but explicit */
+    flex: 0 0 auto;               /* prevent odd height distribution */
+    min-width: 0;                 /* guards against overflow from long content */
+  }
+}
+.shadowrun6.sheet.actor {
+  width: 830px;
+}
+.shadowrun6.sheet.actor.npc {
+  width: 830px;
+}
+.shadowrun6.sheet.actor.vehicle {
+  width: 640px;
+}
+.shadowrun6.sheet.item {
+  width: 620px;
+}
+.shadowrun6.sheet.item .window-content {
+  min-height: 200px;
 }

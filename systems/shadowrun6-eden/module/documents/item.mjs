@@ -67,10 +67,11 @@ export default class SR6Item extends Item {
    */
   _onUpdate(changed, options, userId) {
     super._onUpdate(changed, options, userId);
+
     console.log("SR6E | SR6Item._onUpdate()", changed);
     this._checkPersonaChanges(changed);
     this._informInCombatChanges(changed);
-    this._updateItemModSheet(changed);
+    this._updateItemModSheet(changed, options);
   }
 
  /**
@@ -111,6 +112,7 @@ export default class SR6Item extends Item {
 
   async _checkPersonaChanges(changed) {
     console.log("SR6E | SR6Item._checkPersonaChanges()");
+    if (!this.isOwner) return false;
     if (this.type == "gear" && (this.system.type == "ELECTRONICS" || this.system.type == "CYBERWARE")) {
       if (changed.delete === true || changed.system?.usedForPool !== undefined) {
         await this.parent.updatePersona();
@@ -143,6 +145,8 @@ export default class SR6Item extends Item {
   static migrateData(source) {
     if (typeof source.system?.stun === 'string') source.system.stun = (source.system.stun === "true");
     if (typeof source.system?.ammocap === 'string') source.system.ammocap = parseInt(source.system.ammocap);
+    if (typeof source.system?.fading === 'string') source.system.fading = parseInt(source.system.fading);
+    if (typeof source.system?.threshold === 'string') source.system.threshold = parseInt(source.system.threshold);
     if (typeof source.system?.ammocount === 'string') source.system.ammocount = parseInt(source.system.ammocount);
     if (typeof source.system?.priceDef === 'string') source.system.priceDef = ( isNaN(parseInt(source.system.priceDef)) ? parseInt(source.system.price) : parseInt(source.system.priceDef) );
     if (typeof source.system?.dmg === 'string') source.system.dmg = parseInt(source.system.dmg);
@@ -440,7 +444,11 @@ export default class SR6Item extends Item {
     return await mod.update({"system.embeddedInUuid": this.uuid});
   }
 
-  _updateItemModSheet(changed) {
+  _updateItemModSheet(changed, options) {
+    if (options.itemThatWasModded) {
+      const itemThatWasModded = this.actor.items.get(options.itemThatWasModded);
+      itemThatWasModded.render();
+    }
     if (changed.name && this.actor) {
       for (const item of this.actor.items) {
         // Check if there are any items embedded into this one, and if so rerender their open sheet
@@ -460,6 +468,11 @@ export default class SR6Item extends Item {
         }
       }
     }
+  }
+
+  get collapsedStateOnSheet() {
+    const state = this.getFlag("shadowrun6-eden","collapse-state");
+    return state ?? "closed";
   }
 
 }

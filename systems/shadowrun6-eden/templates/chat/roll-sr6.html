@@ -86,6 +86,14 @@
       {{/if}}
     </div>
   {{/if}}
+  
+   {{#if (eq configured.skillSpec "sprinting")}}
+   <!-- Sprinting Details -->
+   <div class="chat-sprinting">
+      <hr>
+      <h4>{{ configured.sprintingResult }}</h4>
+   </div>
+   {{/if}}
 
    {{#if (eq rollType "legwork")}}
    <!-- Legwork Details -->
@@ -205,7 +213,7 @@
    	  	</tr>
    	</table>
 		<div class="chat-spell-collapsible" style="display:none">
-   		{{configured.spellDesc}}
+   		{{{configured.spellDesc}}}
 		</div>
    </div>
    <div>
@@ -237,7 +245,7 @@
    	  	</tr>
    	</table>
 		<div class="chat-spell-collapsible" style="display:none">
-   		{{configured.formDesc}}
+   		{{{configured.formDesc}}}
 		</div>
    </div>
   	<button class="rollable" data-roll-type="soak" data-soak="fading" data-damage="{{configured.calcFade}}" data-monitor="stun" 
@@ -271,6 +279,15 @@
 {{/if}}
    
    {{#if (or (eq rollType "defense") cantDodgeBullets)}}
+      {{#if actorTraits.hardenedArmor}}
+        {{#if (not actorTraits.immunityNormalWeapons)}}
+        <div class="resulttext" style="flex:2; margin-bottom: 5px; font-style:italic;">{{ localize 'shadowrun6.roll.hardenedArmor'}}</div>
+        {{else}}
+          {{#if (ne configured.defendedWith 'spells_indirect')}}
+          <div class="resulttext" style="flex:2; margin-bottom: 5px; font-style:italic;">{{ localize 'shadowrun6.roll.hardenedArmor'}}</div>
+          {{/if}}
+        {{/if}}
+      {{/if}}
       {{#if cantDodgeBullets}}
         {{#if success}}
           {{#iff targets.length ">" 0}}

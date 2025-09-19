@@ -60,6 +60,10 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
             if (item.system.accessories) item.enriched.accessories = await this.enrichedHTML(item.system.accessories);
         }
 
+        // Get sheet relevant game settings
+        data.settings = {};
+        data.settings.expandedSpecializations = game.settings.get(game.system.id, "expandedSpecializations");
+
         console.log("SR6E | Shadowrun6ActorSheet.getData()", data);
         return data;
     }
@@ -67,7 +71,7 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
         console.log("SR6E | in template()", getSystemData(this.actor));
         console.log("SR6E | default: ", super.template);
         const path = "systems/shadowrun6-eden/templates/actor/";
-        if (this.isEditable) {
+        if (this.isEditable || (!this.document.limited && this.actor.type === 'Player')) { // Also show readwrite sheet if Observer
             console.log("SR6E | ReadWrite sheet ");
             return super.template;
         }
@@ -85,6 +89,10 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
      * @param html {HTML}   The prepared HTML object ready to be rendered into the DOM
      */
     activateListeners(html) {
+        if (this.actor.isOwner || !this.document.limited) {
+            html.find(".health-phys").on("input", this._redrawBar(html, "Phy", getSystemData(this.actor).physical));
+            html.find(".health-stun").on("input", this._redrawBar(html, "Stun", getSystemData(this.actor).stun));
+        }
         // Owner Only Listeners
         if (this.actor.isOwner) {
             // ActiveEffect buttons
@@ -98,8 +106,6 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
             html.find(".matrix-persona-attributes .matrix-attribute").click(this._onMatrixAttributesSwitch.bind(this));
 
             html.find(".weapon-ammo-reload").click(this._onWeaponAmmoReload.bind(this));
-            html.find(".health-phys").on("input", this._redrawBar(html, "Phy", getSystemData(this.actor).physical));
-            html.find(".health-stun").on("input", this._redrawBar(html, "Stun", getSystemData(this.actor).stun));
             // Roll Skill Checks
             html.find(".skill-roll").click(this._onRollSkillCheck.bind(this));
             html.find(".spell-roll").click(this._onRollSpellCheck.bind(this));
@@ -188,6 +194,45 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
                 console.log("SR6E | Edge coin flipped", translateX, rotateY);
             });
 
+            // Overwatch Click
+            html.find(".overwatch").mousedown(async (event) => {
+                const mousePress = event.which; // 1: Left Mouse Button, 2: Middle Mouse Button, 3: Right Mouse button
+                const overwatchUI = event.currentTarget;
+                const icon = overwatchUI.querySelector('img');
+                const input = overwatchUI.querySelector('input');
+                let overWatch = this.actor.system.overwatch;
+                // Check if animation isnt busy
+                if ( !overwatchUI.classList.contains('clickable') ) {
+                    return;
+                }
+                console.log("SR6E | OverWatch Clicked | mousePress:", mousePress, "| OverWatch:", overWatch);
+
+                overwatchUI.classList.remove('clickable');
+                icon.classList.remove('redGlow');
+                icon.classList.remove('blueGlow');
+                void icon.offsetWidth;
+                switch (mousePress) {
+                    // Left Mouse Button
+                    case 1:
+                        icon.classList.add('redGlow');
+                        overWatch++;
+                        break;
+                    // Right Mouse Button
+                    case 3:
+                        if (overWatch === 0) break;
+                        icon.classList.add('blueGlow');
+                        overWatch--;
+                        break;
+                }
+
+                input.value = overWatch;
+                setTimeout(async() => {
+                    await this.actor.update({ ["system.overwatch"]: overWatch });
+                    overwatchUI.classList.add('clickable');
+                }, 550, overWatch);
+                console.log("SR6E | OverWatch adjusted to:", overWatch);
+            });
+
             // Changes on input data fields
             html.find("[data-field]").change(async (event) => {
                 console.log("SR6E | data-field", event);
@@ -218,6 +263,24 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
                     await this.actor.update({ [field]: value });
                 }
             });
+            // Changes on Expanded Specializations
+            html.find(".expandedSpecializations").change(async (event) => {
+                console.log("SR6E | expandedSpecializations field changed", event);
+                const element = event.currentTarget;
+                let value = element.value;
+
+                const skill = element.dataset.skill;
+                const idx = element.dataset.idx;
+                const expandedSpecializations = `system.skills.${skill}.expandedSpecializations`;
+                const original = [...this.actor.system.skills[skill].expandedSpecializations];
+                original[idx] = value;
+                const updated = [...new Set(original.filter(spec => spec !== ''))].sort();
+                const result = await this.actor.update({
+                    [expandedSpecializations]: updated
+                });
+                if (!result) this.actor.render();
+            });
+
             // Checkbox toggle
             html.find("[data-check]").click(async (event) => {
                 const element = event.currentTarget;
@@ -280,6 +343,11 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
                 }
                 content.classList.toggle("closed");
                 content.classList.toggle("open");
+                
+                if (element.classList.contains("persistent") && item) {
+                    let newState = element.classList.contains("open") ? "open" : "closed";
+                    await item.setFlag("shadowrun6-eden","collapse-state", newState);
+                }
             });
             //Collapsible NPC item descriptions 
             html.find(".item-desc").click(async (event) => {
@@ -1015,6 +1083,7 @@ export default class Shadowrun6ActorSheet extends ActorSheet {
     _matrixActionAvailable() {
         let matrixActions = Object.entries(CONFIG.SR6.MATRIX_ACTIONS).filter(([actionId, action]) => {
             action.name = game.i18n.localize('shadowrun6.matrixaction.'+actionId+'.name')
+            if (action.skill === "cracking" && !this.actor.system.skills.cracking.pool) return false
             if (action.linkedAttr === null || action.linkedAttr === undefined) return true;
             if (action.linkedAttr === "a" && this.actor.system.persona?.used?.a > 0) return true;
             if (action.linkedAttr === "s" && this.actor.system.persona?.used?.s > 0) return true;

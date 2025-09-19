@@ -53,15 +53,16 @@ var MEDIA_TYPES = {
   video: "video"
 };
 var MODULE_SETTINGS = {
+  dataVersion: "dataVersion",
   mediaHistory: "mediaHistory",
-  defaultMediaSettings: "defaultMediaSettings",
+  mediaSettings: "mediaSettings",
   mediaSidebarSettings: "mediaSidebarSettings",
   blacklistSettings: "blacklistSettings",
   entitySharingSettings: "entitySharingSettings"
 };
 var MEDIA_SETTINGS = {
   [LAYERS_MODES.popout]: { darkness: Boolean(true) },
-  [LAYERS_MODES.fullscreen]: { immersive: Boolean(false), darkness: Boolean(true) },
+  [LAYERS_MODES.fullscreen]: { immersive: Boolean(false), controls: Boolean(true), darkness: Boolean(true) },
   [MEDIA_TYPES.video]: { loop: Boolean(false), mute: Boolean(false) }
 };
 var MEDIA_HISTORY_SETTINGS = {
@@ -122,6 +123,7 @@ var ICONS = {
   sceneFill: "far fa-frame",
   darkness: "fas fa-moon",
   immersive: "far fa-film",
+  controls: "fas fa-computer-mouse",
   loop: "far fa-repeat",
   mute: "far fa-volume-xmark",
   dismiss: "fas fa-xmark",
@@ -221,18 +223,18 @@ class SettingsCache {
     this.#cache.set(key, value);
   }
 }
-// scripts/settings/apps/default-media-settings.mjs
+// scripts/settings/apps/media-settings.mjs
 var { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 var { reloadConfirm } = foundry.applications.settings.SettingsConfig;
 var { expandObject: expandObject2 } = foundry.utils;
 
-class DefaultMediaSettings extends HandlebarsApplicationMixin(ApplicationV2) {
+class MediaSettings extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
-    id: "shm-default-media-settings",
+    id: "shm-media-settings",
     tag: "form",
     window: {
       get title() {
-        return `share-media.settings.${CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings}.label`;
+        return `share-media.settings.${CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings}.label`;
       },
       contentClasses: ["standard-form"]
     },
@@ -241,13 +243,13 @@ class DefaultMediaSettings extends HandlebarsApplicationMixin(ApplicationV2) {
       height: 600
     },
     form: {
-      handler: DefaultMediaSettings.#onSubmit,
+      handler: MediaSettings.#onSubmit,
       closeOnSubmit: true
     }
   };
   static PARTS = {
     form: {
-      template: "modules/share-media/templates/settings/default-media-settings.hbs",
+      template: "modules/share-media/templates/settings/media-settings.hbs",
       root: true
     }
   };
@@ -255,13 +257,13 @@ class DefaultMediaSettings extends HandlebarsApplicationMixin(ApplicationV2) {
     return {
       ...await super._prepareContext(options),
       icons: CONFIG.shareMedia.CONST.ICONS,
-      description: `${CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings}.description`,
-      defaultMediaSettings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings)
+      description: `${CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings}.description`,
+      mediaSettings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings)
     };
   }
   static async#onSubmit(_event, _form, formData) {
     const mediaSettings = expandObject2(formData.object);
-    await game.modules.shareMedia.settings.set(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings, mediaSettings);
+    await game.modules.shareMedia.settings.set(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings, mediaSettings);
     await reloadConfirm({ world: true });
   }
 }
@@ -416,7 +418,12 @@ var initializeSettings = () => {
 };
 var registerSettings = () => {
   const settings = CONFIG.shareMedia.CONST.MODULE_SETTINGS;
-  game.settings.register("share-media", settings.defaultMediaSettings, {
+  game.settings.register("share-media", settings.dataVersion, {
+    config: false,
+    scope: CONST.SETTING_SCOPES.WORLD,
+    type: new StringField({ gmOnly: true })
+  });
+  game.settings.register("share-media", settings.mediaSettings, {
     config: false,
     scope: CONST.SETTING_SCOPES.WORLD,
     type: new ObjectField({ initial: CONFIG.shareMedia.CONST.MEDIA_SETTINGS, gmOnly: true })
@@ -444,12 +451,12 @@ var registerSettings = () => {
 };
 var registerMenus = () => {
   const settings = CONFIG.shareMedia.CONST.MODULE_SETTINGS;
-  game.settings.registerMenu("share-media", settings.defaultMediaSettings, {
-    label: `share-media.settings.${settings.defaultMediaSettings}.label`,
-    name: `share-media.settings.${settings.defaultMediaSettings}.name`,
-    hint: `share-media.settings.${settings.defaultMediaSettings}.hint`,
+  game.settings.registerMenu("share-media", settings.mediaSettings, {
+    label: `share-media.settings.${settings.mediaSettings}.label`,
+    name: `share-media.settings.${settings.mediaSettings}.name`,
+    hint: `share-media.settings.${settings.mediaSettings}.hint`,
     restricted: true,
-    type: DefaultMediaSettings
+    type: MediaSettings
   });
   game.settings.registerMenu("share-media", settings.mediaSidebarSettings, {
     label: `share-media.settings.${settings.mediaSidebarSettings}.label`,
@@ -472,6 +479,26 @@ var registerMenus = () => {
     restricted: true,
     type: BlacklistSettings
   });
+};
+// scripts/settings/migrations.mjs
+var { isNewerVersion } = foundry.utils;
+var MIGRATIONS = [];
+var runMigrations = async () => {
+  if (!game.users.current.isGM)
+    return;
+  const currentVersion = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.dataVersion);
+  if (!currentVersion) {
+    const latestVersion = MIGRATIONS.at(-1)?.version ?? "1.0.0";
+    await game.modules.shareMedia.settings.set(CONFIG.shareMedia.CONST.MODULE_SETTINGS.dataVersion, latestVersion);
+    return;
+  }
+  const toRun = MIGRATIONS.filter((migration) => isNewerVersion(migration.version, currentVersion));
+  if (!toRun.length)
+    return;
+  for (const migration of toRun) {
+    await migration.handler();
+    await game.modules.shareMedia.settings.set(CONFIG.shareMedia.CONST.MODULE_SETTINGS.dataVersion, migration.version);
+  }
 };
 // scripts/ui/_module.mjs
 var exports__module2 = {};
@@ -618,8 +645,8 @@ class MediaOverlay extends HandlebarsApplicationMixin5(ApplicationV26) {
     const flag = this.targetApplication.document.getFlag("share-media", this.#settingsKey) ?? {};
     const key = this.targetElementEscapedSource;
     const storedSettings = getProperty(flag, key) ?? {};
-    const defaultMediaSettings = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings);
-    const settings2 = mergeObject(defaultMediaSettings, storedSettings, { inplace: false });
+    const mediaSettings = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings);
+    const settings2 = mergeObject(mediaSettings, storedSettings, { inplace: false });
     return { key, settings: settings2 };
   }
   async activate(element, application, context) {
@@ -1129,7 +1156,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
     if (!media)
       return;
     const mode = Object.keys(CONFIG.shareMedia.CONST.LAYERS_MODES).at(0);
-    const settings2 = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings);
+    const settings2 = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings);
     game.modules.shareMedia.utils.applySettingsToMediaOptions(mode, { settings: settings2 }, media.settings);
     const optionsSettings = game.modules.shareMedia.utils.getMediaSettings(media.src, mode, settings2);
     const layer = new game.modules.shareMedia.layers[mode]({
@@ -2141,7 +2168,8 @@ class FullscreenLayer extends HandlebarsApplicationMixin8(ApplicationV28) {
       toggleFolded: FullscreenLayer.#toggleFolded
     },
     caption: "",
-    immersive: false
+    immersive: false,
+    controls: false
   };
   static PARTS = {
     actions: { template: "modules/share-media/templates/layers/fullscreen-actions.hbs" },
@@ -2158,6 +2186,7 @@ class FullscreenLayer extends HandlebarsApplicationMixin8(ApplicationV28) {
       case "actions":
         context.icons = CONFIG.shareMedia.CONST.ICONS;
         context.isGM = game.user.isGM;
+        context.controls = game.user.isGM || this.options.controls;
         context.folded = this.folded;
         break;
     }
@@ -2166,7 +2195,8 @@ class FullscreenLayer extends HandlebarsApplicationMixin8(ApplicationV28) {
   _prepareHookContext() {
     return {
       caption: this.options.caption,
-      immersive: this.options.immersive
+      immersive: this.options.immersive,
+      controls: this.options.controls
     };
   }
   static #onDismiss(_event, _target) {
@@ -2833,7 +2863,7 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
       contentClasses: ["shm"]
     },
     position: {
-      width: 450,
+      width: 460,
       height: "auto",
       top: 100
     },
@@ -2858,7 +2888,7 @@ class ShareSelector extends HandlebarsApplicationMixin11(ApplicationV211) {
     mode: null,
     optionName: null,
     optionValue: null,
-    settings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.defaultMediaSettings)
+    settings: game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSettings)
   };
   #linkElement = null;
   #linkListener = null;
@@ -3207,27 +3237,24 @@ Hooks.once("init", () => {
   CONFIG.shareMedia.shareables.applyEntitySharingSettings();
   CONFIG.shareMedia.utils.registerHandlebarsPartials();
 });
-Hooks.once("setup", () => {
+Hooks.once("ready", async () => {
   const config = CONFIG.shareMedia;
   const module = game.modules.shareMedia;
+  await runMigrations();
   module.ui.detector = new config.ui.MediaDetector.implementation;
   module.ui.overlay = new config.ui.MediaOverlay.implementation;
+  module.ui.sidebar = window.ui["shm-media-sidebar"];
+  module.collections.media = game["shm-media-collection"];
   module.canvas.mediaSprite = config.canvas.MediaSprite.implementation;
   module.canvas.regionSprite = config.canvas.RegionSprite.implementation;
   module.canvas.tileSprite = config.canvas.TileSprite.implementation;
   module.canvas.apps.hud = config.canvas.apps.MediaHUD.implementation;
+  module.canvas.layer = game.canvas["shm-media-layer"];
   module.layers.popout = config.layers.PopoutLayer.implementation;
   module.layers.fullscreen = config.layers.FullscreenLayer.implementation;
   module.shareables.manager = new config.shareables.ShareablesManager.implementation;
   module.shareables.apps.userSelector = config.shareables.apps.UserSelector.implementation;
   module.shareables.apps.areaSelector = config.shareables.apps.AreaSelector.implementation;
   module.shareables.apps.shareSelector = config.shareables.apps.ShareSelector.implementation;
-  Hooks.callAll("shareMedia.setup", module);
-});
-Hooks.once("ready", () => {
-  const module = game.modules.shareMedia;
-  module.ui.sidebar = window.ui["shm-media-sidebar"];
-  module.canvas.layer = game.canvas["shm-media-layer"];
-  module.collections.media = game["shm-media-collection"];
   Hooks.callAll("shareMedia.ready", module);
 });

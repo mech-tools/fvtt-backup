@@ -206,7 +206,8 @@
       "favors": "Favors",
       "favors_short": "Fav",
       "legwork": "Legwork",
-      "type": "Type"
+      "type": "Type",
+      "pronouns": "Pronouns"
     },
     "defense": {
       "astral": "Astral Combat",
@@ -233,6 +234,11 @@
       "defense_rating": "Defense Rating",
       "judge_intentions": "Judge Intentions",
       "lift_carry": "Lift / Carry",
+      "movement": {
+        "label": "Movement / Sprint",
+        "sprint_result": "{name} sprinted {metersSprinted} meters.",
+        "meter_short": "m"
+      },
       "memory": "Memory",
       "matrix_perception": "Matrix Perception",
       "heal": {
@@ -658,6 +664,7 @@
 	    "rating2": "Rating 2",
 	    "rating3": "Rating 3",
 	    "slower": "Decelerate",
+      "soak": "Soak",
       "soaked": "Soaked {soaked} of {threshold} damage",
       "specialization": "Specialization",
       "speed_detail": "You are moving with {speed} km/h ({speedPerTurn} Meter per turn). Your modifier for checks is {modifier}.",
@@ -1119,6 +1126,7 @@
       "wound-modifier": "Use wound modifier",
       "sustained-spell-modifier": "Use sustained spell modifier",
       "criticalglitch": "Critical glitch",
+      "hardenedArmor": "Hardened Armor applied",
       "heal_apply": "Heal",
       "damage": "Damage: ",
 	    "damage_apply": "Apply damage",
@@ -1331,6 +1339,7 @@
       "skills.knowledge": "Knowledge Skills",
       "skills.knowledge_add": "Add new knowledge",
       "skills.language": "Language Skills",
+      "skills.level": "Language Level",
       "skills.language-level": {
         "expert": "Expert",
         "native": "Native",
@@ -1428,6 +1437,10 @@
       "cantDodgeBullets": {
         "hint": "Any Opposed test for an attack is instead a Simple test against a threshold that is set by distance and the size of the target defensepool. The target of the attack may still use Edge Boosts against the attacker's dice. (SWC p.151)",
         "name": "You Can't Dodge Bullets"
+      },
+      "expandedSpecializations": {
+        "hint": "Use no limit on the number  of specializations a skill may have. You are not required to purchase an expertise before taking additional specializations. Expertises are still limited to one per skill (SWC p.153)",
+        "name": "Expanded Specializations"
       }
     },
     "sin" : {
@@ -1924,7 +1937,12 @@
       "dicePoolMod": "Dice Pool Modifier",
       "wild": "Use Wild Die (set Override: true)",
       "badLuck": "Bad Luck glitches (set Override: true)",
-      "painTolerance": "Pain Tolerance (set Override: 'high' or 'low')"
+      "painTolerance": "Pain Tolerance (set Override: 'high' or 'low')",
+      "movementRate": "Movement Rate",
+      "movementSprintBase": "Movement Sprint Base",
+      "movementSprintMultiplier": "Movement Sprint Multiplier",
+      "hardenedArmor": "Hardened Armor",
+      "immunityNormalWeapons": "Immunity to Normal Weapons (Override true)"
     },
     "KEYBINDINGS": {
       "bindTokenControlGroup": "Bind selected Tokens to Control Group",

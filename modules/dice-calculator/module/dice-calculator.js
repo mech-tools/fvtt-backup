@@ -322,7 +322,8 @@ class TemplateDiceMap {
 	}
 
 	roll(formula) {
-		Roll.create(formula).toMessage();
+		const [rollMode] = ui.chat.constructor.parse(formula);
+		Roll.create(formula.replace(/(\/r|\/gmr|\/br|\/sr) /, "")).toMessage({}, { rollMode });
 	}
 
 	/**
@@ -339,7 +340,7 @@ class TemplateDiceMap {
 		/** Clicking the Roll button clears and hides all orange number flags, and unmark the KH/KL keys */
 		html.querySelector(".dice-tray__roll")?.addEventListener("click", async (event) => {
 			event.preventDefault();
-			this.roll(this.textarea.value.replace(/(\/r|\/gmr|\/br|\/sr) /, ""));
+			this.roll(this.textarea.value);
 			this.reset();
 			this.textarea.value = "";
 		});
@@ -529,7 +530,7 @@ class TemplateDiceMap {
 			flag.textContent = "";
 			flag.classList.add("hide");
 		}
-		if (this.removeAdvOnRoll) {
+		if (CONFIG.DICETRAY.removeAdvOnRoll ) {
 			html.querySelector(".dice-tray__ad")?.classList?.remove("active");
 		}
 	}
@@ -644,8 +645,7 @@ class TemplateDiceMap {
 		chat.value = currFormula;
 
 		// Add a flag indicator on the dice.
-		const flagNumber = direction === "add" ? qty : 0;
-		this.updateDiceFlags(flagNumber, dataset.formula);
+		this.updateDiceFlags(qty, dataset.formula);
 
 		currFormula = currFormula.replace(/(\/r|\/gmr|\/br|\/sr)(( \+)| )/g, `${rollPrefix} `).replace(/\+{2}/g, "+").replace(/-{2}/g, "-").replace(/\+$/g, "");
 		chat.value = currFormula;
@@ -1576,6 +1576,7 @@ Hooks.once("i18nInit", () => {
 		}
 	});
 	if (game.settings.get("dice-calculator", "enableDiceTray")) {
+		let wasAtBottom = true;
 		Hooks.on("dice-calculator.forceRender", () => CONFIG.DICETRAY.render());
 		Hooks.once("renderChatLog", () => CONFIG.DICETRAY.render());
 		Hooks.on("renderChatLog", (chatlog, html, data, opt) => {
@@ -1594,9 +1595,11 @@ Hooks.once("i18nInit", () => {
 			if (ui.chat.popout?.rendered && !ui.chat.isPopout) return;
 			moveDiceTray();
 		});
-		Hooks.on("collapseSidebar", (sidebar, expanded) => {
+		Hooks.on("collapseSidebar", (sidebar, wasExpanded) => {
 			if (ui.chat.popout?.rendered && !ui.chat.isPopout) return;
 			moveDiceTray();
+			if (!wasExpanded && wasAtBottom) ui.chat.scrollBottom();
+			wasAtBottom = ui.chat.isAtBottom;
 		});
 	}
 });
