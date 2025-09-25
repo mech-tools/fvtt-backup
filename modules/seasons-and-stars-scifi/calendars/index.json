@@ -1,0 +1,63 @@
+{
+  "$schema": "https://raw.githubusercontent.com/rayners/fvtt-seasons-and-stars/main/schemas/calendar-collection-v1.0.0.json",
+  "name": "Sci-Fi Calendar Pack",
+  "description": "Science fiction calendar collection for Starfinder, Traveller, Star Trek, and other sci-fi settings",
+  "version": "0.0.0",
+  "calendars": [
+    {
+      "id": "coriolis-great-dark",
+      "name": "Ship City Standard Calendar (Coriolis: The Great Dark)",
+      "description": "The Ship City Standard calendar used in The Great Dark, based on Old Horizon traditions and updated by the Navigators Guild. Features a 360-day Cycle-Orbit divided into 12 segments dedicated to Old Horizon systems.",
+      "file": "coriolis-great-dark.json",
+      "preview": "Sample format from Coriolis: The Great Dark",
+      "tags": [
+        "sci-fi"
+      ],
+      "author": "David Raynes"
+    },
+    {
+      "id": "coriolis-third-horizon",
+      "name": "The Third Horizon Calendar (Coriolis)",
+      "description": "The calendar system used throughout the Third Horizon in Coriolis. Features 9 Segments of 37 days each with intercalary holidays marking important religious and cultural observances.",
+      "file": "coriolis-third-horizon.json",
+      "preview": "Sample format from Coriolis: The Third Horizon",
+      "tags": [
+        "sci-fi"
+      ],
+      "author": "David Raynes"
+    },
+    {
+      "id": "gregorian-star-trek-variants",
+      "name": "Star Trek Calendar Variants",
+      "description": "Calendar variants for Star Trek gaming sessions",
+      "file": "gregorian-star-trek-variants.json",
+      "preview": "Sample format from Sci-Fi Calendar Pack",
+      "tags": [
+        "sci-fi"
+      ],
+      "author": "David Raynes"
+    },
+    {
+      "id": "starfinder-absalom-station",
+      "name": "Absalom Station Calendar (Starfinder)",
+      "description": "The galactic standard calendar used throughout the Pact Worlds, based on the ancient Golarion calendar but adapted for space travel and interplanetary coordination.",
+      "file": "starfinder-absalom-station.json",
+      "preview": "Sample format from Starfinder",
+      "tags": [
+        "sci-fi"
+      ],
+      "author": "David Raynes"
+    },
+    {
+      "id": "traveller-imperial",
+      "name": "Imperial Calendar (Traveller)",
+      "description": "The standardized Imperial Calendar used throughout the Third Imperium in the Traveller universe. Features a simplified system with a single 364-day year preceded by a holiday.",
+      "file": "traveller-imperial.json",
+      "preview": "Sample format from Traveller RPG",
+      "tags": [
+        "sci-fi"
+      ],
+      "author": "David Raynes"
+    }
+  ]
+}

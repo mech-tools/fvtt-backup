@@ -141,7 +141,15 @@ export class FileIndexer {
         if (dir.source === 'forge-bazaar' || dir.source === 'forgevtt') {
           await this._buildFauxForgeBrowser(dir.source, dir.target);
         }
-        let iDir = await this.generateIndex(dir.target, foundCaches, dir.source, dir.bucket, settings);
+
+        let iDir = await this.generateIndex({
+          dir: dir.target,
+          foundCaches,
+          source: dir.source,
+          bucket: dir.bucket,
+          settings,
+          tokenize: dir.tokenize,
+        });
 
         if (iDir) {
           const sPath = dir.target.split('/').filter(Boolean);
@@ -149,7 +157,7 @@ export class FileIndexer {
             iDir = { dir: sPath[i], dirs: [iDir] };
           }
 
-          let index = scannedSources.find((i) => i.source === dir.source && i.bucket == dir.bucket);
+          let index = scannedSources.find((i) => i.source === dir.source && sameBucket(i.bucket, dir.bucket));
           if (index) this.mergeIndex(index.index, [iDir]);
           else {
             index = { source: dir.source, index: [iDir] };
@@ -192,7 +200,7 @@ export class FileIndexer {
   static mergeCaches(cacheTo, cacheFrom, { tagsOnly = false, overrideNullTagsOnly = false } = {}) {
     for (const indexSourceFrom of cacheFrom) {
       const indexSourceTo = cacheTo.find(
-        (i) => i.source === indexSourceFrom.source && i.bucket == indexSourceFrom.bucket
+        (i) => i.source === indexSourceFrom.source && sameBucket(i.bucket, indexSourceFrom.bucket)
       );
       if (indexSourceTo) {
         this.mergeIndex(indexSourceTo.index, indexSourceFrom.index, {
@@ -279,14 +287,52 @@ export class FileIndexer {
     }
 
     if (processAutoSave && this._collection) {
-      const folderUuids = game.settings.get(MODULE_ID, 'presetBrowser').autoSaveFolders ?? [];
-      if (!folderUuids.length) return;
+      const autoSaveVirtualFolders = game.settings.get(MODULE_ID, 'presetBrowser').autoSaveVirtualFolders;
+      if (!autoSaveVirtualFolders) return;
 
-      const folders = folderUuids.map((uuid) => fromUuidSync(uuid)).filter(Boolean);
-      if (!folders.length) return;
+      // Lets group folders by target save location
+      const locationsToFolders = [];
+      for (const [uuid, location] of Object.entries(autoSaveVirtualFolders)) {
+        const folder = fromUuidSync(uuid);
+        if (!folder || !folder.indexable || !folder.source) continue;
 
-      for (const folder of folders) {
-        this.saveFolderToCache(folder, false);
+        const lf = locationsToFolders.find(
+          (l) => l.source === location.source && l.target === location.target && sameBucket(l.bucket, location.bucket)
+        );
+        if (lf) lf.folders.push(folder);
+        else
+          locationsToFolders.push({
+            source: location.source,
+            target: location.target,
+            bucket: location.bucket,
+            folders: [folder],
+          });
+      }
+
+      // Save folders at each location by individually constructing an index for each folder and merging it into one single index
+      for (const location of locationsToFolders) {
+        let index = [];
+
+        for (const folder of location.folders) {
+          let wFolder = folder;
+          while (wFolder.parent) {
+            wFolder = {
+              name: wFolder.parent.name,
+              presets: [],
+              children: [{ folder: wFolder }],
+              parent: wFolder.parent.parent,
+            };
+          }
+
+          const sourceCache = {
+            source: wFolder.name,
+            index: wFolder.children.map((ch) => this._cacheFolder(ch.folder)),
+          };
+
+          this.mergeCaches(index, [sourceCache]);
+        }
+
+        this._writeIndexToCache(index, { path: location.target, notify: false, source: location.source });
       }
     }
   }
@@ -370,7 +416,10 @@ export class FileIndexer {
     node.entries = [];
     if (cache.files) {
       for (const file of cache.files) {
-        const preset = VirtualFilePreset.fromSrc(options.prePend + fullPath + '/' + file.name);
+        const preset = VirtualFilePreset.fromSrc(
+          options.prePend + fullPath + '/' + file.name,
+          file.tags?.includes('token') ? 'Token' : undefined
+        );
         if (file.tags) preset.tags = file.tags;
         if (file.thumb) {
           preset.img = options.prePend + fullPath + '/' + file.thumb;
@@ -402,7 +451,16 @@ export class FileIndexer {
     return node;
   }
 
-  static async generateIndex(dir, foundCaches = [], source = 'data', bucket = null, settings, options = {}, tags = []) {
+  static async generateIndex({
+    dir,
+    foundCaches = [],
+    source = 'data',
+    bucket,
+    settings,
+    options = {},
+    tags = [],
+    tokenize = false,
+  } = {}) {
     // Get options associated to this specific directory
     let opts = options[dir] ?? {};
     if (opts.noscan) return null;
@@ -455,7 +513,7 @@ export class FileIndexer {
       if (file === 'noscan.txt') return null;
       else if (file === CACHE_NAME && !settings.ignoreExternal) {
         const cacheDir = settings.cacheDir;
-        if (!(cacheDir.target === dir.target && cacheDir.source === source && cacheDir.bucket === bucket)) {
+        if (!(cacheDir.target === dir.target && cacheDir.source === source && sameBucket(cacheDir.bucket, bucket))) {
           foundCaches.push(path);
           return null;
         }
@@ -492,12 +550,15 @@ export class FileIndexer {
       if (settings.fileFilters.some((k) => file.includes(k))) continue;
 
       if (FILE_EXTENSIONS.includes(ext)) {
-        const f = { name: file };
-        if (tags.length) f.tags = tags;
+        const f = { name: file, tags: [] };
+        if (tags.length) f.tags = f.tags.concat(tags);
         folder.files.push(f);
         if (MODEL_EXTENSIONS.includes(ext)) {
-          f.tags = ['3d-model', ...(f.tags ?? [])];
+          f.tags.push('3d-model');
+          if (tokenize) f.tags.push('token');
           modelFiles.push(f);
+        } else if (tokenize && IMAGE_EXTENSIONS.includes(ext)) {
+          f.tags.push('token');
         }
       }
     }
@@ -530,7 +591,7 @@ export class FileIndexer {
     }
 
     for (let dir of content.dirs) {
-      dir = await this.generateIndex(dir, foundCaches, source, bucket, settings, options, tags);
+      dir = await this.generateIndex({ dir, foundCaches, source, bucket, settings, options, tags, tokenize });
       if (dir) folder.dirs.push(dir);
     }
 
@@ -681,69 +742,55 @@ class StringCompress {
 /**
  * Form to help configure and execute index build.
  */
-export class IndexerForm extends FormApplication {
-  /** @inheritdoc */
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ['sheet', 'mass-edit-dark-window'],
-      template: `modules/${MODULE_ID}/templates/preset/indexer.html`,
+export class IndexerForm extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+) {
+  /** @override */
+  static DEFAULT_OPTIONS = {
+    id: 'me-indexer',
+    tag: 'form',
+    form: {
+      handler: IndexerForm.onSubmit,
+      submitOnChange: true,
+      closeOnSubmit: false,
+    },
+    window: {
+      contentClasses: ['standard-form', 'mass-edit-dark-window'],
+      title: 'Directory Indexer',
+      resizable: false,
+      icon: 'fas fa-file-search',
+    },
+    position: {
       width: 500,
       height: 'auto',
+    },
+    actions: {
+      add: IndexerForm._onAddDirectory,
+      delete: IndexerForm._onDeleteDirectory,
+      generate: IndexerForm._onGenerateIndex,
+      tokenize: IndexerForm._onTokenize,
+    },
+  };
+
+  /** @override */
+  static PARTS = {
+    main: { template: `modules/${MODULE_ID}/templates/preset/indexer.hbs` },
+  };
+
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+
+    const settings = foundry.utils.deepClone(game.settings.get(MODULE_ID, 'indexer'));
+
+    return Object.assign(context, {
+      ...settings,
+      fileFilters: settings.fileFilters.join(', '),
+      folderFilters: settings.folderFilters.join(', '),
     });
   }
 
-  get title() {
-    return 'Directory Indexer';
-  }
-
-  async getData(options = {}) {
-    const data = foundry.utils.deepClone(game.settings.get(MODULE_ID, 'indexer'));
-    data.fileFilters = data.fileFilters.join(', ');
-    data.folderFilters = data.folderFilters.join(', ');
-    return data;
-  }
-
-  activateListeners(html) {
-    super.activateListeners(html);
-
-    html.on('click', '.addDirectory', this._onAddDirectory.bind(this));
-    html.on('click', '.deleteDirectory', this._onDeleteDirectory.bind(this));
-    html.on('input', '[name="fileFilters"]', this._onFileFiltersChange.bind(this));
-    html.on('input', '[name="folderFilters"]', this._onFolderFiltersChange.bind(this));
-    html.find('input[type="checkbox"]').on('change', this._onToggleCheckbox.bind(this));
-  }
-
-  _onToggleCheckbox(event) {
-    const chkBox = $(event.currentTarget);
-    const name = chkBox.attr('name');
-    this._updateIndexerSettings({ [name]: chkBox.is(':checked') }, false);
-  }
-
-  _onFileFiltersChange(event) {
-    clearTimeout(this._onInputTimeOut);
-    this._onInputTimeOut = setTimeout(() => {
-      const fileFilters = $(event.currentTarget)
-        .val()
-        .split(',')
-        .map((f) => f.trim())
-        .filter(Boolean);
-      this._updateIndexerSettings({ fileFilters }, false);
-    }, 500);
-  }
-
-  _onFolderFiltersChange(event) {
-    clearTimeout(this._onInputTimeOut);
-    this._onInputTimeOut = setTimeout(() => {
-      const folderFilters = $(event.currentTarget)
-        .val()
-        .split(',')
-        .map((f) => f.trim())
-        .filter(Boolean);
-      this._updateIndexerSettings({ folderFilters }, false);
-    }, 500);
-  }
-
-  async _onAddDirectory() {
+  static async _onAddDirectory() {
     this.selectFolder(async (selection) => {
       if (!selection) return;
       if (!selection.bucket) delete selection.bucket;
@@ -757,7 +804,8 @@ export class IndexerForm extends FormApplication {
       // Make sure the selection is unique
       if (
         indexDirs.find(
-          (id) => id.source === selection.source && id.target === selection.target && id.bucket == selection.bucket
+          (id) =>
+            id.source === selection.source && id.target === selection.target && sameBucket(id.bucket, selection.bucket)
         )
       ) {
         return;
@@ -768,17 +816,32 @@ export class IndexerForm extends FormApplication {
     });
   }
 
-  async _onDeleteDirectory(event) {
-    const directory = $(event.target).closest('.directory');
+  static async _onDeleteDirectory(event, element) {
+    const directory = $(element.closest('.directory'));
     const source = directory.find('.source').val();
     const target = directory.find('.target').val();
-    const bucket = directory.find('.bucket').val() || null;
+    const bucket = directory.find('.bucket').val() || '';
 
     const indexDirs = game.settings
       .get(MODULE_ID, 'indexer')
-      .indexDirs.filter((id) => !(id.source === source && id.target === target && id.bucket == bucket));
+      .indexDirs.filter((id) => !(id.source === source && id.target === target && sameBucket(id.bucket, bucket)));
 
     this._updateIndexerSettings({ indexDirs });
+  }
+
+  static _onGenerateIndex() {
+    FileIndexer.buildIndex();
+    this.close(true);
+  }
+
+  static _onTokenize(event, target) {
+    const active = target.classList.contains('active');
+
+    if (active) target.classList.remove('active');
+    else target.classList.add('active');
+
+    target.closest('.directory').querySelector('.tokenize').checked = !active;
+    this.submit();
   }
 
   async _updateIndexerSettings(update = {}, render = true) {
@@ -801,12 +864,22 @@ export class IndexerForm extends FormApplication {
     }).render(true);
   }
 
-  /**
-   * @param {Event} event
-   * @param {Object} formData
-   */
-  async _updateObject(event, formData) {
-    FileIndexer.buildIndex();
+  static async onSubmit(event, form, formData) {
+    const update = foundry.utils.expandObject(formData.object);
+
+    update.fileFilters = update.fileFilters
+      .split(',')
+      .map((f) => f.trim())
+      .filter(Boolean);
+    update.folderFilters = update.folderFilters
+      .split(',')
+      .map((f) => f.trim())
+      .filter(Boolean);
+    update.indexDirs = Object.values(update.indexDirs);
+
+    const settings = game.settings.get(MODULE_ID, 'indexer');
+    foundry.utils.mergeObject(settings, update);
+    await game.settings.set(MODULE_ID, 'indexer', settings);
   }
 }
 
@@ -818,4 +891,8 @@ export class FileIndexerAPI {
   static registerCacheFile(cacheFile) {
     FileIndexer._registeredCacheFiles.push(cacheFile);
   }
+}
+
+function sameBucket(bucket1, bucket2) {
+  return (!Boolean(bucket1) && !Boolean(bucket2)) || bucket1 == bucket2;
 }

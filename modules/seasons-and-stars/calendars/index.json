@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/rayners/fvtt-seasons-and-stars/main/schemas/calendar-collection-v1.0.0.json",
+  "name": "Core Calendars",
+  "description": "Built-in calendar collection for Seasons & Stars",
+  "version": "0.17.1",
+  "calendars": [
+    {
+      "id": "gregorian-canonical-hours-variants",
+      "name": "Gregorian Calendar with Canonical Hours",
+      "description": "Gregorian calendar featuring traditional canonical hours and custom time periods",
+      "file": "gregorian-canonical-hours-variants.json",
+      "preview": "Sample format from Core Calendars",
+      "tags": [
+        "built-in"
+      ],
+      "author": "David Raynes"
+    },
+    {
+      "id": "gregorian",
+      "name": "Gregorian Calendar",
+      "description": "Standard Earth calendar with 12 months and leap years",
+      "file": "gregorian.json",
+      "preview": "Sample format from Earth",
+      "tags": [
+        "built-in"
+      ],
+      "author": "David Raynes"
+    }
+  ]
+}

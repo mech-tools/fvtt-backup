@@ -778,10 +778,14 @@ nav > a[data-tab='me-pinned'] {
   flex: 1;
 }
 
-.indexDirectories .deleteDirectory {
-  flex: 0.1;
+.indexDirectories a {
+  flex: 0;
   text-align: center;
   padding-top: 5px;
+}
+
+.indexDirectories a.active {
+  color: darkorange
 }
 
 
@@ -949,4 +953,17 @@ nav > a[data-tab='me-pinned'] {
 
 .mass-edit-category-browser .category.active {
   border-color: darkorange;
+}
+
+/* Temp fix */
+string-tags-multi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+string-tags-multi > input {
+  flex: 1;
 }

@@ -109,7 +109,11 @@ class DiceRowSettings extends HandlebarsApplicationMixin$1(ApplicationV2$1) {
 
 	settings;
 
-	static settingsKeys = ["compactMode", "hideNumberInput", "hideRollButton"];
+	static get settingsKeys() {
+		const keys = ["compactMode", "hideNumberInput", "hideNumberButtons", "hideRollButton"];
+		if (CONFIG.DICETRAY.showExtraButtons) keys.splice(4, 0, "hideAdv");
+		return keys;
+	}
 
 	_prepareContext(options) {
 		this.settings ??= DiceRowSettings.settingsKeys.reduce((obj, key) => {
@@ -119,6 +123,7 @@ class DiceRowSettings extends HandlebarsApplicationMixin$1(ApplicationV2$1) {
 		return {
 			diceRows: this.diceRows,
 			settings: this.settings,
+			showExtraButtons: CONFIG.DICETRAY.showExtraButtons,
 			buttons: [
 				{ type: "button", icon: "fa-solid fa-plus", label: "DICE_TRAY.DiceCreator.CreateDice", action: "add" },
 				{ type: "submit", icon: "fa-solid fa-save", label: "SETTINGS.Save" },
@@ -129,7 +134,7 @@ class DiceRowSettings extends HandlebarsApplicationMixin$1(ApplicationV2$1) {
 
 	_onRender(context, options) {
 		super._onRender(context, options);
-		CONFIG.DICETRAY.applyLayout(this.element);
+		CONFIG.DICETRAY.applyLayout(this.element, { hideAdv: context.settings.hideAdv });
 		const diceTrayInput = this.element.querySelector("input.dice-tray__input");
 		for (const input of this.element.querySelectorAll(".form-group input")) {
 			input.addEventListener("click", async (event) => {
@@ -213,6 +218,79 @@ class DiceRowSettings extends HandlebarsApplicationMixin$1(ApplicationV2$1) {
 			forceRender = true;
 		}
 		if (forceRender) Hooks.callAll("dice-calculator.forceRender");
+	}
+}
+
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+
+class DiceTrayPopOut extends HandlebarsApplicationMixin(ApplicationV2) {
+	static DEFAULT_OPTIONS = {
+		id: "dice-tray-popout",
+		tag: "aside",
+		position: {
+			width: ui?.sidebar?.options.width ?? 300
+		},
+		window: {
+			title: "DICE_TRAY.DiceTray",
+			icon: "fas fa-dice-d20",
+			minimizable: true
+		}
+	};
+
+	static PARTS = {
+		list: {
+			id: "list",
+			template: "modules/dice-calculator/templates/tray.html",
+		}
+	};
+
+	async _renderFrame(options) {
+		const frame = await super._renderFrame(options);
+		this.window.close.remove(); // Prevent closing
+		return frame;
+	}
+
+	async close(options={}) {
+		if ( !options.closeKey ) return super.close(options);
+		return this;
+	}
+
+	get chatElement() {
+		return ui.sidebar.popouts.chat?.element || ui.chat.element;
+	}
+
+	_configureRenderOptions(options) {
+		super._configureRenderOptions(options);
+		if ( options.isFirstRender && ui.nav ) {
+			const position = game.settings.get("dice-calculator", "popoutPosition");
+			const {right, top} = ui.nav.element.getBoundingClientRect();
+			const uiScale = game.settings.get("core", "uiConfig").uiScale;
+			options.position.left ??= position.left ?? right + (16 * uiScale);
+			options.position.top ??= position.top ?? top;
+		}
+	}
+
+	_onRender(context, options) {
+		super._onRender(context, options);
+		CONFIG.DICETRAY.applyLayout(this.element);
+		CONFIG.DICETRAY.applyListeners(this.element);
+	}
+
+	async _prepareContext(_options) {
+		return {
+			dicerows: game.settings.get("dice-calculator", "diceRows"),
+			settings: DiceRowSettings.settingsKeys.reduce((obj, key) => {
+				obj[key] = game.settings.get("dice-calculator", key);
+				return obj;
+			}, {})
+		};
+	}
+
+	setPosition(position) {
+		const superPosition = super.setPosition(position);
+		const { left, top } = superPosition;
+		game.settings.set("dice-calculator", "popoutPosition", { left, top });
+		return superPosition;
 	}
 }
 
@@ -329,9 +407,10 @@ class TemplateDiceMap {
 	/**
 	 * Logic to set display the additiona KH/KL buttons and event listeners.
 	 * @param {HTMLElement} html
+	 * @param {Object} options
 	 */
-	applyLayout(html) {
-		const disableExtras = game.settings.settings.get("dice-calculator.hideAdv").config && game.settings.get("dice-calculator", "hideAdv");
+	applyLayout(html, options = {}) {
+		const disableExtras = options.hideAdv ?? game.settings.get("dice-calculator", "hideAdv");
 		if (this.showExtraButtons && !disableExtras) {
 			this._createExtraButtons(html);
 			this._extraButtonsLogic(html);
@@ -351,6 +430,7 @@ class TemplateDiceMap {
 			// Avoids moving focus to the button
 			button.addEventListener("pointerdown", (event) => {
 				event.preventDefault();
+				this.textarea.select();
 			});
 		});
 		html.querySelectorAll(".dice-tray__button").forEach((button) => {
@@ -381,14 +461,17 @@ class TemplateDiceMap {
 			let modVal = Number(event.target.value);
 			modVal = Number.isNaN(modVal) ? 0 : modVal;
 			event.target.value = modVal;
-			CONFIG.DICETRAY.applyModifier(html);
+			CONFIG.DICETRAY.applyModifier(html, { noFocus: true });
 		});
 		diceTrayInput?.addEventListener("wheel", (event) => {
 			const diff = event.deltaY < 0 ? 1 : -1;
 			let modVal = event.currentTarget.value;
 			modVal = Number.isNaN(modVal) ? 0 : Number(modVal);
 			event.currentTarget.value = modVal + diff;
-			CONFIG.DICETRAY.applyModifier(html);
+			CONFIG.DICETRAY.applyModifier(html, { noFocus: true });
+		});
+		diceTrayInput?.addEventListener("focus", (event) => {
+			diceTrayInput.select();
 		});
 
 		// Handle +/- buttons near the modifier input.
@@ -538,8 +621,9 @@ class TemplateDiceMap {
 	/**
 	 * Logic to apply the number on the -/+ selector.
 	 * @param {HTMLElement} html
+	 * @param {Object} options
 	 */
-	applyModifier(html) {
+	applyModifier(html, options = {}) {
 		const modInput = html.querySelector(".dice-tray__input");
 		if (!modInput) return;
 		const modVal = Number(modInput.value);
@@ -568,7 +652,7 @@ class TemplateDiceMap {
 		if (/(\/r|\/gmr|\/br|\/sr) $/g.test(chat.value)) {
 			chat.value = "";
 		}
-		this.textarea.focus();
+		if (!options.noFocus) this.textarea.focus();
 	}
 
 	/**
@@ -737,6 +821,12 @@ class TemplateDiceMap {
 			count: newCount
 		};
 	}
+
+	async togglePopout() {
+		this.popout ??= new DiceTrayPopOut();
+		if (this.popout.rendered) await this.popout.close({ animate: false });
+		else await this.popout.render(true);
+	}
 }
 
 class dccDiceMap extends TemplateDiceMap {
@@ -900,13 +990,88 @@ class FateDiceMap extends TemplateDiceMap {
 }
 
 class pf2eDiceMap extends TemplateDiceMap {
+	get buttonFormulas() {
+		if (game.settings.get("dice-calculator", "flatCheck")) {
+			return {
+				kh: 5,
+				kl: 11
+			};
+		}
+		return super.buttonFormulas;
+	}
+
+	get dice() {
+		return [
+			{
+				d4: { img: "icons/dice/d4black.svg" },
+				d6: { img: "icons/dice/d6black.svg" },
+				d8: { img: "icons/dice/d8black.svg" },
+				d10: { img: "icons/dice/d10black.svg" },
+				d12: { img: "icons/dice/d12black.svg" },
+				d20: { img: "icons/dice/d20black.svg" }
+			}
+		];
+	}
+
+	flatCheckLabel(dc) {
+		return game.i18n.format("DICE_TRAY.SETTINGS.PF2E.flatCheckLabel", {
+			dc: game.i18n.format("PF2E.InlineAction.Check.DC", { dc }),
+			text: game.i18n.localize("PF2E.FlatCheck"),
+		});
+	}
+
 	get labels() {
+		if (game.settings.get("dice-calculator", "flatCheck")) {
+			const dc = game.i18n.localize("PF2E.Check.DC.Unspecific");
+			return {
+				advantage: this.flatCheckLabel(5),
+				adv: game.i18n.format("DICE_TRAY.SETTINGS.PF2E.flatCheckLabel", { dc, text: 5 }),
+				disadvantage: this.flatCheckLabel(11),
+				dis: game.i18n.format("DICE_TRAY.SETTINGS.PF2E.flatCheckLabel", { dc, text: 11 }),
+			};
+		}
 		return {
 			advantage: "DICE_TRAY.Fortune",
 			adv: "DICE_TRAY.For",
 			disadvantage: "DICE_TRAY.Misfortune",
 			dis: "DICE_TRAY.Mis"
 		};
+	}
+
+	get settings() {
+		return {
+			flatCheck: {
+				name: "DICE_TRAY.SETTINGS.PF2E.flatCheck.name",
+				hint: "DICE_TRAY.SETTINGS.PF2E.flatCheck.hint",
+				default: true,
+				type: Boolean,
+				onChange: () => CONFIG.DICETRAY.render()
+			}
+		};
+	}
+
+	_extraButtonsLogic(html) {
+		if (game.settings.get("dice-calculator", "flatCheck")) {
+			for (const button of html.querySelectorAll(".dice-tray__ad")) {
+				button.addEventListener("click", (event) => {
+					event.preventDefault();
+					const { formula } = event.currentTarget.dataset;
+					const actor = canvas.tokens.controlled.length === 1
+						? canvas.tokens.controlled[0].actor
+						: game.user.character ?? {};
+					game.pf2e.Check.roll(new game.pf2e.StatisticModifier(this.flatCheckLabel(formula), []), {
+						actor: actor ?? {},
+						type: "flat-check",
+						dc: { value: formula },
+						options: new Set(["flat-check"]),
+						createMessage: true,
+						skipDialog: true,
+					});
+				});
+			}
+		} else {
+			super._extraButtonsLogic(html);
+		}
 	}
 }
 
@@ -1350,79 +1515,6 @@ var keymaps = /*#__PURE__*/Object.freeze({
 	grimwild: GrimwildDiceMap
 });
 
-const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-
-class DiceTrayPopOut extends HandlebarsApplicationMixin(ApplicationV2) {
-	static DEFAULT_OPTIONS = {
-		id: "dice-tray-popout",
-		tag: "aside",
-		position: {
-			width: ui?.sidebar?.options.width ?? 300
-		},
-		window: {
-			title: "DICE_TRAY.DiceTray",
-			icon: "fas fa-dice-d20",
-			minimizable: true
-		}
-	};
-
-	static PARTS = {
-		list: {
-			id: "list",
-			template: "modules/dice-calculator/templates/tray.html",
-		}
-	};
-
-	async _renderFrame(options) {
-		const frame = await super._renderFrame(options);
-		this.window.close.remove(); // Prevent closing
-		return frame;
-	}
-
-	async close(options={}) {
-		if ( !options.closeKey ) return super.close(options);
-		return this;
-	}
-
-	get chatElement() {
-		return ui.sidebar.popouts.chat?.element || ui.chat.element;
-	}
-
-	_configureRenderOptions(options) {
-		super._configureRenderOptions(options);
-		if ( options.isFirstRender && ui.nav ) {
-			const position = game.settings.get("dice-calculator", "popoutPosition");
-			const {right, top} = ui.nav.element.getBoundingClientRect();
-			const uiScale = game.settings.get("core", "uiConfig").uiScale;
-			options.position.left ??= position.left ?? right + (16 * uiScale);
-			options.position.top ??= position.top ?? top;
-		}
-	}
-
-	_onRender(context, options) {
-		super._onRender(context, options);
-		CONFIG.DICETRAY.applyLayout(this.element);
-		CONFIG.DICETRAY.applyListeners(this.element);
-	}
-
-	async _prepareContext(_options) {
-		return {
-			dicerows: game.settings.get("dice-calculator", "diceRows"),
-			settings: DiceRowSettings.settingsKeys.reduce((obj, key) => {
-				obj[key] = game.settings.get("dice-calculator", key);
-				return obj;
-			}, {})
-		};
-	}
-
-	setPosition(position) {
-		const superPosition = super.setPosition(position);
-		const { left, top } = superPosition;
-		game.settings.set("dice-calculator", "popoutPosition", { left, top });
-		return superPosition;
-	}
-}
-
 /**
  * Javascript imports don't support dashes so the workaround
  * for systems with dashes in their names is to create this map.
@@ -1455,10 +1547,9 @@ function registerSettings() {
 		name: game.i18n.localize("DICE_TRAY.SETTINGS.hideAdv.name"),
 		hint: game.i18n.localize("DICE_TRAY.SETTINGS.hideAdv.hint"),
 		scope: "world",
-		config: CONFIG.DICETRAY.constructor.name === "TemplateDiceMap",
+		config: false,
 		default: false,
-		type: Boolean,
-		requiresReload: true
+		type: Boolean
 	});
 
 	// Menu Settings
@@ -1481,6 +1572,12 @@ function registerSettings() {
 		config: false,
 		default: false,
 		type: Boolean,
+	});
+	game.settings.register("dice-calculator", "hideNumberButtons", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
 	});
 	game.settings.register("dice-calculator", "hideRollButton", {
 		scope: "world",
@@ -1566,7 +1663,7 @@ Hooks.once("i18nInit", () => {
 	game.keybindings.register("dice-calculator", "popout", {
 		name: "DICE_TRAY.KEYBINGINDS.popout.name",
 		onDown: async () => {
-			await togglePopout();
+			await CONFIG.DICETRAY.togglePopout();
 			if (game.settings.get("dice-calculator", "popout") === "none") return;
 			const tool = ui.controls.control.tools.diceTray;
 			if (tool) {
@@ -1605,7 +1702,7 @@ Hooks.once("i18nInit", () => {
 });
 
 Hooks.once("ready", () => {
-	if (game.settings.get("dice-calculator", "autoOpenPopout")) togglePopout();
+	if (game.settings.get("dice-calculator", "autoOpenPopout")) CONFIG.DICETRAY.togglePopout();
 });
 
 function getProviderString(regex) {
@@ -1616,12 +1713,6 @@ function getProviderString(regex) {
 		return id;
 	}
 	return "";
-}
-
-async function togglePopout() {
-	CONFIG.DICETRAY.popout ??= new DiceTrayPopOut();
-	if (CONFIG.DICETRAY.popout.rendered) await CONFIG.DICETRAY.popout.close({ animate: false });
-	else await CONFIG.DICETRAY.popout.render(true);
 }
 
 function moveDiceTray() {
@@ -1638,7 +1729,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 			name: "diceTray",
 			title: "Dice Tray",
 			icon: "fas fa-dice-d20",
-			onChange: () => togglePopout(),
+			onChange: () => CONFIG.DICETRAY.togglePopout(),
 			active: CONFIG.DICETRAY.popout?.rendered || (!game.ready && autoOpenPopout),
 			toggle: true,
 		};

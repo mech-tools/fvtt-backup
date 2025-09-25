@@ -3073,7 +3073,9 @@ var applyEntitySharingSettings = () => {
     };
     if (config.sheet) {
       const hookName = `get${documentName}ContextOptions`;
-      Hooks.on(hookName, (_application, menuItems) => {
+      Hooks.on(hookName, (application, menuItems) => {
+        if (application.collection !== game[entity])
+          return;
         const entry = {
           name: "share-media.shareables.selector.entities.label",
           icon: `<i class="${CONFIG.shareMedia.CONST.ICONS.shareAgain}"></i>`,

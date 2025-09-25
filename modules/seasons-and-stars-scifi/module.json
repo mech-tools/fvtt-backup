@@ -1,0 +1,36 @@
+{
+  "id": "seasons-and-stars-scifi",
+  "title": "Seasons & Stars - Sci-Fi Calendar Pack",
+  "description": "Science fiction calendar collection for Seasons & Stars - includes calendars for Starfinder, Traveller, Star Trek, and other sci-fi settings",
+  "version": "0.3.1",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "David Raynes",
+      "email": "rayners@gmail.com",
+      "discord": "rayners78",
+      "github": "rayners"
+    }
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "seasons-and-stars",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.7.0"
+        }
+      }
+    ]
+  },
+  "url": "https://github.com/rayners/fvtt-seasons-and-stars",
+  "manifest": "https://github.com/rayners/fvtt-seasons-and-stars/releases/download/seasons-and-stars-scifi-v0.3.1/module.json",
+  "download": "https://github.com/rayners/fvtt-seasons-and-stars/releases/download/seasons-and-stars-scifi-v0.3.1/module.zip",
+  "readme": "https://github.com/rayners/fvtt-seasons-and-stars/blob/main/packages/scifi-pack/README_FOUNDRY.md",
+  "license": "https://github.com/rayners/fvtt-seasons-and-stars/blob/main/LICENSE",
+  "bugs": "https://github.com/rayners/fvtt-seasons-and-stars/issues",
+  "changelog": "https://github.com/rayners/fvtt-seasons-and-stars/blob/main/CHANGELOG.md"
+}
