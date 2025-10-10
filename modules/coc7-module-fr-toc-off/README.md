@@ -1,6 +1,6 @@
 # Call of Cthulhu 7th French (Unofficial)
 
-![](images/fvtt-coc7-mod-toc-off01.jpg)
+![](images/fvtt-coc7-mod-toc-off02.jpg)
 
 Bonjour.
 
@@ -12,3 +12,7 @@ Ouvrez Doc d'utilisation des compendiums.
 https://gitlab.com/vonv/fvtt-coc7-mod-toc-off/-/raw/main/module.json
 
 Bon jeu.
+
+Anciennce version:
+
+![](images/fvtt-coc7-mod-toc-off01.jpg)
