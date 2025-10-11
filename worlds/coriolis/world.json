@@ -2,7 +2,7 @@
   "title": "Coriolis",
   "id": "coriolis",
   "system": "yzecoriolis",
-  "coreVersion": "13.348",
+  "coreVersion": "13.350",
   "esmodules": [
     "scripts.js"
   ],
@@ -13,13 +13,13 @@
   ],
   "compatibility": {
     "minimum": "13",
-    "verified": "13.348"
+    "verified": "13.350"
   },
   "systemVersion": "4.0.1",
   "resetKeys": false,
   "background": "worlds/coriolis/img/ship/pj/source-2856398998.jpg",
-  "lastPlayed": "Wed Sep 24 2025 13:21:19 GMT+0200 (Central European Summer Time)",
-  "playtime": 48262112,
+  "lastPlayed": "Fri Oct 10 2025 12:05:30 GMT+0200 (Central European Summer Time)",
+  "playtime": 48270863,
   "safeMode": false,
   "packs": [
     {

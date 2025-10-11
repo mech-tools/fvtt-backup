@@ -206,7 +206,7 @@ var getAvailableAreas = () => {
   if (!game.canvas)
     return [];
   const regions = game.canvas.regions.placeables.filter((region) => region.document.shapes.length > 0 && region.document.behaviors.some((behavior) => behavior.type === CONFIG.shareMedia.canvas.ShareRegionBehaviorType.type && !behavior.disabled)).map((region) => region.document);
-  const tiles = game.canvas.tiles.placeables.filter((tile) => tile.document.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_ENABLED)).map((tile) => tile.document);
+  const tiles = game.canvas.tiles.placeables.filter((tile) => tile.document.getFlag("share-media", game.canvas["shm-media-layer"].constructor.MEDIA_TILE_ENABLED)).map((tile) => tile.document);
   return [...regions, ...tiles];
 };
 // scripts/settings/settings-cache.mjs
@@ -922,7 +922,7 @@ class MediaSidebar extends HandlebarsApplicationMixin6(AbstractSidebarTab) {
   #renderingQueue = new Semaphore(1);
   #renderingBatch = false;
   get mediaCollection() {
-    return game.modules.shareMedia.collections.media;
+    return game["shm-media-collection"];
   }
   async storeMedia(src, targetUsers = [], settings2 = {}) {
     if (!game.users.current.isGM)
@@ -1600,7 +1600,7 @@ class MediaSprite {
     this._mesh = new PrimarySpriteMesh(texture);
     this._createMesh();
     this._mesh.sortLayer = MediaSprite.SORT_LAYER;
-    this._mesh.sort = this.area.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.SORT_FLAG_KEY) ?? 1;
+    this._mesh.sort = this.area.getFlag("share-media", game.canvas["shm-media-layer"].constructor.SORT_FLAG_KEY) ?? 1;
   }
   _createMesh() {
     throw new Error("_createMesh must be implemented by subclass");
@@ -1690,14 +1690,14 @@ class MediaSprite {
       return;
     game.canvas.masks.addChild(this._mask);
     game.canvas.primary.addChild(this._mesh);
-    game.modules.shareMedia.canvas.layer.objects.addChild(this._frame);
-    game.modules.shareMedia.canvas.layer.objects.addChild(this._border);
+    game.canvas["shm-media-layer"].objects.addChild(this._frame);
+    game.canvas["shm-media-layer"].objects.addChild(this._border);
     const video = game.video.getVideoSource(this._mesh);
     if (video) {
       if (!this.options.mute)
         game.canvas.primary.videoMeshes.add(this._mesh);
       if (!this.options.loop) {
-        this.#videoEndedHandler = () => game.modules.shareMedia.canvas.layer.deleteSprite(this.area.uuid, { unsetFlag: true });
+        this.#videoEndedHandler = () => game.canvas["shm-media-layer"].deleteSprite(this.area.uuid, { unsetFlag: true });
         video.addEventListener("ended", this.#videoEndedHandler);
       }
       game.video.play(video, {
@@ -1705,7 +1705,7 @@ class MediaSprite {
         volume: this.options.mute ? 0 : game.settings.get("core", "globalAmbientVolume")
       });
     }
-    if (game.modules.shareMedia.canvas.layer.active) {
+    if (game.canvas["shm-media-layer"].active) {
       if (MediaSprite.lastControlled === this.area.uuid)
         this.control();
       if (game.modules.shareMedia.canvas.apps.hud.lastSprite === this.area.uuid)
@@ -1968,10 +1968,10 @@ class MediaHUD extends HandlebarsApplicationMixin7(ApplicationV27) {
   }
   static async#onSortMedia(_event, target) {
     const up = target.dataset.direction === "up";
-    await game.modules.shareMedia.canvas.layer.sendToBackOrBringToFront(this.#sprite.area.uuid, up);
+    await game.canvas["shm-media-layer"].sendToBackOrBringToFront(this.#sprite.area.uuid, up);
   }
   static #onClearMedia(_event, _target) {
-    game.modules.shareMedia.canvas.layer.deleteSprite(this.#sprite.area.uuid, { unsetFlag: true });
+    game.canvas["shm-media-layer"].deleteSprite(this.#sprite.area.uuid, { unsetFlag: true });
   }
   static get implementation() {
     let Class = CONFIG.shareMedia.canvas.apps.MediaHUD;
@@ -1993,7 +1993,7 @@ var registerTileConfiguration = () => {
   Hooks.on("renderTileConfig", (application, element, _context, _option) => {
     if (!game.users.current.isGM)
       return;
-    const { MEDIA_TILE_ENABLED, MEDIA_TILE_NAME } = game.modules.shareMedia.canvas.layer.constructor;
+    const { MEDIA_TILE_ENABLED, MEDIA_TILE_NAME } = game.canvas["shm-media-layer"].constructor;
     const enabled = application.document.getFlag("share-media", MEDIA_TILE_ENABLED) ?? false;
     const name = application.document.getFlag("share-media", MEDIA_TILE_NAME) || game.i18n.localize("share-media.canvas.layer.tile.name.default");
     const html = `
@@ -2036,15 +2036,15 @@ var registerMediaLayer = () => {
         toggle: true,
         visible: game.users.current.isGM,
         active: (() => {
-          if (!game.modules.shareMedia.canvas.layer)
+          if (!game.canvas["shm-media-layer"])
             return false;
-          return game.modules.shareMedia.canvas.layer.active;
+          return game.canvas["shm-media-layer"].active;
         })(),
         onChange: (_event, active) => {
           if (active) {
-            if (game.modules.shareMedia.canvas.layer.sprites.size < 1)
+            if (game.canvas["shm-media-layer"].sprites.size < 1)
               ui.notifications.info(game.i18n.localize("share-media.canvas.layer.tool.zero"));
-            game.modules.shareMedia.canvas.layer.activate();
+            game.canvas["shm-media-layer"].activate();
           } else
             game.canvas.tokens.activate();
         }
@@ -2592,7 +2592,7 @@ class ShareablesManager {
   }
   static async _handleCreateAreaFlag(context) {
     const { users: _users, mode: _mode, targetArea, ...data } = context;
-    const result = await game.modules.shareMedia.canvas.layer.createAreaMediaData(targetArea, data);
+    const result = await game.canvas["shm-media-layer"].createAreaMediaData(targetArea, data);
     return result ? context : null;
   }
   static async _handleCreatelayer(context) {
@@ -2608,7 +2608,7 @@ class ShareablesManager {
     const { src, targetUsers, ...settings2 } = context;
     const mediaSidebarSettings = game.modules.shareMedia.settings.get(CONFIG.shareMedia.CONST.MODULE_SETTINGS.mediaSidebarSettings);
     if (mediaSidebarSettings.layers[settings2.mode])
-      game.modules.shareMedia.ui.sidebar.storeMedia(src, targetUsers, settings2);
+      ui["shm-media-sidebar"].storeMedia(src, targetUsers, settings2);
     return context;
   }
   _registerUserQueries() {
@@ -2774,7 +2774,7 @@ class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
   #prepareAreas() {
     const areas = game.modules.shareMedia.utils.getAvailableAreas().map((area) => ({
       uuid: area.uuid,
-      name: area.name ?? area.getFlag("share-media", game.modules.shareMedia.canvas.layer.constructor.MEDIA_TILE_NAME),
+      name: area.name ?? area.getFlag("share-media", game.canvas["shm-media-layer"].constructor.MEDIA_TILE_NAME),
       color: area.color ?? area.texture.tint,
       checked: area.uuid === this.options.targetArea
     }));
@@ -2803,10 +2803,18 @@ class AreaSelector extends HandlebarsApplicationMixin10(ApplicationV210) {
       return;
     this._deactivateArea(areaElement.dataset.areaUuid);
   }
+  #onDoubleClick(event) {
+    const target = event.target;
+    const areaElement = target.closest("[data-area-uuid]");
+    if (!areaElement)
+      return;
+    this.form.submit();
+  }
   _attachFrameListeners() {
     super._attachFrameListeners();
     this.element.addEventListener("pointerover", this.#onPointerOver.bind(this));
     this.element.addEventListener("pointerout", this.#onPointerOut.bind(this));
+    this.element.addEventListener("dblclick", this.#onDoubleClick.bind(this));
   }
   async _preFirstRender(context, options) {
     super._preFirstRender(context, options);
@@ -3239,24 +3247,24 @@ Hooks.once("init", () => {
   CONFIG.shareMedia.shareables.applyEntitySharingSettings();
   CONFIG.shareMedia.utils.registerHandlebarsPartials();
 });
-Hooks.once("ready", async () => {
+Hooks.once("setup", () => {
   const config = CONFIG.shareMedia;
   const module = game.modules.shareMedia;
-  await runMigrations();
   module.ui.detector = new config.ui.MediaDetector.implementation;
   module.ui.overlay = new config.ui.MediaOverlay.implementation;
-  module.ui.sidebar = window.ui["shm-media-sidebar"];
-  module.collections.media = game["shm-media-collection"];
   module.canvas.mediaSprite = config.canvas.MediaSprite.implementation;
   module.canvas.regionSprite = config.canvas.RegionSprite.implementation;
   module.canvas.tileSprite = config.canvas.TileSprite.implementation;
   module.canvas.apps.hud = config.canvas.apps.MediaHUD.implementation;
-  module.canvas.layer = game.canvas["shm-media-layer"];
   module.layers.popout = config.layers.PopoutLayer.implementation;
   module.layers.fullscreen = config.layers.FullscreenLayer.implementation;
   module.shareables.manager = new config.shareables.ShareablesManager.implementation;
   module.shareables.apps.userSelector = config.shareables.apps.UserSelector.implementation;
   module.shareables.apps.areaSelector = config.shareables.apps.AreaSelector.implementation;
   module.shareables.apps.shareSelector = config.shareables.apps.ShareSelector.implementation;
+});
+Hooks.once("ready", async () => {
+  const module = game.modules.shareMedia;
+  await runMigrations();
   Hooks.callAll("shareMedia.ready", module);
 });

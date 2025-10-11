@@ -102,7 +102,7 @@ export default class Shadowrun6Actor extends Actor {
 
     /** @inheritDoc */
     prepareEmbeddedDocuments() {
-        console.log("SR6E | SR6Actor.prepareEmbeddedDocuments()", this.uuid, this.name);
+        console.log("SR6E | Shadowrun6Actor.prepareEmbeddedDocuments()", this.name, this.uuid);
         this._embeddedPreparation = true;
         super.prepareEmbeddedDocuments();
         delete this._embeddedPreparation;
@@ -112,15 +112,23 @@ export default class Shadowrun6Actor extends Actor {
      * TODO rework move to prepareBaseData() and prepareDerivedData()
      */
     prepareData(callSuper=true) {
-        // This also calls Item Active Effects > Don't call it on vehiclePrep as it will trigger double prepareEmbeddedDocuments
+        // Actor.prepareData() calls ClientDocument.prepareData(), which has the following flow:
+        // prepareData() {
+        //     const isTypeData = this.system instanceof foundry.abstract.TypeDataModel;
+        //     if ( isTypeData ) this.system.prepareBaseData();
+        //     this.prepareBaseData();
+        //     this.prepareEmbeddedDocuments();
+        //     if ( isTypeData ) this.system.prepareDerivedData();
+        //     this.prepareDerivedData();
+        // }
+        // prepareEmbeddedDocuments() calls Item Active Effects > Don't call it on vehiclePrep as it will trigger double prepareEmbeddedDocuments
         // TODO rework vehicles completely to not be dependent on Actor.prepareData()
         if (callSuper) super.prepareData();
 
         // Modern DataModel Actors skip legacy data load flow
         if (this.system instanceof foundry.abstract.DataModel) return;
         
-
-        console.log("SR6E | Shadowrun6Actor.prepareData() ", this);
+        console.log("SR6E | Shadowrun6Actor.prepareData() START", this.name, this.uuid);
         const actorData = getActorData(this);
         const system = getSystemData(this);
         if (isPlayer(system)) {
@@ -190,7 +198,7 @@ export default class Shadowrun6Actor extends Actor {
         catch (err) {
             console.log(`SR6E | Error ${err.message}`, err.stack);
         }
-        console.log("SR6E | Shadowrun6Actor.prepareData() ", actorData.name + " = " + actorData.type);
+        console.log("SR6E | Shadowrun6Actor.prepareData() END", this.name, this.uuid);
     }
     /**
      * @Override
@@ -2276,22 +2284,24 @@ export default class Shadowrun6Actor extends Actor {
 
     //-------------------------------------------------------------
     async importFromJSON(json) {
-        console.log("SR6E | importFromJSON");
         const sourceData = JSON.parse(json);
+        console.log("SR6E | importFromJSON", sourceData);
         // Checking if user is trying to import GENESIS/COMMLINK save instead of a Foundry Print export
         if (sourceData.system === "SHADOWRUN6") {
             ui.notifications.error("shadowrun6.ui.notifications.wrong_import_file", { localize: true });
             return;
         }
+        // GENESIS uses Actor.data in its export, while COMMLINK uses Actor.system as the actors sourceData
+        const actorSystem = sourceData.data ?? sourceData.system;
         // Modify imported GENESIS/COMMLINK items
+        // Both GENESIS and COMMLINK use Item.data as its sourceData
         sourceData.items?.forEach(item => {
             if (item.data?.genesisID) {
                 if (item.data.type === "WEAPON_CLOSE_COMBAT") {
-                    item.data.attackRating[0] -= sourceData.data.attributes.str.pool;
+                    item.data.attackRating[0] -= actorSystem.attributes.str.pool;
                 }
             }
         })
-
         return super.importFromJSON(JSON.stringify(sourceData));
     }
 
