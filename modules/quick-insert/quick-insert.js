@@ -1,4 +1,4 @@
-import { fuzziersort_default, Fuse, writable, get, derived, append_styles, prop, template, slot, child, template_effect, set_class, append, push, first_child, sibling, if_block, bind_checked, store_get, pop, setup_stores, set_text, set_attribute, store_set, init_select, each, bind_this, event, get$1, derived$1, select_option, createEventDispatcher, user_effect, index, comment, clsx, stopPropagation, html, set_checked, preventDefault, bubble_event, state, text, bind_value, set, snippet, noop, delegate, proxy, user_pre_effect, onMount, component, transition, fade, blur, readable, set_value, set_selected, unmount, mount } from './vendor.js';
+import { writable, get, readable, derived, fuzziersort_default, Fuse, append_styles, prop, template, slot, child, template_effect, set_class, append, push, first_child, sibling, if_block, bind_checked, store_get, pop, setup_stores, set_text, set_attribute, store_set, init_select, each, bind_this, event, get$1, derived$1, select_option, delegate, html, index, text, clsx, stopPropagation, comment, snippet, noop, user_effect, component, createEventDispatcher, set_checked, preventDefault, bubble_event, state, bind_value, set, proxy, user_pre_effect, onMount, transition, fade, blur, set_value, set_selected, unmount, mount } from './vendor.js';
 
 const MODULE_NAME = "quick-insert";
 function registerSetting(setting, callback, { ...options }) {
@@ -219,6 +219,231 @@ const documentIcons = {
     [DocumentType.ADVENTURE]: "fa-globe-asia",
     [DocumentType.JOURNALENTRYPAGE]: "fa-duotone fa-book-open",
 };
+function packEnabled$1(pack) {
+    const disabled = getSetting(ModuleSetting.INDEXING_DISABLED);
+    // Pack document type enabled?
+    const role = game.user?.role;
+    if (role) {
+        if (disabled?.entities?.[pack.metadata.type]?.includes(role)) {
+            return false;
+        }
+        // Pack enabled?
+        if (disabled?.packs?.[pack.collection]?.includes(role)) {
+            return false;
+        }
+        // Pack entity type indexed?
+        if (!IndexedDocumentTypes.includes(pack.metadata.type)) {
+            return false;
+        }
+    }
+    // Not hidden?
+    return Boolean(pack.visible || game.user?.isGM);
+}
+
+function createStore(setting) {
+    const store = writable();
+    const { subscribe, set } = store;
+    return {
+        subscribe,
+        set: (value) => {
+            if (value !== get(store)) {
+                setSetting(setting, value);
+            }
+            return value;
+        },
+        update: (updater) => {
+            const value = updater(get(store));
+            setSetting(setting, value);
+        },
+        load: () => {
+            const value = getSetting(setting);
+            set(value);
+        },
+    };
+}
+const stores = {
+    [ModuleSetting.GM_ONLY]: createStore(ModuleSetting.GM_ONLY),
+    [ModuleSetting.FILTERS_SHEETS_ENABLED]: createStore(ModuleSetting.FILTERS_SHEETS_ENABLED),
+    [ModuleSetting.AUTOMATIC_INDEXING]: createStore(ModuleSetting.AUTOMATIC_INDEXING),
+    [ModuleSetting.SEARCH_BUTTON]: createStore(ModuleSetting.SEARCH_BUTTON),
+    [ModuleSetting.ENABLE_GLOBAL_CONTEXT]: createStore(ModuleSetting.ENABLE_GLOBAL_CONTEXT),
+    [ModuleSetting.INDEXING_DISABLED]: createStore(ModuleSetting.INDEXING_DISABLED),
+    [ModuleSetting.FILTERS_CLIENT]: createStore(ModuleSetting.FILTERS_CLIENT),
+    [ModuleSetting.FILTERS_WORLD]: createStore(ModuleSetting.FILTERS_WORLD),
+    [ModuleSetting.FILTERS_ADD_DEFAULT_SUBTYPE]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_SUBTYPE),
+    [ModuleSetting.FILTERS_ADD_DEFAULT_PACKS]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_PACKS),
+    [ModuleSetting.FILTERS_ADD_DEFAULT_TYPE]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_TYPE),
+    [ModuleSetting.DEFAULT_ACTION_MACRO]: createStore(ModuleSetting.DEFAULT_ACTION_MACRO),
+    [ModuleSetting.DEFAULT_ACTION_ROLL_TABLE]: createStore(ModuleSetting.DEFAULT_ACTION_ROLL_TABLE),
+    [ModuleSetting.DEFAULT_ACTION_SCENE]: createStore(ModuleSetting.DEFAULT_ACTION_SCENE),
+    [ModuleSetting.SEARCH_TOOLTIPS]: createStore(ModuleSetting.SEARCH_TOOLTIPS),
+    [ModuleSetting.EMBEDDED_INDEXING]: createStore(ModuleSetting.EMBEDDED_INDEXING),
+    [ModuleSetting.TOC_INDEXING]: createStore(ModuleSetting.TOC_INDEXING),
+    [ModuleSetting.SEARCH_DENSITY]: createStore(ModuleSetting.SEARCH_DENSITY),
+    [ModuleSetting.ENHANCED_TOOLTIPS]: createStore(ModuleSetting.ENHANCED_TOOLTIPS),
+    [ModuleSetting.SEARCH_ENGINE]: createStore(ModuleSetting.SEARCH_ENGINE),
+    [ModuleSetting.QUICK_FILTER_EDIT]: createStore(ModuleSetting.QUICK_FILTER_EDIT),
+    [ModuleSetting.REMEMBER_BROWSE_INPUT]: createStore(ModuleSetting.REMEMBER_BROWSE_INPUT),
+    [ModuleSetting.SEARCH_FOOTER]: createStore(ModuleSetting.SEARCH_FOOTER),
+};
+Hooks.on("ready", () => {
+    Object.values(stores).forEach((store) => store.load());
+});
+
+function filterDisplayed(contents) {
+    console.log("VVVVV", contents);
+    return contents.filter((i) => i.displayed);
+}
+function createCollectionStore(getCollection) {
+    return readable([], function start(set) {
+        const collection = getCollection();
+        function onCreate() {
+            set(filterDisplayed(collection.contents));
+        }
+        function onDelete() {
+            set(filterDisplayed(collection.contents));
+        }
+        const type = collection.documentName;
+        Hooks.on(`create${type}`, onCreate);
+        Hooks.on(`delete${type}`, onDelete);
+        set(filterDisplayed(collection.contents));
+        return function stop() {
+            Hooks.off(`create${type}`, onCreate);
+            Hooks.off(`delete${type}`, onDelete);
+        };
+    });
+}
+const collectionStores = {
+    folders: createCollectionStore(() => game.folders),
+};
+
+// Generate view data from IndexingDisabledSetting
+const enabledRoles = (disabled) => {
+    return [1, 2, 3, 4].reduce(function (map, role) {
+        map[role] = !disabled?.includes(role);
+        return map;
+    }, {});
+};
+function createDisabled() {
+    const { subscribe, update } = stores[ModuleSetting.INDEXING_DISABLED];
+    return {
+        subscribe,
+        toggleRole: (type, id, role, disabled) => update((value) => {
+            if (!value[type])
+                value[type] = { root: [] };
+            let roles = value[type][id];
+            if (!roles) {
+                value[type][id] = roles = [];
+            }
+            const roleIndex = roles.indexOf(role);
+            if (disabled && roleIndex === -1) {
+                roles.push(role);
+            }
+            else if (!disabled && roleIndex !== -1) {
+                roles.splice(roleIndex, 1);
+            }
+            if (roles.length === 0) {
+                delete value[type][id];
+            }
+            return value;
+        }),
+        toggleAll: (type, id, disabled) => update((value) => {
+            if (!value[type])
+                return value;
+            if (disabled) {
+                value[type][id] = [1, 2, 3, 4];
+            }
+            else {
+                delete value[type][id];
+            }
+            return value;
+        }),
+    };
+}
+function getAllChildFolders(folder) {
+    if (!folder) {
+        return [];
+    }
+    return folder.children
+        .map((child) => {
+        if (!child.folder) {
+            return [];
+        }
+        return [
+            child.folder.id,
+            getAllChildFolders(child.folder),
+        ].flat();
+    })
+        .flat();
+}
+const disabled = createDisabled();
+// Derived read-only stores used for views
+const documents = derived(disabled, ($disabled) => {
+    return IndexedDocumentTypes.map((type) => ({
+        type: "entities",
+        id: type,
+        title: loc(`DOCUMENT.${type}`),
+        enabled: enabledRoles($disabled.entities[type]),
+    }));
+});
+const packs = derived(disabled, ($disabled) => {
+    return game.packs
+        ? [...game.packs.contents].map((pack) => ({
+            type: "packs",
+            id: pack.collection,
+            title: pack.title,
+            documentType: pack.documentName,
+            subTitle: `${loc(`DOCUMENT.${pack.documentName}`)} (${pack.metadata.packageName})`,
+            enabled: enabledRoles($disabled.packs[pack.collection]),
+        }))
+        : [];
+});
+const directory = derived([disabled, collectionStores.folders], ([$disabled, $folders]) => {
+    return [
+        {
+            type: "directory",
+            id: "root",
+            title: mloc("FilterEditorDirectory"),
+            enabled: enabledRoles($disabled.directory?.["root"]),
+        },
+        ...$folders
+            .filter((folder) => !folder.folder &&
+            IndexedDocumentTypes.includes(folder.type))
+            .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0))
+            .map((folder) => ({
+            type: "directory",
+            id: folder.id,
+            title: folder.name,
+            documentType: folder.type,
+            subTitle: `${loc(`DOCUMENT.${folder.type}`)} (${loc(`DOCUMENT.Folder`)})`,
+            enabled: enabledRoles($disabled.directory?.[folder.id]),
+        })),
+    ];
+});
+const enabledDocumentTypes$1 = derived([stores[ModuleSetting.INDEXING_DISABLED]], ([$disabled]) => {
+    const role = game.user?.role ?? 0;
+    return IndexedDocumentTypes.filter((t) => !$disabled?.entities?.[t]?.includes(role));
+});
+const enabledPacks = derived([stores[ModuleSetting.INDEXING_DISABLED]], () => (game.packs ? game.packs.filter(packEnabled$1) : []));
+const disabledFolders = derived([stores[ModuleSetting.INDEXING_DISABLED], collectionStores.folders], ([disabled]) => {
+    const role = game.user?.role;
+    const ignoredFolders = new Set();
+    if (!role ||
+        !disabled?.directory ||
+        (disabled.directory["root"] &&
+            Object.keys(disabled.directory).length === 1)) {
+        return ignoredFolders;
+    }
+    for (const [id, folderIgnores] of Object.entries(disabled.directory)) {
+        if (folderIgnores.includes(role)) {
+            ignoredFolders.add(id);
+            const children = getAllChildFolders(game.folders.get(id));
+            children.forEach((c) => ignoredFolders.add(c));
+        }
+    }
+    return ignoredFolders;
+});
+
 function extractEmbeddedIndex(item, pack) {
     if (!("pages" in item))
         return;
@@ -266,15 +491,15 @@ function getCollectionFromType(type) {
 }
 function getLocationIcon(item) {
     if (item.folder) {
-        return `<i class="fas fa-folder location-icon" data-tooltip="Folder"></i></span>`;
+        return `<i class="fas fa-folder location-icon" data-tooltip="${loc("DOCUMENT.Folder")}" data-tooltip-direction="RIGHT"></i>`;
     }
     if (item.packageName) {
-        return `<i class="fas fa-atlas location-icon" data-tooltip="Compendium"></i></span>`;
+        return `<i class="fas fa-atlas location-icon" data-tooltip="${loc("PACKAGE.TagCompendium")} (${item.packageId})" data-tooltip-direction="RIGHT"></i>`;
     }
     if (item.__source !== "quick-insert:native") {
-        return `<i class="fas fa-cube location-icon" data-tooltip="External Module"></i></span>`;
+        return `<i class="fas fa-cube location-icon" data-tooltip="External Module" data-tooltip-direction="RIGHT"></i></span>`;
     }
-    return `<i class="fas fa-globe location-icon"></i></span>`;
+    return `<i class="fas fa-globe location-icon" data-tooltip="${loc("QUICKINSERT.FilterEditorFolderRoot")}" data-tooltip-direction="RIGHT"></i>`;
 }
 const ignoredFolderNames = { _fql_quests: true };
 function directoryEnabled() {
@@ -284,7 +509,7 @@ function directoryEnabled() {
         return false;
     return !disabled?.directory?.["root"]?.includes(role);
 }
-function enabledDocumentTypes$1() {
+function enabledDocumentTypes() {
     const disabled = getSetting(ModuleSetting.INDEXING_DISABLED);
     const role = game.user?.role;
     if (!role)
@@ -292,7 +517,7 @@ function enabledDocumentTypes$1() {
     return IndexedDocumentTypes.filter((t) => !disabled?.entities?.[t]?.includes(role));
 }
 function enabledEmbeddedDocumentTypes() {
-    if (enabledDocumentTypes$1().includes(DocumentType.JOURNALENTRY) &&
+    if (enabledDocumentTypes().includes(DocumentType.JOURNALENTRY) &&
         getSetting(ModuleSetting.EMBEDDED_INDEXING)) {
         return [EmbeddedDocumentTypes[DocumentType.JOURNALENTRY]];
     }
@@ -326,7 +551,7 @@ function getSubTypeName(documentType, subType) {
     //@ts-expect-error typeLabels not in types yet
     return loc(CONFIG[documentType].typeLabels?.[subType]);
 }
-class SearchItem {
+class BaseSearchItem {
     __source = "quick-insert:native";
     id;
     uuid;
@@ -336,6 +561,7 @@ class SearchItem {
     img;
     system;
     packageName;
+    packageId;
     folder;
     anchor;
     constructor(data) {
@@ -347,50 +573,46 @@ class SearchItem {
         this.img = data.img;
         this.system = data.system;
     }
-    // Get the drag data for drag operations
     get dragData() {
         return {};
     }
-    // Get the html for an icon that represents the item
     get icon() {
         return "";
     }
-    // Reference the entity in a journal, chat or other places that support it
     get journalLink() {
         return "";
     }
-    // Reference the entity in a script
     get script() {
         return "";
     }
-    // Short tagline that explains where this is
     get tagline() {
         return "";
     }
-    // Additional details for result tooltips
     get tooltip() {
         const type = this.subType
             ? getSubTypeName(this.documentType, this.subType)
             : loc(DocumentMeta[this.documentType].label);
         return `${type} · ${this.tagline}`;
     }
-    // Show the sheet or equivalent of this search result
     async show() {
         return;
     }
-    // Fetch the original object (or null if no longer available).
-    // NEVER call as part of indexing or filtering.
-    // It can be slow and most calls will cause a request to the database!
-    // Call it once a decision is made, do not call for every SearchItem!
     async get() {
         return null;
     }
 }
-class EntitySearchItem extends SearchItem {
+class EntitySearchItem extends BaseSearchItem {
     static fromDocuments(documents) {
+        const ignoredFolderIds = get(disabledFolders);
         return documents
             .filter((e) => {
-            return (e.visible && !(e.folder?.name && ignoredFolderNames[e.folder.name]));
+            if (e.folder) {
+                if (ignoredFolderNames[e.folder.name] ||
+                    ignoredFolderIds.has(e.folder.id || "")) {
+                    return false;
+                }
+            }
+            return e.visible;
         })
             .map((document) => {
             let embedded;
@@ -483,7 +705,7 @@ class EntitySearchItem extends SearchItem {
         }
     }
 }
-class CompendiumSearchItem extends SearchItem {
+class CompendiumSearchItem extends BaseSearchItem {
     package;
     packageName;
     static fromCompendium(pack) {
@@ -509,6 +731,7 @@ class CompendiumSearchItem extends SearchItem {
         });
         this.package = packName;
         this.packageName = pack?.metadata?.label || pack.title;
+        this.packageId = pack.metadata.id;
         this.documentType = pack.metadata.type;
         this.uuid = `Compendium.${this.package}.${this.id}`;
     }
@@ -541,7 +764,7 @@ class CompendiumSearchItem extends SearchItem {
         return (await fromUuid(this.uuid));
     }
 }
-class EmbeddedEntitySearchItem extends SearchItem {
+class EmbeddedEntitySearchItem extends BaseSearchItem {
     #tagline;
     #embeddedName;
     anchor;
@@ -657,7 +880,7 @@ class EmbeddedEntitySearchItem extends SearchItem {
         return (await fromUuid(this.uuid));
     }
 }
-class EmbeddedCompendiumSearchItem extends SearchItem {
+class EmbeddedCompendiumSearchItem extends BaseSearchItem {
     package;
     packageName;
     // Inject overrides??
@@ -696,6 +919,7 @@ class EmbeddedCompendiumSearchItem extends SearchItem {
         this.uuid = uuid;
         this.package = packName;
         this.packageName = pack?.metadata?.label || pack.title;
+        this.packageId = pack.metadata?.id;
         // this.documentType = DocumentType.JOURNALENTRYPAGE;
         this.#tagline = item.tagline;
     }
@@ -736,6 +960,7 @@ class EmbeddedCompendiumSearchItem extends SearchItem {
         return (await fromUuid(this.uuid));
     }
 }
+// Create individual item from updated or added doc
 function searchItemFromDocument(document) {
     if (document.parent) {
         if (document.compendium) {
@@ -905,7 +1130,7 @@ class SearchLib {
     indexDocuments() {
         if (!directoryEnabled())
             return;
-        for (const type of enabledDocumentTypes$1()) {
+        for (const type of enabledDocumentTypes()) {
             this.index.addAll(EntitySearchItem.fromDocuments(getCollectionFromType(type).contents));
         }
     }
@@ -1002,16 +1227,16 @@ function checkIndexed(document, embedded = false) {
             return false;
     }
     else {
-        if (!enabledDocumentTypes$1().includes(document.documentName))
+        if (!enabledDocumentTypes().includes(document.documentName))
             return false;
     }
     // Check disabled packs
     return !(document.pack &&
         document.compendium &&
-        !packEnabled(document.compendium));
+        !packEnabled$1(document.compendium));
 }
 function setupDocumentHooks(quickInsert) {
-    enabledDocumentTypes$1().forEach((type) => {
+    enabledDocumentTypes().forEach((type) => {
         Hooks.on(`create${type}`, (document) => {
             if (!directoryEnabled())
                 return;
@@ -1122,7 +1347,7 @@ var ContextMode;
     ContextMode[ContextMode["Browse"] = 0] = "Browse";
     ContextMode[ContextMode["Insert"] = 1] = "Insert";
 })(ContextMode || (ContextMode = {}));
-class SearchContext {
+class BaseSearchContext {
     mode = ContextMode.Insert;
     spawnCSS = {};
     classes;
@@ -1130,12 +1355,12 @@ class SearchContext {
     startText;
     allowMultiple = true;
     restrictTypes;
-    onClose() {
+    onClose = () => {
         return;
-    }
+    };
 }
 // Default browse context
-class BrowseContext extends SearchContext {
+class BrowseContext extends BaseSearchContext {
     constructor() {
         super();
         this.startText = document.getSelection()?.toString();
@@ -1146,7 +1371,7 @@ class BrowseContext extends SearchContext {
         item.show();
     }
 }
-class InputContext extends SearchContext {
+class InputContext extends BaseSearchContext {
     input;
     selectionStart = null;
     selectionEnd = null;
@@ -1190,10 +1415,10 @@ class InputContext extends SearchContext {
             this.insertResult(item.journalLink);
         }
     }
-    onClose() {
+    onClose = () => {
         $(this.input).removeClass("quick-insert-context");
         this.input.focus();
-    }
+    };
 }
 class ScriptMacroContext extends InputContext {
     onSubmit(item) {
@@ -1249,7 +1474,7 @@ class RollTableContext extends InputContext {
         }
     }
 }
-class TinyMCEContext extends SearchContext {
+class TinyMCEContext extends BaseSearchContext {
     editor;
     constructor(editor) {
         super();
@@ -1272,11 +1497,11 @@ class TinyMCEContext extends SearchContext {
             this.editor.insertContent(item.journalLink);
         }
     }
-    onClose() {
+    onClose = () => {
         this.editor.focus();
-    }
+    };
 }
-class ProseMirrorContext extends SearchContext {
+class ProseMirrorContext extends BaseSearchContext {
     state;
     dispatch;
     view;
@@ -1302,11 +1527,11 @@ class ProseMirrorContext extends SearchContext {
         this.dispatch(tr);
         this.view.focus();
     }
-    onClose() {
+    onClose = () => {
         this.view.focus();
-    }
+    };
 }
-class CharacterSheetContext extends SearchContext {
+class CharacterSheetContext extends BaseSearchContext {
     documentSheet;
     anchor;
     restrictTypes = [DocumentType.ITEM];
@@ -1384,135 +1609,6 @@ function identifyContext(target) {
     return null;
 }
 
-function createStore(setting) {
-    const store = writable();
-    const { subscribe, set } = store;
-    return {
-        subscribe,
-        set: (value) => {
-            if (value !== get(store)) {
-                setSetting(setting, value);
-            }
-            return value;
-        },
-        update: (updater) => {
-            const value = updater(get(store));
-            setSetting(setting, value);
-        },
-        load: () => {
-            const value = getSetting(setting);
-            set(value);
-        },
-    };
-}
-const stores = {
-    [ModuleSetting.GM_ONLY]: createStore(ModuleSetting.GM_ONLY),
-    [ModuleSetting.FILTERS_SHEETS_ENABLED]: createStore(ModuleSetting.FILTERS_SHEETS_ENABLED),
-    [ModuleSetting.AUTOMATIC_INDEXING]: createStore(ModuleSetting.AUTOMATIC_INDEXING),
-    [ModuleSetting.SEARCH_BUTTON]: createStore(ModuleSetting.SEARCH_BUTTON),
-    [ModuleSetting.ENABLE_GLOBAL_CONTEXT]: createStore(ModuleSetting.ENABLE_GLOBAL_CONTEXT),
-    [ModuleSetting.INDEXING_DISABLED]: createStore(ModuleSetting.INDEXING_DISABLED),
-    [ModuleSetting.FILTERS_CLIENT]: createStore(ModuleSetting.FILTERS_CLIENT),
-    [ModuleSetting.FILTERS_WORLD]: createStore(ModuleSetting.FILTERS_WORLD),
-    [ModuleSetting.FILTERS_ADD_DEFAULT_SUBTYPE]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_SUBTYPE),
-    [ModuleSetting.FILTERS_ADD_DEFAULT_PACKS]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_PACKS),
-    [ModuleSetting.FILTERS_ADD_DEFAULT_TYPE]: createStore(ModuleSetting.FILTERS_ADD_DEFAULT_TYPE),
-    [ModuleSetting.DEFAULT_ACTION_MACRO]: createStore(ModuleSetting.DEFAULT_ACTION_MACRO),
-    [ModuleSetting.DEFAULT_ACTION_ROLL_TABLE]: createStore(ModuleSetting.DEFAULT_ACTION_ROLL_TABLE),
-    [ModuleSetting.DEFAULT_ACTION_SCENE]: createStore(ModuleSetting.DEFAULT_ACTION_SCENE),
-    [ModuleSetting.SEARCH_TOOLTIPS]: createStore(ModuleSetting.SEARCH_TOOLTIPS),
-    [ModuleSetting.EMBEDDED_INDEXING]: createStore(ModuleSetting.EMBEDDED_INDEXING),
-    [ModuleSetting.TOC_INDEXING]: createStore(ModuleSetting.TOC_INDEXING),
-    [ModuleSetting.SEARCH_DENSITY]: createStore(ModuleSetting.SEARCH_DENSITY),
-    [ModuleSetting.ENHANCED_TOOLTIPS]: createStore(ModuleSetting.ENHANCED_TOOLTIPS),
-    [ModuleSetting.SEARCH_ENGINE]: createStore(ModuleSetting.SEARCH_ENGINE),
-    [ModuleSetting.QUICK_FILTER_EDIT]: createStore(ModuleSetting.QUICK_FILTER_EDIT),
-    [ModuleSetting.REMEMBER_BROWSE_INPUT]: createStore(ModuleSetting.REMEMBER_BROWSE_INPUT),
-    [ModuleSetting.SEARCH_FOOTER]: createStore(ModuleSetting.SEARCH_FOOTER),
-};
-Hooks.on("ready", () => {
-    Object.values(stores).forEach((store) => store.load());
-});
-
-// Generate view data from IndexingDisabledSetting
-const enabledRoles = (disabled) => {
-    return [1, 2, 3, 4].reduce(function (map, role) {
-        map[role] = !disabled?.includes(role);
-        return map;
-    }, {});
-};
-function createDisabled() {
-    const { subscribe, update } = stores[ModuleSetting.INDEXING_DISABLED];
-    return {
-        subscribe,
-        toggleRole: (type, id, role, disabled) => update((value) => {
-            if (!value[type])
-                value[type] = { root: [] };
-            let roles = value[type][id];
-            if (!roles) {
-                value[type][id] = roles = [];
-            }
-            const roleIndex = roles.indexOf(role);
-            if (disabled && roleIndex === -1) {
-                roles.push(role);
-            }
-            else if (!disabled && roleIndex !== -1) {
-                roles.splice(roleIndex, 1);
-            }
-            if (roles.length === 0) {
-                delete value[type][id];
-            }
-            return value;
-        }),
-        toggleAll: (type, id, disabled) => update((value) => {
-            if (!value[type])
-                return value;
-            if (disabled) {
-                value[type][id] = [1, 2, 3, 4];
-            }
-            else {
-                delete value[type][id];
-            }
-            return value;
-        }),
-    };
-}
-const disabled = createDisabled();
-// Derived read-only stores used for views
-const documents = derived(disabled, ($disabled) => {
-    return IndexedDocumentTypes.map((type) => ({
-        type: "entities",
-        id: type,
-        title: loc(`DOCUMENT.${type}`),
-        enabled: enabledRoles($disabled.entities[type]),
-    }));
-});
-const packs = derived(disabled, ($disabled) => {
-    return game.packs
-        ? [...game.packs.contents].map((pack) => ({
-            type: "packs",
-            id: pack.collection,
-            title: pack.title,
-            documentType: pack.documentName,
-            subTitle: `${loc(`DOCUMENT.${pack.documentName}`)} (${pack.metadata.packageName})`,
-            enabled: enabledRoles($disabled.packs[pack.collection]),
-        }))
-        : [];
-});
-const directory = derived(disabled, ($disabled) => {
-    return {
-        type: "directory",
-        id: "root",
-        title: mloc("FilterEditorDirectory"),
-        enabled: enabledRoles($disabled.directory?.["root"]),
-    };
-});
-const enabledDocumentTypes = derived([stores[ModuleSetting.INDEXING_DISABLED]], ([$disabled]) => {
-    const role = game.user?.role || 4;
-    return IndexedDocumentTypes.filter((t) => !$disabled?.entities?.[t]?.includes(role));
-});
-const enabledPacks = derived([stores[ModuleSetting.INDEXING_DISABLED]], () => (game.packs ? game.packs.filter(packEnabled) : []));
-
 function typeLabel(type, subType) {
     if (type.includes(":")) {
         [type, subType] = type.split(":");
@@ -1542,7 +1638,7 @@ function getSubTypes(type) {
 
 function createDefaultStore() {
     return derived([
-        enabledDocumentTypes,
+        enabledDocumentTypes$1,
         stores[ModuleSetting.FILTERS_ADD_DEFAULT_PACKS],
         stores[ModuleSetting.FILTERS_ADD_DEFAULT_TYPE],
         stores[ModuleSetting.FILTERS_ADD_DEFAULT_SUBTYPE],
@@ -1568,7 +1664,7 @@ function createDefaultStore() {
         }
         if (enablePacks && game.packs) {
             const packFilters = game.packs
-                .filter(packEnabled)
+                .filter(packEnabled$1)
                 .map((pack) => {
                 return {
                     id: pack.collection,
@@ -1913,7 +2009,7 @@ function openAboutApp() {
     new AboutApp({}).render(true);
 }
 
-var root$s = template(`<div><!></div>`);
+var root$t = template(`<div><!></div>`);
 
 const $$css$w = {
 	hash: 'svelte-5hycqw',
@@ -1924,7 +2020,7 @@ function FormGroup($$anchor, $$props) {
 	append_styles($$anchor, $$css$w);
 
 	let sub = prop($$props, 'sub', 3, false);
-	var div = root$s();
+	var div = root$t();
 	let classes;
 	var node = child(div);
 
@@ -1933,8 +2029,8 @@ function FormGroup($$anchor, $$props) {
 	append($$anchor, div);
 }
 
-var root_2$g = template(`<p class="hint"> </p>`);
-var root_1$o = template(`<label class="svelte-oi272j"> </label> <div class="form-fields"><input type="checkbox" data-dtype="Boolean"></div> <!>`, 1);
+var root_2$c = template(`<p class="hint"> </p>`);
+var root_1$m = template(`<label class="svelte-oi272j"> </label> <div class="form-fields"><input type="checkbox" data-dtype="Boolean"></div> <!>`, 1);
 
 const $$css$v = {
 	hash: 'svelte-oi272j',
@@ -1955,7 +2051,7 @@ function FormCheckbox($$anchor, $$props) {
 			return sub();
 		},
 		children: ($$anchor, $$slotProps) => {
-			var fragment_1 = root_1$o();
+			var fragment_1 = root_1$m();
 			var label_1 = first_child(fragment_1);
 			var text = child(label_1);
 
@@ -1966,7 +2062,7 @@ function FormCheckbox($$anchor, $$props) {
 
 			{
 				var consequent = ($$anchor) => {
-					var p = root_2$g();
+					var p = root_2$c();
 					var text_1 = child(p);
 					template_effect(() => set_text(text_1, $$props.notes));
 					append($$anchor, p);
@@ -1994,9 +2090,9 @@ function FormCheckbox($$anchor, $$props) {
 	$$cleanup();
 }
 
-var root_2$f = template(`<option> </option>`);
-var root_3$3 = template(`<p class="hint"> </p>`);
-var root_1$n = template(`<label class="svelte-oi272j"> </label> <div class="form-fields"><select></select></div> <!>`, 1);
+var root_2$b = template(`<option> </option>`);
+var root_3$4 = template(`<p class="hint"> </p>`);
+var root_1$l = template(`<label class="svelte-oi272j"> </label> <div class="form-fields"><select></select></div> <!>`, 1);
 
 const $$css$u = {
 	hash: 'svelte-oi272j',
@@ -2020,7 +2116,7 @@ function FormSelect($$anchor, $$props) {
 			return $$props.sub;
 		},
 		children: ($$anchor, $$slotProps) => {
-			var fragment_1 = root_1$n();
+			var fragment_1 = root_1$l();
 			var label_1 = first_child(fragment_1);
 			var text = child(label_1);
 
@@ -2033,7 +2129,7 @@ function FormSelect($$anchor, $$props) {
 			var select_1_value;
 
 			each(select_1, 21, () => options, (option) => option.id, ($$anchor, option) => {
-				var option_1 = root_2$f();
+				var option_1 = root_2$b();
 				var option_1_value = {};
 				var text_1 = child(option_1);
 
@@ -2056,7 +2152,7 @@ function FormSelect($$anchor, $$props) {
 
 			{
 				var consequent = ($$anchor) => {
-					var p = root_3$3();
+					var p = root_3$4();
 					var text_2 = child(p);
 					template_effect(() => set_text(text_2, $$props.notes));
 					append($$anchor, p);
@@ -2093,7 +2189,7 @@ function FormSelect($$anchor, $$props) {
 	$$cleanup();
 }
 
-var root$r = template(`<fieldset class="svelte-z8u5q7"><legend class="svelte-z8u5q7"> </legend> <!></fieldset>`);
+var root$s = template(`<fieldset class="svelte-z8u5q7"><legend class="svelte-z8u5q7"> </legend> <!></fieldset>`);
 
 const $$css$t = {
 	hash: 'svelte-z8u5q7',
@@ -2103,7 +2199,7 @@ const $$css$t = {
 function SettingsGroup($$anchor, $$props) {
 	append_styles($$anchor, $$css$t);
 
-	var fieldset = root$r();
+	var fieldset = root$s();
 	var legend = child(fieldset);
 	var text = child(legend);
 
@@ -2114,8 +2210,8 @@ function SettingsGroup($$anchor, $$props) {
 	append($$anchor, fieldset);
 }
 
-var root_1$m = template(`<div class="options svelte-1kbg508"><!> <!> <!> <!> <!> <!></div>`);
-var root$q = template(`<div role="tabpanel"><p class="notes svelte-1kbg508"> </p> <!></div>`);
+var root_1$k = template(`<div class="options svelte-1kbg508"><!> <!> <!> <!> <!> <!></div>`);
+var root$r = template(`<div role="tabpanel"><p class="notes svelte-1kbg508"> </p> <!></div>`);
 
 const $$css$s = {
 	hash: 'svelte-1kbg508',
@@ -2127,7 +2223,7 @@ function GmTab($$anchor, $$props) {
 	append_styles($$anchor, $$css$s);
 
 	let active = prop($$props, 'active', 3, false);
-	var div = root$q();
+	var div = root$r();
 	let classes;
 	var p = child(div);
 	var text = child(p);
@@ -2137,7 +2233,7 @@ function GmTab($$anchor, $$props) {
 	SettingsGroup(node, {
 		title: 'General Settings',
 		children: ($$anchor, $$slotProps) => {
-			var div_1 = root_1$m();
+			var div_1 = root_1$k();
 			var node_1 = child(div_1);
 			const expression = derived$1(() => mloc("SettingsGmOnly"));
 			const expression_1 = derived$1(() => mloc("SettingsGmOnlyHint"));
@@ -2488,969 +2584,6 @@ function fakeSearchResults(insertContext = false) {
     ];
 }
 
-var root_2$e = template(`<img class="doc-image" draggable="false">`);
-var root_4$4 = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"> <!></span></div>`);
-var root_5$2 = template(`<span class="title"><!></span> <span class="sub"> </span> <!>`, 1);
-var root_7$1 = template(`<i draggable="false" data-tooltip-direction="UP"><img></i>`);
-var root_8 = template(`<i data-tooltip-direction="UP"></i>`);
-var root_1$l = template(`<li role="option"><a draggable="true"><!> <!> <span class="action-icons"></span></a></li>`);
-var root$p = template(`<ul tabindex="-1" role="listbox"></ul>`);
-
-function SearchResults($$anchor, $$props) {
-	push($$props, true);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $tooltipModeSetting = () => store_get(tooltipModeSetting, '$tooltipModeSetting', $$stores);
-	const $density = () => store_get(density, '$density', $$stores);
-	const $enhancedTooltips = () => store_get(enhancedTooltips, '$enhancedTooltips', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let tooltips = prop($$props, 'tooltips', 3, "LEFT"),
-		embedded = prop($$props, 'embedded', 3, false),
-		results = prop($$props, 'results', 19, () => []);
-
-	let density = stores[ModuleSetting.SEARCH_DENSITY];
-	let tooltipModeSetting = stores[ModuleSetting.SEARCH_TOOLTIPS];
-	let enhancedTooltips = stores[ModuleSetting.ENHANCED_TOOLTIPS];
-	let tooltipMode = $tooltipModeSetting();
-	let resultList;
-
-	user_effect(() => {
-		if (embedded()) {
-			return;
-		}
-
-		if (resultList?.children[$$props.selectedIndex]) {
-			const selected = resultList.children[$$props.selectedIndex];
-
-			selected.scrollIntoView({ block: "nearest" });
-
-			if (tooltipMode !== "off" && selected.dataset?.tooltip && !embedded()) {
-				game.tooltip.activate(selected);
-			} else {
-				game.tooltip.deactivate();
-			}
-		} else {
-			if (tooltipMode !== "off") {
-				game.tooltip.deactivate();
-			}
-		}
-	});
-
-	function callAction(actionId, item, shiftKey) {
-		dispatch("callAction", { actionId, item, shiftKey });
-	}
-
-	function getTooltip(item, side, tooltipMode) {
-		if (tooltipMode === "off" || side === "OFF") return "";
-
-		const showImage = tooltipMode === "full" || tooltipMode === "image";
-		const img = showImage && item.img ? `<img src="${item.img}" style="max-width: 80px; margin: 0 auto 0.5rem auto; border-radius: 10px;"/>` : "";
-		const text = tooltipMode !== "image"
-			? `<p style='margin:0;text-align:center; max-width: 260px;'>${item.name}</p>
-           <p style='text-align: center;font-size: 90%; opacity:0.8;margin:0; max-width: 260px;'>${item.icon} ${item.tooltip}</p>`
-			: "";
-
-		return img + text;
-	}
-
-	var ul = root$p();
-
-	each(
-		ul,
-		23,
-		results,
-		(
-			{
-				item,
-				formattedMatch,
-				actions,
-				defaultAction
-			}
-		) => item.id + item.uuid,
-		($$anchor, $$item, index$1) => {
-			let item = () => get$1($$item).item;
-			let formattedMatch = () => get$1($$item).formattedMatch;
-			let actions = () => get$1($$item).actions;
-			let defaultAction = () => get$1($$item).defaultAction;
-			var li = root_1$l();
-			let classes;
-			var a = child(li);
-			var node = child(a);
-
-			{
-				var consequent = ($$anchor) => {
-					var img_1 = root_2$e();
-
-					template_effect(() => set_attribute(img_1, 'src', item().img));
-					append($$anchor, img_1);
-				};
-
-				var alternate = ($$anchor) => {
-					var fragment = comment();
-					var node_1 = first_child(fragment);
-
-					html(node_1, () => item().icon);
-					append($$anchor, fragment);
-				};
-
-				if_block(node, ($$render) => {
-					if (item().img) $$render(consequent); else $$render(alternate, false);
-				});
-			}
-
-			var node_2 = sibling(node, 2);
-
-			{
-				var consequent_1 = ($$anchor) => {
-					var div = root_4$4();
-					var span = child(div);
-					var node_3 = child(span);
-
-					html(node_3, () => formattedMatch() || item().name);
-
-					var span_1 = sibling(span, 2);
-					var text_1 = child(span_1);
-					var node_4 = sibling(text_1);
-
-					html(node_4, () => getLocationIcon(item()));
-					template_effect(() => set_text(text_1, `${item().tooltip ?? ''} `));
-					append($$anchor, div);
-				};
-
-				var alternate_1 = ($$anchor) => {
-					var fragment_1 = root_5$2();
-					var span_2 = first_child(fragment_1);
-					var node_5 = child(span_2);
-
-					html(node_5, () => formattedMatch() || item().name);
-
-					var span_3 = sibling(span_2, 2);
-					var text_2 = child(span_3);
-
-					var node_6 = sibling(span_3, 2);
-
-					html(node_6, () => getLocationIcon(item()));
-					template_effect(() => set_text(text_2, item().tagline));
-					append($$anchor, fragment_1);
-				};
-
-				if_block(node_2, ($$render) => {
-					if ($density() === "spacious") $$render(consequent_1); else $$render(alternate_1, false);
-				});
-			}
-
-			var span_4 = sibling(node_2, 2);
-
-			each(span_4, 21, () => actions() || [], index, ($$anchor, action) => {
-				var fragment_2 = comment();
-				var node_7 = first_child(fragment_2);
-
-				{
-					var consequent_2 = ($$anchor) => {
-						var i = root_7$1();
-						let classes_1;
-						var img_2 = child(i);
-
-						template_effect(
-							($0) => {
-								classes_1 = set_class(i, 1, 'action-icon', null, classes_1, $0);
-								set_attribute(i, 'data-tooltip', get$1(action).title);
-								set_attribute(i, 'data-action-id', get$1(action).id);
-								set_attribute(img_2, 'src', get$1(action).img);
-							},
-							[
-								() => ({
-									selected: get$1(index$1) === $$props.selectedIndex && ($$props.selectedAction ? get$1(action).id === $$props.selectedAction : get$1(action).id == defaultAction())
-								})
-							]
-						);
-
-						event('click', i, stopPropagation((e) => callAction(get$1(action).id, item(), e.shiftKey)));
-						append($$anchor, i);
-					};
-
-					var alternate_2 = ($$anchor) => {
-						var i_1 = root_8();
-						let classes_2;
-
-						template_effect(
-							($0) => {
-								classes_2 = set_class(i_1, 1, `${get$1(action).icon ?? ''} action-icon`, null, classes_2, $0);
-								set_attribute(i_1, 'data-tooltip', get$1(action).title);
-								set_attribute(i_1, 'data-action-id', get$1(action).id);
-							},
-							[
-								() => ({
-									selected: get$1(index$1) === $$props.selectedIndex && ($$props.selectedAction ? get$1(action).id === $$props.selectedAction : get$1(action).id == defaultAction())
-								})
-							]
-						);
-
-						event('click', i_1, stopPropagation((e) => callAction(get$1(action).id, item(), e.shiftKey)));
-						append($$anchor, i_1);
-					};
-
-					if_block(node_7, ($$render) => {
-						if (get$1(action).img) $$render(consequent_2); else $$render(alternate_2, false);
-					});
-				}
-
-				append($$anchor, fragment_2);
-			});
-
-			template_effect(
-				($0, $1) => {
-					set_attribute(li, 'aria-selected', get$1(index$1) === $$props.selectedIndex);
-					set_attribute(li, 'data-tooltip', $0);
-					classes = set_class(li, 1, clsx($enhancedTooltips() ? "content-link" : undefined), null, classes, $1);
-					set_attribute(li, 'data-uuid', item().uuid);
-					set_attribute(li, 'data-hash', item().anchor?.slug);
-					set_attribute(li, 'id', `result_${item().id}${item().uuid}`);
-					set_attribute(a, 'title', tooltipMode === "off" || tooltipMode === "image" ? `${item().name} - ${item().tooltip}` : undefined);
-				},
-				[
-					() => getTooltip(item(), tooltips(), $tooltipModeSetting()),
-					() => ({
-						'search-selected': get$1(index$1) === $$props.selectedIndex
-					})
-				]
-			);
-
-			event('dragstart', a, (event) => event.dataTransfer?.setData("text/plain", JSON.stringify(item().dragData)));
-			event('click', a, stopPropagation((e) => callAction(defaultAction(), item(), e.shiftKey)));
-			append($$anchor, li);
-		}
-	);
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-
-	template_effect(() => {
-		set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`);
-		set_attribute(ul, 'data-tooltip-direction', tooltips());
-		set_attribute(ul, 'aria-activedescendant', `result_${results()[$$props.selectedIndex]?.item.id}${results()[$$props.selectedIndex]?.item.uuid}`);
-	});
-
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var root$o = template(`<div class="example-results svelte-zptd4e"><!> <span class="notes svelte-zptd4e"><!></span></div>`);
-
-const $$css$r = {
-	hash: 'svelte-zptd4e',
-	code: '.example-results.svelte-zptd4e {overflow:hidden;display:flex;flex-shrink:0;flex-grow:1;flex-direction:column;align-items:center;width:275px;margin-top:1em;}.example-results.svelte-zptd4e .quick-insert-result {border-radius:4px;border:1px solid #7a7971;width:275px;background:var(--qiBackground);}\n\n  /* Dorako UI compatibility */[data-theme].application\n    .example-results.svelte-zptd4e\n    .quick-insert-result {background:var(--app-background);border:var(--app-border-width) solid var(--app-border-color);}.example-results.svelte-zptd4e .notes:where(.svelte-zptd4e) {text-align:center;}'
-};
-
-function ExampleResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$r);
-
-	let selectedIndex = prop($$props, 'selectedIndex', 19, () => $$props.results.length - 1);
-	var div = root$o();
-	var node = child(div);
-
-	SearchResults(node, {
-		embedded: true,
-		get results() {
-			return $$props.results;
-		},
-		get selectedIndex() {
-			return selectedIndex();
-		},
-		selectedAction: ''
-	});
-
-	var span = sibling(node, 2);
-	var node_1 = child(span);
-
-	slot(node_1, $$props, 'default', {});
-	append($$anchor, div);
-	pop();
-}
-
-var root_1$k = template(`<div class="options svelte-15t6cpc"><!> <!> <!> <!> <!> <!></div>`);
-var root_2$d = template(`<p class="notes svelte-15t6cpc"><!></p> <div class="options svelte-15t6cpc"><!> <!> <legend> </legend> <p class="notes svelte-15t6cpc"><!></p> <!> <!> <!></div> <!>`, 1);
-var root_4$3 = template(`<div class="options svelte-15t6cpc"><p class="notes svelte-15t6cpc"><!></p></div> <!>`, 1);
-var root$n = template(`<div role="tabpanel"><p class="notes svelte-15t6cpc"> </p> <!> <!> <!></div>`);
-
-const $$css$q = {
-	hash: 'svelte-15t6cpc',
-	code: '.usertab.svelte-15t6cpc {overflow:auto;height:100%;padding:0.6em;}.hidden.svelte-15t6cpc {display:none;}.usertab.svelte-15t6cpc .form-fields:first-child {flex-grow:0;margin-right:0.2em;}.options.svelte-15t6cpc {display:flex;flex-direction:column;flex-grow:1;width:50%;gap:1rem;}p.notes.svelte-15t6cpc {margin-top:0;}kbd {flex:none;padding:0 4px;min-width:24px;background:rgba(255, 255, 255, 0.25);border:1px solid var(--color-border-light-2);border-radius:5px;box-shadow:1px 1px #444;text-align:center;}'
-};
-
-function UserTab($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$q);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $defaultActionMacro = () => store_get(defaultActionMacro, '$defaultActionMacro', $$stores);
-	const $defaultActionRollTable = () => store_get(defaultActionRollTable, '$defaultActionRollTable', $$stores);
-	const $defaultActionScene = () => store_get(defaultActionScene, '$defaultActionScene', $$stores);
-	let active = prop($$props, 'active', 3, false);
-	const insertResults = fakeSearchResults(true);
-	let defaultActionMacro = stores[ModuleSetting.DEFAULT_ACTION_MACRO];
-	let defaultActionRollTable = stores[ModuleSetting.DEFAULT_ACTION_ROLL_TABLE];
-	let defaultActionScene = stores[ModuleSetting.DEFAULT_ACTION_SCENE];
-	let browseResults = derived$1(() => $defaultActionMacro() && $defaultActionRollTable() && $defaultActionScene() && fakeSearchResults());
-	var div = root$n();
-	let classes;
-	var p = child(div);
-	var text = child(p);
-
-	var node = sibling(p, 2);
-
-	SettingsGroup(node, {
-		title: 'General Settings',
-		children: ($$anchor, $$slotProps) => {
-			var div_1 = root_1$k();
-			var node_1 = child(div_1);
-			const expression = derived$1(() => mloc("SettingsSearchDensity"));
-			const expression_1 = derived$1(() => mloc("SettingsSearchDensityHint"));
-
-			FormSelect(node_1, {
-				get label() {
-					return get$1(expression);
-				},
-				get setting() {
-					return ModuleSetting.SEARCH_DENSITY;
-				},
-				get notes() {
-					return get$1(expression_1);
-				}
-			});
-
-			var node_2 = sibling(node_1, 2);
-			const expression_2 = derived$1(() => mloc("SettingsSearchFooter"));
-			const expression_3 = derived$1(() => mloc("SettingsSearchFooterHint"));
-
-			FormCheckbox(node_2, {
-				get label() {
-					return get$1(expression_2);
-				},
-				get setting() {
-					return ModuleSetting.SEARCH_FOOTER;
-				},
-				get notes() {
-					return get$1(expression_3);
-				}
-			});
-
-			var node_3 = sibling(node_2, 2);
-			const expression_4 = derived$1(() => mloc("SettingsSearchTooltips"));
-			const expression_5 = derived$1(() => mloc("SettingsSearchTooltipsHint"));
-
-			FormSelect(node_3, {
-				get label() {
-					return get$1(expression_4);
-				},
-				get setting() {
-					return ModuleSetting.SEARCH_TOOLTIPS;
-				},
-				get notes() {
-					return get$1(expression_5);
-				}
-			});
-
-			var node_4 = sibling(node_3, 2);
-			const expression_6 = derived$1(() => mloc("SettingsEnhancedTooltips"));
-			const expression_7 = derived$1(() => mloc("SettingsEnhancedTooltipsHint"));
-
-			FormCheckbox(node_4, {
-				get label() {
-					return get$1(expression_6);
-				},
-				get setting() {
-					return ModuleSetting.ENHANCED_TOOLTIPS;
-				},
-				get notes() {
-					return get$1(expression_7);
-				}
-			});
-
-			var node_5 = sibling(node_4, 2);
-			const expression_8 = derived$1(() => mloc("SettingsSearchEngine"));
-			const expression_9 = derived$1(() => mloc("SettingsSearchEngineHint"));
-
-			FormSelect(node_5, {
-				get label() {
-					return get$1(expression_8);
-				},
-				get setting() {
-					return ModuleSetting.SEARCH_ENGINE;
-				},
-				get notes() {
-					return get$1(expression_9);
-				}
-			});
-
-			var node_6 = sibling(node_5, 2);
-			const expression_10 = derived$1(() => mloc("SettingsQuickFilterEdit"));
-			const expression_11 = derived$1(() => mloc("SettingsQuickFilterEditHint"));
-
-			FormCheckbox(node_6, {
-				get label() {
-					return get$1(expression_10);
-				},
-				get setting() {
-					return ModuleSetting.QUICK_FILTER_EDIT;
-				},
-				get notes() {
-					return get$1(expression_11);
-				}
-			});
-			append($$anchor, div_1);
-		},
-		$$slots: { default: true }
-	});
-
-	var node_7 = sibling(node, 2);
-	const expression_12 = derived$1(() => mloc("ModeBrowse"));
-
-	SettingsGroup(node_7, {
-		get title() {
-			return get$1(expression_12);
-		},
-		children: ($$anchor, $$slotProps) => {
-			var fragment = root_2$d();
-			var p_1 = first_child(fragment);
-			var node_8 = child(p_1);
-
-			html(node_8, () => mloc("ModeBrowseDescription"));
-
-			var div_2 = sibling(p_1, 2);
-			var node_9 = child(div_2);
-			const expression_13 = derived$1(() => mloc("SettingsEnableGlobalContext"));
-			const expression_14 = derived$1(() => mloc("SettingsEnableGlobalContextHint"));
-
-			FormCheckbox(node_9, {
-				get label() {
-					return get$1(expression_13);
-				},
-				get setting() {
-					return ModuleSetting.ENABLE_GLOBAL_CONTEXT;
-				},
-				get notes() {
-					return get$1(expression_14);
-				}
-			});
-
-			var node_10 = sibling(node_9, 2);
-			const expression_15 = derived$1(() => mloc("SettingsRememberBrowseInput"));
-			const expression_16 = derived$1(() => mloc("SettingsRememberBrowseInputHint"));
-
-			FormCheckbox(node_10, {
-				get label() {
-					return get$1(expression_15);
-				},
-				get setting() {
-					return ModuleSetting.REMEMBER_BROWSE_INPUT;
-				},
-				get notes() {
-					return get$1(expression_16);
-				}
-			});
-
-			var legend = sibling(node_10, 2);
-			var text_1 = child(legend);
-
-			var p_2 = sibling(legend, 2);
-			var node_11 = child(p_2);
-
-			html(node_11, () => mloc("SettingsDefaultActionDescription"));
-
-			var node_12 = sibling(p_2, 2);
-
-			FormSelect(node_12, {
-				sub: true,
-				label: 'Scenes',
-				get setting() {
-					return ModuleSetting.DEFAULT_ACTION_SCENE;
-				}
-			});
-
-			var node_13 = sibling(node_12, 2);
-
-			FormSelect(node_13, {
-				sub: true,
-				label: 'Rollable Tables',
-				get setting() {
-					return ModuleSetting.DEFAULT_ACTION_ROLL_TABLE;
-				}
-			});
-
-			var node_14 = sibling(node_13, 2);
-
-			FormSelect(node_14, {
-				sub: true,
-				label: 'Macros',
-				get setting() {
-					return ModuleSetting.DEFAULT_ACTION_MACRO;
-				}
-			});
-
-			var node_15 = sibling(div_2, 2);
-			const expression_17 = derived$1(() => get$1(browseResults) || []);
-
-			ExampleResults(node_15, {
-				get results() {
-					return get$1(expression_17);
-				},
-				children: ($$anchor, $$slotProps) => {
-					var fragment_1 = comment();
-					var node_16 = first_child(fragment_1);
-
-					html(node_16, () => mloc("SettingsExampleBrowse"));
-					append($$anchor, fragment_1);
-				},
-				$$slots: { default: true }
-			});
-
-			template_effect(($0) => set_text(text_1, $0), [
-				() => mloc("SettingsDefaultActionCategory")
-			]);
-
-			append($$anchor, fragment);
-		},
-		$$slots: { default: true }
-	});
-
-	var node_17 = sibling(node_7, 2);
-	const expression_18 = derived$1(() => mloc("ModeInsert"));
-
-	SettingsGroup(node_17, {
-		get title() {
-			return get$1(expression_18);
-		},
-		children: ($$anchor, $$slotProps) => {
-			var fragment_2 = root_4$3();
-			var div_3 = first_child(fragment_2);
-			var p_3 = child(div_3);
-			var node_18 = child(p_3);
-
-			html(node_18, () => mloc("ModeInsertDescription"));
-
-			var node_19 = sibling(div_3, 2);
-
-			ExampleResults(node_19, {
-				results: insertResults,
-				children: ($$anchor, $$slotProps) => {
-					var fragment_3 = comment();
-					var node_20 = first_child(fragment_3);
-
-					html(node_20, () => mloc("SettingsExampleInsert"));
-					append($$anchor, fragment_3);
-				},
-				$$slots: { default: true }
-			});
-
-			append($$anchor, fragment_2);
-		},
-		$$slots: { default: true }
-	});
-
-	template_effect(
-		($0, $1) => {
-			classes = set_class(div, 1, 'usertab standard-form svelte-15t6cpc', null, classes, $0);
-			set_text(text, $1);
-		},
-		[
-			() => ({ hidden: !active() }),
-			() => mloc("SettingsUserSettingDescription")
-		]
-	);
-
-	append($$anchor, div);
-	pop();
-	$$cleanup();
-}
-
-var root_1$j = template(`<span class="hint"> </span>`);
-var root$m = template(`<div class="form-group svelte-i8ja8a"><div class="row-label svelte-i8ja8a"><input type="checkbox" class="svelte-i8ja8a"> <label class="index svelte-i8ja8a"> <!></label></div> <div class="form-fields svelte-i8ja8a"><input type="checkbox" class="svelte-i8ja8a"> <input type="checkbox" class="svelte-i8ja8a"> <input type="checkbox" class="svelte-i8ja8a"> <input type="checkbox" class="svelte-i8ja8a"></div></div>`);
-
-const $$css$p = {
-	hash: 'svelte-i8ja8a',
-	code: '.form-group.svelte-i8ja8a {padding:0.2em;margin:0;align-items:center;border-top:1px solid var(--color-border-dark-4);color:var(--color-form-label);}.form-group.svelte-i8ja8a label:where(.svelte-i8ja8a) {font-weight:bold;}.form-group.svelte-i8ja8a:hover {color:var(--color-form-label-hover);}.row-label.svelte-i8ja8a {flex:0 0 calc(45% + 0.4em);display:flex;align-items:center;}.row-label.svelte-i8ja8a label:where(.svelte-i8ja8a) {flex:unset;}.form-fields.svelte-i8ja8a {justify-content:space-around;}input.svelte-i8ja8a:disabled {opacity:0.6;filter:saturate(0);}'
-};
-
-function IndexingRow($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$p);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $disabled = () => store_get(disabled, '$disabled', $$stores);
-	const dispatch = createEventDispatcher();
-	let disabledRoles = derived$1(() => $$props.row.documentType && $$props.row.documentType in $disabled().entities ? $disabled().entities[$$props.row.documentType] : []);
-	let checked = derived$1(() => Object.values($$props.row.enabled).some((v) => v));
-	let indeterminate = derived$1(() => get$1(checked) && !Object.values($$props.row.enabled).every((v) => v));
-	const all = [1, 2, 3, 4];
-	let allDisabled = derived$1(() => all.every((r) => get$1(disabledRoles).includes(r)));
-
-	const checkAll = (evt) => dispatch("change", {
-		disabled: !evt.target.checked || get$1(indeterminate)
-	});
-
-	const check = (role) => (evt) => dispatch("change", { role, disabled: !evt.target?.checked });
-	var div = root$m();
-	var div_1 = child(div);
-	var input = child(div_1);
-
-	var label = sibling(input, 2);
-	var text = child(label);
-	var node = sibling(text);
-
-	{
-		var consequent = ($$anchor) => {
-			var span = root_1$j();
-			var text_1 = child(span);
-			template_effect(() => set_text(text_1, $$props.row.subTitle));
-			append($$anchor, span);
-		};
-
-		if_block(node, ($$render) => {
-			if ($$props.row.subTitle) $$render(consequent);
-		});
-	}
-
-	var div_2 = sibling(div_1, 2);
-	var input_1 = child(div_2);
-	var event_handler = derived$1(() => check(1));
-
-	var input_2 = sibling(input_1, 2);
-	var event_handler_1 = derived$1(() => check(2));
-
-	var input_3 = sibling(input_2, 2);
-	var event_handler_2 = derived$1(() => check(3));
-
-	var input_4 = sibling(input_3, 2);
-	var event_handler_3 = derived$1(() => check(4));
-
-	template_effect(
-		($0, $1, $2, $3) => {
-			set_attribute(input, 'name', `${$$props.row.id ?? ''}.All`);
-			set_attribute(input, 'id', `${$$props.row.id ?? ''}.All`);
-			set_checked(input, get$1(checked));
-			input.indeterminate = get$1(indeterminate);
-			input.disabled = get$1(allDisabled);
-			set_attribute(label, 'for', `${$$props.row.id ?? ''}.All`);
-			set_text(text, `${$$props.row.title ?? ''} `);
-			set_attribute(input_1, 'name', `${$$props.row.id ?? ''}.1`);
-			set_attribute(input_1, 'id', `${$$props.row.id ?? ''}.1`);
-			set_checked(input_1, $$props.row.enabled[1]);
-			input_1.disabled = $0;
-			set_attribute(input_2, 'name', `${$$props.row.id ?? ''}.2`);
-			set_attribute(input_2, 'id', `${$$props.row.id ?? ''}.2`);
-			set_checked(input_2, $$props.row.enabled[2]);
-			input_2.disabled = $1;
-			set_attribute(input_3, 'name', `${$$props.row.id ?? ''}.3`);
-			set_attribute(input_3, 'id', `${$$props.row.id ?? ''}.3`);
-			set_checked(input_3, $$props.row.enabled[3]);
-			input_3.disabled = $2;
-			set_attribute(input_4, 'name', `${$$props.row.id ?? ''}.4`);
-			set_attribute(input_4, 'id', `${$$props.row.id ?? ''}.4`);
-			set_checked(input_4, $$props.row.enabled[4]);
-			input_4.disabled = $3;
-		},
-		[
-			() => get$1(disabledRoles).includes(1),
-			() => get$1(disabledRoles).includes(2),
-			() => get$1(disabledRoles).includes(3),
-			() => get$1(disabledRoles).includes(4)
-		]
-	);
-
-	event('click', input, checkAll);
-
-	event('click', input_1, function (...$$args) {
-		get$1(event_handler)?.apply(this, $$args);
-	});
-
-	event('click', input_2, function (...$$args) {
-		get$1(event_handler_1)?.apply(this, $$args);
-	});
-
-	event('click', input_3, function (...$$args) {
-		get$1(event_handler_2)?.apply(this, $$args);
-	});
-
-	event('click', input_4, function (...$$args) {
-		get$1(event_handler_3)?.apply(this, $$args);
-	});
-
-	append($$anchor, div);
-	pop();
-	$$cleanup();
-}
-
-var root$l = template(`<button><!></button>`);
-
-const $$css$o = {
-	hash: 'svelte-96f0xp',
-	code: 'button.svelte-96f0xp {color:var(--color-text-primary);border:none;background:rgba(255, 255, 255, 0.2);width:100%;margin:6px;transition:box-shadow 100ms ease-out;}button.svelte-96f0xp:hover {color:var(--color-text-primary);background:rgba(255, 255, 255, 0.3);box-shadow:0 0 2px 1px #0003;}button.svelte-96f0xp:focus {box-shadow:0 0 0 2px #0003;}button.svelte-96f0xp:active {box-shadow:inset 0 0 0 1px #0004;}.round.svelte-96f0xp {background:rgba(255, 255, 255, 0.2);border-radius:15px;height:30px;padding:0 16px 0 8px;}.round.svelte-96f0xp:hover {background:rgba(255, 255, 255, 0.3);}'
-};
-
-function NiceButton($$anchor, $$props) {
-	append_styles($$anchor, $$css$o);
-
-	let round = prop($$props, 'round', 3, false);
-	var button = root$l();
-	let classes;
-	var node = child(button);
-
-	slot(node, $$props, 'default', {});
-
-	template_effect(
-		($0) => {
-			set_attribute(button, 'title', $$props.title);
-			classes = set_class(button, 1, 'svelte-96f0xp', null, classes, $0);
-		},
-		[() => ({ round: round() })]
-	);
-
-	event('click', button, preventDefault(function ($$arg) {
-		bubble_event.call(this, $$props, $$arg);
-	}));
-
-	append($$anchor, button);
-}
-
-var root_2$c = template(`<span class="notes"> </span>`);
-var root_6$2 = template(`<span class="notes"> </span>`);
-var root$k = template(`<div role="tabpanel"><p class="notes svelte-1uc6pmt"> </p> <header class="table-header flexrow svelte-1uc6pmt"><span class="index svelte-1uc6pmt"><input class="filter-input svelte-1uc6pmt" type="text"></span> <span> </span> <span> </span> <span> </span> <span> </span></header> <div class="indexing-list svelte-1uc6pmt"><h3 class="svelte-1uc6pmt"> </h3> <!> <h3 class="svelte-1uc6pmt"> </h3> <!> <h3 class="svelte-1uc6pmt"> </h3> <div class="form-group"><!> <!></div> <!></div></div>`);
-
-const $$css$n = {
-	hash: 'svelte-1uc6pmt',
-	code: '.indexingtab.svelte-1uc6pmt {display:flex;flex-direction:column;height:100%;gap:0;}.hidden.svelte-1uc6pmt {display:none;}.indexingtab.svelte-1uc6pmt > :where(.svelte-1uc6pmt) {flex:unset;}.filter-input.svelte-1uc6pmt {color:inherit;font-weight:normal;}.filter-input.svelte-1uc6pmt::placeholder {color:inherit;opacity:0.6;}.indexing-list.svelte-1uc6pmt {overflow-y:auto;overflow-x:hidden;height:500px;scrollbar-width:thin;flex:1;}.index.svelte-1uc6pmt {flex:0 0 45%;font-weight:bold;padding:0 1em;}header.table-header.svelte-1uc6pmt {background:#2229;line-height:2em;text-align:center;color:#f0f0e0;font-weight:bold;text-shadow:1px 1px #000d;box-shadow:0 2px 2px #0006;position:relative;z-index:2;}.indexing-list.svelte-1uc6pmt h3:where(.svelte-1uc6pmt) {color:#f0f0e0;background:rgba(0, 0, 0, 0.5);border:none;text-shadow:1px 1px #000d;padding:0.2em;font-size:120%;margin:0;}p.notes.svelte-1uc6pmt {margin:0.6em;}'
-};
-
-function IndexingTab($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$n);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $packs = () => store_get(packs, '$packs', $$stores);
-	const $directory = () => store_get(directory, '$directory', $$stores);
-	const $documents = () => store_get(documents, '$documents', $$stores);
-	let filter = state("");
-	const filterRows = (filter, rows) => rows.filter((row) => row.title.toLowerCase().includes(filter.toLowerCase()) || row.subTitle?.toLowerCase().includes(filter.toLowerCase()));
-
-	const change = (row) => (event) => {
-		if (event.detail.role) {
-			disabled.toggleRole(row.type, row.id, event.detail.role, event.detail.disabled);
-		} else {
-			disabled.toggleAll(row.type, row.id, event.detail.disabled);
-		}
-	};
-
-	function selectAll() {
-		filterRows(get$1(filter), $packs()).forEach((row) => change(row)(new CustomEvent("", { detail: { disabled: false } })));
-	}
-
-	function deselectAll() {
-		filterRows(get$1(filter), $packs()).forEach((row) => change(row)(new CustomEvent("", { detail: { disabled: true } })));
-	}
-
-	var div = root$k();
-	let classes;
-	var p = child(div);
-	var text$1 = child(p);
-
-	var header = sibling(p, 2);
-	var span = child(header);
-	var input = child(span);
-
-	var span_1 = sibling(span, 2);
-	var text_1 = child(span_1);
-
-	var span_2 = sibling(span_1, 2);
-	var text_2 = child(span_2);
-
-	var span_3 = sibling(span_2, 2);
-	var text_3 = child(span_3);
-
-	var span_4 = sibling(span_3, 2);
-	var text_4 = child(span_4);
-
-	var div_1 = sibling(header, 2);
-	var h3 = child(div_1);
-	var text_5 = child(h3);
-
-	var node = sibling(h3, 2);
-	var event_handler = derived$1(() => change($directory()));
-
-	IndexingRow(node, {
-		get row() {
-			return $directory();
-		},
-		$$events: {
-			change(...$$args) {
-				get$1(event_handler)?.apply(this, $$args);
-			}
-		}
-	});
-
-	var h3_1 = sibling(node, 2);
-	var text_6 = child(h3_1);
-
-	var node_1 = sibling(h3_1, 2);
-
-	each(
-		node_1,
-		1,
-		() => filterRows(get$1(filter), $documents()),
-		(row) => row.id,
-		($$anchor, row) => {
-			var event_handler_1 = derived$1(() => change(get$1(row)));
-
-			IndexingRow($$anchor, {
-				get row() {
-					return get$1(row);
-				},
-				$$events: {
-					change(...$$args) {
-						get$1(event_handler_1)?.apply(this, $$args);
-					}
-				}
-			});
-		},
-		($$anchor) => {
-			var span_5 = root_2$c();
-			var text_7 = child(span_5);
-
-			template_effect(($0) => set_text(text_7, $0), [
-				() => mloc("IndexingSettingsNoMatchType", { filter: get$1(filter) })
-			]);
-
-			append($$anchor, span_5);
-		}
-	);
-
-	var h3_2 = sibling(node_1, 2);
-	var text_8 = child(h3_2);
-
-	var div_2 = sibling(h3_2, 2);
-	var node_2 = child(div_2);
-
-	NiceButton(node_2, {
-		$$events: { click: selectAll },
-		children: ($$anchor, $$slotProps) => {
-
-			var text_9 = text();
-
-			template_effect(($0) => set_text(text_9, $0), [() => mloc("IndexingSettingsSelectAll")]);
-			append($$anchor, text_9);
-		},
-		$$slots: { default: true }
-	});
-
-	var node_3 = sibling(node_2, 2);
-
-	NiceButton(node_3, {
-		$$events: { click: deselectAll },
-		children: ($$anchor, $$slotProps) => {
-
-			var text_10 = text();
-
-			template_effect(($0) => set_text(text_10, $0), [() => mloc("IndexingSettingsDeselectAll")]);
-			append($$anchor, text_10);
-		},
-		$$slots: { default: true }
-	});
-
-	var node_4 = sibling(div_2, 2);
-
-	each(
-		node_4,
-		1,
-		() => filterRows(get$1(filter), $packs()),
-		(row) => row.id,
-		($$anchor, row) => {
-			var event_handler_2 = derived$1(() => change(get$1(row)));
-
-			IndexingRow($$anchor, {
-				get row() {
-					return get$1(row);
-				},
-				$$events: {
-					change(...$$args) {
-						get$1(event_handler_2)?.apply(this, $$args);
-					}
-				}
-			});
-		},
-		($$anchor) => {
-			var span_6 = root_6$2();
-			var text_11 = child(span_6);
-
-			template_effect(($0) => set_text(text_11, $0), [
-				() => mloc("IndexingSettingsNoMatchCompendium", { filter: get$1(filter) })
-			]);
-
-			append($$anchor, span_6);
-		}
-	);
-
-	template_effect(
-		(
-			$0,
-			$1,
-			$2,
-			$3,
-			$4,
-			$5,
-			$6,
-			$7,
-			$8,
-			$9
-		) => {
-			classes = set_class(div, 1, 'indexingtab standard-form svelte-1uc6pmt', null, classes, $0);
-			set_text(text$1, $1);
-			set_attribute(input, 'placeholder', $2);
-			set_text(text_1, $3);
-			set_text(text_2, $4);
-			set_text(text_3, $5);
-			set_text(text_4, $6);
-			set_text(text_5, $7);
-			set_text(text_6, $8);
-			set_text(text_8, $9);
-		},
-		[
-			() => ({ hidden: !$$props.active }),
-			() => mloc("IndexingSettingsIntroduction"),
-			() => mloc("FilterEditorOptionFilter"),
-			() => loc("USER.RolePlayer"),
-			() => loc("USER.RoleTrusted"),
-			() => loc("USER.RoleAssistant"),
-			() => loc("USER.RoleGamemaster"),
-			() => mloc("FilterEditorDirectory"),
-			() => loc("COMPENDIUM.Type"),
-			() => loc("SIDEBAR.TabCompendium")
-		]
-	);
-
-	bind_value(input, () => get$1(filter), ($$value) => set(filter, $$value));
-	append($$anchor, div);
-	pop();
-	$$cleanup();
-}
-
-var root$j = template(`<kbd class="svelte-olmfu0"><!></kbd>`);
-
-const $$css$m = {
-	hash: 'svelte-olmfu0',
-	code: 'kbd.svelte-olmfu0 {display:inline-flex;\n    /* background: rgba(255, 255, 255, 0.25); */background:var(--qiItemSelectedColor);padding:0em 0.25em;border:1px solid var(--color-border-light-2);border-radius:3px;font-size:90%;flex-grow:0;flex:none;min-width:24px;justify-content:center;align-items:center;}'
-};
-
-function KeyboardKey($$anchor, $$props) {
-	append_styles($$anchor, $$css$m);
-
-	var kbd = root$j();
-	var node = child(kbd);
-
-	snippet(node, () => $$props.children ?? noop);
-	append($$anchor, kbd);
-}
-
 // https://stackoverflow.com/a/75355272
 // WTF!
 // parseFloat('-0') => -0 vs parseFloat(-0) => 0
@@ -3713,6 +2846,7 @@ function getContents() {
         // typing doesn't understand the collection instance type
         const instance = c;
         return {
+            id: instance._id,
             instance,
             track: instance.playing
                 ? instance.sounds.find((s) => s.playing)?.name || undefined
@@ -3742,614 +2876,6 @@ function searchPlaylists(query) {
 
 const systemDocumentActions = {};
 const systemDocumentActionCallbacks = {};
-
-var root_1$i = template(`<li><a><span class="title"> </span> <span class="sub"> </span></a></li>`);
-var root$i = template(`<ul></ul>`);
-
-function SearchFiltersResults($$anchor, $$props) {
-	push($$props, true);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function selected(item) {
-		dispatch("callAction", { item });
-	}
-
-	var ul = root$i();
-
-	each(ul, 23, results, (item) => item.item.id, ($$anchor, item, i) => {
-		var li = root_1$i();
-		let classes;
-		var a = child(li);
-		var span = child(a);
-		var text = child(span);
-
-		var span_1 = sibling(span, 2);
-		var text_1 = child(span_1);
-
-		template_effect(
-			($0) => {
-				classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
-				set_text(text, `@${get$1(item).item.tag ?? ''}`);
-				set_text(text_1, get$1(item).item.subTitle);
-			},
-			[
-				() => ({
-					'search-selected': get$1(i) === selectedIndex()
-				})
-			]
-		);
-
-		event('click', a, () => selected(get$1(item).item));
-		append($$anchor, li);
-	});
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var root_1$h = template(`<li><a><span class="title svelte-1v29e8i"> </span> <span class="sub"> </span></a></li>`);
-var root$h = template(`<ul></ul>`);
-
-const $$css$l = {
-	hash: 'svelte-1v29e8i',
-	code: '.title.svelte-1v29e8i {min-width:auto;}'
-};
-
-function SearchHelpResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$l);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function selected(item) {
-		dispatch("callAction", { item });
-	}
-
-	var ul = root$h();
-
-	each(ul, 23, results, (item) => item.item.id, ($$anchor, item, i) => {
-		var li = root_1$h();
-		let classes;
-		var a = child(li);
-		var span = child(a);
-		var text = child(span);
-
-		var span_1 = sibling(span, 2);
-		var text_1 = child(span_1);
-
-		template_effect(
-			($0, $1) => {
-				classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
-				set_text(text, get$1(item).item.name);
-				set_text(text_1, $1);
-			},
-			[
-				() => ({
-					'search-selected': get$1(i) === selectedIndex()
-				}),
-				() => mloc(get$1(item).item.description)
-			]
-		);
-
-		event('click', a, () => selected(get$1(item).item));
-		append($$anchor, li);
-	});
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`, 'svelte-1v29e8i'));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var root_2$b = template(`<span class="sub"> </span>`);
-var root_1$g = template(`<li><a class="svelte-11bhqwx"><span> </span> <span class="secondary svelte-11bhqwx"><!> <!></span></a></li>`);
-var root$g = template(`<ul></ul>`);
-
-const $$css$k = {
-	hash: 'svelte-11bhqwx',
-	code: '.density-spacious.svelte-11bhqwx a:where(.svelte-11bhqwx) {display:flex;flex-direction:column;align-items:stretch;}.secondary.svelte-11bhqwx {display:flex;flex-direction:row;justify-content:end;flex-shrink:0;gap:0.4em;}'
-};
-
-function SearchCommandResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$k);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function selected(item, shiftKey) {
-		dispatch("callAction", { item, shiftKey });
-	}
-
-	var ul = root$g();
-
-	each(ul, 23, results, (result) => result.item.id, ($$anchor, result, i) => {
-		var li = root_1$g();
-		let classes;
-		var a = child(li);
-		var span = child(a);
-		var text$1 = child(span);
-
-		var span_1 = sibling(span, 2);
-		var node = child(span_1);
-
-		{
-			var consequent = ($$anchor) => {
-				var span_2 = root_2$b();
-				var text_1 = child(span_2);
-				template_effect(() => set_text(text_1, get$1(result).item.description));
-				append($$anchor, span_2);
-			};
-
-			if_block(node, ($$render) => {
-				if ($density() === "spacious" && get$1(result).item.description) $$render(consequent);
-			});
-		}
-
-		var node_1 = sibling(node, 2);
-
-		each(node_1, 17, () => get$1(result).item.keybinds, index, ($$anchor, bind) => {
-			KeyboardKey($$anchor, {
-				children: ($$anchor, $$slotProps) => {
-
-					var text_2 = text();
-
-					template_effect(() => set_text(text_2, get$1(bind)));
-					append($$anchor, text_2);
-				}});
-		});
-
-		template_effect(
-			($0) => {
-				classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
-				set_attribute(li, 'title', get$1(result).item.name);
-				set_text(text$1, get$1(result).item.name);
-			},
-			[
-				() => ({
-					'search-selected': get$1(i) === selectedIndex()
-				})
-			]
-		);
-
-		event('click', a, (e) => selected(get$1(result).item, e.shiftKey));
-		append($$anchor, li);
-	});
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`, 'svelte-11bhqwx'));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var root_3$2 = template(` <!>`, 1);
-var root_5$1 = template(`<span class="result svelte-1o98r2s"> </span>`);
-var root_2$a = template(`<span class="one-line-item svelte-1o98r2s"><!> <!></span>`);
-var root_7 = template(`<span> </span>`);
-var root_6$1 = template(`<div class="two-line-item"><!> <span class="result svelte-1o98r2s"> </span></div>`);
-var root_1$f = template(`<li><a class="svelte-1o98r2s"><i></i> <!></a></li>`);
-var root$f = template(`<ul></ul>`);
-
-const $$css$j = {
-	hash: 'svelte-1o98r2s',
-	code: '.one-line-item.svelte-1o98r2s {display:flex;align-items:center;flex-grow:1;}.density-comfortable.svelte-1o98r2s .result:where(.svelte-1o98r2s),\n  .density-spacious.svelte-1o98r2s .result:where(.svelte-1o98r2s) {font-size:120%;}.result.svelte-1o98r2s {font-weight:bold;padding:0 !important;}li.svelte-1o98r2s a:where(.svelte-1o98r2s) {height:auto !important;}'
-};
-
-function SearchCalcResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$j);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function selected(item, shiftKey) {
-		dispatch("callAction", { item, shiftKey });
-	}
-
-	var ul = root$f();
-
-	each(ul, 21, results, index, ($$anchor, result, i) => {
-		var li = root_1$f();
-		let classes;
-		var a = child(li);
-		var i_1 = child(a);
-		var node = sibling(i_1, 2);
-
-		{
-			var consequent_3 = ($$anchor) => {
-				var span = root_2$a();
-				var node_1 = child(span);
-
-				{
-					var consequent_1 = ($$anchor) => {
-						var fragment = root_3$2();
-						var text$1 = first_child(fragment);
-						var node_2 = sibling(text$1);
-
-						{
-							var consequent = ($$anchor) => {
-								var text_1 = text(' = ');
-
-								append($$anchor, text_1);
-							};
-
-							if_block(node_2, ($$render) => {
-								if (get$1(result).item.result) $$render(consequent);
-							});
-						}
-
-						template_effect(() => set_text(text$1, get$1(result).item.input));
-						append($$anchor, fragment);
-					};
-
-					if_block(node_1, ($$render) => {
-						if (get$1(result).item.input !== get$1(result).item.result?.toString()) $$render(consequent_1);
-					});
-				}
-
-				var node_3 = sibling(node_1, 2);
-
-				{
-					var consequent_2 = ($$anchor) => {
-						var span_1 = root_5$1();
-						var text_2 = child(span_1);
-						template_effect(() => set_text(text_2, get$1(result).item.result ?? ""));
-						append($$anchor, span_1);
-					};
-
-					if_block(node_3, ($$render) => {
-						if (get$1(result).item.result) $$render(consequent_2);
-					});
-				}
-				append($$anchor, span);
-			};
-
-			var alternate = ($$anchor) => {
-				var div = root_6$1();
-				var node_4 = child(div);
-
-				{
-					var consequent_4 = ($$anchor) => {
-						var span_2 = root_7();
-						var text_3 = child(span_2);
-						template_effect(() => set_text(text_3, get$1(result).item.input));
-						append($$anchor, span_2);
-					};
-
-					if_block(node_4, ($$render) => {
-						if (get$1(result).item.input !== get$1(result).item.result?.toString()) $$render(consequent_4);
-					});
-				}
-
-				var span_3 = sibling(node_4, 2);
-				var text_4 = child(span_3);
-				template_effect(() => set_text(text_4, get$1(result).item.result ?? ""));
-				append($$anchor, div);
-			};
-
-			if_block(node, ($$render) => {
-				if ($density() === "compact") $$render(consequent_3); else $$render(alternate, false);
-			});
-		}
-
-		template_effect(
-			($0) => {
-				classes = set_class(li, 1, 'no-icon-result svelte-1o98r2s', null, classes, $0);
-				set_class(i_1, 1, `fas ${(get$1(result).item.history ? 'fa-clock-rotate-left' : 'fa-calculator') ?? ''} entity-icon`);
-			},
-			[
-				() => ({ 'search-selected': i === selectedIndex() })
-			]
-		);
-
-		event('click', a, (e) => selected(get$1(result).item, e.shiftKey));
-		append($$anchor, li);
-	});
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`, 'svelte-1o98r2s'));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var root_2$9 = template(`<span> </span>`);
-var root_1$e = template(`<li><a class="svelte-1hm5nbg"><span> </span> <!></a></li>`);
-var root$e = template(`<ul></ul>`);
-
-const $$css$i = {
-	hash: 'svelte-1hm5nbg',
-	code: 'a.svelte-1hm5nbg {padding:4px;}'
-};
-
-function SearchSlashResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$i);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function selected(item) {
-		dispatch("callAction", { item });
-	}
-
-	var ul = root$e();
-
-	each(ul, 23, results, (item) => item.item.id, ($$anchor, item, i) => {
-		var li = root_1$e();
-		let classes;
-		var a = child(li);
-		var span = child(a);
-		var text = child(span);
-
-		var node = sibling(span, 2);
-
-		{
-			var consequent = ($$anchor) => {
-				var span_1 = root_2$9();
-				var text_1 = child(span_1);
-
-				template_effect(($0) => set_text(text_1, $0), [
-					() => loc(get$1(item).item.description)
-				]);
-
-				append($$anchor, span_1);
-			};
-
-			if_block(node, ($$render) => {
-				if (get$1(item).item.description) $$render(consequent);
-			});
-		}
-
-		template_effect(
-			($0) => {
-				classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
-				set_text(text, `${get$1(item).item.commandText ?? ''} ${get$1(item).item.args || ""}`);
-			},
-			[
-				() => ({
-					'search-selected': get$1(i) === selectedIndex()
-				})
-			]
-		);
-
-		event('click', a, () => selected(get$1(item).item));
-		append($$anchor, li);
-	});
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-var on_click = (e, callAction, item) => callAction(undefined, item(), e.shiftKey);
-var root_3$1 = template(`<i class="fa-solid fa-play"></i> `, 1);
-var root_2$8 = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"><!></span></div>`);
-var root_5 = template(`<i class="fa-solid fa-play"></i> `, 1);
-var root_4$2 = template(`<span class="title"><!></span> <span class="sub"><!></span>`, 1);
-var on_click_1 = (e, callAction, action, item) => callAction(get$1(action).id, item(), e.shiftKey);
-var root_6 = template(`<i data-tooltip-direction="UP"></i>`);
-var root_1$d = template(`<li><a draggable="true" class="svelte-1hm5nbg"><i class="fa-solid fa-music entity-icon"></i> <!> <span class="action-icons"></span></a></li>`);
-var root$d = template(`<ul></ul>`);
-
-const $$css$h = {
-	hash: 'svelte-1hm5nbg',
-	code: 'a.svelte-1hm5nbg {padding:4px;}'
-};
-
-function SearchAudioResults($$anchor, $$props) {
-	push($$props, true);
-	append_styles($$anchor, $$css$h);
-
-	const [$$stores, $$cleanup] = setup_stores();
-	const $density = () => store_get(get$1(density), '$density', $$stores);
-	const dispatch = createEventDispatcher();
-
-	let results = prop($$props, 'results', 19, () => []),
-		selectedIndex = prop($$props, 'selectedIndex', 3, 0);
-
-	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
-	let resultList;
-
-	user_effect(() => {
-		resultList?.children[selectedIndex()]?.scrollIntoView({ block: "nearest" });
-	});
-
-	function callAction(actionId, item, shiftKey) {
-		dispatch("callAction", { actionId, item, shiftKey });
-	}
-
-	var ul = root$d();
-
-	each(
-		ul,
-		23,
-		results,
-		(
-			{
-				item,
-				formattedMatch,
-				actions,
-				defaultAction
-			}
-		) => item.instance._id,
-		($$anchor, $$item, index$1) => {
-			let item = () => get$1($$item).item;
-			let formattedMatch = () => get$1($$item).formattedMatch;
-			let actions = () => get$1($$item).actions;
-			let defaultAction = () => get$1($$item).defaultAction;
-			var li = root_1$d();
-			let classes;
-			var a_1 = child(li);
-
-			a_1.__click = [on_click, callAction, item];
-
-			var node = sibling(child(a_1), 2);
-
-			{
-				var consequent_1 = ($$anchor) => {
-					var div = root_2$8();
-					var span = child(div);
-					var node_1 = child(span);
-
-					html(node_1, () => formattedMatch() || item().instance.name);
-
-					var span_1 = sibling(span, 2);
-					var node_2 = child(span_1);
-
-					{
-						var consequent = ($$anchor) => {
-							var fragment = root_3$1();
-							var text = sibling(first_child(fragment));
-
-							template_effect(() => set_text(text, ` ${item().track ?? ''}`));
-							append($$anchor, fragment);
-						};
-
-						if_block(node_2, ($$render) => {
-							if (item().instance.playing) $$render(consequent);
-						});
-					}
-					append($$anchor, div);
-				};
-
-				var alternate = ($$anchor) => {
-					var fragment_1 = root_4$2();
-					var span_2 = first_child(fragment_1);
-					var node_3 = child(span_2);
-
-					html(node_3, () => formattedMatch() || item().instance.name);
-
-					var span_3 = sibling(span_2, 2);
-					var node_4 = child(span_3);
-
-					{
-						var consequent_2 = ($$anchor) => {
-							var fragment_2 = root_5();
-							var text_1 = sibling(first_child(fragment_2));
-
-							template_effect(() => set_text(text_1, ` ${item().track ?? ''}`));
-							append($$anchor, fragment_2);
-						};
-
-						if_block(node_4, ($$render) => {
-							if (item().instance.playing) $$render(consequent_2);
-						});
-					}
-					append($$anchor, fragment_1);
-				};
-
-				if_block(node, ($$render) => {
-					if ($density() === "spacious") $$render(consequent_1); else $$render(alternate, false);
-				});
-			}
-
-			var span_4 = sibling(node, 2);
-
-			each(span_4, 21, () => actions() || [], index, ($$anchor, action) => {
-				var i = root_6();
-				let classes_1;
-
-				i.__click = [on_click_1, callAction, action, item];
-
-				template_effect(
-					($0) => {
-						classes_1 = set_class(i, 1, `${get$1(action).icon ?? ''} action-icon`, null, classes_1, $0);
-						set_attribute(i, 'data-tooltip', get$1(action).title);
-						set_attribute(i, 'data-action-id', get$1(action).id);
-					},
-					[
-						() => ({
-							selected: get$1(index$1) === selectedIndex() && (actions()?.some((a) => a.id === $$props.selectedAction) ? get$1(action).id === $$props.selectedAction : get$1(action).id == defaultAction())
-						})
-					]
-				);
-
-				append($$anchor, i);
-			});
-
-			template_effect(($0) => classes = set_class(li, 1, 'no-icon-result', null, classes, $0), [
-				() => ({
-					'search-selected': get$1(index$1) === selectedIndex()
-				})
-			]);
-
-			event('dragstart', a_1, (event) => event.dataTransfer?.setData("text/plain", JSON.stringify({
-				type: "Playlist",
-				uuid: item().instance.uuid
-			})));
-
-			append($$anchor, li);
-		}
-	);
-	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
-	template_effect(() => set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`));
-	append($$anchor, ul);
-	pop();
-	$$cleanup();
-}
-
-delegate(['click']);
 
 var SearchMode;
 (function (SearchMode) {
@@ -4387,7 +2913,7 @@ class DocumentController extends SearchController {
         const val = await DOCUMENTACTIONS[action](searchItem);
         if (val && this.isInsertMode) {
             // this.app.keepOpen = shiftKey; // Keep open until onSubmit completes
-            this.#context?.onSubmit(val);
+            this.#context?.onSubmit?.(val);
         }
         if (!shiftKey || this.#context?.allowMultiple === false) {
             this.#close();
@@ -4574,7 +3100,7 @@ class KeybindController extends SearchController {
                 },
             };
         })
-            .filter((i) => Boolean(i));
+            .filter((i) => i !== undefined);
         return actions.filter((item) => item.item.name.toLowerCase().includes(cleanedInput));
     }
 }
@@ -4699,9 +3225,10 @@ class SlashController extends SearchController {
     #onExampleSelected(commandText) {
         this.callbacks.setInputText(commandText);
     }
-    onTab(item) {
-        if (item.item.commandText !== this.#input) {
-            this.#onExampleSelected(item.item.commandText);
+    onTab(resultItem) {
+        const item = resultItem.item;
+        if (item.commandText !== this.#input) {
+            this.#onExampleSelected(item.commandText);
         }
     }
     onAction(item) {
@@ -4742,7 +3269,9 @@ class CalcController extends SearchController {
         if (item.result === undefined) {
             return;
         }
-        this.#history.push({ item: { ...item, history: true } });
+        if (!item.history) {
+            this.#history.push({ item: { ...item, id: randomId(), history: true } });
+        }
         this.setInputText("=" + item.result.toString());
     }
     search(textInput) {
@@ -4762,6 +3291,7 @@ class CalcController extends SearchController {
             result = undefined;
         }
         const item = {
+            id: "-1",
             input: cleanedInput,
             result,
         };
@@ -4827,7 +3357,9 @@ class AudioController extends SearchController {
     }
     search(textInput) {
         const cleanedInput = textInput.replace("#", "").toLowerCase().trim();
-        return searchPlaylists(cleanedInput).map((item) => ({
+        return searchPlaylists(cleanedInput)
+            .reverse()
+            .map((item) => ({
             ...item,
             defaultAction: item.item.instance.playing ? "stop" : "play",
             actions: item.item.instance.playing
@@ -4929,45 +3461,1551 @@ const modeConfig = {
     [SearchMode.DOCUMENT]: {
         showInInsertMode: true,
         controller: (options) => new DocumentController(options),
-        component: SearchResults,
     },
     [SearchMode.FILTER]: {
         showInInsertMode: true,
         prefix: "@",
         controller: (options) => new FilterController(options),
-        component: SearchFiltersResults,
     },
     [SearchMode.HELP]: {
         prefix: "?",
         controller: (options) => new HelpController(options),
-        component: SearchHelpResults,
     },
     [SearchMode.COMMANDS]: {
         prefix: ">",
         controller: (options) => new KeybindController(options),
-        component: SearchCommandResults,
     },
     [SearchMode.SLASH]: {
         prefix: "/",
         controller: (options) => new SlashController(options),
-        component: SearchSlashResults,
     },
     [SearchMode.CALC]: {
         prefix: "=",
         controller: (options) => new CalcController(options),
-        component: SearchCalcResults,
     },
     [SearchMode.AUDIO]: {
         prefix: "#",
         controller: (options) => new AudioController(options),
-        component: SearchAudioResults,
     },
     [SearchMode.OWNED]: {
         prefix: "!",
         controller: (options) => new OwnedController(options),
-        component: SearchResults,
     },
 };
+
+var on_click$5 = (e, $$props, item) => $$props.callAction({
+	actionId: undefined,
+	item: get$1(item),
+	shiftKey: e.shiftKey
+});
+
+var root_2$a = template(`<i class="fa-solid fa-play"></i> `, 1);
+var root_1$j = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"><!></span></div>`);
+var root_4$5 = template(`<i class="fa-solid fa-play"></i> `, 1);
+var root_3$3 = template(`<span class="title"><!></span> <span class="sub"><!></span>`, 1);
+
+var on_click_1 = (e, $$props, action, item) => $$props.callAction({
+	actionId: get$1(action).id,
+	item: get$1(item),
+	shiftKey: e.shiftKey
+});
+
+var root_5$1 = template(`<i data-tooltip-direction="UP"></i>`);
+var root$q = template(`<li><a draggable="true" class="svelte-1hm5nbg"><i class="fa-solid fa-music entity-icon"></i> <!> <span class="action-icons"></span></a></li>`);
+
+const $$css$r = {
+	hash: 'svelte-1hm5nbg',
+	code: 'a.svelte-1hm5nbg {padding:4px;}'
+};
+
+function AudioResultItem($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$r);
+
+	let item = derived$1(() => $$props.resultItem.item);
+
+	let formattedMatch = derived$1(() => $$props.resultItem.formattedMatch),
+		actions = derived$1(() => $$props.resultItem.actions),
+		defaultAction = derived$1(() => $$props.resultItem.defaultAction);
+
+	var li = root$q();
+	let classes;
+	var a_1 = child(li);
+
+	a_1.__click = [on_click$5, $$props, item];
+
+	var node = sibling(child(a_1), 2);
+
+	{
+		var consequent_1 = ($$anchor) => {
+			var div = root_1$j();
+			var span = child(div);
+			var node_1 = child(span);
+
+			html(node_1, () => get$1(formattedMatch) || get$1(item).instance.name);
+
+			var span_1 = sibling(span, 2);
+			var node_2 = child(span_1);
+
+			{
+				var consequent = ($$anchor) => {
+					var fragment = root_2$a();
+					var text = sibling(first_child(fragment));
+
+					template_effect(() => set_text(text, ` ${get$1(item).track ?? ''}`));
+					append($$anchor, fragment);
+				};
+
+				if_block(node_2, ($$render) => {
+					if (get$1(item).instance.playing) $$render(consequent);
+				});
+			}
+			append($$anchor, div);
+		};
+
+		var alternate = ($$anchor) => {
+			var fragment_1 = root_3$3();
+			var span_2 = first_child(fragment_1);
+			var node_3 = child(span_2);
+
+			html(node_3, () => get$1(formattedMatch) || get$1(item).instance.name);
+
+			var span_3 = sibling(span_2, 2);
+			var node_4 = child(span_3);
+
+			{
+				var consequent_2 = ($$anchor) => {
+					var fragment_2 = root_4$5();
+					var text_1 = sibling(first_child(fragment_2));
+
+					template_effect(() => set_text(text_1, ` ${get$1(item).track ?? ''}`));
+					append($$anchor, fragment_2);
+				};
+
+				if_block(node_4, ($$render) => {
+					if (get$1(item).instance.playing) $$render(consequent_2);
+				});
+			}
+			append($$anchor, fragment_1);
+		};
+
+		if_block(node, ($$render) => {
+			if ($$props.density === "spacious") $$render(consequent_1); else $$render(alternate, false);
+		});
+	}
+
+	var span_4 = sibling(node, 2);
+
+	each(span_4, 21, () => get$1(actions) || [], index, ($$anchor, action) => {
+		var i = root_5$1();
+		let classes_1;
+
+		i.__click = [on_click_1, $$props, action, item];
+
+		template_effect(
+			($0) => {
+				classes_1 = set_class(i, 1, `${get$1(action).icon ?? ''} action-icon`, null, classes_1, $0);
+				set_attribute(i, 'data-tooltip', get$1(action).title);
+				set_attribute(i, 'data-action-id', get$1(action).id);
+			},
+			[
+				() => ({
+					selected: $$props.selected && (get$1(actions)?.some((a) => a.id === $$props.selectedAction) ? get$1(action).id === $$props.selectedAction : get$1(action).id == get$1(defaultAction))
+				})
+			]
+		);
+
+		append($$anchor, i);
+	});
+
+	template_effect(($0) => classes = set_class(li, 1, 'no-icon-result', null, classes, $0), [
+		() => ({ 'search-selected': $$props.selected })
+	]);
+
+	event('dragstart', a_1, (event) => event.dataTransfer?.setData("text/plain", JSON.stringify({
+		type: "Playlist",
+		uuid: get$1(item).instance.uuid
+	})));
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+var on_click$4 = (e, $$props, item) => $$props.callAction({ item: get$1(item), shiftKey: e.shiftKey });
+var root_2$9 = template(` <!>`, 1);
+var root_4$4 = template(`<span class="result svelte-1xfx1k6"> </span>`);
+var root_1$i = template(`<div class="one-line-item svelte-1xfx1k6"><!> <!></div>`);
+var root_5 = template(`<div class="two-line-item svelte-1xfx1k6"><span> <!></span> <span><span class="result svelte-1xfx1k6"> </span></span></div>`);
+var root$p = template(`<li><a class="svelte-1xfx1k6"><i></i> <!></a></li>`);
+
+const $$css$q = {
+	hash: 'svelte-1xfx1k6',
+	code: '.one-line-item.svelte-1xfx1k6 {display:flex;align-items:center;flex-grow:1;}.two-line-item.svelte-1xfx1k6 {display:flex;flex-direction:column;flex-grow:1;}.density-comfortable .result.svelte-1xfx1k6,\n  .density-spacious .result.svelte-1xfx1k6 {font-size:120%;}.result.svelte-1xfx1k6 {font-weight:bold;padding:0 !important;}li.svelte-1xfx1k6 a:where(.svelte-1xfx1k6) {height:auto !important;}'
+};
+
+function CalcResultItem($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$q);
+
+	let item = derived$1(() => $$props.resultItem.item);
+	var li = root$p();
+	let classes;
+	var a = child(li);
+
+	a.__click = [on_click$4, $$props, item];
+
+	var i = child(a);
+	var node = sibling(i, 2);
+
+	{
+		var consequent_3 = ($$anchor) => {
+			var div = root_1$i();
+			var node_1 = child(div);
+
+			{
+				var consequent_1 = ($$anchor) => {
+					var fragment = root_2$9();
+					var text$1 = first_child(fragment);
+					var node_2 = sibling(text$1);
+
+					{
+						var consequent = ($$anchor) => {
+							var text_1 = text(' = ');
+
+							append($$anchor, text_1);
+						};
+
+						if_block(node_2, ($$render) => {
+							if (get$1(item).result !== undefined) $$render(consequent);
+						});
+					}
+
+					template_effect(() => set_text(text$1, get$1(item).input));
+					append($$anchor, fragment);
+				};
+
+				if_block(node_1, ($$render) => {
+					if (get$1(item).input !== get$1(item).result?.toString()) $$render(consequent_1);
+				});
+			}
+
+			var node_3 = sibling(node_1, 2);
+
+			{
+				var consequent_2 = ($$anchor) => {
+					var span = root_4$4();
+					var text_2 = child(span);
+					template_effect(() => set_text(text_2, get$1(item).result ?? ""));
+					append($$anchor, span);
+				};
+
+				if_block(node_3, ($$render) => {
+					if (get$1(item).result !== undefined) $$render(consequent_2);
+				});
+			}
+			append($$anchor, div);
+		};
+
+		var alternate = ($$anchor) => {
+			var div_1 = root_5();
+			var span_1 = child(div_1);
+			var text_3 = child(span_1);
+			var node_4 = sibling(text_3);
+
+			{
+				var consequent_4 = ($$anchor) => {
+					var text_4 = text(' = ');
+
+					append($$anchor, text_4);
+				};
+
+				if_block(node_4, ($$render) => {
+					if (get$1(item).result !== undefined) $$render(consequent_4);
+				});
+			}
+
+			var span_2 = sibling(span_1, 2);
+			var span_3 = child(span_2);
+			var text_5 = child(span_3);
+
+			template_effect(() => {
+				set_text(text_3, get$1(item).input);
+				set_text(text_5, get$1(item).result ?? "");
+			});
+
+			append($$anchor, div_1);
+		};
+
+		if_block(node, ($$render) => {
+			if ($$props.density === "compact") $$render(consequent_3); else $$render(alternate, false);
+		});
+	}
+
+	template_effect(
+		($0) => {
+			classes = set_class(li, 1, 'no-icon-result svelte-1xfx1k6', null, classes, $0);
+			set_class(i, 1, `fas ${(get$1(item).history ? 'fa-clock-rotate-left' : 'fa-calculator') ?? ''} entity-icon`);
+		},
+		[
+			() => ({ 'search-selected': $$props.selected })
+		]
+	);
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+var root_1$h = template(`<img class="doc-image" draggable="false">`);
+var root_3$2 = template(`<div class="two-line-item"><span class="title"><!></span> <span class="sub"> <!></span></div>`);
+var root_4$3 = template(`<span class="title"><!></span> <span class="sub"> </span> <!>`, 1);
+var root_6 = template(`<i draggable="false" data-tooltip-direction="UP"><img></i>`);
+var root_7$1 = template(`<i data-tooltip-direction="UP"></i>`);
+var root$o = template(`<li role="option"><a draggable="true"><!> <!> <span class="action-icons"></span></a></li>`);
+
+function DocumentResultItem($$anchor, $$props) {
+	push($$props, true);
+
+	const [$$stores, $$cleanup] = setup_stores();
+	const $tooltipModeSetting = () => store_get(tooltipModeSetting, '$tooltipModeSetting', $$stores);
+	const $enhancedTooltips = () => store_get(enhancedTooltips, '$enhancedTooltips', $$stores);
+	let tooltips = prop($$props, 'tooltips', 3, "LEFT");
+	let tooltipModeSetting = stores[ModuleSetting.SEARCH_TOOLTIPS];
+	let enhancedTooltips = stores[ModuleSetting.ENHANCED_TOOLTIPS];
+	let tooltipMode = $tooltipModeSetting();
+	let item = $$props.resultItem.item;
+
+	let formattedMatch = derived$1(() => $$props.resultItem.formattedMatch),
+		actions = derived$1(() => $$props.resultItem.actions),
+		defaultAction = derived$1(() => $$props.resultItem.defaultAction);
+
+	function getTooltip(item, side, tooltipMode) {
+		if (tooltipMode === "off" || side === "OFF") return "";
+
+		const showImage = tooltipMode === "full" || tooltipMode === "image";
+		const img = showImage && item.img ? `<img src="${item.img}" style="max-width: 80px; margin: 0 auto 0.5rem auto; border-radius: 10px;"/>` : "";
+		const text = tooltipMode !== "image"
+			? `<p style='margin:0;text-align:center; max-width: 260px;'>${item.name}</p>
+           <p style='text-align: center;font-size: 90%; opacity:0.8;margin:0; max-width: 260px;'>${item.icon} ${item.tooltip}</p>`
+			: "";
+
+		return img + text;
+	}
+
+	var li = root$o();
+	let classes;
+	var a = child(li);
+	var node = child(a);
+
+	{
+		var consequent = ($$anchor) => {
+			var img_1 = root_1$h();
+
+			template_effect(() => set_attribute(img_1, 'src', item.img));
+			append($$anchor, img_1);
+		};
+
+		var alternate = ($$anchor) => {
+			var fragment = comment();
+			var node_1 = first_child(fragment);
+
+			html(node_1, () => item.icon);
+			append($$anchor, fragment);
+		};
+
+		if_block(node, ($$render) => {
+			if (item.img) $$render(consequent); else $$render(alternate, false);
+		});
+	}
+
+	var node_2 = sibling(node, 2);
+
+	{
+		var consequent_1 = ($$anchor) => {
+			var div = root_3$2();
+			var span = child(div);
+			var node_3 = child(span);
+
+			html(node_3, () => get$1(formattedMatch) || item.name);
+
+			var span_1 = sibling(span, 2);
+			var text_1 = child(span_1);
+			var node_4 = sibling(text_1);
+
+			html(node_4, () => getLocationIcon(item));
+			template_effect(() => set_text(text_1, `${item.tooltip ?? ''} `));
+			append($$anchor, div);
+		};
+
+		var alternate_1 = ($$anchor) => {
+			var fragment_1 = root_4$3();
+			var span_2 = first_child(fragment_1);
+			var node_5 = child(span_2);
+
+			html(node_5, () => get$1(formattedMatch) || item.name);
+
+			var span_3 = sibling(span_2, 2);
+			var text_2 = child(span_3);
+
+			var node_6 = sibling(span_3, 2);
+
+			html(node_6, () => getLocationIcon(item));
+			template_effect(() => set_text(text_2, item.tagline));
+			append($$anchor, fragment_1);
+		};
+
+		if_block(node_2, ($$render) => {
+			if ($$props.density === "spacious") $$render(consequent_1); else $$render(alternate_1, false);
+		});
+	}
+
+	var span_4 = sibling(node_2, 2);
+
+	each(span_4, 21, () => get$1(actions) || [], index, ($$anchor, action) => {
+		var fragment_2 = comment();
+		var node_7 = first_child(fragment_2);
+
+		{
+			var consequent_2 = ($$anchor) => {
+				var i = root_6();
+				let classes_1;
+				var img_2 = child(i);
+
+				template_effect(
+					($0) => {
+						classes_1 = set_class(i, 1, 'action-icon', null, classes_1, $0);
+						set_attribute(i, 'data-tooltip', get$1(action).title);
+						set_attribute(i, 'data-action-id', get$1(action).id);
+						set_attribute(img_2, 'src', get$1(action).img);
+					},
+					[
+						() => ({
+							selected: $$props.selected && ($$props.selectedAction ? get$1(action).id === $$props.selectedAction : get$1(action).id == get$1(defaultAction))
+						})
+					]
+				);
+
+				event('click', i, stopPropagation((e) => $$props.callAction({
+					actionId: get$1(action).id,
+					item,
+					shiftKey: e.shiftKey
+				})));
+
+				append($$anchor, i);
+			};
+
+			var alternate_2 = ($$anchor) => {
+				var i_1 = root_7$1();
+				let classes_2;
+
+				template_effect(
+					($0) => {
+						classes_2 = set_class(i_1, 1, `${get$1(action).icon ?? ''} action-icon`, null, classes_2, $0);
+						set_attribute(i_1, 'data-tooltip', get$1(action).title);
+						set_attribute(i_1, 'data-action-id', get$1(action).id);
+					},
+					[
+						() => ({
+							selected: $$props.selected && ($$props.selectedAction ? get$1(action).id === $$props.selectedAction : get$1(action).id == get$1(defaultAction))
+						})
+					]
+				);
+
+				event('click', i_1, stopPropagation((e) => $$props.callAction({
+					actionId: get$1(action).id,
+					item,
+					shiftKey: e.shiftKey
+				})));
+
+				append($$anchor, i_1);
+			};
+
+			if_block(node_7, ($$render) => {
+				if (get$1(action).img) $$render(consequent_2); else $$render(alternate_2, false);
+			});
+		}
+
+		append($$anchor, fragment_2);
+	});
+
+	template_effect(
+		($0, $1) => {
+			set_attribute(li, 'aria-selected', $$props.selected);
+			set_attribute(li, 'data-tooltip', $0);
+			classes = set_class(li, 1, clsx($enhancedTooltips() ? "content-link" : undefined), null, classes, $1);
+			set_attribute(li, 'data-uuid', item.uuid);
+			set_attribute(li, 'data-hash', item.anchor?.slug);
+			set_attribute(li, 'id', `result_${item.id}${item.uuid}`);
+			set_attribute(a, 'title', tooltipMode === "off" || tooltipMode === "image" ? `${item.name} - ${item.tooltip}` : undefined);
+		},
+		[
+			() => getTooltip(item, tooltips(), $tooltipModeSetting()),
+			() => ({ 'search-selected': $$props.selected })
+		]
+	);
+
+	event('dragstart', a, (event) => event.dataTransfer?.setData("text/plain", JSON.stringify(item.dragData)));
+
+	event('click', a, stopPropagation((e) => $$props.callAction({
+		actionId: get$1(defaultAction),
+		item,
+		shiftKey: e.shiftKey
+	})));
+
+	append($$anchor, li);
+	pop();
+	$$cleanup();
+}
+
+var on_click$3 = (_, $$props, item) => $$props.callAction({ item });
+var root$n = template(`<li><a><span class="title"> </span> <span class="sub"> </span></a></li>`);
+
+function FilterResultItem($$anchor, $$props) {
+	push($$props, true);
+
+	let item = $$props.resultItem.item;
+	var li = root$n();
+	let classes;
+	var a = child(li);
+
+	a.__click = [on_click$3, $$props, item];
+
+	var span = child(a);
+	var text = child(span);
+
+	var span_1 = sibling(span, 2);
+	var text_1 = child(span_1);
+
+	template_effect(
+		($0) => {
+			classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
+			set_text(text, `@${item.tag ?? ''}`);
+			set_text(text_1, item.subTitle);
+		},
+		[
+			() => ({ 'search-selected': $$props.selected })
+		]
+	);
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+var on_click$2 = (_, $$props, item) => $$props.callAction({ item });
+var root$m = template(`<li><a><span class="title svelte-1v29e8i"> </span> <span class="sub"> </span></a></li>`);
+
+const $$css$p = {
+	hash: 'svelte-1v29e8i',
+	code: '.title.svelte-1v29e8i {min-width:auto;}'
+};
+
+function HelpResultItem($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$p);
+
+	let item = $$props.resultItem.item;
+	var li = root$m();
+	let classes;
+	var a = child(li);
+
+	a.__click = [on_click$2, $$props, item];
+
+	var span = child(a);
+	var text = child(span);
+
+	var span_1 = sibling(span, 2);
+	var text_1 = child(span_1);
+
+	template_effect(
+		($0, $1) => {
+			classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
+			set_text(text, item.name);
+			set_text(text_1, $1);
+		},
+		[
+			() => ({ 'search-selected': $$props.selected }),
+			() => mloc(item.description)
+		]
+	);
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+var root$l = template(`<kbd class="svelte-olmfu0"><!></kbd>`);
+
+const $$css$o = {
+	hash: 'svelte-olmfu0',
+	code: 'kbd.svelte-olmfu0 {display:inline-flex;\n    /* background: rgba(255, 255, 255, 0.25); */background:var(--qiItemSelectedColor);padding:0em 0.25em;border:1px solid var(--color-border-light-2);border-radius:3px;font-size:90%;flex-grow:0;flex:none;min-width:24px;justify-content:center;align-items:center;}'
+};
+
+function KeyboardKey($$anchor, $$props) {
+	append_styles($$anchor, $$css$o);
+
+	var kbd = root$l();
+	var node = child(kbd);
+
+	snippet(node, () => $$props.children ?? noop);
+	append($$anchor, kbd);
+}
+
+var on_click$1 = (e, $$props, item) => $$props.callAction({ item, shiftKey: e.shiftKey });
+var root_1$g = template(`<span class="sub"> </span>`);
+var root$k = template(`<li><a class="svelte-gi3tor"><span> </span> <span class="secondary svelte-gi3tor"><!> <!></span></a></li>`);
+
+const $$css$n = {
+	hash: 'svelte-gi3tor',
+	code: '.density-spacious a.svelte-gi3tor {display:flex;flex-direction:column;align-items:stretch;}.secondary.svelte-gi3tor {display:flex;flex-direction:row;justify-content:end;flex-shrink:0;gap:0.4em;}'
+};
+
+function KeybindResultItem($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$n);
+
+	let item = $$props.resultItem.item;
+	var li = root$k();
+	let classes;
+	var a = child(li);
+
+	a.__click = [on_click$1, $$props, item];
+
+	var span = child(a);
+	var text$1 = child(span);
+
+	var span_1 = sibling(span, 2);
+	var node = child(span_1);
+
+	{
+		var consequent = ($$anchor) => {
+			var span_2 = root_1$g();
+			var text_1 = child(span_2);
+			template_effect(() => set_text(text_1, item.description));
+			append($$anchor, span_2);
+		};
+
+		if_block(node, ($$render) => {
+			if ($$props.density === "spacious" && item.description) $$render(consequent);
+		});
+	}
+
+	var node_1 = sibling(node, 2);
+
+	each(node_1, 17, () => item.keybinds, index, ($$anchor, bind) => {
+		KeyboardKey($$anchor, {
+			children: ($$anchor, $$slotProps) => {
+
+				var text_2 = text();
+
+				template_effect(() => set_text(text_2, get$1(bind)));
+				append($$anchor, text_2);
+			}});
+	});
+
+	template_effect(
+		($0) => {
+			classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
+			set_attribute(li, 'title', item.name);
+			set_text(text$1, item.name);
+		},
+		[
+			() => ({ 'search-selected': $$props.selected })
+		]
+	);
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+var on_click = (_, $$props, item) => $$props.callAction({ item });
+var root_1$f = template(`<span> </span>`);
+var root$j = template(`<li><a class="svelte-1hm5nbg"><span> </span> <!></a></li>`);
+
+const $$css$m = {
+	hash: 'svelte-1hm5nbg',
+	code: 'a.svelte-1hm5nbg {padding:4px;}'
+};
+
+function SlashResultItem($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$m);
+
+	let item = $$props.resultItem.item;
+	var li = root$j();
+	let classes;
+	var a = child(li);
+
+	a.__click = [on_click, $$props, item];
+
+	var span = child(a);
+	var text = child(span);
+
+	var node = sibling(span, 2);
+
+	{
+		var consequent = ($$anchor) => {
+			var span_1 = root_1$f();
+			var text_1 = child(span_1);
+			template_effect(($0) => set_text(text_1, $0), [() => loc(item.description)]);
+			append($$anchor, span_1);
+		};
+
+		if_block(node, ($$render) => {
+			if (item.description) $$render(consequent);
+		});
+	}
+
+	template_effect(
+		($0) => {
+			classes = set_class(li, 1, 'no-icon-result', null, classes, $0);
+			set_text(text, `${item.commandText ?? ''} ${item.args || ""}`);
+		},
+		[
+			() => ({ 'search-selected': $$props.selected })
+		]
+	);
+
+	append($$anchor, li);
+	pop();
+}
+
+delegate(['click']);
+
+const resultItems = {
+    [SearchMode.AUDIO]: AudioResultItem,
+    [SearchMode.CALC]: CalcResultItem,
+    [SearchMode.COMMANDS]: KeybindResultItem,
+    [SearchMode.DOCUMENT]: DocumentResultItem,
+    [SearchMode.FILTER]: FilterResultItem,
+    [SearchMode.HELP]: HelpResultItem,
+    [SearchMode.OWNED]: DocumentResultItem,
+    [SearchMode.SLASH]: SlashResultItem,
+};
+
+var root$i = template(`<ul tabindex="-1" role="listbox"></ul>`);
+
+function SearchResults($$anchor, $$props) {
+	push($$props, true);
+
+	const [$$stores, $$cleanup] = setup_stores();
+	const $tooltipModeSetting = () => store_get(tooltipModeSetting, '$tooltipModeSetting', $$stores);
+	const $density = () => store_get(density, '$density', $$stores);
+
+	let tooltips = prop($$props, 'tooltips', 3, "LEFT"),
+		embedded = prop($$props, 'embedded', 3, false),
+		results = prop($$props, 'results', 19, () => []);
+
+	let density = stores[ModuleSetting.SEARCH_DENSITY];
+	let tooltipModeSetting = stores[ModuleSetting.SEARCH_TOOLTIPS];
+	let tooltipMode = $tooltipModeSetting();
+	let resultList;
+	const ResultComponent = derived$1(() => resultItems[$$props.searchMode]);
+
+	user_effect(() => {
+		if (embedded()) {
+			return;
+		}
+
+		if (resultList?.children[$$props.selectedIndex]) {
+			const selected = resultList.children[$$props.selectedIndex];
+
+			selected.scrollIntoView({ block: "nearest" });
+
+			if (tooltipMode !== "off" && selected.dataset?.tooltip && !embedded()) {
+				game.tooltip.activate(selected);
+			} else {
+				game.tooltip.deactivate();
+			}
+		} else {
+			if (tooltipMode !== "off") {
+				game.tooltip.deactivate();
+			}
+		}
+	});
+
+	function getId(resultItem) {
+		if (!resultItem) {
+			return undefined;
+		}
+
+		if ("id" in resultItem.item && "uuid" in resultItem.item) {
+			return resultItem.item.id + resultItem.item.uuid;
+		}
+
+		return resultItem.item.id;
+	}
+
+	var ul = root$i();
+
+	each(ul, 23, results, (resultItem) => getId(resultItem), ($$anchor, resultItem, index) => {
+		var fragment = comment();
+		var node = first_child(fragment);
+		const expression = derived$1(() => $$props.selectedIndex === get$1(index));
+
+		component(node, () => get$1(ResultComponent), ($$anchor, $$component) => {
+			$$component($$anchor, {
+				get selected() {
+					return get$1(expression);
+				},
+				get density() {
+					return $density();
+				},
+				get resultItem() {
+					return get$1(resultItem);
+				},
+				get selectedAction() {
+					return $$props.selectedAction;
+				},
+				get callAction() {
+					return $$props.callAction;
+				}
+			});
+		});
+
+		append($$anchor, fragment);
+	});
+	bind_this(ul, ($$value) => resultList = $$value, () => resultList);
+
+	template_effect(
+		($0) => {
+			set_class(ul, 1, `quick-insert-result density-${$density() ?? ''}`);
+			set_attribute(ul, 'data-tooltip-direction', tooltips());
+			set_attribute(ul, 'aria-activedescendant', $0);
+		},
+		[
+			() => `result_${getId(results()[$$props.selectedIndex])}`
+		]
+	);
+
+	append($$anchor, ul);
+	pop();
+	$$cleanup();
+}
+
+var root$h = template(`<div class="example-results svelte-zptd4e"><!> <span class="notes svelte-zptd4e"><!></span></div>`);
+
+const $$css$l = {
+	hash: 'svelte-zptd4e',
+	code: '.example-results.svelte-zptd4e {overflow:hidden;display:flex;flex-shrink:0;flex-grow:1;flex-direction:column;align-items:center;width:275px;margin-top:1em;}.example-results.svelte-zptd4e .quick-insert-result {border-radius:4px;border:1px solid #7a7971;width:275px;background:var(--qiBackground);}\n\n  /* Dorako UI compatibility */[data-theme].application\n    .example-results.svelte-zptd4e\n    .quick-insert-result {background:var(--app-background);border:var(--app-border-width) solid var(--app-border-color);}.example-results.svelte-zptd4e .notes:where(.svelte-zptd4e) {text-align:center;}'
+};
+
+function ExampleResults($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$l);
+
+	let selectedIndex = prop($$props, 'selectedIndex', 19, () => $$props.results.length - 1),
+		searchMode = prop($$props, 'searchMode', 19, () => SearchMode.DOCUMENT);
+
+	var div = root$h();
+	var node = child(div);
+
+	SearchResults(node, {
+		embedded: true,
+		get searchMode() {
+			return searchMode();
+		},
+		get results() {
+			return $$props.results;
+		},
+		get selectedIndex() {
+			return selectedIndex();
+		},
+		selectedAction: '',
+		callAction: () => {}
+	});
+
+	var span = sibling(node, 2);
+	var node_1 = child(span);
+
+	slot(node_1, $$props, 'default', {});
+	append($$anchor, div);
+	pop();
+}
+
+var root_1$e = template(`<div class="options svelte-15t6cpc"><!> <!> <!> <!> <!> <!></div>`);
+var root_2$8 = template(`<p class="notes svelte-15t6cpc"><!></p> <div class="options svelte-15t6cpc"><!> <!> <legend> </legend> <p class="notes svelte-15t6cpc"><!></p> <!> <!> <!></div> <!>`, 1);
+var root_4$2 = template(`<div class="options svelte-15t6cpc"><p class="notes svelte-15t6cpc"><!></p></div> <!>`, 1);
+var root$g = template(`<div role="tabpanel"><p class="notes svelte-15t6cpc"> </p> <!> <!> <!></div>`);
+
+const $$css$k = {
+	hash: 'svelte-15t6cpc',
+	code: '.usertab.svelte-15t6cpc {overflow:auto;height:100%;padding:0.6em;}.hidden.svelte-15t6cpc {display:none;}.usertab.svelte-15t6cpc .form-fields:first-child {flex-grow:0;margin-right:0.2em;}.options.svelte-15t6cpc {display:flex;flex-direction:column;flex-grow:1;width:50%;gap:1rem;}p.notes.svelte-15t6cpc {margin-top:0;}kbd {flex:none;padding:0 4px;min-width:24px;background:rgba(255, 255, 255, 0.25);border:1px solid var(--color-border-light-2);border-radius:5px;box-shadow:1px 1px #444;text-align:center;}'
+};
+
+function UserTab($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$k);
+
+	const [$$stores, $$cleanup] = setup_stores();
+	const $defaultActionMacro = () => store_get(defaultActionMacro, '$defaultActionMacro', $$stores);
+	const $defaultActionRollTable = () => store_get(defaultActionRollTable, '$defaultActionRollTable', $$stores);
+	const $defaultActionScene = () => store_get(defaultActionScene, '$defaultActionScene', $$stores);
+	let active = prop($$props, 'active', 3, false);
+	const insertResults = fakeSearchResults(true);
+	let defaultActionMacro = stores[ModuleSetting.DEFAULT_ACTION_MACRO];
+	let defaultActionRollTable = stores[ModuleSetting.DEFAULT_ACTION_ROLL_TABLE];
+	let defaultActionScene = stores[ModuleSetting.DEFAULT_ACTION_SCENE];
+	let browseResults = derived$1(() => $defaultActionMacro() && $defaultActionRollTable() && $defaultActionScene() && fakeSearchResults());
+	var div = root$g();
+	let classes;
+	var p = child(div);
+	var text = child(p);
+
+	var node = sibling(p, 2);
+
+	SettingsGroup(node, {
+		title: 'General Settings',
+		children: ($$anchor, $$slotProps) => {
+			var div_1 = root_1$e();
+			var node_1 = child(div_1);
+			const expression = derived$1(() => mloc("SettingsSearchDensity"));
+			const expression_1 = derived$1(() => mloc("SettingsSearchDensityHint"));
+
+			FormSelect(node_1, {
+				get label() {
+					return get$1(expression);
+				},
+				get setting() {
+					return ModuleSetting.SEARCH_DENSITY;
+				},
+				get notes() {
+					return get$1(expression_1);
+				}
+			});
+
+			var node_2 = sibling(node_1, 2);
+			const expression_2 = derived$1(() => mloc("SettingsSearchFooter"));
+			const expression_3 = derived$1(() => mloc("SettingsSearchFooterHint"));
+
+			FormCheckbox(node_2, {
+				get label() {
+					return get$1(expression_2);
+				},
+				get setting() {
+					return ModuleSetting.SEARCH_FOOTER;
+				},
+				get notes() {
+					return get$1(expression_3);
+				}
+			});
+
+			var node_3 = sibling(node_2, 2);
+			const expression_4 = derived$1(() => mloc("SettingsSearchTooltips"));
+			const expression_5 = derived$1(() => mloc("SettingsSearchTooltipsHint"));
+
+			FormSelect(node_3, {
+				get label() {
+					return get$1(expression_4);
+				},
+				get setting() {
+					return ModuleSetting.SEARCH_TOOLTIPS;
+				},
+				get notes() {
+					return get$1(expression_5);
+				}
+			});
+
+			var node_4 = sibling(node_3, 2);
+			const expression_6 = derived$1(() => mloc("SettingsEnhancedTooltips"));
+			const expression_7 = derived$1(() => mloc("SettingsEnhancedTooltipsHint"));
+
+			FormCheckbox(node_4, {
+				get label() {
+					return get$1(expression_6);
+				},
+				get setting() {
+					return ModuleSetting.ENHANCED_TOOLTIPS;
+				},
+				get notes() {
+					return get$1(expression_7);
+				}
+			});
+
+			var node_5 = sibling(node_4, 2);
+			const expression_8 = derived$1(() => mloc("SettingsSearchEngine"));
+			const expression_9 = derived$1(() => mloc("SettingsSearchEngineHint"));
+
+			FormSelect(node_5, {
+				get label() {
+					return get$1(expression_8);
+				},
+				get setting() {
+					return ModuleSetting.SEARCH_ENGINE;
+				},
+				get notes() {
+					return get$1(expression_9);
+				}
+			});
+
+			var node_6 = sibling(node_5, 2);
+			const expression_10 = derived$1(() => mloc("SettingsQuickFilterEdit"));
+			const expression_11 = derived$1(() => mloc("SettingsQuickFilterEditHint"));
+
+			FormCheckbox(node_6, {
+				get label() {
+					return get$1(expression_10);
+				},
+				get setting() {
+					return ModuleSetting.QUICK_FILTER_EDIT;
+				},
+				get notes() {
+					return get$1(expression_11);
+				}
+			});
+			append($$anchor, div_1);
+		},
+		$$slots: { default: true }
+	});
+
+	var node_7 = sibling(node, 2);
+	const expression_12 = derived$1(() => mloc("ModeBrowse"));
+
+	SettingsGroup(node_7, {
+		get title() {
+			return get$1(expression_12);
+		},
+		children: ($$anchor, $$slotProps) => {
+			var fragment = root_2$8();
+			var p_1 = first_child(fragment);
+			var node_8 = child(p_1);
+
+			html(node_8, () => mloc("ModeBrowseDescription"));
+
+			var div_2 = sibling(p_1, 2);
+			var node_9 = child(div_2);
+			const expression_13 = derived$1(() => mloc("SettingsEnableGlobalContext"));
+			const expression_14 = derived$1(() => mloc("SettingsEnableGlobalContextHint"));
+
+			FormCheckbox(node_9, {
+				get label() {
+					return get$1(expression_13);
+				},
+				get setting() {
+					return ModuleSetting.ENABLE_GLOBAL_CONTEXT;
+				},
+				get notes() {
+					return get$1(expression_14);
+				}
+			});
+
+			var node_10 = sibling(node_9, 2);
+			const expression_15 = derived$1(() => mloc("SettingsRememberBrowseInput"));
+			const expression_16 = derived$1(() => mloc("SettingsRememberBrowseInputHint"));
+
+			FormCheckbox(node_10, {
+				get label() {
+					return get$1(expression_15);
+				},
+				get setting() {
+					return ModuleSetting.REMEMBER_BROWSE_INPUT;
+				},
+				get notes() {
+					return get$1(expression_16);
+				}
+			});
+
+			var legend = sibling(node_10, 2);
+			var text_1 = child(legend);
+
+			var p_2 = sibling(legend, 2);
+			var node_11 = child(p_2);
+
+			html(node_11, () => mloc("SettingsDefaultActionDescription"));
+
+			var node_12 = sibling(p_2, 2);
+
+			FormSelect(node_12, {
+				sub: true,
+				label: 'Scenes',
+				get setting() {
+					return ModuleSetting.DEFAULT_ACTION_SCENE;
+				}
+			});
+
+			var node_13 = sibling(node_12, 2);
+
+			FormSelect(node_13, {
+				sub: true,
+				label: 'Rollable Tables',
+				get setting() {
+					return ModuleSetting.DEFAULT_ACTION_ROLL_TABLE;
+				}
+			});
+
+			var node_14 = sibling(node_13, 2);
+
+			FormSelect(node_14, {
+				sub: true,
+				label: 'Macros',
+				get setting() {
+					return ModuleSetting.DEFAULT_ACTION_MACRO;
+				}
+			});
+
+			var node_15 = sibling(div_2, 2);
+			const expression_17 = derived$1(() => get$1(browseResults) || []);
+
+			ExampleResults(node_15, {
+				get results() {
+					return get$1(expression_17);
+				},
+				children: ($$anchor, $$slotProps) => {
+					var fragment_1 = comment();
+					var node_16 = first_child(fragment_1);
+
+					html(node_16, () => mloc("SettingsExampleBrowse"));
+					append($$anchor, fragment_1);
+				},
+				$$slots: { default: true }
+			});
+
+			template_effect(($0) => set_text(text_1, $0), [
+				() => mloc("SettingsDefaultActionCategory")
+			]);
+
+			append($$anchor, fragment);
+		},
+		$$slots: { default: true }
+	});
+
+	var node_17 = sibling(node_7, 2);
+	const expression_18 = derived$1(() => mloc("ModeInsert"));
+
+	SettingsGroup(node_17, {
+		get title() {
+			return get$1(expression_18);
+		},
+		children: ($$anchor, $$slotProps) => {
+			var fragment_2 = root_4$2();
+			var div_3 = first_child(fragment_2);
+			var p_3 = child(div_3);
+			var node_18 = child(p_3);
+
+			html(node_18, () => mloc("ModeInsertDescription"));
+
+			var node_19 = sibling(div_3, 2);
+
+			ExampleResults(node_19, {
+				results: insertResults,
+				children: ($$anchor, $$slotProps) => {
+					var fragment_3 = comment();
+					var node_20 = first_child(fragment_3);
+
+					html(node_20, () => mloc("SettingsExampleInsert"));
+					append($$anchor, fragment_3);
+				},
+				$$slots: { default: true }
+			});
+
+			append($$anchor, fragment_2);
+		},
+		$$slots: { default: true }
+	});
+
+	template_effect(
+		($0, $1) => {
+			classes = set_class(div, 1, 'usertab standard-form svelte-15t6cpc', null, classes, $0);
+			set_text(text, $1);
+		},
+		[
+			() => ({ hidden: !active() }),
+			() => mloc("SettingsUserSettingDescription")
+		]
+	);
+
+	append($$anchor, div);
+	pop();
+	$$cleanup();
+}
+
+const checkAll = (evt, dispatch, indeterminate) => dispatch("change", {
+	disabled: !evt.target.checked || get$1(indeterminate)
+});
+
+var root_1$d = template(`<span class="hint"> </span>`);
+var root$f = template(`<div><div class="row-label svelte-mwyaxl"><input type="checkbox" class="svelte-mwyaxl"> <label class="index svelte-mwyaxl"> <!></label></div> <div class="form-fields svelte-mwyaxl"><input type="checkbox" class="svelte-mwyaxl"> <input type="checkbox" class="svelte-mwyaxl"> <input type="checkbox" class="svelte-mwyaxl"> <input type="checkbox" class="svelte-mwyaxl"></div></div>`);
+
+const $$css$j = {
+	hash: 'svelte-mwyaxl',
+	code: '.form-group.svelte-mwyaxl {padding:0.2em;margin:0;align-items:center;border-top:1px solid var(--color-border-dark-4);color:var(--color-form-label);}.form-group.sublevel.svelte-mwyaxl .row-label:where(.svelte-mwyaxl) {padding-left:2em;}.form-group.svelte-mwyaxl label:where(.svelte-mwyaxl) {font-weight:bold;}.form-group.svelte-mwyaxl:hover {color:var(--color-form-label-hover);}.row-label.svelte-mwyaxl {flex:0 0 calc(45% + 0.4em);display:flex;align-items:center;}.row-label.svelte-mwyaxl label:where(.svelte-mwyaxl) {flex:unset;}.form-fields.svelte-mwyaxl {justify-content:space-around;}input.svelte-mwyaxl:disabled {opacity:0.6;filter:saturate(0);}'
+};
+
+function IndexingRow($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$j);
+
+	const [$$stores, $$cleanup] = setup_stores();
+	const $disabled = () => store_get(disabled, '$disabled', $$stores);
+	const dispatch = createEventDispatcher();
+	let disabledRoles = derived$1(() => $$props.row.documentType && $$props.row.documentType in $disabled().entities ? $disabled().entities[$$props.row.documentType] : []);
+	let checked = derived$1(() => Object.values($$props.row.enabled).some((v) => v));
+	let indeterminate = derived$1(() => get$1(checked) && !Object.values($$props.row.enabled).every((v) => v));
+	const all = [1, 2, 3, 4];
+	let allDisabled = derived$1(() => all.every((r) => get$1(disabledRoles).includes(r)));
+	const check = (role) => (evt) => dispatch("change", { role, disabled: !evt.target?.checked });
+	var div = root$f();
+	let classes;
+	var div_1 = child(div);
+	var input = child(div_1);
+	input.__click = [checkAll, dispatch, indeterminate];
+
+	var label = sibling(input, 2);
+	var text = child(label);
+	var node = sibling(text);
+
+	{
+		var consequent = ($$anchor) => {
+			var span = root_1$d();
+			var text_1 = child(span);
+			template_effect(() => set_text(text_1, $$props.row.subTitle));
+			append($$anchor, span);
+		};
+
+		if_block(node, ($$render) => {
+			if ($$props.row.subTitle) $$render(consequent);
+		});
+	}
+
+	var div_2 = sibling(div_1, 2);
+	var input_1 = child(div_2);
+
+	var event_handler = derived$1(() => check(1));
+
+	input_1.__click = function (...$$args) {
+		get$1(event_handler)?.apply(this, $$args);
+	};
+
+	var input_2 = sibling(input_1, 2);
+
+	var event_handler_1 = derived$1(() => check(2));
+
+	input_2.__click = function (...$$args) {
+		get$1(event_handler_1)?.apply(this, $$args);
+	};
+
+	var input_3 = sibling(input_2, 2);
+
+	var event_handler_2 = derived$1(() => check(3));
+
+	input_3.__click = function (...$$args) {
+		get$1(event_handler_2)?.apply(this, $$args);
+	};
+
+	var input_4 = sibling(input_3, 2);
+
+	var event_handler_3 = derived$1(() => check(4));
+
+	input_4.__click = function (...$$args) {
+		get$1(event_handler_3)?.apply(this, $$args);
+	};
+
+	template_effect(
+		($0, $1, $2, $3, $4) => {
+			classes = set_class(div, 1, 'form-group svelte-mwyaxl', null, classes, $0);
+			set_attribute(input, 'name', `${$$props.row.id ?? ''}.All`);
+			set_attribute(input, 'id', `${$$props.row.id ?? ''}.All`);
+			set_checked(input, get$1(checked));
+			input.indeterminate = get$1(indeterminate);
+			input.disabled = get$1(allDisabled);
+			set_attribute(label, 'for', `${$$props.row.id ?? ''}.All`);
+			set_text(text, `${$$props.row.title ?? ''} `);
+			set_attribute(input_1, 'name', `${$$props.row.id ?? ''}.1`);
+			set_attribute(input_1, 'id', `${$$props.row.id ?? ''}.1`);
+			set_checked(input_1, $$props.row.enabled[1]);
+			input_1.disabled = $1;
+			set_attribute(input_2, 'name', `${$$props.row.id ?? ''}.2`);
+			set_attribute(input_2, 'id', `${$$props.row.id ?? ''}.2`);
+			set_checked(input_2, $$props.row.enabled[2]);
+			input_2.disabled = $2;
+			set_attribute(input_3, 'name', `${$$props.row.id ?? ''}.3`);
+			set_attribute(input_3, 'id', `${$$props.row.id ?? ''}.3`);
+			set_checked(input_3, $$props.row.enabled[3]);
+			input_3.disabled = $3;
+			set_attribute(input_4, 'name', `${$$props.row.id ?? ''}.4`);
+			set_attribute(input_4, 'id', `${$$props.row.id ?? ''}.4`);
+			set_checked(input_4, $$props.row.enabled[4]);
+			input_4.disabled = $4;
+		},
+		[
+			() => ({
+				sublevel: $$props.row.type === "directory" && $$props.row.id !== "root"
+			}),
+			() => get$1(disabledRoles).includes(1),
+			() => get$1(disabledRoles).includes(2),
+			() => get$1(disabledRoles).includes(3),
+			() => get$1(disabledRoles).includes(4)
+		]
+	);
+
+	append($$anchor, div);
+	pop();
+	$$cleanup();
+}
+
+delegate(['click']);
+
+var root$e = template(`<button><!></button>`);
+
+const $$css$i = {
+	hash: 'svelte-96f0xp',
+	code: 'button.svelte-96f0xp {color:var(--color-text-primary);border:none;background:rgba(255, 255, 255, 0.2);width:100%;margin:6px;transition:box-shadow 100ms ease-out;}button.svelte-96f0xp:hover {color:var(--color-text-primary);background:rgba(255, 255, 255, 0.3);box-shadow:0 0 2px 1px #0003;}button.svelte-96f0xp:focus {box-shadow:0 0 0 2px #0003;}button.svelte-96f0xp:active {box-shadow:inset 0 0 0 1px #0004;}.round.svelte-96f0xp {background:rgba(255, 255, 255, 0.2);border-radius:15px;height:30px;padding:0 16px 0 8px;}.round.svelte-96f0xp:hover {background:rgba(255, 255, 255, 0.3);}'
+};
+
+function NiceButton($$anchor, $$props) {
+	append_styles($$anchor, $$css$i);
+
+	let round = prop($$props, 'round', 3, false);
+	var button = root$e();
+	let classes;
+	var node = child(button);
+
+	slot(node, $$props, 'default', {});
+
+	template_effect(
+		($0) => {
+			set_attribute(button, 'title', $$props.title);
+			classes = set_class(button, 1, 'svelte-96f0xp', null, classes, $0);
+		},
+		[() => ({ round: round() })]
+	);
+
+	event('click', button, preventDefault(function ($$arg) {
+		bubble_event.call(this, $$props, $$arg);
+	}));
+
+	append($$anchor, button);
+}
+
+var root_3$1 = template(`<span class="notes"> </span>`);
+var root_7 = template(`<span class="notes"> </span>`);
+var root$d = template(`<div role="tabpanel"><p class="notes svelte-1uc6pmt"> </p> <header class="table-header flexrow svelte-1uc6pmt"><span class="index svelte-1uc6pmt"><input class="filter-input svelte-1uc6pmt" type="text"></span> <span> </span> <span> </span> <span> </span> <span> </span></header> <div class="indexing-list svelte-1uc6pmt"><h3 class="svelte-1uc6pmt"> </h3> <!> <h3 class="svelte-1uc6pmt"> </h3> <!> <h3 class="svelte-1uc6pmt"> </h3> <div class="form-group"><!> <!></div> <!></div></div>`);
+
+const $$css$h = {
+	hash: 'svelte-1uc6pmt',
+	code: '.indexingtab.svelte-1uc6pmt {display:flex;flex-direction:column;height:100%;gap:0;}.hidden.svelte-1uc6pmt {display:none;}.indexingtab.svelte-1uc6pmt > :where(.svelte-1uc6pmt) {flex:unset;}.filter-input.svelte-1uc6pmt {color:inherit;font-weight:normal;}.filter-input.svelte-1uc6pmt::placeholder {color:inherit;opacity:0.6;}.indexing-list.svelte-1uc6pmt {overflow-y:auto;overflow-x:hidden;height:500px;scrollbar-width:thin;flex:1;}.index.svelte-1uc6pmt {flex:0 0 45%;font-weight:bold;padding:0 1em;}header.table-header.svelte-1uc6pmt {background:#2229;line-height:2em;text-align:center;color:#f0f0e0;font-weight:bold;text-shadow:1px 1px #000d;box-shadow:0 2px 2px #0006;position:relative;z-index:2;}.indexing-list.svelte-1uc6pmt h3:where(.svelte-1uc6pmt) {color:#f0f0e0;background:rgba(0, 0, 0, 0.5);border:none;text-shadow:1px 1px #000d;padding:0.2em;font-size:120%;margin:0;}p.notes.svelte-1uc6pmt {margin:0.6em;}'
+};
+
+function IndexingTab($$anchor, $$props) {
+	push($$props, true);
+	append_styles($$anchor, $$css$h);
+
+	const [$$stores, $$cleanup] = setup_stores();
+	const $packs = () => store_get(packs, '$packs', $$stores);
+	const $directory = () => store_get(directory, '$directory', $$stores);
+	const $documents = () => store_get(documents, '$documents', $$stores);
+	let filter = state("");
+	const filterRows = (filter, rows) => rows.filter((row) => row.title.toLowerCase().includes(filter.toLowerCase()) || row.subTitle?.toLowerCase().includes(filter.toLowerCase()));
+
+	const change = (row) => (event) => {
+		if (event.detail.role) {
+			disabled.toggleRole(row.type, row.id, event.detail.role, event.detail.disabled);
+		} else {
+			disabled.toggleAll(row.type, row.id, event.detail.disabled);
+		}
+	};
+
+	function selectAll() {
+		filterRows(get$1(filter), $packs()).forEach((row) => change(row)(new CustomEvent("", { detail: { disabled: false } })));
+	}
+
+	function deselectAll() {
+		filterRows(get$1(filter), $packs()).forEach((row) => change(row)(new CustomEvent("", { detail: { disabled: true } })));
+	}
+
+	var div = root$d();
+	let classes;
+	var p = child(div);
+	var text$1 = child(p);
+
+	var header = sibling(p, 2);
+	var span = child(header);
+	var input = child(span);
+
+	var span_1 = sibling(span, 2);
+	var text_1 = child(span_1);
+
+	var span_2 = sibling(span_1, 2);
+	var text_2 = child(span_2);
+
+	var span_3 = sibling(span_2, 2);
+	var text_3 = child(span_3);
+
+	var span_4 = sibling(span_3, 2);
+	var text_4 = child(span_4);
+
+	var div_1 = sibling(header, 2);
+	var h3 = child(div_1);
+	var text_5 = child(h3);
+
+	var node = sibling(h3, 2);
+
+	each(node, 1, () => filterRows(get$1(filter), $directory()), (row) => row.id, ($$anchor, row) => {
+		var event_handler = derived$1(() => change(get$1(row)));
+
+		IndexingRow($$anchor, {
+			get row() {
+				return get$1(row);
+			},
+			$$events: {
+				change(...$$args) {
+					get$1(event_handler)?.apply(this, $$args);
+				}
+			}
+		});
+	});
+
+	var h3_1 = sibling(node, 2);
+	var text_6 = child(h3_1);
+
+	var node_1 = sibling(h3_1, 2);
+
+	each(
+		node_1,
+		1,
+		() => filterRows(get$1(filter), $documents()),
+		(row) => row.id,
+		($$anchor, row) => {
+			var event_handler_1 = derived$1(() => change(get$1(row)));
+
+			IndexingRow($$anchor, {
+				get row() {
+					return get$1(row);
+				},
+				$$events: {
+					change(...$$args) {
+						get$1(event_handler_1)?.apply(this, $$args);
+					}
+				}
+			});
+		},
+		($$anchor) => {
+			var span_5 = root_3$1();
+			var text_7 = child(span_5);
+
+			template_effect(($0) => set_text(text_7, $0), [
+				() => mloc("IndexingSettingsNoMatchType", { filter: get$1(filter) })
+			]);
+
+			append($$anchor, span_5);
+		}
+	);
+
+	var h3_2 = sibling(node_1, 2);
+	var text_8 = child(h3_2);
+
+	var div_2 = sibling(h3_2, 2);
+	var node_2 = child(div_2);
+
+	NiceButton(node_2, {
+		$$events: { click: selectAll },
+		children: ($$anchor, $$slotProps) => {
+
+			var text_9 = text();
+
+			template_effect(($0) => set_text(text_9, $0), [() => mloc("IndexingSettingsSelectAll")]);
+			append($$anchor, text_9);
+		},
+		$$slots: { default: true }
+	});
+
+	var node_3 = sibling(node_2, 2);
+
+	NiceButton(node_3, {
+		$$events: { click: deselectAll },
+		children: ($$anchor, $$slotProps) => {
+
+			var text_10 = text();
+
+			template_effect(($0) => set_text(text_10, $0), [() => mloc("IndexingSettingsDeselectAll")]);
+			append($$anchor, text_10);
+		},
+		$$slots: { default: true }
+	});
+
+	var node_4 = sibling(div_2, 2);
+
+	each(
+		node_4,
+		1,
+		() => filterRows(get$1(filter), $packs()),
+		(row) => row.id,
+		($$anchor, row) => {
+			var event_handler_2 = derived$1(() => change(get$1(row)));
+
+			IndexingRow($$anchor, {
+				get row() {
+					return get$1(row);
+				},
+				$$events: {
+					change(...$$args) {
+						get$1(event_handler_2)?.apply(this, $$args);
+					}
+				}
+			});
+		},
+		($$anchor) => {
+			var span_6 = root_7();
+			var text_11 = child(span_6);
+
+			template_effect(($0) => set_text(text_11, $0), [
+				() => mloc("IndexingSettingsNoMatchCompendium", { filter: get$1(filter) })
+			]);
+
+			append($$anchor, span_6);
+		}
+	);
+
+	template_effect(
+		(
+			$0,
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9
+		) => {
+			classes = set_class(div, 1, 'indexingtab standard-form svelte-1uc6pmt', null, classes, $0);
+			set_text(text$1, $1);
+			set_attribute(input, 'placeholder', $2);
+			set_text(text_1, $3);
+			set_text(text_2, $4);
+			set_text(text_3, $5);
+			set_text(text_4, $6);
+			set_text(text_5, $7);
+			set_text(text_6, $8);
+			set_text(text_8, $9);
+		},
+		[
+			() => ({ hidden: !$$props.active }),
+			() => mloc("IndexingSettingsIntroduction"),
+			() => mloc("FilterEditorOptionFilter"),
+			() => loc("USER.RolePlayer"),
+			() => loc("USER.RoleTrusted"),
+			() => loc("USER.RoleAssistant"),
+			() => loc("USER.RoleGamemaster"),
+			() => mloc("FilterEditorDirectory"),
+			() => loc("COMPENDIUM.Type"),
+			() => loc("SIDEBAR.TabCompendium")
+		]
+	);
+
+	bind_value(input, () => get$1(filter), ($$value) => set(filter, $$value));
+	append($$anchor, div);
+	pop();
+	$$cleanup();
+}
 
 var root_1$c = template(`<span> </span>`);
 var root_2$7 = template(`<i class="fas fa-filter edit-filter svelte-18cyknh"></i>`);
@@ -5128,6 +5166,7 @@ function SearchApp($$anchor, $$props) {
 	let density = derived$1(() => stores[ModuleSetting.SEARCH_DENSITY]);
 	let showFootersetting = derived$1(() => stores[ModuleSetting.SEARCH_FOOTER]);
 	let selectedIndex = state(-1);
+	let results = state([]);
 	let showFooter = derived$1(() => $showFootersetting() && !embedded());
 
 	user_effect(() => {
@@ -5154,11 +5193,7 @@ function SearchApp($$anchor, $$props) {
 			appElement.querySelector("input")?.focus();
 		},
 		refresh: () => {
-			// This is ugly, maybe we can do something about it...
-			const oldSelected = get$1(selectedIndex);
-
-			set(results, proxy(get$1(controller).search(searchText(), filter())));
-			set(selectedIndex, proxy(oldSelected));
+			set(results, get$1(controller).search(searchText(), filter()));
 		},
 		setInputText: (inputText) => {
 			inputChanged(inputText);
@@ -5167,7 +5202,6 @@ function SearchApp($$anchor, $$props) {
 	};
 
 	let controller = state(proxy(modeConfig[SearchMode.DOCUMENT].controller(callbacks)));
-	let results = derived$1(() => get$1(controller).search(searchText(), filter()));
 
 	user_pre_effect(() => {
 		inputChanged(searchText());
@@ -5209,17 +5243,18 @@ function SearchApp($$anchor, $$props) {
 		const nextMode = filter() ? SearchMode.DOCUMENT : availableModes.find(([, c]) => c.prefix && textInput.startsWith(c.prefix))?.[0] || SearchMode.DOCUMENT;
 
 		selectMode(nextMode);
+		set(results, get$1(controller).search(searchText(), filter()));
 	}
 
 	function onAction(actionId, item, shiftKey) {
 		get$1(controller).onAction(item, actionId, shiftKey);
 	}
 
-	function callAction(event) {
-		const { actionId, item, shiftKey } = event.detail;
+	const callAction = (action) => {
+		const { actionId, item, shiftKey } = action;
 
 		onAction(actionId, item, shiftKey);
-	}
+	};
 
 	function navigateUp() {
 		set(selectedIndex, proxy(get$1(selectedIndex) == 0 ? get$1(results).length - 1 : get$1(selectedIndex) - 1));
@@ -5304,22 +5339,23 @@ function SearchApp($$anchor, $$props) {
 	let classes;
 	var node = child(div);
 
-	component(node, () => modeConfig[get$1(mode)].component, ($$anchor, $$component) => {
-		$$component($$anchor, {
-			get tooltips() {
-				return tooltips();
-			},
-			get selectedAction() {
-				return get$1(selectedAction);
-			},
-			get results() {
-				return get$1(results);
-			},
-			get selectedIndex() {
-				return get$1(selectedIndex);
-			},
-			$$events: { callAction }
-		});
+	SearchResults(node, {
+		get searchMode() {
+			return get$1(mode);
+		},
+		get tooltips() {
+			return tooltips();
+		},
+		get selectedAction() {
+			return get$1(selectedAction);
+		},
+		get results() {
+			return get$1(results);
+		},
+		get selectedIndex() {
+			return get$1(selectedIndex);
+		},
+		callAction
 	});
 
 	var div_1 = sibling(node, 2);
@@ -5531,7 +5567,7 @@ function FilterSectionTypes($$anchor, $$props) {
 	append_styles($$anchor, $$css$d);
 
 	const [$$stores, $$cleanup] = setup_stores();
-	const $enabledDocumentTypes = () => store_get(enabledDocumentTypes, '$enabledDocumentTypes', $$stores);
+	const $enabledDocumentTypes = () => store_get(enabledDocumentTypes$1, '$enabledDocumentTypes', $$stores);
 	let disabled = prop($$props, 'disabled', 3, false);
 	const dispatch = createEventDispatcher();
 
@@ -5825,34 +5861,6 @@ function FilterSectionLocation($$anchor, $$props) {
 	pop();
 }
 
-function filterDisplayed(contents) {
-    return contents.filter((i) => i.displayed);
-}
-function createCollectionStore(collection) {
-    return readable([], function start(set) {
-        function onCreate() {
-            set(filterDisplayed(collection.contents));
-        }
-        function onDelete() {
-            set(filterDisplayed(collection.contents));
-        }
-        const type = collection.documentName;
-        Hooks.on(`create${type}`, onCreate);
-        Hooks.on(`delete${type}`, onDelete);
-        set(filterDisplayed(collection.contents));
-        return function stop() {
-            Hooks.off(`create${type}`, onCreate);
-            Hooks.off(`delete${type}`, onDelete);
-        };
-    });
-}
-const collectionStores = {};
-Hooks.on("ready", () => {
-    if (game.folders) {
-        collectionStores.folders = createCollectionStore(game.folders);
-    }
-});
-
 var root_1$9 = template(`<i></i>`);
 var root_2$4 = template(`<ul class="svelte-7oc4bi"></ul>`);
 var root$7 = template(`<li><span><i></i> </span> <!></li> <!>`, 1);
@@ -6033,7 +6041,7 @@ function FilterModalFolders($$anchor, $$props) {
 	append_styles($$anchor, $$css$9);
 
 	const [$$stores, $$cleanup] = setup_stores();
-	const $enabledDocumentTypes = () => store_get(enabledDocumentTypes, '$enabledDocumentTypes', $$stores);
+	const $enabledDocumentTypes = () => store_get(enabledDocumentTypes$1, '$enabledDocumentTypes', $$stores);
 	const $folders = () => store_get(folders, '$folders', $$stores);
 	let open = prop($$props, 'open', 3, false);
 	let folderFilter = state("");
@@ -7754,7 +7762,6 @@ class SearchAppShell {
 	#rootElement;
 	rendered = false;
 	visible = false;
-	debug = false;
 	rememberedText = "";
 	rememberedFilter = undefined;
 	attachedContext = null;
@@ -7965,7 +7972,7 @@ class SearchAppShell {
 	}
 
 	clickOutside() {
-		if (this.visible && !this.#filterEditor && !this.debug) {
+		if (this.visible && !this.#filterEditor) {
 			this.close();
 		}
 	}
@@ -8514,7 +8521,8 @@ Hooks.once("ready", function () {
             "closest" in evt.target &&
             !evt.shiftKey) {
             const target = evt.target;
-            if (target.closest &&
+            if (target.isConnected &&
+                target.closest &&
                 !target.closest(".quick-insert-app") &&
                 !target.closest(".quick-insert-result")) {
                 QuickInsert.app?.clickOutside();
@@ -8558,5 +8566,5 @@ Hooks.on("renderSceneControls", (controls, html) => {
 //@ts-expect-error not defined
 globalThis.QuickInsert = QuickInsert;
 
-export { CharacterSheetContext, DocumentType, ModuleSetting, QuickInsert, SearchContext, getSetting, systemDocumentActionCallbacks, systemDocumentActions, systemFields };
+export { CharacterSheetContext, DocumentType, ModuleSetting, QuickInsert, BaseSearchContext as SearchContext, getSetting, systemDocumentActionCallbacks, systemDocumentActions, systemFields };
 //# sourceMappingURL=quick-insert.js.map

@@ -1,14 +1,14 @@
-2025/10/09-10:26:49.775478 79a12effd6c0 Recovering log #1543
-2025/10/09-10:26:49.780204 79a12effd6c0 Delete type=0 #1543
-2025/10/09-10:26:49.780296 79a12effd6c0 Delete type=3 #1541
-2025/10/12-22:14:58.179039 79a12d7ff6c0 Level-0 table #1548: started
-2025/10/12-22:14:58.180766 79a12d7ff6c0 Level-0 table #1548: 1151 bytes OK
-2025/10/12-22:14:58.182504 79a12d7ff6c0 Delete type=0 #1546
-2025/10/12-22:14:58.210543 79a12d7ff6c0 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at '!macros!IeRnp7Tqb8MxNtxT' @ 91 : 1
-2025/10/12-22:14:58.210551 79a12d7ff6c0 Compacting 1@0 + 1@1 files
-2025/10/12-22:14:58.212159 79a12d7ff6c0 Generated table #1549@0: 1 keys, 1151 bytes
-2025/10/12-22:14:58.212175 79a12d7ff6c0 Compacted 1@0 + 1@1 files => 1151 bytes
-2025/10/12-22:14:58.212977 79a12d7ff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
-2025/10/12-22:14:58.213051 79a12d7ff6c0 Delete type=2 #1458
-2025/10/12-22:14:58.213116 79a12d7ff6c0 Delete type=2 #1548
-2025/10/12-22:14:58.246637 79a12d7ff6c0 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 91 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
+2025/10/12-22:15:16.350904 79a17cbfa6c0 Recovering log #1547
+2025/10/12-22:15:16.355280 79a17cbfa6c0 Delete type=3 #1545
+2025/10/12-22:15:16.355351 79a17cbfa6c0 Delete type=0 #1547
+2025/10/15-12:08:21.671514 79a12d7ff6c0 Level-0 table #1553: started
+2025/10/15-12:08:21.673469 79a12d7ff6c0 Level-0 table #1553: 1151 bytes OK
+2025/10/15-12:08:21.675120 79a12d7ff6c0 Delete type=0 #1551
+2025/10/15-12:08:21.681155 79a12d7ff6c0 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 72057594037927935 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at '!macros!IeRnp7Tqb8MxNtxT' @ 92 : 1
+2025/10/15-12:08:21.681168 79a12d7ff6c0 Compacting 1@0 + 1@1 files
+2025/10/15-12:08:21.683816 79a12d7ff6c0 Generated table #1554@0: 1 keys, 1151 bytes
+2025/10/15-12:08:21.683848 79a12d7ff6c0 Compacted 1@0 + 1@1 files => 1151 bytes
+2025/10/15-12:08:21.685606 79a12d7ff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/10/15-12:08:21.685771 79a12d7ff6c0 Delete type=2 #1553
+2025/10/15-12:08:21.685895 79a12d7ff6c0 Delete type=2 #1549
+2025/10/15-12:08:21.693641 79a12d7ff6c0 Manual compaction at level-0 from '!macros!IeRnp7Tqb8MxNtxT' @ 92 : 1 .. '!macros!IeRnp7Tqb8MxNtxT' @ 0 : 0; will stop at (end)
