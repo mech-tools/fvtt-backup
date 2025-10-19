@@ -12212,6 +12212,49 @@ async function removeFreeMarker(database) {
     }
   }
 }
+class Frozen {
+  /**
+   * @hideconstructor
+   */
+  constructor() {
+    throw new Error("Frozen constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * @param {Iterable<[K, V]>} [entries] - Target Map or iterable of [key, value] pairs.
+   *
+   * @returns {ReadonlyMap<K, V>} A strictly ReadonlyMap.
+   *
+   * @template K, V
+   */
+  static Map(entries) {
+    const result = new Map(entries);
+    result.set = void 0;
+    result.delete = void 0;
+    result.clear = void 0;
+    return (
+      /** @type {ReadonlyMap<K, V>} */
+      result
+    );
+  }
+  /**
+   * @param {Iterable<T>} [data] - Target Set or iterable list.
+   *
+   * @returns {ReadonlySet<T>} A strictly ReadonlySet.
+   *
+   * @template T
+   */
+  static Set(data2) {
+    const result = new Set(data2);
+    result.add = void 0;
+    result.delete = void 0;
+    result.clear = void 0;
+    return (
+      /** @type {ReadonlySet<T>} */
+      result
+    );
+  }
+}
+Object.freeze(Frozen);
 class Hashing {
   static #regexUuidv = /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
   /**
@@ -15724,7 +15767,6 @@ function secondaryEffect(secondary2, seq, targetArray, targetEnabled = false, mi
   }
 }
 function targetEffect(targetFX, seq, targetArray, missable = false, handler) {
-  debugger;
   const options2 = targetFX.options;
   if (targetFX.sound) {
     seq.addSequence(targetFX.sound);
@@ -15747,7 +15789,7 @@ function targetEffect(targetFX, seq, targetArray, missable = false, handler) {
     }
     if (options2.persistent) {
       thisSeq.persist(true, { persistTokenPrototype: true });
-      thisSeq.attachTo(currentTarget, { bindVisibility: targetFX.unbindVisibility, bindAlpha: targetFX.unbindAlpha });
+      thisSeq.attachTo(currentTarget, { bindVisibility: targetFX.options.unbindVisibility, bindAlpha: targetFX.options.unbindAlpha });
     } else {
       thisSeq.atLocation(missable ? `spot ${currentTarget.id}` : currentTarget);
     }
@@ -18252,9 +18294,9 @@ async function teleportation(handler, animationData) {
     animSeq.on(sourceToken);
     animSeq.delay(data2.options.delayMove);
     if (data2.options.teleport) {
-      animSeq.teleportTo({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation });
+      animSeq.teleportTo({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: true });
     } else {
-      animSeq.moveTowards({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation });
+      animSeq.moveTowards({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: true });
       animSeq.moveSpeed(data2.options.speed);
     }
     if (data2.options.alpha < 1) {
@@ -20400,21 +20442,21 @@ function currentAutorecVersion() {
 }
 const autoRecMigration = {
   /**
-   * 
-   * @param {*} autoObject 
+   *
+   * @param {*} autoObject
    * @param {
-   * shouldSubmit: Boolean (Merges should be submitted), 
-   * newSchema: Boolean (Is a new data Schema?), 
+   * shouldSubmit: Boolean (Merges should be submitted),
+   * newSchema: Boolean (Is a new data Schema?),
    * submitAll: Boolean (A-A ONLY override to submit ALL merged Menus)
-   * } options 
-   * @returns 
+   * } options
+   * @returns
    */
   async handle(autoObject, options2 = {}) {
     if (options2.newSchema) {
       ui.notifications.info("Automated Animations | Exporting your Global Automatic Recognition Menu before running Migration");
       const data2 = game.settings.get("autoanimations", "aaAutorec");
       const filename = `Autorec-Menu-Backup`;
-      saveDataToFile(JSON.stringify(data2, null, 2), "text/json", filename);
+      foundry.utils.saveDataToFile(JSON.stringify(data2, null, 2), "text/json", filename);
       autoObject = {
         melee: game.settings.get("autoanimations", "aaAutorec-melee"),
         range: game.settings.get("autoanimations", "aaAutorec-range"),
@@ -23046,7 +23088,7 @@ class AAAutorecManager {
       version: await game.settings.get("autoanimations", "aaAutorec").version
     };
     const filename = `fvtt-AutomatedAnimations-GlobalMenu${string}.json`;
-    saveDataToFile(JSON.stringify(exportData, null, 2), "text/json", filename);
+    foundry.utils.saveDataToFile(JSON.stringify(exportData, null, 2), "text/json", filename);
   }
   /**
    *
@@ -23704,6 +23746,689 @@ function registerActiveEffectHooks() {
       });
   }
 }
+class CrossWindow {
+  /**
+   * @private
+   */
+  constructor() {
+    throw new Error("CrossWindow constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Class names for all focusable element types.
+   */
+  static #FocusableElementClassNames = [
+    "HTMLAnchorElement",
+    "HTMLButtonElement",
+    "HTMLDetailsElement",
+    "HTMLEmbedElement",
+    "HTMLIFrameElement",
+    "HTMLInputElement",
+    "HTMLObjectElement",
+    "HTMLSelectElement",
+    "HTMLTextAreaElement"
+  ];
+  /**
+   * DOM nodes with defined `ownerDocument` property.
+   */
+  static #NodesWithOwnerDocument = /* @__PURE__ */ new Set([
+    Node.ELEMENT_NODE,
+    Node.TEXT_NODE,
+    Node.COMMENT_NODE,
+    Node.DOCUMENT_FRAGMENT_NODE
+  ]);
+  // Various UIEvent sets for duck typing by constructor name.
+  /**
+   * Duck typing class names for pointer events.
+   */
+  static #PointerEventSet = /* @__PURE__ */ new Set(["MouseEvent", "PointerEvent"]);
+  /**
+   * Duck typing class names for all UIEvents.
+   */
+  static #UIEventSet = /* @__PURE__ */ new Set([
+    "UIEvent",
+    "FocusEvent",
+    "MouseEvent",
+    "WheelEvent",
+    "KeyboardEvent",
+    "PointerEvent",
+    "TouchEvent",
+    "InputEvent",
+    "CompositionEvent",
+    "DragEvent"
+  ]);
+  /**
+   * Duck typing class names for events considered as user input.
+   */
+  static #UserInputEventSet = /* @__PURE__ */ new Set(["KeyboardEvent", "MouseEvent", "PointerEvent"]);
+  /**
+   * Internal options used by `#checkDOMInstanceType` when retrieving the Window reference from a Node that doesn't
+   * define `ownerDocument`.
+   */
+  static #optionsInternalCheckDOM = { throws: false };
+  // DOM Querying ---------------------------------------------------------------------------------------------------
+  /**
+   * Convenience method to test if the given target element is the current active element.
+   *
+   * @param target - Element to test as current active element.
+   */
+  static isActiveElement(target2) {
+    if (this.#hasOwnerDocument(target2)) {
+      return target2?.ownerDocument?.activeElement === target2;
+    }
+    return false;
+  }
+  /**
+   * Convenience method to retrieve the `document.activeElement` value in the current Window context of a DOM Node /
+   * Element, EventTarget, Document, or Window.
+   *
+   * @param target - DOM Node / Element, EventTarget, Document, UIEvent or Window to query.
+   *
+   * @param [options] - Options.
+   *
+   * @returns Active element or `undefined` when `throws` option is `false` and the target is invalid.
+   *
+   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
+   */
+  static getActiveElement(target2, { throws = true } = {}) {
+    if (this.#hasOwnerDocument(target2)) {
+      return target2?.ownerDocument?.activeElement ?? null;
+    }
+    if (this.isUIEvent(target2) && isObject(target2?.view)) {
+      return target2?.view?.document?.activeElement ?? null;
+    }
+    if (this.isDocument(target2)) {
+      return target2?.activeElement ?? null;
+    }
+    if (this.isWindow(target2)) {
+      return target2?.document?.activeElement ?? null;
+    }
+    if (throws) {
+      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
+    }
+    return void 0;
+  }
+  /**
+   * Convenience method to retrieve the `Document` value in the current context of a DOM Node / Element, EventTarget,
+   * Document, UIEvent, or Window.
+   *
+   * @param target - DOM Node / Element, EventTarget, Document, UIEvent or Window to query.
+   *
+   * @param [options] - Options.
+   *
+   * @returns {Document} Active document or `undefined` when `throws` option is `false` and the target is invalid.
+   *
+   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
+   */
+  static getDocument(target2, { throws = true } = {}) {
+    if (this.#hasOwnerDocument(target2)) {
+      return target2?.ownerDocument;
+    }
+    if (this.isUIEvent(target2) && isObject(target2?.view)) {
+      return target2?.view?.document;
+    }
+    if (this.isDocument(target2)) {
+      return target2;
+    }
+    if (this.isWindow(target2)) {
+      return target2?.document;
+    }
+    if (throws) {
+      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
+    }
+    return void 0;
+  }
+  /**
+   * Convenience method to retrieve the `Window` value in the current context of a DOM Node / Element, EventTarget,
+   * Document, or Window.
+   *
+   * @param target - DOM Node / Element, EventTarget, Document, UIEvent or Window to query.
+   *
+   * @param [options] - Options.
+   *
+   * @returns Active window or `undefined` when `throws` option is `false` and the target is invalid.
+   *
+   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
+   */
+  static getWindow(target2, { throws = true } = {}) {
+    if (this.#hasOwnerDocument(target2)) {
+      return target2.ownerDocument?.defaultView ?? globalThis;
+    }
+    if (this.isUIEvent(target2) && isObject(target2?.view)) {
+      return target2.view ?? globalThis;
+    }
+    if (this.isDocument(target2)) {
+      return target2.defaultView ?? globalThis;
+    }
+    if (this.isWindow(target2)) {
+      return target2;
+    }
+    if (throws) {
+      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
+    }
+    return void 0;
+  }
+  // ES / Browser API basic prototype tests -------------------------------------------------------------------------
+  /**
+   * Provides basic prototype string type checking if `target` is a CSSImportRule.
+   *
+   * @param target - A potential CSSImportRule to test.
+   *
+   * @returns Is `target` a CSSImportRule.
+   */
+  static isCSSImportRule(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object CSSImportRule]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a CSSLayerBlockRule.
+   *
+   * @param target - A potential CSSLayerBlockRule to test.
+   *
+   * @returns Is `target` a CSSLayerBlockRule.
+   */
+  static isCSSLayerBlockRule(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object CSSLayerBlockRule]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a CSSStyleRule.
+   *
+   * @param target - A potential CSSStyleRule to test.
+   *
+   * @returns Is `target` a CSSStyleRule.
+   */
+  static isCSSStyleRule(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object CSSStyleRule]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a CSSStyleSheet.
+   *
+   * @param target - A potential CSSStyleSheet to test.
+   *
+   * @returns Is `target` a CSSStyleSheet.
+   */
+  static isCSSStyleSheet(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object CSSStyleSheet]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a Document.
+   *
+   * @param target - A potential Document to test.
+   *
+   * @returns Is `target` a Document.
+   */
+  static isDocument(target2) {
+    return isObject(target2) && /^\[object (HTML)?Document]$/.test(Object.prototype.toString.call(target2));
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a Map.
+   *
+   * @param target - A potential Map to test.
+   *
+   * @returns Is `target` a Map.
+   */
+  static isMap(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Map]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a Promise.
+   *
+   * @param target - A potential Promise to test.
+   *
+   * @returns Is `target` a Promise.
+   */
+  static isPromise(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Promise]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a RegExp.
+   *
+   * @param target - A potential RegExp to test.
+   *
+   * @returns Is `target` a RegExp.
+   */
+  static isRegExp(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object RegExp]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a Set.
+   *
+   * @param target - A potential Set to test.
+   *
+   * @returns Is `target` a Set.
+   */
+  static isSet(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Set]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a URL.
+   *
+   * @param target - A potential URL to test.
+   *
+   * @returns Is `target` a URL.
+   */
+  static isURL(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object URL]";
+  }
+  /**
+   * Provides basic prototype string type checking if `target` is a Window.
+   *
+   * @param target - A potential Window to test.
+   *
+   * @returns Is `target` a Window.
+   */
+  static isWindow(target2) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Window]";
+  }
+  // DOM Element typing ---------------------------------------------------------------------------------------------
+  /**
+   * Ensures that the given target is an `instanceof` all known DOM elements that are focusable. Please note that
+   * additional checks are required regarding focusable state; use {@link A11yHelper.isFocusable} for a complete check.
+   *
+   * @param target - Target to test for `instanceof` focusable HTML element.
+   *
+   * @returns Is target an `instanceof` a focusable DOM element.
+   */
+  static isFocusableHTMLElement(target2) {
+    for (let cntr = this.#FocusableElementClassNames.length; --cntr >= 0; ) {
+      if (this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, this.#FocusableElementClassNames[cntr])) {
+        return true;
+      }
+    }
+    return false;
+  }
+  /**
+   * Provides precise type checking if `target` is a DocumentFragment.
+   *
+   * @param target - A potential DocumentFragment to test.
+   *
+   * @returns Is `target` a DocumentFragment.
+   */
+  static isDocumentFragment(target2) {
+    return this.#checkDOMInstanceType(target2, Node.DOCUMENT_FRAGMENT_NODE, "DocumentFragment");
+  }
+  /**
+   * Provides precise type checking if `target` is an Element.
+   *
+   * @param target - A potential Element to test.
+   *
+   * @returns Is `target` an Element.
+   */
+  static isElement(target2) {
+    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "Element");
+  }
+  /**
+   * Provides precise type checking if `target` is a HTMLAnchorElement.
+   *
+   * @param target - A potential HTMLAnchorElement to test.
+   *
+   * @returns Is `target` a HTMLAnchorElement.
+   */
+  static isHTMLAnchorElement(target2) {
+    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "HTMLAnchorElement");
+  }
+  /**
+   * Provides precise type checking if `target` is an HTMLElement.
+   *
+   * @param target - A potential HTMLElement to test.
+   *
+   * @returns Is `target` a HTMLElement.
+   */
+  static isHTMLElement(target2) {
+    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "HTMLElement");
+  }
+  /**
+   * Provides precise type checking if `target` is a Node.
+   *
+   * @param target - A potential Node to test.
+   *
+   * @returns Is `target` a DOM Node.
+   */
+  static isNode(target2) {
+    if (typeof target2?.nodeType !== "number") {
+      return false;
+    }
+    if (target2 instanceof globalThis.Node) {
+      return true;
+    }
+    const activeWindow = this.getWindow(target2, this.#optionsInternalCheckDOM);
+    const TargetNode = activeWindow?.Node;
+    return TargetNode && target2 instanceof TargetNode;
+  }
+  /**
+   * Provides precise type checking if `target` is a ShadowRoot.
+   *
+   * @param target - A potential ShadowRoot to test.
+   *
+   * @returns Is `target` a ShadowRoot.
+   */
+  static isShadowRoot(target2) {
+    return this.#checkDOMInstanceType(target2, Node.DOCUMENT_FRAGMENT_NODE, "ShadowRoot");
+  }
+  /**
+   * Provides precise type checking if `target` is a SVGElement.
+   *
+   * @param target - A potential SVGElement to test.
+   *
+   * @returns Is `target` a SVGElement.
+   */
+  static isSVGElement(target2) {
+    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "SVGElement");
+  }
+  // Event typing ---------------------------------------------------------------------------------------------------
+  /**
+   * Provides basic duck type checking for `Event` signature and optional constructor name(s).
+   *
+   * @param target - A potential DOM event to test.
+   *
+   * @param [types] Specific constructor name or Set of constructor names to match.
+   *
+   * @returns Is `target` an Event with optional constructor name check.
+   */
+  static isEvent(target2, types) {
+    if (typeof target2?.type !== "string" || typeof target2?.defaultPrevented !== "boolean" || typeof target2?.stopPropagation !== "function") {
+      return false;
+    }
+    return types !== void 0 ? this.isCtorName(target2, types) : true;
+  }
+  /**
+   * Provides basic duck type checking for `Event` signature for standard mouse / pointer events including
+   * `MouseEvent` and `PointerEvent`.
+   *
+   * @param target - A potential DOM event to test.
+   *
+   * @returns Is `target` a MouseEvent or PointerEvent.
+   */
+  static isPointerEvent(target2) {
+    return this.isEvent(target2, this.#PointerEventSet);
+  }
+  /**
+   * Provides basic duck type checking for `Event` signature for all UI events.
+   *
+   * @param target - A potential DOM event to test.
+   *
+   * @returns Is `target` a UIEvent.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UIEvent
+   */
+  static isUIEvent(target2) {
+    return this.isEvent(target2, this.#UIEventSet);
+  }
+  /**
+   * Provides basic duck type checking for `Event` signature for standard user input events including `KeyboardEvent`,
+   * `MouseEvent`, and `PointerEvent`.
+   *
+   * @param target - A potential DOM event to test.
+   *
+   * @returns Is `target` a Keyboard, MouseEvent, or PointerEvent.
+   */
+  static isUserInputEvent(target2) {
+    return this.isEvent(target2, this.#UserInputEventSet);
+  }
+  // Generic typing -------------------------------------------------------------------------------------------------
+  /**
+   * Provides basic type checking by constructor name(s) for objects. This can be useful when checking multiple
+   * constructor names against a provided Set.
+   *
+   * @param target - Object to test for constructor name.
+   *
+   * @param types Specific constructor name or Set of constructor names to match.
+   *
+   * @returns Does the provided object constructor name match the types provided.
+   */
+  static isCtorName(target2, types) {
+    if (!isObject(target2)) {
+      return false;
+    }
+    if (typeof types === "string" && target2?.constructor?.name === types) {
+      return true;
+    }
+    return !!types?.has(target2?.constructor?.name);
+  }
+  // Errors ---------------------------------------------------------------------------------------------------------
+  /**
+   * Provides basic duck type checking and error name for {@link DOMException}.
+   *
+   * @param target - Error to duck type test.
+   *
+   * @param name - Specific error name.
+   *
+   * @returns Is target a DOMException matching the error name.
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMException#error_names
+   */
+  static isDOMException(target2, name) {
+    return isObject(target2) && Object.prototype.toString.call(target2) === "[object DOMException]" && target2.name === name;
+  }
+  // Internal implementation ----------------------------------------------------------------------------------------
+  /**
+   * Internal generic DOM `instanceof` check. First will attempt to find the class name by `globalThis` falling back
+   * to the {@link Window} associated with the DOM node.
+   *
+   * @param target - Target to test.
+   *
+   * @param nodeType - Node type constant.
+   *
+   * @param className - DOM classname for instanceof check.
+   *
+   * @returns Is the target the given nodeType and instance of class name.
+   */
+  static #checkDOMInstanceType(target2, nodeType, className) {
+    if (!isObject(target2)) {
+      return false;
+    }
+    if (target2.nodeType !== nodeType) {
+      return false;
+    }
+    const GlobalClass = window[className];
+    if (GlobalClass && target2 instanceof GlobalClass) {
+      return true;
+    }
+    const activeWindow = this.#hasOwnerDocument(target2) ? target2?.ownerDocument?.defaultView : (
+      // @ts-ignore: Safe in this context.
+      this.getWindow(target2, this.#optionsInternalCheckDOM)
+    );
+    const TargetClass = activeWindow?.[className];
+    return TargetClass && target2 instanceof TargetClass;
+  }
+  static #hasOwnerDocument(target2) {
+    return typeof target2 === "object" && target2 !== null && this.#NodesWithOwnerDocument.has(target2?.nodeType);
+  }
+}
+class URLParser {
+  /**
+   * @private
+   */
+  constructor() {
+    throw new Error("URLParser constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Parses a URL string converting it to a fully qualified URL. If URL is an existing URL instance, it is returned
+   * immediately. Optionally, you may construct a fully qualified URL from a relative base origin / path or with a
+   * route prefix added to the current location origin.
+   *
+   * @param options - Options.
+   *
+   * @param options.url - URL string to convert to a URL.
+   *
+   * @param [options.base] - Optional fully qualified base path for relative URL construction.
+   *
+   * @param [options.routePrefix] - Optional route prefix to add to location origin for absolute URL strings
+   *        when `base` is not defined.
+   *
+   * @returns Parsed URL or null if `url` is not parsed.
+   */
+  static parse({ url, base, routePrefix }) {
+    if (CrossWindow.isURL(url)) {
+      return url;
+    }
+    if (typeof url !== "string") {
+      return null;
+    }
+    if (base !== void 0 && typeof base !== "string") {
+      return null;
+    }
+    if (routePrefix !== void 0 && typeof routePrefix !== "string") {
+      return null;
+    }
+    const targetURL = this.#createURL(url);
+    if (targetURL) {
+      return targetURL;
+    }
+    let targetBase;
+    if (url.startsWith("./") || url.startsWith("../")) {
+      targetBase = base ? base : `${globalThis.location.origin}${globalThis.location.pathname}`;
+    } else {
+      let targetRoutePrefix = "";
+      if (routePrefix) {
+        targetRoutePrefix = routePrefix.startsWith("/") ? routePrefix : `/${routePrefix}`;
+        targetRoutePrefix = targetRoutePrefix.endsWith("/") ? targetRoutePrefix : `${targetRoutePrefix}/`;
+      }
+      targetBase = `${globalThis.location.origin}${targetRoutePrefix}`;
+    }
+    return this.#createURL(url, targetBase);
+  }
+  // Internal implementation ----------------------------------------------------------------------------------------
+  /**
+   * Helper to create a URL and catch any exception. Useful until `URL.parse` and `URL.canParse` are more widespread.
+   *
+   * @param url - URL string.
+   *
+   * @param base - Base origin / path.
+   *
+   * @returns Valid URL or null.
+   */
+  static #createURL(url, base = "") {
+    try {
+      return new URL(url, base);
+    } catch (err) {
+      return null;
+    }
+  }
+}
+class AssetValidator {
+  /** Default media types. */
+  static #mediaTypes = Object.freeze({
+    all: Frozen.Set(["audio", "img", "svg", "video"]),
+    audio: Frozen.Set(["audio"]),
+    img: Frozen.Set(["img"]),
+    img_svg: Frozen.Set(["img", "svg"]),
+    img_svg_video: Frozen.Set(["img", "svg", "video"]),
+    video: Frozen.Set(["video"])
+  });
+  /** Supported audio extensions. */
+  static #audioExtensions = /* @__PURE__ */ new Set(["mp3", "wav", "ogg", "aac", "flac", "webm"]);
+  /** Supported image extensions. */
+  static #imageExtensions = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"]);
+  /** Supported SVG extensions. */
+  static #svgExtensions = /* @__PURE__ */ new Set(["svg"]);
+  /** Supported video extensions. */
+  static #videoExtensions = /* @__PURE__ */ new Set(["mp4", "webm", "ogg"]);
+  /**
+   * @private
+   */
+  constructor() {
+    throw new Error("AssetValidator constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Provides several readonly default media type Sets useful for the `mediaTypes` option.
+   */
+  static get MediaTypes() {
+    return this.#mediaTypes;
+  }
+  /**
+   * Parses the provided file path to determine the media type and validity based on the file extension. Certain
+   * extensions can be excluded in addition to filtering by specified media types.
+   *
+   * @param options - Options.
+   *
+   * @returns The parsed asset information containing the file path, extension, element type, and whether the parsing
+   *          is valid for the file extension is supported and not excluded.
+   *
+   * @throws {TypeError} If the provided `url` is not a string or URL, `routePrefix` is not a string,
+   *         `exclude` is not a Set, or `mediaTypes` is not a Set.
+   */
+  static parseMedia({ url, routePrefix, exclude, mediaTypes = this.#mediaTypes.all, raiseException = false }) {
+    const throws = typeof raiseException === "boolean" ? raiseException : true;
+    if (typeof url !== "string" && !CrossWindow.isURL(url)) {
+      if (throws) {
+        throw new TypeError(`'url' is not a string or URL instance.`);
+      } else {
+        return { url, valid: false };
+      }
+    }
+    if (routePrefix !== void 0 && typeof routePrefix !== "string") {
+      if (throws) {
+        throw new TypeError(`'routePrefix' is not a string.`);
+      } else {
+        return { url, valid: false };
+      }
+    }
+    if (exclude !== void 0 && !CrossWindow.isSet(exclude)) {
+      if (throws) {
+        throw new TypeError(`'exclude' is not a Set.`);
+      } else {
+        return { url, valid: false };
+      }
+    }
+    if (!CrossWindow.isSet(mediaTypes)) {
+      if (throws) {
+        throw new TypeError(`'mediaTypes' is not a Set.`);
+      } else {
+        return { url, valid: false };
+      }
+    }
+    const targetURL = typeof url === "string" ? URLParser.parse({ url, routePrefix }) : url;
+    if (!targetURL) {
+      if (throws) {
+        throw new TypeError(`'url' is invalid.`);
+      } else {
+        return { url, valid: false };
+      }
+    }
+    const extensionMatch = targetURL.pathname.match(/\.([a-zA-Z0-9]+)$/);
+    const extension = extensionMatch ? extensionMatch[1].toLowerCase() : void 0;
+    const isExcluded = extension && CrossWindow.isSet(exclude) ? exclude.has(extension) : false;
+    let elementType = void 0;
+    let valid = false;
+    if (extension && !isExcluded) {
+      if (this.#svgExtensions.has(extension) && mediaTypes.has("svg")) {
+        elementType = "svg";
+        valid = true;
+      } else if (this.#imageExtensions.has(extension) && mediaTypes.has("img")) {
+        elementType = "img";
+        valid = true;
+      } else if (this.#videoExtensions.has(extension) && mediaTypes.has("video")) {
+        elementType = "video";
+        valid = true;
+      } else if (this.#audioExtensions.has(extension) && mediaTypes.has("audio")) {
+        elementType = "audio";
+        valid = true;
+      }
+    }
+    return valid ? {
+      src: url,
+      url: targetURL,
+      extension,
+      elementType,
+      valid
+    } : { url, valid: false };
+  }
+}
+Object.freeze(AssetValidator);
+class BrowserSupports {
+  /**
+   * @private
+   */
+  constructor() {
+    throw new Error("BrowserSupports constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Check for container query support.
+   *
+   * @returns True if container queries supported.
+   */
+  static get containerQueries() {
+    return "container" in document.documentElement.style;
+  }
+}
 const subscriber_queue = [];
 function readable(value, start) {
   return {
@@ -23799,6 +24524,170 @@ function derived(stores, fn, initial_value) {
     };
   });
 }
+class ThemeObserver {
+  /**
+   * All readable theme stores.
+   *
+   * @type {Readonly<({
+   *    themeName: Readonly<import('svelte/store').Readable<string>>
+   *    themeToken: Readonly<import('svelte/store').Readable<string>>
+   * })>}
+   */
+  static #stores;
+  /**
+   * Internal setter for theme stores.
+   *
+   * @type {{ themeName: Function, themeToken: Function }}
+   */
+  static #storeSet;
+  /**
+   * Current theme name.
+   *
+   * @type {string}
+   */
+  static #themeName = "";
+  /**
+   * Current theme token.
+   *
+   * @type {string}
+   */
+  static #themeToken = "";
+  /**
+   * @hideconstructor
+   */
+  constructor() {
+    throw new Error("ThemeObserver constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * @returns {Readonly<({
+   *    themeName: Readonly<import('svelte/store').Readable<string>>
+   *    themeToken: Readonly<import('svelte/store').Readable<string>>
+   * })>} Current platform theme stores.
+   */
+  static get stores() {
+    return this.#stores;
+  }
+  /**
+   * @returns {string} Current theme name; may be different from the theme token.
+   */
+  static get themeName() {
+    return this.#themeName;
+  }
+  /**
+   * @returns {string} Current theme token - CSS class.
+   */
+  static get themeToken() {
+    return this.#themeToken;
+  }
+  /**
+   * Verify that the given `theme` name or token (CSS class) is the current platform theme.
+   *
+   * @param {string} theme - A theme name or token to verify.
+   *
+   * @returns {boolean} If the requested theme matches the current platform theme.
+   */
+  static isTheme(theme) {
+    return typeof theme === "string" && (this.#themeName === theme || this.#themeToken === theme);
+  }
+  /**
+   * Detect if theming tokens (CSS classes) are present in the given iterable list.
+   *
+   * @param {Iterable<string>}  tokens - a token list to verify if any theming tokens are included.
+   *
+   * @param {object} [options] - Optional parameters.
+   *
+   * @param {boolean} [options.strict=false] - When true, all theming tokens required if multiple are verified.
+   *
+   * @returns {boolean} True if theming tokens present.
+   */
+  static hasThemedTokens(tokens, { strict = false } = {}) {
+    if (!isIterable(tokens)) {
+      return false;
+    }
+    let strictFound = !strict;
+    let themeFound = false;
+    for (const entry of tokens) {
+      if (typeof entry !== "string") {
+        continue;
+      }
+      if (entry.startsWith("theme-")) {
+        themeFound = true;
+      }
+      if (entry === "themed") {
+        strictFound = true;
+      }
+    }
+    return themeFound && strictFound;
+  }
+  /**
+   * Initialize `document.body` theme observation.
+   *
+   * @internal
+   */
+  static initialize() {
+    if (this.#stores !== void 0) {
+      return;
+    }
+    const themeName = writable(this.#themeName);
+    const themeToken = writable(this.#themeToken);
+    this.#stores = Object.freeze({
+      themeName: Object.freeze({ subscribe: themeName.subscribe }),
+      themeToken: Object.freeze({ subscribe: themeToken.subscribe })
+    });
+    this.#storeSet = {
+      themeName: themeName.set,
+      themeToken: themeToken.set
+    };
+    const observer = new MutationObserver(() => {
+      if (document.body.classList.contains("theme-light")) {
+        this.#themeName = "light";
+        this.#themeToken = "theme-light";
+      } else if (document.body.classList.contains("theme-dark")) {
+        this.#themeName = "dark";
+        this.#themeToken = "theme-dark";
+      }
+      this.#storeSet.themeName(this.#themeName);
+      this.#storeSet.themeToken(this.#themeToken);
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  }
+  /**
+   * Determine the nearest theme tokens (CSS classes) from the given element.
+   *
+   * @param {object} options - Required options.
+   *
+   * @param {Element | EventTarget} options.element - A DOM element.
+   *
+   * @param {Set<string>} [options.output] - An optional source Set of existing tokens.
+   *
+   * @param {boolean} [options.override=true] - When true, override any existing theme tokens.
+   *
+   * @param {boolean} [options.strict=false] - When true, ensure all required theming tokens in output.
+   *
+   * @returns {Iterable<string>} Any theming tokens found from the given element.
+   */
+  static nearestThemedTokens({ element: element2, output = /* @__PURE__ */ new Set(), override = true, strict = false }) {
+    if (!CrossWindow.isSet(output)) {
+      throw new TypeError(`'output' is not a Set.`);
+    }
+    if (!CrossWindow.isElement(element2)) {
+      return output;
+    }
+    if (!override && ThemeObserver.hasThemedTokens(output)) {
+      if (strict) {
+        output.add("themed");
+      }
+      return output;
+    }
+    const nearestThemed = element2.closest(".themed") ?? CrossWindow.getDocument(element2).body;
+    const match = nearestThemed.className.match(/(?:^|\s)(theme-\w+)/);
+    if (match) {
+      output.add("themed");
+      output.add(match[1]);
+    }
+    return output;
+  }
+}
 function isReadableStore(store) {
   if (store === null || store === void 0) {
     return false;
@@ -23853,443 +24742,88 @@ function subscribeFirstRest(store, first, update2) {
     }
   });
 }
-class CrossWindow {
+class SvelteSet extends Set {
   /**
-   * @private
+   * Stores the subscribers.
    */
-  constructor() {
-  }
-  // eslint-disable-line no-useless-constructor
-  /**
-   * Class names for all focusable element types.
-   *
-   * @type {string[]}
-   */
-  static #FocusableElementClassNames = [
-    "HTMLAnchorElement",
-    "HTMLButtonElement",
-    "HTMLDetailsElement",
-    "HTMLEmbedElement",
-    "HTMLIFrameElement",
-    "HTMLInputElement",
-    "HTMLObjectElement",
-    "HTMLSelectElement",
-    "HTMLTextAreaElement"
-  ];
-  /**
-   * DOM nodes with defined `ownerDocument` property.
-   *
-   * @type {Set<number>}
-   */
-  static #NodesWithOwnerDocument = /* @__PURE__ */ new Set([
-    Node.ELEMENT_NODE,
-    Node.TEXT_NODE,
-    Node.COMMENT_NODE,
-    Node.DOCUMENT_FRAGMENT_NODE
-  ]);
-  // Various UI Event sets for duck typing by constructor name.
-  /**
-   * Duck typing class names for pointer events.
-   *
-   * @type {Set<string>}
-   */
-  static #PointerEventSet = /* @__PURE__ */ new Set(["MouseEvent", "PointerEvent"]);
-  /**
-   * Duck typing class names for all UIEvents.
-   *
-   * @type {Set<string>}
-   */
-  static #UIEventSet = /* @__PURE__ */ new Set([
-    "UIEvent",
-    "FocusEvent",
-    "MouseEvent",
-    "WheelEvent",
-    "KeyboardEvent",
-    "PointerEvent",
-    "TouchEvent",
-    "InputEvent",
-    "CompositionEvent",
-    "DragEvent"
-  ]);
-  /**
-   * Duck typing class names for events considered as user input.
-   *
-   * @type {Set<string>}
-   */
-  static #UserInputEventSet = /* @__PURE__ */ new Set(["KeyboardEvent", "MouseEvent", "PointerEvent"]);
-  /**
-   * Internal options used by `#checkDOMInstanceType` when retrieving the Window reference from a Node that doesn't
-   * define `ownerDocument`.
-   *
-   * @type {{throws: boolean}}
-   */
-  static #optionsInternalCheckDOM = { throws: false };
-  // DOM Querying ---------------------------------------------------------------------------------------------------
-  /**
-   * Convenience method to retrieve the `document.activeElement` value in the current Window context of a DOM Node /
-   * Element, EventTarget, Document, or Window.
-   *
-   * @param {Document | EventTarget | Node | UIEvent | Window}  target - DOM Node / Element, EventTarget, Document,
-   *        UIEvent or Window to query.
-   *
-   * @param {object} [options] - Options.
-   *
-   * @param {boolean} [options.throws=true] - When `true` and target is invalid throw an exception. If `false` and the
-   *        target is invalid `undefined` is returned; default: `true`.
-   *
-   * @returns {Element | null} Active element or `undefined` when `throws` option is `false` and the target is invalid.
-   *
-   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
-   */
-  static getActiveElement(target2, { throws = true } = {}) {
-    if (this.#NodesWithOwnerDocument.has(target2?.nodeType)) {
-      return target2?.ownerDocument?.activeElement ?? null;
+  #subscribers = [];
+  constructor(entries) {
+    super();
+    if (entries !== void 0 && !isIterable(entries)) {
+      throw new TypeError(`'entries' must be an iterable list.`);
     }
-    if (this.isUIEvent(target2) && isObject(target2?.view)) {
-      return target2?.view?.document?.activeElement ?? null;
-    }
-    if (isObject(target2?.defaultView)) {
-      return target2?.activeElement ?? null;
-    }
-    if (isObject(target2?.document) && isObject(target2?.location)) {
-      return target2?.document?.activeElement ?? null;
-    }
-    if (throws) {
-      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
-    }
-    return void 0;
-  }
-  /**
-   * Convenience method to retrieve the `Document` value in the current context of a DOM Node / Element, EventTarget,
-   * Document, UIEvent, or Window.
-   *
-   * @param {Document | EventTarget | Node | UIEvent | Window}  target - DOM Node / Element, EventTarget, Document,
-   *        UIEvent or Window to query.
-   *
-   * @param {object} [options] - Options.
-   *
-   * @param {boolean} [options.throws=true] - When `true` and target is invalid throw an exception. If `false` and the
-   *        target is invalid `undefined` is returned; default: `true`.
-   *
-   * @returns {Document} Active document or `undefined` when `throws` option is `false` and the target is invalid.
-   *
-   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
-   */
-  static getDocument(target2, { throws = true } = {}) {
-    if (this.#NodesWithOwnerDocument.has(target2?.nodeType)) {
-      return target2?.ownerDocument;
-    }
-    if (this.isUIEvent(target2) && isObject(target2?.view)) {
-      return target2?.view?.document;
-    }
-    if (isObject(target2?.defaultView)) {
-      return target2;
-    }
-    if (isObject(target2?.document) && isObject(target2?.location)) {
-      return target2?.document;
-    }
-    if (throws) {
-      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
-    }
-    return void 0;
-  }
-  /**
-   * Convenience method to retrieve the `Window` value in the current context of a DOM Node / Element, EventTarget,
-   * Document, or Window.
-   *
-   * @param {Document | EventTarget | Node | UIEvent | Window}  target - DOM Node / Element, EventTarget, Document,
-   *        UIEvent or Window to query.
-   *
-   * @param {object} [options] - Options.
-   *
-   * @param {boolean} [options.throws=true] - When `true` and target is invalid throw an exception. If `false` and the
-   *        target is invalid `undefined` is returned; default: `true`.
-   *
-   * @returns {Window} Active window or `undefined` when `throws` option is `false` and the target is invalid.
-   *
-   * @throws {@link TypeError} Target must be a DOM Node / Element, Document, UIEvent, or Window.
-   */
-  static getWindow(target2, { throws = true } = {}) {
-    if (this.#NodesWithOwnerDocument.has(target2?.nodeType)) {
-      return target2.ownerDocument?.defaultView ?? globalThis;
-    }
-    if (this.isUIEvent(target2) && isObject(target2?.view)) {
-      return target2.view ?? globalThis;
-    }
-    if (isObject(target2?.defaultView)) {
-      return target2.defaultView ?? globalThis;
-    }
-    if (isObject(target2?.document) && isObject(target2?.location)) {
-      return target2;
-    }
-    if (throws) {
-      throw new TypeError(`'target' must be a DOM Node / Element, Document, UIEvent, or Window.`);
-    }
-    return void 0;
-  }
-  // ES / Browser API basic prototype tests -------------------------------------------------------------------------
-  /**
-   * Provides basic prototype string type checking if `target` is a Document.
-   *
-   * @param {unknown}  target - A potential Document to test.
-   *
-   * @returns {target is Document} Is `target` a Document.
-   */
-  static isDocument(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Document]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a Map.
-   *
-   * @param {unknown}  target - A potential Map to test.
-   *
-   * @returns {target is Map} Is `target` a Map.
-   */
-  static isMap(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Map]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a Promise.
-   *
-   * @param {unknown}  target - A potential Promise to test.
-   *
-   * @returns {target is Promise} Is `target` a Promise.
-   */
-  static isPromise(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Promise]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a RegExp.
-   *
-   * @param {unknown}  target - A potential RegExp to test.
-   *
-   * @returns {target is RegExp} Is `target` a RegExp.
-   */
-  static isRegExp(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object RegExp]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a Set.
-   *
-   * @param {unknown}  target - A potential Set to test.
-   *
-   * @returns {target is Set} Is `target` a Set.
-   */
-  static isSet(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Set]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a URL.
-   *
-   * @param {unknown}  target - A potential URL to test.
-   *
-   * @returns {target is URL} Is `target` a URL.
-   */
-  static isURL(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object URL]";
-  }
-  /**
-   * Provides basic prototype string type checking if `target` is a Window.
-   *
-   * @param {unknown}  target - A potential Window to test.
-   *
-   * @returns {target is Window} Is `target` a Window.
-   */
-  static isWindow(target2) {
-    return isObject(target2) && Object.prototype.toString.call(target2) === "[object Window]";
-  }
-  // DOM Element typing ---------------------------------------------------------------------------------------------
-  /**
-   * Ensures that the given target is an `instanceof` all known DOM elements that are focusable. Please note that
-   * additional checks are required regarding focusable state; use {@link A11yHelper.isFocusable} for a complete check.
-   *
-   * @param {unknown}  target - Target to test for `instanceof` focusable HTML element.
-   *
-   * @returns {boolean} Is target an `instanceof` a focusable DOM element.
-   */
-  static isFocusableHTMLElement(target2) {
-    for (let cntr = this.#FocusableElementClassNames.length; --cntr >= 0; ) {
-      if (this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, this.#FocusableElementClassNames[cntr])) {
-        return true;
+    if (entries) {
+      for (const entry of entries) {
+        super.add(entry);
       }
     }
-    return false;
   }
   /**
-   * Provides precise type checking if `target` is a DocumentFragment.
+   * Appends a new element with a specified value to the end of the Set.
    *
-   * @param {unknown}  target - A potential DocumentFragment to test.
+   * @param value - Value to add.
    *
-   * @returns {target is DocumentFragment} Is `target` a DocumentFragment.
+   * @returns This instance.
    */
-  static isDocumentFragment(target2) {
-    return this.#checkDOMInstanceType(target2, Node.DOCUMENT_FRAGMENT_NODE, "DocumentFragment");
-  }
-  /**
-   * Provides precise type checking if `target` is an Element.
-   *
-   * @param {unknown}  target - A potential Element to test.
-   *
-   * @returns {target is Element} Is `target` an Element.
-   */
-  static isElement(target2) {
-    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "Element");
-  }
-  /**
-   * Provides precise type checking if `target` is a HTMLAnchorElement.
-   *
-   * @param {unknown}  target - A potential HTMLAnchorElement to test.
-   *
-   * @returns {target is HTMLAnchorElement} Is `target` a HTMLAnchorElement.
-   */
-  static isHTMLAnchorElement(target2) {
-    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "HTMLAnchorElement");
-  }
-  /**
-   * Provides precise type checking if `target` is a HTMLElement.
-   *
-   * @param {unknown}  target - A potential HTMLElement to test.
-   *
-   * @returns {target is HTMLElement} Is `target` a HTMLElement.
-   */
-  static isHTMLElement(target2) {
-    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "HTMLElement");
-  }
-  /**
-   * Provides precise type checking if `target` is a Node.
-   *
-   * @param {unknown}  target - A potential Node to test.
-   *
-   * @returns {target is Node} Is `target` a DOM Node.
-   */
-  static isNode(target2) {
-    if (typeof target2?.nodeType !== "number") {
-      return false;
+  add(value) {
+    const hasValue = super.has(value);
+    super.add(value);
+    if (!hasValue) {
+      this.#updateSubscribers();
     }
-    if (target2 instanceof globalThis.Node) {
-      return true;
+    return this;
+  }
+  /**
+   * Clears this set.
+   */
+  clear() {
+    if (this.size === 0) {
+      return;
     }
-    const activeWindow = this.getWindow(target2, this.#optionsInternalCheckDOM);
-    const TargetNode = activeWindow?.Node;
-    return TargetNode && target2 instanceof TargetNode;
+    super.clear();
+    this.#updateSubscribers();
   }
   /**
-   * Provides precise type checking if `target` is a ShadowRoot.
+   * Removes a specified value from the Set.
    *
-   * @param {unknown}  target - A potential ShadowRoot to test.
+   * @param value - Value to delete.
    *
-   * @returns {target is ShadowRoot} Is `target` a ShadowRoot.
+   * @returns Returns true if an element in the Set existed and has been removed, or false if the element
+   *          does not exist.
    */
-  static isShadowRoot(target2) {
-    return this.#checkDOMInstanceType(target2, Node.DOCUMENT_FRAGMENT_NODE, "ShadowRoot");
-  }
-  /**
-   * Provides precise type checking if `target` is a SVGElement.
-   *
-   * @param {unknown}  target - A potential SVGElement to test.
-   *
-   * @returns {target is SVGElement} Is `target` a SVGElement.
-   */
-  static isSVGElement(target2) {
-    return this.#checkDOMInstanceType(target2, Node.ELEMENT_NODE, "SVGElement");
-  }
-  // Event typing ---------------------------------------------------------------------------------------------------
-  /**
-   * Provides basic duck type checking for `Event` signature and optional constructor name(s).
-   *
-   * @param {unknown}  target - A potential DOM event to test.
-   *
-   * @param {string | Set<string>} [types] Specific constructor name or Set of constructor names to match.
-   *
-   * @returns {target is Event} Is `target` an Event with optional constructor name check.
-   */
-  static isEvent(target2, types) {
-    if (typeof target2?.type !== "string" || typeof target2?.defaultPrevented !== "boolean" || typeof target2?.stopPropagation !== "function") {
-      return false;
+  delete(value) {
+    const result = super.delete(value);
+    if (result) {
+      this.#updateSubscribers();
     }
-    return types !== void 0 ? this.isCtorName(target2, types) : true;
+    return result;
+  }
+  // Store subscriber implementation --------------------------------------------------------------------------------
+  /**
+   * @param handler - Callback function that is invoked on update / changes.
+   *
+   * @returns Unsubscribe function.
+   */
+  subscribe(handler) {
+    const currentIdx = this.#subscribers.findIndex((sub) => sub === handler);
+    if (currentIdx === -1) {
+      this.#subscribers.push(handler);
+      handler(this);
+    }
+    return () => {
+      const index = this.#subscribers.findIndex((sub) => sub === handler);
+      if (index >= 0) {
+        this.#subscribers.splice(index, 1);
+      }
+    };
   }
   /**
-   * Provides basic duck type checking for `Event` signature for standard mouse / pointer events including
-   * `MouseEvent` and `PointerEvent`.
-   *
-   * @param {unknown}  target - A potential DOM event to test.
-   *
-   * @returns {target is PointerEvent} Is `target` a MouseEvent or PointerEvent.
+   * Updates subscribers.
    */
-  static isPointerEvent(target2) {
-    return this.isEvent(target2, this.#PointerEventSet);
-  }
-  /**
-   * Provides basic duck type checking for `Event` signature for all UI events.
-   *
-   * @param {unknown}  target - A potential DOM event to test.
-   *
-   * @returns {target is UIEvent} Is `target` a UIEvent.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/UIEvent
-   */
-  static isUIEvent(target2) {
-    return this.isEvent(target2, this.#UIEventSet);
-  }
-  /**
-   * Provides basic duck type checking for `Event` signature for standard user input events including `KeyboardEvent`,
-   * `MouseEvent`, and `PointerEvent`.
-   *
-   * @param {unknown}  target - A potential DOM event to test.
-   *
-   * @returns {target is KeyboardEvent | MouseEvent | PointerEvent} Is `target` a Keyboard, MouseEvent, or
-   *          PointerEvent.
-   */
-  static isUserInputEvent(target2) {
-    return this.isEvent(target2, this.#UserInputEventSet);
-  }
-  // Generic typing -------------------------------------------------------------------------------------------------
-  /**
-   * Provides basic type checking by constructor name(s) for objects. This can be useful when checking multiple
-   * constructor names against a provided Set.
-   *
-   * @param {unknown}  target - Object to test for constructor name.
-   *
-   * @param {string | Set<string>} types Specific constructor name or Set of constructor names to match.
-   *
-   * @returns {boolean} Does the provided object constructor name match the types provided.
-   */
-  static isCtorName(target2, types) {
-    if (!isObject(target2)) {
-      return false;
+  #updateSubscribers() {
+    for (let cntr = 0; cntr < this.#subscribers.length; cntr++) {
+      this.#subscribers[cntr](this);
     }
-    if (typeof types === "string" && target2?.constructor?.name === types) {
-      return true;
-    }
-    return !!types?.has(target2?.constructor?.name);
-  }
-  // Internal implementation ----------------------------------------------------------------------------------------
-  /**
-   * Internal generic DOM `instanceof` check. First will attempt to find the class name by `globalThis` falling back
-   * to the {@link Window} associated with the DOM node.
-   *
-   * @param {unknown}  target - Target to test.
-   *
-   * @param {number}   nodeType - Node type constant.
-   *
-   * @param {string}   className - DOM class name for instanceof check.
-   *
-   * @returns {boolean} Is the target the given nodeType and instance of class name.
-   */
-  static #checkDOMInstanceType(target2, nodeType, className) {
-    if (!isObject(target2)) {
-      return false;
-    }
-    if (target2.nodeType !== nodeType) {
-      return false;
-    }
-    const GlobalClass = globalThis[className];
-    if (GlobalClass && target2 instanceof GlobalClass) {
-      return true;
-    }
-    const activeWindow = this.#NodesWithOwnerDocument.has(target2.nodeType) ? target2?.ownerDocument?.defaultView : this.getWindow(target2, this.#optionsInternalCheckDOM);
-    const TargetClass = activeWindow?.[className];
-    return TargetClass && target2 instanceof TargetClass;
   }
 }
 function storeGenerator({ storage, serialize = JSON.stringify, deserialize = JSON.parse }) {
@@ -25007,6 +25541,1753 @@ class TJSSvelte {
   }
 }
 Object.seal(TJSSvelte);
+const semver = /^[v^~<>=]*?(\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+))?(?:-([\da-z\-]+(?:\.[\da-z\-]+)*))?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+const validateAndParse = (version) => {
+  if (typeof version !== "string") {
+    throw new TypeError("Invalid argument expected string");
+  }
+  const match = version.match(semver);
+  if (!match) {
+    throw new Error(`Invalid argument not valid semver ('${version}' received)`);
+  }
+  match.shift();
+  return match;
+};
+const isWildcard = (s) => s === "*" || s === "x" || s === "X";
+const tryParse = (v) => {
+  const n = parseInt(v, 10);
+  return isNaN(n) ? v : n;
+};
+const forceType = (a, b) => typeof a !== typeof b ? [String(a), String(b)] : [a, b];
+const compareStrings = (a, b) => {
+  if (isWildcard(a) || isWildcard(b))
+    return 0;
+  const [ap, bp] = forceType(tryParse(a), tryParse(b));
+  if (ap > bp)
+    return 1;
+  if (ap < bp)
+    return -1;
+  return 0;
+};
+const compareSegments = (a, b) => {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const r = compareStrings(a[i] || "0", b[i] || "0");
+    if (r !== 0)
+      return r;
+  }
+  return 0;
+};
+const compareVersions = (v1, v2) => {
+  const n1 = validateAndParse(v1);
+  const n2 = validateAndParse(v2);
+  const p1 = n1.pop();
+  const p2 = n2.pop();
+  const r = compareSegments(n1, n2);
+  if (r !== 0)
+    return r;
+  if (p1 && p2) {
+    return compareSegments(p1.split("."), p2.split("."));
+  } else if (p1 || p2) {
+    return p1 ? -1 : 1;
+  }
+  return 0;
+};
+const compare = (v1, v2, operator) => {
+  assertValidOperator(operator);
+  const res = compareVersions(v1, v2);
+  return operatorResMap[operator].includes(res);
+};
+const operatorResMap = {
+  ">": [1],
+  ">=": [0, 1],
+  "=": [0],
+  "<=": [-1, 0],
+  "<": [-1],
+  "!=": [-1, 1]
+};
+const allowedOperators = Object.keys(operatorResMap);
+const assertValidOperator = (op) => {
+  if (typeof op !== "string") {
+    throw new TypeError(`Invalid operator type, expected string but got ${typeof op}`);
+  }
+  if (allowedOperators.indexOf(op) === -1) {
+    throw new Error(`Invalid operator, expected one of ${allowedOperators.join("|")}`);
+  }
+};
+const satisfies = (version, range2) => {
+  range2 = range2.replace(/([><=]+)\s+/g, "$1");
+  if (range2.includes("||")) {
+    return range2.split("||").some((r4) => satisfies(version, r4));
+  } else if (range2.includes(" - ")) {
+    const [a, b] = range2.split(" - ", 2);
+    return satisfies(version, `>=${a} <=${b}`);
+  } else if (range2.includes(" ")) {
+    return range2.trim().replace(/\s{2,}/g, " ").split(" ").every((r4) => satisfies(version, r4));
+  }
+  const m = range2.match(/^([<>=~^]+)/);
+  const op = m ? m[1] : "=";
+  if (op !== "^" && op !== "~")
+    return compare(version, range2, op);
+  const [v1, v2, v3, , vp] = validateAndParse(version);
+  const [r1, r2, r3, , rp] = validateAndParse(range2);
+  const v = [v1, v2, v3];
+  const r = [r1, r2 !== null && r2 !== void 0 ? r2 : "x", r3 !== null && r3 !== void 0 ? r3 : "x"];
+  if (rp) {
+    if (!vp)
+      return false;
+    if (compareSegments(v, r) !== 0)
+      return false;
+    if (compareSegments(vp.split("."), rp.split(".")) === -1)
+      return false;
+  }
+  const nonZero = r.findIndex((v4) => v4 !== "0") + 1;
+  const i = op === "~" ? 2 : nonZero > 1 ? nonZero : 1;
+  if (compareSegments(v.slice(0, i), r.slice(0, i)) !== 0)
+    return false;
+  if (compareSegments(v.slice(i), r.slice(i)) === -1)
+    return false;
+  return true;
+};
+const validateStrict = (version) => typeof version === "string" && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/.test(version);
+class StyleParse {
+  static #regexPixels = /(\d+)\s*px/;
+  /**
+   * @private
+   */
+  constructor() {
+    throw new Error("StyleParse constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Parse a CSS declaration block / {@link CSSDeclarationBlock} (IE `color: red; font-size: 14px;`) into an object of
+   * property / value pairs.
+   *
+   * This implementation is optimized for parsing the output of `CSSStyleRule.style.cssText`, which is always
+   * well-formed according to the CSSOM spec. It is designed to be:
+   * ```
+   * - **Fast**: minimal allocations, no regex in the hot loop.
+   * - **Accurate**: ignores `;` inside quotes or parentheses.
+   * - **Flexible**: supports optional camel case conversion.
+   * - **CSS variable safe**: leaves `--*` properties untouched.
+   *```
+   *
+   * @param cssText - A valid CSS declaration block (no selectors).
+   *
+   * @param [options] - Optional parser settings.
+   *
+   * @param [options.camelCase=false] - Convert hyphen-case property names to camel case.
+   *
+   * @returns An object mapping property names to their CSS values.
+   */
+  static cssText(cssText, { camelCase = false } = {}) {
+    if (typeof cssText !== "string" || cssText.length === 0) {
+      return {};
+    }
+    if (cssText.indexOf(":") === -1) {
+      return {};
+    }
+    const out = {};
+    let segStart = 0;
+    let parens = 0;
+    let inSQ = false;
+    let inDQ = false;
+    for (let i = 0; i < cssText.length; i++) {
+      const ch = cssText[i];
+      if (ch === '"' && !inSQ) {
+        inDQ = !inDQ;
+      } else if (ch === "'" && !inDQ) {
+        inSQ = !inSQ;
+      } else if (!inSQ && !inDQ) {
+        if (ch === "(") {
+          parens++;
+        } else if (ch === ")") {
+          if (parens > 0) {
+            parens--;
+          }
+        } else if (ch === ";" && parens === 0) {
+          if (i > segStart) {
+            const chunk = cssText.slice(segStart, i).trim();
+            if (chunk) {
+              this.#cssTextFlushDecl(chunk, out, camelCase);
+            }
+          }
+          segStart = i + 1;
+        }
+      }
+    }
+    if (segStart < cssText.length) {
+      const chunk = cssText.slice(segStart).trim();
+      if (chunk) {
+        this.#cssTextFlushDecl(chunk, out, camelCase);
+      }
+    }
+    return out;
+  }
+  /**
+   * Parses a pixel string / computed styles. Ex. `100px` returns `100`.
+   *
+   * @param   value - Value to parse.
+   *
+   * @returns The integer component of a pixel string.
+   */
+  static pixels(value) {
+    if (typeof value !== "string") {
+      return void 0;
+    }
+    const isPixels = this.#regexPixels.test(value);
+    const number = parseInt(value);
+    return isPixels && Number.isFinite(number) ? number : void 0;
+  }
+  /**
+   * Returns the pixel value for `1rem` based on the root document element. You may apply an optional multiplier.
+   *
+   * @param [multiplier=1] - Optional multiplier to apply to `rem` pixel value; default: 1.
+   *
+   * @param [options] - Optional parameters.
+   *
+   * @param [options.targetDocument=document] The target DOM {@link Document} if different from the main
+   *        browser global `document`.
+   *
+   * @returns The pixel value for `1rem` with or without a multiplier based on the root document element.
+   */
+  static remPixels(multiplier = 1, { targetDocument = window.document } = {}) {
+    return targetDocument?.documentElement ? multiplier * parseFloat(window.getComputedStyle(targetDocument.documentElement).fontSize) : void 0;
+  }
+  /**
+   * Split a CSS selector list into individual selectors, honoring commas that appear only at the top level
+   * (IE not inside (), [], or quotes). Additional options provide inclusion / exclusion filtering of selector parts.
+   *
+   * Examples:
+   *   '.a, .b'                                  → ['.a', '.b']
+   *   ':is(.a, .b):not([data-x=","]) .c, .d'    → [':is(.a, .b):not([data-x=","]) .c', '.d']
+   *
+   * @param selectorText - `CSSStyleRule.selectorText` to parse.
+   *
+   * @param [options] - Optional filtering options.
+   *
+   * @param [options.excludeSelectorParts] - An array of RegExp instances to filter by exclusion.
+   *
+   * @param [options.includeSelectorPartSet] - A Set of strings to filter by inclusion.
+   *
+   * @returns Array of trimmed selector strings w/ optional filtering of parts.
+   */
+  static selectorText(selectorText, { excludeSelectorParts, includeSelectorPartSet } = {}) {
+    const parts = [];
+    if (typeof selectorText !== "string" || selectorText.length === 0) {
+      return parts;
+    }
+    const hasExclude = Array.isArray(excludeSelectorParts) && excludeSelectorParts.length > 0;
+    const hasInclude = CrossWindow.isSet(includeSelectorPartSet) && includeSelectorPartSet.size > 0;
+    let start = 0;
+    let inSQ = false;
+    let inDQ = false;
+    let paren = 0;
+    let bracket = 0;
+    for (let i = 0; i < selectorText.length; i++) {
+      const ch = selectorText[i];
+      if (ch === '"' && !inSQ) {
+        inDQ = !inDQ;
+        continue;
+      }
+      if (ch === "'" && !inDQ) {
+        inSQ = !inSQ;
+        continue;
+      }
+      if (inSQ || inDQ) {
+        continue;
+      }
+      if (ch === "(") {
+        paren++;
+        continue;
+      }
+      if (ch === ")") {
+        if (paren > 0) {
+          paren--;
+        }
+        continue;
+      }
+      if (ch === "[") {
+        bracket++;
+        continue;
+      }
+      if (ch === "]") {
+        if (bracket > 0) {
+          bracket--;
+        }
+        continue;
+      }
+      if (ch === "," && paren === 0 && bracket === 0) {
+        const piece = selectorText.slice(start, i).trim();
+        if (piece && (!hasInclude || includeSelectorPartSet.has(piece)) && (!hasExclude || !excludeSelectorParts.some((rx) => rx.test(piece)))) {
+          parts.push(piece);
+        }
+        start = i + 1;
+      }
+    }
+    const last = selectorText.slice(start).trim();
+    if (last && (!hasInclude || includeSelectorPartSet.has(last)) && (!hasExclude || !excludeSelectorParts.some((rx) => rx.test(last)))) {
+      parts.push(last);
+    }
+    return parts;
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  /**
+   * Parse a single CSS declaration string into a property / value pair and store it in the output object.
+   *
+   * Note: Used by {@link StyleParse.cssText}.
+   *
+   * This method:
+   * ```
+   * - Splits on the first `:` into property and value parts
+   * - Trims whitespace from both
+   * - Optionally converts hyphen-case to camelCase
+   * - Ignores empty or malformed declarations
+   * ```
+   *
+   * @param chunk - The raw CSS declaration string (IE `"color: red"`).
+   *
+   * @param out - The object to store the parsed property / value pair.
+   *
+   * @param camelCase - Whether to convert hyphen-case keys to camel case.
+   */
+  static #cssTextFlushDecl(chunk, out, camelCase) {
+    const idx = chunk.indexOf(":");
+    if (idx < 0) {
+      return;
+    }
+    let key = chunk.slice(0, idx).trim();
+    if (!key) {
+      return;
+    }
+    const value = chunk.slice(idx + 1).trim();
+    if (camelCase && !key.startsWith("--")) {
+      let s = "";
+      for (let i = 0; i < key.length; i++) {
+        const code = key.charCodeAt(i);
+        if (code === 45 && i + 1 < key.length) {
+          i++;
+          s += key[i].toUpperCase();
+        } else {
+          s += key[i];
+        }
+      }
+      key = s;
+    }
+    out[key] = value;
+  }
+}
+class RuleManager {
+  /**
+   * The specific rule instance in the association HTMLStyleElement.
+   */
+  #cssRule;
+  /**
+   * The CSS selector for this rule manager.
+   */
+  #selector;
+  /**
+   * The name that this rule manager is indexed by in the associated `StyleManager` instance.
+   */
+  #name;
+  /**
+   * @param   cssRule -
+   *
+   * @param   name -
+   *
+   * @param   selector -
+   */
+  constructor(cssRule, name, selector) {
+    if (!CrossWindow.isCSSStyleRule(cssRule)) {
+      throw new TypeError(`RuleManager error: 'cssRule' is not a CSSStyleRule instance..`);
+    }
+    if (typeof name !== "string") {
+      throw new TypeError(`RuleManager error: 'name' is not a string.`);
+    }
+    if (typeof selector !== "string") {
+      throw new TypeError(`RuleManager error: 'selector' is not a string.`);
+    }
+    this.#cssRule = cssRule;
+    this.#name = name;
+    this.#selector = selector;
+  }
+  // Accessors ------------------------------------------------------------------------------------------------------
+  /**
+   * @returns Provides an accessor to get the `cssText` for the style rule or undefined if not connected.
+   */
+  get cssText() {
+    return this.isConnected ? this.#cssRule.style.cssText : void 0;
+  }
+  /**
+   * Determines if this RuleManager is still connected / available.
+   *
+   * @returns Is RuleManager connected.
+   */
+  get isConnected() {
+    const sheet = this.#cssRule?.parentStyleSheet;
+    const owner = sheet?.ownerNode;
+    return !!(sheet && owner && owner.isConnected);
+  }
+  /**
+   * @returns Name of this RuleManager indexed by associated StyleManager.
+   */
+  get name() {
+    return this.#name;
+  }
+  /**
+   * @returns The associated selector for this CSS rule.
+   */
+  get selector() {
+    return this.#selector;
+  }
+  /**
+   * @param   cssText - Provides an accessor to set the `cssText` for the style rule.
+   */
+  set cssText(cssText) {
+    if (!this.isConnected) {
+      return;
+    }
+    this.#cssRule.style.cssText = typeof cssText === "string" ? cssText : "";
+  }
+  // Iterator -------------------------------------------------------------------------------------------------------
+  /**
+   * Allows usage in `for of` loops directly.
+   *
+   * @returns Entries Map iterator.
+   */
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+  // Methods --------------------------------------------------------------------------------------------------------
+  /**
+   * @returns Iterator of CSS property entries in hyphen-case.
+   */
+  entries() {
+    return Object.entries(this.get() ?? {})[Symbol.iterator]();
+  }
+  /**
+   * Retrieves an object with the current CSS rule data.
+   *
+   * @param [options] - Optional settings.
+   *
+   * @param [options.camelCase=false] - Whether to convert property names to camel case.
+   *
+   * @returns Current CSS style data or undefined if not connected.
+   */
+  get(options2 = {}) {
+    return this.isConnected ? StyleParse.cssText(this.#cssRule.style.cssText, options2) : void 0;
+  }
+  /**
+   * Gets a particular CSS property value.
+   *
+   * @param key - CSS property key; must be in hyphen-case (IE `background-color`).
+   *
+   * @returns Returns CSS property value or undefined if non-existent.
+   */
+  getProperty(key) {
+    if (!this.isConnected) {
+      return void 0;
+    }
+    if (typeof key !== "string") {
+      throw new TypeError(`RuleManager error: 'key' is not a string.`);
+    }
+    const result = this.#cssRule.style.getPropertyValue(key);
+    return result !== "" ? result : void 0;
+  }
+  /**
+   * Returns whether this CSS rule manager has a given property key.
+   *
+   * @param key - CSS property key; must be in hyphen-case (IE `background-color`).
+   *
+   * @returns Property key exists / is defined.
+   */
+  hasProperty(key) {
+    if (!this.isConnected) {
+      return false;
+    }
+    if (typeof key !== "string") {
+      throw new TypeError(`RuleManager error: 'key' is not a string.`);
+    }
+    return this.#cssRule.style.getPropertyValue(key) !== "";
+  }
+  /**
+   * @returns Iterator of CSS property keys in hyphen-case.
+   */
+  keys() {
+    return Object.keys(this.get() ?? {})[Symbol.iterator]();
+  }
+  /**
+   * Set CSS properties in bulk by property / value. Must use hyphen-case.
+   *
+   * @param styles - CSS styles object.
+   *
+   * @param [options] - Options.
+   *
+   * @param [override=true] - When true overrides any existing values; default: `true`.
+   */
+  setProperties(styles, { override = true } = {}) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (!isObject(styles)) {
+      throw new TypeError(`RuleManager error: 'styles' is not an object.`);
+    }
+    if (typeof override !== "boolean") {
+      throw new TypeError(`RuleManager error: 'override' is not a boolean.`);
+    }
+    if (override) {
+      for (const [key, value] of Object.entries(styles)) {
+        this.#cssRule.style.setProperty(key, value);
+      }
+    } else {
+      for (const [key, value] of Object.entries(styles)) {
+        if (this.#cssRule.style.getPropertyValue(key) === "") {
+          this.#cssRule.style.setProperty(key, value);
+        }
+      }
+    }
+  }
+  /**
+   * Sets a particular property.
+   *
+   * @param key - CSS property key; must be in hyphen-case (IE `background-color`).
+   *
+   * @param value - CSS property value.
+   *
+   * @param [options] - Options.
+   *
+   * @param [options.override=true] - When true overrides any existing value; default: `true`.
+   */
+  setProperty(key, value, { override = true } = {}) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (typeof key !== "string") {
+      throw new TypeError(`RuleManager error: 'key' is not a string.`);
+    }
+    if (typeof value !== "string") {
+      throw new TypeError(`RuleManager error: 'value' is not a string.`);
+    }
+    if (typeof override !== "boolean") {
+      throw new TypeError(`RuleManager error: 'override' is not a boolean.`);
+    }
+    if (override) {
+      this.#cssRule.style.setProperty(key, value);
+    } else {
+      if (this.#cssRule.style.getPropertyValue(key) === "") {
+        this.#cssRule.style.setProperty(key, value);
+      }
+    }
+  }
+  /**
+   * Removes the property keys specified. If `keys` is an iterable list then all property keys in the list are
+   * removed. The keys must be in hyphen-case (IE `background-color`).
+   *
+   * @param keys - The property keys to remove.
+   */
+  removeProperties(keys) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (!isIterable(keys)) {
+      throw new TypeError(`RuleManager error: 'keys' is not an iterable list.`);
+    }
+    for (const key of keys) {
+      if (typeof key === "string") {
+        this.#cssRule.style.removeProperty(key);
+      }
+    }
+  }
+  /**
+   * Removes a particular CSS property.
+   *
+   * @param key - CSS property key; must be in hyphen-case (IE `background-color`).
+   *
+   * @returns CSS value when removed or undefined if non-existent.
+   */
+  removeProperty(key) {
+    if (!this.isConnected) {
+      return void 0;
+    }
+    if (typeof key !== "string") {
+      throw new TypeError(`RuleManager error: 'key' is not a string.`);
+    }
+    const result = this.#cssRule.style.removeProperty(key);
+    return result !== "" ? result : void 0;
+  }
+}
+class StyleManager {
+  /**
+   * Provides a token allowing internal instance construction.
+   */
+  static #CTOR_TOKEN = Symbol("StyleManager.CTOR_TOKEN");
+  /**
+   * Stores configured RuleManager instance by name.
+   */
+  #cssRuleMap;
+  /**
+   * CSS ID associated with style element.
+   */
+  #id;
+  /**
+   * Any associated CSS layer name.
+   */
+  #layerName;
+  /**
+   * The target style element.
+   */
+  #styleElement;
+  /**
+   * The version of this style manager.
+   */
+  #version;
+  /**
+   * @private
+   */
+  constructor({ cssRuleMap, id, styleElement, version, layerName, token }) {
+    if (token !== StyleManager.#CTOR_TOKEN) {
+      throw new Error("StyleManager constructor: Please use the static `create` or `connect` methods.");
+    }
+    this.#cssRuleMap = cssRuleMap;
+    this.#id = id;
+    this.#layerName = layerName;
+    this.#styleElement = styleElement;
+    this.#version = version;
+  }
+  // Static Methods -------------------------------------------------------------------------------------------------
+  /**
+   * Connect to an existing dynamic styles managed element by CSS ID with semver check on version range compatibility.
+   *
+   * @param   options - Options.
+   */
+  static connect({ id, range: range2, document: document2 = window.document, warn = false }) {
+    if (typeof id !== "string") {
+      throw new TypeError(`'id' is not a string.`);
+    }
+    if (typeof range2 !== "string") {
+      throw new TypeError(`'range' is not a string.`);
+    }
+    if (!CrossWindow.isDocument(document2)) {
+      throw new TypeError(`'document' is not an instance of HTMLDocument.`);
+    }
+    return this.#initializeConnect(document2, id, range2, warn);
+  }
+  /**
+   * @param   options - Options.
+   *
+   * @returns Created style manager instance or undefined if already exists with a higher version.
+   */
+  static create(options2) {
+    return this.#createImpl(options2);
+  }
+  /**
+   * Query and check for an existing dynamic style manager element / instance given a CSS ID.
+   *
+   * @param   options - Options.
+   *
+   * @returns Undefined if no style manager is configured for the given CSS ID otherwise an object containing the
+   *          current version and HTMLStyleElement associated with the CSS ID.
+   */
+  static exists({ id, document: document2 = window.document }) {
+    if (typeof id !== "string") {
+      throw new TypeError(`'id' is not a string.`);
+    }
+    if (!CrossWindow.isDocument(document2)) {
+      throw new TypeError(`'document' is not an instance of HTMLDocument.`);
+    }
+    const existingStyleEl = document2.querySelector(`head style#${id}`);
+    if (existingStyleEl) {
+      const existingVersion = existingStyleEl.getAttribute("data-version") ?? "";
+      if (validateStrict(existingVersion)) {
+        return {
+          id,
+          version: existingVersion,
+          element: existingStyleEl
+        };
+      }
+    }
+    return void 0;
+  }
+  // Accessors ------------------------------------------------------------------------------------------------------
+  /**
+   * Determines if this StyleManager style element is still connected / available.
+   *
+   * @returns Is StyleManager connected.
+   */
+  get isConnected() {
+    return !!this.#styleElement?.isConnected;
+  }
+  /**
+   * @returns Provides an accessor to get the `textContent` for the style sheet.
+   */
+  get textContent() {
+    return this.#styleElement?.textContent;
+  }
+  /**
+   * @returns Returns the version of this instance.
+   */
+  get version() {
+    return this.#version;
+  }
+  // Iterator -------------------------------------------------------------------------------------------------------
+  /**
+   * Allows usage in `for of` loops directly.
+   *
+   * @returns Entries Map iterator.
+   */
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+  // Methods --------------------------------------------------------------------------------------------------------
+  /**
+   * Provides a copy constructor to duplicate an existing StyleManager instance into a new document.
+   *
+   * @param   options - Required clone options.
+   *
+   * @returns New style manager instance or undefined if not connected.
+   */
+  clone({ document: document2, force = false, warn = false }) {
+    if (!this.isConnected) {
+      StyleManager.#log(warn, "clone", `This style manager instance is not connected for id: ${this.#id}`);
+      return void 0;
+    }
+    if (!CrossWindow.isDocument(document2)) {
+      throw new TypeError(`'document' is not an instance of HTMLDocument.`);
+    }
+    const rules = {};
+    for (const key of this.#cssRuleMap.keys()) {
+      const selector = this.#cssRuleMap.get(key)?.selector;
+      if (selector) {
+        rules[key] = selector;
+      }
+    }
+    const newStyleManager = StyleManager.#createImpl({
+      id: this.#id,
+      version: this.#version,
+      layerName: this.#layerName,
+      rules,
+      document: document2,
+      force,
+      warn
+    });
+    if (newStyleManager) {
+      for (const key of this.#cssRuleMap.keys()) {
+        if (newStyleManager.#cssRuleMap.has(key)) {
+          const value = this.#cssRuleMap.get(key)?.cssText;
+          const targetRuleManager = newStyleManager.#cssRuleMap.get(key);
+          if (value && targetRuleManager) {
+            targetRuleManager.cssText = value;
+          }
+        }
+      }
+      return newStyleManager;
+    }
+    return void 0;
+  }
+  /**
+   * @returns RuleManager entries iterator.
+   */
+  entries() {
+    return this.#cssRuleMap.entries();
+  }
+  /**
+   * Retrieves an associated {@link RuleManager} by name.
+   *
+   * @param   ruleName - Rule name.
+   *
+   * @returns Associated rule manager for given name or undefined if the rule name is not defined or manager is
+   *          unconnected.
+   */
+  get(ruleName) {
+    if (!this.isConnected) {
+      return;
+    }
+    return this.#cssRuleMap.get(ruleName);
+  }
+  /**
+   * Returns whether a {@link StyleManager.CSSRuleManger} exists for the given name.
+   *
+   * @param ruleName - Rule name.
+   *
+   * @returns Is there a CSS rule manager with the given name.
+   */
+  has(ruleName) {
+    return this.#cssRuleMap.has(ruleName);
+  }
+  /**
+   * @returns {MapIterator<string>} RuleManager keys iterator.
+   */
+  keys() {
+    return this.#cssRuleMap.keys();
+  }
+  /**
+   * @returns Iterator of all RuleManager instances.
+   */
+  values() {
+    return this.#cssRuleMap.values();
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  /**
+   * Internal `create` implementation with additional `force` option to override any version check.
+   *
+   * @param   options - Options.
+   *
+   * @returns Created style manager instance or undefined if already exists with a higher version.
+   */
+  static #createImpl({ id, rules, version, layerName, document: document2 = window.document, force = false, warn = false }) {
+    if (typeof id !== "string") {
+      throw new TypeError(`'id' is not a string.`);
+    }
+    if (!isObject(rules)) {
+      throw new TypeError(`'rules' is not an object.`);
+    }
+    if (!CrossWindow.isDocument(document2)) {
+      throw new TypeError(`'document' is not an instance of HTMLDocument.`);
+    }
+    if (!validateStrict(version)) {
+      throw new TypeError(`'version' is not a valid semver string.`);
+    }
+    if (typeof force !== "boolean") {
+      throw new TypeError(`'force' is not a boolean.`);
+    }
+    if (typeof warn !== "boolean") {
+      throw new TypeError(`'warn' is not a boolean.`);
+    }
+    if (layerName !== void 0 && typeof layerName !== "string") {
+      throw new TypeError(`'layerName' is not a string.`);
+    }
+    const current = this.exists({ id, document: document2 });
+    if (isObject(current)) {
+      if (force || compare(version, current.version, ">")) {
+        current.element?.remove?.();
+        return this.#initializeCreate(document2, id, rules, version, layerName);
+      } else {
+        this.#log(warn, "create", `Could not create instance as one already exists with a higher version for ID: ${id}.`);
+        return void 0;
+      }
+    } else {
+      return this.#initializeCreate(document2, id, rules, version, layerName);
+    }
+  }
+  /**
+   * @param document - Target Document.
+   *
+   * @param id - Associated CSS ID
+   *
+   * @param range - SemVer version or version range.
+   *
+   * @param warn - When true, log warnings.
+   *
+   * @returns Style manager connected to existing element / style rules or undefined if no connection possible.
+   */
+  static #initializeConnect(document2, id, range2, warn = false) {
+    const styleElement = document2.querySelector(`head style#${id}`);
+    if (!styleElement || styleElement?.sheet === null) {
+      this.#log(warn, "connect", `Could not find existing style element for id: ${id}`);
+      return void 0;
+    }
+    const existingRules = styleElement._tjsRules;
+    const existingVersion = styleElement._tjsVersion;
+    const existingLayerName = styleElement._tjsLayerName;
+    let targetSheet = styleElement.sheet;
+    if (!isObject(existingRules)) {
+      this.#log(warn, "connect", `Could not find rules configuration on existing style element for id: ${id}`);
+      return void 0;
+    }
+    if (!validateStrict(existingVersion)) {
+      this.#log(warn, "connect", `Could not find version on existing style element for id: ${id}`);
+      return void 0;
+    }
+    if (existingLayerName !== void 0 && typeof existingLayerName !== "string") {
+      this.#log(warn, "connect", `Could not find layer name on existing style element for id: ${id}`);
+      return void 0;
+    }
+    if (!satisfies(existingVersion, range2)) {
+      this.#log(warn, "connect", `Requested range (${range2}) does not satisfy existing version: ${existingVersion}`);
+      return void 0;
+    }
+    if (!CrossWindow.isCSSStyleSheet(targetSheet)) {
+      return void 0;
+    }
+    const cssRuleMap = /* @__PURE__ */ new Map();
+    const reverseRuleMap = new Map(Object.entries(existingRules).map(([key, value]) => [value, key]));
+    try {
+      if (typeof existingLayerName) {
+        let foundLayer = false;
+        for (const rule of Array.from(targetSheet.cssRules)) {
+          if (CrossWindow.isCSSLayerBlockRule(rule) && rule.name === existingLayerName) {
+            targetSheet = rule;
+            foundLayer = true;
+          }
+        }
+        if (!foundLayer) {
+          this.#log(warn, "connect", `Could not find CSSLayerBlockRule for existing layer name: ${existingLayerName}`);
+          return void 0;
+        }
+      }
+      for (const cssRule of Array.from(targetSheet.cssRules)) {
+        if (!CrossWindow.isCSSStyleRule(cssRule)) {
+          continue;
+        }
+        const selector = cssRule?.selectorText;
+        if (reverseRuleMap.has(selector)) {
+          const ruleName = reverseRuleMap.get(selector);
+          cssRuleMap.set(ruleName, new RuleManager(cssRule, ruleName, selector));
+          reverseRuleMap.delete(selector);
+        }
+      }
+      if (reverseRuleMap.size > 0) {
+        this.#log(warn, "connect", `Could not find CSSStyleRules for these rule configurations: ${JSON.stringify([...reverseRuleMap])}`);
+        return void 0;
+      }
+      return new StyleManager({
+        cssRuleMap,
+        id,
+        version: existingVersion,
+        layerName: existingLayerName,
+        styleElement,
+        token: StyleManager.#CTOR_TOKEN
+      });
+    } catch (error) {
+      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error);
+    }
+    return void 0;
+  }
+  /**
+   * @param document - Target Document.
+   *
+   * @param id - Associated CSS ID
+   *
+   * @param rules -
+   *
+   * @param version -
+   *
+   * @param layerName -
+   *
+   * @returns New StyleManager instance.
+   */
+  static #initializeCreate(document2, id, rules, version, layerName) {
+    const styleElement = document2.createElement("style");
+    styleElement.id = id;
+    styleElement.setAttribute("data-version", String(version));
+    styleElement._tjsRules = rules;
+    styleElement._tjsVersion = version;
+    styleElement._tjsLayerName = layerName;
+    document2.head.append(styleElement);
+    let targetSheet;
+    if (styleElement.sheet === null) {
+      return void 0;
+    }
+    const cssRuleMap = /* @__PURE__ */ new Map();
+    try {
+      if (layerName) {
+        const index = styleElement.sheet.insertRule(`@layer ${layerName} {}`);
+        targetSheet = styleElement.sheet.cssRules[index];
+      } else {
+        targetSheet = styleElement.sheet;
+      }
+      if (rules) {
+        for (const ruleName in rules) {
+          const selector = rules[ruleName];
+          const index = targetSheet.insertRule(`${selector} {}`);
+          const cssRule = targetSheet.cssRules[index];
+          cssRuleMap.set(ruleName, new RuleManager(cssRule, ruleName, selector));
+        }
+      }
+      return new StyleManager({
+        cssRuleMap,
+        id,
+        version,
+        layerName,
+        styleElement,
+        token: StyleManager.#CTOR_TOKEN
+      });
+    } catch (error) {
+      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error);
+      if (styleElement && styleElement.parentNode) {
+        styleElement.remove();
+      }
+    }
+    return void 0;
+  }
+  /**
+   * @param   warn - When true, log warnings.
+   *
+   * @param   path - Particular interaction path for warning.
+   *
+   * @param   message - Message to log.
+   */
+  static #log(warn, path, message) {
+    if (warn) {
+      console.warn(`[TRL StyleManager] ${path} warning: ${message}`);
+    }
+  }
+}
+var _a$2, _b;
+class StyleSheetResolve {
+  /**
+   * Detects hyphen-case separator for camel case property key conversion.
+   */
+  static #HYPHEN_CASE_REGEX = /-([a-z])/g;
+  /**
+   * Detects just a single `(prefers-*)` CSSMediaRule condition.
+   */
+  static #MEDIA_RULE_PREFERS = /^\s*\(?\s*prefers-[^)]+(?:\s*:\s*[^)]+)?\)?\s*$/i;
+  /**
+   * Detects relative `url()` references in CSSStyleRule `cssText`.
+   */
+  static #URL_DETECTION_REGEX = /\burl\(\s*(['"]?)(?!data:|https?:|\/|#)/i;
+  /**
+   * Captures contents of `url()` references.
+   */
+  static #URL_REGEX = /url\((['"]?)([^'")]+)\1\)/g;
+  /**
+   * Internal tracking of frozen state; once frozen, no more modifications are possible.
+   */
+  #frozen = false;
+  /**
+   * Parsed selector to associated style properties.
+   */
+  #sheetMap = /* @__PURE__ */ new Map();
+  /**
+   * Parse a CSSStyleSheet instance with the given options or accept a pre-filled Map generating a new
+   * `StyleSheetResolve` instance.
+   *
+   * @param styleSheetOrMap - The stylesheet instance to parse or an existing parsed stylesheet Map.
+   *
+   * @param [options] - Options for parsing stylesheet.
+   *
+   * @returns {StyleSheetResolve} New instance with the given parsed data.
+   */
+  static parse(styleSheetOrMap, options2 = {}) {
+    return new _a$2().parse(styleSheetOrMap, options2);
+  }
+  /**
+   * Instantiate an empty `StyleSheetResolve` instance.
+   */
+  constructor() {
+  }
+  // Accessors ------------------------------------------------------------------------------------------------------
+  /**
+   * @returns Current frozen state; when true no more modifications are possible.
+   */
+  get frozen() {
+    return this.#frozen;
+  }
+  /**
+   * @returns Returns the size / count of selector properties tracked.
+   */
+  get size() {
+    return this.#sheetMap.size;
+  }
+  // Iterator -------------------------------------------------------------------------------------------------------
+  /**
+   * Allows usage in `for of` loops directly.
+   *
+   * @returns Entries Map iterator.
+   */
+  *[Symbol.iterator]() {
+    yield* this.entries();
+  }
+  // Methods --------------------------------------------------------------------------------------------------------
+  /**
+   * Clears any existing parsed styles.
+   */
+  clear() {
+    if (this.#frozen) {
+      throw new Error("Cannot modify a frozen StyleSheetResolve instance.");
+    }
+    this.#sheetMap.clear();
+  }
+  /**
+   * Clones this instance returning a new `StyleSheetResolve` instance with a copy of the data.
+   *
+   * @returns Cloned instance.
+   */
+  clone() {
+    return _a$2.parse(this.#clone(this.#sheetMap));
+  }
+  /**
+   * Deletes an entry in the parsed stylesheet Map.
+   *
+   * @param   selector - Selector key to delete.
+   *
+   * @returns Success state.
+   */
+  delete(selector) {
+    if (this.#frozen) {
+      throw new Error("Cannot modify a frozen StyleSheetResolve instance.");
+    }
+    return this.#sheetMap.delete(selector);
+  }
+  /**
+   * Entries iterator of selector / style properties objects.
+   *
+   * @returns {MapIterator<[string, { [key: string]: string }]>} Tracked CSS selector key / value iterator.
+   * @yields
+   */
+  *entries() {
+    for (const key of this.#sheetMap.keys()) {
+      yield [key, { ...this.#sheetMap.get(key) }];
+    }
+  }
+  /**
+   * Freezes this instance disallowing further modifications to the stylesheet data.
+   *
+   * @returns This instance.
+   */
+  freeze() {
+    if (this.#frozen) {
+      return this;
+    }
+    this.#frozen = true;
+    for (const props of this.#sheetMap.values()) {
+      Object.freeze(props);
+    }
+    Object.freeze(this.#sheetMap);
+    return this;
+  }
+  /**
+   * Gets all properties associated with the given selector(s). You may combine multiple selectors for a
+   * combined result. You may also provide additional selectors as the `resolve` option to substitute any CSS variables
+   * in the target selector(s).
+   *
+   * @param selector - A selector or list of selectors to retrieve.
+   *
+   * @param [options] - Options.
+   *
+   * @returns Style properties object or undefined.
+   */
+  get(selector, { camelCase = false, depth, resolve, warnCycles = false, warnResolve = false } = {}) {
+    if (typeof selector !== "string" && !isIterable(selector)) {
+      throw new TypeError(`'selector' must be a string or an iterable list of strings.`);
+    }
+    if (typeof camelCase !== "boolean") {
+      throw new TypeError(`'camelCase' must be a boolean.`);
+    }
+    if (depth !== void 0 && (!Number.isInteger(depth) || depth < 1)) {
+      throw new TypeError(`'depth' must be a positive integer >= 1.`);
+    }
+    if (resolve !== void 0 && typeof resolve !== "string" && !isIterable(resolve)) {
+      throw new TypeError(`'resolve' must be a string or an iterable list of strings.`);
+    }
+    if (typeof warnCycles !== "boolean") {
+      throw new TypeError(`'warnCycles' must be a boolean.`);
+    }
+    if (typeof warnResolve !== "boolean") {
+      throw new TypeError(`'warnResolve' must be a boolean.`);
+    }
+    let result = void 0;
+    if (isIterable(selector)) {
+      for (const entry of selector) {
+        if (this.#sheetMap.has(entry)) {
+          result = Object.assign(result ?? {}, this.#sheetMap.get(entry));
+        }
+      }
+    } else {
+      if (this.#sheetMap.has(selector)) {
+        result = Object.assign(result ?? {}, this.#sheetMap.get(selector));
+      }
+    }
+    if (result && (typeof resolve === "string" || isIterable(resolve))) {
+      const resolveList = typeof resolve === "string" ? [resolve] : Array.from(resolve);
+      depth = typeof depth === "number" ? depth : Math.max(1, resolveList.length);
+      const resolveData = {
+        parentNotFound: /* @__PURE__ */ new Set(),
+        seenCycles: /* @__PURE__ */ new Set(),
+        warnCycles
+      };
+      for (let cntr = 0; cntr < depth && cntr < resolveList.length; cntr++) {
+        this.#resolve(result, resolveList, resolveData);
+      }
+      if (resolveData.parentNotFound.size > 0) {
+        console.warn(`[TyphonJS Runtime] StyleSheetResolve - resolve - Could not locate parent selector(s) for resolution: '${[...resolveData.parentNotFound].join(", ")}'`);
+      }
+    }
+    if (result && camelCase) {
+      const remapped = {};
+      const toUpper = (_, str) => str.toUpperCase();
+      for (const key in result) {
+        const mappedKey = key.startsWith("--") ? key : key.replace(_a$2.#HYPHEN_CASE_REGEX, toUpper);
+        remapped[mappedKey] = result[key];
+      }
+      result = remapped;
+    }
+    return result;
+  }
+  /**
+   * Gets a specific property value from the given `selector` and `property` key.
+   *
+   * @param   selector - A selector or list of selectors to retrieve.
+   *
+   * @param   property - Specific property to locate.
+   *
+   * @param   [options] - Options.
+   *
+   * @returns Style property value.
+   */
+  getProperty(selector, property, options2) {
+    const data2 = this.get(selector, options2);
+    return isObject(data2) && property in data2 ? data2[property] : void 0;
+  }
+  /**
+   * Test if `StyleSheetResolve` tracks the given selector.
+   *
+   * @param   selector - CSS selector to check.
+   *
+   * @returns StyleSheetResolve tracks the given selector.
+   */
+  has(selector) {
+    return this.#sheetMap.has(selector);
+  }
+  /**
+   * @returns Tracked CSS selector keys iterator.
+   */
+  keys() {
+    return this.#sheetMap.keys();
+  }
+  /**
+   * Merges selectors and style properties from another StyleSheetResolve instance into this one. By default, the
+   * source of the merge overrides existing properties. You may choose to preserve existing values along with
+   * specifying exact selector matches.
+   *
+   * @param   source - Another instance to merge from.
+   *
+   * @param   [options] - Options.
+   *
+   * @returns This instance.
+   */
+  merge(source2, { exactMatch = false, strategy = "override" } = {}) {
+    if (this.#frozen) {
+      throw new Error("Cannot modify a frozen StyleSheetResolve instance.");
+    }
+    if (!(source2 instanceof _a$2)) {
+      throw new TypeError(`'source' is not a StyleSheetResolve instance.`);
+    }
+    for (const selectorPart of source2.keys()) {
+      if (exactMatch && !this.#sheetMap.has(selectorPart)) {
+        continue;
+      }
+      const incoming = source2.#sheetMap.get(selectorPart);
+      if (!incoming) {
+        continue;
+      }
+      const current = this.#sheetMap.get(selectorPart) ?? {};
+      const merged = strategy === "preserve" ? Object.assign({}, { ...incoming }, current) : Object.assign({}, current, incoming);
+      this.#sheetMap.set(selectorPart, merged);
+    }
+    return this;
+  }
+  /**
+   * Clears existing stylesheet mapping and parses the given stylesheet or Map.
+   *
+   * @param   styleSheetOrMap - The stylesheet element to parse or an existing parsed stylesheet Map.
+   *
+   * @param   [options] - Options for parsing stylesheet.
+   *
+   * @returns This instance.
+   */
+  parse(styleSheetOrMap, options2 = {}) {
+    if (this.#frozen) {
+      throw new Error("Cannot modify a frozen StyleSheetResolve instance.");
+    }
+    this.#sheetMap.clear();
+    if (!CrossWindow.isCSSStyleSheet(styleSheetOrMap) && !CrossWindow.isMap(styleSheetOrMap)) {
+      throw new TypeError(`'styleSheetOrMap' must be a 'CSSStyleSheet' instance or a parsed Map of stylesheet entries.`);
+    }
+    if (!isObject(options2)) {
+      throw new TypeError(`'options' is not an object.`);
+    }
+    if (options2.baseHref !== void 0 && typeof options2.baseHref !== "string") {
+      throw new TypeError(`'baseHref' must be a string.`);
+    }
+    if (options2.excludeSelectorParts !== void 0 && !isIterable(options2.excludeSelectorParts)) {
+      throw new TypeError(`'excludeSelectorParts' must be a list of RegExp instances.`);
+    }
+    if (options2.includeCSSLayers !== void 0 && !isIterable(options2.includeCSSLayers)) {
+      throw new TypeError(`'includeCSSLayers' must be a list of RegExp instances.`);
+    }
+    if (options2.includeSelectorPartSet !== void 0 && !CrossWindow.isSet(options2.includeSelectorPartSet)) {
+      throw new TypeError(`'includeSelectorPartSet' must be a Set of strings.`);
+    }
+    if (options2.mediaQuery !== void 0 && typeof options2.mediaQuery !== "boolean") {
+      throw new TypeError(`'mediaQuery' must be a boolean.`);
+    }
+    if (options2.urlRewrite !== void 0 && typeof options2.urlRewrite !== "boolean") {
+      throw new TypeError(`'urlRewrite' must be a boolean.`);
+    }
+    if (CrossWindow.isCSSStyleSheet(styleSheetOrMap)) {
+      this.#parse(styleSheetOrMap, options2);
+    } else if (CrossWindow.isMap(styleSheetOrMap)) {
+      this.#sheetMap = this.#clone(styleSheetOrMap);
+    }
+    return this;
+  }
+  /**
+   * Directly sets a selector key with the given style properties object.
+   *
+   * @param   selector - A single selector key to set.
+   *
+   * @param   styleObj - Style data object of property / value pairs.
+   */
+  set(selector, styleObj) {
+    if (this.#frozen) {
+      throw new Error("Cannot modify a frozen StyleSheetResolve instance.");
+    }
+    if (typeof selector !== "string") {
+      throw new TypeError(`'selector' must be a string.`);
+    }
+    if (!isObject(styleObj)) {
+      throw new TypeError(`'styleObj' must be an object.`);
+    }
+    this.#sheetMap.set(selector, styleObj);
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  /**
+   * Shallow clone of source Map into target Map.
+   *
+   * @param   sourceMap - Source Map.
+   *
+   * @param   [targetMap] - Target Map.
+   *
+   * @returns Shallow copy cloned Map.
+   */
+  #clone(sourceMap, targetMap = /* @__PURE__ */ new Map()) {
+    for (const [selector, props] of sourceMap.entries()) {
+      targetMap.set(selector, { ...props });
+    }
+    return targetMap;
+  }
+  /**
+   * Parses the given CSSStyleSheet instance.
+   *
+   * @param styleSheet - The stylesheet to parse.
+   *
+   * @param [opts] - Options for parsing stylesheet.
+   */
+  #parse(styleSheet, opts) {
+    const options2 = {
+      baseHref: styleSheet.href ?? opts.baseHref,
+      excludeSelectorParts: isIterable(opts.excludeSelectorParts) ? Array.from(opts.excludeSelectorParts) : [],
+      includeCSSLayers: isIterable(opts.includeCSSLayers) ? Array.from(opts.includeCSSLayers) : [],
+      includeSelectorPartSet: CrossWindow.isSet(opts.includeSelectorPartSet) ? opts.includeSelectorPartSet : /* @__PURE__ */ new Set(),
+      mediaQuery: opts.mediaQuery ?? true,
+      urlRewrite: opts.urlRewrite ?? true
+    };
+    const rules = styleSheet.cssRules;
+    const allStyleRules = [];
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      switch (rule.constructor.name) {
+        case "CSSLayerBlockRule":
+          this.#processLayerBlockRule(rule, void 0, allStyleRules, options2);
+          break;
+        case "CSSMediaRule":
+          this.#processMediaRule(rule, allStyleRules, options2);
+          break;
+        case "CSSStyleRule":
+          allStyleRules.push(rule);
+          break;
+      }
+    }
+    this.#processStyleRules(allStyleRules, options2);
+  }
+  /**
+   * Recursively parses / processes a CSSLayerBlockRule and encountered CSSStyleRule entries.
+   *
+   * @param   blockRule - The `CSSLayerBlockRule` to parse.
+   *
+   * @param   parentLayerName - Name of parent CSS layer.
+   *
+   * @param   allStyleRules - All style rules to process.
+   *
+   * @param   opts - Sanitized process options.
+   */
+  #processLayerBlockRule(blockRule, parentLayerName, allStyleRules, opts) {
+    const fullname = typeof parentLayerName === "string" ? `${parentLayerName}.${blockRule.name}` : blockRule.name;
+    const includeLayer = opts.includeCSSLayers.length === 0 || opts.includeCSSLayers.some((regex) => regex.test(fullname));
+    const layerBlockRules = [];
+    const rules = blockRule.cssRules;
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      switch (rule.constructor.name) {
+        case "CSSLayerBlockRule":
+          layerBlockRules.push(rule);
+          break;
+        case "CSSMediaRule":
+          this.#processMediaRule(rule, allStyleRules, opts);
+          break;
+        case "CSSStyleRule":
+          if (includeLayer) {
+            allStyleRules.push(rule);
+          }
+          break;
+      }
+    }
+    for (let i = 0; i < layerBlockRules.length; i++) {
+      this.#processLayerBlockRule(layerBlockRules[i], fullname, allStyleRules, opts);
+    }
+  }
+  /**
+   * Simple processing of a CSSMediaRule and directly nested CSSStyleRule entries.
+   *
+   * @param   mediaRule - The `CSSMediaRule` to parse.
+   *
+   * @param   allStyleRules - All style rules to process.
+   *
+   * @param   opts - Sanitized process options.
+   */
+  #processMediaRule(mediaRule, allStyleRules, opts) {
+    if (!opts.mediaQuery) {
+      return;
+    }
+    if (!window.matchMedia(mediaRule.media.mediaText).matches) {
+      return;
+    }
+    if (!_a$2.#MEDIA_RULE_PREFERS.test(mediaRule.media.mediaText)) {
+      return;
+    }
+    const rules = mediaRule.cssRules;
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      switch (rule.constructor.name) {
+        case "CSSStyleRule":
+          allStyleRules.push(rule);
+          break;
+      }
+    }
+  }
+  /**
+   * Processes all collected `CSSStyleRules`.
+   *
+   * @param   allStyleRules - Style rules to parse.
+   *
+   * @param   opts - ProcessOptions.
+   */
+  #processStyleRules(allStyleRules, opts) {
+    for (let i = 0; i < allStyleRules.length; i++) {
+      const styleRule = allStyleRules[i];
+      const selectorParts = StyleParse.selectorText(styleRule.selectorText, opts);
+      if (selectorParts.length) {
+        const result = StyleParse.cssText(styleRule.style.cssText);
+        if (opts.urlRewrite && opts.baseHref && _a$2.#URL_DETECTION_REGEX.test(styleRule.style.cssText)) {
+          this.#processStyleRuleUrls(result, opts);
+        }
+        for (let j = selectorParts.length; --j >= 0; ) {
+          const part = selectorParts[j];
+          if (this.#sheetMap.has(part)) {
+            Object.assign(this.#sheetMap.get(part), result);
+          } else {
+            this.#sheetMap.set(part, result);
+          }
+        }
+      }
+    }
+  }
+  /**
+   * Resolve relative `url(...)` references in CSS property values based on the stylesheet origin.
+   *
+   * This method rewrites relative paths in `url(...)` to absolute paths (IE `/assets/img.png`) using the
+   * CSSStyleSheet `href` when available or falling back to the provided `baseHref` for inline stylesheets.
+   *
+   * @param result - Parsed CSS property key-value map.
+   *
+   * @param opts - Processing options.
+   */
+  #processStyleRuleUrls(result, opts) {
+    const baseHref = opts.baseHref;
+    for (const key in result) {
+      let value = result[key];
+      if (value.indexOf("url(") === -1) {
+        continue;
+      }
+      if (!_a$2.#URL_DETECTION_REGEX.test(value)) {
+        continue;
+      }
+      let modified = false;
+      value = value.replace(_a$2.#URL_REGEX, (match, quote, relPath) => {
+        try {
+          const absPath = new URL(relPath, baseHref).pathname;
+          modified = true;
+          return `url(${quote}${absPath}${quote})`;
+        } catch {
+          return match;
+        }
+      });
+      if (modified) {
+        result[key] = value;
+      }
+    }
+  }
+  /**
+   * Resolves intermediate CSS variables defined in the `result` style properties object with data from the given
+   * `resolve` selector(s).
+   *
+   * @param   result - Copy of source selector style properties to resolve.
+   *
+   * @param   resolve - Parent CSS variable resolution selectors.
+   *
+   * @param   resolveData - Resolution data.
+   */
+  #resolve(result, resolve, resolveData) {
+    const parentVars = {};
+    for (let i = 0; i < resolve.length; i++) {
+      const entry = resolve[i];
+      const parent = this.get(entry);
+      if (!isObject(parent)) {
+        resolveData.parentNotFound.add(entry);
+        continue;
+      }
+      for (const key in parent) {
+        if (key.startsWith("--")) {
+          parentVars[key] = parent[key];
+        }
+      }
+    }
+    const cssVars = new ResolveVars(result, parentVars, resolveData);
+    if (!cssVars.unresolvedCount) {
+      return;
+    }
+    for (const key in parentVars) {
+      cssVars.set(key, parentVars[key]);
+    }
+    Object.assign(result, cssVars.resolved);
+  }
+}
+_a$2 = StyleSheetResolve;
+class ResolveVars {
+  /**
+   * Detect CSS variable.
+   */
+  static #DETECT_CSS_VAR_REGEX = /--[\w-]+/g;
+  /**
+   * Capture CSS variable fallbacks.
+   */
+  static #CSS_VAR_FALLBACK_REGEX = /^var\((?<varName>--[\w-]+)\s*,\s*(?<fallback>.+?)\)$/;
+  /**
+   * Replace CSS variable fallbacks.
+   */
+  static #CSS_VAR_FALLBACK_REPLACE_REGEX = /var\((--[\w-]+)(?:\s*,\s*[^()]*?)?\)/g;
+  /**
+   * Closed CSS variable.
+   */
+  static #CSS_VAR_REGEX = /^var\((--[\w-]+)\)$/;
+  /**
+   * Open CSS variable.
+   */
+  static #CSS_VAR_PARTIAL_REGEX = /^var\((--[\w-]+)/;
+  /**
+   * Prevent deep fallback recursion.
+   */
+  static #MAX_FALLBACK_DEPTH = 10;
+  /**
+   * Initial style properties w/ CSS variables to track.
+   */
+  #propMap = /* @__PURE__ */ new Map();
+  /**
+   * Reverse lookup for CSS variable name to associated property.
+   */
+  #varToProp = /* @__PURE__ */ new Map();
+  /**
+   * Resolved CSS variable from parent selector properties.
+   */
+  #varResolved = /* @__PURE__ */ new Map();
+  #parentVars;
+  #resolveData;
+  /**
+   * @param initial - Initial style entry to resolve.
+   *
+   * @param parentVars - All parent resolution vars.
+   *
+   * @param resolveData - Resolution data.
+   */
+  constructor(initial, parentVars, resolveData) {
+    this.#parentVars = parentVars;
+    this.#resolveData = resolveData;
+    for (const prop in initial) {
+      const value = initial[prop];
+      let match;
+      _b.#DETECT_CSS_VAR_REGEX.lastIndex = 0;
+      let found = false;
+      while (match = _b.#DETECT_CSS_VAR_REGEX.exec(value)) {
+        const entry = match[0];
+        if (!this.#varToProp.has(entry))
+          this.#varToProp.set(entry, /* @__PURE__ */ new Set());
+        this.#varToProp.get(entry).add(prop);
+        found = true;
+      }
+      if (found)
+        this.#propMap.set(prop, value);
+    }
+  }
+  /**
+   * Resolves properties in `#propMap` by substituting var(...) expressions using resolved values in #varResolved. If
+   * no resolution is available, attempts to preserve fallback expressions in their original var(...) form.
+   *
+   * Supports chained fallbacks like: var(--a, var(--b, var(--c, red))) and resolving variables in statements like
+   * `calc(1rem + var(--x))`.
+   *
+   * @returns All fields that have been resolved.
+   */
+  get resolved() {
+    const result = {};
+    for (const entry of this.#varToProp.keys()) {
+      const props = this.#varToProp.get(entry);
+      const varResolved = this.#varResolved.get(entry);
+      if (!props) {
+        continue;
+      }
+      if (varResolved) {
+        for (const prop of props) {
+          let value = this.#propMap.get(prop);
+          if (value.indexOf(`var(${entry}`) !== -1) {
+            value = value.replace(_b.#CSS_VAR_FALLBACK_REPLACE_REGEX, (match) => {
+              const varName = match.match(_b.#CSS_VAR_PARTIAL_REGEX)?.[1];
+              const resolved = this.#varResolved.get(varName);
+              return resolved ?? match;
+            });
+          }
+          this.#propMap.set(prop, value);
+          result[prop] = value;
+        }
+      } else {
+        for (const prop of props) {
+          const value = this.#propMap.get(prop);
+          if (value.indexOf(`var(${entry}`) === -1) {
+            continue;
+          }
+          const fallback = this.#resolveNestedFallback(value);
+          this.#propMap.set(prop, fallback);
+          result[prop] = fallback;
+        }
+      }
+    }
+    return result;
+  }
+  /**
+   * @returns Unresolved field count.
+   */
+  get unresolvedCount() {
+    let count = 0;
+    for (const entry of this.#varToProp.keys()) {
+      if (!this.#varResolved.has(entry)) {
+        count++;
+      }
+    }
+    return count;
+  }
+  /**
+   * Sets the parent selector defined CSS variable for resolution.
+   *
+   * @param name - CSS variable name
+   *
+   * @param value - Value of target CSS variable.
+   */
+  set(name, value) {
+    if (typeof value !== "string" || value.length === 0) {
+      return;
+    }
+    if (this.#resolveData.warnCycles) {
+      this.#setCycleWarn(name, value);
+    } else {
+      if (this.#varToProp.has(name) && !this.#varResolved.has(name)) {
+        this.#varResolved.set(name, value);
+      }
+    }
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  /**
+   * Performs DFS traversal to detect cycles in CSS variable resolution. Tracks the resolution path and emits a
+   * warning if a cycle is found. Each affected property is reported once with its originating chain.
+   *
+   * @param   value - Value of target CSS variable.
+   *
+   * @param   visited - Visited CSS variables.
+   *
+   * @param   seenCycles - Dedupe cyclic dependency warnings.
+   *
+   * @returns Resolution result or undefined.
+   */
+  #resolveCycleWarn(value, visited, seenCycles) {
+    const match = value.match(_b.#CSS_VAR_REGEX);
+    if (!match) {
+      return value;
+    }
+    const next = match[1];
+    if (visited.has(next)) {
+      const cycleChain = [...visited, next];
+      const cycleKey = cycleChain.join("→");
+      if (!seenCycles.has(cycleKey)) {
+        seenCycles.add(cycleKey);
+        const affected = cycleChain.flatMap((varName) => Array.from(this.#varToProp.get(varName) ?? []).map((prop) => `- ${prop} (via ${varName})`));
+        if (affected.length > 0) {
+          console.warn(`[TyphonJS Runtime] StyleSheetResolve - CSS variable cyclic dependency detected: ${cycleChain.join(" → ")}
+Affected properties:
+${affected.join("\n")}`);
+        }
+      }
+      return void 0;
+    }
+    visited.add(next);
+    const nextValue = this.#varResolved.get(next) ?? this.#parentVars[next];
+    if (typeof nextValue !== "string") {
+      return void 0;
+    }
+    return this.#resolveCycleWarn(nextValue, visited, seenCycles);
+  }
+  /**
+   * Resolve fallback chains of the form: var(--a, var(--b, ...))
+   * - Only replaces the top-level var if it is resolved.
+   * - Leaves fallback intact if unresolved.
+   * - Recursively evaluates nested fallbacks if they are var(...).
+   * - Limits recursion depth to prevent cycles or stack overflow.
+   *
+   * @param   expr - CSS var expression to resolve.
+   *
+   * @param   depth - Recursion guard
+   *
+   * @returns Nested fallback resolution result.
+   */
+  #resolveNestedFallback(expr, depth = 0) {
+    if (depth > _b.#MAX_FALLBACK_DEPTH) {
+      return expr;
+    }
+    const match = expr.match(_b.#CSS_VAR_FALLBACK_REGEX);
+    if (!match?.groups) {
+      return expr;
+    }
+    const { varName, fallback } = match.groups;
+    const resolved = this.#varResolved.get(varName);
+    if (resolved !== void 0) {
+      return resolved;
+    }
+    const fallbackTrimmed = fallback.trim();
+    if (fallbackTrimmed.startsWith("var(")) {
+      let nested = this.#resolveNestedFallback(fallbackTrimmed, depth + 1);
+      const innerMatch = nested.match(_b.#CSS_VAR_REGEX);
+      if (innerMatch) {
+        const innerResolved = this.#varResolved.get(innerMatch[1]);
+        if (innerResolved !== void 0) {
+          nested = innerResolved;
+        }
+      }
+      return `var(${varName}, ${nested})`;
+    }
+    return `var(${varName}, ${fallbackTrimmed})`;
+  }
+  /**
+   * Sets the parent selector defined CSS variable for resolution with additional cyclic dependency metrics.
+   *
+   * @param   name - CSS variable name
+   *
+   * @param   value - Value of target CSS variable.
+   */
+  #setCycleWarn(name, value) {
+    const resolved = this.#resolveCycleWarn(value, /* @__PURE__ */ new Set([name]), this.#resolveData.seenCycles);
+    if (resolved !== void 0 && this.#varToProp.has(name) && !this.#varResolved.has(name)) {
+      this.#varResolved.set(name, resolved);
+    }
+  }
+}
+_b = ResolveVars;
 function backInOut(t) {
   const s = 1.70158 * 1.525;
   if ((t *= 2) < 1) return 0.5 * (t * t * ((s + 1) * t - s));
@@ -25166,6 +27447,12 @@ class A11yHelper {
    */
   static #globalDebug = false;
   /**
+   * @private
+   */
+  constructor() {
+    throw new Error("A11yHelper constructor: This is a static class and should not be constructed.");
+  }
+  /**
    * @returns {boolean} Global debugging enabled.
    */
   static get debug() {
@@ -25202,6 +27489,9 @@ class A11yHelper {
    */
   static applyFocusSource(options2) {
     if (!isObject(options2)) {
+      if (this.debug) {
+        console.debug(`A11yHelper.applyFocusSource debug - options is not an object: `, options2);
+      }
       return;
     }
     const focusOpts = isObject(options2?.focusSource) ? options2.focusSource : options2;
@@ -25399,10 +27689,10 @@ class A11yHelper {
         `A11yHelper.getFocusSource error: 'event' is not a KeyboardEvent, MouseEvent, or PointerEvent.`
       );
     }
-    if (x !== void 0 && !Number.isInteger(x)) {
+    if (x !== void 0 && !Number.isFinite(x)) {
       throw new TypeError(`A11yHelper.getFocusSource error: 'x' is not a number.`);
     }
-    if (y !== void 0 && !Number.isInteger(y)) {
+    if (y !== void 0 && !Number.isFinite(y)) {
       throw new TypeError(`A11yHelper.getFocusSource error: 'y' is not a number.`);
     }
     let targetEl;
@@ -25487,6 +27777,9 @@ class A11yHelper {
   /**
    * Tests if the given element is focusable.
    *
+   * Note: A special case for focus testing occurs when an element has `tabindex` of `-1` _and_ the
+   * `tjs-a11y-focusable` class.
+   *
    * @param {unknown} el - Element to test.
    *
    * @param {object} [options] - Optional parameters.
@@ -25510,7 +27803,7 @@ class A11yHelper {
     const contenteditableAttr = el.getAttribute("contenteditable");
     const contenteditableFocusable = typeof contenteditableAttr === "string" && (contenteditableAttr === "" || contenteditableAttr === "true");
     const tabindexAttr = globalThis.parseInt(el.getAttribute("tabindex"));
-    const tabindexFocusable = Number.isInteger(tabindexAttr) && tabindexAttr >= 0;
+    const tabindexFocusable = Number.isInteger(tabindexAttr) && (tabindexAttr >= 0 || tabindexAttr === -1 && el.classList.contains("tjs-a11y-focusable"));
     if (contenteditableFocusable || tabindexFocusable || CrossWindow.isFocusableHTMLElement(el)) {
       if (anchorHref && !tabindexFocusable && CrossWindow.isHTMLAnchorElement(el) && typeof el.getAttribute("href") !== "string") {
         return false;
@@ -29025,235 +31318,6 @@ Vec3.sqrLen = Vec3.squaredLength;
 Vec3.mag = Vec3.magnitude;
 Vec3.length = Vec3.magnitude;
 Vec3.len = Vec3.magnitude;
-class StyleParse {
-  static #regexPixels = /(\d+)\s*px/;
-  /**
-   * Parses a pixel string / computed styles. Ex. `100px` returns `100`.
-   *
-   * @param {string}   value - Value to parse.
-   *
-   * @returns {number|undefined} The integer component of a pixel string.
-   */
-  static pixels(value) {
-    if (typeof value !== "string") {
-      return void 0;
-    }
-    const isPixels = this.#regexPixels.test(value);
-    const number = parseInt(value);
-    return isPixels && Number.isFinite(number) ? number : void 0;
-  }
-  /**
-   * Returns the pixel value for `1rem` based on the root document element. You may apply an optional multiplier.
-   *
-   * @param {number} [multiplier=1] - Optional multiplier to apply to `rem` pixel value; default: 1.
-   *
-   * @param {object} [options] - Optional parameters.
-   *
-   * @param {Document} [options.targetDocument=document] The target DOM {@link Document} if different from the main
-   *        browser global `document`.
-   *
-   * @returns {number} The pixel value for `1rem` with or without a multiplier based on the root document element.
-   */
-  static remPixels(multiplier = 1, { targetDocument = document } = {}) {
-    return targetDocument?.documentElement ? multiplier * parseFloat(globalThis.getComputedStyle(targetDocument.documentElement).fontSize) : void 0;
-  }
-}
-class TJSStyleManager {
-  /** @type {CSSStyleRule} */
-  #cssRule;
-  /** @type {string} */
-  #docKey;
-  /** @type {string} */
-  #selector;
-  /** @type {HTMLStyleElement} */
-  #styleElement;
-  /** @type {number} */
-  #version;
-  /**
-   *
-   * @param {object}   opts - Options.
-   *
-   * @param {string}   opts.docKey - Required key providing a link to a specific style sheet element.
-   *
-   * @param {string}   [opts.selector=:root] - Selector element.
-   *
-   * @param {Document} [opts.document] - Target document to load styles into.
-   *
-   * @param {number}   [opts.version] - An integer representing the version / level of styles being managed.
-   */
-  constructor({ docKey, selector = ":root", document: document2 = globalThis.document, version } = {}) {
-    if (typeof docKey !== "string") {
-      throw new TypeError(`StyleManager error: 'docKey' is not a string.`);
-    }
-    if (Object.prototype.toString.call(document2) !== "[object HTMLDocument]") {
-      throw new TypeError(`TJSStyleManager error: 'document' is not an instance of HTMLDocument.`);
-    }
-    if (typeof selector !== "string") {
-      throw new TypeError(`StyleManager error: 'selector' is not a string.`);
-    }
-    if (version !== void 0 && !Number.isSafeInteger(version) && version < 1) {
-      throw new TypeError(`StyleManager error: 'version' is defined and is not a positive integer >= 1.`);
-    }
-    this.#selector = selector;
-    this.#docKey = docKey;
-    this.#version = version;
-    if (document2[this.#docKey] === void 0) {
-      this.#styleElement = document2.createElement("style");
-      document2.head.append(this.#styleElement);
-      this.#styleElement._STYLE_MANAGER_VERSION = version;
-      this.#styleElement.sheet.insertRule(`${selector} {}`, 0);
-      this.#cssRule = this.#styleElement.sheet.cssRules[0];
-      document2[docKey] = this.#styleElement;
-    } else {
-      this.#styleElement = document2[docKey];
-      this.#cssRule = this.#styleElement.sheet.cssRules[0];
-      if (version) {
-        const existingVersion = this.#styleElement._STYLE_MANAGER_VERSION ?? 0;
-        if (version > existingVersion) {
-          this.#cssRule.style.cssText = "";
-        }
-      }
-    }
-  }
-  /**
-   * @returns {string} Provides an accessor to get the `cssText` for the style sheet.
-   */
-  get cssText() {
-    return this.#cssRule.style.cssText;
-  }
-  /**
-   * @returns {number} Returns the version of this instance.
-   */
-  get version() {
-    return this.#version;
-  }
-  /**
-   * Provides a copy constructor to duplicate an existing TJSStyleManager instance into a new document.
-   *
-   * Note: This is used to support the `PopOut` module.
-   *
-   * @param {Document} [document] Target browser document to clone into.
-   *
-   * @returns {TJSStyleManager} New style manager instance.
-   */
-  clone(document2 = globalThis.document) {
-    const newStyleManager = new TJSStyleManager({
-      selector: this.#selector,
-      docKey: this.#docKey,
-      document: document2,
-      version: this.#version
-    });
-    newStyleManager.#cssRule.style.cssText = this.#cssRule.style.cssText;
-    return newStyleManager;
-  }
-  get() {
-    const cssText = this.#cssRule.style.cssText;
-    const result = {};
-    if (cssText !== "") {
-      for (const entry of cssText.split(";")) {
-        if (entry !== "") {
-          const values = entry.split(":");
-          result[values[0].trim()] = values[1];
-        }
-      }
-    }
-    return result;
-  }
-  /**
-   * Gets a particular CSS variable.
-   *
-   * @param {string}   key - CSS variable property key.
-   *
-   * @returns {string} Returns CSS variable value.
-   */
-  getProperty(key) {
-    if (typeof key !== "string") {
-      throw new TypeError(`StyleManager error: 'key' is not a string.`);
-    }
-    return this.#cssRule.style.getPropertyValue(key);
-  }
-  /**
-   * Set rules by property / value; useful for CSS variables.
-   *
-   * @param {{ [key: string]: string }}  rules - An object with property / value string pairs to load.
-   *
-   * @param {boolean}                 [overwrite=true] - When true overwrites any existing values.
-   */
-  setProperties(rules, overwrite = true) {
-    if (!isObject(rules)) {
-      throw new TypeError(`StyleManager error: 'rules' is not an object.`);
-    }
-    if (typeof overwrite !== "boolean") {
-      throw new TypeError(`StyleManager error: 'overwrite' is not a boolean.`);
-    }
-    if (overwrite) {
-      for (const [key, value] of Object.entries(rules)) {
-        this.#cssRule.style.setProperty(key, value);
-      }
-    } else {
-      for (const [key, value] of Object.entries(rules)) {
-        if (this.#cssRule.style.getPropertyValue(key) === "") {
-          this.#cssRule.style.setProperty(key, value);
-        }
-      }
-    }
-  }
-  /**
-   * Sets a particular property.
-   *
-   * @param {string}   key - CSS variable property key.
-   *
-   * @param {string}   value - CSS variable value.
-   *
-   * @param {boolean}  [overwrite=true] - Overwrite any existing value.
-   */
-  setProperty(key, value, overwrite = true) {
-    if (typeof key !== "string") {
-      throw new TypeError(`StyleManager error: 'key' is not a string.`);
-    }
-    if (typeof value !== "string") {
-      throw new TypeError(`StyleManager error: 'value' is not a string.`);
-    }
-    if (typeof overwrite !== "boolean") {
-      throw new TypeError(`StyleManager error: 'overwrite' is not a boolean.`);
-    }
-    if (overwrite) {
-      this.#cssRule.style.setProperty(key, value);
-    } else {
-      if (this.#cssRule.style.getPropertyValue(key) === "") {
-        this.#cssRule.style.setProperty(key, value);
-      }
-    }
-  }
-  /**
-   * Removes the property keys specified. If `keys` is an iterable list then all property keys in the list are removed.
-   *
-   * @param {Iterable<string>} keys - The property keys to remove.
-   */
-  removeProperties(keys) {
-    if (!isIterable(keys)) {
-      throw new TypeError(`StyleManager error: 'keys' is not an iterable list.`);
-    }
-    for (const key of keys) {
-      if (typeof key === "string") {
-        this.#cssRule.style.removeProperty(key);
-      }
-    }
-  }
-  /**
-   * Removes a particular CSS variable.
-   *
-   * @param {string}   key - CSS variable property key.
-   *
-   * @returns {string} CSS variable value when removed.
-   */
-  removeProperty(key) {
-    if (typeof key !== "string") {
-      throw new TypeError(`StyleManager error: 'key' is not a string.`);
-    }
-    return this.#cssRule.style.removeProperty(key);
-  }
-}
 async function nextAnimationFrame(cntr = 1) {
   if (!Number.isInteger(cntr) || cntr < 1) {
     throw new TypeError(`nextAnimationFrame error: 'cntr' must be a positive integer greater than 0.`);
@@ -29284,7 +31348,7 @@ function draggable(node, { position, enabled: enabled2 = true, button = 0, store
   };
   function activateListeners() {
     node.addEventListener(...handlers.dragDown);
-    node.classList.add("draggable");
+    node.classList.add("tjs-draggable");
   }
   function removeListeners() {
     if (typeof storeDragging?.set === "function") {
@@ -29293,7 +31357,7 @@ function draggable(node, { position, enabled: enabled2 = true, button = 0, store
     node.removeEventListener(...handlers.dragDown);
     node.removeEventListener(...handlers.dragMove);
     node.removeEventListener(...handlers.dragUp);
-    node.classList.remove("draggable");
+    node.classList.remove("tjs-draggable");
   }
   if (enabled2) {
     activateListeners();
@@ -29665,7 +31729,7 @@ class AnimationManager {
   /**
    * Provides the `this` context for {@link AnimationManager.animate} to be scheduled on rAF.
    */
-  static #animateBound = (timeFrame) => this.animate(timeFrame);
+  static #animateBound = AnimationManager.animate.bind(AnimationManager);
   /**
    */
   static #pendingList = [];
@@ -29740,7 +31804,7 @@ class AnimationManager {
     }
     for (let cntr = AnimationManager.#activeList.length; --cntr >= 0; ) {
       const data2 = AnimationManager.#activeList[cntr];
-      if (data2.cancelled || data2.el !== void 0 && !data2.el.isConnected) {
+      if (data2.cancelled) {
         AnimationManager.#activeList.splice(cntr, 1);
         this.#cleanupData(data2);
         continue;
@@ -29775,7 +31839,7 @@ class AnimationManager {
   static cancel(position, cancelFn = AnimationManager.cancelFn) {
     for (let cntr = AnimationManager.#activeList.length; --cntr >= 0; ) {
       const data2 = AnimationManager.#activeList[cntr];
-      if (data2.position === position && cancelFn(data2)) {
+      if (data2.cancelable && data2.position === position && cancelFn(data2)) {
         AnimationManager.#activeList.splice(cntr, 1);
         data2.cancelled = true;
         this.#cleanupData(data2);
@@ -29783,7 +31847,7 @@ class AnimationManager {
     }
     for (let cntr = AnimationManager.#pendingList.length; --cntr >= 0; ) {
       const data2 = AnimationManager.#pendingList[cntr];
-      if (data2.position === position && cancelFn(data2)) {
+      if (data2.cancelable && data2.position === position && cancelFn(data2)) {
         AnimationManager.#pendingList.splice(cntr, 1);
         data2.cancelled = true;
         this.#cleanupData(data2);
@@ -29940,8 +32004,6 @@ class TJSPositionData {
    * @param [opts.width] -
    *
    * @param [opts.zIndex] -
-   *
-   * @param [opts.rotation] - Alias for `rotateZ`.
    */
   constructor({ height = null, left = null, maxHeight = null, maxWidth = null, minHeight = null, minWidth = null, rotateX = null, rotateY = null, rotateZ = null, scale = null, translateX = null, translateY = null, translateZ = null, top = null, transformOrigin = null, width = null, zIndex = null } = {}) {
     this.height = height;
@@ -30467,6 +32529,8 @@ class TJSPositionStyleCache {
       resizeContentWidth: propertyStore(storeResizeObserved, "contentWidth"),
       resizeObserved: storeResizeObserved,
       resizeObservable: writable(false),
+      resizeObservableHeight: writable(false),
+      resizeObservableWidth: writable(false),
       resizeOffsetHeight: propertyStore(storeResizeObserved, "offsetHeight"),
       resizeOffsetWidth: propertyStore(storeResizeObserved, "offsetWidth")
     };
@@ -30557,12 +32621,15 @@ class TJSTransforms {
   #orderList = [];
   /**
    * Defines the keys of TJSPositionData that are transform keys.
+   *
+   * Note: `rotateZ` is the most likely transform applied in 2D context. Putting it first makes `hasTransform` slightly
+   * quicker.
    */
   static #transformKeys = Object.freeze([
-    "rotateX",
-    "rotateY",
     "rotateZ",
     "scale",
+    "rotateX",
+    "rotateY",
     "translateX",
     "translateY",
     "translateZ"
@@ -31138,8 +33205,8 @@ class TJSTransforms {
    * @returns Whether the given TJSPositionData has transforms.
    */
   hasTransform(data2) {
-    for (const key of TJSTransforms.#transformKeys) {
-      if (Number.isFinite(data2[key])) {
+    for (let cntr = 0; cntr < TJSTransforms.#transformKeys.length; cntr++) {
+      if (Number.isFinite(data2[TJSTransforms.#transformKeys[cntr]])) {
         return true;
       }
     }
@@ -31281,6 +33348,8 @@ class AnimationScheduler {
    *
    * @param el -
    *
+   * @param cancelable -
+   *
    * @param delay -
    *
    * @param ease -
@@ -31295,7 +33364,7 @@ class AnimationScheduler {
    *
    * @returns An AnimationControl instance or null if none created.
    */
-  static #addAnimation(position, initial, destination, duration, el, delay, ease, interpolate = lerp, transformOrigin, transformOriginInitial, cleanup) {
+  static #addAnimation(position, initial, destination, duration, el, cancelable, delay, ease, interpolate = lerp, transformOrigin, transformOriginInitial, cleanup) {
     TJSPositionDataUtil.setNumericDefaults(initial);
     TJSPositionDataUtil.setNumericDefaults(destination);
     for (const key in initial) {
@@ -31311,6 +33380,7 @@ class AnimationScheduler {
     const animationData = {
       active: true,
       cleanup,
+      cancelable,
       cancelled: false,
       control: void 0,
       current: 0,
@@ -31359,7 +33429,7 @@ class AnimationScheduler {
     if (parent !== void 0 && typeof parent?.options?.positionable === "boolean" && !parent?.options?.positionable) {
       return null;
     }
-    let { delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
+    let { cancelable = true, delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
     if (strategy !== void 0) {
       if (this.#handleStrategy(position, strategy) === null) {
         return null;
@@ -31390,7 +33460,7 @@ class AnimationScheduler {
       }
     }
     ConvertStringData.process(initial, this.#data, el);
-    return this.#addAnimation(position, initial, destination, duration, el, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
+    return this.#addAnimation(position, initial, destination, duration, el, cancelable, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
   }
   /**
    * Provides a tween from given position data to the given position.
@@ -31418,7 +33488,7 @@ class AnimationScheduler {
     if (parent !== void 0 && typeof parent?.options?.positionable === "boolean" && !parent?.options?.positionable) {
       return null;
     }
-    let { delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
+    let { cancelable = true, delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
     if (strategy !== void 0) {
       if (this.#handleStrategy(position, strategy) === null) {
         return null;
@@ -31454,7 +33524,7 @@ class AnimationScheduler {
     }
     ConvertStringData.process(initial, this.#data, el);
     ConvertStringData.process(destination, this.#data, el);
-    return this.#addAnimation(position, initial, destination, duration, el, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
+    return this.#addAnimation(position, initial, destination, duration, el, cancelable, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
   }
   /**
    * Provides a tween to given position data from the current position.
@@ -31477,7 +33547,7 @@ class AnimationScheduler {
     if (parent !== void 0 && typeof parent?.options?.positionable === "boolean" && !parent?.options?.positionable) {
       return null;
     }
-    let { delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
+    let { cancelable = true, delay = 0, duration = 1, ease = "cubicOut", strategy, transformOrigin } = options2;
     if (strategy !== void 0) {
       if (this.#handleStrategy(position, strategy) === null) {
         return null;
@@ -31508,7 +33578,7 @@ class AnimationScheduler {
       }
     }
     ConvertStringData.process(destination, this.#data, el);
-    return this.#addAnimation(position, initial, destination, duration, el, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
+    return this.#addAnimation(position, initial, destination, duration, el, cancelable, delay, ease, lerp, transformOrigin, transformOriginInitial, cleanup);
   }
   // Internal implementation ----------------------------------------------------------------------------------------
   /**
@@ -31669,6 +33739,7 @@ class AnimationAPIImpl {
     const newData = Object.assign({}, initial);
     const animationData = {
       active: true,
+      cancelable: true,
       cancelled: false,
       control: void 0,
       current: 0,
@@ -32622,13 +34693,15 @@ class PositionStateAPI {
    *
    * @param [options.animateTo=false] - Animate to restore data.
    *
+   * @param [options.cancelable=true] - When false, any animation can not be cancelled.
+   *
    * @param [options.duration=0.1] - Duration in seconds.
    *
    * @param [options.ease='linear'] - Easing function name or function.
    *
    * @returns Any saved position data.
    */
-  restore({ name, remove = false, properties, silent = false, async = false, animateTo = false, duration = 0.1, ease = "linear" }) {
+  restore({ name, remove = false, properties, silent = false, async = false, animateTo = false, cancelable = true, duration = 0.1, ease = "linear" }) {
     if (typeof name !== "string") {
       throw new TypeError(`TJSPosition - restore error: 'name' is not a string.`);
     }
@@ -32656,9 +34729,9 @@ class PositionStateAPI {
           this.#position.transformOrigin = data2.transformOrigin;
         }
         if (async) {
-          return this.#position.animate.to(data2, { duration, ease }).finished.then(() => dataSaved);
+          return this.#position.animate.to(data2, { cancelable, duration, ease }).finished.then(() => dataSaved);
         } else {
-          this.#position.animate.to(data2, { duration, ease });
+          this.#position.animate.to(data2, { cancelable, duration, ease });
         }
       } else {
         this.#position.set(data2);
@@ -33325,9 +35398,6 @@ class UpdateElementManager {
       entry[0] = void 0;
       entry[1] = void 0;
       updateData.queued = false;
-      if (!el.isConnected) {
-        continue;
-      }
       if (updateData.options.ortho) {
         UpdateElementManager.#updateElementOrtho(el, updateData);
       } else {
@@ -33349,9 +35419,6 @@ class UpdateElementManager {
    * @param updateData - An UpdateElementData instance.
    */
   static immediate(el, updateData) {
-    if (!el.isConnected) {
-      return;
-    }
     if (updateData.options.ortho) {
       UpdateElementManager.#updateElementOrtho(el, updateData);
     } else {
@@ -33525,6 +35592,16 @@ class TJSPosition {
    */
   #resizeObservable = false;
   /**
+   * Tracks the current state if this position instance is a candidate for resize observation by the `resizeObserver`
+   * action. This is `true` when `height` is `auto` or `inherit`.
+   */
+  #resizeObservableHeight = false;
+  /**
+   * Tracks the current state if this position instance is a candidate for resize observation by the `resizeObserver`
+   * action. This is `true` when `width` is `auto` or `inherit`.
+   */
+  #resizeObservableWidth = false;
+  /**
    */
   #stores;
   /**
@@ -33617,7 +35694,7 @@ class TJSPosition {
   }
   /**
    * Returns a duplicate of a given position instance copying any options and validators. The position parent is not
-   * copied and a new one must be set manually via the {@link TJSPosition.parent} setter.
+   * copied, and a new one must be set manually via the {@link TJSPosition.parent} setter.
    *
    * @param position - A position instance.
    *
@@ -33636,10 +35713,10 @@ class TJSPosition {
     return newPosition;
   }
   /**
-   * @param [parentOrOptions] - A  potential parent element or object w/ `elementTarget` accessor. You may also forego
-   *        setting the parent and pass in the options object.
+   * @param [parentOrOptions] - A potential parent element or object w/ `elementTarget` accessor. You may also forego
+   *        setting the parent and pass in the configuration options object.
    *
-   * @param [options] - The options object.
+   * @param [options] - The configuration options object.
    */
   constructor(parentOrOptions, options2) {
     if (isPlainObject(parentOrOptions)) {
@@ -33682,6 +35759,8 @@ class TJSPosition {
       resizeContentHeight: { subscribe: this.#styleCache.stores.resizeContentHeight.subscribe },
       resizeContentWidth: { subscribe: this.#styleCache.stores.resizeContentWidth.subscribe },
       resizeObservable: { subscribe: this.#styleCache.stores.resizeObservable.subscribe },
+      resizeObservableHeight: { subscribe: this.#styleCache.stores.resizeObservableHeight.subscribe },
+      resizeObservableWidth: { subscribe: this.#styleCache.stores.resizeObservableWidth.subscribe },
       resizeOffsetHeight: { subscribe: this.#styleCache.stores.resizeOffsetHeight.subscribe },
       resizeOffsetWidth: { subscribe: this.#styleCache.stores.resizeOffsetWidth.subscribe },
       transform: { subscribe: updateData.storeTransform.subscribe },
@@ -33768,6 +35847,24 @@ class TJSPosition {
     return this.#parent;
   }
   /**
+   * Returns the resize observable state which is `true` whenever `width` or `height` is `auto` or `inherit`.
+   */
+  get resizeObservable() {
+    return this.#resizeObservable;
+  }
+  /**
+   * Returns the resize observable state which is `true` whenever `height` is `auto` or `inherit`.
+   */
+  get resizeObservableHeight() {
+    return this.#resizeObservableHeight;
+  }
+  /**
+   * Returns the resize observable state which is `true` whenever `width` is `auto` or `inherit`.
+   */
+  get resizeObservableWidth() {
+    return this.#resizeObservableWidth;
+  }
+  /**
    * Returns the state API.
    *
    * @returns TJSPosition state API.
@@ -33802,13 +35899,18 @@ class TJSPosition {
   /**
    * Sets the enabled state.
    *
-   * @param enabled - New enabled state.
+   * @param enabled - Newly enabled state.
    */
   set enabled(enabled2) {
     if (typeof enabled2 !== "boolean") {
       throw new TypeError(`'enabled' is not a boolean.`);
     }
-    this.#enabled = enabled2;
+    if (this.#enabled !== enabled2) {
+      this.#enabled = enabled2;
+      if (enabled2) {
+        this.set(this.#data);
+      }
+    }
   }
   /**
    * Sets the associated {@link TJSPosition.PositionParent} instance. Resets the style cache and default data.
@@ -34046,16 +36148,16 @@ class TJSPosition {
     this.#stores.zIndex.set(zIndex);
   }
   /**
-   * Assigns current position data to given object `data` object. By default, `null` position data is not assigned.
-   * Other options allow configuration of the data assigned including setting default numeric values for any properties
-   * that are null.
+   * Assigns current position data to the given object `data` object. By default, `null` position data is not assigned.
+   * Other options allow configuration of the data assigned, including setting default numeric values for any
+   * properties that are null.
    *
    * @param [data] - Target to assign current position data.
    *
    * @param [options] - Defines options for specific keys and substituting null for numeric default values. By
    *        default, nullable keys are included.
    *
-   * @returns Passed in object with current position data.
+   * @returns Any passed in data object with current position data.
    */
   get(data2 = {}, options2 = {}) {
     const keys = options2?.keys;
@@ -34108,7 +36210,7 @@ class TJSPosition {
    * The initial set call with a target element will always set width / height as this is necessary for correct
    * calculations.
    *
-   * When a target element is present updated styles are applied after validation. To modify the behavior of set
+   * When a target element is present, updated styles are applied after validation. To modify the behavior of set,
    * implement one or more validator functions and add them via the validator API available from
    * {@link TJSPosition.validators}.
    *
@@ -34143,7 +36245,7 @@ class TJSPosition {
     const data2 = this.#data;
     const transforms = this.#transforms;
     const targetEl = A11yHelper.isFocusTarget(parent) ? parent : parent?.elementTarget;
-    const el = A11yHelper.isFocusTarget(targetEl) && targetEl.isConnected ? targetEl : void 0;
+    const el = A11yHelper.isFocusTarget(targetEl) ? targetEl : void 0;
     const changeSet = this.#positionChangeSet;
     const styleCache = this.#styleCache;
     if (el) {
@@ -34278,6 +36380,14 @@ class TJSPosition {
       this.#resizeObservable = resizeObservable;
       this.#styleCache.stores.resizeObservable.set(resizeObservable);
     }
+    if (this.#resizeObservableHeight !== heightIsObservable) {
+      this.#resizeObservableHeight = heightIsObservable;
+      this.#styleCache.stores.resizeObservableHeight.set(heightIsObservable);
+    }
+    if (this.#resizeObservableWidth !== widthIsObservable) {
+      this.#resizeObservableWidth = widthIsObservable;
+      this.#styleCache.stores.resizeObservableWidth.set(widthIsObservable);
+    }
     if (el) {
       const defaultData2 = this.#state.getDefault();
       if (!isObject(defaultData2)) {
@@ -34381,7 +36491,7 @@ class TJSPosition {
     translateY,
     translateZ,
     zIndex,
-    // Aliased parameters
+    // Aliased parameters.
     rotation,
     ...rest
   }, parent, el, styleCache) {
@@ -34496,6 +36606,158 @@ class TJSPosition {
   }
 }
 _a$1 = TJSPosition;
+class CQPositionValidate {
+  /**
+   * Associated TJSPosition.
+   */
+  #position;
+  /**
+   * Stores the subscribers.
+   */
+  #subscribers = [];
+  /**
+   * Unsubscriber when subscribed to backing SvelteSet.
+   */
+  #unsubscribe = [];
+  #resizeObservableHeight = false;
+  #resizeObservableWidth = false;
+  #updateStateBound;
+  /**
+   * @param [position] - Associated TJSPosition instance.
+   */
+  constructor(position) {
+    this.#updateStateBound = this.#updateState.bind(this);
+    if (position) {
+      this.setPosition(position);
+    }
+  }
+  /**
+   * Manually destroy and cleanup associations to any subscribers and TJSPosition instance.
+   */
+  destroy() {
+    this.#cleanup();
+  }
+  /**
+   * Returns the associated TJSPosition instance.
+   */
+  getPosition() {
+    return this.#deref();
+  }
+  /**
+   * Set a new TJSPosition instance to monitor.
+   *
+   * @param position - New TJSPosition instance to associate.
+   */
+  setPosition(position) {
+    const current = this.#deref();
+    if (position === current) {
+      return;
+    }
+    this.#cleanup();
+    this.#position = void 0;
+    if (position instanceof TJSPosition) {
+      this.#position = new WeakRef(position);
+      if (this.#subscribers.length) {
+        this.#unsubscribe.push(position.stores.resizeObservableHeight.subscribe(this.#updateStateBound));
+        this.#unsubscribe.push(position.stores.resizeObservableWidth.subscribe(this.#updateStateBound));
+      }
+    }
+  }
+  /**
+   * Returns the serialized state tracking supported container types.
+   */
+  toJSON() {
+    return {
+      inlineSize: !this.#resizeObservableWidth,
+      normal: true,
+      size: !this.#resizeObservableWidth && !this.#resizeObservableHeight
+    };
+  }
+  /**
+   * @param cqType - The container query type to validate against current associated {@link TJSPosition} state.
+   *
+   * @returns Whether the browser and associated TJSPosition current state supports the requested container query type.
+   */
+  validate(cqType) {
+    if (!BrowserSupports.containerQueries) {
+      return false;
+    }
+    const hasPosition = this.#deref() !== void 0;
+    switch (cqType) {
+      case "inline-size":
+        return hasPosition && !this.#resizeObservableWidth;
+      case "normal":
+        return true;
+      case "size":
+        return hasPosition && !this.#resizeObservableWidth && !this.#resizeObservableHeight;
+    }
+    return false;
+  }
+  // Store subscriber implementation --------------------------------------------------------------------------------
+  /**
+   * @param handler - Callback function that is invoked on update / changes.
+   *
+   * @returns Unsubscribe function.
+   */
+  subscribe(handler) {
+    const currentIdx = this.#subscribers.findIndex((sub) => sub === handler);
+    if (currentIdx === -1) {
+      this.#subscribers.push(handler);
+      if (this.#subscribers.length === 1) {
+        const position = this.#deref();
+        if (position) {
+          this.#unsubscribe.push(position.stores.resizeObservableHeight.subscribe(this.#updateStateBound));
+          this.#unsubscribe.push(position.stores.resizeObservableWidth.subscribe(this.#updateStateBound));
+        }
+      }
+      handler(this);
+    }
+    return () => {
+      const index = this.#subscribers.findIndex((sub) => sub === handler);
+      if (index >= 0) {
+        this.#subscribers.splice(index, 1);
+        if (this.#subscribers.length === 0) {
+          this.#cleanup();
+        }
+      }
+    };
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  #cleanup(notify = false) {
+    for (const unsubscribe of this.#unsubscribe) {
+      unsubscribe();
+    }
+    this.#unsubscribe.length = 0;
+    this.#resizeObservableHeight = false;
+    this.#resizeObservableWidth = false;
+    if (notify) {
+      this.#updateSubscribers();
+    }
+  }
+  #deref() {
+    const position = this.#position?.deref();
+    if (!position) {
+      this.#cleanup(true);
+    }
+    return position;
+  }
+  #updateState() {
+    const position = this.#deref();
+    if (position) {
+      this.#resizeObservableHeight = position.resizeObservableHeight;
+      this.#resizeObservableWidth = position.resizeObservableWidth;
+    }
+    this.#updateSubscribers();
+  }
+  /**
+   * Updates subscribers.
+   */
+  #updateSubscribers() {
+    for (let cntr = 0; cntr < this.#subscribers.length; cntr++) {
+      this.#subscribers[cntr](this);
+    }
+  }
+}
 if (typeof window !== "undefined")
   (window.__svelte || (window.__svelte = { v: /* @__PURE__ */ new Set() })).v.add(PUBLIC_VERSION);
 function fade(node, { delay = 0, duration = 400, easing = identity } = {}) {
@@ -34533,7 +36795,224 @@ function slide(node, { delay = 0, duration = 400, easing = cubicOut, axis = "y" 
     css: (t) => `overflow: hidden;opacity: ${Math.min(t * 20, 1) * opacity};${primary_property}: ${t * primary_property_value}px;padding-${secondary_properties[0]}: ${t * padding_start_value}px;padding-${secondary_properties[1]}: ${t * padding_end_value}px;margin-${secondary_properties[0]}: ${t * margin_start_value}px;margin-${secondary_properties[1]}: ${t * margin_end_value}px;border-${secondary_properties[0]}-width: ${t * border_width_start_value}px;border-${secondary_properties[1]}-width: ${t * border_width_end_value}px;`
   };
 }
-const cssVariables = new TJSStyleManager({ docKey: "#__trl-root-styles", version: 1 });
+function getRoutePrefix(url) {
+  return globalThis.foundry.utils.getRoute(url);
+}
+const cursorCSSVariables = {
+  "--tjs-cursor-all-scroll": "all-scroll",
+  "--tjs-cursor-all-scroll-down": "all-scroll",
+  "--tjs-cursor-alias": "alias",
+  "--tjs-cursor-alias-down": "alias",
+  "--tjs-cursor-cell": "cell",
+  "--tjs-cursor-cell-down": "cell",
+  "--tjs-cursor-copy": "copy",
+  "--tjs-cursor-copy-down": "copy",
+  "--tjs-cursor-context-menu": "context-menu",
+  "--tjs-cursor-context-menu-down": "context-menu",
+  "--tjs-cursor-crosshair": "crosshair",
+  "--tjs-cursor-crosshair-down": "crosshair",
+  "--tjs-cursor-default": "default",
+  "--tjs-cursor-default-down": "default",
+  "--tjs-cursor-grab": "grab",
+  "--tjs-cursor-grab-down": "var(--tjs-cursor-grabbing, grabbing)",
+  "--tjs-cursor-grabbing": "grabbing",
+  "--tjs-cursor-grabbing-down": "grabbing",
+  "--tjs-cursor-help": "help",
+  "--tjs-cursor-help-down": "help",
+  "--tjs-cursor-pointer": "pointer",
+  "--tjs-cursor-pointer-down": "pointer",
+  "--tjs-cursor-move": "move",
+  "--tjs-cursor-move-down": "move",
+  "--tjs-cursor-no-drop": "no-drop",
+  "--tjs-cursor-no-drop-down": "no-drop",
+  "--tjs-cursor-not-allowed": "not-allowed",
+  "--tjs-cursor-not-allowed-down": "not-allowed",
+  "--tjs-cursor-progress": "progress",
+  "--tjs-cursor-progress-down": "progress",
+  "--tjs-cursor-resize-col": "col-resize",
+  "--tjs-cursor-resize-col-down": "col-resize",
+  "--tjs-cursor-resize-e": "e-resize",
+  "--tjs-cursor-resize-e-down": "e-resize",
+  "--tjs-cursor-resize-ew": "ew-resize",
+  "--tjs-cursor-resize-ew-down": "ew-resize",
+  "--tjs-cursor-resize-n": "n-resize",
+  "--tjs-cursor-resize-n-down": "n-resize",
+  "--tjs-cursor-resize-ne": "ne-resize",
+  "--tjs-cursor-resize-ne-down": "ne-resize",
+  "--tjs-cursor-resize-nesw": "nesw-resize",
+  "--tjs-cursor-resize-nesw-down": "nesw-resize",
+  "--tjs-cursor-resize-ns": "ns-resize",
+  "--tjs-cursor-resize-ns-down": "ns-resize",
+  "--tjs-cursor-resize-nw": "nw-resize",
+  "--tjs-cursor-resize-nw-down": "nw-resize",
+  "--tjs-cursor-resize-nwse": "nwse-resize",
+  "--tjs-cursor-resize-nwse-down": "nwse-resize",
+  "--tjs-cursor-resize-row": "row-resize",
+  "--tjs-cursor-resize-row-down": "row-resize",
+  "--tjs-cursor-resize-s": "s-resize",
+  "--tjs-cursor-resize-s-down": "s-resize",
+  "--tjs-cursor-resize-se": "se-resize",
+  "--tjs-cursor-resize-se-down": "se-resize",
+  "--tjs-cursor-resize-sw": "sw-resize",
+  "--tjs-cursor-resize-sw-down": "sw-resize",
+  "--tjs-cursor-resize-w": "w-resize",
+  "--tjs-cursor-resize-w-down": "w-resize",
+  "--tjs-cursor-text": "text",
+  "--tjs-cursor-text-down": "text",
+  "--tjs-cursor-text-vertical": "vertical-text",
+  "--tjs-cursor-text-vertical-down": "vertical-text",
+  "--tjs-cursor-wait": "wait",
+  "--tjs-cursor-wait-down": "wait",
+  "--tjs-cursor-zoom-in": "zoom-in",
+  "--tjs-cursor-zoom-in-down": "zoom-in",
+  "--tjs-cursor-zoom-out": "zoom-out",
+  "--tjs-cursor-zoom-out-down": "zoom-out"
+};
+class FVTTAppTheme {
+  /**
+   * Generate all app classes with applied core or explicitly set theme.
+   *
+   * @param {Set<string>} activeClasses - Active app classes Set.
+   *
+   * @param {string} coreTheme - Current core theme class.
+   *
+   * @param {string} appThemeName - Any explicitly set app theme name override.
+   *
+   * @returns {string} All app classes.
+   */
+  static appClasses(activeClasses, coreTheme, appThemeName) {
+    const classes = new Set(activeClasses);
+    for (const entry of classes) {
+      if (entry.startsWith("theme-")) {
+        classes.delete(entry);
+      }
+    }
+    classes.add("themed");
+    classes.add(appThemeName ? `theme-${appThemeName}` : coreTheme);
+    return Array.from(classes).join(" ");
+  }
+}
+let FVTTConfigure$1 = class FVTTConfigure2 {
+  static #initialized = false;
+  static initialize() {
+    if (this.#initialized) {
+      return;
+    }
+    const manager = StyleManager.create({
+      id: "__tjs-runtime-vars",
+      version: "0.1.1",
+      layerName: "variables.tjs-runtime-vars",
+      rules: {
+        themeDark: "body, .themed.theme-dark",
+        themeLight: ".themed.theme-light"
+      }
+    });
+    if (!manager?.isConnected) {
+      this.#initialized = true;
+      return;
+    }
+    this.#initialized = true;
+    document?.["#__trl-root-styles"]?.remove?.();
+    const themeDarkRoot = manager.get("themeDark");
+    const themeLight = manager.get("themeLight");
+    Hooks.once("ready", () => this.#setCoreInlineStyles(themeDarkRoot));
+    themeDarkRoot.setProperties(cursorCSSVariables);
+    this.#app(themeDarkRoot, themeLight);
+    Hooks.on("PopOut:loading", (app, popout) => {
+      popout.document.addEventListener(
+        "DOMContentLoaded",
+        () => manager.clone({ document: popout.document, force: true })
+      );
+    });
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #app(themeDarkRoot, themeLight) {
+    const opts = { camelCase: true };
+    const propsApp = FoundryStyles.ext.get(".application", opts);
+    const propsAppDark = FoundryStyles.ext.get(".application", { ...opts, resolve: [
+      ".themed.theme-dark .application"
+    ] });
+    const propsAppHeader = FoundryStyles.ext.get(".application .window-header", { ...opts, resolve: [
+      ".application",
+      ".themed.theme-dark .application"
+    ] });
+    const propsAppHeaderBtn = FoundryStyles.ext.get(".application .window-header button.header-control", opts);
+    const propsAppHandle = FoundryStyles.ext.get(".application .window-resize-handle", opts);
+    const propsAppHandleDark = FoundryStyles.ext.get(".themed.theme-dark.application .window-resize-handle", opts);
+    const propsBody = FoundryStyles.ext.get("body", opts);
+    themeDarkRoot.setProperties({
+      // `:root` properties applying to all themes ----------------------------------------------------------------
+      // For `TJSApplicationShell.svelte` app background.
+      "--tjs-app-background": `url(${getRoutePrefix("/ui/denim075.png")})`,
+      "--tjs-app-color": propsApp?.color ?? "var(--color-text-primary)",
+      "--tjs-app-font-family": propsBody?.fontFamily ?? "var(--font-body)",
+      "--tjs-app-font-size": propsApp?.fontSize ?? "var(--font-size-14)",
+      // For `TJSApplicationHeader.svelte`
+      "--tjs-app-header-flex": propsAppHeader?.flex ?? "0 0 var(--header-height)",
+      "--tjs-app-header-font-size": propsAppHeader?.fontSize ?? "var(--font-size-13)",
+      "--tjs-app-header-height": propsApp?.["--header-height"] ?? "36px",
+      // For `TJSHeaderButton.svelte / core only provides one set of properties across themes.
+      "--tjs-app-header-button-border": propsAppHeaderBtn?.border ?? "none",
+      "--tjs-app-header-button-margin": propsAppHeaderBtn?.margin ?? "0",
+      "--tjs-app-header-button-size": propsAppHeaderBtn?.["--button-size"] ?? "1.5rem",
+      "--tjs-app-header-button-color": propsAppHeaderBtn?.["--button-text-color"] ?? "var(--color-light-1)",
+      // For `ResizeHandle.svelte` / the resize handle.
+      "--tjs-app-resize-handle-background": propsAppHandle?.background ?? `url(${getRoutePrefix("/ui/resize-handle.webp")}) center center / contain no-repeat transparent`,
+      "--tjs-app-resize-handle-inset": propsAppHandle?.inset ?? "auto 1px 1px auto",
+      "--tjs-app-resize-handle-position": propsAppHandle?.position ?? "absolute",
+      "--tjs-app-resize-handle-height": propsAppHandle?.height ?? "11x",
+      "--tjs-app-resize-handle-width": propsAppHandle?.width ?? "11px",
+      // Explicit dark theme properties ---------------------------------------------------------------------------
+      // For `TJSApplicationShell.svelte`.
+      "--tjs-app-border": propsAppDark?.border ?? "1px solid var(--color-cool-4)",
+      // For `TJSApplicationHeader.svelte
+      "--tjs-app-header-background": propsAppHeader?.background ?? "rgba(0, 0, 0, 0.5)",
+      "--tjs-app-header-border-bottom": propsAppHeader?.borderBottom ?? "1px solid var(--color-cool-4)",
+      "--tjs-app-header-color": propsAppHeader?.color ?? "var(--color-light-1)",
+      // For `ResizeHandle.svelte` / invert the resize handle.
+      "--tjs-app-resize-handle-filter": propsAppHandleDark?.filter ?? "invert(1)"
+    });
+    const propsAppLight = FoundryStyles.ext.get(".application", {
+      camelCase: true,
+      resolve: "body.theme-light .application"
+    });
+    const propsAppHeaderLight = FoundryStyles.ext.get(".application .window-header", {
+      camelCase: true,
+      resolve: "body.theme-light .application"
+    });
+    themeLight.setProperties({
+      // For `TJSApplicationShell.svelte`.
+      "--tjs-app-border": propsAppLight?.border ?? "1px solid var(--color-cool-4)",
+      // For `TJSApplicationHeader.svelte`
+      "--tjs-app-header-background": propsAppHeaderLight?.background ?? "var(--color-dark-3)",
+      "--tjs-app-header-border-bottom": propsAppHeaderLight?.borderBottom ?? "1px solid green",
+      // '1px solid var(--color-cool-4)',
+      // For `ResizeHandle.svelte` / cancel invert of the resize handle / there is no core style to set.
+      "--tjs-app-resize-handle-filter": "none"
+    });
+  }
+  /**
+   * Sets any top level inline styles to TRL CSS variables defined in root `<html>` element by Foundry or game system
+   * override.
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}   ruleManager - Target rule manager.
+   */
+  static #setCoreInlineStyles(ruleManager) {
+    const htmlStyles = StyleParse.cssText(document.documentElement.style.cssText);
+    for (const key in htmlStyles) {
+      if (key.startsWith("--cursor-")) {
+        const tjsCursorKey = key.replace(/^--cursor-/, "--tjs-cursor-");
+        if (ruleManager.hasProperty(tjsCursorKey)) {
+          ruleManager.setProperty(tjsCursorKey, htmlStyles[key]);
+        }
+      }
+    }
+  }
+};
 class ResizeObserverManager {
   /** @type {Map<HTMLElement, import('./types-local').ResizeObserverSubscriber[]>} */
   #elMap = /* @__PURE__ */ new Map();
@@ -34911,10 +37390,16 @@ class TJSDefaultTransition {
   }
 }
 class AppShellContextInternal {
-  /** @type {import('./types').AppShell.Context.Internal.stores} */
+  /** @type {import('./types').AppShell.Context.InternalAppStores} */
   #stores;
   constructor() {
     this.#stores = {
+      // When app shell has content resize observation enabled these stores are updated.
+      contentOffsetWidth: writable(0),
+      contentOffsetHeight: writable(0),
+      contentWidth: writable(0),
+      contentHeight: writable(0),
+      cqEnabled: writable(false),
       elementContent: writable(void 0),
       elementRoot: writable(void 0)
     };
@@ -34922,124 +37407,459 @@ class AppShellContextInternal {
     Object.seal(this);
   }
   /**
-   * @returns {import('./types').AppShell.Context.Internal.stores} The internal context stores for `elementContent` /
-   *          `elementRoot`
+   * @returns {import('./types').AppShell.Context.InternalAppStores} The internal context stores:
+   * - `cqEnabled` - Container query enabled state.
+   * - `elementContent` - The bound elementContent element reference.
+   * - `elementRoot` - The bound elementRoot element reference.
    */
   get stores() {
     return this.#stores;
   }
 }
-function create_fragment$1M(ctx) {
-  let button_1;
-  let button_1_class_value;
-  let button_1_data_action_value;
-  let button_1_data_tooltip_value;
-  let applyStyles_action;
+const DIMENSION_REGEX = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z%]+)?$/;
+function extractDimensionNumberAndUnit(dimension) {
+  const [, num, unit = ""] = dimension.trim().match(DIMENSION_REGEX) ?? [];
+  return { number: parseInt(num, 10), unit };
+}
+function calculateNewDimensions(base, constraint) {
+  const { width, height } = base;
+  if ("width" in constraint) {
+    const { width: constraintWidth } = constraint;
+    return {
+      width: constraintWidth,
+      height: constraintWidth / width * height
+    };
+  }
+  const { height: constraintHeight } = constraint;
+  return {
+    width: constraintHeight / height * width,
+    height: constraintHeight
+  };
+}
+function calculateDimensions(local, remote) {
+  const lWidthStr = local.getAttribute("width");
+  const lHeightStr = local.getAttribute("height");
+  if (lWidthStr && lHeightStr) {
+    return { width: lWidthStr, height: lHeightStr };
+  }
+  const lDimension = { width: lWidthStr || "", height: lHeightStr || "" };
+  const rWidthStr = remote.getAttribute("width");
+  const rHeightStr = remote.getAttribute("height");
+  const rViewBox = remote.getAttribute("viewBox");
+  if (!(rWidthStr && rHeightStr || rViewBox)) {
+    return lDimension;
+  }
+  let rWidth = 0;
+  let rHeight = 0;
+  let rWidthUnit = "";
+  let rHeightUnit = "";
+  if (rWidthStr && rHeightStr) {
+    ({ number: rWidth, unit: rWidthUnit } = extractDimensionNumberAndUnit(rWidthStr));
+    ({ number: rHeight, unit: rHeightUnit } = extractDimensionNumberAndUnit(rHeightStr));
+  } else if (rViewBox) {
+    [, , rWidth, rHeight] = rViewBox.split(" ").map((s) => parseInt(s, 10));
+  }
+  if (rWidthUnit !== rHeightUnit) {
+    return {
+      width: lWidthStr || rWidthStr || "",
+      height: lHeightStr || rHeightStr || ""
+    };
+  }
+  if (lWidthStr) {
+    const { number, unit } = extractDimensionNumberAndUnit(lWidthStr);
+    const cDimension = calculateNewDimensions(
+      { width: rWidth, height: rHeight },
+      { width: number }
+    );
+    const cUnit = unit || rWidthUnit;
+    return {
+      width: cDimension.width.toFixed(2) + cUnit,
+      height: cDimension.height.toFixed(2) + cUnit
+    };
+  }
+  if (lHeightStr) {
+    const { number, unit } = extractDimensionNumberAndUnit(lHeightStr);
+    const cDimension = calculateNewDimensions(
+      { width: rWidth, height: rHeight },
+      { height: number }
+    );
+    const cUnit = unit || rHeightUnit;
+    return {
+      width: cDimension.width.toFixed(2) + cUnit,
+      height: cDimension.height.toFixed(2) + cUnit
+    };
+  }
+  return {
+    width: rWidth + rWidthUnit,
+    height: rHeight + rHeightUnit
+  };
+}
+function inlineSvg(node, param) {
+  let config = resolveConfig(param);
+  async function op() {
+    if (config.src) {
+      const response = await fetch(config.src, { cache: config.cache });
+      const str = config.transform(await response.text());
+      const svg = new DOMParser().parseFromString(str, "image/svg+xml").documentElement;
+      for (let i = 0; i < svg.attributes.length; i++) {
+        const attr2 = svg.attributes[i];
+        if (!node.hasAttribute(attr2.name) && !["width", "height"].includes(attr2.name)) {
+          node.setAttribute(attr2.name, attr2.value);
+        }
+      }
+      if (config.autoDimensions) {
+        const dimensions = calculateDimensions(node, svg);
+        node.setAttribute("width", dimensions.width);
+        node.setAttribute("height", dimensions.height);
+      } else {
+        node.setAttribute("width", node.getAttribute("width") || "");
+        node.setAttribute("height", node.getAttribute("height") || "");
+      }
+      node.innerHTML = svg.innerHTML;
+    }
+  }
+  op();
+  return {
+    update(update2) {
+      config = resolveConfig(update2);
+      op();
+    }
+  };
+}
+const DEFAULT_INLINE_SVG_ACTION_CONFIG = {
+  src: "",
+  cache: "no-cache",
+  autoDimensions: true,
+  transform: (svg) => svg
+};
+function resolveConfig(param = "") {
+  if (typeof param === "string") {
+    return {
+      ...DEFAULT_INLINE_SVG_ACTION_CONFIG,
+      src: param
+    };
+  }
+  return {
+    ...DEFAULT_INLINE_SVG_ACTION_CONFIG,
+    ...param
+  };
+}
+function popoverTooltip(node, { cssClass, direction, isHTML, locked, tooltip }) {
+  function setAttributes() {
+    if (typeof tooltip === "string") {
+      if (isHTML) {
+        node.setAttribute("data-tooltip-html", tooltip);
+        node.removeAttribute("data-tooltip");
+      } else {
+        node.setAttribute("data-tooltip", tooltip);
+        node.removeAttribute("data-tooltip-html");
+      }
+    } else {
+      node.removeAttribute("data-tooltip");
+      node.removeAttribute("data-tooltip-html");
+    }
+    if (typeof cssClass === "string") {
+      node.setAttribute("data-tooltip-class", cssClass);
+    } else {
+      node.removeAttribute("data-tooltip-class");
+    }
+    if (typeof direction === "string") {
+      node.setAttribute("data-tooltip-direction", direction);
+    } else {
+      node.removeAttribute("data-tooltip-direction");
+    }
+    if (typeof locked === "boolean" && locked) {
+      node.setAttribute("data-locked", String(locked));
+    } else {
+      node.removeAttribute("data-locked");
+    }
+    if (node === globalThis?.game?.tooltip?.element) {
+      globalThis?.game?.tooltip?.activate(node);
+    }
+  }
+  setAttributes();
+  return {
+    /**
+     * @param {TooltipOptions}  options - Update tooltip.
+     */
+    update: (options2) => {
+      cssClass = typeof options2?.cssClass === "string" ? options2.cssClass : void 0;
+      direction = typeof options2?.direction === "string" ? options2.direction : void 0;
+      isHTML = typeof options2?.isHTML === "boolean" ? options2.isHTML : void 0;
+      locked = typeof options2?.locked === "boolean" ? options2.locked : void 0;
+      tooltip = typeof options2?.tooltip === "string" ? options2.tooltip : void 0;
+      setAttributes();
+    }
+  };
+}
+function create_if_block$z(ctx) {
+  let if_block_anchor;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*iconType*/
+      ctx2[3] === "font"
+    ) return create_if_block_1$m;
+    if (
+      /*iconType*/
+      ctx2[3] === "img"
+    ) return create_if_block_2$j;
+    if (
+      /*iconType*/
+      ctx2[3] === "svg"
+    ) return create_if_block_3$e;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, if_block_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block) if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block) {
+        if_block.d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_3$e(ctx) {
+  let svg;
+  let inlineSvg_action;
   let mounted;
   let dispose;
   return {
     c() {
+      svg = svg_element("svg");
+      attr(svg, "class", "icon-int svelte-auto-guag71");
+    },
+    m(target2, anchor) {
+      insert(target2, svg, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+          /*icon*/
+          ctx[2]
+        ) }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty & /*icon*/
+      4) inlineSvg_action.update.call(null, { src: (
+        /*icon*/
+        ctx2[2]
+      ) });
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_2$j(ctx) {
+  let img;
+  let img_src_value;
+  return {
+    c() {
+      img = element("img");
+      if (!src_url_equal(img.src, img_src_value = /*icon*/
+      ctx[2])) attr(img, "src", img_src_value);
+      attr(img, "alt", "");
+      attr(img, "class", "icon-int svelte-auto-guag71");
+    },
+    m(target2, anchor) {
+      insert(target2, img, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*icon*/
+      4 && !src_url_equal(img.src, img_src_value = /*icon*/
+      ctx2[2])) {
+        attr(img, "src", img_src_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+    }
+  };
+}
+function create_if_block_1$m(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = null_to_empty(
+        /*icon*/
+        ctx[2]
+      ) + " svelte-auto-guag71");
+    },
+    m(target2, anchor) {
+      insert(target2, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*icon*/
+      4 && i_class_value !== (i_class_value = null_to_empty(
+        /*icon*/
+        ctx2[2]
+      ) + " svelte-auto-guag71")) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_fragment$1P(ctx) {
+  let button_1;
+  let button_1_class_value;
+  let applyStyles_action;
+  let popoverTooltip_action;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*icon*/
+    ctx[2] && create_if_block$z(ctx)
+  );
+  return {
+    c() {
       button_1 = element("button");
+      if (if_block) if_block.c();
       attr(button_1, "type", "button");
-      attr(button_1, "class", button_1_class_value = "header-control icon " + /*icon*/
-      ctx[5] + " " + /*button*/
-      ctx[0].class);
-      attr(button_1, "data-action", button_1_data_action_value = /*button*/
-      ctx[0].class);
-      attr(button_1, "data-tooltip", button_1_data_tooltip_value = /*$storeHeaderButtonNoLabel*/
-      ctx[6] ? null : (
-        /*label*/
-        ctx[4]
-      ));
-      attr(
-        button_1,
-        "aria-label",
-        /*label*/
-        ctx[4]
-      );
+      attr(button_1, "class", button_1_class_value = "header-control icon" + (typeof /*button*/
+      ctx[0].class === "string" ? ` ${/*button*/
+      ctx[0].class}` : "") + " svelte-auto-guag71");
       toggle_class(
         button_1,
         "keep-minimized",
         /*keepMinimized*/
-        ctx[3]
+        ctx[5]
       );
     },
     m(target2, anchor) {
       insert(target2, button_1, anchor);
+      if (if_block) if_block.m(button_1, null);
       if (!mounted) {
         dispose = [
           listen(button_1, "click", stop_propagation(prevent_default(
             /*onClick*/
-            ctx[7]
+            ctx[9]
           ))),
           listen(button_1, "contextmenu", stop_propagation(prevent_default(
             /*onContextMenu*/
-            ctx[8]
+            ctx[10]
           ))),
           listen(
             button_1,
             "keydown",
             /*onKeydown*/
-            ctx[9]
+            ctx[11]
           ),
           listen(
             button_1,
             "keyup",
             /*onKeyup*/
-            ctx[10]
+            ctx[12]
           ),
           action_destroyer(applyStyles_action = applyStyles.call(
             null,
             button_1,
             /*styles*/
-            ctx[2]
-          ))
+            ctx[4]
+          )),
+          action_destroyer(popoverTooltip_action = popoverTooltip.call(null, button_1, {
+            ariaLabel: true,
+            tooltip: (
+              /*$storeHeaderButtonNoLabel*/
+              ctx[8] ? void 0 : (
+                /*label*/
+                ctx[7]
+              )
+            ),
+            direction: (
+              /*tooltipDirection*/
+              ctx[6]
+            )
+          }))
         ];
         mounted = true;
       }
     },
     p(ctx2, [dirty]) {
-      if (dirty & /*icon, button*/
-      33 && button_1_class_value !== (button_1_class_value = "header-control icon " + /*icon*/
-      ctx2[5] + " " + /*button*/
-      ctx2[0].class)) {
-        attr(button_1, "class", button_1_class_value);
+      if (
+        /*icon*/
+        ctx2[2]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$z(ctx2);
+          if_block.c();
+          if_block.m(button_1, null);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
       }
       if (dirty & /*button*/
-      1 && button_1_data_action_value !== (button_1_data_action_value = /*button*/
-      ctx2[0].class)) {
-        attr(button_1, "data-action", button_1_data_action_value);
-      }
-      if (dirty & /*$storeHeaderButtonNoLabel, label*/
-      80 && button_1_data_tooltip_value !== (button_1_data_tooltip_value = /*$storeHeaderButtonNoLabel*/
-      ctx2[6] ? null : (
-        /*label*/
-        ctx2[4]
-      ))) {
-        attr(button_1, "data-tooltip", button_1_data_tooltip_value);
-      }
-      if (dirty & /*label*/
-      16) {
-        attr(
-          button_1,
-          "aria-label",
-          /*label*/
-          ctx2[4]
-        );
+      1 && button_1_class_value !== (button_1_class_value = "header-control icon" + (typeof /*button*/
+      ctx2[0].class === "string" ? ` ${/*button*/
+      ctx2[0].class}` : "") + " svelte-auto-guag71")) {
+        attr(button_1, "class", button_1_class_value);
       }
       if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
-      4) applyStyles_action.update.call(
+      16) applyStyles_action.update.call(
         null,
         /*styles*/
-        ctx2[2]
+        ctx2[4]
       );
-      if (dirty & /*icon, button, keepMinimized*/
-      41) {
+      if (popoverTooltip_action && is_function(popoverTooltip_action.update) && dirty & /*$storeHeaderButtonNoLabel, label, tooltipDirection*/
+      448) popoverTooltip_action.update.call(null, {
+        ariaLabel: true,
+        tooltip: (
+          /*$storeHeaderButtonNoLabel*/
+          ctx2[8] ? void 0 : (
+            /*label*/
+            ctx2[7]
+          )
+        ),
+        direction: (
+          /*tooltipDirection*/
+          ctx2[6]
+        )
+      });
+      if (dirty & /*button, keepMinimized*/
+      33) {
         toggle_class(
           button_1,
           "keep-minimized",
           /*keepMinimized*/
-          ctx2[3]
+          ctx2[5]
         );
       }
     },
@@ -35049,22 +37869,25 @@ function create_fragment$1M(ctx) {
       if (detaching) {
         detach(button_1);
       }
+      if (if_block) if_block.d();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$1E($$self, $$props, $$invalidate) {
+function instance$1H($$self, $$props, $$invalidate) {
   let icon;
   let label;
+  let tooltipDirection;
   let keepMinimized;
   let keyCode;
   let styles;
-  let $storeHeaderButtonNoLabel, $$unsubscribe_storeHeaderButtonNoLabel = noop, $$subscribe_storeHeaderButtonNoLabel = () => ($$unsubscribe_storeHeaderButtonNoLabel(), $$unsubscribe_storeHeaderButtonNoLabel = subscribe(storeHeaderButtonNoLabel, ($$value) => $$invalidate(6, $storeHeaderButtonNoLabel = $$value)), storeHeaderButtonNoLabel);
+  let $storeHeaderButtonNoLabel, $$unsubscribe_storeHeaderButtonNoLabel = noop, $$subscribe_storeHeaderButtonNoLabel = () => ($$unsubscribe_storeHeaderButtonNoLabel(), $$unsubscribe_storeHeaderButtonNoLabel = subscribe(storeHeaderButtonNoLabel, ($$value) => $$invalidate(8, $storeHeaderButtonNoLabel = $$value)), storeHeaderButtonNoLabel);
   $$self.$$.on_destroy.push(() => $$unsubscribe_storeHeaderButtonNoLabel());
   let { button = void 0 } = $$props;
   let { storeHeaderButtonNoLabel = void 0 } = $$props;
   $$subscribe_storeHeaderButtonNoLabel();
+  let iconType;
   function onClick(event) {
     const invoke = button?.onPress ?? button?.onclick;
     if (typeof invoke === "function") {
@@ -35102,15 +37925,19 @@ function instance$1E($$self, $$props, $$invalidate) {
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*button*/
     1) {
-      $$invalidate(5, icon = isObject(button) && typeof button.icon === "string" ? button.icon : void 0);
+      $$invalidate(2, icon = isObject(button) && typeof button.icon === "string" ? button.icon : void 0);
     }
     if ($$self.$$.dirty & /*button*/
     1) {
-      $$invalidate(4, label = isObject(button) && typeof button.label === "string" ? localize(button.label) : void 0);
+      $$invalidate(7, label = isObject(button) && typeof button.label === "string" ? localize(button.label) : void 0);
     }
     if ($$self.$$.dirty & /*button*/
     1) {
-      $$invalidate(3, keepMinimized = isObject(button) && typeof button.keepMinimized === "boolean" ? button.keepMinimized : false);
+      $$invalidate(6, tooltipDirection = isObject(button) && typeof button.tooltipDirection === "string" ? button.tooltipDirection : void 0);
+    }
+    if ($$self.$$.dirty & /*button*/
+    1) {
+      $$invalidate(5, keepMinimized = isObject(button) && typeof button.keepMinimized === "boolean" ? button.keepMinimized : false);
     }
     if ($$self.$$.dirty & /*button*/
     1) {
@@ -35118,16 +37945,28 @@ function instance$1E($$self, $$props, $$invalidate) {
     }
     if ($$self.$$.dirty & /*button*/
     1) {
-      $$invalidate(2, styles = isObject(button) && isObject(button.styles) ? button.styles : void 0);
+      $$invalidate(4, styles = isObject(button) && isObject(button.styles) ? button.styles : void 0);
+    }
+    if ($$self.$$.dirty & /*icon*/
+    4) {
+      {
+        const result = AssetValidator.parseMedia({
+          url: icon,
+          mediaTypes: AssetValidator.MediaTypes.img_svg
+        });
+        $$invalidate(3, iconType = result.valid ? result.elementType : "font");
+      }
     }
   };
   return [
     button,
     storeHeaderButtonNoLabel,
+    icon,
+    iconType,
     styles,
     keepMinimized,
+    tooltipDirection,
     label,
-    icon,
     $storeHeaderButtonNoLabel,
     onClick,
     onContextMenu,
@@ -35138,7 +37977,7 @@ function instance$1E($$self, $$props, $$invalidate) {
 class TJSHeaderButton extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1E, create_fragment$1M, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
+    init(this, options2, instance$1H, create_fragment$1P, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
   }
   get button() {
     return this.$$.ctx[0];
@@ -35155,32 +37994,68 @@ class TJSHeaderButton extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$h(ctx, list, i) {
+function get_each_context$i(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[34] = list[i];
+  child_ctx[40] = list[i];
   return child_ctx;
 }
 function get_each_context_1$3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[34] = list[i];
+  child_ctx[40] = list[i];
   return child_ctx;
 }
-function create_if_block_1$i(ctx) {
+function create_if_block_2$i(ctx) {
+  let svg;
+  let inlineSvg_action;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      svg = svg_element("svg");
+      attr(svg, "class", "tjs-app-icon keep-minimized svelte-auto-1n4tpql");
+    },
+    m(target2, anchor) {
+      insert(target2, svg, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+          /*$storeHeaderIcon*/
+          ctx[4]
+        ) }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty[0] & /*$storeHeaderIcon*/
+      16) inlineSvg_action.update.call(null, { src: (
+        /*$storeHeaderIcon*/
+        ctx2[4]
+      ) });
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_1$l(ctx) {
   let i;
   let i_class_value;
   return {
     c() {
       i = element("i");
       attr(i, "class", i_class_value = "window-icon keep-minimized " + /*$storeHeaderIcon*/
-      ctx[3] + " svelte-auto-1nljvaj");
+      ctx[4] + " svelte-auto-1n4tpql");
     },
     m(target2, anchor) {
       insert(target2, i, anchor);
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*$storeHeaderIcon*/
-      8 && i_class_value !== (i_class_value = "window-icon keep-minimized " + /*$storeHeaderIcon*/
-      ctx2[3] + " svelte-auto-1nljvaj")) {
+      16 && i_class_value !== (i_class_value = "window-icon keep-minimized " + /*$storeHeaderIcon*/
+      ctx2[4] + " svelte-auto-1n4tpql")) {
         attr(i, "class", i_class_value);
       }
     },
@@ -35191,16 +38066,16 @@ function create_if_block_1$i(ctx) {
     }
   };
 }
-function create_if_block$v(ctx) {
+function create_if_block$y(ctx) {
   let img;
   let img_src_value;
   return {
     c() {
       img = element("img");
-      attr(img, "class", "tjs-app-icon keep-minimized svelte-auto-1nljvaj");
-      if (!src_url_equal(img.src, img_src_value = globalThis.foundry.utils.getRoute(
+      attr(img, "class", "tjs-app-icon keep-minimized svelte-auto-1n4tpql");
+      if (!src_url_equal(img.src, img_src_value = getRoutePrefix(
         /*$storeHeaderIcon*/
-        ctx[3]
+        ctx[4]
       ))) attr(img, "src", img_src_value);
       attr(img, "alt", "icon");
     },
@@ -35209,9 +38084,9 @@ function create_if_block$v(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*$storeHeaderIcon*/
-      8 && !src_url_equal(img.src, img_src_value = globalThis.foundry.utils.getRoute(
+      16 && !src_url_equal(img.src, img_src_value = getRoutePrefix(
         /*$storeHeaderIcon*/
-        ctx2[3]
+        ctx2[4]
       ))) {
         attr(img, "src", img_src_value);
       }
@@ -35229,11 +38104,11 @@ function create_each_block_1$3(ctx) {
   let current;
   const switch_instance_spread_levels = [
     /*button*/
-    ctx[34].props
+    ctx[40].props
   ];
   var switch_value = (
     /*button*/
-    ctx[34].class
+    ctx[40].class
   );
   function switch_props(ctx2, dirty) {
     let switch_instance_props = {};
@@ -35241,10 +38116,10 @@ function create_each_block_1$3(ctx) {
       switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
     }
     if (dirty !== void 0 && dirty[0] & /*buttonsLeft*/
-    2) {
+    4) {
       switch_instance_props = assign(switch_instance_props, get_spread_update(switch_instance_spread_levels, [get_spread_object(
         /*button*/
-        ctx2[34].props
+        ctx2[40].props
       )]));
     }
     return { props: switch_instance_props };
@@ -35264,8 +38139,8 @@ function create_each_block_1$3(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*buttonsLeft*/
-      2 && switch_value !== (switch_value = /*button*/
-      ctx2[34].class)) {
+      4 && switch_value !== (switch_value = /*button*/
+      ctx2[40].class)) {
         if (switch_instance) {
           group_outros();
           const old_component = switch_instance;
@@ -35284,9 +38159,9 @@ function create_each_block_1$3(ctx) {
         }
       } else if (switch_value) {
         const switch_instance_changes = dirty[0] & /*buttonsLeft*/
-        2 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
+        4 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
           /*button*/
-          ctx2[34].props
+          ctx2[40].props
         )]) : {};
         switch_instance.$set(switch_instance_changes);
       }
@@ -35308,17 +38183,17 @@ function create_each_block_1$3(ctx) {
     }
   };
 }
-function create_each_block$h(ctx) {
+function create_each_block$i(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
   const switch_instance_spread_levels = [
     /*button*/
-    ctx[34].props
+    ctx[40].props
   ];
   var switch_value = (
     /*button*/
-    ctx[34].class
+    ctx[40].class
   );
   function switch_props(ctx2, dirty) {
     let switch_instance_props = {};
@@ -35326,10 +38201,10 @@ function create_each_block$h(ctx) {
       switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
     }
     if (dirty !== void 0 && dirty[0] & /*buttonsRight*/
-    4) {
+    8) {
       switch_instance_props = assign(switch_instance_props, get_spread_update(switch_instance_spread_levels, [get_spread_object(
         /*button*/
-        ctx2[34].props
+        ctx2[40].props
       )]));
     }
     return { props: switch_instance_props };
@@ -35349,8 +38224,8 @@ function create_each_block$h(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*buttonsRight*/
-      4 && switch_value !== (switch_value = /*button*/
-      ctx2[34].class)) {
+      8 && switch_value !== (switch_value = /*button*/
+      ctx2[40].class)) {
         if (switch_instance) {
           group_outros();
           const old_component = switch_instance;
@@ -35369,9 +38244,9 @@ function create_each_block$h(ctx) {
         }
       } else if (switch_value) {
         const switch_instance_changes = dirty[0] & /*buttonsRight*/
-        4 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
+        8 ? get_spread_update(switch_instance_spread_levels, [get_spread_object(
           /*button*/
-          ctx2[34].props
+          ctx2[40].props
         )]) : {};
         switch_instance.$set(switch_instance_changes);
       }
@@ -35396,10 +38271,10 @@ function create_each_block$h(ctx) {
 function create_key_block(ctx) {
   let header;
   let t0;
-  let h4;
+  let h1;
   let t1_value = localize(
     /*$storeTitle*/
-    ctx[9]
+    ctx[10]
   ) + "";
   let t1;
   let t2;
@@ -35414,18 +38289,22 @@ function create_key_block(ctx) {
   function select_block_type(ctx2, dirty) {
     if (
       /*mediaType*/
-      ctx2[7] === "img"
-    ) return create_if_block$v;
+      ctx2[8] === "img"
+    ) return create_if_block$y;
     if (
       /*mediaType*/
-      ctx2[7] === "font"
-    ) return create_if_block_1$i;
+      ctx2[8] === "font"
+    ) return create_if_block_1$l;
+    if (
+      /*mediaType*/
+      ctx2[8] === "svg"
+    ) return create_if_block_2$i;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type && current_block_type(ctx);
   let each_value_1 = ensure_array_like(
     /*buttonsLeft*/
-    ctx[1]
+    ctx[2]
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
@@ -35436,11 +38315,11 @@ function create_key_block(ctx) {
   });
   let each_value = ensure_array_like(
     /*buttonsRight*/
-    ctx[2]
+    ctx[3]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$h(get_each_context$h(ctx, each_value, i));
+    each_blocks[i] = create_each_block$i(get_each_context$i(ctx, each_value, i));
   }
   const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -35450,7 +38329,7 @@ function create_key_block(ctx) {
       header = element("header");
       if (if_block) if_block.c();
       t0 = space();
-      h4 = element("h4");
+      h1 = element("h1");
       t1 = text(t1_value);
       t2 = space();
       for (let i = 0; i < each_blocks_1.length; i += 1) {
@@ -35462,24 +38341,24 @@ function create_key_block(ctx) {
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].c();
       }
-      attr(h4, "class", "window-title svelte-auto-1nljvaj");
+      attr(h1, "class", "window-title svelte-auto-1n4tpql");
       set_style(
-        h4,
+        h1,
         "display",
         /*displayHeaderTitle*/
-        ctx[6]
+        ctx[7]
       );
-      attr(span, "class", "tjs-window-header-spacer keep-minimized svelte-auto-1nljvaj");
-      attr(header, "class", "window-header flexrow svelte-auto-1nljvaj");
+      attr(span, "class", "tjs-window-header-spacer keep-minimized svelte-auto-1n4tpql");
+      attr(header, "class", "window-header svelte-auto-1n4tpql");
       toggle_class(header, "not-draggable", !/*$storeDraggable*/
-      ctx[4]);
+      ctx[5]);
     },
     m(target2, anchor) {
       insert(target2, header, anchor);
       if (if_block) if_block.m(header, null);
       append(header, t0);
-      append(header, h4);
-      append(h4, t1);
+      append(header, h1);
+      append(h1, t1);
       append(header, t2);
       for (let i = 0; i < each_blocks_1.length; i += 1) {
         if (each_blocks_1[i]) {
@@ -35494,6 +38373,7 @@ function create_key_block(ctx) {
           each_blocks[i].m(header, null);
         }
       }
+      ctx[31](header);
       current = true;
       if (!mounted) {
         dispose = [
@@ -35501,21 +38381,21 @@ function create_key_block(ctx) {
             header,
             "pointerdown",
             /*onPointerdown*/
-            ctx[21]
+            ctx[24]
           ),
           action_destroyer(draggable_action = /*draggable*/
           ctx[0].call(
             null,
             header,
             /*dragOptions*/
-            ctx[5]
+            ctx[6]
           )),
           action_destroyer(minimizable_action = /*minimizable*/
-          ctx[20].call(
+          ctx[23].call(
             null,
             header,
             /*$storeMinimizable*/
-            ctx[8]
+            ctx[9]
           ))
         ];
         mounted = true;
@@ -35533,24 +38413,24 @@ function create_key_block(ctx) {
         }
       }
       if ((!current || dirty[0] & /*$storeTitle*/
-      512) && t1_value !== (t1_value = localize(
+      1024) && t1_value !== (t1_value = localize(
         /*$storeTitle*/
-        ctx2[9]
+        ctx2[10]
       ) + "")) set_data(t1, t1_value);
       if (dirty[0] & /*displayHeaderTitle*/
-      64) {
+      128) {
         set_style(
-          h4,
+          h1,
           "display",
           /*displayHeaderTitle*/
-          ctx2[6]
+          ctx2[7]
         );
       }
       if (dirty[0] & /*buttonsLeft*/
-      2) {
+      4) {
         each_value_1 = ensure_array_like(
           /*buttonsLeft*/
-          ctx2[1]
+          ctx2[2]
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
@@ -35572,19 +38452,19 @@ function create_key_block(ctx) {
         check_outros();
       }
       if (dirty[0] & /*buttonsRight*/
-      4) {
+      8) {
         each_value = ensure_array_like(
           /*buttonsRight*/
-          ctx2[2]
+          ctx2[3]
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$h(ctx2, each_value, i);
+          const child_ctx = get_each_context$i(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$h(child_ctx);
+            each_blocks[i] = create_each_block$i(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(header, null);
@@ -35597,21 +38477,21 @@ function create_key_block(ctx) {
         check_outros();
       }
       if (draggable_action && is_function(draggable_action.update) && dirty[0] & /*dragOptions*/
-      32) draggable_action.update.call(
+      64) draggable_action.update.call(
         null,
         /*dragOptions*/
-        ctx2[5]
+        ctx2[6]
       );
       if (minimizable_action && is_function(minimizable_action.update) && dirty[0] & /*$storeMinimizable*/
-      256) minimizable_action.update.call(
+      512) minimizable_action.update.call(
         null,
         /*$storeMinimizable*/
-        ctx2[8]
+        ctx2[9]
       );
       if (!current || dirty[0] & /*$storeDraggable*/
-      16) {
+      32) {
         toggle_class(header, "not-draggable", !/*$storeDraggable*/
-        ctx2[4]);
+        ctx2[5]);
       }
     },
     i(local) {
@@ -35644,12 +38524,13 @@ function create_key_block(ctx) {
       }
       destroy_each(each_blocks_1, detaching);
       destroy_each(each_blocks, detaching);
+      ctx[31](null);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_fragment$1L(ctx) {
+function create_fragment$1O(ctx) {
   let previous_key = (
     /*draggable*/
     ctx[0]
@@ -35699,7 +38580,7 @@ function create_fragment$1L(ctx) {
     }
   };
 }
-function instance$1D($$self, $$props, $$invalidate) {
+function instance$1G($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $elementRoot;
@@ -35708,39 +38589,52 @@ function instance$1D($$self, $$props, $$invalidate) {
   let $storeMinimized;
   let $storeHeaderNoTitleMinimized;
   let $storeDraggable;
+  let $storeDetached;
+  let $storeAlwaysOnTop;
   let $storeMinimizable;
   let $storeTitle;
   let { draggable: draggable$1 = void 0 } = $$props;
   let { draggableOptions = void 0 } = $$props;
   const application = getContext("#external")?.application;
   const { focusAuto, focusKeep } = application.reactive.storeAppOptions;
-  component_subscribe($$self, focusAuto, (value) => $$invalidate(27, $focusAuto = value));
-  component_subscribe($$self, focusKeep, (value) => $$invalidate(26, $focusKeep = value));
+  component_subscribe($$self, focusAuto, (value) => $$invalidate(33, $focusAuto = value));
+  component_subscribe($$self, focusKeep, (value) => $$invalidate(32, $focusKeep = value));
   const { elementRoot } = getContext("#internal").stores;
-  component_subscribe($$self, elementRoot, (value) => $$invalidate(28, $elementRoot = value));
-  const storeTitle = application.reactive.storeAppOptions.title;
-  component_subscribe($$self, storeTitle, (value) => $$invalidate(9, $storeTitle = value));
+  component_subscribe($$self, elementRoot, (value) => $$invalidate(34, $elementRoot = value));
+  const storeAlwaysOnTop = application.reactive.storeAppOptions.alwaysOnTop;
+  component_subscribe($$self, storeAlwaysOnTop, (value) => $$invalidate(30, $storeAlwaysOnTop = value));
   const storeDraggable = application.reactive.storeAppOptions.draggable;
-  component_subscribe($$self, storeDraggable, (value) => $$invalidate(4, $storeDraggable = value));
+  component_subscribe($$self, storeDraggable, (value) => $$invalidate(5, $storeDraggable = value));
+  const storeDetached = application.reactive.storeUIState.detached;
+  component_subscribe($$self, storeDetached, (value) => $$invalidate(29, $storeDetached = value));
   const storeDragging = application.reactive.storeUIState.dragging;
   const storeHeaderButtons = application.reactive.storeUIState.headerButtons;
-  component_subscribe($$self, storeHeaderButtons, (value) => $$invalidate(23, $storeHeaderButtons = value));
+  component_subscribe($$self, storeHeaderButtons, (value) => $$invalidate(26, $storeHeaderButtons = value));
   const storeHeaderButtonNoLabel = application.reactive.storeAppOptions.headerButtonNoLabel;
   const storeHeaderIcon = application.reactive.storeAppOptions.headerIcon;
-  component_subscribe($$self, storeHeaderIcon, (value) => $$invalidate(3, $storeHeaderIcon = value));
+  component_subscribe($$self, storeHeaderIcon, (value) => $$invalidate(4, $storeHeaderIcon = value));
   const storeHeaderNoTitleMinimized = application.reactive.storeAppOptions.headerNoTitleMinimized;
-  component_subscribe($$self, storeHeaderNoTitleMinimized, (value) => $$invalidate(25, $storeHeaderNoTitleMinimized = value));
+  component_subscribe($$self, storeHeaderNoTitleMinimized, (value) => $$invalidate(28, $storeHeaderNoTitleMinimized = value));
   const storeMinimizable = application.reactive.storeAppOptions.minimizable;
-  component_subscribe($$self, storeMinimizable, (value) => $$invalidate(8, $storeMinimizable = value));
+  component_subscribe($$self, storeMinimizable, (value) => $$invalidate(9, $storeMinimizable = value));
   const storeMinimized = application.reactive.storeUIState.minimized;
-  component_subscribe($$self, storeMinimized, (value) => $$invalidate(24, $storeMinimized = value));
+  component_subscribe($$self, storeMinimized, (value) => $$invalidate(27, $storeMinimized = value));
+  const storeTitle = application.reactive.storeAppOptions.title;
+  component_subscribe($$self, storeTitle, (value) => $$invalidate(10, $storeTitle = value));
   const s_DRAG_TARGET_CLASSLIST = Object.freeze(["tjs-app-icon", "tjs-window-header-spacer", "window-header", "window-title"]);
+  let headerEl;
+  function checkAlwaysOnTop(hide) {
+    if (hide) {
+      headerEl?.querySelector(".popout-module-button")?.setAttribute("hidden", "");
+    } else {
+      headerEl?.querySelector(".popout-module-button")?.removeAttribute("hidden");
+    }
+  }
   let dragOptions;
   let displayHeaderTitle;
   let buttonsLeft;
   let buttonsRight;
   let mediaType = void 0;
-  const validExt = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "webp"]);
   function minimizable(node, booleanStore) {
     const callback = (event) => {
       if (event.target.classList.contains("window-title") || event.target.classList.contains("window-header") || event.target.classList.contains("keep-minimized")) {
@@ -35784,18 +38678,30 @@ function instance$1D($$self, $$props, $$invalidate) {
       }
     }
   }
+  function header_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      headerEl = $$value;
+      $$invalidate(1, headerEl);
+    });
+  }
   $$self.$$set = ($$props2) => {
     if ("draggable" in $$props2) $$invalidate(0, draggable$1 = $$props2.draggable);
-    if ("draggableOptions" in $$props2) $$invalidate(22, draggableOptions = $$props2.draggableOptions);
+    if ("draggableOptions" in $$props2) $$invalidate(25, draggableOptions = $$props2.draggableOptions);
   };
   $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*headerEl, $storeAlwaysOnTop, $storeDetached*/
+    1610612738) {
+      if (headerEl) {
+        checkAlwaysOnTop($storeAlwaysOnTop && !$storeDetached);
+      }
+    }
     if ($$self.$$.dirty[0] & /*draggable*/
     1) {
       $$invalidate(0, draggable$1 = typeof draggable$1 === "function" ? draggable$1 : draggable);
     }
     if ($$self.$$.dirty[0] & /*draggableOptions, $storeDraggable*/
-    4194320) {
-      $$invalidate(5, dragOptions = Object.assign(
+    33554464) {
+      $$invalidate(6, dragOptions = Object.assign(
         {},
         {
           tween: true,
@@ -35811,14 +38717,14 @@ function instance$1D($$self, $$props, $$invalidate) {
       ));
     }
     if ($$self.$$.dirty[0] & /*$storeHeaderNoTitleMinimized, $storeMinimized*/
-    50331648) {
-      $$invalidate(6, displayHeaderTitle = $storeHeaderNoTitleMinimized && $storeMinimized ? "none" : null);
+    402653184) {
+      $$invalidate(7, displayHeaderTitle = $storeHeaderNoTitleMinimized && $storeMinimized ? "none" : null);
     }
     if ($$self.$$.dirty[0] & /*$storeHeaderButtons, buttonsLeft, buttonsRight*/
-    8388614) {
+    67108876) {
       {
-        $$invalidate(1, buttonsLeft = []);
-        $$invalidate(2, buttonsRight = []);
+        $$invalidate(2, buttonsLeft = []);
+        $$invalidate(3, buttonsRight = []);
         for (const button of $storeHeaderButtons) {
           const buttonsList = typeof button?.alignLeft === "boolean" && button?.alignLeft ? buttonsLeft : buttonsRight;
           buttonsList.push(TJSSvelte.config.isConfigEmbed(button?.svelte) ? { ...button.svelte } : {
@@ -35829,18 +38735,21 @@ function instance$1D($$self, $$props, $$invalidate) {
       }
     }
     if ($$self.$$.dirty[0] & /*$storeHeaderIcon*/
-    8) {
+    16) {
       if (typeof $storeHeaderIcon === "string") {
-        const extensionMatch = $storeHeaderIcon.match(/\.([a-z]+)$/);
-        const extension = extensionMatch ? extensionMatch[1].toLowerCase() : null;
-        $$invalidate(7, mediaType = validExt.has(extension) ? "img" : "font");
+        const result = AssetValidator.parseMedia({
+          url: $storeHeaderIcon,
+          mediaTypes: AssetValidator.MediaTypes.img_svg
+        });
+        $$invalidate(8, mediaType = result.valid ? result.elementType : "font");
       } else {
-        $$invalidate(7, mediaType = void 0);
+        $$invalidate(8, mediaType = void 0);
       }
     }
   };
   return [
     draggable$1,
+    headerEl,
     buttonsLeft,
     buttonsRight,
     $storeHeaderIcon,
@@ -35853,25 +38762,30 @@ function instance$1D($$self, $$props, $$invalidate) {
     focusAuto,
     focusKeep,
     elementRoot,
-    storeTitle,
+    storeAlwaysOnTop,
     storeDraggable,
+    storeDetached,
     storeHeaderButtons,
     storeHeaderIcon,
     storeHeaderNoTitleMinimized,
     storeMinimizable,
     storeMinimized,
+    storeTitle,
     minimizable,
     onPointerdown,
     draggableOptions,
     $storeHeaderButtons,
     $storeMinimized,
-    $storeHeaderNoTitleMinimized
+    $storeHeaderNoTitleMinimized,
+    $storeDetached,
+    $storeAlwaysOnTop,
+    header_binding
   ];
 }
 class TJSApplicationHeader extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1D, create_fragment$1L, safe_not_equal, { draggable: 0, draggableOptions: 22 }, null, [-1, -1]);
+    init(this, options2, instance$1G, create_fragment$1O, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
   }
 }
 class ResizeHandleTransform {
@@ -35928,7 +38842,7 @@ class ResizeHandleTransform {
     return this.#pDeltaLocal;
   }
 }
-function create_fragment$1K(ctx) {
+function create_fragment$1N(ctx) {
   let div;
   let resizable_action;
   let mounted;
@@ -35937,28 +38851,29 @@ function create_fragment$1K(ctx) {
     c() {
       div = element("div");
       div.innerHTML = ``;
-      attr(div, "class", "window-resize-handle svelte-auto-n0c9z4");
+      attr(div, "class", "window-resize-handle svelte-auto-1kzx9yd");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
-      ctx[11](div);
+      ctx[13](div);
       if (!mounted) {
         dispose = [
           listen(
             div,
             "pointerdown",
             /*onPointerdown*/
-            ctx[6]
+            ctx[8]
           ),
           action_destroyer(resizable_action = /*resizable*/
-          ctx[7].call(null, div, {
+          ctx[9].call(null, div, {
             active: (
               /*$storeResizable*/
-              ctx[1]
+              ctx[1] && !/*$storeDetached*/
+              ctx[2]
             ),
             storeResizing: (
               /*storeResizing*/
-              ctx[5]
+              ctx[7]
             )
           }))
         ];
@@ -35966,15 +38881,16 @@ function create_fragment$1K(ctx) {
       }
     },
     p(ctx2, [dirty]) {
-      if (resizable_action && is_function(resizable_action.update) && dirty & /*$storeResizable*/
-      2) resizable_action.update.call(null, {
+      if (resizable_action && is_function(resizable_action.update) && dirty & /*$storeResizable, $storeDetached*/
+      6) resizable_action.update.call(null, {
         active: (
           /*$storeResizable*/
-          ctx2[1]
+          ctx2[1] && !/*$storeDetached*/
+          ctx2[2]
         ),
         storeResizing: (
           /*storeResizing*/
-          ctx2[5]
+          ctx2[7]
         )
       });
     },
@@ -35984,24 +38900,27 @@ function create_fragment$1K(ctx) {
       if (detaching) {
         detach(div);
       }
-      ctx[11](null);
+      ctx[13](null);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$1C($$self, $$props, $$invalidate) {
+function instance$1F($$self, $$props, $$invalidate) {
   let $storeElementRoot;
   let $storeMinimized;
   let $storeResizable;
+  let $storeDetached;
   let { isResizable = false } = $$props;
   const application = getContext("#external")?.application;
   const storeElementRoot = getContext("#internal").stores.elementRoot;
-  component_subscribe($$self, storeElementRoot, (value) => $$invalidate(9, $storeElementRoot = value));
+  component_subscribe($$self, storeElementRoot, (value) => $$invalidate(11, $storeElementRoot = value));
   const storeResizable = application.reactive.storeAppOptions.resizable;
   component_subscribe($$self, storeResizable, (value) => $$invalidate(1, $storeResizable = value));
+  const storeDetached = application.reactive.storeUIState.detached;
+  component_subscribe($$self, storeDetached, (value) => $$invalidate(2, $storeDetached = value));
   const storeMinimized = application.reactive.storeUIState.minimized;
-  component_subscribe($$self, storeMinimized, (value) => $$invalidate(10, $storeMinimized = value));
+  component_subscribe($$self, storeMinimized, (value) => $$invalidate(12, $storeMinimized = value));
   const storeResizing = application.reactive.storeUIState.resizing;
   let elementResize;
   function onPointerdown() {
@@ -36019,7 +38938,7 @@ function instance$1C($$self, $$props, $$invalidate) {
     };
     function activateListeners() {
       node.addEventListener(...handlers.resizeDown);
-      $$invalidate(8, isResizable = true);
+      $$invalidate(10, isResizable = true);
       node.style.display = "block";
     }
     function removeListeners() {
@@ -36030,7 +38949,7 @@ function instance$1C($$self, $$props, $$invalidate) {
       node.removeEventListener(...handlers.resizeMove);
       node.removeEventListener(...handlers.resizeUp);
       node.style.display = "none";
-      $$invalidate(8, isResizable = false);
+      $$invalidate(10, isResizable = false);
     }
     if (active2) {
       activateListeners();
@@ -36089,15 +39008,15 @@ function instance$1C($$self, $$props, $$invalidate) {
   function div_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       elementResize = $$value;
-      $$invalidate(0, elementResize), $$invalidate(8, isResizable), $$invalidate(10, $storeMinimized), $$invalidate(9, $storeElementRoot);
+      $$invalidate(0, elementResize), $$invalidate(10, isResizable), $$invalidate(12, $storeMinimized), $$invalidate(11, $storeElementRoot);
     });
   }
   $$self.$$set = ($$props2) => {
-    if ("isResizable" in $$props2) $$invalidate(8, isResizable = $$props2.isResizable);
+    if ("isResizable" in $$props2) $$invalidate(10, isResizable = $$props2.isResizable);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*elementResize, isResizable, $storeMinimized, $storeElementRoot*/
-    1793) {
+    7169) {
       if (elementResize) {
         $$invalidate(0, elementResize.style.display = isResizable && !$storeMinimized ? "block" : "none", elementResize);
         const elementRoot = $storeElementRoot;
@@ -36110,8 +39029,10 @@ function instance$1C($$self, $$props, $$invalidate) {
   return [
     elementResize,
     $storeResizable,
+    $storeDetached,
     storeElementRoot,
     storeResizable,
+    storeDetached,
     storeMinimized,
     storeResizing,
     onPointerdown,
@@ -36125,10 +39046,10 @@ function instance$1C($$self, $$props, $$invalidate) {
 class ResizableHandle extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1C, create_fragment$1K, safe_not_equal, { isResizable: 8 });
+    init(this, options2, instance$1F, create_fragment$1N, safe_not_equal, { isResizable: 10 });
   }
 }
-function create_fragment$1J(ctx) {
+function create_fragment$1M(ctx) {
   let div;
   let mounted;
   let dispose;
@@ -36164,7 +39085,7 @@ function create_fragment$1J(ctx) {
     }
   };
 }
-function instance$1B($$self, $$props, $$invalidate) {
+function instance$1E($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled: enabled2 = true } = $$props;
   let ignoreElements, wrapEl;
@@ -36204,7 +39125,7 @@ function instance$1B($$self, $$props, $$invalidate) {
 let TJSFocusWrap$1 = class TJSFocusWrap2 extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1B, create_fragment$1J, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options2, instance$1E, create_fragment$1M, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 };
 function create_else_block$k(ctx) {
@@ -36239,13 +39160,13 @@ function create_else_block$k(ctx) {
   });
   const default_slot_template = (
     /*#slots*/
-    ctx[40].default
+    ctx[51].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[39],
+    ctx[50],
     null
   );
   resizablehandle = new ResizableHandle({});
@@ -36257,7 +39178,7 @@ function create_else_block$k(ctx) {
       ),
       enabled: (
         /*focusWrapEnabled*/
-        ctx[11]
+        ctx[12]
       )
     }
   });
@@ -36272,16 +39193,30 @@ function create_else_block$k(ctx) {
       create_component(resizablehandle.$$.fragment);
       t2 = space();
       create_component(tjsfocuswrap.$$.fragment);
-      attr(section2, "class", "window-content svelte-auto-c7odu8");
+      attr(section2, "class", "window-content svelte-auto-xfthie");
       attr(section2, "tabindex", "-1");
       attr(div, "id", div_id_value = /*application*/
       ctx[10].id);
-      attr(div, "class", div_class_value = "application " + /*appClasses*/
-      ctx[12] + " svelte-auto-c7odu8");
+      attr(div, "class", div_class_value = "application tjs-app " + /*appClasses*/
+      ctx[14] + " svelte-auto-xfthie");
       attr(div, "data-appid", div_data_appid_value = /*application*/
       ctx[10].appId);
       attr(div, "role", "application");
       attr(div, "tabindex", "-1");
+      toggle_class(
+        div,
+        "tjs-cq-inline-size",
+        /*cqEnabled*/
+        ctx[13] && /*$containerQueryType*/
+        ctx[11] === "inline-size"
+      );
+      toggle_class(
+        div,
+        "tjs-cq-size",
+        /*cqEnabled*/
+        ctx[13] && /*$containerQueryType*/
+        ctx[11] === "size"
+      );
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -36291,12 +39226,12 @@ function create_else_block$k(ctx) {
       if (default_slot) {
         default_slot.m(section2, null);
       }
-      ctx[43](section2);
+      ctx[54](section2);
       append(div, t1);
       mount_component(resizablehandle, div, null);
       append(div, t2);
       mount_component(tjsfocuswrap, div, null);
-      ctx[44](div);
+      ctx[55](div);
       current = true;
       if (!mounted) {
         dispose = [
@@ -36304,7 +39239,7 @@ function create_else_block$k(ctx) {
             section2,
             "pointerdown",
             /*onPointerdownContent*/
-            ctx[24]
+            ctx[30]
           ),
           action_destroyer(applyStyles_action = applyStyles.call(
             null,
@@ -36314,28 +39249,28 @@ function create_else_block$k(ctx) {
           )),
           action_destroyer(
             /*contentResizeObserver*/
-            ctx[19].call(
+            ctx[23].call(
               null,
               section2,
               /*resizeObservedContent*/
-              ctx[25]
+              ctx[31]
             )
           ),
           listen(div, "close:popup", stop_propagation(prevent_default(
             /*onClosePopup*/
-            ctx[21]
+            ctx[27]
           ))),
           listen(
             div,
             "keydown",
             /*onKeydown*/
-            ctx[22]
+            ctx[28]
           ),
           listen(
             div,
             "pointerdown",
-            /*onPointerdownApp*/
-            ctx[23],
+            /*onPointerdownAppCapture*/
+            ctx[29],
             true
           ),
           action_destroyer(applyStyles_action_1 = applyStyles.call(
@@ -36348,7 +39283,7 @@ function create_else_block$k(ctx) {
             null,
             div,
             /*appResizeObserver*/
-            ctx[13]
+            ctx[15]
           ))
         ];
         mounted = true;
@@ -36365,20 +39300,20 @@ function create_else_block$k(ctx) {
       tjsapplicationheader.$set(tjsapplicationheader_changes);
       if (default_slot) {
         if (default_slot.p && (!current || dirty[1] & /*$$scope*/
-        256)) {
+        524288)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[39],
+            ctx2[50],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[39]
+              ctx2[50]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[39],
+              ctx2[50],
               dirty,
               null
             ),
@@ -36397,8 +39332,8 @@ function create_else_block$k(ctx) {
       2) tjsfocuswrap_changes.elementRoot = /*elementRoot*/
       ctx2[1];
       if (dirty[0] & /*focusWrapEnabled*/
-      2048) tjsfocuswrap_changes.enabled = /*focusWrapEnabled*/
-      ctx2[11];
+      4096) tjsfocuswrap_changes.enabled = /*focusWrapEnabled*/
+      ctx2[12];
       tjsfocuswrap.$set(tjsfocuswrap_changes);
       if (!current || dirty[0] & /*application*/
       1024 && div_id_value !== (div_id_value = /*application*/
@@ -36406,8 +39341,8 @@ function create_else_block$k(ctx) {
         attr(div, "id", div_id_value);
       }
       if (!current || dirty[0] & /*appClasses*/
-      4096 && div_class_value !== (div_class_value = "application " + /*appClasses*/
-      ctx2[12] + " svelte-auto-c7odu8")) {
+      16384 && div_class_value !== (div_class_value = "application tjs-app " + /*appClasses*/
+      ctx2[14] + " svelte-auto-xfthie")) {
         attr(div, "class", div_class_value);
       }
       if (!current || dirty[0] & /*application*/
@@ -36422,11 +39357,31 @@ function create_else_block$k(ctx) {
         ctx2[8]
       );
       if (dynamicAction_action && is_function(dynamicAction_action.update) && dirty[0] & /*appResizeObserver*/
-      8192) dynamicAction_action.update.call(
+      32768) dynamicAction_action.update.call(
         null,
         /*appResizeObserver*/
-        ctx2[13]
+        ctx2[15]
       );
+      if (!current || dirty[0] & /*appClasses, cqEnabled, $containerQueryType*/
+      26624) {
+        toggle_class(
+          div,
+          "tjs-cq-inline-size",
+          /*cqEnabled*/
+          ctx2[13] && /*$containerQueryType*/
+          ctx2[11] === "inline-size"
+        );
+      }
+      if (!current || dirty[0] & /*appClasses, cqEnabled, $containerQueryType*/
+      26624) {
+        toggle_class(
+          div,
+          "tjs-cq-size",
+          /*cqEnabled*/
+          ctx2[13] && /*$containerQueryType*/
+          ctx2[11] === "size"
+        );
+      }
     },
     i(local) {
       if (current) return;
@@ -36449,16 +39404,16 @@ function create_else_block$k(ctx) {
       }
       destroy_component(tjsapplicationheader);
       if (default_slot) default_slot.d(detaching);
-      ctx[43](null);
+      ctx[54](null);
       destroy_component(resizablehandle);
       destroy_component(tjsfocuswrap);
-      ctx[44](null);
+      ctx[55](null);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block$u(ctx) {
+function create_if_block$x(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -36492,13 +39447,13 @@ function create_if_block$u(ctx) {
   });
   const default_slot_template = (
     /*#slots*/
-    ctx[40].default
+    ctx[51].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[39],
+    ctx[50],
     null
   );
   resizablehandle = new ResizableHandle({});
@@ -36519,16 +39474,30 @@ function create_if_block$u(ctx) {
       create_component(resizablehandle.$$.fragment);
       t2 = space();
       create_component(tjsfocuswrap.$$.fragment);
-      attr(section2, "class", "window-content svelte-auto-c7odu8");
+      attr(section2, "class", "window-content svelte-auto-xfthie");
       attr(section2, "tabindex", "-1");
       attr(div, "id", div_id_value = /*application*/
       ctx[10].id);
-      attr(div, "class", div_class_value = "application " + /*appClasses*/
-      ctx[12] + " svelte-auto-c7odu8");
+      attr(div, "class", div_class_value = "application tjs-app " + /*appClasses*/
+      ctx[14] + " svelte-auto-xfthie");
       attr(div, "data-appid", div_data_appid_value = /*application*/
       ctx[10].appId);
       attr(div, "role", "application");
       attr(div, "tabindex", "-1");
+      toggle_class(
+        div,
+        "tjs-cq-inline-size",
+        /*cqEnabled*/
+        ctx[13] && /*$containerQueryType*/
+        ctx[11] === "inline-size"
+      );
+      toggle_class(
+        div,
+        "tjs-cq-size",
+        /*cqEnabled*/
+        ctx[13] && /*$containerQueryType*/
+        ctx[11] === "size"
+      );
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -36538,12 +39507,12 @@ function create_if_block$u(ctx) {
       if (default_slot) {
         default_slot.m(section2, null);
       }
-      ctx[41](section2);
+      ctx[52](section2);
       append(div, t1);
       mount_component(resizablehandle, div, null);
       append(div, t2);
       mount_component(tjsfocuswrap, div, null);
-      ctx[42](div);
+      ctx[53](div);
       current = true;
       if (!mounted) {
         dispose = [
@@ -36551,7 +39520,7 @@ function create_if_block$u(ctx) {
             section2,
             "pointerdown",
             /*onPointerdownContent*/
-            ctx[24]
+            ctx[30]
           ),
           action_destroyer(applyStyles_action = applyStyles.call(
             null,
@@ -36561,28 +39530,28 @@ function create_if_block$u(ctx) {
           )),
           action_destroyer(
             /*contentResizeObserver*/
-            ctx[19].call(
+            ctx[23].call(
               null,
               section2,
               /*resizeObservedContent*/
-              ctx[25]
+              ctx[31]
             )
           ),
           listen(div, "close:popup", stop_propagation(prevent_default(
             /*onClosePopup*/
-            ctx[21]
+            ctx[27]
           ))),
           listen(
             div,
             "keydown",
             /*onKeydown*/
-            ctx[22]
+            ctx[28]
           ),
           listen(
             div,
             "pointerdown",
-            /*onPointerdownApp*/
-            ctx[23],
+            /*onPointerdownAppCapture*/
+            ctx[29],
             true
           ),
           action_destroyer(applyStyles_action_1 = applyStyles.call(
@@ -36595,7 +39564,7 @@ function create_if_block$u(ctx) {
             null,
             div,
             /*appResizeObserver*/
-            ctx[13]
+            ctx[15]
           ))
         ];
         mounted = true;
@@ -36613,20 +39582,20 @@ function create_if_block$u(ctx) {
       tjsapplicationheader.$set(tjsapplicationheader_changes);
       if (default_slot) {
         if (default_slot.p && (!current || dirty[1] & /*$$scope*/
-        256)) {
+        524288)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx,
             /*$$scope*/
-            ctx[39],
+            ctx[50],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx[39]
+              ctx[50]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx[39],
+              ctx[50],
               dirty,
               null
             ),
@@ -36651,8 +39620,8 @@ function create_if_block$u(ctx) {
         attr(div, "id", div_id_value);
       }
       if (!current || dirty[0] & /*appClasses*/
-      4096 && div_class_value !== (div_class_value = "application " + /*appClasses*/
-      ctx[12] + " svelte-auto-c7odu8")) {
+      16384 && div_class_value !== (div_class_value = "application tjs-app " + /*appClasses*/
+      ctx[14] + " svelte-auto-xfthie")) {
         attr(div, "class", div_class_value);
       }
       if (!current || dirty[0] & /*application*/
@@ -36667,11 +39636,31 @@ function create_if_block$u(ctx) {
         ctx[8]
       );
       if (dynamicAction_action && is_function(dynamicAction_action.update) && dirty[0] & /*appResizeObserver*/
-      8192) dynamicAction_action.update.call(
+      32768) dynamicAction_action.update.call(
         null,
         /*appResizeObserver*/
-        ctx[13]
+        ctx[15]
       );
+      if (!current || dirty[0] & /*appClasses, cqEnabled, $containerQueryType*/
+      26624) {
+        toggle_class(
+          div,
+          "tjs-cq-inline-size",
+          /*cqEnabled*/
+          ctx[13] && /*$containerQueryType*/
+          ctx[11] === "inline-size"
+        );
+      }
+      if (!current || dirty[0] & /*appClasses, cqEnabled, $containerQueryType*/
+      26624) {
+        toggle_class(
+          div,
+          "tjs-cq-size",
+          /*cqEnabled*/
+          ctx[13] && /*$containerQueryType*/
+          ctx[11] === "size"
+        );
+      }
     },
     i(local) {
       if (current) return;
@@ -36714,22 +39703,22 @@ function create_if_block$u(ctx) {
       }
       destroy_component(tjsapplicationheader);
       if (default_slot) default_slot.d(detaching);
-      ctx[41](null);
+      ctx[52](null);
       destroy_component(resizablehandle);
       destroy_component(tjsfocuswrap);
-      ctx[42](null);
+      ctx[53](null);
       if (detaching && div_outro) div_outro.end();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_fragment$1I(ctx) {
+function create_fragment$1L(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$u, create_else_block$k];
+  const if_block_creators = [create_if_block$x, create_else_block$k];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -36790,11 +39779,16 @@ function create_fragment$1I(ctx) {
     }
   };
 }
-function instance$1A($$self, $$props, $$invalidate) {
+function instance$1D($$self, $$props, $$invalidate) {
   let appResizeObserver;
+  let appClasses;
   let $focusKeep;
   let $focusAuto;
-  let $themeStore;
+  let $containerQueryType;
+  let $cqTypes;
+  let $appThemeName;
+  let $themeTokenStore;
+  let $activeClasses;
   let $minimized;
   let $focusTrap;
   let $resizeObservable;
@@ -36806,20 +39800,25 @@ function instance$1A($$self, $$props, $$invalidate) {
   let { stylesApp = void 0 } = $$props;
   let { stylesContent = void 0 } = $$props;
   const application = getContext("#external")?.application;
-  const { focusAuto, focusKeep, focusTrap } = application.reactive.storeAppOptions;
-  component_subscribe($$self, focusAuto, (value) => $$invalidate(34, $focusAuto = value));
-  component_subscribe($$self, focusKeep, (value) => $$invalidate(45, $focusKeep = value));
-  component_subscribe($$self, focusTrap, (value) => $$invalidate(37, $focusTrap = value));
+  const { containerQueryType, focusAuto, focusKeep, focusTrap } = application.reactive.storeAppOptions;
+  component_subscribe($$self, containerQueryType, (value) => $$invalidate(11, $containerQueryType = value));
+  component_subscribe($$self, focusAuto, (value) => $$invalidate(42, $focusAuto = value));
+  component_subscribe($$self, focusKeep, (value) => $$invalidate(56, $focusKeep = value));
+  component_subscribe($$self, focusTrap, (value) => $$invalidate(48, $focusTrap = value));
   const { minimized } = application.reactive.storeUIState;
-  component_subscribe($$self, minimized, (value) => $$invalidate(36, $minimized = value));
+  component_subscribe($$self, minimized, (value) => $$invalidate(47, $minimized = value));
   const { resizeObservable } = application.position.stores;
-  component_subscribe($$self, resizeObservable, (value) => $$invalidate(38, $resizeObservable = value));
+  component_subscribe($$self, resizeObservable, (value) => $$invalidate(49, $resizeObservable = value));
+  const cqTypes = new CQPositionValidate(application.position);
+  component_subscribe($$self, cqTypes, (value) => $$invalidate(43, $cqTypes = value));
   let { appOffsetHeight = false } = $$props;
   let { appOffsetWidth = false } = $$props;
   const initialAppResizeObserver = !!appOffsetHeight || !!appOffsetWidth;
   let { contentOffsetHeight = false } = $$props;
   let { contentOffsetWidth = false } = $$props;
-  const contentResizeObserver = !!contentOffsetHeight || !!contentOffsetWidth ? resizeObserver : () => null;
+  let { contentHeight = false } = $$props;
+  let { contentWidth = false } = $$props;
+  const contentResizeObserver = !!contentOffsetHeight || !!contentOffsetWidth || !!contentHeight || !!contentWidth ? resizeObserver : () => null;
   const internal = new AppShellContextInternal();
   const s_IGNORE_CLASSES = { ignoreClasses: ["tjs-focus-wrap"] };
   setContext("#internal", internal);
@@ -36832,10 +39831,18 @@ function instance$1A($$self, $$props, $$invalidate) {
   let { outTransitionOptions = TJSDefaultTransition.options } = $$props;
   let oldTransition = TJSDefaultTransition.default;
   let oldTransitionOptions = void 0;
-  const themeStore = ThemeObserver.stores.theme;
-  component_subscribe($$self, themeStore, (value) => $$invalidate(35, $themeStore = value));
-  let appClasses = "";
-  onMount(() => elementRoot.focus());
+  const themeTokenStore = ThemeObserver.stores.themeToken;
+  component_subscribe($$self, themeTokenStore, (value) => $$invalidate(45, $themeTokenStore = value));
+  const activeClasses = application.reactive.activeClasses;
+  component_subscribe($$self, activeClasses, (value) => $$invalidate(46, $activeClasses = value));
+  const appThemeName = application.reactive.storeAppOptions.themeName;
+  component_subscribe($$self, appThemeName, (value) => $$invalidate(44, $appThemeName = value));
+  onMount(() => {
+    if ($focusAuto) {
+      elementRoot.focus();
+    }
+  });
+  let cqEnabled = false;
   function onClosePopup(event) {
     if (!$focusAuto) {
       return;
@@ -36861,7 +39868,8 @@ function instance$1A($$self, $$props, $$invalidate) {
     }
   }
   function onKeydown(event) {
-    if ((event.target === elementRoot || event.target === elementContent) && KeyboardManager && KeyboardManager?._getMatchingActions?.(KeyboardManager?.getKeyboardEventContext?.(event))?.length) {
+    const FVTTKeyboardManager = foundry.helpers.interaction.KeyboardManager;
+    if ((event.target === elementRoot || event.target === elementContent) && FVTTKeyboardManager && FVTTKeyboardManager?._getMatchingActions?.(FVTTKeyboardManager?.getKeyboardEventContext?.(event))?.length) {
       event.target?.blur();
       return;
     }
@@ -36878,14 +39886,10 @@ function instance$1A($$self, $$props, $$invalidate) {
         event.stopPropagation();
       }
     }
-    if (typeof application?.options?.popOut === "boolean" && application.options.popOut && application !== globalThis.ui?.activeWindow) {
-      application.bringToTop.call(application);
-    }
+    application.bringToTop.call(application);
   }
-  function onPointerdownApp() {
-    if (typeof application?.options?.popOut === "boolean" && application.options.popOut && application !== globalThis.ui?.activeWindow) {
-      application.bringToTop.call(application);
-    }
+  function onPointerdownAppCapture() {
+    application.bringToTop.call(application);
   }
   function onPointerdownContent(event) {
     const focusable = A11yHelper.isFocusable(event.target);
@@ -36903,20 +39907,26 @@ function instance$1A($$self, $$props, $$invalidate) {
       }
     }
   }
-  function resizeObservedContent(offsetWidth, offsetHeight) {
-    $$invalidate(29, contentOffsetWidth = offsetWidth);
-    $$invalidate(28, contentOffsetHeight = offsetHeight);
-  }
-  function resizeObservedApp(offsetWidth, offsetHeight, contentWidth, contentHeight) {
+  function resizeObservedApp(offsetWidth, offsetHeight, width, height) {
     application.position.stores.resizeObserved.update((object) => {
-      object.contentWidth = contentWidth;
-      object.contentHeight = contentHeight;
+      object.contentWidth = width;
+      object.contentHeight = height;
       object.offsetWidth = offsetWidth;
       object.offsetHeight = offsetHeight;
       return object;
     });
-    $$invalidate(26, appOffsetHeight = offsetHeight);
-    $$invalidate(27, appOffsetWidth = offsetWidth);
+    $$invalidate(32, appOffsetHeight = offsetHeight);
+    $$invalidate(33, appOffsetWidth = offsetWidth);
+  }
+  function resizeObservedContent(offsetWidth, offsetHeight, width, height) {
+    $$invalidate(35, contentOffsetWidth = offsetWidth);
+    $$invalidate(34, contentOffsetHeight = offsetHeight);
+    $$invalidate(37, contentWidth = width);
+    $$invalidate(36, contentHeight = height);
+    internal.stores.contentOffsetWidth.set(contentOffsetWidth);
+    internal.stores.contentOffsetHeight.set(contentOffsetHeight);
+    internal.stores.contentWidth.set(contentWidth);
+    internal.stores.contentHeight.set(contentHeight);
   }
   function section_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
@@ -36949,22 +39959,24 @@ function instance$1A($$self, $$props, $$invalidate) {
     if ("draggableOptions" in $$props2) $$invalidate(7, draggableOptions = $$props2.draggableOptions);
     if ("stylesApp" in $$props2) $$invalidate(8, stylesApp = $$props2.stylesApp);
     if ("stylesContent" in $$props2) $$invalidate(9, stylesContent = $$props2.stylesContent);
-    if ("appOffsetHeight" in $$props2) $$invalidate(26, appOffsetHeight = $$props2.appOffsetHeight);
-    if ("appOffsetWidth" in $$props2) $$invalidate(27, appOffsetWidth = $$props2.appOffsetWidth);
-    if ("contentOffsetHeight" in $$props2) $$invalidate(28, contentOffsetHeight = $$props2.contentOffsetHeight);
-    if ("contentOffsetWidth" in $$props2) $$invalidate(29, contentOffsetWidth = $$props2.contentOffsetWidth);
-    if ("transition" in $$props2) $$invalidate(30, transition = $$props2.transition);
+    if ("appOffsetHeight" in $$props2) $$invalidate(32, appOffsetHeight = $$props2.appOffsetHeight);
+    if ("appOffsetWidth" in $$props2) $$invalidate(33, appOffsetWidth = $$props2.appOffsetWidth);
+    if ("contentOffsetHeight" in $$props2) $$invalidate(34, contentOffsetHeight = $$props2.contentOffsetHeight);
+    if ("contentOffsetWidth" in $$props2) $$invalidate(35, contentOffsetWidth = $$props2.contentOffsetWidth);
+    if ("contentHeight" in $$props2) $$invalidate(36, contentHeight = $$props2.contentHeight);
+    if ("contentWidth" in $$props2) $$invalidate(37, contentWidth = $$props2.contentWidth);
+    if ("transition" in $$props2) $$invalidate(38, transition = $$props2.transition);
     if ("inTransition" in $$props2) $$invalidate(2, inTransition = $$props2.inTransition);
     if ("outTransition" in $$props2) $$invalidate(3, outTransition = $$props2.outTransition);
-    if ("transitionOptions" in $$props2) $$invalidate(31, transitionOptions = $$props2.transitionOptions);
+    if ("transitionOptions" in $$props2) $$invalidate(39, transitionOptions = $$props2.transitionOptions);
     if ("inTransitionOptions" in $$props2) $$invalidate(4, inTransitionOptions = $$props2.inTransitionOptions);
     if ("outTransitionOptions" in $$props2) $$invalidate(5, outTransitionOptions = $$props2.outTransitionOptions);
-    if ("$$scope" in $$props2) $$invalidate(39, $$scope = $$props2.$$scope);
+    if ("$$scope" in $$props2) $$invalidate(50, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty[1] & /*$resizeObservable*/
-    128) {
-      $$invalidate(13, appResizeObserver = initialAppResizeObserver || $resizeObservable ? {
+    262144) {
+      $$invalidate(15, appResizeObserver = initialAppResizeObserver || $resizeObservable ? {
         action: resizeObserver,
         data: resizeObservedApp
       } : void 0);
@@ -36972,36 +39984,35 @@ function instance$1A($$self, $$props, $$invalidate) {
     if ($$self.$$.dirty[0] & /*elementContent*/
     1) {
       if (elementContent !== void 0 && elementContent !== null) {
-        getContext("#internal").stores.elementContent.set(elementContent);
+        internal.stores.elementContent.set(elementContent);
       }
     }
     if ($$self.$$.dirty[0] & /*elementRoot*/
     2) {
       if (elementRoot !== void 0 && elementRoot !== null) {
-        getContext("#internal").stores.elementRoot.set(elementRoot);
+        internal.stores.elementRoot.set(elementRoot);
       }
     }
     if ($$self.$$.dirty[1] & /*$focusAuto, $focusTrap, $minimized*/
-    104) {
-      $$invalidate(11, focusWrapEnabled = $focusAuto && $focusTrap && !$minimized);
+    198656) {
+      $$invalidate(12, focusWrapEnabled = $focusAuto && $focusTrap && !$minimized);
     }
-    if ($$self.$$.dirty[0] & /*transition*/
-    1073741824 | $$self.$$.dirty[1] & /*oldTransition*/
-    2) {
+    if ($$self.$$.dirty[1] & /*oldTransition, transition*/
+    640) {
       if (oldTransition !== transition) {
         const newTransition = typeof transition === "function" ? transition : TJSDefaultTransition.default;
         $$invalidate(2, inTransition = newTransition);
         $$invalidate(3, outTransition = newTransition);
-        $$invalidate(32, oldTransition = newTransition);
+        $$invalidate(40, oldTransition = newTransition);
       }
     }
     if ($$self.$$.dirty[1] & /*oldTransitionOptions, transitionOptions*/
-    5) {
+    1280) {
       if (oldTransitionOptions !== transitionOptions) {
         const newOptions = transitionOptions !== TJSDefaultTransition.options && isObject(transitionOptions) ? transitionOptions : TJSDefaultTransition.options;
         $$invalidate(4, inTransitionOptions = newOptions);
         $$invalidate(5, outTransitionOptions = newOptions);
-        $$invalidate(33, oldTransitionOptions = newOptions);
+        $$invalidate(41, oldTransitionOptions = newOptions);
       }
     }
     if ($$self.$$.dirty[0] & /*inTransition*/
@@ -37034,11 +40045,19 @@ function instance$1A($$self, $$props, $$invalidate) {
         $$invalidate(5, outTransitionOptions = TJSDefaultTransition.options);
       }
     }
-    if ($$self.$$.dirty[0] & /*application*/
-    1024 | $$self.$$.dirty[1] & /*$themeStore*/
-    16) {
-      if ($themeStore) {
-        $$invalidate(12, appClasses = ThemeObserver.appClasses(application));
+    if ($$self.$$.dirty[1] & /*$activeClasses, $themeTokenStore, $appThemeName*/
+    57344) {
+      $$invalidate(14, appClasses = FVTTAppTheme.appClasses($activeClasses, $themeTokenStore, $appThemeName));
+    }
+    if ($$self.$$.dirty[0] & /*$containerQueryType*/
+    2048 | $$self.$$.dirty[1] & /*$cqTypes*/
+    4096) {
+      if ($cqTypes.validate($containerQueryType)) {
+        internal.stores.cqEnabled.set(true);
+        requestAnimationFrame(() => $$invalidate(13, cqEnabled = true));
+      } else {
+        $$invalidate(13, cqEnabled = false);
+        internal.stores.cqEnabled.set(false);
       }
     }
   };
@@ -37054,31 +40073,42 @@ function instance$1A($$self, $$props, $$invalidate) {
     stylesApp,
     stylesContent,
     application,
+    $containerQueryType,
     focusWrapEnabled,
+    cqEnabled,
     appClasses,
     appResizeObserver,
+    containerQueryType,
     focusAuto,
     focusKeep,
     focusTrap,
     minimized,
     resizeObservable,
+    cqTypes,
     contentResizeObserver,
-    themeStore,
+    themeTokenStore,
+    activeClasses,
+    appThemeName,
     onClosePopup,
     onKeydown,
-    onPointerdownApp,
+    onPointerdownAppCapture,
     onPointerdownContent,
     resizeObservedContent,
     appOffsetHeight,
     appOffsetWidth,
     contentOffsetHeight,
     contentOffsetWidth,
+    contentHeight,
+    contentWidth,
     transition,
     transitionOptions,
     oldTransition,
     oldTransitionOptions,
     $focusAuto,
-    $themeStore,
+    $cqTypes,
+    $appThemeName,
+    $themeTokenStore,
+    $activeClasses,
     $minimized,
     $focusTrap,
     $resizeObservable,
@@ -37096,8 +40126,8 @@ class ApplicationShell extends SvelteComponent {
     init(
       this,
       options2,
-      instance$1A,
-      create_fragment$1I,
+      instance$1D,
+      create_fragment$1L,
       safe_not_equal,
       {
         elementContent: 0,
@@ -37106,14 +40136,16 @@ class ApplicationShell extends SvelteComponent {
         draggableOptions: 7,
         stylesApp: 8,
         stylesContent: 9,
-        appOffsetHeight: 26,
-        appOffsetWidth: 27,
-        contentOffsetHeight: 28,
-        contentOffsetWidth: 29,
-        transition: 30,
+        appOffsetHeight: 32,
+        appOffsetWidth: 33,
+        contentOffsetHeight: 34,
+        contentOffsetWidth: 35,
+        contentHeight: 36,
+        contentWidth: 37,
+        transition: 38,
         inTransition: 2,
         outTransition: 3,
-        transitionOptions: 31,
+        transitionOptions: 39,
         inTransitionOptions: 4,
         outTransitionOptions: 5
       },
@@ -37164,35 +40196,49 @@ class ApplicationShell extends SvelteComponent {
     flush();
   }
   get appOffsetHeight() {
-    return this.$$.ctx[26];
+    return this.$$.ctx[32];
   }
   set appOffsetHeight(appOffsetHeight) {
     this.$$set({ appOffsetHeight });
     flush();
   }
   get appOffsetWidth() {
-    return this.$$.ctx[27];
+    return this.$$.ctx[33];
   }
   set appOffsetWidth(appOffsetWidth) {
     this.$$set({ appOffsetWidth });
     flush();
   }
   get contentOffsetHeight() {
-    return this.$$.ctx[28];
+    return this.$$.ctx[34];
   }
   set contentOffsetHeight(contentOffsetHeight) {
     this.$$set({ contentOffsetHeight });
     flush();
   }
   get contentOffsetWidth() {
-    return this.$$.ctx[29];
+    return this.$$.ctx[35];
   }
   set contentOffsetWidth(contentOffsetWidth) {
     this.$$set({ contentOffsetWidth });
     flush();
   }
+  get contentHeight() {
+    return this.$$.ctx[36];
+  }
+  set contentHeight(contentHeight) {
+    this.$$set({ contentHeight });
+    flush();
+  }
+  get contentWidth() {
+    return this.$$.ctx[37];
+  }
+  set contentWidth(contentWidth) {
+    this.$$set({ contentWidth });
+    flush();
+  }
   get transition() {
-    return this.$$.ctx[30];
+    return this.$$.ctx[38];
   }
   set transition(transition) {
     this.$$set({ transition });
@@ -37213,7 +40259,7 @@ class ApplicationShell extends SvelteComponent {
     flush();
   }
   get transitionOptions() {
-    return this.$$.ctx[31];
+    return this.$$.ctx[39];
   }
   set transitionOptions(transitionOptions) {
     this.$$set({ transitionOptions });
@@ -37244,20 +40290,20 @@ function create_else_block$j(ctx) {
   let dispose;
   const default_slot_template = (
     /*#slots*/
-    ctx[20].default
+    ctx[19].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[19],
+    ctx[18],
     null
   );
   return {
     c() {
       div = element("div");
       if (default_slot) default_slot.c();
-      attr(div, "class", "tjs-glass-pane-background tjs-glass-pane-container svelte-auto-hqedxf");
+      attr(div, "class", "tjs-glass-pane-background tjs-glass-pane-container svelte-auto-gqztui");
       set_style(
         div,
         "background",
@@ -37270,7 +40316,7 @@ function create_else_block$j(ctx) {
       if (default_slot) {
         default_slot.m(div, null);
       }
-      ctx[26](div);
+      ctx[25](div);
       current = true;
       if (!mounted) {
         dispose = action_destroyer(applyStyles_action = applyStyles.call(
@@ -37286,20 +40332,20 @@ function create_else_block$j(ctx) {
       ctx = new_ctx;
       if (default_slot) {
         if (default_slot.p && (!current || dirty & /*$$scope*/
-        524288)) {
+        262144)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx,
             /*$$scope*/
-            ctx[19],
+            ctx[18],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx[19]
+              ctx[18]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx[19],
+              ctx[18],
               dirty,
               null
             ),
@@ -37357,14 +40403,14 @@ function create_else_block$j(ctx) {
         detach(div);
       }
       if (default_slot) default_slot.d(detaching);
-      ctx[26](null);
+      ctx[25](null);
       if (detaching && div_outro) div_outro.end();
       mounted = false;
       dispose();
     }
   };
 }
-function create_if_block$t(ctx) {
+function create_if_block$w(ctx) {
   let div0;
   let applyStyles_action;
   let div0_intro;
@@ -37376,13 +40422,13 @@ function create_if_block$t(ctx) {
   let dispose;
   const default_slot_template = (
     /*#slots*/
-    ctx[20].default
+    ctx[19].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[19],
+    ctx[18],
     null
   );
   return {
@@ -37391,24 +40437,24 @@ function create_if_block$t(ctx) {
       t = space();
       div1 = element("div");
       if (default_slot) default_slot.c();
-      attr(div0, "class", "tjs-glass-pane-background svelte-auto-hqedxf");
+      attr(div0, "class", "tjs-glass-pane-background svelte-auto-gqztui");
       set_style(
         div0,
         "background",
         /*background*/
         ctx[5]
       );
-      attr(div1, "class", "tjs-glass-pane-container svelte-auto-hqedxf");
+      attr(div1, "class", "tjs-glass-pane-container svelte-auto-gqztui");
     },
     m(target2, anchor) {
       insert(target2, div0, anchor);
-      ctx[24](div0);
+      ctx[23](div0);
       insert(target2, t, anchor);
       insert(target2, div1, anchor);
       if (default_slot) {
         default_slot.m(div1, null);
       }
-      ctx[25](div1);
+      ctx[24](div1);
       current = true;
       if (!mounted) {
         dispose = action_destroyer(applyStyles_action = applyStyles.call(
@@ -37439,20 +40485,20 @@ function create_if_block$t(ctx) {
       }
       if (default_slot) {
         if (default_slot.p && (!current || dirty & /*$$scope*/
-        524288)) {
+        262144)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx,
             /*$$scope*/
-            ctx[19],
+            ctx[18],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx[19]
+              ctx[18]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx[19],
+              ctx[18],
               dirty,
               null
             ),
@@ -37496,23 +40542,23 @@ function create_if_block$t(ctx) {
         detach(t);
         detach(div1);
       }
-      ctx[24](null);
+      ctx[23](null);
       if (detaching && div0_outro) div0_outro.end();
       if (default_slot) default_slot.d(detaching);
-      ctx[25](null);
+      ctx[24](null);
       mounted = false;
       dispose();
     }
   };
 }
-function create_fragment$1H(ctx) {
+function create_fragment$1K(ctx) {
   let div;
   let current_block_type_index;
   let if_block;
   let current;
   let mounted;
   let dispose;
-  const if_block_creators = [create_if_block$t, create_else_block$j];
+  const if_block_creators = [create_if_block$w, create_else_block$j];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -37533,18 +40579,13 @@ function create_fragment$1H(ctx) {
         /*id*/
         ctx[6]
       );
-      attr(div, "class", "tjs-glass-pane svelte-auto-hqedxf");
-      set_style(
-        div,
-        "z-index",
-        /*zIndex*/
-        ctx[8]
-      );
+      attr(div, "class", "tjs-glass-pane svelte-auto-gqztui");
+      attr(div, "popover", "manual");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
       if_blocks[current_block_type_index].m(div, null);
-      ctx[27](div);
+      ctx[26](div);
       current = true;
       if (!mounted) {
         dispose = [
@@ -37552,117 +40593,124 @@ function create_fragment$1H(ctx) {
             window,
             "contextmenu",
             /*swallow*/
-            ctx[12],
+            ctx[11],
+            true
+          ),
+          listen(
+            window,
+            "click",
+            /*swallow*/
+            ctx[11],
             true
           ),
           listen(
             window,
             "dblclick",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "keydown",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "keyup",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "mousedown",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "mousemove",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "mouseup",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "pointerdown",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "pointermove",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "pointerup",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "touchend",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "touchmove",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "touchstart",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             window,
             "wheel",
             /*swallow*/
-            ctx[12],
+            ctx[11],
             true
           ),
           listen(
             div,
             "glasspane:close",
             /*glasspane_close_handler*/
-            ctx[21]
+            ctx[20]
           ),
           listen(
             div,
             "glasspane:keydown:escape",
             /*glasspane_keydown_escape_handler*/
-            ctx[22]
+            ctx[21]
           ),
           listen(
             div,
             "glasspane:pointerdown",
             /*glasspane_pointerdown_handler*/
-            ctx[23]
+            ctx[22]
           )
         ];
         mounted = true;
@@ -37698,15 +40746,6 @@ function create_fragment$1H(ctx) {
           ctx2[6]
         );
       }
-      if (dirty & /*zIndex*/
-      256) {
-        set_style(
-          div,
-          "z-index",
-          /*zIndex*/
-          ctx2[8]
-        );
-      }
     },
     i(local) {
       if (current) return;
@@ -37722,13 +40761,13 @@ function create_fragment$1H(ctx) {
         detach(div);
       }
       if_blocks[current_block_type_index].d();
-      ctx[27](null);
+      ctx[26](null);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$1z($$self, $$props, $$invalidate) {
+function instance$1C($$self, $$props, $$invalidate) {
   let { $$slots: slots = {}, $$scope } = $$props;
   let { background = "#50505080" } = $$props;
   let { captureInput = true } = $$props;
@@ -37736,7 +40775,6 @@ function instance$1z($$self, $$props, $$invalidate) {
   let { id = void 0 } = $$props;
   let { slotSeparate = void 0 } = $$props;
   let { styles = void 0 } = $$props;
-  let { zIndex = Number.MAX_SAFE_INTEGER } = $$props;
   let backgroundEl, containerEl, glassPaneEl;
   let { transition = void 0 } = $$props;
   let { inTransition = void 0 } = $$props;
@@ -37746,6 +40784,9 @@ function instance$1z($$self, $$props, $$invalidate) {
   let { outTransitionOptions = TJSDefaultTransition.options } = $$props;
   let oldTransition = void 0;
   let oldTransitionOptions = void 0;
+  onMount(() => {
+    glassPaneEl.showPopover();
+  });
   function swallow(event) {
     const targetEl = event.target;
     if (event?.type === "keydown" && event?.code === "Escape") {
@@ -37779,42 +40820,41 @@ function instance$1z($$self, $$props, $$invalidate) {
   function div0_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       backgroundEl = $$value;
-      $$invalidate(9, backgroundEl);
+      $$invalidate(8, backgroundEl);
     });
   }
   function div1_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       containerEl = $$value;
-      $$invalidate(10, containerEl);
+      $$invalidate(9, containerEl);
     });
   }
   function div_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       backgroundEl = $$value;
-      $$invalidate(9, backgroundEl);
+      $$invalidate(8, backgroundEl);
     });
   }
   function div_binding_1($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       glassPaneEl = $$value;
-      $$invalidate(11, glassPaneEl);
+      $$invalidate(10, glassPaneEl);
     });
   }
   $$self.$$set = ($$props2) => {
     if ("background" in $$props2) $$invalidate(5, background = $$props2.background);
-    if ("captureInput" in $$props2) $$invalidate(13, captureInput = $$props2.captureInput);
-    if ("closeOnInput" in $$props2) $$invalidate(14, closeOnInput = $$props2.closeOnInput);
+    if ("captureInput" in $$props2) $$invalidate(12, captureInput = $$props2.captureInput);
+    if ("closeOnInput" in $$props2) $$invalidate(13, closeOnInput = $$props2.closeOnInput);
     if ("id" in $$props2) $$invalidate(6, id = $$props2.id);
     if ("slotSeparate" in $$props2) $$invalidate(0, slotSeparate = $$props2.slotSeparate);
     if ("styles" in $$props2) $$invalidate(7, styles = $$props2.styles);
-    if ("zIndex" in $$props2) $$invalidate(8, zIndex = $$props2.zIndex);
-    if ("transition" in $$props2) $$invalidate(15, transition = $$props2.transition);
+    if ("transition" in $$props2) $$invalidate(14, transition = $$props2.transition);
     if ("inTransition" in $$props2) $$invalidate(1, inTransition = $$props2.inTransition);
     if ("outTransition" in $$props2) $$invalidate(2, outTransition = $$props2.outTransition);
-    if ("transitionOptions" in $$props2) $$invalidate(16, transitionOptions = $$props2.transitionOptions);
+    if ("transitionOptions" in $$props2) $$invalidate(15, transitionOptions = $$props2.transitionOptions);
     if ("inTransitionOptions" in $$props2) $$invalidate(3, inTransitionOptions = $$props2.inTransitionOptions);
     if ("outTransitionOptions" in $$props2) $$invalidate(4, outTransitionOptions = $$props2.outTransitionOptions);
-    if ("$$scope" in $$props2) $$invalidate(19, $$scope = $$props2.$$scope);
+    if ("$$scope" in $$props2) $$invalidate(18, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*slotSeparate*/
@@ -37822,21 +40862,21 @@ function instance$1z($$self, $$props, $$invalidate) {
       $$invalidate(0, slotSeparate = typeof slotSeparate === "boolean" ? slotSeparate : false);
     }
     if ($$self.$$.dirty & /*oldTransition, transition*/
-    163840) {
+    81920) {
       if (oldTransition !== transition) {
         const newTransition = typeof transition === "function" ? transition : void 0;
         $$invalidate(1, inTransition = newTransition);
         $$invalidate(2, outTransition = newTransition);
-        $$invalidate(17, oldTransition = newTransition);
+        $$invalidate(16, oldTransition = newTransition);
       }
     }
     if ($$self.$$.dirty & /*oldTransitionOptions, transitionOptions*/
-    327680) {
+    163840) {
       if (oldTransitionOptions !== transitionOptions) {
         const newOptions = transitionOptions !== TJSDefaultTransition.options && isObject(transitionOptions) ? transitionOptions : TJSDefaultTransition.options;
         $$invalidate(3, inTransitionOptions = newOptions);
         $$invalidate(4, outTransitionOptions = newOptions);
-        $$invalidate(18, oldTransitionOptions = newOptions);
+        $$invalidate(17, oldTransitionOptions = newOptions);
       }
     }
     if ($$self.$$.dirty & /*inTransition*/
@@ -37873,7 +40913,6 @@ function instance$1z($$self, $$props, $$invalidate) {
     background,
     id,
     styles,
-    zIndex,
     backgroundEl,
     containerEl,
     glassPaneEl,
@@ -37898,34 +40937,29 @@ function instance$1z($$self, $$props, $$invalidate) {
 class TJSGlassPane extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1z, create_fragment$1H, safe_not_equal, {
+    init(this, options2, instance$1C, create_fragment$1K, safe_not_equal, {
       background: 5,
-      captureInput: 13,
-      closeOnInput: 14,
+      captureInput: 12,
+      closeOnInput: 13,
       id: 6,
       slotSeparate: 0,
       styles: 7,
-      zIndex: 8,
-      transition: 15,
+      transition: 14,
       inTransition: 1,
       outTransition: 2,
-      transitionOptions: 16,
+      transitionOptions: 15,
       inTransitionOptions: 3,
       outTransitionOptions: 4
     });
   }
 }
-cssVariables.setProperties({
-  // TJSApplicationShell app background.
-  "--tjs-app-background-default": `url("${globalThis.foundry.utils.getRoute("/ui/denim075.png")}")`,
-  "--tjs-app-resize-handle-background-default": `transparent url("${globalThis.foundry.utils.getRoute("/ui/resize-handle.webp")}") no-repeat center / contain`
-}, false);
-function get_each_context$g(ctx, list, i) {
+Hooks.once("init", () => FVTTConfigure$1.initialize());
+function get_each_context$h(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[26] = list[i];
   return child_ctx;
 }
-function create_if_block_3$a(ctx) {
+function create_if_block_3$d(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -38013,7 +41047,7 @@ function create_if_block_3$a(ctx) {
     }
   };
 }
-function create_if_block_2$e(ctx) {
+function create_if_block_2$h(ctx) {
   let html_tag;
   let html_anchor;
   return {
@@ -38048,7 +41082,7 @@ function create_if_block_2$e(ctx) {
     }
   };
 }
-function create_if_block$s(ctx) {
+function create_if_block$v(ctx) {
   let div;
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
@@ -38061,9 +41095,9 @@ function create_if_block$s(ctx) {
     ctx2[26].id
   );
   for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$g(ctx, each_value, i);
+    let child_ctx = get_each_context$h(ctx, each_value, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$g(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$h(key, child_ctx));
   }
   return {
     c() {
@@ -38089,7 +41123,7 @@ function create_if_block$s(ctx) {
           /*buttons*/
           ctx2[1]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div, destroy_block, create_each_block$g, null, get_each_context$g);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div, destroy_block, create_each_block$h, null, get_each_context$h);
       }
     },
     d(detaching) {
@@ -38103,7 +41137,7 @@ function create_if_block$s(ctx) {
     }
   };
 }
-function create_if_block_1$h(ctx) {
+function create_if_block_1$k(ctx) {
   let html_tag;
   let raw_value = (
     /*button*/
@@ -38133,7 +41167,7 @@ function create_if_block_1$h(ctx) {
     }
   };
 }
-function create_each_block$g(key_1, ctx) {
+function create_each_block$h(key_1, ctx) {
   let button_1;
   let span;
   let t0_value = (
@@ -38150,7 +41184,7 @@ function create_each_block$g(key_1, ctx) {
   let dispose;
   let if_block = (
     /*button*/
-    ctx[26].icon && create_if_block_1$h(ctx)
+    ctx[26].icon && create_if_block_1$k(ctx)
   );
   function click_handler() {
     return (
@@ -38216,7 +41250,7 @@ function create_each_block$g(key_1, ctx) {
         if (if_block) {
           if_block.p(ctx, dirty);
         } else {
-          if_block = create_if_block_1$h(ctx);
+          if_block = create_if_block_1$k(ctx);
           if_block.c();
           if_block.m(span, t0);
         }
@@ -38259,14 +41293,14 @@ function create_each_block$g(key_1, ctx) {
     }
   };
 }
-function create_fragment$1G(ctx) {
+function create_fragment$1J(ctx) {
   let main2;
   let div;
   let current_block_type_index;
   let if_block0;
   let t;
   let current;
-  const if_block_creators = [create_if_block_2$e, create_if_block_3$a];
+  const if_block_creators = [create_if_block_2$h, create_if_block_3$d];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (typeof /*content*/
@@ -38282,7 +41316,7 @@ function create_fragment$1G(ctx) {
   }
   let if_block1 = (
     /*buttons*/
-    ctx[1].length && create_if_block$s(ctx)
+    ctx[1].length && create_if_block$v(ctx)
   );
   return {
     c() {
@@ -38340,7 +41374,7 @@ function create_fragment$1G(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block$s(ctx2);
+          if_block1 = create_if_block$v(ctx2);
           if_block1.c();
           if_block1.m(main2, null);
         }
@@ -38371,7 +41405,7 @@ function create_fragment$1G(ctx) {
   };
 }
 const s_REGEX_HTML = /^\s*<.*>$/;
-function instance$1y($$self, $$props, $$invalidate) {
+function instance$1B($$self, $$props, $$invalidate) {
   let autoClose;
   let focusFirst;
   let resolveId;
@@ -38680,7 +41714,7 @@ function instance$1y($$self, $$props, $$invalidate) {
 class DialogContent extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1y, create_fragment$1G, safe_not_equal, {
+    init(this, options2, instance$1B, create_fragment$1J, safe_not_equal, {
       data: 10,
       preventDefault: 11,
       stopPropagation: 12,
@@ -38704,7 +41738,7 @@ function create_else_block$i(ctx) {
     ctx[17](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot_2$2] },
+    $$slots: { default: [create_default_slot_2$3] },
     $$scope: { ctx }
   };
   for (let i = 0; i < applicationshell_spread_levels.length; i += 1) {
@@ -38775,7 +41809,7 @@ function create_else_block$i(ctx) {
     }
   };
 }
-function create_if_block$r(ctx) {
+function create_if_block$u(ctx) {
   let tjsglasspane;
   let current;
   const tjsglasspane_spread_levels = [
@@ -38784,11 +41818,7 @@ function create_if_block$r(ctx) {
       ctx[4].id}-glasspane`
     },
     /*modalProps*/
-    ctx[7],
-    { zIndex: (
-      /*zIndex*/
-      ctx[8]
-    ) }
+    ctx[7]
   ];
   let tjsglasspane_props = {
     $$slots: { default: [create_default_slot$E] },
@@ -38817,8 +41847,8 @@ function create_if_block$r(ctx) {
       current = true;
     },
     p(ctx2, dirty) {
-      const tjsglasspane_changes = dirty & /*application, modalProps, zIndex*/
-      400 ? get_spread_update(tjsglasspane_spread_levels, [
+      const tjsglasspane_changes = dirty & /*application, modalProps*/
+      144 ? get_spread_update(tjsglasspane_spread_levels, [
         dirty & /*application*/
         16 && {
           id: `${/*application*/
@@ -38828,12 +41858,7 @@ function create_if_block$r(ctx) {
         128 && get_spread_object(
           /*modalProps*/
           ctx2[7]
-        ),
-        dirty & /*zIndex*/
-        256 && { zIndex: (
-          /*zIndex*/
-          ctx2[8]
-        ) }
+        )
       ]) : {};
       if (dirty & /*$$scope, appProps, elementRoot, elementContent, data, dialogComponent*/
       8388687) {
@@ -38855,7 +41880,7 @@ function create_if_block$r(ctx) {
     }
   };
 }
-function create_default_slot_2$2(ctx) {
+function create_default_slot_2$3(ctx) {
   let dialogcontent;
   let updating_dialogComponent;
   let current;
@@ -39057,12 +42082,12 @@ function create_default_slot$E(ctx) {
     }
   };
 }
-function create_fragment$1F(ctx) {
+function create_fragment$1I(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$r, create_else_block$i];
+  const if_block_creators = [create_if_block$u, create_else_block$i];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -39123,7 +42148,7 @@ function create_fragment$1F(ctx) {
   };
 }
 const s_MODAL_BACKGROUND = "#50505080";
-function instance$1x($$self, $$props, $$invalidate) {
+function instance$1A($$self, $$props, $$invalidate) {
   let { elementContent = void 0 } = $$props;
   let { elementRoot = void 0 } = $$props;
   let { data: data2 = {} } = $$props;
@@ -39212,7 +42237,7 @@ function instance$1x($$self, $$props, $$invalidate) {
     if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
     if ("data" in $$props2) $$invalidate(3, data2 = $$props2.data);
     if ("dialogComponent" in $$props2) $$invalidate(2, dialogComponent = $$props2.dialogComponent);
-    if ("managedPromise" in $$props2) $$invalidate(9, managedPromise = $$props2.managedPromise);
+    if ("managedPromise" in $$props2) $$invalidate(8, managedPromise = $$props2.managedPromise);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*elementRoot, modal*/
@@ -39224,13 +42249,13 @@ function instance$1x($$self, $$props, $$invalidate) {
         }
       }
     }
-    if ($$self.$$.dirty & /*data, modal, zIndex, application*/
-    312) {
+    if ($$self.$$.dirty & /*data, application, zIndex*/
+    536) {
       if (isObject(data2)) {
         dialogOptions.set(data2);
-        const newZIndex = Number.isInteger(data2.zIndex) || data2.zIndex === null ? data2.zIndex : modal ? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER - 1;
-        if (zIndex !== newZIndex) {
-          $$invalidate(8, zIndex = newZIndex);
+        const newAlwaysOnTop = typeof data2.alwaysOnTop === "boolean" ? data2.alwaysOnTop : void 0;
+        if (newAlwaysOnTop !== void 0 && application.reactive.alwaysOnTop !== newAlwaysOnTop) {
+          $$invalidate(4, application.reactive.alwaysOnTop = newAlwaysOnTop, application);
         }
         const newDraggable = typeof data2.draggable === "boolean" ? data2.draggable : void 0;
         if (newDraggable !== void 0 && application.reactive.draggable !== newDraggable) {
@@ -39259,6 +42284,10 @@ function instance$1x($$self, $$props, $$invalidate) {
         const newTitle = data2.title ?? "Dialog";
         if (newTitle !== application?.options?.title) {
           $$invalidate(4, application.reactive.title = newTitle, application);
+        }
+        const newZIndex = Number.isInteger(data2.zIndex) || data2.zIndex === null ? data2.zIndex : void 0;
+        if (zIndex !== newZIndex) {
+          $$invalidate(9, zIndex = newZIndex);
         }
         if (application.position.zIndex !== zIndex) {
           $$invalidate(4, application.position.zIndex = zIndex, application);
@@ -39376,8 +42405,8 @@ function instance$1x($$self, $$props, $$invalidate) {
     modal,
     appProps,
     modalProps,
-    zIndex,
     managedPromise,
+    zIndex,
     dialogcontent_dialogComponent_binding,
     applicationshell_elementRoot_binding,
     applicationshell_elementContent_binding,
@@ -39391,12 +42420,12 @@ function instance$1x($$self, $$props, $$invalidate) {
 class DialogShell extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1x, create_fragment$1F, safe_not_equal, {
+    init(this, options2, instance$1A, create_fragment$1I, safe_not_equal, {
       elementContent: 1,
       elementRoot: 0,
       data: 3,
       dialogComponent: 2,
-      managedPromise: 9
+      managedPromise: 8
     });
   }
   get elementContent() {
@@ -39428,7 +42457,7 @@ class DialogShell extends SvelteComponent {
     flush();
   }
   get managedPromise() {
-    return this.$$.ctx[9];
+    return this.$$.ctx[8];
   }
   set managedPromise(managedPromise) {
     this.$$set({ managedPromise });
@@ -39683,6 +42712,8 @@ class ApplicationState {
    *
    * @param {boolean}           [options.animateTo=false] - Animate to restore data.
    *
+   * @param {boolean}           [options.cancelable=true] - When true, animation is cancelable.
+   *
    * @param {number}            [options.duration=0.1] - Duration in seconds.
    *
    * @param {import('@typhonjs-fvtt/runtime/svelte/easing').EasingReference} [options.ease='linear'] - Easing function or easing
@@ -39690,7 +42721,7 @@ class ApplicationState {
    *
    * @returns {import('../../types').SvelteApp.API.State.Data | undefined} Any saved application state.
    */
-  restore({ name, remove = false, animateTo = false, duration = 0.1, ease = "linear" }) {
+  restore({ name, remove = false, animateTo = false, cancelable = true, duration = 0.1, ease = "linear" }) {
     if (typeof name !== "string") {
       throw new TypeError(`[SvelteApp.state.restore] error: 'name' is not a string.`);
     }
@@ -39704,6 +42735,7 @@ class ApplicationState {
         this.#setImpl(dataSaved, {
           animateTo,
           async: true,
+          cancelable,
           duration,
           ease
         }).then(() => {
@@ -39747,6 +42779,8 @@ class ApplicationState {
    *
    * @param {boolean}        [options.animateTo=false] - Animate to restore data.
    *
+   * @param {boolean}        [options.cancelable=true] - When true, animation is cancelable.
+   *
    * @param {number}         [options.duration=0.1] - Duration in seconds.
    *
    * @param {import('@typhonjs-fvtt/runtime/svelte/easing').EasingReference} [options.ease='linear'] - Easing function or easing
@@ -39776,6 +42810,8 @@ class ApplicationState {
    *
    * @param {boolean}           [opts.animateTo=false] - Animate to restore data.
    *
+   * @param {boolean}           [opts.cancelable=true] - When true, animation is cancelable.
+   *
    * @param {number}            [opts.duration=0.1] - Duration in seconds.
    *
    * @param {import('@typhonjs-fvtt/runtime/svelte/easing').EasingReference} [opts.ease='linear'] - Easing function or easing
@@ -39783,7 +42819,7 @@ class ApplicationState {
    *
    * @returns {undefined | Promise<void>} When asynchronous the animation Promise.
    */
-  #setImpl(data2, { async = false, animateTo = false, duration = 0.1, ease = "linear" } = {}) {
+  #setImpl(data2, { async = false, animateTo = false, cancelable = true, duration = 0.1, ease = "linear" } = {}) {
     if (!isObject(data2)) {
       throw new TypeError(`[SvelteApp.state.set] error: 'data' is not an object.`);
     }
@@ -39808,6 +42844,7 @@ class ApplicationState {
         }
       }
       const promise2 = application.position.animate.to(data2.position, {
+        cancelable,
         duration,
         ease,
         strategy: "cancelAll"
@@ -39832,10 +42869,10 @@ class ApplicationState {
         return promise2;
       }
     } else {
+      if (isObject(data2?.options)) {
+        application?.reactive.mergeOptions(data2.options);
+      }
       if (rendered) {
-        if (isObject(data2?.options)) {
-          application?.reactive.mergeOptions(data2.options);
-        }
         if (isObject(data2?.ui)) {
           const minimized = typeof data2.ui?.minimized === "boolean" ? data2.ui.minimized : false;
           if (application?.reactive?.minimized && !minimized) {
@@ -39905,565 +42942,29 @@ class GetSvelteData {
     return this.#svelteData[0];
   }
 }
-class SvelteReactive {
-  /**
-   * @type {import('../SvelteApp').SvelteApp}
-   */
-  #application;
-  /**
-   * @type {boolean}
-   */
-  #initialized = false;
-  /** @type {import('@typhonjs-fvtt/runtime/svelte/store/web-storage').WebStorage} */
-  #sessionStorage;
-  /**
-   * The Application option store which is injected into mounted Svelte component context under the `external` key.
-   *
-   * @type {import('./types').StoreAppOptions}
-   */
-  #storeAppOptions;
-  /**
-   * Stores the update function for `#storeAppOptions`.
-   *
-   * @type {(this: void, updater: import('svelte/store').Updater<object>) => void}
-   */
-  #storeAppOptionsUpdate;
-  /**
-   * Stores the UI state data to make it accessible via getters.
-   *
-   * @type {object}
-   */
-  #dataUIState;
-  /**
-   * The UI option store which is injected into mounted Svelte component context under the `external` key.
-   *
-   * @type {import('./types').StoreUIOptions}
-   */
-  #storeUIState;
-  /**
-   * Stores the update function for `#storeUIState`.
-   *
-   * @type {(this: void, updater: import('svelte/store').Updater<object>) => void}
-   */
-  #storeUIStateUpdate;
-  /**
-   * Stores the unsubscribe functions from local store subscriptions.
-   *
-   * @type {import('svelte/store').Unsubscriber[]}
-   */
-  #storeUnsubscribe = [];
-  /**
-   * @param {import('../SvelteApp').SvelteApp} application - The host Foundry application.
-   */
-  constructor(application) {
-    this.#application = application;
-    const optionsSessionStorage = application?.options?.sessionStorage;
-    if (optionsSessionStorage !== void 0 && !(optionsSessionStorage instanceof TJSWebStorage)) {
-      throw new TypeError(`'options.sessionStorage' is not an instance of TJSWebStorage.`);
-    }
-    this.#sessionStorage = optionsSessionStorage !== void 0 ? optionsSessionStorage : new TJSSessionStorage();
+function handleAlwaysOnTop(application, enabled2, initialPopOut) {
+  if (typeof enabled2 !== "boolean") {
+    throw new TypeError(`[SvelteApp handleAlwaysOnTop error]: 'enabled' is not a boolean.`);
   }
-  /**
-   * Initializes reactive support. Package private for internal use.
-   *
-   * @returns {import('./types-local').SvelteReactiveStores | undefined} Internal methods to interact with Svelte
-   * stores.
-   *
-   * @package
-   * @internal
-   */
-  initialize() {
-    if (this.#initialized) {
-      return;
-    }
-    this.#initialized = true;
-    this.#storesInitialize();
-    return {
-      appOptionsUpdate: this.#storeAppOptionsUpdate,
-      uiStateUpdate: this.#storeUIStateUpdate,
-      subscribe: this.#storesSubscribe.bind(this),
-      unsubscribe: this.#storesUnsubscribe.bind(this)
-    };
+  if (typeof initialPopOut !== "boolean") {
+    throw new TypeError(`[SvelteApp handleAlwaysOnTop error]: 'initialPopOut' is not a boolean.`);
   }
-  // Store getters -----------------------------------------------------------------------------------------------------
-  /**
-   * @returns {import('@typhonjs-fvtt/runtime/svelte/store/web-storage').WebStorage} Returns WebStorage (session) instance.
-   */
-  get sessionStorage() {
-    return this.#sessionStorage;
+  const version = globalThis?.TRL_SVELTE_APP_DATA?.VERSION;
+  if (typeof version !== "number") {
+    console.error("[SvelteApp handleAlwaysOnTop error]: global SvelteApp data unavailable.");
+    return;
   }
-  /**
-   * Returns the store for app options.
-   *
-   * @returns {import('../../types').SvelteApp.API.Reactive.AppOptions} App options store.
-   */
-  get storeAppOptions() {
-    return this.#storeAppOptions;
-  }
-  /**
-   * Returns the store for UI options.
-   *
-   * @returns {import('../../types').SvelteApp.API.Reactive.UIState} UI options store.
-   */
-  get storeUIState() {
-    return this.#storeUIState;
-  }
-  // Only reactive getters ---------------------------------------------------------------------------------------------
-  /**
-   * Returns the current active Window / WindowProxy UI state.
-   *
-   * @returns {Window} Active window UI state.
-   */
-  get activeWindow() {
-    return this.#dataUIState.activeWindow ?? globalThis;
-  }
-  /**
-   * Returns the current dragging UI state.
-   *
-   * @returns {boolean} Dragging UI state.
-   */
-  get dragging() {
-    return this.#dataUIState.dragging;
-  }
-  /**
-   * Returns the current minimized UI state.
-   *
-   * @returns {boolean} Minimized UI state.
-   */
-  get minimized() {
-    return this.#dataUIState.minimized;
-  }
-  /**
-   * Returns the current resizing UI state.
-   *
-   * @returns {boolean} Resizing UI state.
-   */
-  get resizing() {
-    return this.#dataUIState.resizing;
-  }
-  /**
-   * Sets the current active Window / WindowProxy UI state.
-   *
-   * Note: This is protected usage and used internally.
-   *
-   * @param {Window} activeWindow - Active Window / WindowProxy UI state.
-   *
-   * @hidden
-   */
-  set activeWindow(activeWindow) {
-    if (activeWindow === void 0 || activeWindow === null || Object.prototype.toString.call(activeWindow) === "[object Window]") {
-      this.#storeUIStateUpdate((options2) => deepMerge(options2, { activeWindow: activeWindow ?? globalThis }));
-    }
-  }
-  // Reactive getter / setters -----------------------------------------------------------------------------------------
-  /**
-   * Returns the draggable app option.
-   *
-   * @returns {boolean} Draggable app option.
-   */
-  get draggable() {
-    return this.#application?.options?.draggable;
-  }
-  /**
-   * Returns the focusAuto app option.
-   *
-   * @returns {boolean} When true auto-management of app focus is enabled.
-   */
-  get focusAuto() {
-    return this.#application?.options?.focusAuto;
-  }
-  /**
-   * Returns the focusKeep app option.
-   *
-   * @returns {boolean} When `focusAuto` and `focusKeep` is true; keeps internal focus.
-   */
-  get focusKeep() {
-    return this.#application?.options?.focusKeep;
-  }
-  /**
-   * Returns the focusTrap app option.
-   *
-   * @returns {boolean} When true focus trapping / wrapping is enabled keeping focus inside app.
-   */
-  get focusTrap() {
-    return this.#application?.options?.focusTrap;
-  }
-  /**
-   * Returns the headerButtonNoClose app option.
-   *
-   * @returns {boolean} Remove the close the button in header app option.
-   */
-  get headerButtonNoClose() {
-    return this.#application?.options?.headerButtonNoClose;
-  }
-  /**
-   * Returns the headerButtonNoLabel app option.
-   *
-   * @returns {boolean} Remove the labels from buttons in header app option.
-   */
-  get headerButtonNoLabel() {
-    return this.#application?.options?.headerButtonNoLabel;
-  }
-  /**
-   * Returns the headerIcon app option.
-   *
-   * @returns {string|void} URL for header app icon.
-   */
-  get headerIcon() {
-    return this.#application?.options?.headerIcon;
-  }
-  /**
-   * Returns the headerNoTitleMinimized app option.
-   *
-   * @returns {boolean} When true removes the header title when minimized.
-   */
-  get headerNoTitleMinimized() {
-    return this.#application?.options?.headerNoTitleMinimized;
-  }
-  /**
-   * Returns the minimizable app option.
-   *
-   * @returns {boolean} Minimizable app option.
-   */
-  get minimizable() {
-    return this.#application?.options?.minimizable;
-  }
-  /**
-   * Returns the Foundry popOut state; {@link Application.popOut}
-   *
-   * @returns {boolean} Positionable app option.
-   */
-  get popOut() {
-    return this.#application.popOut;
-  }
-  /**
-   * Returns the positionable app option; {@link SvelteApp.Options.positionable}
-   *
-   * @returns {boolean} Positionable app option.
-   */
-  get positionable() {
-    return this.#application?.options?.positionable;
-  }
-  /**
-   * Returns the resizable option.
-   *
-   * @returns {boolean} Resizable app option.
-   */
-  get resizable() {
-    return this.#application?.options?.resizable;
-  }
-  /**
-   * Returns the title accessor from the parent Application class; {@link Application.title}
-   *
-   * @privateRemarks
-   * TODO: Application v2; note that super.title localizes `this.options.title`; IMHO it shouldn't.    *
-   *
-   * @returns {string} Title.
-   */
-  get title() {
-    return this.#application.title;
-  }
-  /**
-   * Sets `this.options.draggable` which is reactive for application shells.
-   *
-   * @param {boolean}  draggable - Sets the draggable option.
-   */
-  set draggable(draggable2) {
-    if (typeof draggable2 === "boolean") {
-      this.setOptions("draggable", draggable2);
-    }
-  }
-  /**
-   * Sets `this.options.focusAuto` which is reactive for application shells.
-   *
-   * @param {boolean}  focusAuto - Sets the focusAuto option.
-   */
-  set focusAuto(focusAuto) {
-    if (typeof focusAuto === "boolean") {
-      this.setOptions("focusAuto", focusAuto);
-    }
-  }
-  /**
-   * Sets `this.options.focusKeep` which is reactive for application shells.
-   *
-   * @param {boolean}  focusKeep - Sets the focusKeep option.
-   */
-  set focusKeep(focusKeep) {
-    if (typeof focusKeep === "boolean") {
-      this.setOptions("focusKeep", focusKeep);
-    }
-  }
-  /**
-   * Sets `this.options.focusTrap` which is reactive for application shells.
-   *
-   * @param {boolean}  focusTrap - Sets the focusTrap option.
-   */
-  set focusTrap(focusTrap) {
-    if (typeof focusTrap === "boolean") {
-      this.setOptions("focusTrap", focusTrap);
-    }
-  }
-  /**
-   * Sets `this.options.headerButtonNoClose` which is reactive for application shells.
-   *
-   * @param {boolean}  headerButtonNoClose - Sets the headerButtonNoClose option.
-   */
-  set headerButtonNoClose(headerButtonNoClose) {
-    if (typeof headerButtonNoClose === "boolean") {
-      this.setOptions("headerButtonNoClose", headerButtonNoClose);
-    }
-  }
-  /**
-   * Sets `this.options.headerButtonNoLabel` which is reactive for application shells.
-   *
-   * @param {boolean}  headerButtonNoLabel - Sets the headerButtonNoLabel option.
-   */
-  set headerButtonNoLabel(headerButtonNoLabel) {
-    if (typeof headerButtonNoLabel === "boolean") {
-      this.setOptions("headerButtonNoLabel", headerButtonNoLabel);
-    }
-  }
-  /**
-   * Sets `this.options.headerIcon` which is reactive for application shells.
-   *
-   * @param {string | undefined}  headerIcon - Sets the headerButtonNoLabel option.
-   */
-  set headerIcon(headerIcon) {
-    if (headerIcon === void 0 || typeof headerIcon === "string") {
-      this.setOptions("headerIcon", headerIcon);
-    }
-  }
-  /**
-   * Sets `this.options.headerNoTitleMinimized` which is reactive for application shells.
-   *
-   * @param {boolean}  headerNoTitleMinimized - Sets the headerNoTitleMinimized option.
-   */
-  set headerNoTitleMinimized(headerNoTitleMinimized) {
-    if (typeof headerNoTitleMinimized === "boolean") {
-      this.setOptions("headerNoTitleMinimized", headerNoTitleMinimized);
-    }
-  }
-  /**
-   * Sets `this.options.minimizable` which is reactive for application shells that are also pop out.
-   *
-   * @param {boolean}  minimizable - Sets the minimizable option.
-   */
-  set minimizable(minimizable) {
-    if (typeof minimizable === "boolean") {
-      this.setOptions("minimizable", minimizable);
-    }
-  }
-  /**
-   * Sets `this.options.popOut` which is reactive for application shells. This will add / remove this application
-   * from `ui.windows`.
-   *
-   * @param {boolean}  popOut - Sets the popOut option.
-   */
-  set popOut(popOut) {
-    if (typeof popOut === "boolean") {
-      this.setOptions("popOut", popOut);
-    }
-  }
-  /**
-   * Sets `this.options.positionable` enabling / disabling {@link SvelteApp.position}.
-   *
-   * @param {boolean}  positionable - Sets the positionable option.
-   */
-  set positionable(positionable) {
-    if (typeof positionable === "boolean") {
-      this.setOptions("positionable", positionable);
-    }
-  }
-  /**
-   * Sets `this.options.resizable` which is reactive for application shells.
-   *
-   * @param {boolean}  resizable - Sets the resizable option.
-   */
-  set resizable(resizable) {
-    if (typeof resizable === "boolean") {
-      this.setOptions("resizable", resizable);
-    }
-  }
-  /**
-   * Sets `this.options.title` which is reactive for application shells.
-   *
-   * Note: Will set empty string if title is undefined or null.
-   *
-   * @param {string | undefined | null}   title - Application title; will be localized, so a translation key is fine.
-   */
-  set title(title2) {
-    if (typeof title2 === "string") {
-      this.setOptions("title", title2);
-    } else if (title2 === void 0 || title2 === null) {
-      this.setOptions("title", "");
-    }
-  }
-  // Reactive Options API -------------------------------------------------------------------------------------------
-  /**
-   * Provides a way to safely get this applications options given an accessor string which describes the
-   * entries to walk. To access deeper entries into the object format the accessor string with `.` between entries
-   * to walk.
-   *
-   * // TODO DOCUMENT the accessor in more detail.
-   *
-   * @param {string}   accessor - The path / key to set. You can set multiple levels.
-   *
-   * @param {*}        [defaultValue] - A default value returned if the accessor is not found.
-   *
-   * @returns {*} Value at the accessor.
-   */
-  getOptions(accessor, defaultValue) {
-    return safeAccess(this.#application.options, accessor, defaultValue);
-  }
-  /**
-   * Provides a way to merge `options` into this applications options and update the appOptions store.
-   *
-   * @param {object}   options - The options object to merge with `this.options`.
-   */
-  mergeOptions(options2) {
-    this.#storeAppOptionsUpdate((instanceOptions) => deepMerge(instanceOptions, options2));
-  }
-  /**
-   * Provides a way to safely set this applications options given an accessor string which describes the
-   * entries to walk. To access deeper entries into the object format the accessor string with `.` between entries
-   * to walk.
-   *
-   * Additionally, if an application shell Svelte component is mounted and exports the `appOptions` property then
-   * the application options is set to `appOptions` potentially updating the application shell / Svelte component.
-   *
-   * @param {string}   accessor - The path / key to set. You can set multiple levels.
-   *
-   * @param {any}      value - Value to set.
-   */
-  setOptions(accessor, value) {
-    const success = safeSet(this.#application.options, accessor, value, { createMissing: true });
-    if (success) {
-      this.#storeAppOptionsUpdate(() => this.#application.options);
-    }
-  }
-  /**
-   * Serializes the main {@link SvelteApp.Options} for common application state.
-   *
-   * @returns {import('../../types').SvelteApp.API.Reactive.Data} Common application state.
-   */
-  toJSON() {
-    return {
-      draggable: this.#application?.options?.draggable ?? true,
-      focusAuto: this.#application?.options?.focusAuto ?? true,
-      focusKeep: this.#application?.options?.focusKeep ?? false,
-      focusTrap: this.#application?.options?.focusTrap ?? true,
-      headerButtonNoClose: this.#application?.options?.headerButtonNoClose ?? false,
-      headerButtonNoLabel: this.#application?.options?.headerButtonNoLabel ?? false,
-      headerNoTitleMinimized: this.#application?.options?.headerNoTitleMinimized ?? false,
-      minimizable: this.#application?.options?.minimizable ?? true,
-      positionable: this.#application?.options?.positionable ?? true,
-      resizable: this.#application?.options?.resizable ?? true
-    };
-  }
-  /**
-   * Updates the UI Options store with the current header buttons. You may dynamically add / remove header buttons
-   * if using an application shell Svelte component. In either overriding `_getHeaderButtons` or responding to the
-   * Hooks fired return a new button array and the uiOptions store is updated and the application shell will render
-   * the new buttons.
-   *
-   * Optionally you can set in the SvelteApp app options {@link SvelteApp.Options.headerButtonNoClose}
-   * to remove the close button from the header buttons.
-   *
-   * @param {object} [opts] - Optional parameters (for internal use)
-   *
-   * @param {boolean} [opts.headerButtonNoClose] - The value for `headerButtonNoClose`.
-   */
-  updateHeaderButtons({ headerButtonNoClose = this.#application.options.headerButtonNoClose } = {}) {
-    let buttons = this.#application._getHeaderButtons();
-    if (typeof headerButtonNoClose === "boolean" && headerButtonNoClose) {
-      buttons = buttons.filter((button) => button.class !== "close");
-    }
-    const closeButton = buttons.find((button) => button.class === "close");
-    if (closeButton) {
-      closeButton.label = "APPLICATION.TOOLS.Close";
-    }
-    this.#storeUIStateUpdate((options2) => {
-      options2.headerButtons = buttons;
-      return options2;
+  if (enabled2) {
+    globalThis.requestAnimationFrame(() => {
+      application.reactive.popOut = false;
+      globalThis.requestAnimationFrame(() => application.bringToTop({ force: true }));
     });
-  }
-  // Internal implementation ----------------------------------------------------------------------------------------
-  /**
-   * Initializes the Svelte stores and derived stores for the application options and UI state.
-   *
-   * While writable stores are created the update method is stored in private variables locally and derived Readable
-   * stores are provided for essential options which are commonly used.
-   *
-   * These stores are injected into all Svelte components mounted under the `external` context: `storeAppOptions` and
-   * `storeUIState`.
-   */
-  #storesInitialize() {
-    const writableAppOptions = writable(this.#application.options);
-    this.#storeAppOptionsUpdate = writableAppOptions.update;
-    const storeAppOptions = {
-      subscribe: writableAppOptions.subscribe,
-      draggable: propertyStore(writableAppOptions, "draggable"),
-      focusAuto: propertyStore(writableAppOptions, "focusAuto"),
-      focusKeep: propertyStore(writableAppOptions, "focusKeep"),
-      focusTrap: propertyStore(writableAppOptions, "focusTrap"),
-      headerButtonNoClose: propertyStore(writableAppOptions, "headerButtonNoClose"),
-      headerButtonNoLabel: propertyStore(writableAppOptions, "headerButtonNoLabel"),
-      headerIcon: propertyStore(writableAppOptions, "headerIcon"),
-      headerNoTitleMinimized: propertyStore(writableAppOptions, "headerNoTitleMinimized"),
-      minimizable: propertyStore(writableAppOptions, "minimizable"),
-      popOut: propertyStore(writableAppOptions, "popOut"),
-      positionable: propertyStore(writableAppOptions, "positionable"),
-      resizable: propertyStore(writableAppOptions, "resizable"),
-      title: propertyStore(writableAppOptions, "title")
-    };
-    Object.freeze(storeAppOptions);
-    this.#storeAppOptions = storeAppOptions;
-    this.#dataUIState = {
-      activeWindow: globalThis,
-      dragging: false,
-      headerButtons: [],
-      minimized: this.#application._minimized,
-      resizing: false
-    };
-    const writableUIOptions = writable(this.#dataUIState);
-    this.#storeUIStateUpdate = writableUIOptions.update;
-    const storeUIState = {
-      subscribe: writableUIOptions.subscribe,
-      // activeWindow: propertyStore(writableUIOptions, 'activeWindow'),
-      activeWindow: derived(writableUIOptions, ($options, set2) => set2($options.activeWindow)),
-      dragging: propertyStore(writableUIOptions, "dragging"),
-      headerButtons: derived(writableUIOptions, ($options, set2) => set2($options.headerButtons)),
-      minimized: derived(writableUIOptions, ($options, set2) => set2($options.minimized)),
-      resizing: propertyStore(writableUIOptions, "resizing")
-    };
-    Object.freeze(storeUIState);
-    this.#storeUIState = storeUIState;
-  }
-  /**
-   * Registers local store subscriptions for app options. `popOut` controls registering this app with `ui.windows`.
-   *
-   * @see SvelteApp._injectHTML
-   */
-  #storesSubscribe() {
-    this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.headerButtonNoClose, (value) => {
-      this.updateHeaderButtons({ headerButtonNoClose: value });
-    }));
-    this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.popOut, (value) => {
-      if (value && this.#application.rendered) {
-        globalThis.ui.windows[this.#application.appId] = this.#application;
-      } else {
-        delete globalThis.ui.windows[this.#application.appId];
-      }
-    }));
-  }
-  /**
-   * Unsubscribes from any locally monitored stores.
-   *
-   * @see SvelteApp.close
-   */
-  #storesUnsubscribe() {
-    this.#storeUnsubscribe.forEach((unsubscribe) => unsubscribe());
-    this.#storeUnsubscribe = [];
+  } else {
+    globalThis.requestAnimationFrame(() => {
+      application.position.zIndex = foundry.applications.api.ApplicationV2._maxZ - 1;
+      application.reactive.popOut = initialPopOut;
+      globalThis.requestAnimationFrame(() => application.bringToTop({ force: true }));
+    });
   }
 }
 const applicationShellContract = ["elementRoot"];
@@ -40537,6 +43038,742 @@ Offending config:
   }
   return { config: svelteConfig, component, element: element2 };
 }
+class SvelteReactive {
+  /**
+   * @type {SvelteSet<string>}
+   */
+  #activeClasses;
+  /**
+   * @type {import('../SvelteApp').SvelteApp}
+   */
+  #application;
+  /**
+   * @type {boolean}
+   */
+  #initialized = false;
+  /**
+   * @type {boolean}
+   */
+  #initialPopOut;
+  /** @type {import('@typhonjs-fvtt/runtime/svelte/store/web-storage').WebStorage} */
+  #sessionStorage;
+  /**
+   * The Application option store which is injected into mounted Svelte component context under the `external` key.
+   *
+   * @type {import('../../types').SvelteApp.API.Reactive.AppOptions}
+   */
+  #storeAppOptions;
+  /**
+   * Stores the update function for `#storeAppOptions`.
+   *
+   * @type {(this: void, updater: import('svelte/store').Updater<object>) => void}
+   */
+  #storeAppOptionsUpdate;
+  /**
+   * Stores the UI state data to make it accessible via getters.
+   *
+   * @type {import('../../types').SvelteApp.API.Reactive.UIStateData}
+   */
+  #dataUIState;
+  /**
+   * The UI option store which is injected into mounted Svelte component context under the `external` key.
+   *
+   * @type {import('../../types').SvelteApp.API.Reactive.UIState}
+   */
+  #storeUIState;
+  /**
+   * Stores the update function for `#storeUIState`.
+   *
+   * @type {(this: void, updater: import('svelte/store').Updater<object>) => void}
+   */
+  #storeUIStateUpdate;
+  /**
+   * Stores the unsubscribe functions from local store subscriptions.
+   *
+   * @type {import('svelte/store').Unsubscriber[]}
+   */
+  #storeUnsubscribe = [];
+  /**
+   * @param {import('../SvelteApp').SvelteApp} application - The host Foundry application.
+   *
+   * @param {boolean} initialPopOut - Initial `popOut` state on app construction.
+   */
+  constructor(application, initialPopOut) {
+    this.#application = application;
+    this.#initialPopOut = initialPopOut;
+    const optionsSessionStorage = application?.options?.sessionStorage;
+    if (optionsSessionStorage !== void 0 && !(optionsSessionStorage instanceof TJSWebStorage)) {
+      throw new TypeError(`'options.sessionStorage' is not an instance of TJSWebStorage.`);
+    }
+    this.#sessionStorage = optionsSessionStorage !== void 0 ? optionsSessionStorage : new TJSSessionStorage();
+  }
+  /**
+   * Initializes reactive support. Package private for internal use.
+   *
+   * @returns {import('./types-local').SvelteReactiveStores | undefined} Internal methods to interact with Svelte
+   * stores.
+   *
+   * @package
+   * @internal
+   */
+  initialize() {
+    if (this.#initialized) {
+      return;
+    }
+    this.#initialized = true;
+    this.#storesInitialize();
+    return {
+      appOptionsUpdate: this.#storeAppOptionsUpdate,
+      uiStateUpdate: this.#storeUIStateUpdate,
+      subscribe: this.#storesSubscribe.bind(this),
+      unsubscribe: this.#storesUnsubscribe.bind(this)
+    };
+  }
+  // Store getters -----------------------------------------------------------------------------------------------------
+  /**
+   * @returns {import('@typhonjs-fvtt/runtime/svelte/store/web-storage').WebStorage} Returns WebStorage (session) instance.
+   */
+  get sessionStorage() {
+    return this.#sessionStorage;
+  }
+  /**
+   * Returns the store for app options.
+   *
+   * @returns {import('../../types').SvelteApp.API.Reactive.AppOptions} App options store.
+   */
+  get storeAppOptions() {
+    return this.#storeAppOptions;
+  }
+  /**
+   * Returns the store for UI options.
+   *
+   * @returns {import('../../types').SvelteApp.API.Reactive.UIState} UI options store.
+   */
+  get storeUIState() {
+    return this.#storeUIState;
+  }
+  // Only reactive getters ---------------------------------------------------------------------------------------------
+  /**
+   * Returns the current active CSS classes Set applied to the app window. This is reactive for any modifications.
+   *
+   * @returns {SvelteSet<string>} Active app CSS classes Set.
+   */
+  get activeClasses() {
+    return this.#activeClasses;
+  }
+  /**
+   * Returns the current active Window / WindowProxy UI state.
+   *
+   * @returns {Window} Active window UI state.
+   */
+  get activeWindow() {
+    return this.#dataUIState.activeWindow ?? globalThis;
+  }
+  /**
+   * Returns the current dragging UI state.
+   *
+   * @returns {boolean} Dragging UI state.
+   */
+  get dragging() {
+    return this.#dataUIState.dragging;
+  }
+  /**
+   * Returns whether the app is detached from the main browser window.
+   *
+   * @returns {boolean} App detached state.
+   */
+  get detached() {
+    return this.#dataUIState.activeWindow !== globalThis;
+  }
+  /**
+   * Returns the current minimized UI state.
+   *
+   * @returns {boolean} Minimized UI state.
+   */
+  get minimized() {
+    return this.#dataUIState.minimized;
+  }
+  /**
+   * Returns the current resizing UI state.
+   *
+   * @returns {boolean} Resizing UI state.
+   */
+  get resizing() {
+    return this.#dataUIState.resizing;
+  }
+  /**
+   * Sets the current active Window / WindowProxy UI state.
+   *
+   * Note: This is protected usage and used internally.
+   *
+   * @param {Window} activeWindow - Active Window / WindowProxy UI state.
+   *
+   * @internal
+   */
+  set activeWindow(activeWindow) {
+    if (activeWindow === void 0 || activeWindow === null || Object.prototype.toString.call(activeWindow) === "[object Window]") {
+      this.#storeUIStateUpdate((options2) => deepMerge(options2, { activeWindow: activeWindow ?? globalThis }));
+    }
+  }
+  // Reactive getter / setters -----------------------------------------------------------------------------------------
+  /**
+   * Returns the alwaysOnTop app option.
+   *
+   * @returns {boolean} Always on top app option.
+   */
+  get alwaysOnTop() {
+    return this.#application?.options?.alwaysOnTop;
+  }
+  /**
+   * Returns the containerQueryType app option.
+   *
+   * @returns {string} App content container query app option.
+   */
+  get containerQueryType() {
+    return this.#application?.options?.containerQueryType;
+  }
+  /**
+   * Returns the draggable app option.
+   *
+   * @returns {boolean} Draggable app option.
+   */
+  get draggable() {
+    return this.#application?.options?.draggable;
+  }
+  /**
+   * Returns the focusAuto app option.
+   *
+   * @returns {boolean} When true auto-management of app focus is enabled.
+   */
+  get focusAuto() {
+    return this.#application?.options?.focusAuto;
+  }
+  /**
+   * Returns the focusKeep app option.
+   *
+   * @returns {boolean} When `focusAuto` and `focusKeep` is true; keeps internal focus.
+   */
+  get focusKeep() {
+    return this.#application?.options?.focusKeep;
+  }
+  /**
+   * Returns the focusTrap app option.
+   *
+   * @returns {boolean} When true focus trapping / wrapping is enabled keeping focus inside app.
+   */
+  get focusTrap() {
+    return this.#application?.options?.focusTrap;
+  }
+  /**
+   * Returns the headerButtonNoClose app option.
+   *
+   * @returns {boolean} Remove the close the button in header app option.
+   */
+  get headerButtonNoClose() {
+    return this.#application?.options?.headerButtonNoClose;
+  }
+  /**
+   * Returns the headerButtonNoLabel app option.
+   *
+   * @returns {boolean} Remove the labels from buttons in the header app option.
+   */
+  get headerButtonNoLabel() {
+    return this.#application?.options?.headerButtonNoLabel;
+  }
+  /**
+   * Returns the headerIcon app option.
+   *
+   * @returns {string | undefined} URL for header app icon.
+   */
+  get headerIcon() {
+    return this.#application?.options?.headerIcon;
+  }
+  /**
+   * Returns the headerNoTitleMinimized app option.
+   *
+   * @returns {boolean} When true removes the header title when minimized.
+   */
+  get headerNoTitleMinimized() {
+    return this.#application?.options?.headerNoTitleMinimized;
+  }
+  /**
+   * Returns the minimizable app option.
+   *
+   * @returns {boolean} Minimizable app option.
+   */
+  get minimizable() {
+    return this.#application?.options?.minimizable;
+  }
+  /**
+   * Returns the Foundry popOut state; {@link Application.popOut}
+   *
+   * @returns {boolean} Positionable app option.
+   */
+  get popOut() {
+    return this.#application.popOut;
+  }
+  /**
+   * Returns the positionable app option; {@link SvelteApp.Options.positionable}
+   *
+   * @returns {boolean} Positionable app option.
+   */
+  get positionable() {
+    return this.#application?.options?.positionable;
+  }
+  /**
+   * Returns the resizable option.
+   *
+   * @returns {boolean} Resizable app option.
+   */
+  get resizable() {
+    return this.#application?.options?.resizable;
+  }
+  /**
+   * Returns the explicit theme name option.
+   *
+   * @returns {string | undefined} Theme name option.
+   */
+  get themeName() {
+    return this.#application?.options?.themeName;
+  }
+  /**
+   * Returns the title accessor from the parent Application class; {@link Application.title}
+   *
+   * @privateRemarks
+   * TODO: Application v2; note that super.title localizes `this.options.title`; IMHO it shouldn't.    *
+   *
+   * @returns {string} Title.
+   */
+  get title() {
+    return this.#application.title;
+  }
+  /**
+   * Sets `this.options.alwaysOnTop`, which is reactive for application shells.
+   *
+   * @param {boolean}  alwaysOnTop - Sets the `alwaysOnTop` option.
+   */
+  set alwaysOnTop(alwaysOnTop) {
+    if (typeof alwaysOnTop === "boolean") {
+      this.setOptions("alwaysOnTop", alwaysOnTop);
+    }
+  }
+  /**
+   * Sets `this.options.containerQueryType`, which is reactive for application shells.
+   *
+   * @param {string}  containerQueryType - Sets the `containerQueryType` option.
+   */
+  set containerQueryType(containerQueryType) {
+    if (containerQueryType === void 0 || containerQueryType === "inline-size" || containerQueryType === "size") {
+      this.setOptions("containerQueryType", containerQueryType);
+    }
+  }
+  /**
+   * Sets `this.options.draggable`, which is reactive for application shells.
+   *
+   * @param {boolean}  draggable - Sets the draggable option.
+   */
+  set draggable(draggable2) {
+    if (typeof draggable2 === "boolean") {
+      this.setOptions("draggable", draggable2);
+    }
+  }
+  /**
+   * Sets `this.options.focusAuto`, which is reactive for application shells.
+   *
+   * @param {boolean}  focusAuto - Sets the focusAuto option.
+   */
+  set focusAuto(focusAuto) {
+    if (typeof focusAuto === "boolean") {
+      this.setOptions("focusAuto", focusAuto);
+    }
+  }
+  /**
+   * Sets `this.options.focusKeep`, which is reactive for application shells.
+   *
+   * @param {boolean}  focusKeep - Sets the focusKeep option.
+   */
+  set focusKeep(focusKeep) {
+    if (typeof focusKeep === "boolean") {
+      this.setOptions("focusKeep", focusKeep);
+    }
+  }
+  /**
+   * Sets `this.options.focusTrap`, which is reactive for application shells.
+   *
+   * @param {boolean}  focusTrap - Sets the focusTrap option.
+   */
+  set focusTrap(focusTrap) {
+    if (typeof focusTrap === "boolean") {
+      this.setOptions("focusTrap", focusTrap);
+    }
+  }
+  /**
+   * Sets `this.options.headerButtonNoClose`, which is reactive for application shells.
+   *
+   * @param {boolean}  headerButtonNoClose - Sets the headerButtonNoClose option.
+   */
+  set headerButtonNoClose(headerButtonNoClose) {
+    if (typeof headerButtonNoClose === "boolean") {
+      this.setOptions("headerButtonNoClose", headerButtonNoClose);
+    }
+  }
+  /**
+   * Sets `this.options.headerButtonNoLabel`, which is reactive for application shells.
+   *
+   * @param {boolean}  headerButtonNoLabel - Sets the headerButtonNoLabel option.
+   */
+  set headerButtonNoLabel(headerButtonNoLabel) {
+    if (typeof headerButtonNoLabel === "boolean") {
+      this.setOptions("headerButtonNoLabel", headerButtonNoLabel);
+    }
+  }
+  /**
+   * Sets `this.options.headerIcon`, which is reactive for application shells.
+   *
+   * @param {string | undefined}  headerIcon - Sets the headerButtonNoLabel option.
+   */
+  set headerIcon(headerIcon) {
+    if (headerIcon === void 0 || typeof headerIcon === "string") {
+      this.setOptions("headerIcon", headerIcon);
+    }
+  }
+  /**
+   * Sets `this.options.headerNoTitleMinimized`, which is reactive for application shells.
+   *
+   * @param {boolean}  headerNoTitleMinimized - Sets the headerNoTitleMinimized option.
+   */
+  set headerNoTitleMinimized(headerNoTitleMinimized) {
+    if (typeof headerNoTitleMinimized === "boolean") {
+      this.setOptions("headerNoTitleMinimized", headerNoTitleMinimized);
+    }
+  }
+  /**
+   * Sets `this.options.minimizable`, which is reactive for application shells that are also pop out.
+   *
+   * @param {boolean}  minimizable - Sets the minimizable option.
+   */
+  set minimizable(minimizable) {
+    if (typeof minimizable === "boolean") {
+      this.setOptions("minimizable", minimizable);
+    }
+  }
+  /**
+   * Sets `this.options.popOut` which is reactive for application shells. This will add / remove this application
+   * from `ui.windows` via the subscription set in `#storesSubscribe`.
+   *
+   * @param {boolean}  popOut - Sets the popOut option.
+   */
+  set popOut(popOut) {
+    if (typeof popOut === "boolean") {
+      this.setOptions("popOut", popOut);
+    }
+  }
+  /**
+   * Sets `this.options.positionable`, enabling / disabling {@link SvelteApp.position}.
+   *
+   * @param {boolean}  positionable - Sets the positionable option.
+   */
+  set positionable(positionable) {
+    if (typeof positionable === "boolean") {
+      this.setOptions("positionable", positionable);
+    }
+  }
+  /**
+   * Sets `this.options.resizable`, which is reactive for application shells.
+   *
+   * @param {boolean}  resizable - Sets the resizable option.
+   */
+  set resizable(resizable) {
+    if (typeof resizable === "boolean") {
+      this.setOptions("resizable", resizable);
+    }
+  }
+  /**
+   * Sets `this.options.themeName`, which is reactive for application shells.
+   *
+   * @param {string | undefined}  themeName - Sets the themeName option.
+   */
+  set themeName(themeName) {
+    if (themeName === void 0 || typeof themeName === "string") {
+      this.setOptions("themeName", themeName);
+    }
+  }
+  /**
+   * Sets `this.options.title`, which is reactive for application shells.
+   *
+   * Note: Will set empty string if title is undefined or null.
+   *
+   * @param {string | undefined | null}   title - Application title; will be localized, so a translation key is fine.
+   */
+  set title(title2) {
+    if (typeof title2 === "string") {
+      this.setOptions("title", title2);
+    } else if (title2 === void 0 || title2 === null) {
+      this.setOptions("title", "");
+    }
+  }
+  // Reactive Options API -------------------------------------------------------------------------------------------
+  /**
+   * Provides a way to safely get this applications options given an accessor string which describes the
+   * entries to walk. To access deeper entries into the object format the accessor string with `.` between entries
+   * to walk.
+   *
+   * @privateRemarks
+   * TODO: DOCUMENT the accessor in more detail.
+   *
+   * @param {string}   accessor - The path / key to set. You can set multiple levels.
+   *
+   * @param {*}        [defaultValue] - A default value returned if the accessor is not found.
+   *
+   * @returns {*} Value at the accessor.
+   */
+  getOptions(accessor, defaultValue) {
+    return safeAccess(this.#application.options, accessor, defaultValue);
+  }
+  /**
+   * Provides a way to merge `options` into the application options and update the appOptions store.
+   *
+   * @param {object}   options - The options object to merge with `this.options`.
+   */
+  mergeOptions(options2) {
+    this.#storeAppOptionsUpdate((instanceOptions) => deepMerge(instanceOptions, options2));
+  }
+  /**
+   * Provides a way to safely set the application options given an accessor string which describes the
+   * entries to walk. To access deeper entries into the object format, the accessor string with `.` between entries
+   * to walk.
+   *
+   * Additionally, if an application shell Svelte component is mounted and exports the `appOptions` property, then
+   * the application options are set to `appOptions` potentially updating the application shell / Svelte component.
+   *
+   * @param {string}   accessor - The path / key to set. You can set multiple levels.
+   *
+   * @param {any}      value - Value to set.
+   */
+  setOptions(accessor, value) {
+    const success = safeSet(this.#application.options, accessor, value, { createMissing: true });
+    if (success) {
+      this.#storeAppOptionsUpdate(() => this.#application.options);
+    }
+  }
+  /**
+   * Serializes the main {@link SvelteApp.Options} for common application state.
+   *
+   * @returns {import('../../types').SvelteApp.API.Reactive.SerializedData} Common application state.
+   */
+  toJSON() {
+    return {
+      alwaysOnTop: this.#application?.options?.alwaysOnTop ?? false,
+      draggable: this.#application?.options?.draggable ?? true,
+      focusAuto: this.#application?.options?.focusAuto ?? true,
+      focusKeep: this.#application?.options?.focusKeep ?? false,
+      focusTrap: this.#application?.options?.focusTrap ?? true,
+      headerButtonNoClose: this.#application?.options?.headerButtonNoClose ?? false,
+      headerButtonNoLabel: this.#application?.options?.headerButtonNoLabel ?? false,
+      headerNoTitleMinimized: this.#application?.options?.headerNoTitleMinimized ?? false,
+      minimizable: this.#application?.options?.minimizable ?? true,
+      positionable: this.#application?.options?.positionable ?? true,
+      resizable: this.#application?.options?.resizable ?? true,
+      themeName: this.#application?.options?.themeName ?? void 0
+    };
+  }
+  /**
+   * Updates the UI Options store with the current header buttons. You may dynamically add / remove header buttons
+   * if using an application shell Svelte component. In either overriding `_getHeaderButtons` or responding to the
+   * Hooks fired return a new button array, and the uiOptions store is updated, and the application shell will render
+   * the new buttons.
+   *
+   * Optionally you can set in the SvelteApp app options {@link SvelteApp.Options.headerButtonNoClose}
+   * to remove the close button from the header buttons.
+   *
+   * @param {object} [opts] - Optional parameters (for internal use)
+   *
+   * @param {boolean} [opts.headerButtonNoClose] - The value for `headerButtonNoClose`.
+   */
+  updateHeaderButtons({ headerButtonNoClose = this.#application.options.headerButtonNoClose } = {}) {
+    queueMicrotask(() => {
+      let buttons = this.#application._getHeaderButtons();
+      if (typeof headerButtonNoClose === "boolean" && headerButtonNoClose) {
+        buttons = buttons.filter((button) => button.class !== "close");
+      }
+      const closeButton = buttons.find((button) => button.class === "close");
+      if (closeButton) {
+        closeButton.keepMinimized = true;
+        closeButton.label = "APPLICATION.TOOLS.Close";
+      }
+      this.#storeUIStateUpdate((options2) => {
+        options2.headerButtons = buttons;
+        return options2;
+      });
+    });
+  }
+  // Internal implementation ----------------------------------------------------------------------------------------
+  /**
+   * Initializes the Svelte stores and derived stores for the application options and UI state.
+   *
+   * While writable stores are created, the update method is stored in private variables locally and derived Readable
+   * stores are provided for essential options which are commonly used.
+   *
+   * These stores are injected into all Svelte components mounted under the `external` context: `storeAppOptions` and
+   * `storeUIState`.
+   */
+  #storesInitialize() {
+    this.#activeClasses = new SvelteSet();
+    for (const entry of this.#application.options?.classes ?? []) {
+      if (typeof entry !== "string") {
+        continue;
+      }
+      if (entry === "themed" || entry.startsWith("theme-")) {
+        continue;
+      }
+      this.#activeClasses.add(entry);
+    }
+    const writableAppOptions = writable(this.#application.options);
+    this.#storeAppOptionsUpdate = writableAppOptions.update;
+    const storeAppOptions = {
+      subscribe: writableAppOptions.subscribe,
+      alwaysOnTop: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "alwaysOnTop")
+      ),
+      containerQueryType: (
+        /** @type {import('svelte/store').Writable<string>} */
+        propertyStore(writableAppOptions, "containerQueryType")
+      ),
+      draggable: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "draggable")
+      ),
+      focusAuto: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "focusAuto")
+      ),
+      focusKeep: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "focusKeep")
+      ),
+      focusTrap: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "focusTrap")
+      ),
+      headerButtonNoClose: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "headerButtonNoClose")
+      ),
+      headerButtonNoLabel: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "headerButtonNoLabel")
+      ),
+      headerIcon: (
+        /** @type {import('svelte/store').Writable<string | undefined>} */
+        propertyStore(writableAppOptions, "headerIcon")
+      ),
+      headerNoTitleMinimized: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "headerNoTitleMinimized")
+      ),
+      minimizable: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "minimizable")
+      ),
+      popOut: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "popOut")
+      ),
+      positionable: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "positionable")
+      ),
+      resizable: (
+        /** @type {import('svelte/store').Writable<boolean>} */
+        propertyStore(writableAppOptions, "resizable")
+      ),
+      themeName: (
+        /** @type {import('svelte/store').Writable<string | undefined>} */
+        propertyStore(writableAppOptions, "themeName")
+      ),
+      title: (
+        /** @type {import('svelte/store').Writable<string>} */
+        propertyStore(writableAppOptions, "title")
+      )
+    };
+    Object.freeze(storeAppOptions);
+    this.#storeAppOptions = storeAppOptions;
+    this.#dataUIState = {
+      activeWindow: window,
+      dragging: false,
+      headerButtons: [],
+      minimized: this.#application._minimized,
+      resizing: false
+    };
+    const writableUIOptions = writable(this.#dataUIState);
+    this.#storeUIStateUpdate = writableUIOptions.update;
+    const storeUIState = {
+      subscribe: writableUIOptions.subscribe,
+      activeWindow: (
+        /** @type {import('svelte/store').Readable<Window>} */
+        derived(writableUIOptions, ($options, set2) => set2($options.activeWindow))
+      ),
+      detached: (
+        /** @type {import('svelte/store').Readable<boolean>} */
+        derived(writableUIOptions, ($options, set2) => set2($options.activeWindow !== globalThis))
+      ),
+      dragging: (
+        /** @type {import('svelte/store').Readable<boolean>} */
+        propertyStore(writableUIOptions, "dragging")
+      ),
+      headerButtons: (
+        /** @type {import('svelte/store').Readable<import('../../types').SvelteApp.HeaderButton>} */
+        derived(writableUIOptions, ($options, set2) => set2($options.headerButtons))
+      ),
+      minimized: (
+        /** @type {import('svelte/store').Readable<boolean>} */
+        derived(writableUIOptions, ($options, set2) => set2($options.minimized))
+      ),
+      resizing: (
+        /** @type {import('svelte/store').Readable<boolean>} */
+        propertyStore(writableUIOptions, "resizing")
+      )
+    };
+    Object.freeze(storeUIState);
+    this.#storeUIState = storeUIState;
+  }
+  /**
+   * Registers local store subscriptions for app options. `popOut` controls registering this app with `ui.windows`.
+   *
+   * @see SvelteApp._injectHTML
+   */
+  #storesSubscribe() {
+    this.#storeUnsubscribe.push(subscribeIgnoreFirst(
+      this.#storeAppOptions.alwaysOnTop,
+      (enabled2) => handleAlwaysOnTop(this.#application, enabled2, this.#initialPopOut)
+    ));
+    this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.headerButtonNoClose, (value) => this.updateHeaderButtons({ headerButtonNoClose: value })));
+    this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.popOut, (value) => {
+      if (value) {
+        if (globalThis?.ui?.windows?.[this.#application.appId] !== this.#application) {
+          globalThis.ui.windows[this.#application.appId] = this.#application;
+        }
+      } else {
+        if (globalThis?.ui?.activeWindow === this.#application) {
+          globalThis.ui.activeWindow = null;
+        }
+        if (globalThis?.ui?.windows?.[this.#application.appId] === this.#application) {
+          delete globalThis.ui.windows[this.#application.appId];
+        }
+      }
+    }));
+  }
+  /**
+   * Unsubscribes from any locally monitored stores.
+   *
+   * @see SvelteApp.close
+   */
+  #storesUnsubscribe() {
+    this.#storeUnsubscribe.forEach((unsubscribe) => unsubscribe());
+    this.#storeUnsubscribe = [];
+  }
+}
 class TJSAppIndex {
   /**
    * Stores all visible / rendered apps.
@@ -40597,7 +43834,224 @@ class TJSAppIndex {
     return this.#visibleApps.values();
   }
 }
+class FoundryStyles {
+  /**
+   * Parsed Foundry core stylesheet.
+   *
+   * @type {StyleSheetResolve}
+   */
+  static #core;
+  /**
+   * Dummy / no-op instance when parsing or CORS / SecurityException occurs.
+   *
+   * @type {StyleSheetResolve}
+   */
+  static #dummy = new StyleSheetResolve().freeze();
+  /**
+   * Parsed Foundry core stylesheet with extended game system / module overrides.
+   *
+   * @type {StyleSheetResolve}
+   */
+  static #ext;
+  static #initialized = false;
+  /**
+   * @hideconstructor
+   */
+  constructor() {
+    throw new Error("FoundryStyles constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * @returns {StyleSheetResolve} Core parsed styles.
+   */
+  static get core() {
+    if (!this.#initialized) {
+      this.#initialize();
+    }
+    return this.#core ?? this.#dummy;
+  }
+  /**
+   * @returns {StyleSheetResolve} Core parsed styles with extended game system / module overrides.
+   */
+  static get ext() {
+    if (!this.#initialized) {
+      this.#initialize();
+    }
+    return this.#ext ?? this.#dummy;
+  }
+  // Internal Implementation ----------------------------------------------------------------------------------------
+  /**
+   * Find the core Foundry CSSStyleSheet instance and any 3rd party game system / module stylesheets.
+   *
+   * Resolve the core sheet and then create the extended resolved style sheet merging the core with all system / module
+   * sheets.
+   */
+  static #initialize() {
+    this.#initialized = true;
+    const styleSheets = Array.from(document.styleSheets);
+    let foundryStyleSheet;
+    const moduleSheets = [];
+    const systemSheets = [];
+    const failedSheets = [];
+    for (let i = 0; i < styleSheets.length; i++) {
+      const sheet = styleSheets[i];
+      if (typeof sheet?.href === "string") {
+        try {
+          if (sheet.href.endsWith("/css/foundry2.css") && sheet?.cssRules?.length) {
+            foundryStyleSheet = sheet;
+          }
+        } catch (err) {
+          if (CrossWindow.isDOMException(err, "SecurityException")) {
+            failedSheets.push({ href: sheet.href, core: true });
+          }
+        }
+      } else {
+        try {
+          if (sheet?.cssRules?.length) {
+            for (const rule of sheet.cssRules) {
+              if (!CrossWindow.isCSSImportRule(rule) || !CrossWindow.isCSSStyleSheet(rule?.styleSheet)) {
+                continue;
+              }
+              try {
+                switch (rule?.layerName) {
+                  case "modules":
+                    if (rule.styleSheet?.cssRules?.length) {
+                      moduleSheets.push(rule.styleSheet);
+                    }
+                    break;
+                  case "system":
+                    if (rule.styleSheet?.cssRules?.length) {
+                      systemSheets.push(rule.styleSheet);
+                    }
+                    break;
+                }
+              } catch (err) {
+                if (CrossWindow.isDOMException(err, "SecurityException")) {
+                  failedSheets.push({ href: rule.styleSheet.href, core: false, layer: rule.layerName });
+                }
+              }
+            }
+          }
+        } catch (err) {
+          if (CrossWindow.isDOMException(err, "SecurityException")) {
+            failedSheets.push({ href: "", core: false, layer: "inline-stylesheet" });
+          }
+        }
+      }
+    }
+    if (failedSheets.length) {
+      console.warn(`[TyphonJS Runtime] CORS / SecurityException error: FoundryStyles could not load style sheets: ${JSON.stringify(failedSheets, null, 2)}`);
+    }
+    if (!foundryStyleSheet) {
+      console.warn(`[TyphonJS Runtime] error: FoundryStyles could not load core style sheet.`);
+      return;
+    }
+    this.#resolveCore(foundryStyleSheet);
+    this.#resolveExt(moduleSheets, systemSheets);
+    this.#core.freeze();
+    this.#ext.freeze();
+  }
+  /**
+   * @param {CSSStyleSheet}  sheet - Foundry core style sheet.
+   */
+  static #resolveCore(sheet) {
+    this.#core = StyleSheetResolve.parse(sheet, {
+      // Exclude any selector parts that match the following.
+      excludeSelectorParts: [
+        />\s*[^ ]+/,
+        // Direct child selectors
+        /(^|\s)\*/,
+        // Universal selectors
+        /(^|\s)\.app(?![\w-])/,
+        // AppV1 class
+        /^\.application\.[a-z]/,
+        // All `.application.theme` / any specific core application.
+        /^body\.auth/,
+        /^body(?:\.[\w-]+)*\.application\b/,
+        // Remove unnecessary `body.<theme>.application` pairing.
+        /^\.\u037c\d/i,
+        // Code-mirror `.ͼ1`
+        /code-?mirror/i,
+        /(^|[^a-zA-Z0-9_-])#(?!context-menu\b)[\w-]+|[^ \t>+~]#context-menu\b/,
+        /^\.faded-ui/,
+        /(^|\s)kbd\b/,
+        /^input.placeholder-fa-solid\b/,
+        /(^|\s)label\b/,
+        /^\.mixin-theme/,
+        // Remove all mixin related styles left in by core.
+        /prose-?mirror/i,
+        /(^|\s)section\b/,
+        /\.window-app/,
+        // Exclude various core applications.
+        /^\.active-effect-config/,
+        /^\.adventure-importer/,
+        /^\.camera-view/,
+        /#camera-views/,
+        /^\.card-config/,
+        /^\.cards-config/,
+        /^\.category-browser/,
+        /^\.chat-message/,
+        /^\.chat-sidebar/,
+        /\.combat-sidebar/,
+        /\.compendium-directory/,
+        /\.compendium-sidebar/,
+        /^\.document-ownership/,
+        /^\.effects-tooltip/,
+        /^\.journal-category-config/,
+        /\.journal-entry-page/,
+        /^\.macro-config/,
+        /^\.package-list/,
+        /^\.playlists-sidebar/,
+        /\.placeable-hud/,
+        /^\.region-config/,
+        /^\.roll-table-sheet/,
+        /^\.scene-config/,
+        /^\.scenes-sidebar/,
+        /\.settings-sidebar/,
+        /^\.sheet.journal-entry/,
+        /^\.template-config/,
+        /^\.token-config/,
+        /^\.tour/,
+        /\.ui-control/,
+        /^\.wall-config/
+      ],
+      // Only parse CSS layers matching the following regexes.
+      includeCSSLayers: [
+        /^applications$/,
+        /^blocks.ui$/,
+        /^elements/,
+        /^variables\.base$/,
+        /^variables\.themes/
+      ]
+    });
+  }
+  /**
+   * @param {CSSStyleSheet[]}   moduleSheets - Module stylesheet data.
+   *
+   * @param {CSSStyleSheet[]}   systemSheets - System stylesheet data.
+   */
+  static #resolveExt(moduleSheets, systemSheets) {
+    const resolvedSheets = [];
+    const options2 = { includeSelectorPartSet: /* @__PURE__ */ new Set([...this.#core.keys()]) };
+    for (const sheet of systemSheets) {
+      resolvedSheets.push(StyleSheetResolve.parse(sheet, options2));
+    }
+    for (const sheet of moduleSheets) {
+      resolvedSheets.push(StyleSheetResolve.parse(sheet, options2));
+    }
+    this.#ext = this.#core.clone();
+    for (const sheet of resolvedSheets) {
+      this.#ext.merge(sheet);
+    }
+  }
+}
 class SvelteApp extends Application {
+  /**
+   * Disable Foundry v13+ warnings for AppV1.
+   *
+   * @type {boolean}
+   * @internal
+   */
+  static _warnedAppV1 = true;
   static #MIN_WINDOW_HEIGHT = 50;
   static #MIN_WINDOW_WIDTH = 200;
   /**
@@ -40632,6 +44086,10 @@ class SvelteApp extends Application {
    */
   #gateSetPosition = false;
   /**
+   * Tracks initial `popOut` state. `handleAlwaysOnTop` will return the `popOut` state to this value.
+   */
+  #initialPopOut;
+  /**
    * Stores initial z-index from `_renderOuter` to set to target element / Svelte component.
    *
    * @type {number}
@@ -40665,7 +44123,7 @@ class SvelteApp extends Application {
    * Provides a helper class that combines multiple methods for interacting with the mounted components tracked in
    * #svelteData.
    *
-   * @type {import('./types').SvelteApp.API.Svelte<Options>}
+   * @type {import('./types').SvelteApp.API.Svelte<import('./types').SvelteApp.Options>}
    */
   #getSvelteData = new GetSvelteData(this.#applicationShellHolder, this.#svelteData);
   /**
@@ -40682,6 +44140,12 @@ class SvelteApp extends Application {
     if (!isObject(this.options.svelte)) {
       throw new Error(`SvelteApp - constructor - No Svelte configuration object found in 'options'.`);
     }
+    if (Array.isArray(this.options.classes)) {
+      this.options.classes = this.options.classes.filter(
+        (entry) => entry !== "themed" && !entry?.startsWith("theme-")
+      );
+    }
+    this.#initialPopOut = this.popOut;
     this.#applicationState = new ApplicationState(this);
     this.#position = new TJSPosition(this, {
       ...this.position,
@@ -40699,7 +44163,7 @@ class SvelteApp extends Application {
         }
       }
     });
-    this.#reactive = new SvelteReactive(this);
+    this.#reactive = new SvelteReactive(this, this.#initialPopOut);
     this.#stores = this.#reactive.initialize();
   }
   /**
@@ -40712,12 +44176,16 @@ class SvelteApp extends Application {
     return (
       /** @type {import('./types').SvelteApp.Options} */
       deepMerge(super.defaultOptions, {
+        alwaysOnTop: false,
+        // Assigned to position. When true, the app window is floated always on top.
+        containerQueryType: "inline-size",
+        // App window content container query type.
         defaultCloseAnimation: true,
-        // If false the default slide close animation is not run.
+        // If false, the default slide close animation is not run.
         draggable: true,
-        // If true then application shells are draggable.
+        // If true, then application shells are draggable.
         focusAuto: true,
-        // When true auto-management of app focus is enabled.
+        // When true, auto-management of app focus is enabled.
         focusKeep: false,
         // When `focusAuto` and `focusKeep` is true; keeps internal focus.
         focusSource: void 0,
@@ -40725,29 +44193,35 @@ class SvelteApp extends Application {
         focusTrap: true,
         // When true focus trapping / wrapping is enabled keeping focus inside app.
         headerButtonNoClose: false,
-        // If true then the close header button is removed.
+        // If true, then the close header button is removed.
         headerButtonNoLabel: false,
-        // If true then header button labels are removed for application shells.
+        // If true, then the header button labels are removed for application shells.
         headerIcon: void 0,
         // Sets a header icon given an image URL.
         headerNoTitleMinimized: false,
-        // If true then header title is hidden when application is minimized.
+        // If true, then the header title is hidden when the application is minimized.
+        maxHeight: void 0,
+        // Assigned to position. Number specifying maximum window height.
+        maxWidth: void 0,
+        // Assigned to position. Number specifying maximum window width.
         minHeight: SvelteApp.#MIN_WINDOW_HEIGHT,
         // Assigned to position. Number specifying minimum window height.
         minWidth: SvelteApp.#MIN_WINDOW_WIDTH,
         // Assigned to position. Number specifying minimum window width.
         positionable: true,
-        // If false then `position.set` does not take effect.
+        // If false, then `position.set` does not take effect.
         positionInitial: TJSPosition.Initial.browserCentered,
         // A helper for initial position placement.
         positionOrtho: true,
-        // When true TJSPosition is optimized for orthographic use.
+        // When true, TJSPosition is optimized for orthographic use.
         positionValidator: TJSPosition.Validators.transformWindow,
         // A function providing the default validator.
         sessionStorage: void 0,
         // An instance of WebStorage (session) to share across SvelteApps.
         svelte: void 0,
         // A Svelte configuration object.
+        themeName: void 0,
+        // An explicit theme name to apply.
         transformOrigin: "top left"
         // By default, 'top / left' respects rotation when minimizing.
       })
@@ -40823,8 +44297,19 @@ class SvelteApp extends Application {
     if (this.reactive.activeWindow !== globalThis) {
       return;
     }
-    if (force || this.popOut) {
-      super.bringToTop();
+    if (typeof this?.options?.positionable === "boolean" && !this.options.positionable) {
+      return;
+    }
+    if (force || globalThis.ui.activeWindow !== this) {
+      const z = this.position.zIndex;
+      if (this.popOut && z < foundry.applications.api.ApplicationV2._maxZ) {
+        this.position.zIndex = Math.min(++foundry.applications.api.ApplicationV2._maxZ, 99999);
+      } else if (!this.popOut && this.options.alwaysOnTop) {
+        const newAlwaysOnTopZIndex = globalThis?.TRL_SVELTE_APP_DATA?.alwaysOnTop?.getAndIncrement();
+        if (typeof newAlwaysOnTopZIndex === "number") {
+          this.position.zIndex = newAlwaysOnTopZIndex;
+        }
+      }
     }
     const elementTarget = this.elementTarget;
     const activeElement = document.activeElement;
@@ -40940,7 +44425,15 @@ class SvelteApp extends Application {
    * @protected
    */
   _getHeaderButtons() {
-    return super._getHeaderButtons();
+    const buttons = super._getHeaderButtons();
+    const closeButton = buttons.find((entry) => entry?.class === "close");
+    if (closeButton) {
+      closeButton.onclick = () => {
+        globalThis?.game?.tooltip?.deactivate?.();
+        this.close();
+      };
+    }
+    return buttons;
   }
   /**
    * Inject the Svelte components defined in `this.options.svelte`. The Svelte component can attach to the existing
@@ -41005,7 +44498,7 @@ ${JSON.stringify(this.options.svelte)}`
    * @param {number}   [opts.duration=0.1] - Controls content area animation duration in seconds.
    */
   async maximize({ animate: animate2 = true, duration = 0.1 } = {}) {
-    if (!this.popOut || [false, null].includes(this._minimized)) {
+    if (!this.popOut && !this.options.alwaysOnTop || [false, null].includes(this._minimized)) {
       return;
     }
     this._minimized = null;
@@ -41020,6 +44513,7 @@ ${JSON.stringify(this.options.svelte)}`
         async: true,
         animateTo: true,
         properties: ["width"],
+        cancelable: false,
         duration: 0.1
       });
     }
@@ -41035,6 +44529,7 @@ ${JSON.stringify(this.options.svelte)}`
         animateTo: true,
         properties: ["height"],
         remove: true,
+        cancelable: false,
         duration
       }));
     } else {
@@ -41075,7 +44570,7 @@ ${JSON.stringify(this.options.svelte)}`
    * @param {number}   [opts.duration=0.1] - Controls content area animation duration in seconds.
    */
   async minimize({ animate: animate2 = true, duration = 0.1 } = {}) {
-    if (!this.rendered || !this.popOut || [true, null].includes(this._minimized)) {
+    if (!this.rendered || !this.popOut && !this.options.alwaysOnTop || [true, null].includes(this._minimized)) {
       return;
     }
     this.#stores.uiStateUpdate((options2) => deepMerge(options2, { minimized: true }));
@@ -41116,11 +44611,12 @@ ${JSON.stringify(this.options.svelte)}`
     const headerOffsetHeight = header.offsetHeight;
     this.position.minHeight = headerOffsetHeight;
     if (animate2) {
-      await this.position.animate.to({ height: headerOffsetHeight }, { duration }).finished;
+      await this.position.animate.to({ height: headerOffsetHeight }, { cancelable: false, duration }).finished;
     }
     for (let cntr = header.children.length; --cntr >= 0; ) {
-      const className = header.children[cntr].className;
-      if (className.includes("window-title") || className.includes("close")) {
+      let className = header.children[cntr]?.className;
+      className = className?.baseVal ?? className;
+      if (typeof className !== "string" || className.includes("window-title") || className.includes("close")) {
         continue;
       }
       if (className.includes("keep-minimized")) {
@@ -41130,7 +44626,10 @@ ${JSON.stringify(this.options.svelte)}`
       header.children[cntr].style.display = "none";
     }
     if (animate2) {
-      await this.position.animate.to({ width: SvelteApp.#MIN_WINDOW_WIDTH }, { duration: 0.1 }).finished;
+      await this.position.animate.to({ width: SvelteApp.#MIN_WINDOW_WIDTH }, {
+        cancelable: false,
+        duration: 0.1
+      }).finished;
     }
     element2.classList.add("minimized");
     this._minimized = true;
@@ -41191,7 +44690,8 @@ ${JSON.stringify(this.options.svelte)}`
       return;
     }
     this.#gateSetPosition = true;
-    await super._render(force, options2);
+    const popOut = typeof this.options.alwaysOnTop === "boolean" && this.options.alwaysOnTop ? false : this.popOut;
+    await super._render(force, { ...options2, popOut });
     this.#gateSetPosition = false;
     if ([Application.RENDER_STATES.CLOSING, Application.RENDER_STATES.RENDERING].includes(this._state)) {
       return;
@@ -41217,9 +44717,12 @@ ${JSON.stringify(this.options.svelte)}`
       });
     }
     if (!this.#onMount) {
-      TJSAppIndex.add(this);
-      this.onSvelteMount();
       this.#onMount = true;
+      TJSAppIndex.add(this);
+      if (typeof this.options.alwaysOnTop === "boolean" && this.options.alwaysOnTop) {
+        handleAlwaysOnTop(this, true, this.#initialPopOut);
+      }
+      nextAnimationFrame().then(() => this.onSvelteMount());
     }
   }
   /**
@@ -41283,7 +44786,13 @@ ${JSON.stringify(this.options.svelte)}`
         this.position.set(this.position.get());
       }
       super._activateCoreListeners([this.popOut ? this.#elementTarget?.firstChild : this.#elementTarget]);
-      this.onSvelteRemount();
+      if (typeof this.options.alwaysOnTop === "boolean" && this.options.alwaysOnTop) {
+        handleAlwaysOnTop(this, true, this.#initialPopOut);
+      }
+      nextAnimationFrame().then(() => {
+        this.render();
+        this.onSvelteRemount();
+      });
     }
   }
 }
@@ -41319,124 +44828,62 @@ class PopoutSupport {
     }
   }
 }
-class ThemeObserver {
+class SvelteAppData {
+  static #initialized = false;
   /**
-   * All readable theme stores.
-   *
-   * @type {Readonly<({
-   *    theme: Readonly<import('#svelte/store').Readable<'theme-dark' | 'theme-light'>>,
-   *    themeDark: Readonly<import('#svelte/store').Readable<boolean>>,
-   *    themeLight: Readonly<import('#svelte/store').Readable<boolean>>,
-   * })>}
+   * @returns {number} Version number for SvelteAppData.
    */
-  static #stores;
-  /**
-   * Internal setter for theme stores.
-   *
-   * @type {({
-   *    theme: Function,
-   *    themeDark: Function,
-   *    themeLight: Function,
-   * })}
-   */
-  static #storeSet;
-  /**
-   * Current theme.
-   *
-   * @type {string}
-   */
-  static #theme = "";
-  /**
-   * @returns {Readonly<({
-   *    theme: Readonly<import('#svelte/store').Readable<'theme-dark' | 'theme-light'>>,
-   *    themeDark: Readonly<import('#svelte/store').Readable<boolean>>,
-   *    themeLight: Readonly<import('#svelte/store').Readable<boolean>>,
-   * })>} Current core theme stores.
-   */
-  static get stores() {
-    return this.#stores;
+  static get VERSION() {
+    return 1;
   }
-  /**
-   * @returns {'theme-dark' | 'theme-light'} Current core theme.
-   */
-  static get theme() {
-    return this.#theme;
+  static get alwaysOnTop() {
+    return AlwaysOnTop;
   }
-  /**
-   * @returns {boolean} Is the core theme `dark`.
-   */
-  static get themeDark() {
-    return this.#theme === "theme-dark";
-  }
-  /**
-   * @returns {boolean} Is the core theme `light`.
-   */
-  static get themeLight() {
-    return this.#theme === "theme-light";
-  }
-  /**
-   * Helper to apply current core theme to a given SvelteApp optional classes.
-   *
-   * @param {import('@typhonjs-fvtt/runtime/svelte/application').SvelteApp} application - Svelte application.
-   *
-   * @param {object} [options] - Options.
-   *
-   * @param {boolean} [options.hasThemed] - Verify that the original application default options contains the `themed`
-   *        class otherwise do not add the core theme classes.
-   *
-   * @returns {string} App classes CSS string with current core theme applied.
-   */
-  static appClasses(application, { hasThemed = false } = {}) {
-    const classes = /* @__PURE__ */ new Set([
-      ...Array.isArray(application?.options?.classes) ? application.options.classes : []
-    ]);
-    classes.delete("themed");
-    classes.delete("theme-light");
-    if (!hasThemed) {
-      classes.add("themed");
-      classes.add(this.#theme);
-    } else {
-      const origOptions = application.constructor.defaultOptions;
-      if (origOptions?.classes?.includes("themed")) {
-        classes.add("themed");
-        classes.add(this.#theme);
-      }
-    }
-    return Array.from(classes).join(" ");
-  }
-  /**
-   * Initialize `document.body` theme observation.
-   */
   static initialize() {
-    if (this.#stores !== void 0) {
+    if (this.#initialized) {
       return;
     }
-    const themeStore = writable(this.#theme);
-    const themeDarkStore = writable(false);
-    const themeLightStore = writable(false);
-    this.#stores = Object.freeze({
-      theme: Object.freeze({ subscribe: themeStore.subscribe }),
-      themeDark: Object.freeze({ subscribe: themeDarkStore.subscribe }),
-      themeLight: Object.freeze({ subscribe: themeLightStore.subscribe })
-    });
-    this.#storeSet = {
-      theme: themeStore.set,
-      themeDark: themeDarkStore.set,
-      themeLight: themeLightStore.set
-    };
-    const observer = new MutationObserver(() => {
-      if (document.body.classList.contains("theme-light")) {
-        this.#theme = "theme-light";
-        this.#storeSet.themeDark(false);
-        this.#storeSet.themeLight(true);
-      } else if (document.body.classList.contains("theme-dark")) {
-        this.#theme = "theme-dark";
-        this.#storeSet.themeDark(true);
-        this.#storeSet.themeLight(false);
-      }
-      this.#storeSet.theme(this.#theme);
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    this.#initialized = true;
+    const currentVersion = globalThis?.TRL_SVELTE_APP_DATA?.VERSION;
+    if (typeof currentVersion !== "number" || currentVersion < this.VERSION) {
+      globalThis.TRL_SVELTE_APP_DATA = this;
+    }
+  }
+}
+class AlwaysOnTop {
+  /**
+   * Stores the max z-index.
+   *
+   * @type {number}
+   */
+  static #max = 2 ** 31 - 1e3;
+  /**
+   * Stores the min z-index.
+   *
+   * @type {number}
+   */
+  static #min = 2 ** 31 - 1e5;
+  /**
+   * Stores the current z-index for the top most `alwaysOnTop` app.
+   *
+   * @type {number}
+   */
+  static #current = this.#min;
+  /**
+   * @returns {number} Increments the current always on top z-index and returns it.
+   */
+  static getAndIncrement() {
+    this.#current = Math.min(++this.#current, this.#max);
+    return this.#current;
+  }
+  static get current() {
+    return this.#current;
+  }
+  static get max() {
+    return this.#max;
+  }
+  static get min() {
+    return this.#min;
   }
 }
 class TJSDialogData {
@@ -41466,15 +44913,15 @@ class TJSDialogData {
   /**
    * Set the dialog button configuration.
    *
-   * @param {string} buttons - New dialog button configuration.
+   * @param {{ [key: string]: import('./types').TJSDialogButtonData }} buttons - New dialog button configuration.
    */
   set buttons(buttons) {
     this.#internal.buttons = buttons;
     this.#updateComponent();
   }
   /**
-   * @returns {import('@typhonjs-fvtt/runtime/svelte/util').TJSSvelte.Config.Minimal | string} The Svelte configuration object or HTML string
-   *          content.
+   * @returns {import('@typhonjs-fvtt/runtime/svelte/util').TJSSvelte.Config.Embed | string} The Svelte configuration object or
+   *          HTML string content.
    */
   get content() {
     return this.#internal.content;
@@ -41482,8 +44929,8 @@ class TJSDialogData {
   /**
    * Set the Svelte configuration object or HTML string content.
    *
-   * @param {import('@typhonjs-fvtt/runtime/svelte/util').TJSSvelte.Config.Minimal | string} content - New Svelte configuration object or
-   *        HTML string content.
+   * @param {import('@typhonjs-fvtt/runtime/svelte/util').TJSSvelte.Config.Embed | string} content - New Svelte configuration
+   *        object or HTML string content.
    */
   set content(content) {
     this.#internal.content = content;
@@ -41502,6 +44949,21 @@ class TJSDialogData {
    */
   set default(newDefault) {
     this.#internal.default = newDefault;
+    this.#updateComponent();
+  }
+  /**
+   * @returns {boolean} The dialog always on top state.
+   */
+  get alwaysOnTop() {
+    return this.#internal.alwaysOnTop;
+  }
+  /**
+   * Set the dialog always on top state.
+   *
+   * @param {boolean} alwaysOnTop - New dialog always on top state.
+   */
+  set alwaysOnTop(alwaysOnTop) {
+    this.#internal.alwaysOnTop = alwaysOnTop;
     this.#updateComponent();
   }
   /**
@@ -41827,6 +45289,9 @@ class TJSDialog extends SvelteApp {
    */
   constructor(data2, options2 = {}) {
     super({
+      // Explicit setting of `alwaysOnTop` to prevent the PopOut! module button from appearing when always on top.
+      alwaysOnTop: typeof data2?.alwaysOnTop === "boolean" ? data2.alwaysOnTop : false,
+      // Explicit setting of `popOutModuleDisable` to prevent the PopOut! module from acting on modal dialogs.
       popOutModuleDisable: typeof data2?.modal === "boolean" ? data2.modal : false,
       ...options2,
       // Always ensure adding `dialog` class for core styles.
@@ -42116,6 +45581,7 @@ class TJSDialog extends SvelteApp {
     return new this({ ...data2 }, options2).wait();
   }
 }
+SvelteAppData.initialize();
 ThemeObserver.initialize();
 PopoutSupport.initialize();
 function melee$1() {
@@ -45180,7 +48646,7 @@ function ripple({
         left = e.clientX ? `${e.clientX - (elementRect.left + radius)}px` : "0";
         top = e.clientY ? `${e.clientY - (elementRect.top + radius)}px` : "0";
       }
-      const span = document.createElement("span");
+      const span = CrossWindow.getDocument(element2).createElement("span");
       span.style.position = "absolute";
       span.style.width = `${diameter}px`;
       span.style.height = `${diameter}px`;
@@ -45191,28 +48657,37 @@ function ripple({
       span.style.pointerEvents = "none";
       span.style.transform = "translateZ(-1px)";
       element2.prepend(span);
-      const animation = span.animate(
-        [
-          {
-            // from
-            transform: "scale(.7)",
-            opacity: 0.5,
-            filter: "blur(2px)"
-          },
-          {
-            // to
-            transform: "scale(4)",
-            opacity: 0,
-            filter: "blur(5px)"
+      try {
+        const effect = new window.KeyframeEffect(
+          span,
+          [
+            {
+              // from
+              transform: "scale(.7)",
+              opacity: 0.5,
+              filter: "blur(2px)"
+            },
+            {
+              // to
+              transform: "scale(4)",
+              opacity: 0,
+              filter: "blur(5px)"
+            }
+          ],
+          duration
+        );
+        const animation = new window.Animation(effect);
+        animation.onfinish = () => {
+          if (span) {
+            span.remove();
           }
-        ],
-        duration
-      );
-      animation.onfinish = () => {
-        if (span && span.isConnected) {
+        };
+        animation.play();
+      } catch {
+        if (span) {
           span.remove();
         }
-      };
+      }
     }
     function customHandler(event) {
       const actual = event?.detail?.event;
@@ -45274,44 +48749,70 @@ function rippleFocus({ background = "rgba(255, 255, 255, 0.7)", duration = 300, 
   return (element2, initialOptions) => {
     element2.style.overflow = "hidden";
     const targetEl = typeof selector === "string" ? element2.querySelector(selector) : A11yHelper.isFocusTarget(element2.firstChild) ? element2.firstChild : element2;
+    let activeWindow = void 0;
+    let windowBlurActiveFocus = false;
     let clientX = -1;
     let clientY = -1;
     const activeSpans = [];
-    function blurRipple() {
+    function blurRipple(event, force = false) {
       if (!enabled2) {
         return;
       }
-      if (activeSpans.length === 0 || targetEl === CrossWindow.getActiveElement(targetEl)) {
+      if (!force && (activeSpans.length === 0 || targetEl === CrossWindow.getActiveElement(targetEl))) {
         return;
       }
       for (const span of activeSpans) {
-        const animation = span.animate(
-          [
+        try {
+          const effect = new window.KeyframeEffect(
+            span,
+            [
+              {
+                // from
+                transform: "scale(3)",
+                opacity: 0.3
+              },
+              {
+                // to
+                transform: "scale(.7)",
+                opacity: 0
+              }
+            ],
             {
-              // from
-              transform: "scale(3)",
-              opacity: 0.3
-            },
-            {
-              // to
-              transform: "scale(.7)",
-              opacity: 0
+              duration,
+              fill: "forwards"
             }
-          ],
-          {
-            duration,
-            fill: "forwards"
-          }
-        );
-        animation.onfinish = () => {
-          if (span.isConnected) {
+          );
+          const animation = new window.Animation(effect);
+          animation.onfinish = () => {
+            if (span) {
+              span.remove();
+            }
+          };
+          animation.play();
+        } catch {
+          if (span) {
             span.remove();
           }
-        };
+        }
       }
       activeSpans.length = 0;
+      activeWindow?.removeEventListener?.("blur", blurRippleForced);
+      activeWindow = void 0;
     }
-    function focusRipple() {
+    function blurRippleForced(event) {
+      if (CrossWindow.isActiveElement(targetEl)) {
+        windowBlurActiveFocus = true;
+      }
+      blurRipple(event, true);
+    }
+    async function focusRipple() {
+      if (windowBlurActiveFocus) {
+        windowBlurActiveFocus = false;
+        await nextAnimationFrame(2);
+        if (!CrossWindow.isActiveElement(targetEl)) {
+          return;
+        }
+      }
       if (!enabled2) {
         return;
       }
@@ -45325,7 +48826,7 @@ function rippleFocus({ background = "rgba(255, 255, 255, 0.7)", duration = 300, 
       const radius = diameter / 2;
       const left = `${actualX - (elementRect.left + radius)}px`;
       const top = `${actualY - (elementRect.top + radius)}px`;
-      const span = document.createElement("span");
+      const span = CrossWindow.getDocument(element2).createElement("span");
       span.style.position = "absolute";
       span.style.width = `${diameter}px`;
       span.style.height = `${diameter}px`;
@@ -45336,25 +48837,36 @@ function rippleFocus({ background = "rgba(255, 255, 255, 0.7)", duration = 300, 
       span.style.pointerEvents = "none";
       span.style.transform = "translateZ(-1px)";
       element2.prepend(span);
-      activeSpans.push(span);
-      span.animate(
-        [
+      try {
+        const effect = new window.KeyframeEffect(
+          span,
+          [
+            {
+              // from
+              transform: "scale(.7)",
+              opacity: 0.5
+            },
+            {
+              // to
+              transform: "scale(3)",
+              opacity: 0.3
+            }
+          ],
           {
-            // from
-            transform: "scale(.7)",
-            opacity: 0.5
-          },
-          {
-            // to
-            transform: "scale(3)",
-            opacity: 0.3
+            duration,
+            fill: "forwards"
           }
-        ],
-        {
-          duration,
-          fill: "forwards"
+        );
+        const animation = new window.Animation(effect);
+        animation.play();
+        activeSpans.push(span);
+        activeWindow = targetEl.ownerDocument.defaultView;
+        activeWindow.addEventListener("blur", blurRippleForced, { once: true });
+      } catch {
+        if (span) {
+          span.remove();
         }
-      );
+      }
       clientX = clientY = -1;
     }
     function onPointerDown(e) {
@@ -45384,103 +48896,11 @@ function rippleFocus({ background = "rgba(255, 255, 255, 0.7)", duration = 300, 
         targetEl.removeEventListener("pointerdown", onPointerDown);
         targetEl.removeEventListener("blur", blurRipple);
         targetEl.removeEventListener("focus", focusRipple);
+        activeWindow?.removeEventListener?.("blur", blurRippleForced);
+        activeWindow = void 0;
       }
     };
   };
-}
-class FoundryStyles {
-  static #sheet = void 0;
-  /** @type {Map<string, {[key: string]: string}>} */
-  static #sheetMap = /* @__PURE__ */ new Map();
-  static #initialized = false;
-  /**
-   * Called once on initialization / first usage. Parses the core foundry style sheet.
-   */
-  static #initialize() {
-    this.#initialized = true;
-    const styleSheets = Array.from(document.styleSheets).filter((entry) => entry.href !== null);
-    let sheet;
-    const foundryStyleSheet = globalThis.foundry.utils.getRoute("/css/style.css");
-    for (const styleSheet of styleSheets) {
-      let url;
-      try {
-        url = new URL(styleSheet.href);
-      } catch (err) {
-        continue;
-      }
-      if (typeof url.pathname === "string" && url.pathname === foundryStyleSheet) {
-        this.#sheet = sheet = styleSheet;
-        break;
-      }
-    }
-    if (!sheet) {
-      return;
-    }
-    for (const rule of sheet.cssRules) {
-      if (!(rule instanceof CSSStyleRule)) {
-        continue;
-      }
-      const obj2 = {};
-      for (const entry of rule.style.cssText.split(";")) {
-        const parts = entry.split(":");
-        if (parts.length < 2) {
-          continue;
-        }
-        obj2[parts[0].trim()] = parts[1].trim();
-      }
-      this.#sheetMap.set(rule.selectorText, obj2);
-    }
-  }
-  /**
-   * Gets the properties object associated with the selector. Try and use a direct match otherwise all keys
-   * are iterated to find a selector string that includes the `selector`.
-   *
-   * @param {string}   selector - Selector to find.
-   *
-   * @returns { {[key: string]: string} } Properties object.
-   */
-  static getProperties(selector) {
-    if (!this.#initialized) {
-      this.#initialize();
-    }
-    if (this.#sheetMap.has(selector)) {
-      return this.#sheetMap.get(selector);
-    }
-    for (const key of this.#sheetMap.keys()) {
-      if (key.includes(selector)) {
-        return this.#sheetMap.get(key);
-      }
-    }
-    return void 0;
-  }
-  /**
-   * Gets a specific property value from the given `selector` and `property` key. Try and use a direct selector
-   * match otherwise all keys are iterated to find a selector string that includes `selector`.
-   *
-   * @param {string}   selector - Selector to find.
-   *
-   * @param {string}   property - Specific property to locate.
-   *
-   * @returns {string|undefined} Property value.
-   */
-  static getProperty(selector, property) {
-    if (!this.#initialized) {
-      this.#initialize();
-    }
-    if (this.#sheetMap.has(selector)) {
-      const data2 = this.#sheetMap.get(selector);
-      return isObject(data2) && property in data2 ? data2[property] : void 0;
-    }
-    for (const key of this.#sheetMap.keys()) {
-      if (key.includes(selector)) {
-        const data2 = this.#sheetMap.get(key);
-        if (isObject(data2) && property in data2) {
-          return data2[property];
-        }
-      }
-    }
-    return void 0;
-  }
 }
 class FVTTConfigure {
   static #initialized = false;
@@ -45488,160 +48908,520 @@ class FVTTConfigure {
     if (this.#initialized) {
       return;
     }
-    const cssVariables2 = new TJSStyleManager({ docKey: "#__tjs-root-styles", version: 1.1 });
+    document?.["#__tjs-root-styles"]?.remove?.();
+    const manager = StyleManager.create({
+      id: "__tjs-standard-vars",
+      version: "0.0.2",
+      layerName: "variables.tjs-standard-vars",
+      rules: {
+        // Ideally `:root` would be used, but Foundry defines dark them CSS vars in `body`. For scoping reasons
+        // `body` must be used to make these core vars accessible to TRL CSS vars.
+        themeDark: "body, .themed.theme-dark",
+        themeLight: ".themed.theme-light"
+      }
+    });
+    if (!manager?.isConnected) {
+      this.#initialized = true;
+      return;
+    }
     this.#initialized = true;
-    cssVariables2.setProperties({
+    const themeDarkRoot = manager.get("themeDark");
+    const themeLight = manager.get("themeLight");
+    this.#rootConstants(themeDarkRoot);
+    this.#actions(themeDarkRoot, themeLight);
+    this.#buttons(themeDarkRoot, themeLight);
+    this.#component(themeDarkRoot, themeLight);
+    this.#form(themeDarkRoot, themeLight);
+    this.#popup(themeDarkRoot, themeLight);
+    Hooks.on("PopOut:loading", (app, popout) => {
+      popout.document.addEventListener(
+        "DOMContentLoaded",
+        () => manager.clone({ document: popout.document, force: true })
+      );
+    });
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #actions(themeDarkRoot, themeLight) {
+    themeDarkRoot.setProperties({
+      "--tjs-action-ripple-background": "linear-gradient(64.5deg, rgba(245, 116, 185, 1) 40%, rgba(89, 97, 223, 1) 60%)"
+    });
+    themeLight.setProperties({
+      "--tjs-action-ripple-background": "rgba(0, 0, 0, 0.35)"
+    });
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #buttons(themeDarkRoot, themeLight) {
+    const opts = { camelCase: true };
+    const propsDark = FoundryStyles.ext.get(".themed.theme-dark button", opts);
+    const propsLight = FoundryStyles.ext.get(".themed.theme-light button", opts);
+    const propsButton = FoundryStyles.ext.get("button", opts);
+    themeDarkRoot.setProperties({
+      // Constant properties
+      "--tjs-form-button-font-family": propsButton?.fontFamily ?? "var(--font-sans)",
+      "--tjs-form-button-font-size": propsButton?.fontSize ?? "var(--font-size-14)",
+      "--tjs-form-button-transition": propsButton?.transition ?? "0.5s",
+      // Unique TRL properties.
+      "--tjs-icon-button-background-hover": "rgba(255, 255, 255, 0.15)",
+      "--tjs-icon-button-background-selected": "rgba(255, 255, 255, 0.25)",
+      // Themed properties
+      "--tjs-icon-button-color": propsDark?.["--button-text-color"] ?? "var(--color-light-3)",
+      "--tjs-icon-button-color-hover": propsDark?.["--button-hover-text-color"] ?? "var(--color-light-1)"
+    });
+    themeLight.setProperties({
+      // Unique TRL properties.
+      "--tjs-icon-button-background-hover": "rgba(0, 0, 0, 0.15)",
+      "--tjs-icon-button-background-selected": "rgba(0, 0, 0, 0.25)",
+      // Themed properties
+      "--tjs-icon-button-color": propsLight?.["--button-text-color"] ?? "var(--color-dark-1)",
+      "--tjs-icon-button-color-hover": "var(--tjs-icon-button-color)"
+      // Core light theme doesn't have an appropriate highlight.
+    });
+  }
+  /**
+   * Generic reusable component variables.
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #component(themeDarkRoot, themeLight) {
+    {
+      const props = FoundryStyles.ext.get('input[type="text"]', {
+        camelCase: true,
+        resolve: ".themed.theme-dark input"
+      });
+      themeDarkRoot.setProperties({
+        // Constants across dark / light theme:
+        "--tjs-component-border-radius": props?.borderRadius ?? "4px",
+        "--tjs-side-slide-layer-item-border-color-hover": "var(--color-warm-2)",
+        "--tjs-side-slide-layer-item-color": "var(--color-text-secondary)",
+        "--tjs-side-slide-layer-item-color-hover": "var(--color-text-primary)",
+        "--tjs-side-slide-layer-item-host-color": "var(--color-text-primary)",
+        // Color / theme related.
+        "--tjs-component-border": "1px solid var(--color-cool-3)",
+        // Core dark theme does not have input borders.
+        "--tjs-component-overlay-background": "rgba(208, 184, 163, 0.1)",
+        "--tjs-side-slide-layer-item-background": "rgba(180, 180, 180, 0.3)",
+        "--tjs-side-slide-layer-item-border": "solid 2px rgba(60, 60, 60, 0.9)",
+        "--tjs-side-slide-layer-item-host-background": "linear-gradient(135deg, rgba(90, 90, 90, 0.95) 10%, rgba(52, 51, 52, 0.95) 90%)",
+        "--tjs-side-slide-layer-item-host-border": "solid 2px rgba(80, 80, 80, 0.9)"
+      });
+    }
+    {
+      const props = FoundryStyles.ext.get('input[type="text"]', {
+        camelCase: true,
+        resolve: ".themed.theme-light input"
+      });
+      themeLight.setProperties({
+        // Color / theme related.
+        "--tjs-component-border": props?.border ?? "1px solid var(--color-dark-6)",
+        "--tjs-component-overlay-background": "rgba(0, 0, 0, 0.1)",
+        "--tjs-side-slide-layer-item-background": "rgba(180, 180, 180, 0.7)",
+        "--tjs-side-slide-layer-item-border": "solid 2px rgba(100, 100, 100, 0.9)",
+        "--tjs-side-slide-layer-item-host-background": "linear-gradient(135deg, rgba(180, 180, 180, 0.9) 10%, rgba(217, 216, 200, 0.9) 90%)",
+        "--tjs-side-slide-layer-item-host-border": "solid 2px rgba(120, 120, 120, 0.9)"
+      });
+    }
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #form(themeDarkRoot, themeLight) {
+    {
+      const props = FoundryStyles.ext.get('input[type="text"]', {
+        camelCase: true,
+        resolve: ".themed.theme-dark input"
+      });
+      const propsFocus = FoundryStyles.ext.get(['input[type="text"]', 'input[type="text"]:focus'], {
+        camelCase: true,
+        resolve: [".themed.theme-dark input", ".themed.theme-dark input:focus"]
+      });
+      const propsPlaceholder = FoundryStyles.ext.get("::placeholder", {
+        camelCase: true,
+        resolve: ".themed.theme-dark input"
+      });
+      themeDarkRoot.setProperties({
+        // Constants across dark / light theme:
+        "--tjs-input-height": props?.height ?? "var(--input-height)",
+        "--tjs-input-line-height": props?.lineHeight ?? "var(--input-height)",
+        "--tjs-input-padding": props?.padding ?? "0px 0.5rem",
+        "--tjs-input-width": props?.width ?? "100%",
+        "--tjs-input-border-radius": props?.borderRadius ?? "4px",
+        // Color / theme related.
+        "--tjs-input-background": props?.background ?? "var(--color-cool-4)",
+        "--tjs-input-color": props?.color ?? "var(--color-light-3)",
+        "--tjs-input-color-focus": propsFocus?.color ?? "var(--color-light-1)",
+        "--tjs-input-outline": props?.outline ?? "transparent solid 1px",
+        "--tjs-input-outline-focus": propsFocus?.outline ?? "2px solid var(--color-cool-3)",
+        "--tjs-input-outline-offset-focus": propsFocus?.outlineOffset ?? "-2px",
+        "--tjs-input-placeholder-color": propsPlaceholder?.color ?? "var(--color-light-5)",
+        "--tjs-input-transition": props?.transition ?? "outline-color 0.5s",
+        // Set default values that are only to be referenced and not set.
+        "--_tjs-default-input-height": props?.height ?? "var(--input-height)",
+        // Set directly / no lookup:
+        "--tjs-input-checkbox-border": "none",
+        "--tjs-input-range-border": "none"
+      });
+    }
+    {
+      const props = FoundryStyles.ext.get('input[type="text"]', {
+        camelCase: true,
+        resolve: ".themed.theme-light input"
+      });
+      const propsFocus = FoundryStyles.ext.get(['input[type="text"]', 'input[type="text"]:focus'], {
+        camelCase: true,
+        resolve: [".themed.theme-light input", ".themed.theme-light input:focus"]
+      });
+      const propsPlaceholder = FoundryStyles.ext.get("::placeholder", {
+        camelCase: true,
+        resolve: ".themed.theme-light input"
+      });
+      themeLight.setProperties({
+        // Color / theme related.
+        "--tjs-input-background": props?.background ?? "rgba(0, 0, 0, 0.1)",
+        "--tjs-input-border": props?.border ?? "1px solid var(--color-dark-6)",
+        "--tjs-input-color": props?.color ?? "var(--color-dark-2)",
+        "--tjs-input-color-focus": propsFocus?.color ?? "var(--color-dark-1)",
+        "--tjs-input-outline": props?.outline ?? "var(--color-warm-2)",
+        "--tjs-input-outline-focus": propsFocus?.outline ?? "2px solid var(--color-warm-2)",
+        "--tjs-input-outline-offset-focus": propsFocus?.outlineOffset ?? "-2px",
+        "--tjs-input-placeholder-color": propsPlaceholder?.color ?? "var(--color-dark-4)"
+      });
+    }
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   *
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeLight -
+   */
+  static #popup(themeDarkRoot, themeLight) {
+    const propsMenuItem = FoundryStyles.ext.get("#context-menu li.context-item", { camelCase: true });
+    const propsMenuDark = FoundryStyles.ext.get("#context-menu", {
+      camelCase: true,
+      resolve: [".themed.theme-dark #context-menu"]
+    });
+    const propsMenuItemDark = FoundryStyles.ext.get("#context-menu li.context-item:hover", {
+      camelCase: true,
+      resolve: [".themed.theme-dark #context-menu"]
+    });
+    const propsMenuLight = FoundryStyles.ext.get("#context-menu", {
+      camelCase: true,
+      resolve: [".themed.theme-light #context-menu"]
+    });
+    const propsMenuItemLight = FoundryStyles.ext.get("#context-menu li.context-item:hover", {
+      camelCase: true,
+      resolve: [".themed.theme-light #context-menu"]
+    });
+    themeDarkRoot.setProperties({
+      // Direct mapping for TJSContextMenu overrides.
+      "--tjs-context-menu-background": "var(--tjs-menu-background)",
+      "--tjs-context-menu-border": "var(--tjs-menu-border)",
+      "--tjs-context-menu-border-radius": "var(--tjs-menu-border-radius)",
+      "--tjs-context-menu-box-shadow": "var(--tjs-menu-box-shadow)",
+      "--tjs-context-menu-color": "var(--tjs-menu-color)",
+      "--tjs-context-menu-font-size": "var(--tjs-menu-font-size)",
+      "--tjs-context-menu-item-background-highlight": "var(--tjs-menu-item-background-highlight)",
+      "--tjs-context-menu-item-border-highlight": "var(--tjs-menu-item-border-highlight)",
+      "--tjs-context-menu-item-color-highlight": "var(--tjs-menu-item-color-highlight)",
+      // Constant applied across dark / light
+      "--tjs-menu-item-border": propsMenuItem?.border ?? "1px solid transparent",
+      "--tjs-menu-item-line-height": propsMenuItem?.lineHeight ?? "15px",
+      "--tjs-menu-item-padding": propsMenuItem?.padding ?? "8px",
+      "--tjs-context-menu-item-border": "var(--tjs-menu-item-border)",
+      "--tjs-context-menu-item-line-height": "var(--tjs-menu-item-line-height)",
+      "--tjs-context-menu-item-padding": "var(--tjs-menu-item-padding)",
+      // Dark theme
+      "--tjs-menu-background": propsMenuDark?.background ?? "var(--color-cool-5)",
+      "--tjs-menu-border": propsMenuDark?.border ?? "1px solid var(--color-cool-3)",
+      "--tjs-menu-border-radius": propsMenuDark?.borderRadius ?? "5px",
+      "--tjs-menu-box-shadow": propsMenuDark?.boxShadow ?? "rgba(0, 0, 0, 0.45) 0px 3px 6px",
+      "--tjs-menu-color": propsMenuDark?.color ?? "var(--color-text-secondary)",
+      "--tjs-menu-font-size": propsMenuItem?.fontSize ?? "var(--font-size-12)",
+      "--tjs-menu-item-background-highlight": propsMenuItemDark?.background ?? "var(--color-dark-1)",
+      "--tjs-menu-item-border-highlight": propsMenuItemDark?.border ?? "1px solid var(--color-cool-4)",
+      "--tjs-menu-item-color-highlight": propsMenuItemDark?.color ?? "var(--color-text-emphatic)",
+      // `popup` is for components that are slightly elevated, but connected to an application;
+      // see: TJSMenu / TJSContextMenu / TJSColordPicker
+      "--tjs-default-popup-background": propsMenuDark?.background ?? "var(--color-cool-5)",
+      "--tjs-default-popup-border": propsMenuDark?.border ?? "1px solid var(--color-cool-3)",
+      "--tjs-default-popup-box-shadow": propsMenuDark?.boxShadow ?? "rgba(0, 0, 0, 0.45) 0px 3px 6px",
+      "--tjs-default-popup-primary-color": propsMenuDark?.color ?? "var(--color-text-secondary)",
+      "--tjs-default-popup-highlight-color": propsMenuItemDark?.color ?? "var(--color-text-emphatic)",
+      // `popover` is for components that are elevated and independent; see: TJSContextMenu
+      "--tjs-default-popover-border": propsMenuDark?.border ?? "1px solid var(--color-border-dark, #000)",
+      "--tjs-default-popover-box-shadow": "0 0 10px var(--color-shadow-dark, #000)"
+    });
+    themeLight.setProperties({
+      // Direct mapping for TJSContextMenu overrides.
+      "--tjs-context-menu-background": "var(--tjs-menu-background)",
+      "--tjs-context-menu-border": "var(--tjs-menu-border)",
+      "--tjs-context-menu-border-radius": "var(--tjs-menu-border-radius)",
+      "--tjs-context-menu-box-shadow": "var(--tjs-menu-box-shadow)",
+      "--tjs-context-menu-color": "var(--tjs-menu-color)",
+      "--tjs-context-menu-font-size": "var(--tjs-menu-font-size)",
+      "--tjs-context-menu-item-border": "var(--tjs-menu-item-border)",
+      "--tjs-context-menu-item-background-highlight": "var(--tjs-menu-item-background-highlight)",
+      "--tjs-context-menu-item-border-highlight": "var(--tjs-menu-item-border-highlight)",
+      "--tjs-context-menu-item-color-highlight": "var(--tjs-menu-item-color-highlight)",
+      "--tjs-menu-background": propsMenuLight?.background ?? "#d9d8c8",
+      "--tjs-menu-border": propsMenuLight?.border ?? "1px solid #999",
+      "--tjs-menu-border-radius": propsMenuLight?.borderRadius ?? "5px",
+      "--tjs-menu-box-shadow": propsMenuLight?.boxShadow ?? "rgba(0, 0, 0, 0.45) 0px 3px 6px",
+      "--tjs-menu-color": propsMenuLight?.color ?? "var(--color-text-secondary)",
+      "--tjs-menu-item-background-highlight": propsMenuItemLight?.background ?? "#f0f0e0",
+      "--tjs-menu-item-border-highlight": propsMenuItemLight?.border ?? "1px solid #999",
+      "--tjs-menu-item-color-highlight": propsMenuItemLight?.color ?? "var(--color-text-emphatic)",
+      "--tjs-default-popup-background": propsMenuLight?.background ?? "#d9d8c8",
+      "--tjs-default-popup-border": propsMenuLight?.border ?? "1px solid #999",
+      "--tjs-default-popup-box-shadow": propsMenuLight?.boxShadow ?? "rgba(0, 0, 0, 0.45) 0px 3px 6px",
+      "--tjs-default-popup-primary-color": propsMenuLight?.color ?? "var(--color-text-secondary)",
+      "--tjs-default-popup-highlight-color": propsMenuItemLight?.color ?? "var(--color-text-emphatic)"
+    });
+  }
+  /**
+   * @param {import('@typhonjs-fvtt/runtime/util/dom/style').StyleManager.RuleManager}  themeDarkRoot -
+   */
+  static #rootConstants(themeDarkRoot) {
+    themeDarkRoot.setProperties({
+      // For checkbox Foundry core styles override.
+      "--tjs-input-checkbox-appearance": "none"
+    });
+    themeDarkRoot.setProperties({
       // For components w/ transparent background checkered pattern.
       "--tjs-checkerboard-background-dark": "rgb(205, 205, 205)",
       "--tjs-checkerboard-background-10": `url('data:image/svg+xml;utf8,<svg preserveAspectRatio="none"  viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="5" height="5" fill="transparent" /><rect x="5" y="5" width="5" height="5" fill="transparent" /><rect x="5" y="0" width="5" height="5" fill="white" /><rect x="0" y="5" width="5" height="5" fill="white" /></svg>') 0 0 / 10px 10px, var(--tjs-checkerboard-background-dark, rgb(205, 205, 205))`
-    }, false);
-    cssVariables2.setProperties({
-      "--tjs-action-ripple-background": "rgba(0, 0, 0, 0.35)"
-    }, false);
-    cssVariables2.setProperties({
-      "--tjs-icon-button-background-hover": "rgba(0, 0, 0, 0.10)",
-      "--tjs-icon-button-background-selected": "rgba(0, 0, 0, 0.20)"
-    }, false);
-    {
-      const props = FoundryStyles.getProperties('input[type="text"], input[type="number"]');
-      if (isObject(props)) {
-        cssVariables2.setProperties({
-          "--tjs-input-background": "background" in props ? props.background : "rgba(0, 0, 0, 0.05)",
-          "--tjs-input-border": "border" in props ? props.border : "1px solid var(--color-border-light-tertiary)",
-          "--tjs-input-border-radius": "border-radius" in props ? props["border-radius"] : "3px",
-          "--tjs-input-height": "height" in props ? props.height : "var(--form-field-height)",
-          "--tjs-input-min-width": "min-width" in props ? props["min-width"] : "20px",
-          "--tjs-input-padding": "padding" in props ? props["padding"] : "1px 3px",
-          "--tjs-input-width": "width" in props ? props.width : "calc(100% - 2px)",
-          // Set default values that are only to be referenced and not set.
-          "--_tjs-default-input-height": "height" in props ? props.height : "var(--form-field-height)",
-          // Set directly / no lookup:
-          "--tjs-input-border-color": "var(--color-border-light-tertiary)"
-        }, false);
-      }
-    }
-    {
-      const propsTrack = FoundryStyles.getProperties('input[type="range"]::-webkit-slider-runnable-track');
-      const propsTrackFocus = FoundryStyles.getProperties('input[type="range"]:focus::-webkit-slider-runnable-track');
-      const propsThumb = FoundryStyles.getProperties('input[type="range"]::-webkit-slider-thumb');
-      const propsThumbFocus = FoundryStyles.getProperties('input[type="range"]:focus::-webkit-slider-thumb');
-      if (isObject(propsTrack)) {
-        cssVariables2.setProperties({
-          "--tjs-input-range-slider-track-box-shadow": "box-shadow" in propsTrack ? propsTrack["box-shadow"] : "1px 1px 1px #000000, 0px 0px 1px #0d0d0d"
-        }, false);
-      }
-      if (isObject(propsTrackFocus)) {
-        cssVariables2.setProperties({
-          "--tjs-input-range-slider-track-box-shadow-focus": "box-shadow" in propsTrackFocus ? propsTrackFocus["box-shadow"] : "1px 1px 1px #000000, 0px 0px 1px #0d0d0d"
-        }, false);
-      }
-      if (isObject(propsThumb)) {
-        cssVariables2.setProperties({
-          "--tjs-input-range-slider-thumb-box-shadow": "box-shadow" in propsThumb ? propsThumb["box-shadow"] : "0 0 5px var(--color-shadow-primary)"
-        }, false);
-      }
-      if (isObject(propsThumbFocus)) {
-        cssVariables2.setProperties({
-          "--tjs-input-range-slider-thumb-box-shadow-focus": "box-shadow" in propsThumbFocus ? propsThumbFocus["box-shadow"] : "0 0 5px var(--color-shadow-primary)"
-        }, false);
-      }
-    }
-    cssVariables2.setProperties({
-      // `popup` is for components that are slightly elevated, but connected to an application;
-      // see: TJSMenu / TJSContextMenu / TJSColordPicker
-      "--tjs-default-popup-background": "var(--color-text-dark-header, #23221d)",
-      "--tjs-default-popup-border": "1px solid var(--color-border-dark, #000)",
-      "--tjs-default-popup-box-shadow": "0 0 2px var(--color-shadow-dark, #000)",
-      "--tjs-default-popup-primary-color": "var(--color-text-light-primary, #b5b3a4)",
-      "--tjs-default-popup-highlight-color": "var(--color-text-light-highlight, #f0f0e0)",
-      // `popover` is for components that are elevated and independent; see: TJSContextMenu
-      "--tjs-default-popover-border": "1px solid var(--color-border-dark, #000)",
-      "--tjs-default-popover-box-shadow": "0 0 10px var(--color-shadow-dark, #000)"
-    }, false);
-    Hooks.on("PopOut:loading", (app, popout) => {
-      if (app instanceof SvelteApp) {
-        popout.document.addEventListener("DOMContentLoaded", () => cssVariables2.clone(popout.document));
-      }
     });
   }
 }
 FVTTConfigure.initialize();
-function create_fragment$1E(ctx) {
-  let div;
-  let a;
-  let i;
-  let i_class_value;
-  let a_tabindex_value;
-  let a_title_value;
-  let efx_action;
-  let applyStyles_action;
+function create_if_block$t(ctx) {
+  let if_block_anchor;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*iconType*/
+      ctx2[6] === "font"
+    ) return create_if_block_1$j;
+    if (
+      /*iconType*/
+      ctx2[6] === "img"
+    ) return create_if_block_2$g;
+    if (
+      /*iconType*/
+      ctx2[6] === "svg"
+    ) return create_if_block_3$c;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, if_block_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block) if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block) {
+        if_block.d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_3$c(ctx) {
+  let svg;
+  let inlineSvg_action;
   let mounted;
   let dispose;
   return {
     c() {
-      div = element("div");
-      a = element("a");
-      i = element("i");
-      attr(i, "class", i_class_value = null_to_empty(
+      svg = svg_element("svg");
+      attr(svg, "class", "icon svelte-auto-j8llj2");
+    },
+    m(target2, anchor) {
+      insert(target2, svg, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+          /*icon*/
+          ctx[1]
+        ) }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty & /*icon*/
+      2) inlineSvg_action.update.call(null, { src: (
         /*icon*/
-        ctx[1]
-      ) + " svelte-auto-f3qybu");
-      attr(a, "role", "button");
-      attr(a, "tabindex", a_tabindex_value = /*enabled*/
+        ctx2[1]
+      ) });
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_2$g(ctx) {
+  let img;
+  let img_src_value;
+  return {
+    c() {
+      img = element("img");
+      if (!src_url_equal(img.src, img_src_value = /*icon*/
+      ctx[1])) attr(img, "src", img_src_value);
+      attr(img, "alt", "");
+      attr(img, "class", "icon svelte-auto-j8llj2");
+    },
+    m(target2, anchor) {
+      insert(target2, img, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*icon*/
+      2 && !src_url_equal(img.src, img_src_value = /*icon*/
+      ctx2[1])) {
+        attr(img, "src", img_src_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+    }
+  };
+}
+function create_if_block_1$j(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx[1]}`) + " svelte-auto-j8llj2");
+    },
+    m(target2, anchor) {
+      insert(target2, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*icon*/
+      2 && i_class_value !== (i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx2[1]}`) + " svelte-auto-j8llj2")) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_fragment$1H(ctx) {
+  let div;
+  let button_1;
+  let button_1_tabindex_value;
+  let popoverTooltip_action;
+  let efx_action;
+  let applyStyles_action;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*icon*/
+    ctx[1] && create_if_block$t(ctx)
+  );
+  return {
+    c() {
+      div = element("div");
+      button_1 = element("button");
+      if (if_block) if_block.c();
+      attr(button_1, "tabindex", button_1_tabindex_value = /*enabled*/
       ctx[0] ? 0 : null);
-      attr(a, "title", a_title_value = localize(
-        /*title*/
-        ctx[2]
-      ));
-      attr(a, "class", "svelte-auto-f3qybu");
-      attr(div, "class", "tjs-icon-button svelte-auto-f3qybu");
+      attr(button_1, "class", "svelte-auto-j8llj2");
+      attr(div, "class", "tjs-icon-button svelte-auto-j8llj2");
       toggle_class(div, "disabled", !/*enabled*/
       ctx[0]);
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
-      append(div, a);
-      append(a, i);
+      append(div, button_1);
+      if (if_block) if_block.m(button_1, null);
       if (!mounted) {
         dispose = [
           listen(
-            a,
+            button_1,
             "click",
             /*onClick*/
-            ctx[5]
-          ),
-          listen(
-            a,
-            "contextmenu",
-            /*onContextMenuPress*/
-            ctx[6]
-          ),
-          listen(
-            a,
-            "keydown",
-            /*onKeydown*/
             ctx[7]
           ),
           listen(
-            a,
-            "keyup",
-            /*onKeyup*/
+            button_1,
+            "contextmenu",
+            /*onContextMenuPress*/
             ctx[8]
           ),
           listen(
-            a,
-            "click",
-            /*click_handler*/
-            ctx[14]
+            button_1,
+            "keydown",
+            /*onKeydown*/
+            ctx[9]
           ),
           listen(
-            a,
+            button_1,
+            "keyup",
+            /*onKeyup*/
+            ctx[10]
+          ),
+          listen(
+            button_1,
+            "click",
+            /*click_handler*/
+            ctx[16]
+          ),
+          listen(
+            button_1,
             "contextmenu",
             /*contextmenu_handler*/
-            ctx[15]
+            ctx[17]
           ),
+          action_destroyer(popoverTooltip_action = popoverTooltip.call(null, button_1, {
+            tooltip: (
+              /*tooltip*/
+              ctx[2]
+            ),
+            direction: (
+              /*tooltipDirection*/
+              ctx[3]
+            )
+          })),
           action_destroyer(efx_action = /*efx*/
-          ctx[4].call(null, a, { enabled: (
+          ctx[5].call(null, button_1, { enabled: (
             /*enabled*/
             ctx[0]
           ) })),
@@ -45649,42 +49429,54 @@ function create_fragment$1E(ctx) {
             null,
             div,
             /*styles*/
-            ctx[3]
+            ctx[4]
           ))
         ];
         mounted = true;
       }
     },
     p(ctx2, [dirty]) {
-      if (dirty & /*icon*/
-      2 && i_class_value !== (i_class_value = null_to_empty(
+      if (
         /*icon*/
         ctx2[1]
-      ) + " svelte-auto-f3qybu")) {
-        attr(i, "class", i_class_value);
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$t(ctx2);
+          if_block.c();
+          if_block.m(button_1, null);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
       }
       if (dirty & /*enabled*/
-      1 && a_tabindex_value !== (a_tabindex_value = /*enabled*/
+      1 && button_1_tabindex_value !== (button_1_tabindex_value = /*enabled*/
       ctx2[0] ? 0 : null)) {
-        attr(a, "tabindex", a_tabindex_value);
+        attr(button_1, "tabindex", button_1_tabindex_value);
       }
-      if (dirty & /*title*/
-      4 && a_title_value !== (a_title_value = localize(
-        /*title*/
-        ctx2[2]
-      ))) {
-        attr(a, "title", a_title_value);
-      }
+      if (popoverTooltip_action && is_function(popoverTooltip_action.update) && dirty & /*tooltip, tooltipDirection*/
+      12) popoverTooltip_action.update.call(null, {
+        tooltip: (
+          /*tooltip*/
+          ctx2[2]
+        ),
+        direction: (
+          /*tooltipDirection*/
+          ctx2[3]
+        )
+      });
       if (efx_action && is_function(efx_action.update) && dirty & /*enabled*/
       1) efx_action.update.call(null, { enabled: (
         /*enabled*/
         ctx2[0]
       ) });
       if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
-      8) applyStyles_action.update.call(
+      16) applyStyles_action.update.call(
         null,
         /*styles*/
-        ctx2[3]
+        ctx2[4]
       );
       if (dirty & /*enabled*/
       1) {
@@ -45698,16 +49490,18 @@ function create_fragment$1E(ctx) {
       if (detaching) {
         detach(div);
       }
+      if (if_block) if_block.d();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$1w($$self, $$props, $$invalidate) {
+function instance$1z($$self, $$props, $$invalidate) {
   let { button = void 0 } = $$props;
   let { enabled: enabled2 = void 0 } = $$props;
   let { icon = void 0 } = $$props;
-  let { title: title2 = void 0 } = $$props;
+  let { tooltip = void 0 } = $$props;
+  let { tooltipDirection = void 0 } = $$props;
   let { styles = void 0 } = $$props;
   let { efx = void 0 } = $$props;
   let { keyCode = void 0 } = $$props;
@@ -45717,8 +49511,14 @@ function instance$1w($$self, $$props, $$invalidate) {
   const dispatch2 = createEventDispatcher();
   const s_EFX_DEFAULT = () => {
   };
+  let iconType;
   function onClick(event) {
     if (!enabled2) {
+      return;
+    }
+    if (event.detail === 0) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       return;
     }
     if (typeof onPress === "function") {
@@ -45771,61 +49571,78 @@ function instance$1w($$self, $$props, $$invalidate) {
     bubble.call(this, $$self, event);
   }
   $$self.$$set = ($$props2) => {
-    if ("button" in $$props2) $$invalidate(13, button = $$props2.button);
+    if ("button" in $$props2) $$invalidate(15, button = $$props2.button);
     if ("enabled" in $$props2) $$invalidate(0, enabled2 = $$props2.enabled);
     if ("icon" in $$props2) $$invalidate(1, icon = $$props2.icon);
-    if ("title" in $$props2) $$invalidate(2, title2 = $$props2.title);
-    if ("styles" in $$props2) $$invalidate(3, styles = $$props2.styles);
-    if ("efx" in $$props2) $$invalidate(4, efx = $$props2.efx);
-    if ("keyCode" in $$props2) $$invalidate(9, keyCode = $$props2.keyCode);
-    if ("onPress" in $$props2) $$invalidate(10, onPress = $$props2.onPress);
-    if ("onContextMenu" in $$props2) $$invalidate(11, onContextMenu = $$props2.onContextMenu);
-    if ("clickPropagate" in $$props2) $$invalidate(12, clickPropagate = $$props2.clickPropagate);
+    if ("tooltip" in $$props2) $$invalidate(2, tooltip = $$props2.tooltip);
+    if ("tooltipDirection" in $$props2) $$invalidate(3, tooltipDirection = $$props2.tooltipDirection);
+    if ("styles" in $$props2) $$invalidate(4, styles = $$props2.styles);
+    if ("efx" in $$props2) $$invalidate(5, efx = $$props2.efx);
+    if ("keyCode" in $$props2) $$invalidate(11, keyCode = $$props2.keyCode);
+    if ("onPress" in $$props2) $$invalidate(12, onPress = $$props2.onPress);
+    if ("onContextMenu" in $$props2) $$invalidate(13, onContextMenu = $$props2.onContextMenu);
+    if ("clickPropagate" in $$props2) $$invalidate(14, clickPropagate = $$props2.clickPropagate);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*button, enabled*/
-    8193) {
+    32769) {
       $$invalidate(0, enabled2 = isObject(button) && typeof button.enabled === "boolean" ? button.enabled : typeof enabled2 === "boolean" ? enabled2 : true);
     }
     if ($$self.$$.dirty & /*button, icon*/
-    8194) {
-      $$invalidate(1, icon = isObject(button) && typeof button.icon === "string" ? button.icon : typeof icon === "string" ? icon : "");
+    32770) {
+      $$invalidate(1, icon = isObject(button) && typeof button.icon === "string" ? button.icon : typeof icon === "string" ? icon : void 0);
     }
-    if ($$self.$$.dirty & /*button, title*/
-    8196) {
-      $$invalidate(2, title2 = isObject(button) && typeof button.title === "string" ? button.title : typeof title2 === "string" ? title2 : "");
+    if ($$self.$$.dirty & /*button, tooltip*/
+    32772) {
+      $$invalidate(2, tooltip = isObject(button) && typeof button.tooltip === "string" ? button.tooltip : typeof tooltip === "string" ? tooltip : "");
+    }
+    if ($$self.$$.dirty & /*button, tooltipDirection*/
+    32776) {
+      $$invalidate(3, tooltipDirection = isObject(button) && typeof button.tooltipDirection === "string" ? button.tooltipDirection : typeof tooltipDirection === "string" ? tooltipDirection : void 0);
     }
     if ($$self.$$.dirty & /*button, styles*/
-    8200) {
-      $$invalidate(3, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
+    32784) {
+      $$invalidate(4, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
     }
     if ($$self.$$.dirty & /*button, efx*/
-    8208) {
-      $$invalidate(4, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
+    32800) {
+      $$invalidate(5, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
     }
     if ($$self.$$.dirty & /*button, keyCode*/
-    8704) {
-      $$invalidate(9, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
+    34816) {
+      $$invalidate(11, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
     }
     if ($$self.$$.dirty & /*button, onPress*/
-    9216) {
-      $$invalidate(10, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
+    36864) {
+      $$invalidate(12, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
     }
     if ($$self.$$.dirty & /*button, onContextMenu*/
-    10240) {
-      $$invalidate(11, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
+    40960) {
+      $$invalidate(13, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
     }
     if ($$self.$$.dirty & /*button, clickPropagate*/
-    12288) {
-      $$invalidate(12, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    49152) {
+      $$invalidate(14, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    }
+    if ($$self.$$.dirty & /*icon*/
+    2) {
+      {
+        const result = AssetValidator.parseMedia({
+          url: icon,
+          mediaTypes: AssetValidator.MediaTypes.img_svg
+        });
+        $$invalidate(6, iconType = result.valid ? result.elementType : "font");
+      }
     }
   };
   return [
     enabled2,
     icon,
-    title2,
+    tooltip,
+    tooltipDirection,
     styles,
     efx,
+    iconType,
     onClick,
     onContextMenuPress,
     onKeydown,
@@ -45842,31 +49659,216 @@ function instance$1w($$self, $$props, $$invalidate) {
 class TJSIconButton extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1w, create_fragment$1E, safe_not_equal, {
-      button: 13,
+    init(this, options2, instance$1z, create_fragment$1H, safe_not_equal, {
+      button: 15,
       enabled: 0,
       icon: 1,
-      title: 2,
-      styles: 3,
-      efx: 4,
-      keyCode: 9,
-      onPress: 10,
-      onContextMenu: 11,
-      clickPropagate: 12
+      tooltip: 2,
+      tooltipDirection: 3,
+      styles: 4,
+      efx: 5,
+      keyCode: 11,
+      onPress: 12,
+      onContextMenu: 13,
+      clickPropagate: 14
     });
   }
 }
-function create_if_block$q(ctx) {
+function create_if_block_1$i(ctx) {
+  let if_block_anchor;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*iconType*/
+      ctx2[8] === "font"
+    ) return create_if_block_2$f;
+    if (
+      /*iconType*/
+      ctx2[8] === "img"
+    ) return create_if_block_3$b;
+    if (
+      /*iconType*/
+      ctx2[8] === "svg"
+    ) return create_if_block_4$8;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, if_block_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block) if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block) {
+        if_block.d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_4$8(ctx) {
+  let svg;
+  let inlineSvg_action;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      svg = svg_element("svg");
+      attr(svg, "class", "icon svelte-auto-8l32iw");
+      toggle_class(
+        svg,
+        "selected",
+        /*selected*/
+        ctx[6]
+      );
+    },
+    m(target2, anchor) {
+      insert(target2, svg, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+          /*icon*/
+          ctx[1]
+        ) }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty[0] & /*icon*/
+      2) inlineSvg_action.update.call(null, { src: (
+        /*icon*/
+        ctx2[1]
+      ) });
+      if (dirty[0] & /*selected*/
+      64) {
+        toggle_class(
+          svg,
+          "selected",
+          /*selected*/
+          ctx2[6]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_3$b(ctx) {
+  let img;
+  let img_src_value;
+  return {
+    c() {
+      img = element("img");
+      if (!src_url_equal(img.src, img_src_value = /*icon*/
+      ctx[1])) attr(img, "src", img_src_value);
+      attr(img, "alt", "");
+      attr(img, "class", "icon svelte-auto-8l32iw");
+      toggle_class(
+        img,
+        "selected",
+        /*selected*/
+        ctx[6]
+      );
+    },
+    m(target2, anchor) {
+      insert(target2, img, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*icon*/
+      2 && !src_url_equal(img.src, img_src_value = /*icon*/
+      ctx2[1])) {
+        attr(img, "src", img_src_value);
+      }
+      if (dirty[0] & /*selected*/
+      64) {
+        toggle_class(
+          img,
+          "selected",
+          /*selected*/
+          ctx2[6]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+    }
+  };
+}
+function create_if_block_2$f(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx[1]}`) + " svelte-auto-8l32iw");
+      toggle_class(
+        i,
+        "selected",
+        /*selected*/
+        ctx[6]
+      );
+    },
+    m(target2, anchor) {
+      insert(target2, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*icon*/
+      2 && i_class_value !== (i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx2[1]}`) + " svelte-auto-8l32iw")) {
+        attr(i, "class", i_class_value);
+      }
+      if (dirty[0] & /*icon, selected*/
+      66) {
+        toggle_class(
+          i,
+          "selected",
+          /*selected*/
+          ctx2[6]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_if_block$s(ctx) {
   let current;
   const default_slot_template = (
     /*#slots*/
-    ctx[24].default
+    ctx[26].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[23],
+    ctx[25],
     null
   );
   return {
@@ -45881,21 +49883,21 @@ function create_if_block$q(ctx) {
     },
     p(ctx2, dirty) {
       if (default_slot) {
-        if (default_slot.p && (!current || dirty & /*$$scope*/
-        8388608)) {
+        if (default_slot.p && (!current || dirty[0] & /*$$scope*/
+        33554432)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[23],
+            ctx2[25],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[23]
+              ctx2[25]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[23],
+              ctx2[25],
               dirty,
               null
             ),
@@ -45918,107 +49920,104 @@ function create_if_block$q(ctx) {
     }
   };
 }
-function create_fragment$1D(ctx) {
+function create_fragment$1G(ctx) {
   let div;
-  let a;
-  let i;
-  let i_class_value;
-  let a_tabindex_value;
-  let a_title_value;
+  let button_1;
+  let button_1_tabindex_value;
+  let popoverTooltip_action;
   let efx_action;
   let t;
   let applyStyles_action;
   let current;
   let mounted;
   let dispose;
-  let if_block = (
+  let if_block0 = (
+    /*icon*/
+    ctx[1] && create_if_block_1$i(ctx)
+  );
+  let if_block1 = (
     /*selected*/
-    ctx[5] && create_if_block$q(ctx)
+    ctx[6] && create_if_block$s(ctx)
   );
   return {
     c() {
       div = element("div");
-      a = element("a");
-      i = element("i");
+      button_1 = element("button");
+      if (if_block0) if_block0.c();
       t = space();
-      if (if_block) if_block.c();
-      attr(i, "class", i_class_value = null_to_empty(
-        /*icon*/
-        ctx[1]
-      ) + " svelte-auto-v5are2");
-      toggle_class(
-        i,
-        "selected",
-        /*selected*/
-        ctx[5]
-      );
-      attr(a, "role", "button");
-      attr(a, "tabindex", a_tabindex_value = /*enabled*/
+      if (if_block1) if_block1.c();
+      attr(button_1, "tabindex", button_1_tabindex_value = /*enabled*/
       ctx[0] ? 0 : null);
-      attr(a, "title", a_title_value = localize(
-        /*titleCurrent*/
-        ctx[7]
-      ));
-      attr(a, "class", "svelte-auto-v5are2");
+      attr(button_1, "class", "svelte-auto-8l32iw");
       toggle_class(
-        a,
+        button_1,
         "selected",
         /*selected*/
-        ctx[5]
+        ctx[6]
       );
-      attr(div, "class", "tjs-toggle-icon-button svelte-auto-v5are2");
+      attr(div, "class", "tjs-toggle-icon-button svelte-auto-8l32iw");
       attr(div, "role", "button");
       toggle_class(div, "disabled", !/*enabled*/
       ctx[0]);
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
-      append(div, a);
-      append(a, i);
-      ctx[27](a);
+      append(div, button_1);
+      if (if_block0) if_block0.m(button_1, null);
+      ctx[29](button_1);
       append(div, t);
-      if (if_block) if_block.m(div, null);
+      if (if_block1) if_block1.m(div, null);
       current = true;
       if (!mounted) {
         dispose = [
           listen(
-            a,
+            button_1,
             "click",
             /*onClick*/
-            ctx[8]
+            ctx[10]
           ),
           listen(
-            a,
+            button_1,
             "contextmenu",
             /*onContextMenuPress*/
-            ctx[9]
+            ctx[11]
           ),
           listen(
-            a,
+            button_1,
             "keydown",
             /*onKeydown*/
-            ctx[12]
+            ctx[14]
           ),
           listen(
-            a,
+            button_1,
             "keyup",
             /*onKeyup*/
-            ctx[13]
+            ctx[15]
           ),
           listen(
-            a,
+            button_1,
             "click",
             /*click_handler*/
-            ctx[25]
+            ctx[27]
           ),
           listen(
-            a,
+            button_1,
             "contextmenu",
             /*contextmenu_handler*/
-            ctx[26]
+            ctx[28]
           ),
+          action_destroyer(popoverTooltip_action = popoverTooltip.call(null, button_1, {
+            tooltip: (
+              /*tooltipCurrent*/
+              ctx[9]
+            ),
+            direction: (
+              /*tooltipDirection*/
+              ctx[2]
+            )
+          })),
           action_destroyer(efx_action = /*efx*/
-          ctx[4].call(null, a, { enabled: (
+          ctx[5].call(null, button_1, { enabled: (
             /*enabled*/
             ctx[0]
           ) })),
@@ -46026,97 +50025,100 @@ function create_fragment$1D(ctx) {
             div,
             "click",
             /*onClickDiv*/
-            ctx[10]
+            ctx[12]
           ),
           listen(
             div,
             "close:popup",
             /*onClosePopup*/
-            ctx[11]
+            ctx[13]
           ),
           action_destroyer(applyStyles_action = applyStyles.call(
             null,
             div,
             /*styles*/
-            ctx[3]
+            ctx[4]
           ))
         ];
         mounted = true;
       }
     },
-    p(ctx2, [dirty]) {
-      if (!current || dirty & /*icon*/
-      2 && i_class_value !== (i_class_value = null_to_empty(
+    p(ctx2, dirty) {
+      if (
         /*icon*/
         ctx2[1]
-      ) + " svelte-auto-v5are2")) {
-        attr(i, "class", i_class_value);
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_1$i(ctx2);
+          if_block0.c();
+          if_block0.m(button_1, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
       }
-      if (!current || dirty & /*icon, selected*/
-      34) {
-        toggle_class(
-          i,
-          "selected",
-          /*selected*/
-          ctx2[5]
-        );
-      }
-      if (!current || dirty & /*enabled*/
-      1 && a_tabindex_value !== (a_tabindex_value = /*enabled*/
+      if (!current || dirty[0] & /*enabled*/
+      1 && button_1_tabindex_value !== (button_1_tabindex_value = /*enabled*/
       ctx2[0] ? 0 : null)) {
-        attr(a, "tabindex", a_tabindex_value);
+        attr(button_1, "tabindex", button_1_tabindex_value);
       }
-      if (!current || dirty & /*titleCurrent*/
-      128 && a_title_value !== (a_title_value = localize(
-        /*titleCurrent*/
-        ctx2[7]
-      ))) {
-        attr(a, "title", a_title_value);
-      }
-      if (efx_action && is_function(efx_action.update) && dirty & /*enabled*/
+      if (popoverTooltip_action && is_function(popoverTooltip_action.update) && dirty[0] & /*tooltipCurrent, tooltipDirection*/
+      516) popoverTooltip_action.update.call(null, {
+        tooltip: (
+          /*tooltipCurrent*/
+          ctx2[9]
+        ),
+        direction: (
+          /*tooltipDirection*/
+          ctx2[2]
+        )
+      });
+      if (efx_action && is_function(efx_action.update) && dirty[0] & /*enabled*/
       1) efx_action.update.call(null, { enabled: (
         /*enabled*/
         ctx2[0]
       ) });
-      if (!current || dirty & /*selected*/
-      32) {
+      if (!current || dirty[0] & /*selected*/
+      64) {
         toggle_class(
-          a,
+          button_1,
           "selected",
           /*selected*/
-          ctx2[5]
+          ctx2[6]
         );
       }
       if (
         /*selected*/
-        ctx2[5]
+        ctx2[6]
       ) {
-        if (if_block) {
-          if_block.p(ctx2, dirty);
-          if (dirty & /*selected*/
-          32) {
-            transition_in(if_block, 1);
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+          if (dirty[0] & /*selected*/
+          64) {
+            transition_in(if_block1, 1);
           }
         } else {
-          if_block = create_if_block$q(ctx2);
-          if_block.c();
-          transition_in(if_block, 1);
-          if_block.m(div, null);
+          if_block1 = create_if_block$s(ctx2);
+          if_block1.c();
+          transition_in(if_block1, 1);
+          if_block1.m(div, null);
         }
-      } else if (if_block) {
+      } else if (if_block1) {
         group_outros();
-        transition_out(if_block, 1, 1, () => {
-          if_block = null;
+        transition_out(if_block1, 1, 1, () => {
+          if_block1 = null;
         });
         check_outros();
       }
-      if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
-      8) applyStyles_action.update.call(
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*styles*/
+      16) applyStyles_action.update.call(
         null,
         /*styles*/
-        ctx2[3]
+        ctx2[4]
       );
-      if (!current || dirty & /*enabled*/
+      if (!current || dirty[0] & /*enabled*/
       1) {
         toggle_class(div, "disabled", !/*enabled*/
         ctx2[0]);
@@ -46124,34 +50126,36 @@ function create_fragment$1D(ctx) {
     },
     i(local) {
       if (current) return;
-      transition_in(if_block);
+      transition_in(if_block1);
       current = true;
     },
     o(local) {
-      transition_out(if_block);
+      transition_out(if_block1);
       current = false;
     },
     d(detaching) {
       if (detaching) {
         detach(div);
       }
-      ctx[27](null);
-      if (if_block) if_block.d();
+      if (if_block0) if_block0.d();
+      ctx[29](null);
+      if (if_block1) if_block1.d();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function instance$1v($$self, $$props, $$invalidate) {
-  let titleCurrent;
-  let $store, $$unsubscribe_store = noop, $$subscribe_store = () => ($$unsubscribe_store(), $$unsubscribe_store = subscribe(store, ($$value) => $$invalidate(22, $store = $$value)), store);
+function instance$1y($$self, $$props, $$invalidate) {
+  let tooltipCurrent;
+  let $store, $$unsubscribe_store = noop, $$subscribe_store = () => ($$unsubscribe_store(), $$unsubscribe_store = subscribe(store, ($$value) => $$invalidate(24, $store = $$value)), store);
   $$self.$$.on_destroy.push(() => $$unsubscribe_store());
   let { $$slots: slots = {}, $$scope } = $$props;
   let { button = void 0 } = $$props;
   let { enabled: enabled2 = void 0 } = $$props;
   let { icon = void 0 } = $$props;
-  let { title: title2 = void 0 } = $$props;
-  let { titleSelected = void 0 } = $$props;
+  let { tooltip = void 0 } = $$props;
+  let { tooltipDirection = void 0 } = $$props;
+  let { tooltipSelected = void 0 } = $$props;
   let { store = void 0 } = $$props;
   $$subscribe_store();
   let { styles = void 0 } = $$props;
@@ -46164,13 +50168,19 @@ function instance$1v($$self, $$props, $$invalidate) {
   const dispatch2 = createEventDispatcher();
   const s_EFX_DEFAULT = () => {
   };
-  let anchorEl;
+  let buttonEl;
   let selected = false;
+  let iconType;
   function onClick(event) {
     if (!enabled2) {
       return;
     }
-    $$invalidate(5, selected = !selected);
+    if (event.detail === 0) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    $$invalidate(6, selected = !selected);
     if (store) {
       store.set(selected);
     }
@@ -46188,7 +50198,7 @@ function instance$1v($$self, $$props, $$invalidate) {
       return;
     }
     if (typeof onContextMenu === "function") {
-      onContextMenu({ event });
+      onContextMenu({ event, selected });
     }
     if (!clickPropagate) {
       event.preventDefault();
@@ -46205,15 +50215,15 @@ function instance$1v($$self, $$props, $$invalidate) {
     }
   }
   function onClosePopup(event) {
-    $$invalidate(5, selected = false);
+    $$invalidate(6, selected = false);
     if (store) {
       store.set(false);
     }
     if (typeof onClose === "function") {
       onClose({ event, selected });
     }
-    if (typeof event?.detail?.keyboardFocus === "boolean" && event.detail.keyboardFocus && anchorEl?.isConnected) {
-      anchorEl.focus();
+    if (typeof event?.detail?.keyboardFocus === "boolean" && event.detail.keyboardFocus && buttonEl?.isConnected) {
+      buttonEl.focus();
       event.stopPropagation();
       event.preventDefault();
     }
@@ -46232,7 +50242,7 @@ function instance$1v($$self, $$props, $$invalidate) {
       return;
     }
     if (event.code === keyCode) {
-      $$invalidate(5, selected = !selected);
+      $$invalidate(6, selected = !selected);
       if (store) {
         store.set(selected);
       }
@@ -46250,111 +50260,128 @@ function instance$1v($$self, $$props, $$invalidate) {
   function contextmenu_handler(event) {
     bubble.call(this, $$self, event);
   }
-  function a_binding($$value) {
+  function button_1_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
-      anchorEl = $$value;
-      $$invalidate(6, anchorEl);
+      buttonEl = $$value;
+      $$invalidate(7, buttonEl);
     });
   }
   $$self.$$set = ($$props2) => {
-    if ("button" in $$props2) $$invalidate(21, button = $$props2.button);
+    if ("button" in $$props2) $$invalidate(23, button = $$props2.button);
     if ("enabled" in $$props2) $$invalidate(0, enabled2 = $$props2.enabled);
     if ("icon" in $$props2) $$invalidate(1, icon = $$props2.icon);
-    if ("title" in $$props2) $$invalidate(14, title2 = $$props2.title);
-    if ("titleSelected" in $$props2) $$invalidate(15, titleSelected = $$props2.titleSelected);
-    if ("store" in $$props2) $$subscribe_store($$invalidate(2, store = $$props2.store));
-    if ("styles" in $$props2) $$invalidate(3, styles = $$props2.styles);
-    if ("efx" in $$props2) $$invalidate(4, efx = $$props2.efx);
-    if ("keyCode" in $$props2) $$invalidate(16, keyCode = $$props2.keyCode);
-    if ("onPress" in $$props2) $$invalidate(17, onPress = $$props2.onPress);
-    if ("onClose" in $$props2) $$invalidate(18, onClose = $$props2.onClose);
-    if ("onContextMenu" in $$props2) $$invalidate(19, onContextMenu = $$props2.onContextMenu);
-    if ("clickPropagate" in $$props2) $$invalidate(20, clickPropagate = $$props2.clickPropagate);
-    if ("$$scope" in $$props2) $$invalidate(23, $$scope = $$props2.$$scope);
+    if ("tooltip" in $$props2) $$invalidate(16, tooltip = $$props2.tooltip);
+    if ("tooltipDirection" in $$props2) $$invalidate(2, tooltipDirection = $$props2.tooltipDirection);
+    if ("tooltipSelected" in $$props2) $$invalidate(17, tooltipSelected = $$props2.tooltipSelected);
+    if ("store" in $$props2) $$subscribe_store($$invalidate(3, store = $$props2.store));
+    if ("styles" in $$props2) $$invalidate(4, styles = $$props2.styles);
+    if ("efx" in $$props2) $$invalidate(5, efx = $$props2.efx);
+    if ("keyCode" in $$props2) $$invalidate(18, keyCode = $$props2.keyCode);
+    if ("onPress" in $$props2) $$invalidate(19, onPress = $$props2.onPress);
+    if ("onClose" in $$props2) $$invalidate(20, onClose = $$props2.onClose);
+    if ("onContextMenu" in $$props2) $$invalidate(21, onContextMenu = $$props2.onContextMenu);
+    if ("clickPropagate" in $$props2) $$invalidate(22, clickPropagate = $$props2.clickPropagate);
+    if ("$$scope" in $$props2) $$invalidate(25, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
-    if ($$self.$$.dirty & /*button, enabled*/
-    2097153) {
+    if ($$self.$$.dirty[0] & /*button, enabled*/
+    8388609) {
       $$invalidate(0, enabled2 = isObject(button) && typeof button.enabled === "boolean" ? button.enabled : typeof enabled2 === "boolean" ? enabled2 : true);
     }
-    if ($$self.$$.dirty & /*button, icon*/
-    2097154) {
-      $$invalidate(1, icon = isObject(button) && typeof button.icon === "string" ? button.icon : typeof icon === "string" ? icon : "");
+    if ($$self.$$.dirty[0] & /*button, icon*/
+    8388610) {
+      $$invalidate(1, icon = isObject(button) && typeof button.icon === "string" ? button.icon : typeof icon === "string" ? icon : void 0);
     }
-    if ($$self.$$.dirty & /*button, title*/
-    2113536) {
-      $$invalidate(14, title2 = isObject(button) && typeof button.title === "string" ? button.title : typeof title2 === "string" ? title2 : "");
+    if ($$self.$$.dirty[0] & /*button, tooltip*/
+    8454144) {
+      $$invalidate(16, tooltip = isObject(button) && typeof button.tooltip === "string" ? button.tooltip : typeof tooltip === "string" ? tooltip : "");
     }
-    if ($$self.$$.dirty & /*button, titleSelected*/
-    2129920) {
-      $$invalidate(15, titleSelected = isObject(button) && typeof button.titleSelected === "string" ? button.titleSelected : typeof titleSelected === "string" ? titleSelected : "");
+    if ($$self.$$.dirty[0] & /*button, tooltipDirection*/
+    8388612) {
+      $$invalidate(2, tooltipDirection = isObject(button) && typeof button.tooltipDirection === "string" ? button.tooltipDirection : typeof tooltipDirection === "string" ? tooltipDirection : void 0);
     }
-    if ($$self.$$.dirty & /*button, store*/
-    2097156) {
-      $$subscribe_store($$invalidate(2, store = isObject(button) && isMinimalWritableStore(button.store) ? button.store : isMinimalWritableStore(store) ? store : void 0));
+    if ($$self.$$.dirty[0] & /*button, tooltipSelected*/
+    8519680) {
+      $$invalidate(17, tooltipSelected = isObject(button) && typeof button.tooltipSelected === "string" ? button.tooltipSelected : typeof tooltipSelected === "string" ? tooltipSelected : "");
     }
-    if ($$self.$$.dirty & /*button, styles*/
-    2097160) {
-      $$invalidate(3, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
+    if ($$self.$$.dirty[0] & /*button, store*/
+    8388616) {
+      $$subscribe_store($$invalidate(3, store = isObject(button) && isMinimalWritableStore(button.store) ? button.store : isMinimalWritableStore(store) ? store : void 0));
     }
-    if ($$self.$$.dirty & /*button, efx*/
-    2097168) {
-      $$invalidate(4, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
+    if ($$self.$$.dirty[0] & /*button, styles*/
+    8388624) {
+      $$invalidate(4, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
     }
-    if ($$self.$$.dirty & /*button, keyCode*/
-    2162688) {
-      $$invalidate(16, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
+    if ($$self.$$.dirty[0] & /*button, efx*/
+    8388640) {
+      $$invalidate(5, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
     }
-    if ($$self.$$.dirty & /*button, onPress*/
-    2228224) {
-      $$invalidate(17, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
+    if ($$self.$$.dirty[0] & /*button, keyCode*/
+    8650752) {
+      $$invalidate(18, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
     }
-    if ($$self.$$.dirty & /*button, onClose*/
-    2359296) {
-      $$invalidate(18, onClose = isObject(button) && typeof button.onClose === "function" ? button.onClose : typeof onClose === "function" ? onClose : void 0);
+    if ($$self.$$.dirty[0] & /*button, onPress*/
+    8912896) {
+      $$invalidate(19, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
     }
-    if ($$self.$$.dirty & /*button, onContextMenu*/
-    2621440) {
-      $$invalidate(19, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
+    if ($$self.$$.dirty[0] & /*button, onClose*/
+    9437184) {
+      $$invalidate(20, onClose = isObject(button) && typeof button.onClose === "function" ? button.onClose : typeof onClose === "function" ? onClose : void 0);
     }
-    if ($$self.$$.dirty & /*button, clickPropagate*/
-    3145728) {
-      $$invalidate(20, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    if ($$self.$$.dirty[0] & /*button, onContextMenu*/
+    10485760) {
+      $$invalidate(21, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
     }
-    if ($$self.$$.dirty & /*store, enabled*/
-    5) {
+    if ($$self.$$.dirty[0] & /*button, clickPropagate*/
+    12582912) {
+      $$invalidate(22, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    }
+    if ($$self.$$.dirty[0] & /*store, enabled*/
+    9) {
       if (store && !enabled2) {
         set_store_value(store, $store = false, $store);
       }
     }
-    if ($$self.$$.dirty & /*store, $store*/
-    4194308) {
+    if ($$self.$$.dirty[0] & /*store, $store*/
+    16777224) {
       if (store) {
-        $$invalidate(5, selected = $store);
+        $$invalidate(6, selected = $store);
       }
     }
-    if ($$self.$$.dirty & /*selected, titleSelected, title*/
-    49184) {
-      $$invalidate(7, titleCurrent = selected && titleSelected !== "" ? titleSelected : title2);
+    if ($$self.$$.dirty[0] & /*selected, tooltipSelected, tooltip*/
+    196672) {
+      $$invalidate(9, tooltipCurrent = selected && tooltipSelected !== "" ? tooltipSelected : tooltip);
+    }
+    if ($$self.$$.dirty[0] & /*icon*/
+    2) {
+      {
+        const result = AssetValidator.parseMedia({
+          url: icon,
+          mediaTypes: AssetValidator.MediaTypes.img_svg
+        });
+        $$invalidate(8, iconType = result.valid ? result.elementType : "font");
+      }
     }
   };
   return [
     enabled2,
     icon,
+    tooltipDirection,
     store,
     styles,
     efx,
     selected,
-    anchorEl,
-    titleCurrent,
+    buttonEl,
+    iconType,
+    tooltipCurrent,
     onClick,
     onContextMenuPress,
     onClickDiv,
     onClosePopup,
     onKeydown,
     onKeyup,
-    title2,
-    titleSelected,
+    tooltip,
+    tooltipSelected,
     keyCode,
     onPress,
     onClose,
@@ -46366,27 +50393,37 @@ function instance$1v($$self, $$props, $$invalidate) {
     slots,
     click_handler,
     contextmenu_handler,
-    a_binding
+    button_1_binding
   ];
 }
 class TJSToggleIconButton extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1v, create_fragment$1D, safe_not_equal, {
-      button: 21,
-      enabled: 0,
-      icon: 1,
-      title: 14,
-      titleSelected: 15,
-      store: 2,
-      styles: 3,
-      efx: 4,
-      keyCode: 16,
-      onPress: 17,
-      onClose: 18,
-      onContextMenu: 19,
-      clickPropagate: 20
-    });
+    init(
+      this,
+      options2,
+      instance$1y,
+      create_fragment$1G,
+      safe_not_equal,
+      {
+        button: 23,
+        enabled: 0,
+        icon: 1,
+        tooltip: 16,
+        tooltipDirection: 2,
+        tooltipSelected: 17,
+        store: 3,
+        styles: 4,
+        efx: 5,
+        keyCode: 18,
+        onPress: 19,
+        onClose: 20,
+        onContextMenu: 21,
+        clickPropagate: 22
+      },
+      null,
+      [-1, -1]
+    );
   }
 }
 function getStackingContext(node, activeWindow = globalThis) {
@@ -46457,7 +50494,56 @@ function getStackingContext(node, activeWindow = globalThis) {
   }
   return getStackingContext(node.parentNode);
 }
-function create_fragment$1C(ctx) {
+function create_fragment$1F(ctx) {
+  let span;
+  return {
+    c() {
+      span = element("span");
+      attr(span, "class", "tjs-focus-indicator svelte-auto-1gv17cv");
+      toggle_class(
+        span,
+        "absolute",
+        /*absolute*/
+        ctx[0]
+      );
+    },
+    m(target2, anchor) {
+      insert(target2, span, anchor);
+    },
+    p(ctx2, [dirty]) {
+      if (dirty & /*absolute*/
+      1) {
+        toggle_class(
+          span,
+          "absolute",
+          /*absolute*/
+          ctx2[0]
+        );
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function instance$1x($$self, $$props, $$invalidate) {
+  let { absolute = false } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("absolute" in $$props2) $$invalidate(0, absolute = $$props2.absolute);
+  };
+  return [absolute];
+}
+class TJSFocusIndicator extends SvelteComponent {
+  constructor(options2) {
+    super();
+    init(this, options2, instance$1x, create_fragment$1F, safe_not_equal, { absolute: 0 });
+  }
+}
+function create_fragment$1E(ctx) {
   let div;
   let div_tabindex_value;
   let mounted;
@@ -46501,7 +50587,7 @@ function create_fragment$1C(ctx) {
     }
   };
 }
-function instance$1u($$self, $$props, $$invalidate) {
+function instance$1w($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled: enabled2 = true } = $$props;
   let ignoreElements, wrapEl;
@@ -46541,19 +50627,19 @@ function instance$1u($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1u, create_fragment$1C, safe_not_equal, { elementRoot: 3, enabled: 0 });
+    init(this, options2, instance$1w, create_fragment$1E, safe_not_equal, { elementRoot: 3, enabled: 0 });
   }
 }
 const get_after_slot_changes = (dirty) => ({});
 const get_after_slot_context = (ctx) => ({});
-function get_each_context$f(ctx, list, i) {
+function get_each_context$g(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[40] = list[i];
+  child_ctx[43] = list[i];
   return child_ctx;
 }
 const get_before_slot_changes = (dirty) => ({});
 const get_before_slot_context = (ctx) => ({});
-function create_if_block_9$1(ctx) {
+function create_if_block_10$1(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -46654,13 +50740,13 @@ function create_if_block_9$1(ctx) {
   };
 }
 function fallback_block_2$1(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*menu*/
-    ctx[2]?.slotDefault?.class
+    ctx[2]?.slotDefault
   );
   let if_block_anchor;
   let current;
-  let if_block = show_if && create_if_block_9$1(ctx);
+  let if_block = show_if && create_if_block_10$1(ctx);
   return {
     c() {
       if (if_block) if_block.c();
@@ -46673,9 +50759,9 @@ function fallback_block_2$1(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*menu*/
-      4) show_if = TJSSvelte.util.isComponent(
+      4) show_if = TJSSvelte.config.isConfigEmbed(
         /*menu*/
-        ctx2[2]?.slotDefault?.class
+        ctx2[2]?.slotDefault
       );
       if (show_if) {
         if (if_block) {
@@ -46685,7 +50771,7 @@ function fallback_block_2$1(ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block_9$1(ctx2);
+          if_block = create_if_block_10$1(ctx2);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -46715,39 +50801,39 @@ function fallback_block_2$1(ctx) {
     }
   };
 }
-function create_if_block_7$1(ctx) {
+function create_if_block_8$1(ctx) {
   let li;
-  let span;
+  let tjsfocusindicator;
   let t;
   let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   const before_slot_template = (
     /*#slots*/
-    ctx[17].before
+    ctx[18].before
   );
   const before_slot = create_slot(
     before_slot_template,
     ctx,
     /*$$scope*/
-    ctx[16],
+    ctx[17],
     get_before_slot_context
   );
   const before_slot_or_fallback = before_slot || fallback_block_1$1(ctx);
   return {
     c() {
       li = element("li");
-      span = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t = space();
       if (before_slot_or_fallback) before_slot_or_fallback.c();
-      attr(span, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item svelte-auto-1evrp07");
+      attr(li, "class", "tjs-menu-item svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t);
       if (before_slot_or_fallback) {
         before_slot_or_fallback.m(li, null);
@@ -46759,13 +50845,13 @@ function create_if_block_7$1(ctx) {
             li,
             "click",
             /*click_handler*/
-            ctx[18]
+            ctx[19]
           ),
           listen(
             li,
             "keyup",
             /*keyup_handler*/
-            ctx[19]
+            ctx[20]
           )
         ];
         mounted = true;
@@ -46774,20 +50860,20 @@ function create_if_block_7$1(ctx) {
     p(ctx2, dirty) {
       if (before_slot) {
         if (before_slot.p && (!current || dirty[0] & /*$$scope*/
-        65536)) {
+        131072)) {
           update_slot_base(
             before_slot,
             before_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[16],
+            ctx2[17],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[16]
+              ctx2[17]
             ) : get_slot_changes(
               before_slot_template,
               /*$$scope*/
-              ctx2[16],
+              ctx2[17],
               dirty,
               get_before_slot_changes
             ),
@@ -46803,10 +50889,12 @@ function create_if_block_7$1(ctx) {
     },
     i(local) {
       if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
       transition_in(before_slot_or_fallback, local);
       current = true;
     },
     o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
       transition_out(before_slot_or_fallback, local);
       current = false;
     },
@@ -46814,13 +50902,14 @@ function create_if_block_7$1(ctx) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       if (before_slot_or_fallback) before_slot_or_fallback.d(detaching);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block_8$1(ctx) {
+function create_if_block_9$1(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -46921,13 +51010,13 @@ function create_if_block_8$1(ctx) {
   };
 }
 function fallback_block_1$1(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*menu*/
-    ctx[2]?.slotBefore?.class
+    ctx[2]?.slotBefore
   );
   let if_block_anchor;
   let current;
-  let if_block = show_if && create_if_block_8$1(ctx);
+  let if_block = show_if && create_if_block_9$1(ctx);
   return {
     c() {
       if (if_block) if_block.c();
@@ -46940,9 +51029,9 @@ function fallback_block_1$1(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*menu*/
-      4) show_if = TJSSvelte.util.isComponent(
+      4) show_if = TJSSvelte.config.isConfigEmbed(
         /*menu*/
-        ctx2[2]?.slotBefore?.class
+        ctx2[2]?.slotBefore
       );
       if (show_if) {
         if (if_block) {
@@ -46952,7 +51041,7 @@ function fallback_block_1$1(ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block_8$1(ctx2);
+          if_block = create_if_block_9$1(ctx2);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -46982,12 +51071,117 @@ function fallback_block_1$1(ctx) {
     }
   };
 }
-function create_if_block_6$4(ctx) {
+function create_if_block_7$1(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let svg;
+  let inlineSvg_action;
+  let t1;
+  let span;
+  let t2_value = localize(
+    /*item*/
+    ctx[43].label
+  ) + "";
+  let t2;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  function click_handler_5(...args) {
+    return (
+      /*click_handler_5*/
+      ctx[29](
+        /*item*/
+        ctx[43],
+        ...args
+      )
+    );
+  }
+  function keyup_handler_5(...args) {
+    return (
+      /*keyup_handler_5*/
+      ctx[30](
+        /*item*/
+        ctx[43],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      svg = svg_element("svg");
+      t1 = space();
+      span = element("span");
+      t2 = text(t2_value);
+      attr(svg, "class", "svelte-auto-tdmg9t");
+      attr(span, "class", "tjs-menu-item-label svelte-auto-tdmg9t");
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      append(li, svg);
+      append(li, t1);
+      append(li, span);
+      append(span, t2);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+            /*item*/
+            ctx[43].icon
+          ) })),
+          listen(li, "click", click_handler_5),
+          listen(li, "keyup", keyup_handler_5)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty[0] & /*allItems*/
+      8) inlineSvg_action.update.call(null, { src: (
+        /*item*/
+        ctx[43].icon
+      ) });
+      if ((!current || dirty[0] & /*allItems*/
+      8) && t2_value !== (t2_value = localize(
+        /*item*/
+        ctx[43].label
+      ) + "")) set_data(t2, t2_value);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_6$5(ctx) {
   let hr;
   return {
     c() {
       hr = element("hr");
-      attr(hr, "class", "svelte-auto-1evrp07");
+      attr(hr, "class", "svelte-auto-tdmg9t");
     },
     m(target2, anchor) {
       insert(target2, hr, anchor);
@@ -47002,24 +51196,26 @@ function create_if_block_6$4(ctx) {
     }
   };
 }
-function create_if_block_5$5(ctx) {
+function create_if_block_5$7(ctx) {
   let li;
-  let span0;
+  let tjsfocusindicator;
   let t0;
-  let span1;
+  let span;
   let t1_value = localize(
     /*item*/
-    ctx[40].label
+    ctx[43].label
   ) + "";
   let t1;
+  let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   function click_handler_4(...args) {
     return (
       /*click_handler_4*/
-      ctx[26](
+      ctx[27](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47027,9 +51223,9 @@ function create_if_block_5$5(ctx) {
   function keyup_handler_4(...args) {
     return (
       /*keyup_handler_4*/
-      ctx[27](
+      ctx[28](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47037,22 +51233,28 @@ function create_if_block_5$5(ctx) {
   return {
     c() {
       li = element("li");
-      span0 = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t0 = space();
-      span1 = element("span");
+      span = element("span");
       t1 = text(t1_value);
-      attr(span0, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
-      attr(span1, "class", "tjs-menu-item-label svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-1evrp07");
+      attr(span, "class", "tjs-menu-item-label svelte-auto-tdmg9t");
+      toggle_class(
+        span,
+        "has-icons",
+        /*hasIcon*/
+        ctx[4]
+      );
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span0);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t0);
-      append(li, span1);
-      append(span1, t1);
+      append(li, span);
+      append(span, t1);
+      current = true;
       if (!mounted) {
         dispose = [
           listen(li, "click", click_handler_4),
@@ -47063,45 +51265,64 @@ function create_if_block_5$5(ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty[0] & /*allItems*/
-      8 && t1_value !== (t1_value = localize(
+      if ((!current || dirty[0] & /*allItems*/
+      8) && t1_value !== (t1_value = localize(
         /*item*/
-        ctx[40].label
+        ctx[43].label
       ) + "")) set_data(t1, t1_value);
+      if (!current || dirty[0] & /*hasIcon*/
+      16) {
+        toggle_class(
+          span,
+          "has-icons",
+          /*hasIcon*/
+          ctx[4]
+        );
+      }
     },
-    i: noop,
-    o: noop,
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
     d(detaching) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block_4$5(ctx) {
+function create_if_block_4$7(ctx) {
   let li;
-  let span0;
+  let tjsfocusindicator;
   let t0;
   let img;
   let img_src_value;
   let img_alt_value;
   let t1;
-  let span1;
+  let span;
   let t2_value = localize(
     /*item*/
-    ctx[40].label
+    ctx[43].label
   ) + "";
   let t2;
+  let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   function click_handler_3(...args) {
     return (
       /*click_handler_3*/
-      ctx[24](
+      ctx[25](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47109,9 +51330,9 @@ function create_if_block_4$5(ctx) {
   function keyup_handler_3(...args) {
     return (
       /*keyup_handler_3*/
-      ctx[25](
+      ctx[26](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47119,31 +51340,31 @@ function create_if_block_4$5(ctx) {
   return {
     c() {
       li = element("li");
-      span0 = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t0 = space();
       img = element("img");
       t1 = space();
-      span1 = element("span");
+      span = element("span");
       t2 = text(t2_value);
-      attr(span0, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
       if (!src_url_equal(img.src, img_src_value = /*item*/
-      ctx[40].image)) attr(img, "src", img_src_value);
+      ctx[43].icon)) attr(img, "src", img_src_value);
       attr(img, "alt", img_alt_value = /*item*/
-      ctx[40].imageAlt);
-      attr(img, "class", "svelte-auto-1evrp07");
-      attr(span1, "class", "tjs-menu-item-label svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-1evrp07");
+      ctx[43].imageAlt);
+      attr(img, "class", "svelte-auto-tdmg9t");
+      attr(span, "class", "tjs-menu-item-label svelte-auto-tdmg9t");
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span0);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t0);
       append(li, img);
       append(li, t1);
-      append(li, span1);
-      append(span1, t2);
+      append(li, span);
+      append(span, t2);
+      current = true;
       if (!mounted) {
         dispose = [
           listen(li, "click", click_handler_3),
@@ -47154,54 +51375,64 @@ function create_if_block_4$5(ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty[0] & /*allItems*/
+      if (!current || dirty[0] & /*allItems*/
       8 && !src_url_equal(img.src, img_src_value = /*item*/
-      ctx[40].image)) {
+      ctx[43].icon)) {
         attr(img, "src", img_src_value);
       }
-      if (dirty[0] & /*allItems*/
+      if (!current || dirty[0] & /*allItems*/
       8 && img_alt_value !== (img_alt_value = /*item*/
-      ctx[40].imageAlt)) {
+      ctx[43].imageAlt)) {
         attr(img, "alt", img_alt_value);
       }
-      if (dirty[0] & /*allItems*/
-      8 && t2_value !== (t2_value = localize(
+      if ((!current || dirty[0] & /*allItems*/
+      8) && t2_value !== (t2_value = localize(
         /*item*/
-        ctx[40].label
+        ctx[43].label
       ) + "")) set_data(t2, t2_value);
     },
-    i: noop,
-    o: noop,
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
     d(detaching) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block_3$9(ctx) {
+function create_if_block_3$a(ctx) {
   let li;
-  let span0;
+  let tjsfocusindicator;
   let t0;
   let i;
   let i_class_value;
   let t1;
-  let span1;
+  let span;
   let t2_value = localize(
     /*item*/
-    ctx[40].label
+    ctx[43].label
   ) + "";
   let t2;
+  let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   function click_handler_2(...args) {
     return (
       /*click_handler_2*/
-      ctx[22](
+      ctx[23](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47209,9 +51440,9 @@ function create_if_block_3$9(ctx) {
   function keyup_handler_2(...args) {
     return (
       /*keyup_handler_2*/
-      ctx[23](
+      ctx[24](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47219,30 +51450,30 @@ function create_if_block_3$9(ctx) {
   return {
     c() {
       li = element("li");
-      span0 = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t0 = space();
       i = element("i");
       t1 = space();
-      span1 = element("span");
+      span = element("span");
       t2 = text(t2_value);
-      attr(span0, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
       attr(i, "class", i_class_value = null_to_empty(
         /*item*/
-        ctx[40].icon
-      ) + " svelte-auto-1evrp07");
-      attr(span1, "class", "tjs-menu-item-label svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-1evrp07");
+        ctx[43].icon
+      ) + " svelte-auto-tdmg9t");
+      attr(span, "class", "tjs-menu-item-label svelte-auto-tdmg9t");
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span0);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t0);
       append(li, i);
       append(li, t1);
-      append(li, span1);
-      append(span1, t2);
+      append(li, span);
+      append(span, t2);
+      current = true;
       if (!mounted) {
         dispose = [
           listen(li, "click", click_handler_2),
@@ -47253,50 +51484,59 @@ function create_if_block_3$9(ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty[0] & /*allItems*/
+      if (!current || dirty[0] & /*allItems*/
       8 && i_class_value !== (i_class_value = null_to_empty(
         /*item*/
-        ctx[40].icon
-      ) + " svelte-auto-1evrp07")) {
+        ctx[43].icon
+      ) + " svelte-auto-tdmg9t")) {
         attr(i, "class", i_class_value);
       }
-      if (dirty[0] & /*allItems*/
-      8 && t2_value !== (t2_value = localize(
+      if ((!current || dirty[0] & /*allItems*/
+      8) && t2_value !== (t2_value = localize(
         /*item*/
-        ctx[40].label
+        ctx[43].label
       ) + "")) set_data(t2, t2_value);
     },
-    i: noop,
-    o: noop,
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
     d(detaching) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block_2$d(ctx) {
+function create_if_block_2$e(ctx) {
   let li;
-  let span;
+  let tjsfocusindicator;
   let t;
   let switch_instance;
   let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   const switch_instance_spread_levels = [
     isObject(
       /*item*/
-      ctx[40].props
+      ctx[43].svelte.props
     ) ? (
       /*item*/
-      ctx[40].props
+      ctx[43].svelte.props
     ) : {}
   ];
   var switch_value = (
     /*item*/
-    ctx[40].class
+    ctx[43].svelte.class
   );
   function switch_props(ctx2, dirty) {
     let switch_instance_props = {};
@@ -47308,10 +51548,10 @@ function create_if_block_2$d(ctx) {
       switch_instance_props = assign(switch_instance_props, get_spread_update(switch_instance_spread_levels, [
         get_spread_object(isObject(
           /*item*/
-          ctx2[40].props
+          ctx2[43].svelte.props
         ) ? (
           /*item*/
-          ctx2[40].props
+          ctx2[43].svelte.props
         ) : {})
       ]));
     }
@@ -47323,9 +51563,9 @@ function create_if_block_2$d(ctx) {
   function click_handler_1(...args) {
     return (
       /*click_handler_1*/
-      ctx[20](
+      ctx[21](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47333,9 +51573,9 @@ function create_if_block_2$d(ctx) {
   function keyup_handler_1(...args) {
     return (
       /*keyup_handler_1*/
-      ctx[21](
+      ctx[22](
         /*item*/
-        ctx[40],
+        ctx[43],
         ...args
       )
     );
@@ -47343,17 +51583,16 @@ function create_if_block_2$d(ctx) {
   return {
     c() {
       li = element("li");
-      span = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t = space();
       if (switch_instance) create_component(switch_instance.$$.fragment);
-      attr(span, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item svelte-auto-1evrp07");
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t);
       if (switch_instance) mount_component(switch_instance, li, null);
       current = true;
@@ -47369,7 +51608,7 @@ function create_if_block_2$d(ctx) {
       ctx = new_ctx;
       if (dirty[0] & /*allItems*/
       8 && switch_value !== (switch_value = /*item*/
-      ctx[40].class)) {
+      ctx[43].svelte.class)) {
         if (switch_instance) {
           group_outros();
           const old_component = switch_instance;
@@ -47391,10 +51630,10 @@ function create_if_block_2$d(ctx) {
         8 ? get_spread_update(switch_instance_spread_levels, [
           get_spread_object(isObject(
             /*item*/
-            ctx[40].props
+            ctx[43].svelte.props
           ) ? (
             /*item*/
-            ctx[40].props
+            ctx[43].svelte.props
           ) : {})
         ]) : {};
         switch_instance.$set(switch_instance_changes);
@@ -47402,10 +51641,12 @@ function create_if_block_2$d(ctx) {
     },
     i(local) {
       if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
       if (switch_instance) transition_in(switch_instance.$$.fragment, local);
       current = true;
     },
     o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
       if (switch_instance) transition_out(switch_instance.$$.fragment, local);
       current = false;
     },
@@ -47413,46 +51654,52 @@ function create_if_block_2$d(ctx) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       if (switch_instance) destroy_component(switch_instance);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_each_block$f(ctx) {
+function create_each_block$g(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
   const if_block_creators = [
-    create_if_block_2$d,
-    create_if_block_3$9,
-    create_if_block_4$5,
-    create_if_block_5$5,
-    create_if_block_6$4
+    create_if_block_2$e,
+    create_if_block_3$a,
+    create_if_block_4$7,
+    create_if_block_5$7,
+    create_if_block_6$5,
+    create_if_block_7$1
   ];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
       /*item*/
-      ctx2[40]["#type"] === "class"
+      ctx2[43]["#type"] === "class"
     ) return 0;
     if (
       /*item*/
-      ctx2[40]["#type"] === "icon"
+      ctx2[43]["#type"] === "font"
     ) return 1;
     if (
       /*item*/
-      ctx2[40]["#type"] === "image"
+      ctx2[43]["#type"] === "img"
     ) return 2;
     if (
       /*item*/
-      ctx2[40]["#type"] === "label"
+      ctx2[43]["#type"] === "label"
     ) return 3;
     if (
       /*item*/
-      ctx2[40]["#type"] === "separator-hr"
+      ctx2[43]["#type"] === "separator-hr"
     ) return 4;
+    if (
+      /*item*/
+      ctx2[43]["#type"] === "svg"
+    ) return 5;
     return -1;
   }
   if (~(current_block_type_index = select_block_type(ctx))) {
@@ -47519,39 +51766,39 @@ function create_each_block$f(ctx) {
     }
   };
 }
-function create_if_block$p(ctx) {
+function create_if_block$r(ctx) {
   let li;
-  let span;
+  let tjsfocusindicator;
   let t;
   let current;
   let mounted;
   let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
   const after_slot_template = (
     /*#slots*/
-    ctx[17].after
+    ctx[18].after
   );
   const after_slot = create_slot(
     after_slot_template,
     ctx,
     /*$$scope*/
-    ctx[16],
+    ctx[17],
     get_after_slot_context
   );
-  const after_slot_or_fallback = after_slot || fallback_block$1(ctx);
+  const after_slot_or_fallback = after_slot || fallback_block$2(ctx);
   return {
     c() {
       li = element("li");
-      span = element("span");
+      create_component(tjsfocusindicator.$$.fragment);
       t = space();
       if (after_slot_or_fallback) after_slot_or_fallback.c();
-      attr(span, "class", "tjs-menu-focus-indicator svelte-auto-1evrp07");
-      attr(li, "class", "tjs-menu-item svelte-auto-1evrp07");
+      attr(li, "class", "tjs-menu-item tjs-menu-item-button svelte-auto-tdmg9t");
       attr(li, "role", "menuitem");
       attr(li, "tabindex", "0");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
-      append(li, span);
+      mount_component(tjsfocusindicator, li, null);
       append(li, t);
       if (after_slot_or_fallback) {
         after_slot_or_fallback.m(li, null);
@@ -47562,14 +51809,14 @@ function create_if_block$p(ctx) {
           listen(
             li,
             "click",
-            /*click_handler_5*/
-            ctx[28]
+            /*click_handler_6*/
+            ctx[31]
           ),
           listen(
             li,
             "keyup",
-            /*keyup_handler_5*/
-            ctx[29]
+            /*keyup_handler_6*/
+            ctx[32]
           )
         ];
         mounted = true;
@@ -47578,20 +51825,20 @@ function create_if_block$p(ctx) {
     p(ctx2, dirty) {
       if (after_slot) {
         if (after_slot.p && (!current || dirty[0] & /*$$scope*/
-        65536)) {
+        131072)) {
           update_slot_base(
             after_slot,
             after_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[16],
+            ctx2[17],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[16]
+              ctx2[17]
             ) : get_slot_changes(
               after_slot_template,
               /*$$scope*/
-              ctx2[16],
+              ctx2[17],
               dirty,
               get_after_slot_changes
             ),
@@ -47607,10 +51854,12 @@ function create_if_block$p(ctx) {
     },
     i(local) {
       if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
       transition_in(after_slot_or_fallback, local);
       current = true;
     },
     o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
       transition_out(after_slot_or_fallback, local);
       current = false;
     },
@@ -47618,13 +51867,14 @@ function create_if_block$p(ctx) {
       if (detaching) {
         detach(li);
       }
+      destroy_component(tjsfocusindicator);
       if (after_slot_or_fallback) after_slot_or_fallback.d(detaching);
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_if_block_1$g(ctx) {
+function create_if_block_1$h(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -47724,14 +51974,14 @@ function create_if_block_1$g(ctx) {
     }
   };
 }
-function fallback_block$1(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+function fallback_block$2(ctx) {
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*menu*/
-    ctx[2]?.slotAfter?.class
+    ctx[2]?.slotAfter
   );
   let if_block_anchor;
   let current;
-  let if_block = show_if && create_if_block_1$g(ctx);
+  let if_block = show_if && create_if_block_1$h(ctx);
   return {
     c() {
       if (if_block) if_block.c();
@@ -47744,9 +51994,9 @@ function fallback_block$1(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*menu*/
-      4) show_if = TJSSvelte.util.isComponent(
+      4) show_if = TJSSvelte.config.isConfigEmbed(
         /*menu*/
-        ctx2[2]?.slotAfter?.class
+        ctx2[2]?.slotAfter
       );
       if (show_if) {
         if (if_block) {
@@ -47756,7 +52006,7 @@ function fallback_block$1(ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block_1$g(ctx2);
+          if_block = create_if_block_1$h(ctx2);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -47786,7 +52036,7 @@ function fallback_block$1(ctx) {
     }
   };
 }
-function create_fragment$1B(ctx) {
+function create_fragment$1D(ctx) {
   let nav;
   let ol;
   let t0;
@@ -47801,19 +52051,19 @@ function create_fragment$1B(ctx) {
   let dispose;
   const default_slot_template = (
     /*#slots*/
-    ctx[17].default
+    ctx[18].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[16],
+    ctx[17],
     null
   );
   const default_slot_or_fallback = default_slot || fallback_block_2$1(ctx);
   let if_block0 = (
     /*$$slots*/
-    ctx[10].before && create_if_block_7$1(ctx)
+    ctx[11].before && create_if_block_8$1(ctx)
   );
   let each_value = ensure_array_like(
     /*allItems*/
@@ -47821,19 +52071,19 @@ function create_fragment$1B(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$f(get_each_context$f(ctx, each_value, i));
+    each_blocks[i] = create_each_block$g(get_each_context$g(ctx, each_value, i));
   }
   const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
   });
   let if_block1 = (
     /*$$slots*/
-    ctx[10].after && create_if_block$p(ctx)
+    ctx[11].after && create_if_block$r(ctx)
   );
   tjsfocuswrap = new TJSFocusWrap({
     props: { elementRoot: (
       /*menuEl*/
-      ctx[4]
+      ctx[5]
     ) }
   });
   return {
@@ -47851,9 +52101,9 @@ function create_fragment$1B(ctx) {
       if (if_block1) if_block1.c();
       t3 = space();
       create_component(tjsfocuswrap.$$.fragment);
-      attr(ol, "class", "tjs-menu-items svelte-auto-1evrp07");
+      attr(ol, "class", "tjs-menu-items svelte-auto-tdmg9t");
       attr(ol, "role", "menu");
-      attr(nav, "class", "tjs-menu svelte-auto-1evrp07");
+      attr(nav, "class", "tjs-menu svelte-auto-tdmg9t");
       attr(nav, "tabindex", "-1");
     },
     m(target2, anchor) {
@@ -47874,18 +52124,18 @@ function create_fragment$1B(ctx) {
       if (if_block1) if_block1.m(ol, null);
       append(nav, t3);
       mount_component(tjsfocuswrap, nav, null);
-      ctx[30](nav);
+      ctx[33](nav);
       current = true;
       if (!mounted) {
         dispose = [
-          listen(nav, "click", stop_propagation(prevent_default(click_handler_6))),
+          listen(nav, "click", stop_propagation(prevent_default(click_handler_7))),
           listen(nav, "keydown", stop_propagation(
             /*onKeydownMenu*/
-            ctx[7]
+            ctx[8]
           )),
           listen(nav, "keyup", stop_propagation(prevent_default(
             /*onKeyupMenu*/
-            ctx[8]
+            ctx[9]
           ))),
           listen(nav, "pointerdown", stop_propagation(pointerdown_handler)),
           listen(nav, "pointerup", stop_propagation(pointerup_handler)),
@@ -47906,20 +52156,20 @@ function create_fragment$1B(ctx) {
     p(ctx2, dirty) {
       if (default_slot) {
         if (default_slot.p && (!current || dirty[0] & /*$$scope*/
-        65536)) {
+        131072)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[16],
+            ctx2[17],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[16]
+              ctx2[17]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[16],
+              ctx2[17],
               dirty,
               null
             ),
@@ -47934,16 +52184,16 @@ function create_fragment$1B(ctx) {
       }
       if (
         /*$$slots*/
-        ctx2[10].before
+        ctx2[11].before
       ) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
           if (dirty[0] & /*$$slots*/
-          1024) {
+          2048) {
             transition_in(if_block0, 1);
           }
         } else {
-          if_block0 = create_if_block_7$1(ctx2);
+          if_block0 = create_if_block_8$1(ctx2);
           if_block0.c();
           transition_in(if_block0, 1);
           if_block0.m(ol, t1);
@@ -47955,20 +52205,20 @@ function create_fragment$1B(ctx) {
         });
         check_outros();
       }
-      if (dirty[0] & /*onClick, allItems, onKeyupItem*/
-      584) {
+      if (dirty[0] & /*onClick, allItems, onKeyupItem, hasIcon*/
+      1176) {
         each_value = ensure_array_like(
           /*allItems*/
           ctx2[3]
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$f(ctx2, each_value, i);
+          const child_ctx = get_each_context$g(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$f(child_ctx);
+            each_blocks[i] = create_each_block$g(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(ol, t2);
@@ -47982,16 +52232,16 @@ function create_fragment$1B(ctx) {
       }
       if (
         /*$$slots*/
-        ctx2[10].after
+        ctx2[11].after
       ) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
           if (dirty[0] & /*$$slots*/
-          1024) {
+          2048) {
             transition_in(if_block1, 1);
           }
         } else {
-          if_block1 = create_if_block$p(ctx2);
+          if_block1 = create_if_block$r(ctx2);
           if_block1.c();
           transition_in(if_block1, 1);
           if_block1.m(ol, null);
@@ -48005,8 +52255,8 @@ function create_fragment$1B(ctx) {
       }
       const tjsfocuswrap_changes = {};
       if (dirty[0] & /*menuEl*/
-      16) tjsfocuswrap_changes.elementRoot = /*menuEl*/
-      ctx2[4];
+      32) tjsfocuswrap_changes.elementRoot = /*menuEl*/
+      ctx2[5];
       tjsfocuswrap.$set(tjsfocuswrap_changes);
       if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*styles*/
       1) applyStyles_action.update.call(
@@ -48029,7 +52279,7 @@ function create_fragment$1B(ctx) {
         if (!nav_transition) nav_transition = create_bidirectional_transition(
           nav,
           /*animate*/
-          ctx[5],
+          ctx[6],
           {},
           true
         );
@@ -48049,7 +52299,7 @@ function create_fragment$1B(ctx) {
       if (!nav_transition) nav_transition = create_bidirectional_transition(
         nav,
         /*animate*/
-        ctx[5],
+        ctx[6],
         {},
         false
       );
@@ -48065,17 +52315,17 @@ function create_fragment$1B(ctx) {
       destroy_each(each_blocks, detaching);
       if (if_block1) if_block1.d();
       destroy_component(tjsfocuswrap);
-      ctx[30](null);
+      ctx[33](null);
       if (detaching && nav_transition) nav_transition.end();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-const click_handler_6 = () => null;
+const click_handler_7 = () => null;
 const pointerdown_handler = () => null;
 const pointerup_handler = () => null;
-function instance$1t($$self, $$props, $$invalidate) {
+function instance$1v($$self, $$props, $$invalidate) {
   let { $$slots: slots = {}, $$scope } = $$props;
   const $$slots = compute_slots(slots);
   let { menu = void 0 } = $$props;
@@ -48090,20 +52340,25 @@ function instance$1t($$self, $$props, $$invalidate) {
   const s_IGNORE_CLASSES = { ignoreClasses: ["tjs-focus-wrap"] };
   let activeWindow;
   let allItems;
+  let hasIcon = false;
   let menuEl;
   let closed = false;
   let focusSource = void 0;
   let hasKeyboardFocus = false;
   onDestroy(() => {
-    activeWindow?.document.body.removeEventListener("pointerdown", onClose);
-    activeWindow?.document.body.removeEventListener("wheel", onClose);
+    activeWindow?.document.body.removeEventListener("pointerdown", onClose, true);
+    activeWindow?.document.body.removeEventListener("wheel", onClose, true);
     activeWindow?.removeEventListener("blur", onWindowBlur);
+    activeWindow?.removeEventListener("resize", onWindowBlur);
+    $$invalidate(12, focusEl = void 0);
+    focusSource = void 0;
   });
   onMount(() => {
     activeWindow = CrossWindow.getWindow(menuEl);
-    activeWindow.document.body.addEventListener("pointerdown", onClose);
-    activeWindow.document.body.addEventListener("wheel", onClose);
+    activeWindow.document.body.addEventListener("pointerdown", onClose, true);
+    activeWindow.document.body.addEventListener("wheel", onClose, true);
     activeWindow.addEventListener("blur", onWindowBlur);
+    activeWindow.addEventListener("resize", onWindowBlur);
     const activeEl = activeWindow.document.activeElement;
     const parentEl = menuEl.parentElement;
     if (CrossWindow.isHTMLElement(parentEl) && CrossWindow.isHTMLElement(activeEl) && parentEl.contains(activeEl) && activeEl.matches(":focus-visible")) {
@@ -48114,15 +52369,18 @@ function instance$1t($$self, $$props, $$invalidate) {
       } else {
         menuEl.focus();
       }
-      focusSource = { focusEl: [activeEl] };
-      if (focusEl) {
-        focusSource.focusEl.push(focusEl);
-      }
     } else {
       menuEl.focus();
+    }
+    if (activeEl || focusEl) {
+      const focusElements = [];
       if (focusEl) {
-        focusSource = { focusEl: [focusEl] };
+        focusElements.push(focusEl);
       }
+      if (activeEl) {
+        focusElements.push(activeEl);
+      }
+      focusSource = { focusEl: focusElements };
     }
   });
   function animate2(node) {
@@ -48146,25 +52404,38 @@ function instance$1t($$self, $$props, $$invalidate) {
     }
     return slideFade(node, transitionOptions);
   }
-  function onClick(event, item2) {
-    if (typeof item2?.onPress === "function") {
-      item2.onPress({ event, item: item2, focusSource });
+  function handleOnPress(event, item2) {
+    if (!event) {
+      return;
     }
+    if (typeof item2?.onPress === "function") {
+      Promise.resolve(item2.onPress({ event, item: item2, focusSource })).then((result) => {
+        const focusDeferred = !!result;
+        if (!focusDeferred) {
+          A11yHelper.applyFocusSource(focusSource);
+        }
+      });
+    } else {
+      A11yHelper.applyFocusSource(focusSource);
+    }
+  }
+  function onClick(event, item2) {
+    handleOnPress(event, item2);
     if (!closed) {
       closed = true;
       menuEl.dispatchEvent(new CustomEvent("close:popup", { bubbles: true, cancelable: true }));
     }
   }
   async function onClose(event) {
-    if (event.target === menuEl || menuEl.contains(event.target)) {
+    if (event.target === menuEl || menuEl?.contains(event.target)) {
       return;
     }
-    if (event.target === menuEl.parentElement || menuEl.parentElement.contains(event.target)) {
+    if (event.target === menuEl?.parentElement || menuEl?.parentElement.contains(event.target)) {
       return;
     }
     if (!closed) {
       closed = true;
-      menuEl.dispatchEvent(new CustomEvent(
+      menuEl?.dispatchEvent(new CustomEvent(
         "close:popup",
         {
           bubbles: true,
@@ -48204,7 +52475,7 @@ function instance$1t($$self, $$props, $$invalidate) {
       case "Escape":
         if (!closed) {
           closed = true;
-          menuEl.dispatchEvent(new CustomEvent(
+          menuEl?.dispatchEvent(new CustomEvent(
             "close:popup",
             {
               bubbles: true,
@@ -48220,14 +52491,12 @@ function instance$1t($$self, $$props, $$invalidate) {
   }
   function onKeyupItem(event, item2) {
     if (event.code === keyCode) {
-      if (typeof item2?.onPress === "function") {
-        item2.onPress({ event, item: item2, focusSource });
-      }
+      handleOnPress(event, item2);
       if (!closed) {
         closed = true;
         event.preventDefault();
         event.stopPropagation();
-        menuEl.dispatchEvent(new CustomEvent(
+        menuEl?.dispatchEvent(new CustomEvent(
           "close:popup",
           {
             bubbles: true,
@@ -48240,8 +52509,9 @@ function instance$1t($$self, $$props, $$invalidate) {
   }
   function onWindowBlur() {
     if (!closed) {
+      A11yHelper.applyFocusSource(focusSource);
       closed = true;
-      menuEl.dispatchEvent(new CustomEvent("close:popup", { bubbles: true, cancelable: true }));
+      menuEl?.dispatchEvent(new CustomEvent("close:popup", { bubbles: true, cancelable: true }));
     }
   }
   const click_handler = (event) => onClick(event);
@@ -48254,33 +52524,45 @@ function instance$1t($$self, $$props, $$invalidate) {
   const keyup_handler_3 = (item2, event) => onKeyupItem(event, item2);
   const click_handler_4 = (item2, event) => onClick(event, item2);
   const keyup_handler_4 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_5 = (event) => onClick(event);
-  const keyup_handler_5 = (event) => onKeyupItem(event);
+  const click_handler_5 = (item2, event) => onClick(event, item2);
+  const keyup_handler_5 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_6 = (event) => onClick(event);
+  const keyup_handler_6 = (event) => onKeyupItem(event);
   function nav_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       menuEl = $$value;
-      $$invalidate(4, menuEl);
+      $$invalidate(5, menuEl);
     });
   }
   $$self.$$set = ($$props2) => {
     if ("menu" in $$props2) $$invalidate(2, menu = $$props2.menu);
-    if ("items" in $$props2) $$invalidate(15, items = $$props2.items);
-    if ("focusEl" in $$props2) $$invalidate(11, focusEl = $$props2.focusEl);
-    if ("offset" in $$props2) $$invalidate(12, offset = $$props2.offset);
+    if ("items" in $$props2) $$invalidate(16, items = $$props2.items);
+    if ("focusEl" in $$props2) $$invalidate(12, focusEl = $$props2.focusEl);
+    if ("offset" in $$props2) $$invalidate(13, offset = $$props2.offset);
     if ("styles" in $$props2) $$invalidate(0, styles = $$props2.styles);
     if ("efx" in $$props2) $$invalidate(1, efx = $$props2.efx);
-    if ("keyCode" in $$props2) $$invalidate(13, keyCode = $$props2.keyCode);
-    if ("transitionOptions" in $$props2) $$invalidate(14, transitionOptions = $$props2.transitionOptions);
-    if ("$$scope" in $$props2) $$invalidate(16, $$scope = $$props2.$$scope);
+    if ("keyCode" in $$props2) $$invalidate(14, keyCode = $$props2.keyCode);
+    if ("transitionOptions" in $$props2) $$invalidate(15, transitionOptions = $$props2.transitionOptions);
+    if ("$$scope" in $$props2) $$invalidate(17, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty[0] & /*menu, items*/
-    32772) {
+    65540) {
       {
-        const tempList = isObject(menu) && isIterable(menu.items) ? menu.items : isIterable(items) ? items : [];
+        const itemFn = isObject(menu) && typeof menu.items === "function" ? menu.items : typeof items === "function" ? items : void 0;
+        let itemList;
+        if (itemFn) {
+          itemList = itemFn();
+          if (!isIterable(itemList)) {
+            throw new TypeError(`TJSMenu error: 'items' function did not return an iterable list.`);
+          }
+        } else {
+          itemList = isObject(menu) && isIterable(menu.items) ? menu.items : isIterable(items) ? items : [];
+        }
+        $$invalidate(4, hasIcon = false);
         const tempItems = [];
         let cntr = -1;
-        for (const item2 of tempList) {
+        for (const item2 of itemList) {
           cntr++;
           if (!isObject(item2)) {
             throw new TypeError(`TJSMenu error: 'item[${cntr}]' is not an object.`);
@@ -48292,13 +52574,16 @@ function instance$1t($$self, $$props, $$invalidate) {
             continue;
           }
           let type;
-          if (TJSSvelte.util.isComponent(item2.class)) {
+          if (TJSSvelte.config.isConfigEmbed(item2.svelte)) {
             type = "class";
           } else if (typeof item2.icon === "string") {
-            type = "icon";
-          } else if (typeof item2.image === "string") {
-            type = "image";
-          } else if (item2.icon === void 0 && item2.image === void 0 && typeof item2.label === "string") {
+            const result = AssetValidator.parseMedia({
+              url: item2.icon,
+              mediaTypes: AssetValidator.MediaTypes.img_svg
+            });
+            type = result.valid ? result.elementType : "font";
+            $$invalidate(4, hasIcon = true);
+          } else if (item2.icon === void 0 && typeof item2.label === "string") {
             type = "label";
           } else if (typeof item2.separator === "string") {
             if (item2.separator !== "hr") {
@@ -48315,12 +52600,12 @@ function instance$1t($$self, $$props, $$invalidate) {
       }
     }
     if ($$self.$$.dirty[0] & /*menu, focusEl*/
-    2052) {
-      $$invalidate(11, focusEl = isObject(menu) && A11yHelper.isFocusSource(menu.focusEl) ? menu.focusEl : A11yHelper.isFocusSource(focusEl) ? focusEl : void 0);
+    4100) {
+      $$invalidate(12, focusEl = isObject(menu) && A11yHelper.isFocusSource(menu.focusEl) ? menu.focusEl : A11yHelper.isFocusSource(focusEl) ? focusEl : void 0);
     }
     if ($$self.$$.dirty[0] & /*menu, offset*/
-    4100) {
-      $$invalidate(12, offset = isObject(menu) && isObject(menu.offset) ? menu.offset : isObject(offset) ? offset : s_DEFAULT_OFFSET);
+    8196) {
+      $$invalidate(13, offset = isObject(menu) && isObject(menu.offset) ? menu.offset : isObject(offset) ? offset : s_DEFAULT_OFFSET);
     }
     if ($$self.$$.dirty[0] & /*menu, styles*/
     5) {
@@ -48332,12 +52617,12 @@ function instance$1t($$self, $$props, $$invalidate) {
       });
     }
     if ($$self.$$.dirty[0] & /*menu, keyCode*/
-    8196) {
-      $$invalidate(13, keyCode = isObject(menu) && typeof menu.keyCode === "string" ? menu.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
+    16388) {
+      $$invalidate(14, keyCode = isObject(menu) && typeof menu.keyCode === "string" ? menu.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
     }
     if ($$self.$$.dirty[0] & /*menu, transitionOptions*/
-    16388) {
-      $$invalidate(14, transitionOptions = isObject(menu) && isObject(menu.transitionOptions) ? menu.transitionOptions : isObject(transitionOptions) ? transitionOptions : { duration: 200, easing: "quintOut" });
+    32772) {
+      $$invalidate(15, transitionOptions = isObject(menu) && isObject(menu.transitionOptions) ? menu.transitionOptions : isObject(transitionOptions) ? transitionOptions : { duration: 120, easing: "quintOut" });
     }
   };
   return [
@@ -48345,6 +52630,7 @@ function instance$1t($$self, $$props, $$invalidate) {
     efx,
     menu,
     allItems,
+    hasIcon,
     menuEl,
     animate2,
     onClick,
@@ -48371,6 +52657,8 @@ function instance$1t($$self, $$props, $$invalidate) {
     keyup_handler_4,
     click_handler_5,
     keyup_handler_5,
+    click_handler_6,
+    keyup_handler_6,
     nav_binding
   ];
 }
@@ -48380,25 +52668,1202 @@ class TJSMenu extends SvelteComponent {
     init(
       this,
       options2,
-      instance$1t,
-      create_fragment$1B,
+      instance$1v,
+      create_fragment$1D,
       safe_not_equal,
       {
         menu: 2,
-        items: 15,
-        focusEl: 11,
-        offset: 12,
+        items: 16,
+        focusEl: 12,
+        offset: 13,
         styles: 0,
         efx: 1,
-        keyCode: 13,
-        transitionOptions: 14
+        keyCode: 14,
+        transitionOptions: 15
       },
       null,
       [-1, -1]
     );
   }
 }
-function create_fragment$1A(ctx) {
+function get_each_context$f(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[42] = list[i];
+  return child_ctx;
+}
+function create_if_block_5$6(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let svg;
+  let inlineSvg_action;
+  let t1;
+  let span;
+  let t2_value = localize(
+    /*item*/
+    ctx[42].label
+  ) + "";
+  let t2;
+  let t3;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  function click_handler_5(...args) {
+    return (
+      /*click_handler_5*/
+      ctx[32](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  function keyup_handler_4(...args) {
+    return (
+      /*keyup_handler_4*/
+      ctx[33](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      svg = svg_element("svg");
+      t1 = space();
+      span = element("span");
+      t2 = text(t2_value);
+      t3 = space();
+      attr(svg, "class", "svelte-auto-vll23a");
+      attr(span, "class", "tjs-context-menu-item-label svelte-auto-vll23a");
+      attr(li, "class", "tjs-context-menu-item tjs-context-menu-item-button svelte-auto-vll23a");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      append(li, svg);
+      append(li, t1);
+      append(li, span);
+      append(span, t2);
+      append(li, t3);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+            /*item*/
+            ctx[42].icon
+          ) })),
+          listen(li, "click", click_handler_5),
+          listen(li, "keyup", keyup_handler_4)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty[0] & /*items*/
+      8) inlineSvg_action.update.call(null, { src: (
+        /*item*/
+        ctx[42].icon
+      ) });
+      if ((!current || dirty[0] & /*items*/
+      8) && t2_value !== (t2_value = localize(
+        /*item*/
+        ctx[42].label
+      ) + "")) set_data(t2, t2_value);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_4$6(ctx) {
+  let hr;
+  return {
+    c() {
+      hr = element("hr");
+      attr(hr, "class", "svelte-auto-vll23a");
+    },
+    m(target2, anchor) {
+      insert(target2, hr, anchor);
+    },
+    p: noop,
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(hr);
+      }
+    }
+  };
+}
+function create_if_block_3$9(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let span;
+  let t1_value = localize(
+    /*item*/
+    ctx[42].label
+  ) + "";
+  let t1;
+  let t2;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  function click_handler_4(...args) {
+    return (
+      /*click_handler_4*/
+      ctx[30](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  function keyup_handler_3(...args) {
+    return (
+      /*keyup_handler_3*/
+      ctx[31](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      span = element("span");
+      t1 = text(t1_value);
+      t2 = space();
+      attr(span, "class", "tjs-context-menu-item-label svelte-auto-vll23a");
+      toggle_class(
+        span,
+        "has-icons",
+        /*hasIcon*/
+        ctx[2]
+      );
+      attr(li, "class", "tjs-context-menu-item tjs-context-menu-item-button svelte-auto-vll23a");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      append(li, span);
+      append(span, t1);
+      append(li, t2);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(li, "click", click_handler_4),
+          listen(li, "keyup", keyup_handler_3)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if ((!current || dirty[0] & /*items*/
+      8) && t1_value !== (t1_value = localize(
+        /*item*/
+        ctx[42].label
+      ) + "")) set_data(t1, t1_value);
+      if (!current || dirty[0] & /*hasIcon*/
+      4) {
+        toggle_class(
+          span,
+          "has-icons",
+          /*hasIcon*/
+          ctx[2]
+        );
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_2$d(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let img;
+  let img_src_value;
+  let img_alt_value;
+  let t1;
+  let span;
+  let t2_value = localize(
+    /*item*/
+    ctx[42].label
+  ) + "";
+  let t2;
+  let t3;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  function click_handler_3(...args) {
+    return (
+      /*click_handler_3*/
+      ctx[28](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  function keyup_handler_2(...args) {
+    return (
+      /*keyup_handler_2*/
+      ctx[29](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      img = element("img");
+      t1 = space();
+      span = element("span");
+      t2 = text(t2_value);
+      t3 = space();
+      if (!src_url_equal(img.src, img_src_value = /*item*/
+      ctx[42].icon)) attr(img, "src", img_src_value);
+      attr(img, "alt", img_alt_value = /*item*/
+      ctx[42].imageAlt);
+      attr(img, "class", "svelte-auto-vll23a");
+      attr(span, "class", "tjs-context-menu-item-label svelte-auto-vll23a");
+      attr(li, "class", "tjs-context-menu-item tjs-context-menu-item-button svelte-auto-vll23a");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      append(li, img);
+      append(li, t1);
+      append(li, span);
+      append(span, t2);
+      append(li, t3);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(li, "click", click_handler_3),
+          listen(li, "keyup", keyup_handler_2)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (!current || dirty[0] & /*items*/
+      8 && !src_url_equal(img.src, img_src_value = /*item*/
+      ctx[42].icon)) {
+        attr(img, "src", img_src_value);
+      }
+      if (!current || dirty[0] & /*items*/
+      8 && img_alt_value !== (img_alt_value = /*item*/
+      ctx[42].imageAlt)) {
+        attr(img, "alt", img_alt_value);
+      }
+      if ((!current || dirty[0] & /*items*/
+      8) && t2_value !== (t2_value = localize(
+        /*item*/
+        ctx[42].label
+      ) + "")) set_data(t2, t2_value);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_1$g(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let i;
+  let i_class_value;
+  let t1;
+  let span;
+  let t2_value = localize(
+    /*item*/
+    ctx[42].label
+  ) + "";
+  let t2;
+  let t3;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  function click_handler_2(...args) {
+    return (
+      /*click_handler_2*/
+      ctx[26](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  function keyup_handler_1(...args) {
+    return (
+      /*keyup_handler_1*/
+      ctx[27](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      i = element("i");
+      t1 = space();
+      span = element("span");
+      t2 = text(t2_value);
+      t3 = space();
+      attr(i, "class", i_class_value = null_to_empty(
+        /*item*/
+        ctx[42].icon
+      ) + " svelte-auto-vll23a");
+      attr(span, "class", "tjs-context-menu-item-label svelte-auto-vll23a");
+      attr(li, "class", "tjs-context-menu-item tjs-context-menu-item-button svelte-auto-vll23a");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      append(li, i);
+      append(li, t1);
+      append(li, span);
+      append(span, t2);
+      append(li, t3);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(li, "click", click_handler_2),
+          listen(li, "keyup", keyup_handler_1)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (!current || dirty[0] & /*items*/
+      8 && i_class_value !== (i_class_value = null_to_empty(
+        /*item*/
+        ctx[42].icon
+      ) + " svelte-auto-vll23a")) {
+        attr(i, "class", i_class_value);
+      }
+      if ((!current || dirty[0] & /*items*/
+      8) && t2_value !== (t2_value = localize(
+        /*item*/
+        ctx[42].label
+      ) + "")) set_data(t2, t2_value);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block$q(ctx) {
+  let li;
+  let tjsfocusindicator;
+  let t0;
+  let switch_instance;
+  let t1;
+  let current;
+  let mounted;
+  let dispose;
+  tjsfocusindicator = new TJSFocusIndicator({ props: { absolute: true } });
+  const switch_instance_spread_levels = [
+    isObject(
+      /*item*/
+      ctx[42].svelte.props
+    ) ? (
+      /*item*/
+      ctx[42].svelte.props
+    ) : {}
+  ];
+  var switch_value = (
+    /*item*/
+    ctx[42].svelte.class
+  );
+  function switch_props(ctx2, dirty) {
+    let switch_instance_props = {};
+    for (let i = 0; i < switch_instance_spread_levels.length; i += 1) {
+      switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
+    }
+    if (dirty !== void 0 && dirty[0] & /*items*/
+    8) {
+      switch_instance_props = assign(switch_instance_props, get_spread_update(switch_instance_spread_levels, [
+        get_spread_object(isObject(
+          /*item*/
+          ctx2[42].svelte.props
+        ) ? (
+          /*item*/
+          ctx2[42].svelte.props
+        ) : {})
+      ]));
+    }
+    return { props: switch_instance_props };
+  }
+  if (switch_value) {
+    switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+  }
+  function click_handler_1(...args) {
+    return (
+      /*click_handler_1*/
+      ctx[24](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  function keyup_handler(...args) {
+    return (
+      /*keyup_handler*/
+      ctx[25](
+        /*item*/
+        ctx[42],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      li = element("li");
+      create_component(tjsfocusindicator.$$.fragment);
+      t0 = space();
+      if (switch_instance) create_component(switch_instance.$$.fragment);
+      t1 = space();
+      attr(li, "class", "tjs-context-menu-item tjs-context-menu-item-button svelte-auto-vll23a");
+      attr(li, "role", "menuitem");
+      attr(li, "tabindex", "0");
+    },
+    m(target2, anchor) {
+      insert(target2, li, anchor);
+      mount_component(tjsfocusindicator, li, null);
+      append(li, t0);
+      if (switch_instance) mount_component(switch_instance, li, null);
+      append(li, t1);
+      current = true;
+      if (!mounted) {
+        dispose = [listen(li, "click", click_handler_1), listen(li, "keyup", keyup_handler)];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*items*/
+      8 && switch_value !== (switch_value = /*item*/
+      ctx[42].svelte.class)) {
+        if (switch_instance) {
+          group_outros();
+          const old_component = switch_instance;
+          transition_out(old_component.$$.fragment, 1, 0, () => {
+            destroy_component(old_component, 1);
+          });
+          check_outros();
+        }
+        if (switch_value) {
+          switch_instance = construct_svelte_component(switch_value, switch_props(ctx, dirty));
+          create_component(switch_instance.$$.fragment);
+          transition_in(switch_instance.$$.fragment, 1);
+          mount_component(switch_instance, li, t1);
+        } else {
+          switch_instance = null;
+        }
+      } else if (switch_value) {
+        const switch_instance_changes = dirty[0] & /*items*/
+        8 ? get_spread_update(switch_instance_spread_levels, [
+          get_spread_object(isObject(
+            /*item*/
+            ctx[42].svelte.props
+          ) ? (
+            /*item*/
+            ctx[42].svelte.props
+          ) : {})
+        ]) : {};
+        switch_instance.$set(switch_instance_changes);
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      if (switch_instance) transition_in(switch_instance.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      if (switch_instance) transition_out(switch_instance.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(li);
+      }
+      destroy_component(tjsfocusindicator);
+      if (switch_instance) destroy_component(switch_instance);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block$f(ctx) {
+  let current_block_type_index;
+  let if_block;
+  let if_block_anchor;
+  let current;
+  const if_block_creators = [
+    create_if_block$q,
+    create_if_block_1$g,
+    create_if_block_2$d,
+    create_if_block_3$9,
+    create_if_block_4$6,
+    create_if_block_5$6
+  ];
+  const if_blocks = [];
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "class"
+    ) return 0;
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "font"
+    ) return 1;
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "img"
+    ) return 2;
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "label"
+    ) return 3;
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "separator-hr"
+    ) return 4;
+    if (
+      /*item*/
+      ctx2[42]["#type"] === "svg"
+    ) return 5;
+    return -1;
+  }
+  if (~(current_block_type_index = select_block_type(ctx))) {
+    if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  }
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].m(target2, anchor);
+      }
+      insert(target2, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      let previous_block_index = current_block_type_index;
+      current_block_type_index = select_block_type(ctx2);
+      if (current_block_type_index === previous_block_index) {
+        if (~current_block_type_index) {
+          if_blocks[current_block_type_index].p(ctx2, dirty);
+        }
+      } else {
+        if (if_block) {
+          group_outros();
+          transition_out(if_blocks[previous_block_index], 1, 1, () => {
+            if_blocks[previous_block_index] = null;
+          });
+          check_outros();
+        }
+        if (~current_block_type_index) {
+          if_block = if_blocks[current_block_type_index];
+          if (!if_block) {
+            if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
+            if_block.c();
+          } else {
+            if_block.p(ctx2, dirty);
+          }
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        } else {
+          if_block = null;
+        }
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].d(detaching);
+      }
+    }
+  };
+}
+function create_fragment$1C(ctx) {
+  let nav;
+  let ol;
+  let t;
+  let tjsfocuswrap;
+  let nav_class_value;
+  let applyStyles_action;
+  let nav_transition;
+  let current;
+  let mounted;
+  let dispose;
+  let each_value = ensure_array_like(
+    /*items*/
+    ctx[3]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block$f(get_each_context$f(ctx, each_value, i));
+  }
+  const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+    each_blocks[i] = null;
+  });
+  tjsfocuswrap = new TJSFocusWrap({
+    props: { elementRoot: (
+      /*menuEl*/
+      ctx[5]
+    ) }
+  });
+  return {
+    c() {
+      nav = element("nav");
+      ol = element("ol");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t = space();
+      create_component(tjsfocuswrap.$$.fragment);
+      attr(ol, "class", "tjs-context-menu-items svelte-auto-vll23a");
+      attr(ol, "role", "menu");
+      attr(
+        nav,
+        "id",
+        /*id*/
+        ctx[0]
+      );
+      attr(nav, "class", nav_class_value = "tjs-context-menu " + /*classes*/
+      ctx[1].join(" ") + " svelte-auto-vll23a");
+      attr(nav, "popover", "manual");
+      attr(nav, "tabindex", "-1");
+    },
+    m(target2, anchor) {
+      insert(target2, nav, anchor);
+      append(nav, ol);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(ol, null);
+        }
+      }
+      append(nav, t);
+      mount_component(tjsfocuswrap, nav, null);
+      ctx[34](nav);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(nav, "contextmenu", stop_propagation(prevent_default(
+            /*contextmenu_handler*/
+            ctx[22]
+          ))),
+          listen(nav, "click", stop_propagation(prevent_default(
+            /*click_handler*/
+            ctx[23]
+          ))),
+          listen(nav, "keydown", stop_propagation(
+            /*onKeydownMenu*/
+            ctx[8]
+          )),
+          listen(nav, "keyup", stop_propagation(prevent_default(
+            /*onKeyupMenu*/
+            ctx[9]
+          ))),
+          action_destroyer(applyStyles_action = applyStyles.call(
+            null,
+            nav,
+            /*styles*/
+            ctx[4]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*onClick, items, onKeyupItem, hasIcon*/
+      1164) {
+        each_value = ensure_array_like(
+          /*items*/
+          ctx2[3]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$f(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block$f(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(ol, null);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+      const tjsfocuswrap_changes = {};
+      if (dirty[0] & /*menuEl*/
+      32) tjsfocuswrap_changes.elementRoot = /*menuEl*/
+      ctx2[5];
+      tjsfocuswrap.$set(tjsfocuswrap_changes);
+      if (!current || dirty[0] & /*id*/
+      1) {
+        attr(
+          nav,
+          "id",
+          /*id*/
+          ctx2[0]
+        );
+      }
+      if (!current || dirty[0] & /*classes*/
+      2 && nav_class_value !== (nav_class_value = "tjs-context-menu " + /*classes*/
+      ctx2[1].join(" ") + " svelte-auto-vll23a")) {
+        attr(nav, "class", nav_class_value);
+      }
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty[0] & /*styles*/
+      16) applyStyles_action.update.call(
+        null,
+        /*styles*/
+        ctx2[4]
+      );
+    },
+    i(local) {
+      if (current) return;
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      transition_in(tjsfocuswrap.$$.fragment, local);
+      add_render_callback(() => {
+        if (!current) return;
+        if (!nav_transition) nav_transition = create_bidirectional_transition(
+          nav,
+          /*animate*/
+          ctx[6],
+          {},
+          true
+        );
+        nav_transition.run(1);
+      });
+      current = true;
+    },
+    o(local) {
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      transition_out(tjsfocuswrap.$$.fragment, local);
+      if (!nav_transition) nav_transition = create_bidirectional_transition(
+        nav,
+        /*animate*/
+        ctx[6],
+        {},
+        false
+      );
+      nav_transition.run(0);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(nav);
+      }
+      destroy_each(each_blocks, detaching);
+      destroy_component(tjsfocuswrap);
+      ctx[34](null);
+      if (detaching && nav_transition) nav_transition.end();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$1u($$self, $$props, $$invalidate) {
+  let { id = "" } = $$props;
+  let { x = 0 } = $$props;
+  let { y = 0 } = $$props;
+  let { offsetX = 2 } = $$props;
+  let { offsetY = 2 } = $$props;
+  let { classes = [] } = $$props;
+  let { hasIcon = false } = $$props;
+  let { items = [] } = $$props;
+  let { styles = void 0 } = $$props;
+  let { keyCode = void 0 } = $$props;
+  let { focusSource = void 0 } = $$props;
+  let { transitionOptions = void 0 } = $$props;
+  let { activeWindow = globalThis } = $$props;
+  let { targetElHeight = 0 } = $$props;
+  let { targetElWidth = 0 } = $$props;
+  let { current_component: current_component2 = void 0 } = $$props;
+  const s_IGNORE_CLASSES = { ignoreClasses: ["tjs-focus-wrap"] };
+  const dispatch2 = createEventDispatcher();
+  let menuEl;
+  let closed = false;
+  onDestroy(() => {
+    activeWindow.document.body.removeEventListener("pointerdown", onClose, true);
+    activeWindow.document.body.removeEventListener("wheel", onCloseWheel, true);
+    activeWindow.removeEventListener("blur", onWindowBlur);
+    activeWindow.removeEventListener("resize", onWindowBlur);
+    $$invalidate(11, focusSource = void 0);
+  });
+  onMount(() => {
+    activeWindow.document.body.addEventListener("pointerdown", onClose, true);
+    activeWindow.document.body.addEventListener("wheel", onCloseWheel, true);
+    activeWindow.addEventListener("blur", onWindowBlur);
+    activeWindow.addEventListener("resize", onWindowBlur);
+    const keyboardFocus = focusSource?.source === "keyboard";
+    if (keyboardFocus) {
+      const firstFocusEl = A11yHelper.getFirstFocusableElement(menuEl);
+      if (CrossWindow.isHTMLElement(firstFocusEl) && !firstFocusEl.classList.contains("tjs-focus-wrap")) {
+        firstFocusEl.focus();
+      } else {
+        menuEl.focus();
+      }
+    } else {
+      menuEl.focus();
+    }
+  });
+  function animate2(node) {
+    node.showPopover();
+    const browserClientWidth = activeWindow.document.body.clientWidth;
+    const browserClientHeight = activeWindow.document.body.clientHeight;
+    const expandLeft = x + node.clientWidth > browserClientWidth;
+    const expandUp = y + node.clientHeight > browserClientHeight;
+    const adjustedX = expandLeft ? Math.min(x + offsetX + targetElWidth, browserClientWidth) : Math.max(x - offsetX, 0);
+    const adjustedY = expandUp ? Math.min(y + offsetY - targetElHeight, browserClientHeight) : Math.max(y - offsetY, 0);
+    node.style.top = expandUp ? null : `${adjustedY}px`;
+    node.style.bottom = expandUp ? `${browserClientHeight - adjustedY}px` : null;
+    node.style.left = expandLeft ? null : `${adjustedX}px`;
+    node.style.right = expandLeft ? `${browserClientWidth - adjustedX}px` : null;
+    return slideFade(node, transitionOptions);
+  }
+  function handleOnPress(event, item2) {
+    if (!event) {
+      return;
+    }
+    if (typeof item2?.onPress === "function") {
+      Promise.resolve(item2.onPress({ event, item: item2, focusSource })).then((result) => {
+        const focusDeferred = !!result;
+        if (!focusDeferred) {
+          A11yHelper.applyFocusSource(focusSource);
+        }
+      });
+    } else {
+      A11yHelper.applyFocusSource(focusSource);
+    }
+  }
+  function onClick(event, item2) {
+    handleOnPress(event, item2);
+    if (!closed) {
+      dispatch2("close:contextmenu");
+      closed = true;
+      TJSSvelte.util.outroAndDestroy(current_component2);
+    }
+  }
+  function onClose(event, isWheel = false) {
+    if (event.target === menuEl || menuEl?.contains(event.target)) {
+      return;
+    }
+    if (!isWheel && Math.floor(event.pageX) === x && Math.floor(event.pageY) === y) {
+      return;
+    }
+    if (!closed) {
+      dispatch2("close:contextmenu");
+      closed = true;
+      TJSSvelte.util.outroAndDestroy(current_component2);
+    }
+  }
+  function onCloseWheel(event) {
+    onClose(event, true);
+  }
+  function onKeydownMenu(event) {
+    if (event.code === keyCode) {
+      event.stopPropagation();
+      return;
+    }
+    switch (event.code) {
+      case "Tab":
+        event.stopPropagation();
+        if (event.shiftKey) {
+          const allFocusable = A11yHelper.getFocusableElements(menuEl, s_IGNORE_CLASSES);
+          const firstFocusEl = allFocusable.length > 0 ? allFocusable[0] : void 0;
+          const lastFocusEl = allFocusable.length > 0 ? allFocusable[allFocusable.length - 1] : void 0;
+          if (menuEl === activeWindow.document.activeElement || firstFocusEl === activeWindow.document.activeElement) {
+            if (CrossWindow.isHTMLElement(lastFocusEl) && firstFocusEl !== lastFocusEl) {
+              lastFocusEl.focus();
+            }
+            event.preventDefault();
+          }
+        }
+        break;
+      default:
+        event.stopPropagation();
+        break;
+    }
+  }
+  function onKeyupMenu(event) {
+    switch (event.code) {
+      case "ContextMenu":
+      case "Escape":
+        event.preventDefault();
+        event.stopPropagation();
+        if (!closed) {
+          let localFocusSource = focusSource;
+          setTimeout(
+            () => {
+              A11yHelper.applyFocusSource(localFocusSource);
+              localFocusSource = void 0;
+            },
+            50
+          );
+          closed = true;
+          dispatch2("close:contextmenu");
+          TJSSvelte.util.outroAndDestroy(current_component2);
+        }
+        break;
+    }
+  }
+  function onKeyupItem(event, item2) {
+    if (event.code === keyCode) {
+      handleOnPress(event, item2);
+      if (!closed) {
+        closed = true;
+        dispatch2("close:contextmenu");
+        TJSSvelte.util.outroAndDestroy(current_component2);
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  }
+  function onWindowBlur() {
+    if (!closed) {
+      A11yHelper.applyFocusSource(focusSource);
+      dispatch2("close:contextmenu");
+      closed = true;
+      TJSSvelte.util.outroAndDestroy(current_component2);
+    }
+  }
+  function contextmenu_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  const click_handler_1 = (item2, event) => onClick(event, item2);
+  const keyup_handler = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_2 = (item2, event) => onClick(event, item2);
+  const keyup_handler_1 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_3 = (item2, event) => onClick(event, item2);
+  const keyup_handler_2 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_4 = (item2, event) => onClick(event, item2);
+  const keyup_handler_3 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_5 = (item2, event) => onClick(event, item2);
+  const keyup_handler_4 = (item2, event) => onKeyupItem(event, item2);
+  function nav_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      menuEl = $$value;
+      $$invalidate(5, menuEl);
+    });
+  }
+  $$self.$$set = ($$props2) => {
+    if ("id" in $$props2) $$invalidate(0, id = $$props2.id);
+    if ("x" in $$props2) $$invalidate(12, x = $$props2.x);
+    if ("y" in $$props2) $$invalidate(13, y = $$props2.y);
+    if ("offsetX" in $$props2) $$invalidate(14, offsetX = $$props2.offsetX);
+    if ("offsetY" in $$props2) $$invalidate(15, offsetY = $$props2.offsetY);
+    if ("classes" in $$props2) $$invalidate(1, classes = $$props2.classes);
+    if ("hasIcon" in $$props2) $$invalidate(2, hasIcon = $$props2.hasIcon);
+    if ("items" in $$props2) $$invalidate(3, items = $$props2.items);
+    if ("styles" in $$props2) $$invalidate(4, styles = $$props2.styles);
+    if ("keyCode" in $$props2) $$invalidate(16, keyCode = $$props2.keyCode);
+    if ("focusSource" in $$props2) $$invalidate(11, focusSource = $$props2.focusSource);
+    if ("transitionOptions" in $$props2) $$invalidate(17, transitionOptions = $$props2.transitionOptions);
+    if ("activeWindow" in $$props2) $$invalidate(18, activeWindow = $$props2.activeWindow);
+    if ("targetElHeight" in $$props2) $$invalidate(19, targetElHeight = $$props2.targetElHeight);
+    if ("targetElWidth" in $$props2) $$invalidate(20, targetElWidth = $$props2.targetElWidth);
+    if ("current_component" in $$props2) $$invalidate(21, current_component2 = $$props2.current_component);
+  };
+  return [
+    id,
+    classes,
+    hasIcon,
+    items,
+    styles,
+    menuEl,
+    animate2,
+    onClick,
+    onKeydownMenu,
+    onKeyupMenu,
+    onKeyupItem,
+    focusSource,
+    x,
+    y,
+    offsetX,
+    offsetY,
+    keyCode,
+    transitionOptions,
+    activeWindow,
+    targetElHeight,
+    targetElWidth,
+    current_component2,
+    contextmenu_handler,
+    click_handler,
+    click_handler_1,
+    keyup_handler,
+    click_handler_2,
+    keyup_handler_1,
+    click_handler_3,
+    keyup_handler_2,
+    click_handler_4,
+    keyup_handler_3,
+    click_handler_5,
+    keyup_handler_4,
+    nav_binding
+  ];
+}
+class TJSContextMenuImpl extends SvelteComponent {
+  constructor(options2) {
+    super();
+    init(
+      this,
+      options2,
+      instance$1u,
+      create_fragment$1C,
+      safe_not_equal,
+      {
+        id: 0,
+        x: 12,
+        y: 13,
+        offsetX: 14,
+        offsetY: 15,
+        classes: 1,
+        hasIcon: 2,
+        items: 3,
+        styles: 4,
+        keyCode: 16,
+        focusSource: 11,
+        transitionOptions: 17,
+        activeWindow: 18,
+        targetElHeight: 19,
+        targetElWidth: 20,
+        current_component: 21
+      },
+      null,
+      [-1, -1]
+    );
+  }
+}
+function create_fragment$1B(ctx) {
   let table;
   let tr;
   let td0;
@@ -48614,7 +54079,7 @@ function create_fragment$1A(ctx) {
     }
   };
 }
-function instance$1s($$self, $$props, $$invalidate) {
+function instance$1t($$self, $$props, $$invalidate) {
   let isCustom;
   let $animation;
   let { section: section2 } = $$props;
@@ -48668,10 +54133,10 @@ function instance$1s($$self, $$props, $$invalidate) {
 class CustomPicker extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1s, create_fragment$1A, safe_not_equal, { section: 0, section02: 1 });
+    init(this, options2, instance$1t, create_fragment$1B, safe_not_equal, { section: 0, section02: 1 });
   }
 }
-function create_fragment$1z(ctx) {
+function create_fragment$1A(ctx) {
   let div1;
   let div0;
   let label;
@@ -48713,7 +54178,7 @@ function create_fragment$1z(ctx) {
     }
   };
 }
-function instance$1r($$self, $$props, $$invalidate) {
+function instance$1s($$self, $$props, $$invalidate) {
   let { title: title2 } = $$props;
   $$self.$$set = ($$props2) => {
     if ("title" in $$props2) $$invalidate(0, title2 = $$props2.title);
@@ -48723,7 +54188,7 @@ function instance$1r($$self, $$props, $$invalidate) {
 class SectionHeader extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1r, create_fragment$1z, safe_not_equal, { title: 0 });
+    init(this, options2, instance$1s, create_fragment$1A, safe_not_equal, { title: 0 });
   }
 }
 function get_each_context$e(ctx, list, i) {
@@ -48902,7 +54367,7 @@ function create_each_block$e(ctx) {
     }
   };
 }
-function create_fragment$1y(ctx) {
+function create_fragment$1z(ctx) {
   let sectionheader;
   let t0;
   let div8;
@@ -49550,7 +55015,7 @@ function create_fragment$1y(ctx) {
     }
   };
 }
-function instance$1q($$self, $$props, $$invalidate) {
+function instance$1r($$self, $$props, $$invalidate) {
   let dbSection;
   let menuType;
   let anim;
@@ -49662,47 +55127,87 @@ function instance$1q($$self, $$props, $$invalidate) {
 class VideoSelect extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1q, create_fragment$1y, safe_not_equal, { section: 0, section02: 1, title: 2 });
+    init(this, options2, instance$1r, create_fragment$1z, safe_not_equal, { section: 0, section02: 1, title: 2 });
   }
 }
-function applyScrolltop(element2, store) {
-  if (!isMinimalWritableStore(store)) {
-    throw new TypeError(`applyScrolltop error: 'store' must be a minimal writable Svelte store.`);
+function applyScroll(node, options2 = {}) {
+  const storeUpdateLeft = (value) => storeUpdate(value, "scrollLeft");
+  const storeUpdateTop = (value) => storeUpdate(value, "scrollTop");
+  let storeLeft, storeTop;
+  let unsubscribeLeft, unsubscribeTop;
+  function onScroll() {
+    if (node.isConnected) {
+      storeLeft?.set?.(node.scrollLeft);
+      storeTop?.set?.(node.scrollTop);
+    }
   }
-  function storeUpdate(value) {
+  function setOptions(newOptions) {
+    if (!isObject(newOptions)) {
+      throw new TypeError(`applyScroll error: 'options' must be an object.`);
+    }
+    if (newOptions.scrollLeft !== void 0 && !isMinimalWritableStore(newOptions.scrollLeft)) {
+      throw new TypeError(`applyScroll error: 'storeLeft' must be a minimal writable Svelte store.`);
+    }
+    if (newOptions.scrollTop !== void 0 && !isMinimalWritableStore(newOptions.scrollTop)) {
+      throw new TypeError(`applyScroll error: 'scrollTop' must be a minimal writable Svelte store.`);
+    }
+    if (storeLeft !== newOptions.scrollLeft) {
+      unsubscribeLeft?.();
+      unsubscribeLeft = void 0;
+      storeLeft = newOptions.scrollLeft;
+      if (isMinimalWritableStore(storeLeft)) {
+        unsubscribeLeft = storeLeft.subscribe(storeUpdateLeft);
+      }
+    }
+    if (storeTop !== newOptions.scrollTop) {
+      unsubscribeTop?.();
+      unsubscribeTop = void 0;
+      storeTop = newOptions.scrollTop;
+      if (isMinimalWritableStore(storeTop)) {
+        unsubscribeTop = storeTop.subscribe(storeUpdateTop);
+      }
+    }
+  }
+  async function storeUpdate(value, prop) {
     if (!Number.isFinite(value)) {
       return;
     }
-    setTimeout(() => element2.scrollTop = value, 0);
-  }
-  let unsubscribe = store.subscribe(storeUpdate);
-  const resizeControl = resizeObserver(element2, Timing.debounce(() => {
-    if (element2.isConnected) {
-      store.set(element2.scrollTop);
+    await nextAnimationFrame(2);
+    if (!node.isConnected) {
+      return;
     }
-  }, 500));
-  function onScroll(event) {
-    store.set(event.target.scrollTop);
+    node[prop] = Math.max(0, value);
   }
-  const debounceFn = Timing.debounce((e) => onScroll(e), 500);
-  element2.addEventListener("scroll", debounceFn);
+  setOptions(options2);
+  let ignoreResize = true;
+  let resizeControl = resizeObserver(node, Timing.debounce(() => {
+    if (ignoreResize) {
+      ignoreResize = false;
+      return;
+    }
+    if (node.isConnected) {
+      storeLeft?.set?.(node.scrollLeft);
+      storeTop?.set?.(node.scrollTop);
+    }
+  }, 750));
+  const debounceFn = Timing.debounce((e) => onScroll(), 750);
+  node.addEventListener("scroll", debounceFn);
   return {
     /**
-     * @param {import('#runtime/svelte/store/util').MinimalWritable<number>} newStore - A minimal writable store that
-     *        stores the element scrollTop.
+     * @param {import('./types').DOMPropActionOptions.ApplyScroll} newOptions - New options.
      */
-    update: (newStore) => {
-      unsubscribe();
-      store = newStore;
-      if (!isMinimalWritableStore(store)) {
-        throw new TypeError(`applyScrolltop.update error: 'store' must be a minimal writable Svelte store.`);
-      }
-      unsubscribe = store.subscribe(storeUpdate);
-    },
+    update: (newOptions) => setOptions(newOptions),
     destroy: () => {
-      element2.removeEventListener("scroll", debounceFn);
-      unsubscribe();
+      ignoreResize = true;
+      node.removeEventListener("scroll", debounceFn);
       resizeControl.destroy();
+      resizeControl = void 0;
+      storeLeft = void 0;
+      storeTop = void 0;
+      unsubscribeLeft?.();
+      unsubscribeTop?.();
+      unsubscribeLeft = void 0;
+      unsubscribeTop = void 0;
     }
   };
 }
@@ -49846,20 +55351,29 @@ const get_summary_end_slot_changes = (dirty) => ({});
 const get_summary_end_slot_context = (ctx) => ({});
 const get_label_slot_changes = (dirty) => ({});
 const get_label_slot_context = (ctx) => ({});
-function create_if_block_6$3(ctx) {
-  let div;
+function create_if_block_6$4(ctx) {
+  let tjsfocusindicator;
+  let current;
+  tjsfocusindicator = new TJSFocusIndicator({});
   return {
     c() {
-      div = element("div");
-      attr(div, "class", "tjs-folder-focus-indicator svelte-auto-1kxmj7q");
+      create_component(tjsfocusindicator.$$.fragment);
     },
     m(target2, anchor) {
-      insert(target2, div, anchor);
+      mount_component(tjsfocusindicator, target2, anchor);
+      current = true;
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsfocusindicator.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsfocusindicator.$$.fragment, local);
+      current = false;
     },
     d(detaching) {
-      if (detaching) {
-        detach(div);
-      }
+      destroy_component(tjsfocusindicator, detaching);
     }
   };
 }
@@ -49874,7 +55388,7 @@ function create_else_block_1$5(ctx) {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "label svelte-auto-1kxmj7q");
+      attr(div, "class", "label svelte-auto-1c5mzy5");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -49898,7 +55412,7 @@ function create_else_block_1$5(ctx) {
     }
   };
 }
-function create_if_block_5$4(ctx) {
+function create_if_block_5$5(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -50004,14 +55518,14 @@ function fallback_block_3(ctx) {
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block_5$4, create_else_block_1$5];
+  const if_block_creators = [create_if_block_5$5, create_else_block_1$5];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (dirty[0] & /*folder*/
     64) show_if = null;
-    if (show_if == null) show_if = !!TJSSvelte.util.isComponent(
+    if (show_if == null) show_if = !!TJSSvelte.config.isConfigEmbed(
       /*folder*/
-      ctx2[6]?.slotLabel?.class
+      ctx2[6]?.slotLabel
     );
     if (show_if) return 0;
     return 1;
@@ -50067,7 +55581,7 @@ function fallback_block_3(ctx) {
     }
   };
 }
-function create_if_block_4$4(ctx) {
+function create_if_block_4$5(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -50168,13 +55682,13 @@ function create_if_block_4$4(ctx) {
   };
 }
 function fallback_block_2(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*folder*/
-    ctx[6]?.slotSummaryEnd?.class
+    ctx[6]?.slotSummaryEnd
   );
   let if_block_anchor;
   let current;
-  let if_block = show_if && create_if_block_4$4(ctx);
+  let if_block = show_if && create_if_block_4$5(ctx);
   return {
     c() {
       if (if_block) if_block.c();
@@ -50187,9 +55701,9 @@ function fallback_block_2(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*folder*/
-      64) show_if = TJSSvelte.util.isComponent(
+      64) show_if = TJSSvelte.config.isConfigEmbed(
         /*folder*/
-        ctx2[6]?.slotSummaryEnd?.class
+        ctx2[6]?.slotSummaryEnd
       );
       if (show_if) {
         if (if_block) {
@@ -50199,7 +55713,7 @@ function fallback_block_2(ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block_4$4(ctx2);
+          if_block = create_if_block_4$5(ctx2);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -50249,7 +55763,7 @@ function create_else_block$h(ctx) {
     c() {
       div = element("div");
       if (default_slot_or_fallback) default_slot_or_fallback.c();
-      attr(div, "class", "contents svelte-auto-1kxmj7q");
+      attr(div, "class", "contents svelte-auto-1c5mzy5");
       attr(div, "aria-hidden", div_aria_hidden_value = !/*visible*/
       ctx[13]);
       toggle_class(div, "hidden", !/*visible*/
@@ -50319,7 +55833,7 @@ function create_else_block$h(ctx) {
     }
   };
 }
-function create_if_block$o(ctx) {
+function create_if_block$p(ctx) {
   let div;
   let current;
   let if_block = (
@@ -50330,7 +55844,7 @@ function create_if_block$o(ctx) {
     c() {
       div = element("div");
       if (if_block) if_block.c();
-      attr(div, "class", "contents svelte-auto-1kxmj7q");
+      attr(div, "class", "contents svelte-auto-1c5mzy5");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -50480,9 +55994,9 @@ function create_if_block_3$8(ctx) {
   };
 }
 function fallback_block_1(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*folder*/
-    ctx[6]?.slotDefault?.class
+    ctx[6]?.slotDefault
   );
   let if_block_anchor;
   let current;
@@ -50499,9 +56013,9 @@ function fallback_block_1(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*folder*/
-      64) show_if = TJSSvelte.util.isComponent(
+      64) show_if = TJSSvelte.config.isConfigEmbed(
         /*folder*/
-        ctx2[6]?.slotDefault?.class
+        ctx2[6]?.slotDefault
       );
       if (show_if) {
         if (if_block) {
@@ -50554,7 +56068,7 @@ function create_if_block_1$f(ctx) {
     ctx[27],
     null
   );
-  const default_slot_or_fallback = default_slot || fallback_block(ctx);
+  const default_slot_or_fallback = default_slot || fallback_block$1(ctx);
   return {
     c() {
       if (default_slot_or_fallback) default_slot_or_fallback.c();
@@ -50709,10 +56223,10 @@ function create_if_block_2$c(ctx) {
     }
   };
 }
-function fallback_block(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+function fallback_block$1(ctx) {
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*folder*/
-    ctx[6]?.slotDefault?.class
+    ctx[6]?.slotDefault
   );
   let if_block_anchor;
   let current;
@@ -50729,9 +56243,9 @@ function fallback_block(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*folder*/
-      64) show_if = TJSSvelte.util.isComponent(
+      64) show_if = TJSSvelte.config.isConfigEmbed(
         /*folder*/
-        ctx2[6]?.slotDefault?.class
+        ctx2[6]?.slotDefault
       );
       if (show_if) {
         if (if_block) {
@@ -50771,7 +56285,7 @@ function fallback_block(ctx) {
     }
   };
 }
-function create_fragment$1x(ctx) {
+function create_fragment$1y(ctx) {
   let details;
   let summary;
   let svg;
@@ -50790,7 +56304,7 @@ function create_fragment$1x(ctx) {
   let dispose;
   let if_block0 = (
     /*localOptions*/
-    ctx[9].focusIndicator && create_if_block_6$3()
+    ctx[9].focusIndicator && create_if_block_6$4()
   );
   const label_slot_template = (
     /*#slots*/
@@ -50816,7 +56330,7 @@ function create_fragment$1x(ctx) {
     get_summary_end_slot_context
   );
   const summary_end_slot_or_fallback = summary_end_slot || fallback_block_2(ctx);
-  const if_block_creators = [create_if_block$o, create_else_block$h];
+  const if_block_creators = [create_if_block$p, create_else_block$h];
   const if_blocks = [];
   function select_block_type_1(ctx2, dirty) {
     if (
@@ -50847,7 +56361,7 @@ function create_fragment$1x(ctx) {
       set_style(path, "stroke-width", "3");
       attr(path, "d", "M5,8L19,8L12,15Z");
       attr(svg, "viewBox", "0 0 24 24");
-      attr(svg, "class", "svelte-auto-1kxmj7q");
+      attr(svg, "class", "svelte-auto-1c5mzy5");
       toggle_class(
         svg,
         "focus-chevron",
@@ -50857,7 +56371,7 @@ function create_fragment$1x(ctx) {
       attr(summary, "role", "button");
       attr(summary, "tabindex", summary_tabindex_value = /*enabled*/
       ctx[1] ? 0 : -1);
-      attr(summary, "class", "svelte-auto-1kxmj7q");
+      attr(summary, "class", "svelte-auto-1c5mzy5");
       toggle_class(summary, "disabled", !/*enabled*/
       ctx[1]);
       toggle_class(
@@ -50873,7 +56387,7 @@ function create_fragment$1x(ctx) {
         ctx[9].focusIndicator || /*localOptions*/
         ctx[9].focusChevron
       );
-      attr(details, "class", "tjs-svg-folder svelte-auto-1kxmj7q");
+      attr(details, "class", "tjs-svg-folder svelte-auto-1c5mzy5");
       attr(
         details,
         "data-id",
@@ -51032,15 +56546,23 @@ function create_fragment$1x(ctx) {
         /*localOptions*/
         ctx2[9].focusIndicator
       ) {
-        if (if_block0) ;
-        else {
-          if_block0 = create_if_block_6$3();
+        if (if_block0) {
+          if (dirty[0] & /*localOptions*/
+          512) {
+            transition_in(if_block0, 1);
+          }
+        } else {
+          if_block0 = create_if_block_6$4();
           if_block0.c();
+          transition_in(if_block0, 1);
           if_block0.m(summary, t1);
         }
       } else if (if_block0) {
-        if_block0.d(1);
-        if_block0 = null;
+        group_outros();
+        transition_out(if_block0, 1, 1, () => {
+          if_block0 = null;
+        });
+        check_outros();
       }
       if (label_slot) {
         if (label_slot.p && (!current || dirty[0] & /*$$scope*/
@@ -51186,12 +56708,14 @@ function create_fragment$1x(ctx) {
     },
     i(local) {
       if (current) return;
+      transition_in(if_block0);
       transition_in(label_slot_or_fallback, local);
       transition_in(summary_end_slot_or_fallback, local);
       transition_in(if_block1);
       current = true;
     },
     o(local) {
+      transition_out(if_block0);
       transition_out(label_slot_or_fallback, local);
       transition_out(summary_end_slot_or_fallback, local);
       transition_out(if_block1);
@@ -51213,7 +56737,7 @@ function create_fragment$1x(ctx) {
     }
   };
 }
-function instance$1p($$self, $$props, $$invalidate) {
+function instance$1q($$self, $$props, $$invalidate) {
   let $store, $$unsubscribe_store = noop, $$subscribe_store = () => ($$unsubscribe_store(), $$unsubscribe_store = subscribe(store, ($$value) => $$invalidate(8, $store = $$value)), store);
   $$self.$$.on_destroy.push(() => $$unsubscribe_store());
   let { $$slots: slots = {}, $$scope } = $$props;
@@ -51535,8 +57059,8 @@ class TJSSvgFolder extends SvelteComponent {
     init(
       this,
       options2,
-      instance$1p,
-      create_fragment$1x,
+      instance$1q,
+      create_fragment$1y,
       safe_not_equal,
       {
         folder: 6,
@@ -51557,7 +57081,7 @@ class TJSSvgFolder extends SvelteComponent {
     );
   }
 }
-function create_fragment$1w(ctx) {
+function create_fragment$1x(ctx) {
   let div2;
   let div0;
   let label_1;
@@ -51696,7 +57220,7 @@ function create_fragment$1w(ctx) {
     }
   };
 }
-function instance$1o($$self, $$props, $$invalidate) {
+function instance$1p($$self, $$props, $$invalidate) {
   let $animation;
   let { animation } = getContext("animation-data");
   component_subscribe($$self, animation, (value) => $$invalidate(6, $animation = value));
@@ -51733,7 +57257,7 @@ function instance$1o($$self, $$props, $$invalidate) {
 class NumberInput extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1o, create_fragment$1w, safe_not_equal, {
+    init(this, options2, instance$1p, create_fragment$1x, safe_not_equal, {
       section: 0,
       field: 1,
       label: 2,
@@ -51743,7 +57267,7 @@ class NumberInput extends SvelteComponent {
     });
   }
 }
-function create_fragment$1v(ctx) {
+function create_fragment$1w(ctx) {
   let div2;
   let div0;
   let label0;
@@ -51887,7 +57411,7 @@ function create_fragment$1v(ctx) {
     }
   };
 }
-function instance$1n($$self, $$props, $$invalidate) {
+function instance$1o($$self, $$props, $$invalidate) {
   let isAbsolute;
   let $animation;
   let { animation } = getContext("animation-data");
@@ -51922,10 +57446,10 @@ function instance$1n($$self, $$props, $$invalidate) {
 let Elevation$1 = class Elevation2 extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1n, create_fragment$1v, safe_not_equal, { section: 0 });
+    init(this, options2, instance$1o, create_fragment$1w, safe_not_equal, { section: 0 });
   }
 };
-function create_fragment$1u(ctx) {
+function create_fragment$1v(ctx) {
   let div1;
   let label_1;
   let t0;
@@ -52174,7 +57698,7 @@ function create_fragment$1u(ctx) {
     }
   };
 }
-function instance$1m($$self, $$props, $$invalidate) {
+function instance$1n($$self, $$props, $$invalidate) {
   let $animation;
   let { animation } = getContext("animation-data");
   component_subscribe($$self, animation, (value) => $$invalidate(7, $animation = value));
@@ -52219,7 +57743,7 @@ function instance$1m($$self, $$props, $$invalidate) {
 let Opacity$1 = class Opacity2 extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1m, create_fragment$1u, safe_not_equal, {
+    init(this, options2, instance$1n, create_fragment$1v, safe_not_equal, {
       section: 0,
       field: 1,
       min: 2,
@@ -52230,7 +57754,7 @@ let Opacity$1 = class Opacity2 extends SvelteComponent {
     });
   }
 };
-function create_fragment$1t(ctx) {
+function create_fragment$1u(ctx) {
   let table;
   let tr0;
   let t1;
@@ -52429,10 +57953,10 @@ function create_fragment$1t(ctx) {
 class Melee extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1t, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1u, safe_not_equal, {});
   }
 }
-function create_fragment$1s(ctx) {
+function create_fragment$1t(ctx) {
   let table;
   let tr0;
   let t1;
@@ -52716,10 +58240,10 @@ function create_fragment$1s(ctx) {
 class Range extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1s, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1t, safe_not_equal, {});
   }
 }
-function create_fragment$1r(ctx) {
+function create_fragment$1s(ctx) {
   let table;
   let tr0;
   let t1;
@@ -53130,10 +58654,10 @@ function create_fragment$1r(ctx) {
 class Ontoken extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1r, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1s, safe_not_equal, {});
   }
 }
-function create_fragment$1q(ctx) {
+function create_fragment$1r(ctx) {
   let table1;
   let tr0;
   let t1;
@@ -53629,10 +59153,10 @@ function create_fragment$1q(ctx) {
 class Templatefx extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1q, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1r, safe_not_equal, {});
   }
 }
-function create_fragment$1p(ctx) {
+function create_fragment$1q(ctx) {
   let table;
   let tr0;
   let t1;
@@ -53896,7 +59420,7 @@ function create_fragment$1p(ctx) {
 class Aura extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1p, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1q, safe_not_equal, {});
   }
 }
 function get_each_context$d(ctx, list, i) {
@@ -54861,7 +60385,7 @@ function create_if_block_1$e(ctx) {
     }
   };
 }
-function create_if_block$n(ctx) {
+function create_if_block$o(ctx) {
   let table;
   let tr0;
   let t1;
@@ -55030,7 +60554,7 @@ function create_if_block$n(ctx) {
     }
   };
 }
-function create_fragment$1o(ctx) {
+function create_fragment$1p(ctx) {
   let header;
   let ul;
   let t0;
@@ -55060,7 +60584,7 @@ function create_fragment$1o(ctx) {
   );
   let if_block3 = (
     /*$presetStore*/
-    ctx[1] === "thunderwave" && create_if_block$n()
+    ctx[1] === "thunderwave" && create_if_block$o()
   );
   return {
     c() {
@@ -55170,7 +60694,7 @@ function create_fragment$1o(ctx) {
       ) {
         if (if_block3) ;
         else {
-          if_block3 = create_if_block$n();
+          if_block3 = create_if_block$o();
           if_block3.c();
           if_block3.m(if_block3_anchor.parentNode, if_block3_anchor);
         }
@@ -55198,7 +60722,7 @@ function create_fragment$1o(ctx) {
     }
   };
 }
-function instance$1l($$self, $$props, $$invalidate) {
+function instance$1m($$self, $$props, $$invalidate) {
   let $presetStore, $$unsubscribe_presetStore = noop, $$subscribe_presetStore = () => ($$unsubscribe_presetStore(), $$unsubscribe_presetStore = subscribe(presetStore, ($$value) => $$invalidate(1, $presetStore = $$value)), presetStore);
   $$self.$$.on_destroy.push(() => $$unsubscribe_presetStore());
   let { presetStore } = $$props;
@@ -55230,10 +60754,10 @@ function instance$1l($$self, $$props, $$invalidate) {
 class Preset extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1l, create_fragment$1o, safe_not_equal, { presetStore: 0 });
+    init(this, options2, instance$1m, create_fragment$1p, safe_not_equal, { presetStore: 0 });
   }
 }
-function create_fragment$1n(ctx) {
+function create_fragment$1o(ctx) {
   let table;
   let tr0;
   let t1;
@@ -55516,7 +61040,7 @@ function create_fragment$1n(ctx) {
 class Canvas3d extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, null, create_fragment$1n, safe_not_equal, {});
+    init(this, options2, null, create_fragment$1o, safe_not_equal, {});
   }
 }
 const options = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -55677,7 +61201,7 @@ function create_else_block$g(ctx) {
     }
   };
 }
-function create_if_block$m(ctx) {
+function create_if_block$n(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -55753,7 +61277,7 @@ function create_if_block$m(ctx) {
     }
   };
 }
-function create_fragment$1m(ctx) {
+function create_fragment$1n(ctx) {
   let header;
   let ul;
   let t;
@@ -55770,7 +61294,7 @@ function create_fragment$1m(ctx) {
   for (let i = 0; i < each_value.length; i += 1) {
     each_blocks[i] = create_each_block$c(get_each_context$c(ctx, each_value, i));
   }
-  const if_block_creators = [create_if_block$m, create_else_block$g];
+  const if_block_creators = [create_if_block$n, create_else_block$g];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -55875,7 +61399,7 @@ function create_fragment$1m(ctx) {
     }
   };
 }
-function instance$1k($$self, $$props, $$invalidate) {
+function instance$1l($$self, $$props, $$invalidate) {
   let $position;
   let $storageStore, $$unsubscribe_storageStore = noop, $$subscribe_storageStore = () => ($$unsubscribe_storageStore(), $$unsubscribe_storageStore = subscribe(storageStore, ($$value) => $$invalidate(8, $storageStore = $$value)), storageStore);
   let $tabStore, $$unsubscribe_tabStore = noop, $$subscribe_tabStore = () => ($$unsubscribe_tabStore(), $$unsubscribe_tabStore = subscribe(tabStore, ($$value) => $$invalidate(3, $tabStore = $$value)), tabStore);
@@ -55953,7 +61477,7 @@ function instance$1k($$self, $$props, $$invalidate) {
 class OptionsInfo extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1k, create_fragment$1m, safe_not_equal, {
+    init(this, options2, instance$1l, create_fragment$1n, safe_not_equal, {
       storageStore: 0,
       tabStore: 1,
       presetStore: 2
@@ -55965,10 +61489,10 @@ const constants = {
   moduleLabel: "Automated Animations"
 };
 const sessionConstants = {
-  optionsInfoAppState: `${constants.moduleId}.options-info.app-state`,
-  videoPreviewAppState: `${constants.moduleId}.video-preview.app-state`,
+  activeEffectAppState: `${constants.moduleId}.active-effect.app-state`,
   itemAppState: `${constants.moduleId}.item.app-state`,
-  activeEffectAppState: `${constants.moduleId}.active-effect.app-state`
+  optionsInfoAppState: `${constants.moduleId}.options-info.app-state`,
+  videoPreviewAppState: `${constants.moduleId}.video-preview.app-state`
 };
 const aaSessionStorage = new TJSSessionStorage();
 class OptionsDialog extends TJSDialog {
@@ -56000,7 +61524,8 @@ class OptionsDialog extends TJSDialog {
       width: 600,
       height: 600,
       closeOnSubmit: true,
-      id: `OptionsInformation`
+      id: `OptionsInformation`,
+      themeName: "light"
     });
   }
   /**
@@ -56025,7 +61550,7 @@ class OptionsDialog extends TJSDialog {
     }
   }
 }
-function create_fragment$1l(ctx) {
+function create_fragment$1m(ctx) {
   let div2;
   let div0;
   let label0;
@@ -56208,7 +61733,7 @@ function create_fragment$1l(ctx) {
     }
   };
 }
-function instance$1j($$self, $$props, $$invalidate) {
+function instance$1k($$self, $$props, $$invalidate) {
   let isWait;
   let $animation;
   let { animation } = getContext("animation-data");
@@ -56272,7 +61797,7 @@ function instance$1j($$self, $$props, $$invalidate) {
 class WaitDelay extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1j, create_fragment$1l, safe_not_equal, {
+    init(this, options2, instance$1k, create_fragment$1m, safe_not_equal, {
       section: 0,
       field: 1,
       isDisabled: 2,
@@ -56281,10 +61806,481 @@ class WaitDelay extends SvelteComponent {
     });
   }
 }
+function create_if_block$m(ctx) {
+  let switch_instance;
+  let switch_instance_anchor;
+  let current;
+  const switch_instance_spread_levels = [
+    isObject(
+      /*svelte*/
+      ctx[5].props
+    ) ? (
+      /*svelte*/
+      ctx[5].props
+    ) : {}
+  ];
+  var switch_value = (
+    /*svelte*/
+    ctx[5].class
+  );
+  function switch_props(ctx2, dirty) {
+    let switch_instance_props = {};
+    for (let i = 0; i < switch_instance_spread_levels.length; i += 1) {
+      switch_instance_props = assign(switch_instance_props, switch_instance_spread_levels[i]);
+    }
+    if (dirty !== void 0 && dirty & /*svelte*/
+    32) {
+      switch_instance_props = assign(switch_instance_props, get_spread_update(switch_instance_spread_levels, [
+        get_spread_object(isObject(
+          /*svelte*/
+          ctx2[5].props
+        ) ? (
+          /*svelte*/
+          ctx2[5].props
+        ) : {})
+      ]));
+    }
+    return { props: switch_instance_props };
+  }
+  if (switch_value) {
+    switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+  }
+  return {
+    c() {
+      if (switch_instance) create_component(switch_instance.$$.fragment);
+      switch_instance_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (switch_instance) mount_component(switch_instance, target2, anchor);
+      insert(target2, switch_instance_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*svelte*/
+      32 && switch_value !== (switch_value = /*svelte*/
+      ctx2[5].class)) {
+        if (switch_instance) {
+          group_outros();
+          const old_component = switch_instance;
+          transition_out(old_component.$$.fragment, 1, 0, () => {
+            destroy_component(old_component, 1);
+          });
+          check_outros();
+        }
+        if (switch_value) {
+          switch_instance = construct_svelte_component(switch_value, switch_props(ctx2, dirty));
+          create_component(switch_instance.$$.fragment);
+          transition_in(switch_instance.$$.fragment, 1);
+          mount_component(switch_instance, switch_instance_anchor.parentNode, switch_instance_anchor);
+        } else {
+          switch_instance = null;
+        }
+      } else if (switch_value) {
+        const switch_instance_changes = dirty & /*svelte*/
+        32 ? get_spread_update(switch_instance_spread_levels, [
+          get_spread_object(isObject(
+            /*svelte*/
+            ctx2[5].props
+          ) ? (
+            /*svelte*/
+            ctx2[5].props
+          ) : {})
+        ]) : {};
+        switch_instance.$set(switch_instance_changes);
+      }
+    },
+    i(local) {
+      if (current) return;
+      if (switch_instance) transition_in(switch_instance.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      if (switch_instance) transition_out(switch_instance.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(switch_instance_anchor);
+      }
+      if (switch_instance) destroy_component(switch_instance, detaching);
+    }
+  };
+}
+function fallback_block(ctx) {
+  let if_block_anchor;
+  let current;
+  let if_block = (
+    /*svelte*/
+    ctx[5] && create_if_block$m(ctx)
+  );
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, if_block_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (
+        /*svelte*/
+        ctx2[5]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty & /*svelte*/
+          32) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$m(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block) if_block.d(detaching);
+    }
+  };
+}
+function create_fragment$1l(ctx) {
+  let div;
+  let div_tabindex_value;
+  let applyScroll_action;
+  let applyStyles_action;
+  let current;
+  let mounted;
+  let dispose;
+  const default_slot_template = (
+    /*#slots*/
+    ctx[14].default
+  );
+  const default_slot = create_slot(
+    default_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[13],
+    null
+  );
+  const default_slot_or_fallback = default_slot || fallback_block(ctx);
+  return {
+    c() {
+      div = element("div");
+      if (default_slot_or_fallback) default_slot_or_fallback.c();
+      attr(div, "class", "tjs-scroll-container tjs-a11y-focusable svelte-auto-2pzci9");
+      attr(div, "role", "region");
+      attr(div, "tabindex", div_tabindex_value = /*allowTabFocus*/
+      ctx[0] ? 0 : -1);
+    },
+    m(target2, anchor) {
+      insert(target2, div, anchor);
+      if (default_slot_or_fallback) {
+        default_slot_or_fallback.m(div, null);
+      }
+      ctx[15](div);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            div,
+            "contextmenu",
+            /*onContextMenuPress*/
+            ctx[6]
+          ),
+          listen(
+            div,
+            "keydown",
+            /*onKeydown*/
+            ctx[7]
+          ),
+          listen(
+            div,
+            "keyup",
+            /*onKeyup*/
+            ctx[8]
+          ),
+          listen(
+            div,
+            "wheel",
+            /*onWheel*/
+            ctx[9]
+          ),
+          action_destroyer(applyScroll_action = applyScroll.call(null, div, {
+            scrollLeft: (
+              /*scrollLeft*/
+              ctx[1]
+            ),
+            scrollTop: (
+              /*scrollTop*/
+              ctx[2]
+            )
+          })),
+          action_destroyer(applyStyles_action = applyStyles.call(
+            null,
+            div,
+            /*styles*/
+            ctx[3]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (default_slot) {
+        if (default_slot.p && (!current || dirty & /*$$scope*/
+        8192)) {
+          update_slot_base(
+            default_slot,
+            default_slot_template,
+            ctx2,
+            /*$$scope*/
+            ctx2[13],
+            !current ? get_all_dirty_from_scope(
+              /*$$scope*/
+              ctx2[13]
+            ) : get_slot_changes(
+              default_slot_template,
+              /*$$scope*/
+              ctx2[13],
+              dirty,
+              null
+            ),
+            null
+          );
+        }
+      } else {
+        if (default_slot_or_fallback && default_slot_or_fallback.p && (!current || dirty & /*svelte*/
+        32)) {
+          default_slot_or_fallback.p(ctx2, !current ? -1 : dirty);
+        }
+      }
+      if (!current || dirty & /*allowTabFocus*/
+      1 && div_tabindex_value !== (div_tabindex_value = /*allowTabFocus*/
+      ctx2[0] ? 0 : -1)) {
+        attr(div, "tabindex", div_tabindex_value);
+      }
+      if (applyScroll_action && is_function(applyScroll_action.update) && dirty & /*scrollLeft, scrollTop*/
+      6) applyScroll_action.update.call(null, {
+        scrollLeft: (
+          /*scrollLeft*/
+          ctx2[1]
+        ),
+        scrollTop: (
+          /*scrollTop*/
+          ctx2[2]
+        )
+      });
+      if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
+      8) applyStyles_action.update.call(
+        null,
+        /*styles*/
+        ctx2[3]
+      );
+    },
+    i(local) {
+      if (current) return;
+      transition_in(default_slot_or_fallback, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(default_slot_or_fallback, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if (default_slot_or_fallback) default_slot_or_fallback.d(detaching);
+      ctx[15](null);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function instance$1j($$self, $$props, $$invalidate) {
+  let svelte;
+  let { $$slots: slots = {}, $$scope } = $$props;
+  let { container = void 0 } = $$props;
+  let { allowTabFocus = void 0 } = $$props;
+  let { keyPropagate = void 0 } = $$props;
+  let { onContextMenu = void 0 } = $$props;
+  let { scrollLeft = void 0 } = $$props;
+  let { scrollTop = void 0 } = $$props;
+  let { styles = void 0 } = $$props;
+  let containerEl;
+  function onContextMenuPress(event) {
+    if (typeof onContextMenu === "function") {
+      onContextMenu({ event });
+      event.preventDefault();
+    }
+  }
+  function onKeydown(event) {
+    if (keyPropagate) {
+      return;
+    }
+    switch (event.code) {
+      case "ArrowDown":
+      case "ArrowLeft":
+      case "ArrowRight":
+      case "ArrowUp":
+      case "End":
+      case "Home":
+      case "PageDown":
+      case "PageUp":
+      case "Space": {
+        const activeEl = CrossWindow.getActiveElement(event);
+        if (activeEl === containerEl || containerEl.contains(activeEl)) {
+          event.stopPropagation();
+        }
+        break;
+      }
+    }
+  }
+  function onKeyup(event) {
+    if (keyPropagate) {
+      return;
+    }
+    switch (event.code) {
+      case "ArrowDown":
+      case "ArrowLeft":
+      case "ArrowRight":
+      case "ArrowUp":
+      case "End":
+      case "Home":
+      case "PageDown":
+      case "PageUp":
+      case "Space": {
+        const activeEl = CrossWindow.getActiveElement(event);
+        if (activeEl === containerEl || containerEl.contains(activeEl)) {
+          event.stopPropagation();
+        }
+        break;
+      }
+    }
+  }
+  function onWheel(event) {
+    event.stopPropagation();
+    const activeEl = CrossWindow.getActiveElement(event);
+    if (activeEl !== containerEl && !containerEl.contains(activeEl)) {
+      containerEl.focus();
+    }
+  }
+  function div_binding($$value) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      containerEl = $$value;
+      $$invalidate(4, containerEl);
+    });
+  }
+  $$self.$$set = ($$props2) => {
+    if ("container" in $$props2) $$invalidate(12, container = $$props2.container);
+    if ("allowTabFocus" in $$props2) $$invalidate(0, allowTabFocus = $$props2.allowTabFocus);
+    if ("keyPropagate" in $$props2) $$invalidate(10, keyPropagate = $$props2.keyPropagate);
+    if ("onContextMenu" in $$props2) $$invalidate(11, onContextMenu = $$props2.onContextMenu);
+    if ("scrollLeft" in $$props2) $$invalidate(1, scrollLeft = $$props2.scrollLeft);
+    if ("scrollTop" in $$props2) $$invalidate(2, scrollTop = $$props2.scrollTop);
+    if ("styles" in $$props2) $$invalidate(3, styles = $$props2.styles);
+    if ("$$scope" in $$props2) $$invalidate(13, $$scope = $$props2.$$scope);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*container, allowTabFocus*/
+    4097) {
+      $$invalidate(0, allowTabFocus = isObject(container) && typeof container.allowTabFocus === "boolean" ? container.allowTabFocus : typeof allowTabFocus === "boolean" ? allowTabFocus : false);
+    }
+    if ($$self.$$.dirty & /*container, keyPropagate*/
+    5120) {
+      $$invalidate(10, keyPropagate = isObject(container) && typeof container.keyPropagate === "boolean" ? container.keyPropagate : typeof keyPropagate === "boolean" ? keyPropagate : false);
+    }
+    if ($$self.$$.dirty & /*container, onContextMenu*/
+    6144) {
+      $$invalidate(11, onContextMenu = isObject(container) && typeof container.onContextMenu === "function" ? container.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
+    }
+    if ($$self.$$.dirty & /*container, scrollLeft*/
+    4098) {
+      $$invalidate(1, scrollLeft = isObject(container) && isMinimalWritableStore(container.scrollLeft) ? container.scrollLeft : isMinimalWritableStore(scrollLeft) ? scrollLeft : void 0);
+    }
+    if ($$self.$$.dirty & /*container, scrollTop*/
+    4100) {
+      $$invalidate(2, scrollTop = isObject(container) && isMinimalWritableStore(container.scrollTop) ? container.scrollTop : isMinimalWritableStore(scrollTop) ? scrollTop : void 0);
+    }
+    if ($$self.$$.dirty & /*container, styles*/
+    4104) {
+      $$invalidate(3, styles = isObject(container) && isObject(container.styles) ? container.styles : isObject(styles) ? styles : void 0);
+    }
+    if ($$self.$$.dirty & /*container*/
+    4096) {
+      $$invalidate(5, svelte = isObject(container) && TJSSvelte.config.isConfigEmbed(container.svelte) ? container.svelte : void 0);
+    }
+  };
+  return [
+    allowTabFocus,
+    scrollLeft,
+    scrollTop,
+    styles,
+    containerEl,
+    svelte,
+    onContextMenuPress,
+    onKeydown,
+    onKeyup,
+    onWheel,
+    keyPropagate,
+    onContextMenu,
+    container,
+    $$scope,
+    slots,
+    div_binding
+  ];
+}
+class TJSScrollContainer extends SvelteComponent {
+  constructor(options2) {
+    super();
+    init(this, options2, instance$1j, create_fragment$1l, safe_not_equal, {
+      container: 12,
+      allowTabFocus: 0,
+      keyPropagate: 10,
+      onContextMenu: 11,
+      scrollLeft: 1,
+      scrollTop: 2,
+      styles: 3
+    });
+  }
+}
 class FVTTFilePickerControl {
-  static #managedPromise = new ManagedPromise();
-  /** @type {TJSFilePicker} */
+  /**
+   * The deferred definition of the TRL file picker class. The class is deferred in creation until initial usage
+   * as some external platforms like `The Forge` replace the core Foundry file picker class instance.
+   *
+   * @type {null}
+   */
+  static #TJSFilePickerClass = null;
+  /**
+   * The single file picker instance allowing only one open file picker app at a time.
+   *
+   * @type {TJSFilePicker}
+   */
   static #filepickerApp;
+  static #managedPromise = new ManagedPromise();
   /**
    * @returns {boolean} Test if the current user can browse files.
    */
@@ -56310,7 +62306,7 @@ class FVTTFilePickerControl {
       throw new TypeError(`FVTTFilePickerControl.bringToFront error: 'id' is not a string.`);
     }
     let result = false;
-    if (this.#filepickerApp && this.#filepickerApp.id === id) {
+    if (this.#filepickerApp && this.#filepickerApp.trlId === id) {
       if (!this.#filepickerApp?.hasGlasspane) {
         this.#filepickerApp?.bringToFront?.();
         this.#filepickerApp?.maximize?.();
@@ -56353,11 +62349,11 @@ class FVTTFilePickerControl {
     }
     let close = false;
     if (id !== void 0) {
-      if (typeof id === "string" && this.#filepickerApp?.id === id) {
+      if (typeof id === "string" && this.#filepickerApp.trlId === id) {
         close = true;
       } else if (isIterable(id)) {
         for (const appId of id) {
-          if (typeof appId === "string" && this.#filepickerApp?.id === appId) {
+          if (typeof appId === "string" && this.#filepickerApp.trlId === appId) {
             close = true;
           }
         }
@@ -56439,14 +62435,17 @@ class FVTTFilePickerControl {
       promise2.finally(() => TJSSvelte.util.outroAndDestroy(gp));
     }
     const focusSource = glasspaneId && event ? A11yHelper.getFocusSource({ event }) : void 0;
-    this.#filepickerApp = new TJSFilePicker({
+    const TJSFilePickerClass = this.#TJSFilePickerClass ? this.#TJSFilePickerClass : this.#createFilePickerClass();
+    const trlId = options2.id ? options2.id : void 0;
+    delete options2.id;
+    this.#filepickerApp = new TJSFilePickerClass({
       popOutModuleDisable: true,
       minimizable: false,
       ...options2,
       callback: (result) => {
         this.#managedPromise.resolve(result);
       }
-    }, this.#managedPromise, { focusSource, glasspaneId, zIndex });
+    }, this.#managedPromise, { focusSource, glasspaneId, trlId, zIndex });
     await this.#filepickerApp.browse();
     const startMs = performance.now();
     for (let cntr = 0; cntr < 100; cntr++) {
@@ -56480,177 +62479,299 @@ class FVTTFilePickerControl {
     }
     return promise2;
   }
-}
-class TJSFilePicker extends foundry.applications.apps.FilePicker {
-  /** @type {TJSDialog} */
-  #createDirectoryApp;
-  /** @type {import('#runtime/util/browser').A11yFocusSource} */
-  #focusSource;
-  /** @type {string} */
-  #glasspaneId;
-  /** @type {ManagedPromise} */
-  #managedPromise;
-  /** @type {number} */
-  #zIndex;
-  constructor(options2, managedPromise, { focusSource, glasspaneId, zIndex } = {}) {
-    super({
-      ...options2,
-      actions: { makeDirectory: TJSFilePicker.#onMakeDirectory },
-      window: { minimizable: typeof glasspaneId !== "string" }
-      // When modal prevent minimizing.
-    });
-    this.#focusSource = focusSource;
-    this.#glasspaneId = glasspaneId;
-    this.#managedPromise = managedPromise;
-    this.#zIndex = zIndex;
-  }
-  /**
-   * @returns {boolean} Convenience getter for `FVTTFilePickerControl.bringToFront`.
-   */
-  get hasGlasspane() {
-    return typeof this.#glasspaneId === "string";
-  }
-  /**
-   * Always focus first input when `bringToFront` is invoked.
-   */
-  bringToFront() {
-    if (typeof this.#glasspaneId === "string") {
-      return;
-    }
-    super.bringToFront();
-  }
-  /**
-   * Overridden close method that resolves the managed Promise w/ null and closes any associated create directory
-   * dialog.
-   *
-   * @param {object}   options - Application close options.
-   *
-   * @returns {Promise<void>}
-   */
-  async close(options2) {
-    this.#createDirectoryApp?.close?.();
-    this.#createDirectoryApp = void 0;
-    this.#managedPromise?.resolve?.(null);
-    this.#managedPromise = void 0;
-    const content = this.element?.querySelector(".window-content");
-    if (content) {
-      content.style.overflow = "hidden";
-    }
-    await super.close(options2);
-    if (this.#focusSource) {
-      A11yHelper.applyFocusSource(this.#focusSource);
-      this.#focusSource = void 0;
-    }
-  }
-  /**
-   * Present the user with a dialog to create a subdirectory within their currently browsed file storage location.
-   *
-   * @param {object} source     The data source being browsed
-   *
-   * @private
-   */
-  async #createDirectoryDialog(source2) {
-    if (this.#createDirectoryApp) {
-      return;
-    }
-    const labelText = game.i18n.localize("FILES.DirectoryName.Label");
-    const placeholder = game.i18n.localize("FILES.DirectoryName.Placeholder");
-    const form = `<form class="dialog-form standard-form" autocomplete=off><div class="form-group">
-       <label for="create-directory-name">${labelText}</label>
-       <div class="form-fields">
-       <input id="create-directory-name" type="text" name="dirname" placeholder="${placeholder}" required autofocus>
-       </div></div></form>`;
-    let dialogTargetEl = globalThis.document.body;
-    if (typeof this.#glasspaneId === "string") {
-      const gpContainerEl = document.querySelector(`#${this.#glasspaneId} .tjs-glass-pane-container`);
-      if (gpContainerEl) {
-        dialogTargetEl = gpContainerEl;
-      } else {
-        console.warn(`TJSFilePicker.#createDirectoryDialog warning: Could not locate glasspane for CSS ID: ${this.#glasspaneId}`);
+  static #createFilePickerClass() {
+    this.#TJSFilePickerClass = class TJSFilePicker extends foundry.applications.apps.FilePicker.implementation {
+      /** @type {TJSDialog} */
+      #createDirectoryApp;
+      /** @type {import('#runtime/util/browser').A11yFocusSource} */
+      #focusSource;
+      /** @type {string} */
+      #glasspaneId;
+      /** @type {ManagedPromise} */
+      #managedPromise2;
+      #trlId = void 0;
+      /** @type {number} */
+      #zIndex;
+      constructor(options2, managedPromise, { focusSource, glasspaneId, trlId, zIndex } = {}) {
+        super({
+          ...options2,
+          actions: { makeDirectory: TJSFilePicker.#onMakeDirectory },
+          window: { minimizable: typeof glasspaneId !== "string" }
+          // When modal prevent minimizing.
+        });
+        this.#focusSource = focusSource;
+        this.#glasspaneId = glasspaneId;
+        this.#managedPromise2 = managedPromise;
+        this.#trlId = trlId;
+        this.#zIndex = zIndex;
       }
-    }
-    this.#createDirectoryApp = new TJSDialog({
-      draggable: false,
-      zIndex: Number.MAX_SAFE_INTEGER,
-      title: game.i18n.localize("FILES.CreateSubfolder"),
-      content: form,
-      focusFirst: true,
-      minimizable: false,
-      buttons: {
-        onYes: {
-          icon: "fas fa-check",
-          label: "CONTROLS.CommonCreate",
-          onPress: async ({ application }) => {
-            const html = application.elementContent;
-            const dirname = html.querySelector("input").value;
-            const path = [source2.target, dirname].filterJoin("/");
-            try {
-              await this.constructor.createDirectory(this.activeSource, path, { bucket: source2.bucket });
-            } catch (err) {
-              ui.notifications.error(err.message);
-            }
-            return this.browse(this.target);
-          }
-        },
-        onNo: {
-          icon: "fas fa-times",
-          label: "Cancel"
+      /**
+       * @returns {boolean} Convenience getter for `FVTTFilePickerControl.bringToFront`.
+       */
+      get hasGlasspane() {
+        return typeof this.#glasspaneId === "string";
+      }
+      /**
+       * Any `id` field set in initial options to track and close this file picker instance.
+       *
+       * @returns {string | undefined}
+       */
+      get trlId() {
+        return this.#trlId;
+      }
+      /**
+       * Always focus first input when `bringToFront` is invoked.
+       */
+      bringToFront() {
+        if (typeof this.#glasspaneId === "string") {
+          return;
+        }
+        super.bringToFront();
+      }
+      /**
+       * Overridden close method that resolves the managed Promise w/ null and closes any associated create directory
+       * dialog.
+       *
+       * @param {object}   options - Application close options.
+       *
+       * @returns {Promise<void>}
+       */
+      async close(options2) {
+        this.#createDirectoryApp?.close?.();
+        this.#createDirectoryApp = void 0;
+        this.#managedPromise2?.resolve?.(null);
+        this.#managedPromise2 = void 0;
+        const content = this.element?.querySelector(".window-content");
+        if (content) {
+          content.style.overflow = "hidden";
+        }
+        await super.close(options2);
+        if (this.#focusSource) {
+          A11yHelper.applyFocusSource(this.#focusSource);
+          this.#focusSource = void 0;
         }
       }
-    }, {
-      headerIcon: "fa-solid fa-folder-plus",
-      popOutModuleDisable: true,
-      svelte: { target: dialogTargetEl }
-    });
-    await this.#createDirectoryApp.wait();
-    this.#createDirectoryApp = void 0;
-  }
-  /**
-   * Create a new subdirectory in the current working directory.
-   *
-   * @this {TJSFilePicker}
-   */
-  static async #onMakeDirectory() {
-    await this.#createDirectoryDialog(this.source);
-  }
-  /**
-   * Overridden to explicitly center the file picker app when displayed above a modal / glasspane.
-   *
-   * @param {object}   pos - Position object.
-   *
-   * @returns {{left: number, top: number, width: number, height: number, scale: number}} Position object.
-   */
-  setPosition(pos = {}) {
-    const currentPos = super.setPosition(pos);
-    if (this.#glasspaneId) {
-      const top = (globalThis.innerHeight - currentPos.height) / 2;
-      this.element.style.top = `${top}px`;
-      super.setPosition({ top });
-      currentPos.top = top;
-    }
-    return currentPos;
+      /**
+       * Present the user with a dialog to create a subdirectory within their currently browsed file storage location.
+       *
+       * @param {object} source     The data source being browsed
+       *
+       * @private
+       */
+      async #createDirectoryDialog(source2) {
+        if (this.#createDirectoryApp) {
+          return;
+        }
+        const labelText = game.i18n.localize("FILES.DirectoryName.Label");
+        const placeholder = game.i18n.localize("FILES.DirectoryName.Placeholder");
+        const form = `<form class="dialog-form standard-form" autocomplete=off><div class="form-group">
+               <label for="create-directory-name">${labelText}</label>
+               <div class="form-fields">
+               <input id="create-directory-name" type="text" name="dirname" placeholder="${placeholder}" required autofocus>
+               </div></div></form>`;
+        let dialogTargetEl = globalThis.document.body;
+        if (typeof this.#glasspaneId === "string") {
+          const gpContainerEl = document.querySelector(`#${this.#glasspaneId} .tjs-glass-pane-container`);
+          if (gpContainerEl) {
+            dialogTargetEl = gpContainerEl;
+          } else {
+            console.warn(`TJSFilePicker.#createDirectoryDialog warning: Could not locate glasspane for CSS ID: ${this.#glasspaneId}`);
+          }
+        }
+        this.#createDirectoryApp = new TJSDialog({
+          draggable: false,
+          zIndex: Number.MAX_SAFE_INTEGER,
+          title: game.i18n.localize("FILES.CreateSubfolder"),
+          content: form,
+          focusFirst: true,
+          minimizable: false,
+          buttons: {
+            onYes: {
+              icon: "fas fa-check",
+              label: "CONTROLS.CommonCreate",
+              onPress: async ({ application }) => {
+                const html = application.elementContent;
+                const dirname = html.querySelector("input").value;
+                const path = [source2.target, dirname].filterJoin("/");
+                try {
+                  await this.constructor.createDirectory(this.activeSource, path, { bucket: source2.bucket });
+                } catch (err) {
+                  ui.notifications.error(err.message);
+                }
+                return this.browse(this.target);
+              }
+            },
+            onNo: {
+              icon: "fas fa-times",
+              label: "Cancel"
+            }
+          }
+        }, {
+          headerIcon: "fa-solid fa-folder-plus",
+          popOutModuleDisable: true,
+          svelte: { target: dialogTargetEl }
+        });
+        await this.#createDirectoryApp.wait();
+        this.#createDirectoryApp = void 0;
+      }
+      /**
+       * Create a new subdirectory in the current working directory.
+       *
+       * @this {TJSFilePicker}
+       */
+      static async #onMakeDirectory() {
+        await this.#createDirectoryDialog(this.source);
+      }
+      /**
+       * Overridden to explicitly center the file picker app when displayed above a modal / glasspane.
+       *
+       * @param {object}   pos - Position object.
+       *
+       * @returns {{left: number, top: number, width: number, height: number, scale: number}} Position object.
+       */
+      setPosition(pos = {}) {
+        const currentPos = super.setPosition(pos);
+        if (this.#glasspaneId) {
+          const top = (globalThis.innerHeight - currentPos.height) / 2;
+          this.element.style.top = `${top}px`;
+          super.setPosition({ top });
+          currentPos.top = top;
+        }
+        return currentPos;
+      }
+    };
+    return this.#TJSFilePickerClass;
   }
 }
 function create_if_block_3$6(ctx) {
+  let if_block_anchor;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*iconType*/
+      ctx2[8] === "font"
+    ) return create_if_block_4$4;
+    if (
+      /*iconType*/
+      ctx2[8] === "img"
+    ) return create_if_block_5$4;
+    if (
+      /*iconType*/
+      ctx2[8] === "svg"
+    ) return create_if_block_6$3;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block = current_block_type && current_block_type(ctx);
+  return {
+    c() {
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, if_block_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block) {
+        if_block.p(ctx2, dirty);
+      } else {
+        if (if_block) if_block.d(1);
+        if_block = current_block_type && current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(if_block_anchor);
+      }
+      if (if_block) {
+        if_block.d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_6$3(ctx) {
+  let svg;
+  let inlineSvg_action;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      svg = svg_element("svg");
+      attr(svg, "class", "icon svelte-auto-1n18i9o");
+    },
+    m(target2, anchor) {
+      insert(target2, svg, anchor);
+      if (!mounted) {
+        dispose = action_destroyer(inlineSvg_action = inlineSvg.call(null, svg, { src: (
+          /*icon*/
+          ctx[1]
+        ) }));
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (inlineSvg_action && is_function(inlineSvg_action.update) && dirty & /*icon*/
+      2) inlineSvg_action.update.call(null, { src: (
+        /*icon*/
+        ctx2[1]
+      ) });
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(svg);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_5$4(ctx) {
+  let img;
+  let img_src_value;
+  return {
+    c() {
+      img = element("img");
+      if (!src_url_equal(img.src, img_src_value = /*icon*/
+      ctx[1])) attr(img, "src", img_src_value);
+      attr(img, "alt", "");
+      attr(img, "class", "icon svelte-auto-1n18i9o");
+    },
+    m(target2, anchor) {
+      insert(target2, img, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*icon*/
+      2 && !src_url_equal(img.src, img_src_value = /*icon*/
+      ctx2[1])) {
+        attr(img, "src", img_src_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(img);
+      }
+    }
+  };
+}
+function create_if_block_4$4(ctx) {
   let i;
   let i_class_value;
   return {
     c() {
       i = element("i");
-      attr(i, "class", i_class_value = null_to_empty(
-        /*icon*/
-        ctx[1]
-      ) + " svelte-auto-jq7vi1");
+      attr(i, "class", i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx[1]}`) + " svelte-auto-1n18i9o");
     },
     m(target2, anchor) {
       insert(target2, i, anchor);
     },
     p(ctx2, dirty) {
       if (dirty & /*icon*/
-      2 && i_class_value !== (i_class_value = null_to_empty(
-        /*icon*/
-        ctx2[1]
-      ) + " svelte-auto-jq7vi1")) {
+      2 && i_class_value !== (i_class_value = null_to_empty(`icon ${/*icon*/
+      ctx2[1]}`) + " svelte-auto-1n18i9o")) {
         attr(i, "class", i_class_value);
       }
     },
@@ -56794,13 +62915,13 @@ function create_if_block$l(ctx) {
   let current;
   const default_slot_template = (
     /*#slots*/
-    ctx[18].default
+    ctx[20].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[17],
+    ctx[19],
     null
   );
   return {
@@ -56816,20 +62937,20 @@ function create_if_block$l(ctx) {
     p(ctx2, dirty) {
       if (default_slot) {
         if (default_slot.p && (!current || dirty & /*$$scope*/
-        131072)) {
+        524288)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[17],
+            ctx2[19],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[17]
+              ctx2[19]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[17],
+              ctx2[19],
               dirty,
               null
             ),
@@ -56862,7 +62983,7 @@ function create_fragment$1k(ctx) {
   let if_block1;
   let efx_action;
   let button_1_disabled_value;
-  let button_1_title_value;
+  let popoverTooltip_action;
   let applyStyles_action;
   let current;
   let mounted;
@@ -56873,12 +62994,12 @@ function create_fragment$1k(ctx) {
   );
   const if_block_creators = [create_if_block$l, create_if_block_1$d, create_if_block_2$a];
   const if_blocks = [];
-  function select_block_type(ctx2, dirty) {
+  function select_block_type_1(ctx2, dirty) {
     if (dirty & /*label*/
     4) show_if = null;
     if (
       /*$$slots*/
-      ctx2[11].default
+      ctx2[13].default
     ) return 0;
     if (typeof /*label*/
     ctx2[2] === "string") return 1;
@@ -56889,7 +63010,7 @@ function create_fragment$1k(ctx) {
     if (show_if) return 2;
     return -1;
   }
-  if (~(current_block_type_index = select_block_type(ctx, -1))) {
+  if (~(current_block_type_index = select_block_type_1(ctx, -1))) {
     if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
   }
   return {
@@ -56900,15 +63021,11 @@ function create_fragment$1k(ctx) {
       if (if_block0) if_block0.c();
       t = space();
       if (if_block1) if_block1.c();
-      attr(span0, "class", "tjs-form-button-span svelte-auto-jq7vi1");
-      attr(span1, "class", "tjs-form-button-efx svelte-auto-jq7vi1");
-      attr(button_1, "class", "tjs-form-button svelte-auto-jq7vi1");
+      attr(span0, "class", "tjs-form-button-span svelte-auto-1n18i9o");
+      attr(span1, "class", "tjs-form-button-efx svelte-auto-1n18i9o");
+      attr(button_1, "class", "tjs-form-button svelte-auto-1n18i9o");
       button_1.disabled = button_1_disabled_value = !/*enabled*/
       ctx[0];
-      attr(button_1, "title", button_1_title_value = localize(
-        /*title*/
-        ctx[3]
-      ));
     },
     m(target2, anchor) {
       insert(target2, button_1, anchor);
@@ -56919,12 +63036,12 @@ function create_fragment$1k(ctx) {
       if (~current_block_type_index) {
         if_blocks[current_block_type_index].m(span0, null);
       }
-      ctx[22](span1);
+      ctx[24](span1);
       current = true;
       if (!mounted) {
         dispose = [
           action_destroyer(efx_action = /*efx*/
-          ctx[5].call(null, span1, { enabled: (
+          ctx[6].call(null, span1, { enabled: (
             /*enabled*/
             ctx[0]
           ) })),
@@ -56932,49 +63049,59 @@ function create_fragment$1k(ctx) {
             button_1,
             "click",
             /*onClick*/
-            ctx[7]
+            ctx[9]
           ),
           listen(
             button_1,
             "contextmenu",
             /*onContextMenuPress*/
-            ctx[8]
+            ctx[10]
           ),
           listen(
             button_1,
             "keydown",
             /*onKeydown*/
-            ctx[9]
+            ctx[11]
           ),
           listen(
             button_1,
             "keyup",
             /*onKeyup*/
-            ctx[10]
+            ctx[12]
           ),
           listen(
             button_1,
             "click",
             /*click_handler*/
-            ctx[19]
+            ctx[21]
           ),
           listen(
             button_1,
             "contextmenu",
             /*contextmenu_handler*/
-            ctx[20]
+            ctx[22]
           ),
           listen(
             button_1,
             "press",
             /*press_handler*/
-            ctx[21]
+            ctx[23]
           ),
+          action_destroyer(popoverTooltip_action = popoverTooltip.call(null, button_1, {
+            tooltip: (
+              /*tooltip*/
+              ctx[3]
+            ),
+            direction: (
+              /*tooltipDirection*/
+              ctx[4]
+            )
+          })),
           action_destroyer(applyStyles_action = applyStyles.call(
             null,
             button_1,
             /*styles*/
-            ctx[4]
+            ctx[5]
           ))
         ];
         mounted = true;
@@ -56997,7 +63124,7 @@ function create_fragment$1k(ctx) {
         if_block0 = null;
       }
       let previous_block_index = current_block_type_index;
-      current_block_type_index = select_block_type(ctx2, dirty);
+      current_block_type_index = select_block_type_1(ctx2, dirty);
       if (current_block_type_index === previous_block_index) {
         if (~current_block_type_index) {
           if_blocks[current_block_type_index].p(ctx2, dirty);
@@ -57034,18 +63161,22 @@ function create_fragment$1k(ctx) {
       ctx2[0])) {
         button_1.disabled = button_1_disabled_value;
       }
-      if (!current || dirty & /*title*/
-      8 && button_1_title_value !== (button_1_title_value = localize(
-        /*title*/
-        ctx2[3]
-      ))) {
-        attr(button_1, "title", button_1_title_value);
-      }
+      if (popoverTooltip_action && is_function(popoverTooltip_action.update) && dirty & /*tooltip, tooltipDirection*/
+      24) popoverTooltip_action.update.call(null, {
+        tooltip: (
+          /*tooltip*/
+          ctx2[3]
+        ),
+        direction: (
+          /*tooltipDirection*/
+          ctx2[4]
+        )
+      });
       if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
-      16) applyStyles_action.update.call(
+      32) applyStyles_action.update.call(
         null,
         /*styles*/
-        ctx2[4]
+        ctx2[5]
       );
     },
     i(local) {
@@ -57065,7 +63196,7 @@ function create_fragment$1k(ctx) {
       if (~current_block_type_index) {
         if_blocks[current_block_type_index].d();
       }
-      ctx[22](null);
+      ctx[24](null);
       mounted = false;
       run_all(dispose);
     }
@@ -57078,7 +63209,8 @@ function instance$1i($$self, $$props, $$invalidate) {
   let { enabled: enabled2 = void 0 } = $$props;
   let { icon = void 0 } = $$props;
   let { label = void 0 } = $$props;
-  let { title: title2 = void 0 } = $$props;
+  let { tooltip = void 0 } = $$props;
+  let { tooltipDirection = void 0 } = $$props;
   let { styles = void 0 } = $$props;
   let { keyCode = void 0 } = $$props;
   let { efx = void 0 } = $$props;
@@ -57088,7 +63220,13 @@ function instance$1i($$self, $$props, $$invalidate) {
   const dispatch2 = createEventDispatcher();
   const s_EFX_DEFAULT = () => void 0;
   let efxEl;
+  let iconType;
   function onClick(event) {
+    if (event.detail === 0) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     if (typeof onPress === "function") {
       onPress({ event });
     }
@@ -57144,73 +63282,90 @@ function instance$1i($$self, $$props, $$invalidate) {
   function span1_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       efxEl = $$value;
-      $$invalidate(6, efxEl);
+      $$invalidate(7, efxEl);
     });
   }
   $$self.$$set = ($$props2) => {
-    if ("button" in $$props2) $$invalidate(16, button = $$props2.button);
+    if ("button" in $$props2) $$invalidate(18, button = $$props2.button);
     if ("enabled" in $$props2) $$invalidate(0, enabled2 = $$props2.enabled);
     if ("icon" in $$props2) $$invalidate(1, icon = $$props2.icon);
     if ("label" in $$props2) $$invalidate(2, label = $$props2.label);
-    if ("title" in $$props2) $$invalidate(3, title2 = $$props2.title);
-    if ("styles" in $$props2) $$invalidate(4, styles = $$props2.styles);
-    if ("keyCode" in $$props2) $$invalidate(12, keyCode = $$props2.keyCode);
-    if ("efx" in $$props2) $$invalidate(5, efx = $$props2.efx);
-    if ("onPress" in $$props2) $$invalidate(13, onPress = $$props2.onPress);
-    if ("onContextMenu" in $$props2) $$invalidate(14, onContextMenu = $$props2.onContextMenu);
-    if ("clickPropagate" in $$props2) $$invalidate(15, clickPropagate = $$props2.clickPropagate);
-    if ("$$scope" in $$props2) $$invalidate(17, $$scope = $$props2.$$scope);
+    if ("tooltip" in $$props2) $$invalidate(3, tooltip = $$props2.tooltip);
+    if ("tooltipDirection" in $$props2) $$invalidate(4, tooltipDirection = $$props2.tooltipDirection);
+    if ("styles" in $$props2) $$invalidate(5, styles = $$props2.styles);
+    if ("keyCode" in $$props2) $$invalidate(14, keyCode = $$props2.keyCode);
+    if ("efx" in $$props2) $$invalidate(6, efx = $$props2.efx);
+    if ("onPress" in $$props2) $$invalidate(15, onPress = $$props2.onPress);
+    if ("onContextMenu" in $$props2) $$invalidate(16, onContextMenu = $$props2.onContextMenu);
+    if ("clickPropagate" in $$props2) $$invalidate(17, clickPropagate = $$props2.clickPropagate);
+    if ("$$scope" in $$props2) $$invalidate(19, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*button, enabled*/
-    65537) {
+    262145) {
       $$invalidate(0, enabled2 = isObject(button) && typeof button.enabled === "boolean" ? button.enabled : typeof enabled2 === "boolean" ? enabled2 : true);
     }
     if ($$self.$$.dirty & /*button, icon*/
-    65538) {
+    262146) {
       $$invalidate(1, icon = isObject(button) && typeof button.icon === "string" ? button.icon : typeof icon === "string" ? icon : void 0);
     }
     if ($$self.$$.dirty & /*button, label*/
-    65540) {
+    262148) {
       $$invalidate(2, label = isObject(button) && (typeof button.label === "string" || TJSSvelte.config.isConfigEmbed(button.label)) ? button.label : typeof label === "string" || TJSSvelte.config.isConfigEmbed(label) ? label : void 0);
     }
-    if ($$self.$$.dirty & /*button, title*/
-    65544) {
-      $$invalidate(3, title2 = isObject(button) && typeof button.title === "string" ? button.title : typeof title2 === "string" ? title2 : void 0);
+    if ($$self.$$.dirty & /*button, tooltip*/
+    262152) {
+      $$invalidate(3, tooltip = isObject(button) && typeof button.tooltip === "string" ? button.tooltip : typeof tooltip === "string" ? tooltip : void 0);
+    }
+    if ($$self.$$.dirty & /*button, tooltipDirection*/
+    262160) {
+      $$invalidate(4, tooltipDirection = isObject(button) && typeof button.tooltipDirection === "string" ? button.tooltipDirection : typeof tooltipDirection === "string" ? tooltipDirection : void 0);
     }
     if ($$self.$$.dirty & /*button, styles*/
-    65552) {
-      $$invalidate(4, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
+    262176) {
+      $$invalidate(5, styles = isObject(button) && isObject(button.styles) ? button.styles : isObject(styles) ? styles : void 0);
     }
     if ($$self.$$.dirty & /*button, keyCode*/
-    69632) {
-      $$invalidate(12, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
+    278528) {
+      $$invalidate(14, keyCode = isObject(button) && typeof button.keyCode === "string" ? button.keyCode : typeof keyCode === "string" ? keyCode : "Enter");
     }
     if ($$self.$$.dirty & /*button, efx*/
-    65568) {
-      $$invalidate(5, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
+    262208) {
+      $$invalidate(6, efx = isObject(button) && typeof button.efx === "function" ? button.efx : typeof efx === "function" ? efx : s_EFX_DEFAULT);
     }
     if ($$self.$$.dirty & /*button, onPress*/
-    73728) {
-      $$invalidate(13, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
+    294912) {
+      $$invalidate(15, onPress = isObject(button) && typeof button.onPress === "function" ? button.onPress : typeof onPress === "function" ? onPress : void 0);
     }
     if ($$self.$$.dirty & /*button, onContextMenu*/
-    81920) {
-      $$invalidate(14, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
+    327680) {
+      $$invalidate(16, onContextMenu = isObject(button) && typeof button.onContextMenu === "function" ? button.onContextMenu : typeof onContextMenu === "function" ? onContextMenu : void 0);
     }
     if ($$self.$$.dirty & /*button, clickPropagate*/
-    98304) {
-      $$invalidate(15, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    393216) {
+      $$invalidate(17, clickPropagate = isObject(button) && typeof button.clickPropagate === "boolean" ? button.clickPropagate : typeof clickPropagate === "boolean" ? clickPropagate : false);
+    }
+    if ($$self.$$.dirty & /*icon*/
+    2) {
+      {
+        const result = AssetValidator.parseMedia({
+          url: icon,
+          mediaTypes: AssetValidator.MediaTypes.img_svg
+        });
+        $$invalidate(8, iconType = result.valid ? result.elementType : "font");
+      }
     }
   };
   return [
     enabled2,
     icon,
     label,
-    title2,
+    tooltip,
+    tooltipDirection,
     styles,
     efx,
     efxEl,
+    iconType,
     onClick,
     onContextMenuPress,
     onKeydown,
@@ -57233,17 +63388,18 @@ class TJSButton extends SvelteComponent {
   constructor(options2) {
     super();
     init(this, options2, instance$1i, create_fragment$1k, safe_not_equal, {
-      button: 16,
+      button: 18,
       enabled: 0,
       icon: 1,
       label: 2,
-      title: 3,
-      styles: 4,
-      keyCode: 12,
-      efx: 5,
-      onPress: 13,
-      onContextMenu: 14,
-      clickPropagate: 15
+      tooltip: 3,
+      tooltipDirection: 4,
+      styles: 5,
+      keyCode: 14,
+      efx: 6,
+      onPress: 15,
+      onContextMenu: 16,
+      clickPropagate: 17
     });
   }
 }
@@ -57259,13 +63415,13 @@ function create_else_block$f(ctx) {
   let current;
   const default_slot_template = (
     /*#slots*/
-    ctx[3].default
+    ctx[4].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[2],
+    ctx[3],
     null
   );
   return {
@@ -57281,20 +63437,20 @@ function create_else_block$f(ctx) {
     p(ctx2, dirty) {
       if (default_slot) {
         if (default_slot.p && (!current || dirty & /*$$scope*/
-        4)) {
+        8)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[2],
+            ctx2[3],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[2]
+              ctx2[3]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[2],
+              ctx2[3],
               dirty,
               null
             ),
@@ -57343,13 +63499,13 @@ function create_if_block$k(ctx) {
   }
   const default_slot_template = (
     /*#slots*/
-    ctx[3].default
+    ctx[4].default
   );
   const default_slot = create_slot(
     default_slot_template,
     ctx,
     /*$$scope*/
-    ctx[2],
+    ctx[3],
     null
   );
   return {
@@ -57358,7 +63514,7 @@ function create_if_block$k(ctx) {
       if (if_block) if_block.c();
       t = space();
       if (default_slot) default_slot.c();
-      attr(label_1, "class", "tjs-slot-label svelte-auto-1c8p0p4");
+      attr(label_1, "class", "tjs-slot-label svelte-auto-xv9zdb");
     },
     m(target2, anchor) {
       insert(target2, label_1, anchor);
@@ -57402,20 +63558,20 @@ function create_if_block$k(ctx) {
       }
       if (default_slot) {
         if (default_slot.p && (!current || dirty & /*$$scope*/
-        4)) {
+        8)) {
           update_slot_base(
             default_slot,
             default_slot_template,
             ctx2,
             /*$$scope*/
-            ctx2[2],
+            ctx2[3],
             !current ? get_all_dirty_from_scope(
               /*$$scope*/
-              ctx2[2]
+              ctx2[3]
             ) : get_slot_changes(
               default_slot_template,
               /*$$scope*/
-              ctx2[2],
+              ctx2[3],
               dirty,
               null
             ),
@@ -57573,7 +63729,13 @@ function create_if_block_1$c(ctx) {
     c() {
       span = element("span");
       t = text(t_value);
-      attr(span, "class", "tjs-slot-label-span svelte-auto-1c8p0p4");
+      attr(span, "class", "tjs-slot-label-span svelte-auto-xv9zdb");
+      toggle_class(
+        span,
+        "is-pointer",
+        /*isPointer*/
+        ctx[2]
+      );
       toggle_class(span, "disabled", !/*enabled*/
       ctx[1]);
     },
@@ -57587,6 +63749,15 @@ function create_if_block_1$c(ctx) {
         /*label*/
         ctx2[0]
       ) + "")) set_data(t, t_value);
+      if (dirty & /*isPointer*/
+      4) {
+        toggle_class(
+          span,
+          "is-pointer",
+          /*isPointer*/
+          ctx2[2]
+        );
+      }
       if (dirty & /*enabled*/
       2) {
         toggle_class(span, "disabled", !/*enabled*/
@@ -57671,10 +63842,12 @@ function instance$1h($$self, $$props, $$invalidate) {
   let { $$slots: slots = {}, $$scope } = $$props;
   let { label = void 0 } = $$props;
   let { enabled: enabled2 = void 0 } = $$props;
+  let { isPointer = void 0 } = $$props;
   $$self.$$set = ($$props2) => {
     if ("label" in $$props2) $$invalidate(0, label = $$props2.label);
     if ("enabled" in $$props2) $$invalidate(1, enabled2 = $$props2.enabled);
-    if ("$$scope" in $$props2) $$invalidate(2, $$scope = $$props2.$$scope);
+    if ("isPointer" in $$props2) $$invalidate(2, isPointer = $$props2.isPointer);
+    if ("$$scope" in $$props2) $$invalidate(3, $$scope = $$props2.$$scope);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*label*/
@@ -57685,13 +63858,17 @@ function instance$1h($$self, $$props, $$invalidate) {
     3) {
       $$invalidate(1, enabled2 = isObject(label) && typeof label.enabled === "boolean" ? label.enabled : typeof enabled2 === "boolean" ? enabled2 : true);
     }
+    if ($$self.$$.dirty & /*label, isPointer*/
+    5) {
+      $$invalidate(2, isPointer = isObject(label) && typeof label.isPointer === "boolean" ? label.isPointer : typeof isPointer === "boolean" ? isPointer : false);
+    }
   };
-  return [label, enabled2, $$scope, slots];
+  return [label, enabled2, isPointer, $$scope, slots];
 }
 class TJSSlotLabel extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$1h, create_fragment$1j, safe_not_equal, { label: 0, enabled: 1 });
+    init(this, options2, instance$1h, create_fragment$1j, safe_not_equal, { label: 0, enabled: 1, isPointer: 2 });
   }
 }
 function create_default_slot$D(ctx) {
@@ -57705,13 +63882,13 @@ function create_default_slot$D(ctx) {
     c() {
       div = element("div");
       input_1 = element("input");
-      attr(input_1, "class", "tjs-input svelte-auto-11efq82");
+      attr(input_1, "class", "tjs-input svelte-auto-1voocge");
       attr(input_1, "type", "checkbox");
       input_1.disabled = input_1_disabled_value = !/*enabled*/
       ctx[0];
       input_1.readOnly = /*readonly*/
       ctx[2];
-      attr(div, "class", "tjs-input-container svelte-auto-11efq82");
+      attr(div, "class", "tjs-input-container svelte-auto-1voocge");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -57797,6 +63974,7 @@ function create_fragment$1i(ctx) {
         /*enabled*/
         ctx[0]
       ),
+      isPointer: true,
       $$slots: { default: [create_default_slot$D] },
       $$scope: { ctx }
     }
@@ -57933,7 +64111,7 @@ function create_default_slot$C(ctx) {
     c() {
       div = element("div");
       input_1 = element("input");
-      attr(input_1, "class", "tjs-input svelte-auto-7ft2mf");
+      attr(input_1, "class", "tjs-input svelte-auto-1prd8ph");
       attr(input_1, "type", "number");
       attr(
         input_1,
@@ -57971,7 +64149,7 @@ function create_default_slot$C(ctx) {
       );
       toggle_class(input_1, "is-value-invalid", !/*$storeIsValid*/
       ctx[13]);
-      attr(div, "class", "tjs-input-container svelte-auto-7ft2mf");
+      attr(div, "class", "tjs-input-container svelte-auto-1prd8ph");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -58364,7 +64542,7 @@ function create_default_slot$B(ctx) {
     c() {
       div = element("div");
       input_1 = element("input");
-      attr(input_1, "class", "tjs-input svelte-auto-2xxdp1");
+      attr(input_1, "class", "tjs-input svelte-auto-1k6bzm2");
       attr(input_1, "type", "range");
       input_1.disabled = input_1_disabled_value = !/*enabled*/
       ctx[0];
@@ -58388,7 +64566,7 @@ function create_default_slot$B(ctx) {
         /*step*/
         ctx[5]
       );
-      attr(div, "class", "tjs-input-container svelte-auto-2xxdp1");
+      attr(div, "class", "tjs-input-container svelte-auto-1k6bzm2");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -58757,7 +64935,7 @@ function create_default_slot$A(ctx) {
         ctx[0]
       ),
       efx: (
-        /*efx*/
+        /*efxRange*/
         ctx[9]
       ),
       max: (
@@ -58794,8 +64972,8 @@ function create_default_slot$A(ctx) {
         ctx[0]
       ),
       efx: (
-        /*efx*/
-        ctx[9]
+        /*efxNumber*/
+        ctx[10]
       ),
       max: (
         /*max*/
@@ -58844,8 +65022,8 @@ function create_default_slot$A(ctx) {
       if (dirty & /*enabled*/
       1) tjsinputrange_changes.enabled = /*enabled*/
       ctx2[0];
-      if (dirty & /*efx*/
-      512) tjsinputrange_changes.efx = /*efx*/
+      if (dirty & /*efxRange*/
+      512) tjsinputrange_changes.efx = /*efxRange*/
       ctx2[9];
       if (dirty & /*max*/
       8) tjsinputrange_changes.max = /*max*/
@@ -58870,9 +65048,9 @@ function create_default_slot$A(ctx) {
       if (dirty & /*enabled*/
       1) tjsinputnumber_changes.enabled = /*enabled*/
       ctx2[0];
-      if (dirty & /*efx*/
-      512) tjsinputnumber_changes.efx = /*efx*/
-      ctx2[9];
+      if (dirty & /*efxNumber*/
+      1024) tjsinputnumber_changes.efx = /*efxNumber*/
+      ctx2[10];
       if (dirty & /*max*/
       8) tjsinputnumber_changes.max = /*max*/
       ctx2[3];
@@ -58949,8 +65127,8 @@ function create_fragment$1f(ctx) {
       if (dirty & /*enabled*/
       1) tjsslotlabel_changes.enabled = /*enabled*/
       ctx2[0];
-      if (dirty & /*$$scope, enabled, efx, max, min, options, readonly, step, store, styles*/
-      3069) {
+      if (dirty & /*$$scope, enabled, efxNumber, max, min, options, readonly, step, store, styles, efxRange*/
+      6141) {
         tjsslotlabel_changes.$$scope = { dirty, ctx: ctx2 };
       }
       tjsslotlabel.$set(tjsslotlabel_changes);
@@ -58980,9 +65158,10 @@ function instance$1d($$self, $$props, $$invalidate) {
   let { step = void 0 } = $$props;
   let { store = void 0 } = $$props;
   let { styles = void 0 } = $$props;
-  let { efx = void 0 } = $$props;
+  let { efxRange = void 0 } = $$props;
+  let { efxNumber = void 0 } = $$props;
   $$self.$$set = ($$props2) => {
-    if ("input" in $$props2) $$invalidate(10, input = $$props2.input);
+    if ("input" in $$props2) $$invalidate(11, input = $$props2.input);
     if ("enabled" in $$props2) $$invalidate(0, enabled2 = $$props2.enabled);
     if ("label" in $$props2) $$invalidate(1, label = $$props2.label);
     if ("options" in $$props2) $$invalidate(2, options2 = $$props2.options);
@@ -58992,58 +65171,77 @@ function instance$1d($$self, $$props, $$invalidate) {
     if ("step" in $$props2) $$invalidate(6, step = $$props2.step);
     if ("store" in $$props2) $$invalidate(7, store = $$props2.store);
     if ("styles" in $$props2) $$invalidate(8, styles = $$props2.styles);
-    if ("efx" in $$props2) $$invalidate(9, efx = $$props2.efx);
+    if ("efxRange" in $$props2) $$invalidate(9, efxRange = $$props2.efxRange);
+    if ("efxNumber" in $$props2) $$invalidate(10, efxNumber = $$props2.efxNumber);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*input, enabled*/
-    1025) {
+    2049) {
       $$invalidate(0, enabled2 = isObject(input) && typeof input.enabled === "boolean" ? input.enabled : typeof enabled2 === "boolean" ? enabled2 : true);
     }
     if ($$self.$$.dirty & /*input, label*/
-    1026) {
+    2050) {
       $$invalidate(1, label = isObject(input) && TJSSlotLabelUtil.isValid(input.label) ? input.label : TJSSlotLabelUtil.isValid(label) ? label : void 0);
     }
     if ($$self.$$.dirty & /*input, max*/
-    1032) {
+    2056) {
       $$invalidate(3, max = isObject(input) && typeof input.max === "number" ? input.max : typeof max === "number" ? max : 100);
     }
     if ($$self.$$.dirty & /*input, min*/
-    1040) {
+    2064) {
       $$invalidate(4, min = isObject(input) && typeof input.min === "number" ? input.min : typeof min === "number" ? min : 0);
     }
     if ($$self.$$.dirty & /*input, options*/
-    1028) {
+    2052) {
       $$invalidate(2, options2 = isObject(input) && isObject(input.options) ? input.options : isObject(options2) ? options2 : {});
     }
     if ($$self.$$.dirty & /*input, readonly*/
-    1056) {
+    2080) {
       $$invalidate(5, readonly = isObject(input) && typeof input.readonly === "boolean" ? input.readonly : typeof readonly === "boolean" ? readonly : false);
     }
     if ($$self.$$.dirty & /*input, step*/
-    1088) {
+    2112) {
       $$invalidate(6, step = isObject(input) && typeof input.step === "number" ? input.step : typeof step === "number" ? step : 1);
     }
     if ($$self.$$.dirty & /*input, store*/
-    1152) {
+    2176) {
       $$invalidate(7, store = isObject(input) && isMinimalWritableStore(input.store) ? input.store : isMinimalWritableStore(store) ? store : writable(void 0));
     }
     if ($$self.$$.dirty & /*input, styles*/
-    1280) {
+    2304) {
       $$invalidate(8, styles = isObject(input) && isObject(input.styles) ? input.styles : isObject(styles) ? styles : void 0);
     }
-    if ($$self.$$.dirty & /*input, efx*/
-    1536) {
-      $$invalidate(9, efx = isObject(input) && typeof input.efx === "function" ? input.efx : typeof efx === "function" ? efx : () => {
+    if ($$self.$$.dirty & /*input, efxNumber*/
+    3072) {
+      $$invalidate(10, efxNumber = isObject(input) && typeof input.efxNumber === "function" ? input.efxNumber : typeof efxNumber === "function" ? efxNumber : () => {
+      });
+    }
+    if ($$self.$$.dirty & /*input, efxRange*/
+    2560) {
+      $$invalidate(9, efxRange = isObject(input) && typeof input.efxRange === "function" ? input.efxRange : typeof efxRange === "function" ? efxRange : () => {
       });
     }
   };
-  return [enabled2, label, options2, max, min, readonly, step, store, styles, efx, input];
+  return [
+    enabled2,
+    label,
+    options2,
+    max,
+    min,
+    readonly,
+    step,
+    store,
+    styles,
+    efxRange,
+    efxNumber,
+    input
+  ];
 }
 class TJSInputRangeNumber extends SvelteComponent {
   constructor(options2) {
     super();
     init(this, options2, instance$1d, create_fragment$1f, safe_not_equal, {
-      input: 10,
+      input: 11,
       enabled: 0,
       label: 1,
       options: 2,
@@ -59053,7 +65251,8 @@ class TJSInputRangeNumber extends SvelteComponent {
       step: 6,
       store: 7,
       styles: 8,
-      efx: 9
+      efxRange: 9,
+      efxNumber: 10
     });
   }
 }
@@ -59094,8 +65293,8 @@ function create_default_slot$z(ctx) {
       set_attributes(input_1, input_data);
       toggle_class(input_1, "is-value-invalid", !/*$storeIsValid*/
       ctx[10]);
-      toggle_class(input_1, "svelte-auto-k7qury", true);
-      attr(div, "class", "tjs-input-container svelte-auto-k7qury");
+      toggle_class(input_1, "svelte-auto-1oqaqxw", true);
+      attr(div, "class", "tjs-input-container svelte-auto-1oqaqxw");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -59180,7 +65379,7 @@ function create_default_slot$z(ctx) {
       }
       toggle_class(input_1, "is-value-invalid", !/*$storeIsValid*/
       ctx2[10]);
-      toggle_class(input_1, "svelte-auto-k7qury", true);
+      toggle_class(input_1, "svelte-auto-1oqaqxw", true);
       if (applyStyles_action && is_function(applyStyles_action.update) && dirty & /*styles*/
       64) applyStyles_action.update.call(
         null,
@@ -59458,7 +65657,7 @@ function create_each_block$b(ctx) {
       option_1 = element("option");
       t0 = text(t0_value);
       t1 = space();
-      attr(option_1, "class", "tjs-select-option svelte-auto-1uux9av");
+      attr(option_1, "class", "tjs-select-option svelte-auto-11gmhdq");
       option_1.__value = option_1_value_value = /*option*/
       ctx[14].value;
       set_input_value(option_1, option_1.__value);
@@ -59511,7 +65710,7 @@ function create_default_slot$y(ctx) {
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].c();
       }
-      attr(select_1, "class", "tjs-select svelte-auto-1uux9av");
+      attr(select_1, "class", "tjs-select svelte-auto-11gmhdq");
       select_1.disabled = select_1_disabled_value = !/*enabled*/
       ctx[0];
       if (
@@ -59528,7 +65727,7 @@ function create_default_slot$y(ctx) {
         ctx[5] !== /*s_DEFAULT_EFX*/
         ctx[7]
       );
-      attr(div, "class", "tjs-select-container svelte-auto-1uux9av");
+      attr(div, "class", "tjs-select-container svelte-auto-11gmhdq");
     },
     m(target2, anchor) {
       insert(target2, div, anchor);
@@ -60909,7 +67108,7 @@ function create_if_block_2$7(ctx) {
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].c();
       }
-      attr(section_1, "class", "tjs-settings-section svelte-auto-m1gb0h");
+      attr(section_1, "class", "tjs-settings-section svelte-auto-1uilpg5");
     },
     m(target2, anchor) {
       insert(target2, section_1, anchor);
@@ -61037,7 +67236,7 @@ function create_each_block_2(key_1, ctx) {
     }
   };
 }
-function create_default_slot_1$4(ctx) {
+function create_default_slot_2$2(ctx) {
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
   let each_1_anchor;
@@ -61120,7 +67319,7 @@ function create_each_block_1$1(ctx) {
         /*folder*/
         ctx[9].store
       ),
-      $$slots: { default: [create_default_slot_1$4] },
+      $$slots: { default: [create_default_slot_2$2] },
       $$scope: { ctx }
     }
   });
@@ -61128,7 +67327,7 @@ function create_each_block_1$1(ctx) {
     c() {
       section_1 = element("section");
       create_component(tjssvgfolder.$$.fragment);
-      attr(section_1, "class", "tjs-settings-section svelte-auto-m1gb0h");
+      attr(section_1, "class", "tjs-settings-section svelte-auto-1uilpg5");
     },
     m(target2, anchor) {
       insert(target2, section_1, anchor);
@@ -61270,7 +67469,7 @@ function create_if_block$h(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$p],
-        default: [create_default_slot$x]
+        default: [create_default_slot_1$4]
       },
       $$scope: { ctx }
     }
@@ -61305,7 +67504,7 @@ function create_if_block$h(ctx) {
     }
   };
 }
-function create_default_slot$x(ctx) {
+function create_default_slot_1$4(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -61504,9 +67703,9 @@ function create_if_block_1$9(ctx) {
   };
 }
 function create_summary_end_slot$p(ctx) {
-  let show_if = TJSSvelte.util.isComponent(
+  let show_if = TJSSvelte.config.isConfigEmbed(
     /*section*/
-    ctx[6]?.folder?.summaryEnd?.class
+    ctx[6]?.folder?.summaryEnd
   );
   let if_block_anchor;
   let current;
@@ -61565,7 +67764,7 @@ function create_each_block$a(ctx) {
       section_1 = element("section");
       if_block.c();
       t = space();
-      attr(section_1, "class", "tjs-settings-section svelte-auto-m1gb0h");
+      attr(section_1, "class", "tjs-settings-section svelte-auto-1uilpg5");
     },
     m(target2, anchor) {
       insert(target2, section_1, anchor);
@@ -61605,28 +67804,11 @@ function create_each_block$a(ctx) {
     }
   };
 }
-function create_fragment$1a(ctx) {
-  let main2;
+function create_default_slot$x(ctx) {
   let t0;
-  let div;
   let t1;
-  let t2;
-  let t3;
-  let applyStyles_action;
+  let each1_anchor;
   let current;
-  let mounted;
-  let dispose;
-  const settings_header_slot_template = (
-    /*#slots*/
-    ctx[4]["settings-header"]
-  );
-  const settings_header_slot = create_slot(
-    settings_header_slot_template,
-    ctx,
-    /*$$scope*/
-    ctx[5],
-    get_settings_header_slot_context$1
-  );
   let if_block = (
     /*uiSettings*/
     ctx[3].topLevel.length && create_if_block_2$7(ctx)
@@ -61653,6 +67835,157 @@ function create_fragment$1a(ctx) {
   const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
   });
+  return {
+    c() {
+      if (if_block) if_block.c();
+      t0 = space();
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        each_blocks_1[i].c();
+      }
+      t1 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each1_anchor = empty();
+    },
+    m(target2, anchor) {
+      if (if_block) if_block.m(target2, anchor);
+      insert(target2, t0, anchor);
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        if (each_blocks_1[i]) {
+          each_blocks_1[i].m(target2, anchor);
+        }
+      }
+      insert(target2, t1, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target2, anchor);
+        }
+      }
+      insert(target2, each1_anchor, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      if (
+        /*uiSettings*/
+        ctx2[3].topLevel.length
+      ) if_block.p(ctx2, dirty);
+      if (dirty & /*uiSettings*/
+      8) {
+        each_value_1 = ensure_array_like(
+          /*uiSettings*/
+          ctx2[3].folders
+        );
+        let i;
+        for (i = 0; i < each_value_1.length; i += 1) {
+          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
+          if (each_blocks_1[i]) {
+            each_blocks_1[i].p(child_ctx, dirty);
+            transition_in(each_blocks_1[i], 1);
+          } else {
+            each_blocks_1[i] = create_each_block_1$1(child_ctx);
+            each_blocks_1[i].c();
+            transition_in(each_blocks_1[i], 1);
+            each_blocks_1[i].m(t1.parentNode, t1);
+          }
+        }
+        group_outros();
+        for (i = each_value_1.length; i < each_blocks_1.length; i += 1) {
+          out(i);
+        }
+        check_outros();
+      }
+      if (dirty & /*uiSettings*/
+      8) {
+        each_value = ensure_array_like(
+          /*uiSettings*/
+          ctx2[3].sections
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$a(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+            transition_in(each_blocks[i], 1);
+          } else {
+            each_blocks[i] = create_each_block$a(child_ctx);
+            each_blocks[i].c();
+            transition_in(each_blocks[i], 1);
+            each_blocks[i].m(each1_anchor.parentNode, each1_anchor);
+          }
+        }
+        group_outros();
+        for (i = each_value.length; i < each_blocks.length; i += 1) {
+          out_1(i);
+        }
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(if_block);
+      for (let i = 0; i < each_value_1.length; i += 1) {
+        transition_in(each_blocks_1[i]);
+      }
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      each_blocks_1 = each_blocks_1.filter(Boolean);
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        transition_out(each_blocks_1[i]);
+      }
+      each_blocks = each_blocks.filter(Boolean);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t0);
+        detach(t1);
+        detach(each1_anchor);
+      }
+      if (if_block) if_block.d(detaching);
+      destroy_each(each_blocks_1, detaching);
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_fragment$1a(ctx) {
+  let main2;
+  let t0;
+  let tjsscrollcontainer;
+  let t1;
+  let applyStyles_action;
+  let current;
+  let mounted;
+  let dispose;
+  const settings_header_slot_template = (
+    /*#slots*/
+    ctx[4]["settings-header"]
+  );
+  const settings_header_slot = create_slot(
+    settings_header_slot_template,
+    ctx,
+    /*$$scope*/
+    ctx[5],
+    get_settings_header_slot_context$1
+  );
+  tjsscrollcontainer = new TJSScrollContainer({
+    props: {
+      scrollTop: (
+        /*uiSettings*/
+        ctx[3].storeScrollbar
+      ),
+      $$slots: { default: [create_default_slot$x] },
+      $$scope: { ctx }
+    }
+  });
   const settings_footer_slot_template = (
     /*#slots*/
     ctx[4]["settings-footer"]
@@ -61669,20 +68002,10 @@ function create_fragment$1a(ctx) {
       main2 = element("main");
       if (settings_header_slot) settings_header_slot.c();
       t0 = space();
-      div = element("div");
-      if (if_block) if_block.c();
+      create_component(tjsscrollcontainer.$$.fragment);
       t1 = space();
-      for (let i = 0; i < each_blocks_1.length; i += 1) {
-        each_blocks_1[i].c();
-      }
-      t2 = space();
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      t3 = space();
       if (settings_footer_slot) settings_footer_slot.c();
-      attr(div, "class", "scrollable svelte-auto-m1gb0h");
-      attr(main2, "class", "tjs-settings svelte-auto-m1gb0h");
+      attr(main2, "class", "tjs-settings svelte-auto-1uilpg5");
     },
     m(target2, anchor) {
       insert(target2, main2, anchor);
@@ -61690,40 +68013,19 @@ function create_fragment$1a(ctx) {
         settings_header_slot.m(main2, null);
       }
       append(main2, t0);
-      append(main2, div);
-      if (if_block) if_block.m(div, null);
-      append(div, t1);
-      for (let i = 0; i < each_blocks_1.length; i += 1) {
-        if (each_blocks_1[i]) {
-          each_blocks_1[i].m(div, null);
-        }
-      }
-      append(div, t2);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div, null);
-        }
-      }
-      append(main2, t3);
+      mount_component(tjsscrollcontainer, main2, null);
+      append(main2, t1);
       if (settings_footer_slot) {
         settings_footer_slot.m(main2, null);
       }
       current = true;
       if (!mounted) {
-        dispose = [
-          action_destroyer(applyScrolltop.call(
-            null,
-            div,
-            /*uiSettings*/
-            ctx[3].storeScrollbar
-          )),
-          action_destroyer(applyStyles_action = applyStyles.call(
-            null,
-            main2,
-            /*styles*/
-            ctx[2]
-          ))
-        ];
+        dispose = action_destroyer(applyStyles_action = applyStyles.call(
+          null,
+          main2,
+          /*styles*/
+          ctx[2]
+        ));
         mounted = true;
       }
     },
@@ -61751,60 +68053,12 @@ function create_fragment$1a(ctx) {
           );
         }
       }
-      if (
-        /*uiSettings*/
-        ctx2[3].topLevel.length
-      ) if_block.p(ctx2, dirty);
-      if (dirty & /*uiSettings*/
-      8) {
-        each_value_1 = ensure_array_like(
-          /*uiSettings*/
-          ctx2[3].folders
-        );
-        let i;
-        for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
-          if (each_blocks_1[i]) {
-            each_blocks_1[i].p(child_ctx, dirty);
-            transition_in(each_blocks_1[i], 1);
-          } else {
-            each_blocks_1[i] = create_each_block_1$1(child_ctx);
-            each_blocks_1[i].c();
-            transition_in(each_blocks_1[i], 1);
-            each_blocks_1[i].m(div, t2);
-          }
-        }
-        group_outros();
-        for (i = each_value_1.length; i < each_blocks_1.length; i += 1) {
-          out(i);
-        }
-        check_outros();
+      const tjsscrollcontainer_changes = {};
+      if (dirty & /*$$scope*/
+      32) {
+        tjsscrollcontainer_changes.$$scope = { dirty, ctx: ctx2 };
       }
-      if (dirty & /*uiSettings*/
-      8) {
-        each_value = ensure_array_like(
-          /*uiSettings*/
-          ctx2[3].sections
-        );
-        let i;
-        for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$a(ctx2, each_value, i);
-          if (each_blocks[i]) {
-            each_blocks[i].p(child_ctx, dirty);
-            transition_in(each_blocks[i], 1);
-          } else {
-            each_blocks[i] = create_each_block$a(child_ctx);
-            each_blocks[i].c();
-            transition_in(each_blocks[i], 1);
-            each_blocks[i].m(div, null);
-          }
-        }
-        group_outros();
-        for (i = each_value.length; i < each_blocks.length; i += 1) {
-          out_1(i);
-        }
-        check_outros();
-      }
+      tjsscrollcontainer.$set(tjsscrollcontainer_changes);
       if (settings_footer_slot) {
         if (settings_footer_slot.p && (!current || dirty & /*$$scope, settings, options*/
         35)) {
@@ -61838,27 +68092,13 @@ function create_fragment$1a(ctx) {
     i(local) {
       if (current) return;
       transition_in(settings_header_slot, local);
-      transition_in(if_block);
-      for (let i = 0; i < each_value_1.length; i += 1) {
-        transition_in(each_blocks_1[i]);
-      }
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
+      transition_in(tjsscrollcontainer.$$.fragment, local);
       transition_in(settings_footer_slot, local);
       current = true;
     },
     o(local) {
       transition_out(settings_header_slot, local);
-      transition_out(if_block);
-      each_blocks_1 = each_blocks_1.filter(Boolean);
-      for (let i = 0; i < each_blocks_1.length; i += 1) {
-        transition_out(each_blocks_1[i]);
-      }
-      each_blocks = each_blocks.filter(Boolean);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
+      transition_out(tjsscrollcontainer.$$.fragment, local);
       transition_out(settings_footer_slot, local);
       current = false;
     },
@@ -61867,12 +68107,10 @@ function create_fragment$1a(ctx) {
         detach(main2);
       }
       if (settings_header_slot) settings_header_slot.d(detaching);
-      if (if_block) if_block.d();
-      destroy_each(each_blocks_1, detaching);
-      destroy_each(each_blocks, detaching);
+      destroy_component(tjsscrollcontainer);
       if (settings_footer_slot) settings_footer_slot.d(detaching);
       mounted = false;
-      run_all(dispose);
+      dispose();
     }
   };
 }
@@ -62384,7 +68622,7 @@ function createOverflowItems$1(category) {
           content: `Are you sure you want to delete all animations from '${category.label}'?`,
           draggable: false,
           modal: false
-        });
+        }, { themeName: "light" });
         if (result) {
           category.clearEntries();
         }
@@ -62608,41 +68846,272 @@ let CategoryControl$2 = class CategoryControl2 extends SvelteComponent {
     init(this, options2, instance$15, create_fragment$17, safe_not_equal, { category: 0 });
   }
 };
-function create_default_slot$v(ctx) {
-  let tjsmenu;
-  let current;
-  tjsmenu = new TJSMenu({ props: { menu: (
-    /*menu*/
-    ctx[0]
-  ) } });
-  return {
-    c() {
-      create_component(tjsmenu.$$.fragment);
-    },
-    m(target2, anchor) {
-      mount_component(tjsmenu, target2, anchor);
-      current = true;
-    },
-    p(ctx2, dirty) {
-      const tjsmenu_changes = {};
-      if (dirty & /*menu*/
-      1) tjsmenu_changes.menu = /*menu*/
-      ctx2[0];
-      tjsmenu.$set(tjsmenu_changes);
-    },
-    i(local) {
-      if (current) return;
-      transition_in(tjsmenu.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(tjsmenu.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      destroy_component(tjsmenu, detaching);
+class TJSContextMenu {
+  /**
+   * Stores any active context menu.
+   */
+  static #contextMenu = void 0;
+  /**
+   * @hideconstructor
+   */
+  constructor() {
+    throw new Error("TJSContextMenu constructor: This is a static class and should not be constructed.");
+  }
+  /**
+   * Creates and manages a browser wide context menu. The best way to create the context menu is to pass in the source
+   * DOM event as it is processed for the location of the context menu to display. Likewise, an A11yFocusSource object
+   * is generated that allows focus to be returned to the source location. You may supply a default focus target as a
+   * fallback via `focusEl`.
+   *
+   * @param {object}      opts - Optional parameters.
+   *
+   * @param {PointerEvent | MouseEvent | KeyboardEvent}  [opts.event] - The source PointerEvent, MouseEvent or
+   *        KeyboardEvent. It is highly recommended to pass the originating DOM event for automatic configuration.
+   *
+   * @param {(
+   *    Iterable<import('#standard/component/menu').TJSMenuData.Items> |
+   *    (() => Iterable<import('#standard/component/menu').TJSMenuData.Items>)
+   * )} [opts.items] - Menu items list of function returning a menu item list to display.
+   *
+   * @param {number}      [opts.x] - X position override for the top / left of the menu.
+   *
+   * @param {number}      [opts.y] - Y position override for the top / left of the menu.
+   *
+   * @param {number}      [opts.offsetX=2] - Small positive number offset for context menu so the pointer / mouse is
+   *        over the menu on display.
+   *
+   * @param {number}      [opts.offsetY=2] - Small positive number offset for context menu so the pointer / mouse is
+   *        over the menu on display.
+   *
+   * @param {boolean}     [opts.anchorToEventTarget=false] - Align context menu to the `event.target` element. This
+   *        will usually display the context menu aligned at the bottom left of the target element with automatic
+   *        alignment adjustments when the menu opens to the left or upwards.
+   *
+   * @param {Iterable<string>}    [opts.classes] - Additional custom CSS classes to add to the menu. This allows CSS
+   *        style targeting.
+   *
+   * @param {boolean}     [opts.focusDebug] - When true the associated A11yFocusSource object will log focus target
+   *        data when applied.
+   *
+   * @param {HTMLElement|string} [opts.focusEl] - A specific HTMLElement or selector string as the default focus
+   *        target.
+   *
+   * @param {string}      [opts.keyCode='Enter'] - Key to select menu items.
+   *
+   * @param {string}      [opts.id] - A custom CSS ID to add to the menu. This allows CSS style targeting.
+   *
+   * @param {Function}    [opts.onClose] - A function that is invoked when the context menu is closed. Useful for any
+   *        state based changes such as CSS highlighting of context menu invoking element.
+   *
+   * @param {boolean}     [opts.onPressApplyFocus=false] When true, any focus source derived from the associated
+   *        `event` or defined `focusEl` is applied automatically in response to menu item presses.
+   *
+   * @param {{ [key: string]: string | null }}  [opts.styles] - Optional inline styles to apply.
+   *
+   * @param {number}      [opts.duration] - Transition option for duration of transition in milliseconds;
+   *        default: `120ms`.
+   *
+   * @param {import('#runtime/svelte/easing').EasingReference}   [opts.easing] - Transition option for ease. Either an
+   *        easing function or easing function name.
+   *
+   * @param {Window}      [opts.activeWindow] - The active browser window that the context menu is displaying inside.
+   *        When you pass an `event` this is determined automatically.
+   */
+  static create({
+    event,
+    items,
+    x,
+    y,
+    offsetX = 2,
+    offsetY = 2,
+    anchorToEventTarget = false,
+    classes = [],
+    focusDebug = false,
+    focusEl,
+    keyCode = "Enter",
+    id = "",
+    onClose,
+    onPressApplyFocus = false,
+    styles,
+    duration = 120,
+    easing,
+    activeWindow
+  }) {
+    if (TJSContextMenu.#contextMenu !== void 0) {
+      return;
     }
-  };
+    if (event !== void 0 && !CrossWindow.isUserInputEvent(event)) {
+      throw new TypeError(
+        `TJSContextMenu.create error: 'event' is not a KeyboardEvent, MouseEvent, or PointerEvent.`
+      );
+    }
+    if (!event && (typeof x !== "number" || typeof y !== "number")) {
+      throw new Error(`TJSContextMenu.create error: No event or absolute X / Y position not defined.`);
+    }
+    if (typeof anchorToEventTarget !== "boolean") {
+      throw new TypeError(`TJSContextMenu.create error: 'anchorToEventTarget' is not a boolean.`);
+    }
+    if (anchorToEventTarget === true && !event) {
+      throw new TypeError(
+        `TJSContextMenu.create error: 'anchorToEventTarget' when 'true' requires 'event' to be defined.`
+      );
+    }
+    if (Number.isFinite(offsetX) && offsetX < 0) {
+      throw new TypeError(`TJSContextMenu.create error: offsetX is not a positive number.`);
+    }
+    if (Number.isFinite(offsetY) && offsetY < 0) {
+      throw new TypeError(`TJSContextMenu.create error: offsetY is not a positive number.`);
+    }
+    if (!Number.isInteger(duration) || duration < 0) {
+      throw new TypeError(`TJSContextMenu.create error: 'duration' is not a positive integer.`);
+    }
+    if (activeWindow === void 0 && event !== void 0) {
+      activeWindow = CrossWindow.getWindow(event);
+    }
+    if (!CrossWindow.isWindow(activeWindow)) {
+      throw new TypeError(`TJSContextMenu.create error: 'activeWindow' is not a Window.`);
+    }
+    if (typeof id !== "string") {
+      throw new TypeError(`TJSContextMenu.create error: 'id' is not a string.`);
+    }
+    if (onClose !== void 0 && typeof onClose !== "function") {
+      throw new TypeError(`TJSContextMenu.create error: 'onClose' is not a function.`);
+    }
+    if (typeof onPressApplyFocus !== "boolean") {
+      throw new TypeError(`TJSContextMenu.create error: 'onPressApplyFocus' is not a boolean.`);
+    }
+    if (!isIterable(classes)) {
+      throw new TypeError(`TJSContextMenu.create error: 'classes' is not a list of strings.`);
+    }
+    const processedItems = TJSContextMenu.#processItems(items);
+    if (processedItems.length === 0) {
+      return;
+    }
+    const hasIcon = processedItems.some((entry) => entry["#type"] === "font" || entry["#type"] === "svg");
+    let targetElHeight = 0, targetElWidth = 0;
+    if (anchorToEventTarget) {
+      ({ x, y, targetElHeight, targetElWidth } = this.#calcAnchorToEventTarget(event, activeWindow, x, y));
+    }
+    const focusSource = A11yHelper.getFocusSource({ event, x, y, focusEl, debug: focusDebug });
+    const easingFn = getEasingFunc(easing, { default: false });
+    const themedClasses = ThemeObserver.nearestThemedTokens({
+      element: event?.target,
+      output: new Set(classes),
+      override: false,
+      strict: true
+    });
+    TJSContextMenu.#contextMenu = new TJSContextMenuImpl({
+      target: activeWindow.document.body,
+      intro: true,
+      props: {
+        x: focusSource.x,
+        y: focusSource.y,
+        offsetX,
+        offsetY,
+        hasIcon,
+        items: processedItems,
+        classes: Array.from(themedClasses),
+        focusSource,
+        keyCode,
+        id,
+        styles,
+        transitionOptions: { duration, easing: easingFn },
+        activeWindow,
+        onPressApplyFocus,
+        targetElHeight,
+        targetElWidth
+      }
+    });
+    TJSContextMenu.#contextMenu.$set({ current_component: TJSContextMenu.#contextMenu });
+    TJSContextMenu.#contextMenu.$on("close:contextmenu", () => {
+      TJSContextMenu.#contextMenu = void 0;
+      if (typeof onClose === "function") {
+        onClose();
+      }
+    });
+  }
+  /**
+   * Find bottom / left viewport coordinates for current target element of event.
+   *
+   * @param {PointerEvent | MouseEvent | KeyboardEvent} event -
+   *
+   * @param {Window}   activeWindow -
+   *
+   * @param {number}   [x] -
+   *
+   * @param {number}   [y] -
+   *
+   * @returns {{ x: number, y: number, targetElHeight: number, targetElWidth: number }} X / Y viewport coordinates
+   *          aligned to the event target element bottom / left in addition to the target element height / width for
+   *          when the context menu is repositioned due to constraints.
+   */
+  static #calcAnchorToEventTarget(event, activeWindow, x, y) {
+    let targetElHeight = 0, targetElWidth = 0, targetX, targetY;
+    const rect = (event?.currentTarget ?? event?.target)?.getBoundingClientRect?.();
+    if (rect) {
+      targetX = rect.left + activeWindow.scrollX;
+      targetY = rect.bottom + activeWindow.scrollY;
+      targetElHeight = rect.height;
+      targetElWidth = rect.width;
+    }
+    return { x: x ?? targetX, y: y ?? targetY, targetElHeight, targetElWidth };
+  }
+  /**
+   * Processes menu item data for conditions and evaluating the type of menu item.
+   *
+   * @param {(
+   *    Iterable<import('#standard/component/menu').TJSMenuData.Items> |
+   *    (() => Iterable<import('#standard/component/menu').TJSMenuData.Items>)
+   * )} items - Menu item data of function returning items.
+   *
+   * @returns {object[]} Processed menu items.
+   */
+  static #processItems(items) {
+    let itemList;
+    if (typeof items === "function") {
+      itemList = items();
+      if (!isIterable(itemList)) {
+        throw new TypeError(`TJSContextMenu error: 'items' function did not return an iterable list.`);
+      }
+    } else {
+      itemList = isIterable(items) ? items : [];
+    }
+    const tempItems = [];
+    let cntr = -1;
+    for (const item2 of itemList) {
+      cntr++;
+      if (!isObject(item2)) {
+        throw new TypeError(`TJSContextMenu error: 'item[${cntr}]' is not an object.`);
+      }
+      if (typeof item2.condition === "function" && !item2.condition()) {
+        continue;
+      }
+      if (typeof item2.condition === "boolean" && !item2.condition) {
+        continue;
+      }
+      let type;
+      if (TJSSvelte.config.isConfigEmbed(item2?.svelte)) {
+        type = "class";
+      } else if (typeof item2.icon === "string") {
+        const result = AssetValidator.parseMedia({ url: item2.icon, mediaTypes: AssetValidator.MediaTypes.img_svg });
+        type = result.valid ? result.elementType : "font";
+      } else if (item2.icon === void 0 && typeof item2.label === "string") {
+        type = "label";
+      } else if (typeof item2.separator === "string") {
+        if (item2.separator !== "hr") {
+          throw new Error(
+            `TJSContextMenu error: 'item[${cntr}]' has unknown separator type; only 'hr' is currently supported.`
+          );
+        }
+        type = "separator-hr";
+      }
+      if (type === void 0) {
+        throw new TypeError(`TJSContextMenu error: Unknown type for 'item[${cntr}]'.`);
+      }
+      tempItems.push({ ...item2, "#type": type });
+    }
+    return tempItems;
+  }
 }
 function create_fragment$16(ctx) {
   let div0;
@@ -62651,17 +69120,15 @@ function create_fragment$16(ctx) {
   let i_title_value;
   let t;
   let div1;
-  let tjstoggleiconbutton;
+  let tjsiconbutton;
   let current;
-  tjstoggleiconbutton = new TJSToggleIconButton({
+  tjsiconbutton = new TJSIconButton({
     props: {
       button: (
         /*buttonOverflow*/
-        ctx[2]
+        ctx[1]
       ),
-      slot: "summary-end",
-      $$slots: { default: [create_default_slot$v] },
-      $$scope: { ctx }
+      slot: "summary-end"
     }
   });
   return {
@@ -62670,13 +69137,13 @@ function create_fragment$16(ctx) {
       i = element("i");
       t = space();
       div1 = element("div");
-      create_component(tjstoggleiconbutton.$$.fragment);
+      create_component(tjsiconbutton.$$.fragment);
       attr(i, "class", i_class_value = null_to_empty(
         /*info*/
-        ctx[1]?.icon
+        ctx[0]?.icon
       ) + " svelte-auto-1hdz18j");
       attr(i, "title", i_title_value = /*info*/
-      ctx[1].title);
+      ctx[0].title);
       attr(div0, "class", "quickView svelte-auto-1hdz18j");
     },
     m(target2, anchor) {
@@ -62684,36 +69151,30 @@ function create_fragment$16(ctx) {
       append(div0, i);
       insert(target2, t, anchor);
       insert(target2, div1, anchor);
-      mount_component(tjstoggleiconbutton, div1, null);
+      mount_component(tjsiconbutton, div1, null);
       current = true;
     },
     p(ctx2, [dirty]) {
       if (!current || dirty & /*info*/
-      2 && i_class_value !== (i_class_value = null_to_empty(
+      1 && i_class_value !== (i_class_value = null_to_empty(
         /*info*/
-        ctx2[1]?.icon
+        ctx2[0]?.icon
       ) + " svelte-auto-1hdz18j")) {
         attr(i, "class", i_class_value);
       }
       if (!current || dirty & /*info*/
-      2 && i_title_value !== (i_title_value = /*info*/
-      ctx2[1].title)) {
+      1 && i_title_value !== (i_title_value = /*info*/
+      ctx2[0].title)) {
         attr(i, "title", i_title_value);
       }
-      const tjstoggleiconbutton_changes = {};
-      if (dirty & /*$$scope, menu*/
-      9) {
-        tjstoggleiconbutton_changes.$$scope = { dirty, ctx: ctx2 };
-      }
-      tjstoggleiconbutton.$set(tjstoggleiconbutton_changes);
     },
     i(local) {
       if (current) return;
-      transition_in(tjstoggleiconbutton.$$.fragment, local);
+      transition_in(tjsiconbutton.$$.fragment, local);
       current = true;
     },
     o(local) {
-      transition_out(tjstoggleiconbutton.$$.fragment, local);
+      transition_out(tjsiconbutton.$$.fragment, local);
       current = false;
     },
     d(detaching) {
@@ -62722,7 +69183,7 @@ function create_fragment$16(ctx) {
         detach(t);
         detach(div1);
       }
-      destroy_component(tjstoggleiconbutton);
+      destroy_component(tjsiconbutton);
     }
   };
 }
@@ -62733,19 +69194,26 @@ function instance$14($$self, $$props, $$invalidate) {
     icon: "fas fa-ellipsis-v",
     efx: ripple(),
     styles: { "margin-left": "0.5em" },
-    clickPropagate: false
+    clickPropagate: false,
     // Necessary to capture click for Firefox.
+    onPress: ({ event }) => {
+      TJSContextMenu.create({
+        event,
+        anchorToEventTarget: true,
+        items: menu.items
+      });
+    }
   };
   $$self.$$set = ($$props2) => {
-    if ("menu" in $$props2) $$invalidate(0, menu = $$props2.menu);
-    if ("info" in $$props2) $$invalidate(1, info = $$props2.info);
+    if ("menu" in $$props2) $$invalidate(2, menu = $$props2.menu);
+    if ("info" in $$props2) $$invalidate(0, info = $$props2.info);
   };
-  return [menu, info, buttonOverflow];
+  return [info, buttonOverflow, menu];
 }
 class OverflowSlot extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$14, create_fragment$16, safe_not_equal, { menu: 0, info: 1 });
+    init(this, options2, instance$14, create_fragment$16, safe_not_equal, { menu: 2, info: 0 });
   }
 }
 function get_each_context$9(ctx, list, i) {
@@ -63304,7 +69772,7 @@ function createOverflowItems(animation, category) {
           content: `Are you sure you want to delete: ${label}`,
           draggable: false,
           modal: false
-        });
+        }, { themeName: "light" });
         if (result) {
           category.deleteEntry(animation.id);
         }
@@ -63318,7 +69786,7 @@ function createOverflowItems(animation, category) {
     {
       label: "Advanced",
       icon: "fab fa-searchengin",
-      onPress: async () => {
+      onPress: () => {
         new TJSDialog({
           modal: false,
           title: `Advanced Features: ${animation._data.label}`,
@@ -63329,7 +69797,8 @@ function createOverflowItems(animation, category) {
             }
           },
           defaultYes: false
-        }).render(true);
+        }, { themeName: "light" }).render(true);
+        return true;
       }
     }
   ];
@@ -63760,7 +70229,7 @@ class SoundOnly extends SvelteComponent {
     init(this, options2, instance$12, create_fragment$14, safe_not_equal, {});
   }
 }
-function create_default_slot$u(ctx) {
+function create_default_slot$v(ctx) {
   let div14;
   let div3;
   let div0;
@@ -64257,7 +70726,7 @@ function create_fragment$13(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$o],
-        default: [create_default_slot$u]
+        default: [create_default_slot$v]
       },
       $$scope: { ctx }
     }
@@ -64664,7 +71133,7 @@ let ScaleRadius$1 = class ScaleRadius2 extends SvelteComponent {
     });
   }
 };
-function create_default_slot$t(ctx) {
+function create_default_slot$u(ctx) {
   let table;
   let tr0;
   let td0;
@@ -65193,7 +71662,7 @@ function create_fragment$11(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$n],
-        default: [create_default_slot$t]
+        default: [create_default_slot$u]
       },
       $$scope: { ctx }
     }
@@ -65309,7 +71778,7 @@ class SourceFXOptions extends SvelteComponent {
     init(this, options2, instance$$, create_fragment$11, safe_not_equal, {});
   }
 }
-function create_default_slot$s(ctx) {
+function create_default_slot$t(ctx) {
   let table;
   let tr;
   let td0;
@@ -65576,7 +72045,7 @@ function create_fragment$10(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$m],
-        default: [create_default_slot$s]
+        default: [create_default_slot$t]
       },
       $$scope: { ctx }
     }
@@ -65680,7 +72149,7 @@ class EffectColor extends SvelteComponent {
     init(this, options2, instance$_, create_fragment$10, safe_not_equal, { section: 0 });
   }
 }
-function create_default_slot$r(ctx) {
+function create_default_slot$s(ctx) {
   let div;
   let videoselect;
   let t0;
@@ -65891,7 +72360,7 @@ function create_fragment$$(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$l],
-        default: [create_default_slot$r]
+        default: [create_default_slot$s]
       },
       $$scope: { ctx }
     }
@@ -65982,7 +72451,7 @@ class ExtraSource extends SvelteComponent {
     init(this, options2, instance$Z, create_fragment$$, safe_not_equal, {});
   }
 }
-function create_default_slot$q(ctx) {
+function create_default_slot$r(ctx) {
   let table;
   let tr0;
   let td0;
@@ -66684,7 +73153,7 @@ function create_fragment$_(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$k],
-        default: [create_default_slot$q]
+        default: [create_default_slot$r]
       },
       $$scope: { ctx }
     }
@@ -66821,7 +73290,7 @@ class TargetFXOptions extends SvelteComponent {
     init(this, options2, instance$Y, create_fragment$_, safe_not_equal, {});
   }
 }
-function create_default_slot$p(ctx) {
+function create_default_slot$q(ctx) {
   let div;
   let videoselect;
   let t0;
@@ -67032,7 +73501,7 @@ function create_fragment$Z(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$j],
-        default: [create_default_slot$p]
+        default: [create_default_slot$q]
       },
       $$scope: { ctx }
     }
@@ -68163,7 +74632,7 @@ let Macro$1 = class Macro2 extends SvelteComponent {
     init(this, options2, instance$T, create_fragment$V, safe_not_equal, {});
   }
 };
-function create_default_slot$o(ctx) {
+function create_default_slot$p(ctx) {
   let div0;
   let videoselect;
   let div0_class_value;
@@ -68568,7 +75037,7 @@ function create_fragment$U(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$i],
-        default: [create_default_slot$o]
+        default: [create_default_slot$p]
       },
       $$scope: { ctx }
     }
@@ -68701,7 +75170,7 @@ class MeleeSwitch extends SvelteComponent {
     init(this, options2, instance$S, create_fragment$U, safe_not_equal, {});
   }
 }
-function create_default_slot$n(ctx) {
+function create_default_slot$o(ctx) {
   let div14;
   let div3;
   let div0;
@@ -69264,7 +75733,7 @@ function create_fragment$T(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$h],
-        default: [create_default_slot$n]
+        default: [create_default_slot$o]
       },
       $$scope: { ctx }
     }
@@ -69418,7 +75887,7 @@ class SoundSettingsNested extends SvelteComponent {
     init(this, options2, instance$R, create_fragment$T, safe_not_equal, { section: 0, section02: 1 });
   }
 }
-function create_default_slot$m(ctx) {
+function create_default_slot$n(ctx) {
   let table;
   let tr0;
   let td0;
@@ -69947,7 +76416,7 @@ function create_fragment$S(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$g],
-        default: [create_default_slot$m]
+        default: [create_default_slot$n]
       },
       $$scope: { ctx }
     }
@@ -70063,7 +76532,7 @@ class SecondaryOptions extends SvelteComponent {
     init(this, options2, instance$Q, create_fragment$S, safe_not_equal, {});
   }
 }
-function create_default_slot$l(ctx) {
+function create_default_slot$m(ctx) {
   let div;
   let videoselect;
   let t0;
@@ -70274,7 +76743,7 @@ function create_fragment$R(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$f],
-        default: [create_default_slot$l]
+        default: [create_default_slot$m]
       },
       $$scope: { ctx }
     }
@@ -70717,7 +77186,7 @@ function create_if_block$f(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$e],
-        default: [create_default_slot$k]
+        default: [create_default_slot$l]
       },
       $$scope: { ctx }
     }
@@ -71158,7 +77627,7 @@ function create_if_block_1$8(ctx) {
     }
   };
 }
-function create_default_slot$k(ctx) {
+function create_default_slot$l(ctx) {
   let table;
   let tr0;
   let td0;
@@ -72808,7 +79277,7 @@ function create_summary_end_slot_1$2(ctx) {
     }
   };
 }
-function create_default_slot$j(ctx) {
+function create_default_slot$k(ctx) {
   let div0;
   let label0;
   let t1;
@@ -73301,7 +79770,7 @@ function create_fragment$P(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$d],
-        default: [create_default_slot$j]
+        default: [create_default_slot$k]
       },
       $$scope: { ctx }
     }
@@ -73584,7 +80053,7 @@ function create_each_block$5(ctx) {
     }
   };
 }
-function create_default_slot$i(ctx) {
+function create_default_slot$j(ctx) {
   let div13;
   let table;
   let tr0;
@@ -74144,7 +80613,7 @@ function create_fragment$O(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$c],
-        default: [create_default_slot$i]
+        default: [create_default_slot$j]
       },
       $$scope: { ctx }
     }
@@ -74967,7 +81436,7 @@ class Canvas3D extends SvelteComponent {
     init(this, options2, instance$L, create_fragment$N, safe_not_equal, {});
   }
 }
-function create_default_slot$h(ctx) {
+function create_default_slot$i(ctx) {
   let table;
   let tr0;
   let td0;
@@ -75240,7 +81709,7 @@ function create_fragment$M(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$b],
-        default: [create_default_slot$h]
+        default: [create_default_slot$i]
       },
       $$scope: { ctx }
     }
@@ -75401,7 +81870,7 @@ function create_if_block$d(ctx) {
     }
   };
 }
-function create_default_slot$g(ctx) {
+function create_default_slot$h(ctx) {
   let table;
   let tr0;
   let td0;
@@ -75866,7 +82335,7 @@ function create_fragment$L(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$a],
-        default: [create_default_slot$g]
+        default: [create_default_slot$h]
       },
       $$scope: { ctx }
     }
@@ -76006,7 +82475,7 @@ class RangeOptions extends SvelteComponent {
     init(this, options2, instance$J, create_fragment$L, safe_not_equal, {});
   }
 }
-function create_default_slot$f(ctx) {
+function create_default_slot$g(ctx) {
   let table;
   let tr0;
   let td0;
@@ -76737,7 +83206,7 @@ function create_fragment$K(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$9],
-        default: [create_default_slot$f]
+        default: [create_default_slot$g]
       },
       $$scope: { ctx }
     }
@@ -77090,7 +83559,7 @@ function create_if_block$c(ctx) {
     }
   };
 }
-function create_default_slot$e(ctx) {
+function create_default_slot$f(ctx) {
   let table0;
   let tr0;
   let td0;
@@ -77849,7 +84318,7 @@ function create_fragment$J(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$8],
-        default: [create_default_slot$e]
+        default: [create_default_slot$f]
       },
       $$scope: { ctx }
     }
@@ -78030,7 +84499,7 @@ class TemplateOptions extends SvelteComponent {
     init(this, options2, instance$H, create_fragment$J, safe_not_equal, {});
   }
 }
-function create_default_slot$d(ctx) {
+function create_default_slot$e(ctx) {
   let table;
   let tr0;
   let td0;
@@ -78539,7 +85008,7 @@ function create_fragment$I(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$7],
-        default: [create_default_slot$d]
+        default: [create_default_slot$e]
       },
       $$scope: { ctx }
     }
@@ -78647,7 +85116,7 @@ let AuraOptions$1 = class AuraOptions2 extends SvelteComponent {
     init(this, options2, instance$G, create_fragment$I, safe_not_equal, {});
   }
 };
-function create_default_slot$c(ctx) {
+function create_default_slot$d(ctx) {
   let table0;
   let tr0;
   let th0;
@@ -79168,7 +85637,7 @@ function create_fragment$H(ctx) {
         /*$uiAnimation*/
         ctx[4]
       ),
-      $$slots: { default: [create_default_slot$c] },
+      $$slots: { default: [create_default_slot$d] },
       $$scope: { ctx }
     }
   });
@@ -82241,7 +88710,7 @@ class Opacity02 extends SvelteComponent {
     init(this, options2, instance$z, create_fragment$B, safe_not_equal, {});
   }
 }
-function create_default_slot$b(ctx) {
+function create_default_slot$c(ctx) {
   let table;
   let tr0;
   let td0;
@@ -82497,7 +88966,7 @@ function create_fragment$A(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$6],
-        default: [create_default_slot$b]
+        default: [create_default_slot$c]
       },
       $$scope: { ctx }
     }
@@ -84251,7 +90720,7 @@ function create_default_slot_1$2(ctx) {
     }
   };
 }
-function create_default_slot$a(ctx) {
+function create_default_slot$b(ctx) {
   let sectionheader;
   let t0;
   let div7;
@@ -84649,7 +91118,7 @@ function create_fragment$x(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$5],
-        default: [create_default_slot$a]
+        default: [create_default_slot$b]
       },
       $$scope: { ctx }
     }
@@ -86377,7 +92846,7 @@ function create_default_slot_1$1(ctx) {
     }
   };
 }
-function create_default_slot$9(ctx) {
+function create_default_slot$a(ctx) {
   let div1;
   let videoselect;
   let t;
@@ -86672,7 +93141,7 @@ function create_fragment$v(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$4],
-        default: [create_default_slot$9]
+        default: [create_default_slot$a]
       },
       $$scope: { ctx }
     }
@@ -87502,7 +93971,7 @@ function create_each_block$3(ctx) {
     }
   };
 }
-function create_default_slot$8(ctx) {
+function create_default_slot$9(ctx) {
   let table;
   let tr0;
   let td0;
@@ -87788,7 +94257,7 @@ function create_fragment$u(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$3],
-        default: [create_default_slot$8]
+        default: [create_default_slot$9]
       },
       $$scope: { ctx }
     }
@@ -88328,7 +94797,7 @@ class BuildPreset extends SvelteComponent {
     init(this, options2, instance$r, create_fragment$t, safe_not_equal, { fromMenu: 0 });
   }
 }
-function create_default_slot$7(ctx) {
+function create_default_slot$8(ctx) {
   let table;
   let tr0;
   let td0;
@@ -88965,7 +95434,7 @@ function create_fragment$s(ctx) {
       ),
       $$slots: {
         "summary-end": [create_summary_end_slot$2],
-        default: [create_default_slot$7]
+        default: [create_default_slot$8]
       },
       $$scope: { ctx }
     }
@@ -89570,7 +96039,7 @@ function selectBuildMenu(categoryKey) {
   }
   return component;
 }
-function create_default_slot$6(ctx) {
+function create_default_slot$7(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -89756,7 +96225,7 @@ function create_fragment$p(ctx) {
       $$slots: {
         "summary-end": [create_summary_end_slot$1],
         label: [create_label_slot],
-        default: [create_default_slot$6]
+        default: [create_default_slot$7]
       },
       $$scope: { ctx }
     }
@@ -89907,7 +96376,7 @@ function create_each_block$2(key_1, ctx) {
       section2 = element("section");
       create_component(animation_1.$$.fragment);
       t = space();
-      attr(section2, "class", "svelte-auto-rvr532");
+      attr(section2, "class", "svelte-auto-oefgm3");
       this.first = section2;
     },
     m(target2, anchor) {
@@ -89947,11 +96416,10 @@ function create_each_block$2(key_1, ctx) {
     }
   };
 }
-function create_fragment$o(ctx) {
+function create_default_slot$6(ctx) {
   let main2;
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
-  let applyScrolltop_action;
   let current;
   let mounted;
   let dispose;
@@ -89972,7 +96440,7 @@ function create_fragment$o(ctx) {
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].c();
       }
-      attr(main2, "class", "svelte-auto-rvr532");
+      attr(main2, "class", "svelte-auto-oefgm3");
     },
     m(target2, anchor) {
       insert(target2, main2, anchor);
@@ -89984,12 +96452,6 @@ function create_fragment$o(ctx) {
       current = true;
       if (!mounted) {
         dispose = [
-          action_destroyer(applyScrolltop_action = applyScrolltop.call(
-            null,
-            main2,
-            /*category*/
-            ctx[0].stores.scrollTop
-          )),
           listen(
             main2,
             "openAny",
@@ -90006,7 +96468,7 @@ function create_fragment$o(ctx) {
         mounted = true;
       }
     },
-    p(ctx2, [dirty]) {
+    p(ctx2, dirty) {
       if (dirty & /*$dataReducer, category*/
       3) {
         each_value = ensure_array_like([.../*$dataReducer*/
@@ -90015,12 +96477,6 @@ function create_fragment$o(ctx) {
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, main2, outro_and_destroy_block, create_each_block$2, null, get_each_context$2);
         check_outros();
       }
-      if (applyScrolltop_action && is_function(applyScrolltop_action.update) && dirty & /*category*/
-      1) applyScrolltop_action.update.call(
-        null,
-        /*category*/
-        ctx2[0].stores.scrollTop
-      );
     },
     i(local) {
       if (current) return;
@@ -90044,6 +96500,52 @@ function create_fragment$o(ctx) {
       }
       mounted = false;
       run_all(dispose);
+    }
+  };
+}
+function create_fragment$o(ctx) {
+  let tjsscrollcontainer;
+  let current;
+  tjsscrollcontainer = new TJSScrollContainer({
+    props: {
+      scrollTop: (
+        /*category*/
+        ctx[0].stores.scrollTop
+      ),
+      $$slots: { default: [create_default_slot$6] },
+      $$scope: { ctx }
+    }
+  });
+  return {
+    c() {
+      create_component(tjsscrollcontainer.$$.fragment);
+    },
+    m(target2, anchor) {
+      mount_component(tjsscrollcontainer, target2, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const tjsscrollcontainer_changes = {};
+      if (dirty & /*category*/
+      1) tjsscrollcontainer_changes.scrollTop = /*category*/
+      ctx2[0].stores.scrollTop;
+      if (dirty & /*$$scope, $dataReducer, category*/
+      131) {
+        tjsscrollcontainer_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      tjsscrollcontainer.$set(tjsscrollcontainer_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(tjsscrollcontainer.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(tjsscrollcontainer.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(tjsscrollcontainer, detaching);
     }
   };
 }
@@ -90718,16 +97220,19 @@ function create_fragment$m(ctx) {
 function instance$k($$self) {
   const { application } = getContext("#external");
   async function restoreDefault() {
-    TJSDialog.confirm({
-      modal: false,
-      title: "WARNING!!",
-      content: `<p style="font-weight: bold; text-align: center; font-size: medium;">This will ERASE your current Menu. ARE YOU SURE?</p>
+    TJSDialog.confirm(
+      {
+        modal: false,
+        title: "WARNING!!",
+        content: `<p style="font-weight: bold; text-align: center; font-size: medium;">This will ERASE your current Menu. ARE YOU SURE?</p>
                     <br>
                     <p style="text-align: center; font-size: small;">A Backup will be Exported for Insurance</p> `,
-      onYes: () => setDefault(),
-      onNo: () => console.log("Exiting without default restore"),
-      defaultYes: false
-    });
+        onYes: () => setDefault(),
+        onNo: () => console.log("Exiting without default restore"),
+        defaultYes: false
+      },
+      { themeName: "light" }
+    );
     async function setDefault() {
       AAAutorecManager.exportMenu("-backup");
       Hooks.call("AutomaticAnimations.Clear.Data");
@@ -90735,72 +97240,87 @@ function instance$k($$self) {
     }
   }
   async function mergeMenu() {
-    TJSDialog.confirm({
-      title: "WARNING!!",
-      modal: false,
-      content: `<p style="text-align:center">This will <strong>Merge</strong> menus and is <strong>IRREVERSIBLE. Continue?</strong></p>`,
-      onYes: () => getFiles(),
-      onNo: () => console.log("Exiting without default restore"),
-      defaultYes: false
-    });
+    TJSDialog.confirm(
+      {
+        title: "WARNING!!",
+        modal: false,
+        content: `<p style="text-align:center">This will <strong>Merge</strong> menus and is <strong>IRREVERSIBLE. Continue?</strong></p>`,
+        onYes: () => getFiles(),
+        onNo: () => console.log("Exiting without default restore"),
+        defaultYes: false
+      },
+      { themeName: "light" }
+    );
     async function getFiles() {
       const content = await renderTemplate("modules/autoanimations/htmlTemplate/import-data.html", {
         entity: "autoanimations",
         name: "aaAutorec"
       });
-      TJSDialog.prompt({
-        title: "Merge Menus",
-        content,
-        modal: false,
-        onOk: ({ application: app }) => {
-          const form = app.element.find("form")[0];
-          if (!form.data.files.length) return ui.notifications?.error("You did not upload a data file!");
-          readTextFromFile(form.data.files[0]).then(async (json) => {
-            selectMenus(json, "merge");
-            await application.close();
-          });
-        }
-      });
+      TJSDialog.prompt(
+        {
+          title: "Merge Menus",
+          content,
+          modal: false,
+          onOk: ({ application: app }) => {
+            const form = app.element.find("form")[0];
+            if (!form.data.files.length) return ui.notifications?.error("You did not upload a data file!");
+            readTextFromFile(form.data.files[0]).then(async (json) => {
+              selectMenus(json, "merge");
+              await application.close();
+            });
+          }
+        },
+        { themeName: "light" }
+      );
     }
   }
   function selectMenus(json, option) {
-    new TJSDialog({
-      modal: false,
-      title: "IMPORT SETTINGS",
-      content: {
-        class: ImportMenus,
-        props: { type: option, menu: json }
+    new TJSDialog(
+      {
+        modal: false,
+        title: "IMPORT SETTINGS",
+        content: {
+          class: ImportMenus,
+          props: { type: option, menu: json }
+        },
+        defaultYes: false
       },
-      defaultYes: false
-    }).render(true);
+      { themeName: "light" }
+    ).render(true);
   }
   async function overwriteMenu() {
-    TJSDialog.confirm({
-      title: "WARNING!!",
-      modal: false,
-      content: `<p style="text-align:center">This will <strong>ERASE</strong> your current menu and is <strong>IRREVERSIBLE. Continue?</strong></p>`,
-      onYes: () => getFiles(),
-      onNo: () => console.log("Exiting without overwrite"),
-      defaultYes: false
-    });
+    TJSDialog.confirm(
+      {
+        title: "WARNING!!",
+        modal: false,
+        content: `<p style="text-align:center">This will <strong>ERASE</strong> your current menu and is <strong>IRREVERSIBLE. Continue?</strong></p>`,
+        onYes: () => getFiles(),
+        onNo: () => console.log("Exiting without overwrite"),
+        defaultYes: false
+      },
+      { themeName: "light" }
+    );
     async function getFiles() {
       const content = await renderTemplate("modules/autoanimations/htmlTemplate/import-data.html", {
         entity: "autoanimations",
         name: "aaAutorec"
       });
-      TJSDialog.prompt({
-        title: "Overwrite Menu",
-        content,
-        modal: false,
-        onOk: ({ application: app }) => {
-          const form = app.element.find("form")[0];
-          if (!form.data.files.length) return ui.notifications?.error("You did not upload a data file!");
-          readTextFromFile(form.data.files[0]).then(async (json) => {
-            selectMenus(json, "overwrite");
-            await application.close();
-          });
-        }
-      });
+      TJSDialog.prompt(
+        {
+          title: "Overwrite Menu",
+          content,
+          modal: false,
+          onOk: ({ application: app }) => {
+            const form = app.element.find("form")[0];
+            if (!form.data.files.length) return ui.notifications?.error("You did not upload a data file!");
+            readTextFromFile(form.data.files[0]).then(async (json) => {
+              selectMenus(json, "overwrite");
+              await application.close();
+            });
+          }
+        },
+        { themeName: "light" }
+      );
     }
   }
   async function exportMenu() {
@@ -90842,7 +97362,8 @@ class MenuManager extends TJSDialog {
       id: `Autorec-Menu-Manager`,
       minimizable: false,
       width: "auto",
-      height: "auto"
+      height: "auto",
+      themeName: "light"
     });
   }
   /**
@@ -93371,7 +99892,8 @@ class TotalPreview extends TJSDialog {
       width: "auto",
       height: "auto",
       closeOnSubmit: true,
-      id: `AA-Video-Preview`
+      id: `AA-Video-Preview`,
+      themeName: "light"
     });
   }
   /**
@@ -93857,9 +100379,9 @@ function create_each_block$1(ctx) {
       attr(i, "class", null_to_empty(
         /*category*/
         ctx[6].icon
-      ) + " svelte-auto-1g5ic18");
+      ) + " svelte-auto-1mkr9av");
       attr(li, "role", "presentation");
-      attr(li, "class", "svelte-auto-1g5ic18");
+      attr(li, "class", "svelte-auto-1mkr9av");
       toggle_class(
         li,
         "active",
@@ -93867,7 +100389,7 @@ function create_each_block$1(ctx) {
         ctx[0] === /*category*/
         ctx[6]
       );
-      attr(span, "class", "svelte-auto-1g5ic18");
+      attr(span, "class", "svelte-auto-1mkr9av");
     },
     m(target2, anchor) {
       insert(target2, li, anchor);
@@ -93950,10 +100472,10 @@ function create_fragment$j(ctx) {
       ul1 = element("ul");
       ul1.textContent = `${/*bottomLabel*/
       ctx[2]}`;
-      attr(ul0, "class", "svelte-auto-1g5ic18");
-      attr(header, "class", "svelte-auto-1g5ic18");
-      attr(ul1, "class", "svelte-auto-1g5ic18");
-      attr(footer, "class", "aa-AutorecManager svelte-auto-1g5ic18");
+      attr(ul0, "class", "svelte-auto-1mkr9av");
+      attr(header, "class", "svelte-auto-1mkr9av");
+      attr(ul1, "class", "svelte-auto-1mkr9av");
+      attr(footer, "class", "aa-AutorecManager svelte-auto-1mkr9av");
       attr(footer, "role", "presentation");
     },
     m(target2, anchor) {
@@ -94397,12 +100919,12 @@ function create_else_block_5(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Photosensitive mode is disabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94425,12 +100947,12 @@ function create_if_block_6(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Photosensitive mode is enabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94453,12 +100975,12 @@ function create_else_block_4(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Effects are Enabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94481,12 +101003,12 @@ function create_if_block_5$1(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Effects are Disabled!!";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94509,12 +101031,12 @@ function create_else_block_3(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Sounds are Enabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94537,12 +101059,12 @@ function create_if_block_4$1(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Sounds are Disabled!!";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94565,12 +101087,12 @@ function create_else_block_2(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Effects are Enabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94593,12 +101115,12 @@ function create_if_block_3$3(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Effects are Disabled!!";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94621,12 +101143,12 @@ function create_else_block_1$4(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Global Automatic Recognition Menu is Enabled (GM Only Setting)";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94649,12 +101171,12 @@ function create_if_block_2$3(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Global Automatic Recognition Menu is Disabled!! (GM Only Setting)";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94686,18 +101208,18 @@ function create_if_block$7(ctx) {
     c() {
       table = element("table");
       tr0 = element("tr");
-      tr0.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1bd3kd8">Midi-QOL Settings</th>`;
+      tr0.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1ia30g2">Midi-QOL Settings</th>`;
       t1 = space();
       tr1 = element("tr");
       if_block.c();
       attr(tr1, "class", null_to_empty(
         /*midiWorkflow*/
         ctx[10] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8");
+      ) + " svelte-auto-1ia30g2");
       attr(table, "cellpadding", "0");
       attr(table, "cellspacing", "0");
       attr(table, "border", "1");
-      attr(table, "class", "svelte-auto-1bd3kd8");
+      attr(table, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, table, anchor);
@@ -94722,12 +101244,12 @@ function create_else_block$5(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-check isGreen svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Midi-QOL Roll Automation is Enabled";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94750,12 +101272,12 @@ function create_if_block_1$4(ctx) {
   return {
     c() {
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i>`;
       t0 = space();
       td1 = element("td");
       td1.textContent = "Midi-QOL Roll Automation is disabled!!";
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
     },
     m(target2, anchor) {
       insert(target2, td0, anchor);
@@ -94902,14 +101424,14 @@ function create_fragment$g(ctx) {
       t8 = space();
       table0 = element("table");
       tr0 = element("tr");
-      tr0.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1bd3kd8">Foundry Core Settings</th>`;
+      tr0.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1ia30g2">Foundry Core Settings</th>`;
       t10 = space();
       tr1 = element("tr");
       if_block0.c();
       t11 = space();
       table1 = element("table");
       tr2 = element("tr");
-      tr2.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1bd3kd8">Sequencer Settings</th>`;
+      tr2.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1ia30g2">Sequencer Settings</th>`;
       t13 = space();
       tr3 = element("tr");
       if_block1.c();
@@ -94919,7 +101441,7 @@ function create_fragment$g(ctx) {
       t15 = space();
       tr5 = element("tr");
       td0 = element("td");
-      td0.innerHTML = `<i class="fas fa-circle-info isBlue svelte-auto-1bd3kd8"></i>`;
+      td0.innerHTML = `<i class="fas fa-circle-info isBlue svelte-auto-1ia30g2"></i>`;
       t16 = space();
       td1 = element("td");
       t17 = text("Sequencer Effects permissions are set to ");
@@ -94929,7 +101451,7 @@ function create_fragment$g(ctx) {
       t20 = space();
       table2 = element("table");
       tr6 = element("tr");
-      tr6.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1bd3kd8">Automated Animations Settings</th>`;
+      tr6.innerHTML = `<th colspan="2" class="AAheader svelte-auto-1ia30g2">Automated Animations Settings</th>`;
       t22 = space();
       tr7 = element("tr");
       if_block3.c();
@@ -94940,14 +101462,14 @@ function create_fragment$g(ctx) {
       if (if_block5) if_block5.c();
       t25 = space();
       table3 = element("table");
-      table3.innerHTML = `<tr><th colspan="2" class="AAheader02 svelte-auto-1bd3kd8" style="background-color: rgba(0, 0, 0, 0.2)">Legend</th></tr> <tr><td class="isBad svelte-auto-1bd3kd8"><i class="fas fa-exclamation isRed svelte-auto-1bd3kd8"></i></td> <td class="svelte-auto-1bd3kd8">Will cause issues</td></tr> <tr><td class="isGood svelte-auto-1bd3kd8"><i class="fas fa-check isGreen svelte-auto-1bd3kd8"></i></td> <td class="svelte-auto-1bd3kd8">No issues</td></tr> <tr><td class="isOk svelte-auto-1bd3kd8"><i class="fas fa-circle-info isBlue svelte-auto-1bd3kd8"></i></td> <td class="svelte-auto-1bd3kd8">May cause issues depending on Player trusted level</td></tr>`;
+      table3.innerHTML = `<tr><th colspan="2" class="AAheader02 svelte-auto-1ia30g2" style="background-color: rgba(0, 0, 0, 0.2)">Legend</th></tr> <tr><td class="isBad svelte-auto-1ia30g2"><i class="fas fa-exclamation isRed svelte-auto-1ia30g2"></i></td> <td class="svelte-auto-1ia30g2">Will cause issues</td></tr> <tr><td class="isGood svelte-auto-1ia30g2"><i class="fas fa-check isGreen svelte-auto-1ia30g2"></i></td> <td class="svelte-auto-1ia30g2">No issues</td></tr> <tr><td class="isOk svelte-auto-1ia30g2"><i class="fas fa-circle-info isBlue svelte-auto-1ia30g2"></i></td> <td class="svelte-auto-1ia30g2">May cause issues depending on Player trusted level</td></tr>`;
       t36 = space();
       div4 = element("div");
       button = element("button");
       button.innerHTML = `<strong>Re-Run Diagnostics</strong>`;
       t38 = space();
       div6 = element("div");
-      div6.innerHTML = `<div style="text-align: center"><label for="" style="font-weight:bold; font-size: 1.2em; text-decoration:underline">Below you can find general troubleshooting tips</label></div> <table cellpadding="0" cellspacing="0" border="1" class="svelte-auto-1bd3kd8"><tr><th colspan="2" class="AAheader02 svelte-auto-1bd3kd8">General Troubleshooting</th></tr> <tr><td class="svelte-auto-1bd3kd8">1</td> <td class="svelte-auto-1bd3kd8">Melee, Range, On Token, and some Preset animations REQUIRE use of the Foundry Targetting System</td></tr> <tr><td class="svelte-auto-1bd3kd8">2</td> <td class="svelte-auto-1bd3kd8">Enable Debugging inside the Automated Animations module settings. Then open the console (F12) and check for any error messages when you expect an animation</td></tr> <tr><td class="svelte-auto-1bd3kd8">3</td> <td class="svelte-auto-1bd3kd8">Check the menu where the animation is defined, and make sure everything is filled out correctly</td></tr> <tr><td class="svelte-auto-1bd3kd8">4</td> <td class="svelte-auto-1bd3kd8">Use the Find the Culprit module to test with ONLY Automated Animations, Sequencer Socketlib active</td></tr> <tr><td class="svelte-auto-1bd3kd8">5</td> <td class="svelte-auto-1bd3kd8">Make sure your Game System is supported</td></tr> <tr><td class="svelte-auto-1bd3kd8">6</td> <td class="svelte-auto-1bd3kd8">Still not working? File an Issue on the Automated Animations GitHub repository.</td></tr></table>`;
+      div6.innerHTML = `<div style="text-align: center"><label for="" style="font-weight:bold; font-size: 1.2em; text-decoration:underline">Below you can find general troubleshooting tips</label></div> <table cellpadding="0" cellspacing="0" border="1" class="svelte-auto-1ia30g2"><tr><th colspan="2" class="AAheader02 svelte-auto-1ia30g2">General Troubleshooting</th></tr> <tr><td class="svelte-auto-1ia30g2">1</td> <td class="svelte-auto-1ia30g2">Melee, Range, On Token, and some Preset animations REQUIRE use of the Foundry Targetting System</td></tr> <tr><td class="svelte-auto-1ia30g2">2</td> <td class="svelte-auto-1ia30g2">Enable Debugging inside the Automated Animations module settings. Then open the console (F12) and check for any error messages when you expect an animation</td></tr> <tr><td class="svelte-auto-1ia30g2">3</td> <td class="svelte-auto-1ia30g2">Check the menu where the animation is defined, and make sure everything is filled out correctly</td></tr> <tr><td class="svelte-auto-1ia30g2">4</td> <td class="svelte-auto-1ia30g2">Use the Find the Culprit module to test with ONLY Automated Animations, Sequencer Socketlib active</td></tr> <tr><td class="svelte-auto-1ia30g2">5</td> <td class="svelte-auto-1ia30g2">Make sure your Game System is supported</td></tr> <tr><td class="svelte-auto-1ia30g2">6</td> <td class="svelte-auto-1ia30g2">Still not working? File an Issue on the Automated Animations GitHub repository.</td></tr></table>`;
       set_style(div0, "text-align", "center");
       attr(label1, "for", "");
       set_style(label1, "font-weight", "bold");
@@ -94965,40 +101487,40 @@ function create_fragment$g(ctx) {
       set_style(div1, "padding-top", "1.5em");
       set_style(div2, "text-align", "center");
       attr(tr1, "class", tr1_class_value = null_to_empty(!/*photoSensitive*/
-      ctx[1] ? "isGood" : "isBad") + " svelte-auto-1bd3kd8");
+      ctx[1] ? "isGood" : "isBad") + " svelte-auto-1ia30g2");
       attr(table0, "cellpadding", "0");
       attr(table0, "cellspacing", "0");
       attr(table0, "border", "1");
-      attr(table0, "class", "svelte-auto-1bd3kd8");
+      attr(table0, "class", "svelte-auto-1ia30g2");
       attr(tr3, "class", tr3_class_value = null_to_empty(
         /*sequencerEffectsEnabled*/
         ctx[3] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8");
+      ) + " svelte-auto-1ia30g2");
       attr(tr4, "class", tr4_class_value = null_to_empty(
         /*sequencerSoundsEnabled*/
         ctx[4] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8");
-      attr(td0, "class", "svelte-auto-1bd3kd8");
-      attr(td1, "class", "svelte-auto-1bd3kd8");
-      attr(tr5, "class", "isOk svelte-auto-1bd3kd8");
+      ) + " svelte-auto-1ia30g2");
+      attr(td0, "class", "svelte-auto-1ia30g2");
+      attr(td1, "class", "svelte-auto-1ia30g2");
+      attr(tr5, "class", "isOk svelte-auto-1ia30g2");
       attr(table1, "cellpadding", "0");
       attr(table1, "cellspacing", "0");
       attr(table1, "border", "1");
-      attr(table1, "class", "svelte-auto-1bd3kd8");
+      attr(table1, "class", "svelte-auto-1ia30g2");
       attr(tr7, "class", tr7_class_value = null_to_empty(
         /*aaEffectsEnabled*/
         ctx[5] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8");
+      ) + " svelte-auto-1ia30g2");
       attr(tr8, "class", tr8_class_value = null_to_empty(!/*aaAutorecDisabled*/
-      ctx[6] ? "isGood" : "isBad") + " svelte-auto-1bd3kd8");
+      ctx[6] ? "isGood" : "isBad") + " svelte-auto-1ia30g2");
       attr(table2, "cellpadding", "0");
       attr(table2, "cellspacing", "0");
       attr(table2, "border", "1");
-      attr(table2, "class", "svelte-auto-1bd3kd8");
+      attr(table2, "class", "svelte-auto-1ia30g2");
       attr(table3, "cellpadding", "0");
       attr(table3, "cellspacing", "0");
       attr(table3, "border", "1");
-      attr(table3, "class", "svelte-auto-1bd3kd8");
+      attr(table3, "class", "svelte-auto-1ia30g2");
       set_style(div3, "font-size", "1.1em");
       set_style(div4, "margin", "2em");
       set_style(div4, "font-size", "1.3em");
@@ -95133,7 +101655,7 @@ function create_fragment$g(ctx) {
       }
       if (dirty & /*photoSensitive*/
       2 && tr1_class_value !== (tr1_class_value = null_to_empty(!/*photoSensitive*/
-      ctx2[1] ? "isGood" : "isBad") + " svelte-auto-1bd3kd8")) {
+      ctx2[1] ? "isGood" : "isBad") + " svelte-auto-1ia30g2")) {
         attr(tr1, "class", tr1_class_value);
       }
       if (current_block_type_1 !== (current_block_type_1 = select_block_type_1(ctx2))) {
@@ -95148,7 +101670,7 @@ function create_fragment$g(ctx) {
       8 && tr3_class_value !== (tr3_class_value = null_to_empty(
         /*sequencerEffectsEnabled*/
         ctx2[3] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8")) {
+      ) + " svelte-auto-1ia30g2")) {
         attr(tr3, "class", tr3_class_value);
       }
       if (current_block_type_2 !== (current_block_type_2 = select_block_type_2(ctx2))) {
@@ -95163,7 +101685,7 @@ function create_fragment$g(ctx) {
       16 && tr4_class_value !== (tr4_class_value = null_to_empty(
         /*sequencerSoundsEnabled*/
         ctx2[4] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8")) {
+      ) + " svelte-auto-1ia30g2")) {
         attr(tr4, "class", tr4_class_value);
       }
       if (dirty & /*sequencerPermissions*/
@@ -95184,7 +101706,7 @@ function create_fragment$g(ctx) {
       32 && tr7_class_value !== (tr7_class_value = null_to_empty(
         /*aaEffectsEnabled*/
         ctx2[5] ? "isGood" : "isBad"
-      ) + " svelte-auto-1bd3kd8")) {
+      ) + " svelte-auto-1ia30g2")) {
         attr(tr7, "class", tr7_class_value);
       }
       if (current_block_type_4 !== (current_block_type_4 = select_block_type_4(ctx2))) {
@@ -95197,7 +101719,7 @@ function create_fragment$g(ctx) {
       }
       if (dirty & /*aaAutorecDisabled*/
       64 && tr8_class_value !== (tr8_class_value = null_to_empty(!/*aaAutorecDisabled*/
-      ctx2[6] ? "isGood" : "isBad") + " svelte-auto-1bd3kd8")) {
+      ctx2[6] ? "isGood" : "isBad") + " svelte-auto-1ia30g2")) {
         attr(tr8, "class", tr8_class_value);
       }
       if (
@@ -95326,7 +101848,8 @@ class AADiagnostics extends TJSDialog {
       width: 600,
       height: "auto",
       closeOnSubmit: true,
-      id: `AutomatedAnimations-Diagnostics`
+      id: `AutomatedAnimations-Diagnostics`,
+      themeName: "light"
     });
   }
 }
@@ -95352,6 +101875,7 @@ class AutorecMenuApp extends SvelteApp {
       width: 600,
       height: 750,
       minWidth: 550,
+      themeName: "light",
       svelte: {
         class: AutorecAppShell,
         target: document.body
@@ -95407,6 +101931,13 @@ function showAutorecMenu() {
   return mainAutorecMenu;
 }
 class AutorecShim extends FormApplication {
+  /**
+   * Disable Foundry v13+ warnings for AppV1.
+   *
+   * @type {boolean}
+   * @internal
+   */
+  static _warnedAppV1 = true;
   /**
    * @inheritDoc
    */
@@ -95951,7 +102482,7 @@ class UIControlImpl {
         buttonData = {
           icon: "fas fa-file-import fa-fw",
           efx: efx === "ripple" ? ripple() : void 0,
-          title: "FILES.BrowseTooltip",
+          tooltip: "FILES.BrowseTooltip",
           styles: { "margin-left": "0.25em" }
         };
       }
@@ -98228,7 +104759,8 @@ class ItemToAutorec extends TJSDialog {
       width: "auto",
       height: "auto",
       closeOnSubmit: true,
-      id: `AA-Copy-Item-To-Global`
+      id: `AA-Copy-Item-To-Global`,
+      themeName: "light"
     });
   }
 }
@@ -98260,7 +104792,7 @@ function copyToFrom(animation, item2, autorecSettings, isAE) {
         content: `Are you sure you want copy <strong>${label}</strong> from the <strong>Global ${menu} Menu?</strong>`,
         draggable: false,
         modal: false
-      });
+      }, { themeName: "light" });
       if (result) {
         animation.copyFromAutorec(isInAutorec);
       }
@@ -99968,7 +106500,8 @@ let ItemInfoDialog$1 = class ItemInfoDialog2 extends TJSDialog {
       width: 600,
       height: "auto",
       closeOnSubmit: true,
-      id: `Item-Information`
+      id: `Item-Information`,
+      themeName: "light"
     });
   }
 };
@@ -99976,9 +106509,6 @@ class AEMenuApp extends SvelteApp {
   /** @inheritDoc */
   constructor(item2) {
     super({
-      title: `A-A Item Menu`,
-      id: `AA-ae-settings`,
-      zIndex: 102,
       svelte: {
         class: AEAppShell,
         target: document.body,
@@ -99999,11 +106529,15 @@ class AEMenuApp extends SvelteApp {
    */
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
+      title: `A-A Item Menu`,
+      id: `AA-ae-settings`,
+      zIndex: 102,
       resizable: true,
       minimizable: true,
       width: 600,
       height: 750,
-      minWidth: 550
+      minWidth: 550,
+      themeName: "light"
     });
   }
   _getHeaderButtons() {
@@ -102159,7 +108693,8 @@ class ItemInfoDialog extends TJSDialog {
       width: 600,
       height: "auto",
       closeOnSubmit: true,
-      id: `ItemInformation`
+      id: `ItemInformation`,
+      themeName: "light"
     });
   }
 }
@@ -102167,9 +108702,6 @@ class ItemMenuApp extends SvelteApp {
   /** @inheritDoc */
   constructor(item2) {
     super({
-      title: `A-A Item Menu`,
-      id: `AA-item-settings`,
-      zIndex: 102,
       svelte: {
         class: ItemAppShell,
         target: document.body,
@@ -102190,11 +108722,15 @@ class ItemMenuApp extends SvelteApp {
    */
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
+      title: `A-A Item Menu`,
+      id: `AA-item-settings`,
+      zIndex: 102,
       resizable: true,
       minimizable: true,
       width: 600,
       height: 750,
-      minWidth: 550
+      minWidth: 550,
+      themeName: "light"
     });
   }
   _getHeaderButtons() {
@@ -102348,7 +108884,8 @@ function getTokenFromActor(actor, actorId2) {
   let token = foundActor.getActiveTokens();
   return Array.isArray(token) ? token[0] : token;
 }
-function systemHooks$y() {
+const activityCache = {};
+function systemHooks$z() {
   if (!foundry.utils.isNewerVersion(game.system.version, 3.9)) return ui.notifications.error(`Automated Animations: This version of Automated Animations requires DnD5e 4.3 or higher, please downgrade to Automated Animations 5.0.10 or update your game system.`, { permanent: true });
   Hooks.on("dnd5e.rollAttackV2", async (rolls, data2) => {
     const roll = rolls[0];
@@ -102393,11 +108930,18 @@ function systemHooks$y() {
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
     useItem$2(await getRequiredData({ item: item2, actor: item2.parent, roll: item2, useItemHook: { item: item2, config, options: options2 }, spellLevel: options2?.flags?.dnd5e?.use?.spellLevel || void 0, overrideNames }));
   });
+  Hooks.on("dnd5e.preUseActivity", (activity, config) => {
+    if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
+    if (activity.item?.system?.uses?.autoDestroy) activityCache[activity.uuid] = activity;
+    setTimeout(() => {
+      if (activityCache[activity.uuid]) delete activityCache[activity.uuid];
+    }, 6e4);
+  });
   Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
     if (userId !== game.user.id) {
       return;
     }
-    const activity = fromUuidSync(template.flags?.dnd5e?.origin);
+    const activity = fromUuidSync(template.flags?.dnd5e?.origin) ?? activityCache[template.flags?.dnd5e?.origin];
     if (!activity) return;
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
     const item2 = activity?.item;
@@ -102475,9 +109019,9 @@ function criticalCheck$1(roll, item2 = {}) {
 }
 const aaDnd5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$y
+  systemHooks: systemHooks$z
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$x() {
+function systemHooks$y() {
   if (game.modules.get("midi-qol")?.active) {
     Hooks.on("midi-qol.AttackRollComplete", (workflow) => {
       let playOnDamage = game.settings.get("autoanimations", "playonDamage");
@@ -102612,9 +109156,9 @@ function criticalCheck(workflow) {
 }
 const aaSw5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$x
+  systemHooks: systemHooks$y
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$w() {
+function systemHooks$x() {
   Hooks.on("DL.Action", async (data2) => {
     const eventType = data2.type;
     let compiledData = await getRequiredData({
@@ -102658,7 +109202,7 @@ async function runDemonlord(data2) {
 }
 const aaDemonlord = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$w
+  systemHooks: systemHooks$x
 }, Symbol.toStringTag, { value: "Module" }));
 const PF2E_SIZE_TO_REACH = {
   tiny: 0,
@@ -102668,7 +109212,7 @@ const PF2E_SIZE_TO_REACH = {
   huge: 10,
   grg: 15
 };
-function systemHooks$v() {
+function systemHooks$w() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -102885,9 +109429,9 @@ function checkOutcome$1(input) {
 }
 const aaPf2e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$v
+  systemHooks: systemHooks$w
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$u() {
+function systemHooks$v() {
   Hooks.on("createChatMessage", async (msg) => {
     function extractItemId(content) {
       try {
@@ -102968,9 +109512,9 @@ function funkyTest$1(msg) {
 }
 const aaSfrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$u
+  systemHooks: systemHooks$v
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$t() {
+function systemHooks$u() {
   Hooks.on("swadeAction", async (SwadeTokenOrActor, SwadeItem, SwadeAction, SwadeRoll, userId) => {
     if (!SwadeRoll) {
       return;
@@ -103061,9 +109605,9 @@ async function runSwade(token, actor, item2) {
 }
 const aaSwade = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$t
+  systemHooks: systemHooks$u
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$s() {
+function systemHooks$t() {
   BaseWFRP4eItemSheet.DEFAULT_OPTIONS.window.controls.push({
     class: "aaItemSettings",
     icon: "fas fa-biohazard",
@@ -103233,9 +109777,9 @@ function compileTargets$2(targets2) {
 }
 const aaWfrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$s
+  systemHooks: systemHooks$t
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$r() {
+function systemHooks$s() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -103256,9 +109800,9 @@ async function runDcc(input) {
 }
 const aaDcc = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$r
+  systemHooks: systemHooks$s
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$q() {
+function systemHooks$r() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103306,9 +109850,9 @@ async function runPF1(requiredData) {
 }
 const aaPf1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$q
+  systemHooks: systemHooks$r
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$p() {
+function systemHooks$q() {
   const queue = [];
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
@@ -103350,9 +109894,9 @@ async function runA5e$1(input) {
 }
 const aaA5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$p
+  systemHooks: systemHooks$q
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$o() {
+function systemHooks$p() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103375,9 +109919,9 @@ async function runA5e(input) {
 }
 const aaForbiddenLands = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$o
+  systemHooks: systemHooks$p
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$n() {
+function systemHooks$o() {
   Hooks.on("ffgDiceMessage", async (roll) => {
     let compiledData = await getRequiredData({
       item: roll.data,
@@ -103395,9 +109939,9 @@ async function runStarwarsffg(input) {
 }
 const aaStarwarsffg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$n
+  systemHooks: systemHooks$o
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$m() {
+function systemHooks$n() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103420,9 +109964,9 @@ async function runOse(input) {
 }
 const aaOse = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$m
+  systemHooks: systemHooks$n
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$l() {
+function systemHooks$m() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103453,9 +109997,9 @@ async function runD35E(input) {
 }
 const aaD35E = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$l
+  systemHooks: systemHooks$m
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$k() {
+function systemHooks$l() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103497,9 +110041,9 @@ async function runCypherSystem(input) {
 }
 const aaCyphersystem = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$k
+  systemHooks: systemHooks$l
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$j() {
+function systemHooks$k() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103530,9 +110074,9 @@ async function runAlienRPG(input) {
 }
 const aaAlienrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$j
+  systemHooks: systemHooks$k
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$i() {
+function systemHooks$j() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage$2(msg);
   });
@@ -103587,17 +110131,37 @@ async function setFireModeOptions(data2) {
   }
 }
 function checkAmmo(data2) {
-  let item2 = data2.item || {};
-  let token = data2.token;
-  let ammoId = item2.system?.magazine?.ammoId?.split(".") ?? "";
-  if (ammoId === "" || ammoId.length === 1 && ammoId[0] === "")
-    ammoId = item2.system?.magazine?.ammoData?.uuid?.split(".");
-  let ammoItem;
-  if (ammoId) {
-    let trueId = ammoId[ammoId.length - 1];
-    ammoItem = token.actor?.items?.get(trueId);
+  const weapon = data2?.item ?? {};
+  const token = data2?.token;
+  const actor = token?.actor ?? weapon?.actor ?? null;
+  if (!actor || !weapon?.system) return null;
+  const installedIds = weapon.system?.installedItems?.list ?? [];
+  const varieties = weapon.system?.ammoVariety ?? [];
+  let ammoItem = null;
+  for (const id of installedIds) {
+    const it = actor.items?.get(id);
+    if (it?.type === "ammo") {
+      const matchesVariety = !varieties?.length || varieties.includes(it.system?.variety);
+      const hasAmmo = typeof it.system?.amount !== "number" ? true : it.system.amount > 0;
+      if (matchesVariety && hasAmmo) {
+        ammoItem = it;
+        break;
+      }
+    }
   }
-  return ammoItem;
+  if (!ammoItem) {
+    const ammoIdRaw = weapon.system?.magazine?.ammoId || weapon.system?.magazine?.ammoData?.uuid;
+    if (typeof ammoIdRaw === "string" && ammoIdRaw.length) {
+      const parts = ammoIdRaw.split(".");
+      const last = parts[parts.length - 1];
+      const legacy = actor.items?.get(last);
+      if (legacy?.type === "ammo") ammoItem = legacy;
+    }
+  }
+  if (!ammoItem && varieties?.length) {
+    ammoItem = actor.items.find((i) => i.type === "ammo" && varieties.includes(i.system?.variety));
+  }
+  return ammoItem ?? null;
 }
 function extactData(msg) {
   let findItemId = $(msg.content).find(`[data-item-id]`);
@@ -103670,9 +110234,9 @@ async function isHit(data2) {
 }
 const aaCyberpunkred = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$i
+  systemHooks: systemHooks$j
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$h() {
+function systemHooks$i() {
   Hooks.on("createChatMessage", async (msg) => {
     checkMessage$1(msg);
   });
@@ -103712,9 +110276,9 @@ async function checkMessage$1(msg) {
 }
 const aaTheWitcherTRPG = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$h
+  systemHooks: systemHooks$i
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$g() {
+function systemHooks$h() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103749,9 +110313,9 @@ async function runTwoDSix(data2) {
 }
 const aaTwodsix = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$g
+  systemHooks: systemHooks$h
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$f() {
+function systemHooks$g() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id || !AnimationState.enabled) {
       return;
@@ -103798,15 +110362,15 @@ async function runOd6s(input) {
 }
 const aaOd6s = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$f
+  systemHooks: systemHooks$g
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$e() {
+function systemHooks$f() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage$1(msg);
   });
 }
 async function checkChatMessage$1(msg) {
-  if (msg.user.id !== game.user.id) {
+  if (msg.author !== game.user) {
     return;
   }
   let findData = funkyTest(msg);
@@ -103814,7 +110378,7 @@ async function checkChatMessage$1(msg) {
     debug$1("Unable to locate Item ID from Chat Message HTML");
     return;
   }
-  let item2 = msg.item ?? msg.itemSource;
+  let item2 = findData.item ?? msg.item ?? msg.itemSource;
   let compiledData = await getRequiredData({
     itemId: findData.itemId,
     item: item2,
@@ -103830,24 +110394,28 @@ async function checkChatMessage$1(msg) {
   trafficCop$1(handler);
 }
 function funkyTest(msg) {
-  let filterItemId = $(msg.content).filter(`[data-item-id]`);
-  let itemId2 = filterItemId?.[0]?.attributes?.["data-item-id"]?.value || filterItemId?.prevObject?.[0]?.attributes?.["data-item-id"]?.value;
-  if (!itemId2) {
-    const systemId = game.system.id;
-    let flags = msg.flags;
-    itemId2 = flags.itemId ?? flags.ItemId ?? flags[systemId]?.itemId ?? flags[systemId]?.ItemId ?? msg.rolls?.[0]?.options?.itemId;
-  }
-  let filterTokenId = $(msg.content).filter(`[data-token-id]`);
-  let tokenId = filterTokenId?.[0]?.attributes?.["data-token-id"]?.value || filterTokenId?.prevObject?.[0]?.attributes?.["data-token-id"]?.value;
-  let filterActorId = $(msg.content).filter(`[data-actor-id]`);
-  let actorId2 = filterActorId?.[0]?.attributes?.["data-actor-id"]?.value || filterActorId?.prevObject?.[0]?.attributes?.["data-actor-id"]?.value;
-  return { itemId: itemId2, tokenId, actorId: actorId2 };
+  const element2 = document.createElement("div");
+  element2.innerHTML = msg.content;
+  const elItemUUID = element2.querySelector("[data-item-uuid]")?.getAttribute("data-item-uuid");
+  const elActorID = element2.querySelector("[data-actor-id]")?.getAttribute("data-actor-id");
+  const elTokenUUID = element2.querySelector("[data-token-uuid]")?.getAttribute("data-token-uuid");
+  const elItemID = element2.querySelector("[data-item-id]")?.getAttribute("data-item-id");
+  const systemFlags = msg.flags[game.system.id] || {};
+  const flagItemID = systemFlags.itemId;
+  const flagActorID = systemFlags.actorId;
+  const flagTokenUUID = systemFlags.tokenUuid;
+  const flagItemUUID = systemFlags.itemUuid;
+  const token = fromUuidSync(flagTokenUUID || elTokenUUID) || canvas.tokens.get(msg.speaker?.token);
+  let item2 = fromUuidSync(flagItemUUID || elItemUUID) || msg.item || msg.itemSource;
+  const actor = item2?.actor || token?.actor || game.actors.get(flagActorID || elActorID);
+  if (!item2) item2 = actor?.items.get(flagItemID || elItemID || msg.rolls?.[0]?.options?.itemId);
+  return { token, item: item2, actor, itemId: item2?.id, actorId: actor?.id, tokenId: token?.id };
 }
 const aaChatmessage = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$e
+  systemHooks: systemHooks$f
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$d() {
+function systemHooks$e() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -103909,9 +110477,9 @@ async function templateAnimation$2(input) {
 }
 const aaDarkheresy = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$d
+  systemHooks: systemHooks$e
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$c() {
+function systemHooks$d() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage(msg);
   });
@@ -103946,7 +110514,7 @@ async function checkChatMessage(msg) {
       }
       break;
   }
-  const skill = compiledData.item?.getActionSkill();
+  const skill = test.data?.action?.skill;
   if (skill && await tryAnnimationWith$1(compiledData, skill)) {
     return;
   }
@@ -104006,9 +110574,9 @@ async function tryAnnimationWith$1(compiledData, itemNameOverride) {
 }
 const aaShadowrun5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$c
+  systemHooks: systemHooks$d
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$b() {
+function systemHooks$c() {
   Hooks.on("ds4.rollItem", async (data2) => {
     let compiledData = await getRequiredData({
       itemId: data2.id,
@@ -104027,9 +110595,9 @@ async function runDs4(input) {
 }
 const aaDs4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$b
+  systemHooks: systemHooks$c
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$a() {
+function systemHooks$b() {
   Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
     if (userId !== game.user.id) {
       return;
@@ -104150,9 +110718,9 @@ async function templateAnimation$1(input) {
 }
 const aaDnd4e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$a
+  systemHooks: systemHooks$b
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$9() {
+function systemHooks$a() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.flags.criticaled) {
       let critAnim = game.settings.get("autoanimations", "CriticalAnimation");
@@ -104180,9 +110748,9 @@ async function useItem(input) {
 }
 const aaArs = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$9
+  systemHooks: systemHooks$a
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$8() {
+function systemHooks$9() {
   Hooks.on("chatOutput", async (data2) => {
     let compiledData = await getRequiredData({
       itemId,
@@ -104201,9 +110769,9 @@ async function runEd4(input) {
 }
 const aaEd4e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$8
+  systemHooks: systemHooks$9
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$7() {
+function systemHooks$8() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -104312,9 +110880,9 @@ function checkOutcome(input) {
 }
 const aaPtu = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$7
+  systemHooks: systemHooks$8
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$6() {
+function systemHooks$7() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) return;
     const itemData = getHandlerInputData(msg);
@@ -104387,9 +110955,9 @@ function rinseHeader(headerText) {
 }
 const aaLancer = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$6
+  systemHooks: systemHooks$7
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$5() {
+function systemHooks$6() {
   Hooks.on("renderChatMessage", async (msg) => {
     let rawDataMsg = msg.getFlag("anarchy", "message-data");
     if (!rawDataMsg) {
@@ -104457,9 +111025,9 @@ async function tryAnnimationWith(compiledData, itemNameOverride) {
 }
 const aaShadowrunAnarchy = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$5
+  systemHooks: systemHooks$6
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$4() {
+function systemHooks$5() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -104493,7 +111061,7 @@ async function runWrathandGlory(input) {
 }
 const aaWrathAndGlory = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$4
+  systemHooks: systemHooks$5
 }, Symbol.toStringTag, { value: "Module" }));
 const idLocations = [
   [".magic-roll", "data-spell-id"],
@@ -104501,7 +111069,7 @@ const idLocations = [
   [".skill-roll", "data-skill-id"],
   [".ability-use", "data-ability-id"]
 ];
-function systemHooks$3() {
+function systemHooks$4() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -104536,9 +111104,9 @@ async function runDragonbane(input) {
 }
 const aaDragonbane = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$3
+  systemHooks: systemHooks$4
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$2() {
+function systemHooks$3() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -104626,9 +111194,9 @@ async function checkCrit(result) {
 }
 const aaImpMal = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$2
+  systemHooks: systemHooks$3
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$1() {
+function systemHooks$2() {
   Hooks.on("createChatMessage", async (msg) => {
     checkMessage(msg);
   });
@@ -104652,9 +111220,9 @@ async function checkMessage(msg) {
 }
 const aaSalvageUnion = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$1
+  systemHooks: systemHooks$2
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks() {
+function systemHooks$1() {
   Hooks.on("chatOutput", async (data2) => {
     let compiledData = await getRequiredData({
       itemId,
@@ -104673,6 +111241,47 @@ async function runDeathInSpace(input) {
 }
 const aaDeathinspace = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  systemHooks: systemHooks$1
+}, Symbol.toStringTag, { value: "Module" }));
+function systemHooks() {
+  Hooks.on("createChatMessage", async (msg) => {
+    if (msg.type != "dualityRoll" && msg.type != "adversaryRoll") {
+      return;
+    }
+    let data2 = msg.system ?? msg.flags?.daggerheart;
+    checkDHMessage(data2);
+  });
+}
+async function checkDHMessage(msg) {
+  if (!msg.source.item) {
+    return;
+  }
+  let compiledData = await getRequiredData({
+    name: msg.title,
+    item: getItemDH(msg.source.item, msg.source.actor, msg.title),
+    actorId: canvas.scene.tokens.get(msg.source.actor),
+    targets: getTargetsDH(),
+    ///msg.targets,
+    workflow: msg
+  });
+  const handler = await AAHandler.make(compiledData);
+  trafficCop$1(handler);
+}
+function getTargetsDH() {
+  const targetarray = Array.from(game.user.targets);
+  return targetarray;
+}
+function getItemDH(selection, source2, itemTitle) {
+  const actor = fromUuidSync(source2);
+  let item2 = actor.items.find((i) => i._id == selection);
+  if (!item2) {
+    let DHItem = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
+    item2 = DHItem;
+  }
+  return item2;
+}
+const aaDaggerheart = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
   systemHooks
 }, Symbol.toStringTag, { value: "Module" }));
 const systemSupport = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -104685,6 +111294,7 @@ const systemSupport = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defin
   ars: aaArs,
   cyberpunkredcore: aaCyberpunkred,
   cyphersystem: aaCyphersystem,
+  daggerheart: aaDaggerheart,
   darkheresy: aaDarkheresy,
   dcc: aaDcc,
   deathinspace: aaDeathinspace,
@@ -104818,7 +111428,7 @@ Hooks.once("ready", async function() {
     storeDeletedItems(item2);
   });
   const systemIdClean = game.system.id.replace(/\-/g, "");
-  systemSupport[systemIdClean] ? systemSupport[systemIdClean].systemHooks() : systemHooks$e();
+  systemSupport[systemIdClean] ? systemSupport[systemIdClean].systemHooks() : systemHooks$f();
   registerActiveEffectHooks();
   handleTemplates();
   Hooks.callAll("aa.initialize");

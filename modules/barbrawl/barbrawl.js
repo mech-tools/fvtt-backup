@@ -4,14 +4,15 @@
  */
 
 import { extendBarRenderer } from "./module/rendering.js";
-import { extendPrototypeTokenConfig, extendTokenConfig } from "./module/config.js";
+import { extendTokenConfig } from "./module/config.js";
 import { extendTokenHud } from "./module/hud.js";
 import { getDefaultResources, registerSettings } from "./module/settings.js";
 import { prepareCreation, prepareUpdate } from "./module/synchronization.js";
 import * as api from "./module/api.js";
+import { adjustPrototypeOverrides } from "./module/prototypeOverrides.js";
 
 /** Hook to register settings. */
-Hooks.once('init', async function () {
+Hooks.once('init', function () {
     console.log('Bar Brawl | Initializing barbrawl');
     game.modules.get("barbrawl").api = window.BarBrawlApi = {
         getBars: api.getBars,
@@ -31,10 +32,10 @@ Hooks.once('init', async function () {
     });
 
     foundry.applications.handlebars.loadTemplates(["modules/barbrawl/templates/bar-config.hbs"]);
-    extendPrototypeTokenConfig();
 });
+Hooks.once("ready", adjustPrototypeOverrides);
 
-/** Hooks to replace UI elements. */
+/** Hooks to change UI elements. */
 Hooks.once("setup", extendBarRenderer);
 Hooks.on("renderTokenHUD", extendTokenHud);
 Hooks.on("renderTokenApplication", extendTokenConfig);
