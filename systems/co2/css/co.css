@@ -1,0 +1,3512 @@
+.empty {
+  color: var(--sub);
+  font-style: italic;
+}
+i:not(.fas):not([class^="fa-"]),
+em,
+.emphasis,
+.italic {
+  font-style: italic;
+}
+b,
+strong,
+.strong {
+  font-weight: 700;
+}
+prose-mirror,
+.prosemirror {
+  flex: 1;
+  max-width: 100%;
+  min-height: 50px;
+  max-height: 100%;
+  position: relative;
+}
+prose-mirror > button,
+.prosemirror > button {
+  display: none;
+}
+prose-mirror .editor-menu,
+.prosemirror .editor-menu {
+  padding: 4px;
+}
+prose-mirror .editor-content,
+.prosemirror .editor-content {
+  overflow: hidden;
+  position: relative;
+  white-space: wrap;
+}
+prose-mirror:hover:not([open]) > button,
+.prosemirror:hover:not([open]) > button {
+  display: flex;
+}
+prose-mirror .editor-container,
+.prosemirror .editor-container {
+  height: clamp(25px, 100%, 50vh);
+  padding: 0 0 8px 8px;
+  overflow: hidden scroll;
+}
+prose-mirror .editor-container .editor-content,
+.prosemirror .editor-container .editor-content {
+  padding: 0;
+}
+multi-select {
+  margin-bottom: 4px;
+  min-height: var(--input-height);
+  position: relative;
+  overflow: hidden;
+}
+multi-select .tags.input-element-tags {
+  align-items: flex-start;
+  flex-flow: row wrap;
+  gap: 1px 2px;
+  justify-content: flex-start;
+  margin: 2px 3px;
+  padding: 0;
+  padding-right: 22px;
+  pointer-events: none;
+}
+multi-select .tags.input-element-tags::after {
+  content: "";
+  clear: both;
+}
+multi-select .tags.input-element-tags .tag {
+  border: 1px solid var(--color-cool-3);
+  height: calc(var(--input-height) - 5px);
+  max-width: 170px;
+  overflow: hidden;
+  padding: 2px 4px;
+  vertical-align: baseline;
+}
+multi-select .tags.input-element-tags .tag span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-dark multi-select .tags.input-element-tags .tag {
+  background-color: var(--color-dark-3);
+}
+.theme-light multi-select .tags.input-element-tags .tag {
+  background-color: var(--color-light-3);
+}
+multi-select .tags.input-element-tags .tag a.remove {
+  pointer-events: all;
+  margin-top: -2px;
+}
+.theme-dark select option {
+  background: var(--color-WindowContent);
+}
+.theme-light select option {
+  background: inherit;
+}
+co-toggle-switch {
+  --toggle-switch-height: 20px;
+  --toggle-switch-width: 36px;
+  --toggle-switch-padding: 3px;
+  --toggle-switch-track-color-unchecked: black;
+  --toggle-switch-track-color-checked: #3ba55d;
+  --toggle-switch-thumb-color: white;
+  --toggle-switch-thumb-width: calc(var(--toggle-switch-height) - var(--toggle-switch-padding) * 2);
+  --toggle-switch-thumb-height: var(--toggle-switch-thumb-width);
+  --toggle-switch-transition-time: 250ms;
+  cursor: var(--cursor-pointer) !important;
+  display: inline-block;
+  width: var(--toggle-switch-width);
+  height: var(--toggle-switch-height);
+}
+co-toggle-switch track {
+  background: var(--toggle-switch-track-color-unchecked);
+  border-radius: calc((var(--toggle-switch-height) * 2) / 3);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.45);
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  padding: var(--toggle-switch-padding);
+  width: 100%;
+}
+co-toggle-switch thumb {
+  background: var(--toggle-switch-thumb-color);
+  border-radius: 100%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.45);
+  display: block;
+  height: var(--toggle-switch-thumb-height);
+  text-align: center;
+  transition: margin-left var(--toggle-switch-transition-time) ease;
+  width: var(--toggle-switch-thumb-width);
+}
+co-toggle-switch[checked] track {
+  background: var(--toggle-switch-track-color-checked);
+}
+co-toggle-switch[checked] thumb {
+  margin-left: calc(100% - var(--toggle-switch-thumb-width));
+}
+.co {
+  --color-green: #44a12b;
+  --color-grey: #c2b9b7;
+}
+.co .enabled {
+  color: var(--color-green);
+}
+.co .inactivated {
+  color: #999;
+}
+.co .green {
+  color: var(--color-green);
+}
+.co .blue {
+  color: var(--color-abilities);
+}
+.theme-dark .co .blue {
+  color: #266995;
+}
+.theme-dark .co h4,
+.theme-dark .co label,
+.theme-dark .co span {
+  color: var(--color-background-grey);
+}
+.co fieldset {
+  border: 0;
+  border-top: 2px solid var(--color-primary);
+  border-radius: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.co fieldset legend {
+  font-size: 120%;
+}
+.co .form-header {
+  margin: 8px 0 4px 0;
+}
+.co .form-group .form-fields,
+.co .form-group-stacked .form-fields {
+  gap: 0;
+  justify-content: stretch;
+}
+.theme-light .co .form-group .form-fields,
+.theme-light .co .form-group-stacked .form-fields {
+  --input-background-color: rgba(0, 0, 0, 0.1);
+  --input-border-color: var(--color-dark-6);
+  --input-box-shadow: inset 0 0 6px var(--input-background-color);
+  --input-focus-outline-color: var(--color-warm-2);
+}
+.theme-dark .co .form-group .form-fields,
+.theme-dark .co .form-group-stacked .form-fields {
+  --input-background-color: var(--color-cool-4);
+  --input-border-color: transparent;
+  --input-box-shadow: none;
+  --input-focus-outline-color: var(--color-cool-3);
+}
+.co .form-group .form-fields :has(> :only-child) input[disabled],
+.co .form-group-stacked .form-fields :has(> :only-child) input[disabled],
+.co .form-group .form-fields :has(> :only-child) select[disabled],
+.co .form-group-stacked .form-fields :has(> :only-child) select[disabled] {
+  height: var(--input-height);
+}
+.co .form-group .form-fields:not(:has(> :only-child)),
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) {
+  background: var(--input-background-color);
+  border: 1px solid var(--input-border-color);
+  border-radius: 4px;
+  box-shadow: var(--input-box-shadow);
+  color: var(--input-text-color);
+  outline: 1px solid transparent;
+  transition: outline-color 0.5s;
+}
+.co .form-group .form-fields:not(:has(> :only-child)):focus,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)):focus,
+.co .form-group .form-fields:not(:has(> :only-child)):focus-visible,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)):focus-visible,
+.co .form-group .form-fields:not(:has(> :only-child)):focus-within,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)):focus-within {
+  outline-color: var(--input-focus-outline-color);
+}
+.co .form-group .form-fields:not(:has(> :only-child)) input,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) input,
+.co .form-group .form-fields:not(:has(> :only-child)) select,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) select,
+.co .form-group .form-fields:not(:has(> :only-child)) input:disabled,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) input:disabled,
+.co .form-group .form-fields:not(:has(> :only-child)) select:disabled,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) select:disabled {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  height: var(--input-height);
+}
+.co .form-group .form-fields:not(:has(> :only-child)) > :not(:last-child),
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) > :not(:last-child) {
+  border: 0;
+  border-right: 1px solid var(--input-border-color);
+  border-radius: 0;
+}
+.co .form-group .form-fields:not(:has(> :only-child)) label,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) label,
+.co .form-group .form-fields:not(:has(> :only-child)) span,
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) span,
+.co .form-group .form-fields:not(:has(> :only-child)) > *:has(+ a),
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) > *:has(+ a),
+.co .form-group .form-fields:not(:has(> :only-child)) > *:has(+ button),
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) > *:has(+ button),
+.co .form-group .form-fields:not(:has(> :only-child)) > *:has(+ label),
+.co .form-group-stacked .form-fields:not(:has(> :only-child)) > *:has(+ label) {
+  border: 0 !important;
+}
+.co .form-group .form-fields label,
+.co .form-group-stacked .form-fields label {
+  height: var(--input-height);
+  padding-right: 4px;
+}
+.co .form-group .form-fields label:has(> input[type="checkbox"]),
+.co .form-group-stacked .form-fields label:has(> input[type="checkbox"]),
+.co .form-group .form-fields label:has(> input[type="radio"]),
+.co .form-group-stacked .form-fields label:has(> input[type="radio"]) {
+  align-items: center;
+  display: flex;
+  flex-flow: row nowrap;
+  padding-top: 4px;
+}
+.co .form-group .form-fields input[type="checkbox"],
+.co .form-group-stacked .form-fields input[type="checkbox"],
+.co .form-group .form-fields input[type="radio"],
+.co .form-group-stacked .form-fields input[type="radio"] {
+  height: var(--input-height);
+  background: none;
+  align-content: center;
+}
+.co .form-group .form-fields button,
+.co .form-group-stacked .form-fields button {
+  height: calc(var(--button-size) - 4px);
+  margin: 1px;
+  min-height: calc(var(--button-size) - 4px);
+}
+.co .form-group .form-fields img.action-icon,
+.co .form-group-stacked .form-fields img.action-icon {
+  flex: 0 1 32px;
+  height: 32px;
+  max-width: 32px;
+}
+.co .form-group.like-grid label,
+.co .form-group-stacked.like-grid label {
+  overflow: hidden;
+  position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.co .form-group.like-grid label,
+.co .form-group-stacked.like-grid label,
+.co .form-group.like-grid .form-fields,
+.co .form-group-stacked.like-grid .form-fields {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(auto-fit, 1fr);
+}
+.co .form-group .grid,
+.co .form-group-stacked .grid {
+  display: grid;
+}
+.co .form-group .grid.grid-4col,
+.co .form-group-stacked .grid.grid-4col {
+  grid-template-columns: repeat(4, 1fr);
+}
+.co .form-group .grid.grid-6col,
+.co .form-group-stacked .grid.grid-6col {
+  grid-template-columns: repeat(6, 1fr);
+}
+.co .form-group-stacked {
+  display: flex;
+  flex-flow: column nowrap;
+}
+.co input.center {
+  text-align: center;
+}
+.co select {
+  width: 100%;
+}
+.co input[disabled],
+.co select[disabled] {
+  background: var(--input-background-color);
+  height: var(--input-height);
+}
+.co input[type="checkbox"] {
+  vertical-align: middle;
+}
+.co .theme-light input[type="checkbox"],
+.co .theme-light input[type="radio"] {
+  --checkbox-background-color: var(--color-dark-4);
+}
+.co .theme-light input[type="checkbox"]:checked:disabled::before {
+  color: var(--color-warm-1);
+}
+.co .theme-dark input[type="checkbox"]:checked:disabled::after {
+  color: var(--color-warm-1);
+}
+.theme-light .co.application {
+  --color-characterSheet: #ba9442;
+  --color-abilities: #0c4f7b;
+  --color-background-grey: #ebebe8;
+  --color-encounterSheet: #95262699;
+  --color-WindowContent: #584a756b;
+  --color-textLight: #fffaf2;
+  --color-backgroundAttackDialog: #754a548c;
+  --color-backgroundSkillDialog: #2a3c876b;
+}
+.theme-dark .co.application {
+  --color-characterSheet: #5c4921;
+  --color-abilities: #07314d;
+  --color-background-grey: #bcbcb1;
+  --color-encounterSheet: rgba(108, 28, 28, 0.6);
+  --color-WindowContent: #00000094;
+  --color-textLight: #e7d1b1;
+  --color-backgroundAttackDialog: #33161d8c;
+  --color-backgroundSkillDialog: #313a5f6b;
+}
+.co.application ul,
+.co.application ol,
+.co.application li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.co.application .item-img {
+  background-size: 28px;
+  cursor: pointer;
+  display: block;
+  flex: 0 0 28px;
+  height: 28px;
+}
+.co.application .sheet-tabs {
+  align-items: stretch;
+  border-top: 0;
+  border-bottom-color: var(--color-abilities);
+  display: flex;
+  flex-flow: row nowrap;
+  padding: 0 8px;
+  gap: 0;
+}
+.co.application .sheet-tabs [data-tab] {
+  align-items: baseline;
+  border: 1px solid transparent;
+  display: flex;
+  flex: 1;
+  flex-flow: row nowrap;
+  gap: 4px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.co.application .sheet-tabs [data-tab].active {
+  background-color: var(--color-abilities);
+  border: 1px solid var(--color-abilities);
+  color: var(--color-background-grey);
+  font-weight: bold;
+}
+.co.application .sheet-tabs [data-tab]:hover {
+  border: 2px dotted var(--color-abilities);
+  border-bottom: 0;
+}
+.co.application .tab[data-tab] {
+  padding: 10px 0 10px 10px;
+  overflow: hidden auto;
+  scrollbar-color: var(--color-abilities) var(--color-scrollbar-track);
+  scrollbar-gutter: stable;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  mask: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000000 12px, #000000 calc(100% - 12px), rgba(0, 0, 0, 0) 100%);
+}
+.co.application .tab[data-tab].active {
+  display: flex;
+  flex-flow: column nowrap;
+}
+.co.application .tab[data-tab] > * {
+  flex: none;
+}
+.co.application h4.form-header {
+  display: flex;
+  flex-flow: row nowrap;
+  line-height: 1;
+}
+.co.application h4.form-header .section-toggle,
+.co.application h4.form-header [data-action="toggleSection"] {
+  flex: 10;
+}
+.co.application h4.form-header a:not(:first-of-type):last-of-type {
+  flex: 0;
+}
+.co.application .actionRow {
+  display: grid;
+  grid-template-columns: 25px 20px 1fr;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.co.application .actionColumn {
+  justify-self: center;
+  font-size: 15px;
+  font-weight: bold;
+}
+.co.application .resolvers-container .resolver {
+  display: flex;
+  flex-flow: row wrap;
+  /*.form-group-stacked.difficulty {
+      margin-right: -1px;
+
+      input[type] {
+        border-radius: 3px 0 0 3px;
+      }
+    }*/
+}
+.co.application .resolvers-container .resolver:not(:first-child) {
+  padding-top: 8px;
+}
+.co.application .resolvers-container .resolver:not(:last-child) {
+  border-bottom: 1px solid #999;
+  padding-bottom: 8px;
+}
+.co.application .resolvers-container .resolver > .form-group,
+.co.application .resolvers-container .resolver > .form-group-stacked {
+  flex: 2 0 100%;
+}
+.co.application .resolvers-container .resolver .form-fields {
+  flex-flow: row nowrap;
+}
+.co.application .resolvers-container .resolver .form-fields .action {
+  flex: none;
+  margin-left: 4px;
+  padding: 4px 8px;
+}
+.co.application .resolvers-container .resolver .form-fields .checkbox {
+  flex: 0 0 auto;
+}
+.co.application .resolvers-container .resolver .form-group-stacked.damages {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  margin: 5px 0;
+}
+.co.application .resolvers-container .resolver .form-group-stacked.damages label {
+  margin-right: 10px;
+}
+.co.application .resolvers-container .resolver .form-group-stacked.damages input[type] {
+  border-radius: 0 3px 3px 0;
+}
+.co.application .resolvers-container .resolver .form-group-stacked.heal {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  margin: 5px 0;
+}
+.co.application .resolvers-container .resolver .form-group-stacked.heal label {
+  margin-right: 10px;
+}
+.co.application .resolvers-container .resolver .form-group.effects .form-fields span {
+  border-right: 0;
+  flex: none;
+  margin-left: 4px;
+}
+.co.application.dialog.edit-abilities-dialog .window-header {
+  border-radius: 5px 5px 0 0;
+  background: var(--color-abilities);
+  border: none;
+}
+.co.application.dialog.edit-abilities-dialog .window-header .window-title {
+  color: var(--color-abilities);
+}
+.co.application.dialog.edit-abilities-dialog .window-content {
+  padding: 0;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 5px;
+  border: 10px solid var(--color-abilities);
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .select-abilities-type {
+  display: flex;
+  width: 45%;
+  flex-direction: column;
+  align-items: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .select-abilities-type label {
+  margin-bottom: 5px;
+  font-size: var(--font-size-18);
+  font-weight: bold;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .select-abilities-type #distribution-mode {
+  font-size: var(--font-size-24);
+  text-align: center;
+  height: auto;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .value-pool {
+  display: flex;
+  width: 100%;
+  align-content: center;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .value-pool .draggable-value {
+  border: 3px solid var(--color-abilities);
+  background-color: lightgrey;
+  padding: 5px 15px;
+  border-radius: 15px;
+  font-size: var(--font-size-24);
+  font-weight: bold;
+  color: var(--color-abilities);
+  cursor: grab;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-type .value-pool .used {
+  opacity: 0.5;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-values {
+  width: 100%;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .values-informations {
+  font-size: var(--font-size-20);
+  font-style: italic;
+  text-align: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 200px repeat(7, 1fr);
+  grid-template-rows: 40px 23px repeat(4, 40px) 50px;
+  grid-auto-flow: column;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden auto;
+  padding: 0;
+}
+.theme-light .co.application.dialog.edit-abilities-dialog .window-content .abilities-table {
+  background-color: #0c4f7b29;
+}
+.theme-dark .co.application.dialog.edit-abilities-dialog .window-content .abilities-table {
+  background: none;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #b3b4b5;
+}
+.theme-dark .co.application.dialog.edit-abilities-dialog .window-content .abilities-table input {
+  color: #b3b4b5;
+  text-align: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 1),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 2),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 3),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 4),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 5),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 6),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 14) {
+  background-color: var(--color-abilities);
+  color: var(--color-background-grey);
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 1) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 2) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 3) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 4) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 5) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 6) input[type="number"],
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(14n + 14) input[type="number"] {
+  color: var(--color-background-grey);
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(2),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(3),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(4),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(5),
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table > :nth-child(6) {
+  text-align: right;
+  padding-right: 10px;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table .cell {
+  padding: 8px;
+  text-align: center;
+  align-content: center;
+  justify-items: center;
+  font-size: large;
+  font-weight: bold;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table .cell input[type="number"] {
+  text-align: center;
+  height: 25px;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table .dropzone,
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table .ability-base {
+  font-size: var(--font-size-24);
+  align-self: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table label .title {
+  line-height: 2;
+  margin-left: 20px;
+  font-size: large;
+  font-weight: bold;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table label .total-bonus {
+  font-size: x-large;
+  text-align: right;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table .value {
+  font-family: var(--serif);
+  font-size: var(--font-size-28);
+  font-weight: 700;
+  text-shadow: 0px 0px 5px #c30000b5;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table h3 {
+  font-size: var(--font-size-24);
+  line-height: var(--font-size-24);
+  margin: 0;
+  align-content: center;
+  text-align: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table h3:first-child {
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: left;
+  grid-row: 1/3;
+  padding: 10px;
+  text-align: center;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table h4 {
+  color: #605856;
+  font-family: var(--sans-serif);
+  font-size: var(--font-size-10);
+  font-weight: 400;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button {
+  align-items: center;
+  border: 1px solid var(--button-color);
+  color: var(--button-color);
+  display: flex;
+  font-size: var(--font-size-12);
+  justify-content: space-around;
+  outline: none;
+  margin: 0;
+  text-transform: uppercase;
+  height: 1.75em;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button.locked,
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button.selected {
+  color: white;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button.selected {
+  background: var(--button-color);
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button.hidden {
+  pointer-events: none;
+  visibility: hidden;
+}
+.co.application.dialog.edit-abilities-dialog .window-content .abilities-table button.superior {
+  --button-color: #316549;
+  --button-locked-color: #1b3c2a;
+}
+.co.application.dialog.skill-roll .window-header {
+  border-radius: 5px 5px 0 0;
+  background-color: var(--color-backgroundSkillDialog);
+  border-bottom: 2px solid #5d142b;
+  /*.theme-dark & {
+      background: none;
+      background-color: rgba(0, 0, 0, 0.8);
+    }*/
+}
+.co.application.dialog.skill-roll .window-header .window-title {
+  text-align: center;
+  font-size: 25px;
+  font-weight: bold;
+  color: #5d142b;
+}
+.theme-dark .co.application.dialog.skill-roll .window-header .window-title {
+  color: #b3b4b5;
+}
+.co.application.dialog.skill-roll .icone {
+  text-align: center;
+  font-size: 30px;
+  align-content: center;
+}
+.co.application.dialog.skill-roll #totalSkillBonuses {
+  color: #5d142b;
+  font-weight: bolder;
+  font-size: 30px;
+}
+.theme-dark .co.application.dialog.skill-roll #totalSkillBonuses {
+  color: #d33e6d;
+}
+.co.application.dialog.skill-roll .window-content {
+  background-color: var(--color-backgroundSkillDialog);
+  padding: 10px;
+}
+.co.application.dialog.skill-roll .window-content .skill-roll-1 {
+  display: grid;
+  grid-template-columns: 0.5fr 1.5fr 0.3fr 1.7fr 0.3fr 1.5fr;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #5d142b;
+}
+.co.application.dialog.skill-roll .window-content .skill-roll-2 {
+  display: grid;
+  grid-template-columns: 0.6fr 3fr 0.8fr 0.8fr 1.2fr 1fr;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #5d142b;
+}
+.co.application.dialog.skill-roll .window-content .skill-roll-3 {
+  padding-bottom: 0px;
+  border-bottom: 2px solid #5d142b;
+  margin-bottom: 3px;
+}
+.co.application.dialog.skill-roll .window-content .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  align-items: start;
+  justify-content: flex-end;
+  padding-left: 8px;
+}
+.co.application.dialog.skill-roll .window-content .form-group label.near {
+  margin-bottom: -18px;
+}
+.co.application.dialog.skill-roll .window-content .form-group .form-fields {
+  border: none;
+}
+.co.application.dialog.skill-roll .window-content .form-group label {
+  margin-bottom: -8px;
+  font-weight: bold;
+}
+.co.application.dialog.skill-roll .window-content .textCenter {
+  text-align: center;
+  align-self: center;
+}
+.co.application.dialog.skill-roll .diffGroup {
+  padding-right: 30px;
+}
+.co.application.dialog.skill-roll .form-group.rollMode {
+  padding: 0px 0px 0px 10px;
+}
+.co.application.dialog.skill-roll .form-fields-radio {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+  margin: 0px;
+  align-items: start;
+  justify-content: start;
+}
+.co.application.dialog.skill-roll .form-fields-radio .radio {
+  margin: 0;
+}
+.co.application.dialog.skill-roll input {
+  margin: 0px;
+  text-align: left;
+}
+.co.application.dialog.skill-roll .field-value,
+.co.application.dialog.skill-roll select {
+  text-align: left;
+  font-size: 20px;
+  font-weight: bolder;
+  background-color: #ffffff57;
+}
+.theme-dark .co.application.dialog.skill-roll .field-value,
+.theme-dark .co.application.dialog.skill-roll select {
+  color: #e7d1b1;
+}
+.co.application.dialog.skill-roll .standard-form {
+  gap: 0;
+}
+.co.application.dialog.skill-roll .flex1.skill-bonuses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 3px;
+}
+.co.application.dialog.skill-roll .fas.fa-fw.fa-shield-alt {
+  color: #0e507c;
+}
+.co.application.dialog.skill-roll .fa-solid.fa-dice {
+  color: #2f4f4f;
+}
+.co.application.dialog.skill-roll .fa-solid.fa-dice-d20 {
+  color: #393939;
+}
+.co.application.dialog.skill-roll .bonus-description {
+  display: flex;
+  flex-direction: column;
+}
+.co.application.dialog.skill-roll .bonus-value.flex0 {
+  font-size: 25px;
+  font-weight: bolder;
+  padding-right: 10px;
+  padding-left: 0px;
+}
+.co.application.dialog.skill-roll .bonus-name.flex1 {
+  font-size: 15px;
+  font-weight: bold;
+  padding-right: 5px;
+}
+.co.application.dialog.skill-roll .bonus-name.flex2 {
+  font-style: italic;
+  padding-right: 5px;
+  margin-left: 10px;
+}
+.co.application.dialog.skill-roll .bonus-item.flexrow {
+  border: 2px solid grey;
+  padding: 5px;
+  margin: 5px;
+  background-color: #ffffff57;
+}
+.co.application.dialog.skill-roll .bonus-item.flexrow.checked {
+  color: #b3b4b5;
+  padding: 5px;
+  margin: 5px;
+  border: 2px solid #b3b4b5;
+  background-color: #5d142b;
+}
+.theme-dark .co.application.dialog.skill-roll {
+  color: #e7d1b1;
+}
+.theme-dark .co.application.dialog.skill-roll input {
+  color: #b3b4b5;
+  text-align: left;
+}
+.co.application.dialog.attack-roll .window-header {
+  border-radius: 5px 5px 0 0;
+  background-color: var(--color-backgroundAttackDialog);
+  border-bottom: 2px solid #ad0606;
+  /*.theme-dark & {
+      background: none;
+      background-color: rgba(0, 0, 0, 0.8);
+    }*/
+}
+.co.application.dialog.attack-roll .window-header .window-title {
+  text-align: center;
+  font-size: 25px;
+  font-weight: bold;
+  color: #5d142b;
+}
+.theme-dark .co.application.dialog.attack-roll .window-header .window-title {
+  color: #b3b4b5;
+}
+.co.application.dialog.attack-roll .icone {
+  text-align: center;
+  font-size: 30px;
+  align-content: center;
+}
+.co.application.dialog.attack-roll .window-content {
+  background-color: var(--color-backgroundAttackDialog);
+  padding: 10px;
+}
+.co.application.dialog.attack-roll .window-content .attack-roll-1 {
+  display: grid;
+  grid-template-columns: 0.5fr 1.5fr 0.3fr 1.7fr 0.3fr 1.5fr;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #ad0606;
+  gap: 0;
+}
+.co.application.dialog.attack-roll .window-content .attack-roll-2 {
+  display: grid;
+  grid-template-columns: 0.5fr 3fr 0.8fr 0.8fr 1.2fr;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #ad0606;
+  gap: 0;
+}
+.co.application.dialog.attack-roll .window-content .rollDommages {
+  display: grid;
+  grid-template-columns: 2.4fr 0.3fr 2fr 2.4fr;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #ad0606;
+}
+.co.application.dialog.attack-roll .window-content .dommageDialog {
+  display: grid;
+  grid-template-columns: 0.5fr 3fr 0.8fr 0.8fr 1.2fr;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 2px solid #ad0606;
+  gap: 0;
+}
+.co.application.dialog.attack-roll .window-content .tacticalTargets {
+  display: grid;
+  grid-template-columns: 0.6fr 1fr;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid #ad0606;
+}
+.co.application.dialog.attack-roll .window-content .tacticalOptions {
+  display: grid;
+  grid-template-columns: 0.7fr 2.7fr;
+  gap: 0;
+}
+.co.application.dialog.attack-roll .window-content .form-fields {
+  border: none;
+  justify-content: center;
+}
+.co.application.dialog.attack-roll .window-content .form-fields .temp-checkbox {
+  align-content: center;
+}
+.co.application.dialog.attack-roll .window-content .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  align-items: start;
+  justify-content: flex-end;
+  padding-left: 8px;
+}
+.co.application.dialog.attack-roll .window-content .form-group label.near {
+  margin-bottom: -18px;
+}
+.co.application.dialog.attack-roll .window-content .form-group label {
+  margin-bottom: -8px;
+  font-weight: bold;
+}
+.co.application.dialog.attack-roll .window-content .form-group .textCenter {
+  text-align: center;
+  align-self: center;
+}
+.co.application.dialog.attack-roll .window-content .diffGroup {
+  padding-right: 30px;
+}
+.co.application.dialog.attack-roll .window-content .form-group.rollMode {
+  padding-left: 0px 0px 0px 10px;
+}
+.co.application.dialog.attack-roll .window-content .form-fields-radio {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+  margin: 0px;
+  align-items: start;
+  justify-content: start;
+}
+.co.application.dialog.attack-roll .window-content .form-fields-radio .radio {
+  margin: 0;
+}
+.co.application.dialog.attack-roll .window-content input {
+  margin: 0px;
+  text-align: left;
+}
+.co.application.dialog.attack-roll .window-content .field-value,
+.co.application.dialog.attack-roll .window-content select {
+  text-align: left;
+  font-size: 20px;
+  font-weight: bolder;
+  background-color: #ffffff57;
+}
+.theme-dark .co.application.dialog.attack-roll .window-content .field-value,
+.theme-dark .co.application.dialog.attack-roll .window-content select {
+  color: #e7d1b1;
+}
+.co.application.dialog.attack-roll .window-content .standard-form {
+  gap: 0;
+}
+.co.application.dialog.attack-roll .window-content .fas.fa-fw.fa-shield-alt {
+  color: #0e507c;
+}
+.co.application.dialog.attack-roll .window-content .fa-solid.fa-dice {
+  color: #2f4f4f;
+}
+.co.application.dialog.attack-roll .window-content .fa-solid.fa-dice-d20 {
+  color: #393939;
+}
+.co.application.dialog.attack-roll .window-content .fa-solid.fa-droplet {
+  color: #9f0000;
+}
+.co.application.dialog.attack-roll .window-content .fa-solid.fa-sliders-up {
+  color: #532d75;
+  align-content: start;
+}
+.co.application.dialog.attack-roll .window-content legend {
+  text-align: center;
+  padding-bottom: 3px;
+}
+.co.application.dialog.attack-roll .window-content .targets.center {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.co.application.dialog.attack-roll .window-content .target {
+  margin: 3px 8px;
+}
+.theme-dark .co.application.dialog.attack-roll .window-content {
+  color: #e7d1b1;
+}
+.theme-dark .co.application.dialog.attack-roll .window-content input {
+  color: #b3b4b5;
+  text-align: left;
+}
+.co.application.sheet {
+  --color-primary: var(--color-text-selection-bg);
+}
+.co.application.sheet .list-3col,
+.co.application.sheet .list-4col {
+  display: grid;
+  gap: 2px 0;
+  align-items: center;
+}
+.co.application.sheet .list-3col {
+  grid-template-columns: 42px 1fr 28px;
+}
+.co.application.sheet .list-3col > :nth-child(3n + 1) {
+  margin-right: 8px;
+}
+.co.application.sheet .list-4col {
+  grid-template-columns: 32px 42px 1fr 28px;
+}
+.co.application.sheet .list-4col > :nth-child(4n + 1):not(:first-child) {
+  font-size: 150%;
+  font-weight: bold;
+}
+.co.application.sheet .list-4col > :nth-child(4n + 2) {
+  margin-right: 8px;
+}
+.co.application.sheet .section-container {
+  display: flex;
+  border: 1px solid var(--color-abilities);
+  border-radius: 0 0 3px 3px;
+  flex-direction: column;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+.co.application.sheet .section-container.no-header {
+  border-radius: 3px;
+}
+.co.application.sheet .section-container .section-header {
+  display: flex;
+  align-items: center;
+  /*background-color: var(--color-primary);
+    color: #fff;*/
+  flex-direction: row;
+  color: var(--color-background-grey);
+  background-color: var(--color-abilities);
+}
+.co.application.sheet .section-container .section-header h4 {
+  flex: 1;
+  font-size: 18px;
+  line-height: 1.2;
+  margin: 0;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  color: var(--color-background-grey);
+}
+.co.application.sheet .section-container .section-header .controls {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin: 0 8px;
+  align-items: center;
+}
+.co.application.sheet .items-container,
+.co.application.sheet .item-list {
+  border: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 5px 0 0;
+}
+.co.application.sheet .items-container.foldable .items-container-header h4,
+.co.application.sheet .item-list.foldable .items-container-header h4 {
+  cursor: pointer;
+}
+.co.application.sheet .items-container.foldable .items-container-header h4:before,
+.co.application.sheet .item-list.foldable .items-container-header h4:before {
+  content: "▼\202F";
+}
+.co.application.sheet .items-container.folded,
+.co.application.sheet .item-list.folded {
+  display: none;
+}
+.co.application.sheet .items-container.folded .items-container-header h4:before,
+.co.application.sheet .item-list.folded .items-container-header h4:before {
+  content: "▶\202F";
+}
+.co.application.sheet .items-container .attack,
+.co.application.sheet .item-list .attack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin: 8px 6px 0 6px;
+  border-bottom: 1px solid var(--color-border-light-tertiary);
+}
+.co.application.sheet .items-container .attack .attack-header,
+.co.application.sheet .item-list .attack .attack-header {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: row;
+  align-items: baseline;
+  width: 100%;
+}
+.co.application.sheet .items-container .attack .attack-name,
+.co.application.sheet .item-list .attack .attack-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin: 0 4px 0 0;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+.co.application.sheet .items-container .attack .attack-name > span,
+.co.application.sheet .item-list .attack .attack-name > span {
+  gap: 3px;
+  margin-right: 10px;
+  display: flex;
+  align-items: baseline;
+  line-height: 1.125rem;
+}
+.co.application.sheet .items-container .attack .attack-body,
+.co.application.sheet .item-list .attack .attack-body {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  width: 100%;
+  padding-top: 3px;
+}
+.co.application.sheet .items-container .attack .attack-body .sub-section,
+.co.application.sheet .item-list .attack .attack-body .sub-section {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex: auto;
+  justify-content: flex-start;
+}
+.co.application.sheet .items-container .attack .attack-body .flexrow,
+.co.application.sheet .item-list .attack .attack-body .flexrow,
+.co.application.sheet .items-container .attack .attack-body .sub-section,
+.co.application.sheet .item-list .attack .attack-body .sub-section {
+  gap: 2px;
+}
+.co.application.sheet .items-container .attack .attack-body button,
+.co.application.sheet .item-list .attack .attack-body button {
+  width: auto !important;
+  cursor: pointer;
+  margin: 0;
+  padding: 0 8px;
+  font-size: var(--font-size-11);
+  height: 18px;
+  line-height: 18px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3), inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+  background: var(--color-primary);
+  color: #f5efe0;
+  text-align: center;
+  white-space: nowrap;
+  border-radius: 3px;
+  border: none;
+}
+.co.application.sheet .items-container .attack .attack-body button:first-child,
+.co.application.sheet .item-list .attack .attack-body button:first-child {
+  margin-left: 0px;
+}
+.co.application.sheet .items-container .attack .attack-body .attack-button,
+.co.application.sheet .item-list .attack .attack-body .attack-button {
+  background-color: var(--color-primary);
+}
+.co.application.sheet .items-container .attack .attack-body .damage-button,
+.co.application.sheet .item-list .attack .attack-body .damage-button,
+.co.application.sheet .items-container .attack .attack-body .critical-button,
+.co.application.sheet .item-list .attack .attack-body .critical-button {
+  background-color: var(--color-primary);
+}
+.co.application.sheet .path-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 5px;
+}
+.co.application.sheet .items-container {
+  margin-bottom: 8px;
+}
+.co.application.sheet .items-container .items-container-header,
+.co.application.sheet .items-container .item {
+  display: flex;
+  align-items: stretch;
+  flex-direction: row;
+  height: 30px;
+  line-height: 30px;
+  flex-wrap: nowrap;
+}
+.co.application.sheet .items-container .items-container-header {
+  /*background: var(--color-primary);
+    color: #FFF;*/
+  font-weight: bold;
+  /*padding: 0;
+    padding-left: 4px;*/
+  color: var(--color-background-grey);
+  background-color: var(--color-abilities);
+  padding: 0 10px;
+  border-radius: 10px 10px 0 0;
+}
+.co.application.sheet .items-container .items-container-header h4 {
+  border: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  color: var(--color-background-grey);
+}
+.co.application.sheet .items-container .items-container-header .item-name {
+  flex: 1;
+}
+.co.application.sheet .items-container .item:last-child {
+  border-bottom: none;
+}
+.co.application.sheet .items-container .item:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+.co.application.sheet .items-container .item i.fa-solid.fa-circle-check,
+.co.application.sheet .items-container .item i.fa-regular.fa-circle-xmark {
+  font-size: 16px;
+  margin-left: 5px;
+}
+.co.application.sheet .items-container .item .item-name {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  width: 150px;
+}
+.co.application.sheet .items-container .item .item-name h4 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.co.application.sheet .items-container .item .item-name .icon-effet {
+  font-size: 0.8rem;
+  margin-left: 5px;
+  color: darkred;
+}
+.co.application.sheet .items-container .item-detail {
+  border-right: 1px solid var(--color-blue);
+  flex: 0 70px;
+  font-size: 16px;
+  text-align: center;
+  white-space: nowrap;
+  word-break: break-word;
+}
+.co.application.sheet .items-container .item-detail:last-child {
+  border-right: none;
+}
+.co.application.sheet .items-container .item-detail.item-action {
+  flex: 0 0 100px;
+}
+.co.application.sheet .items-container .item-detail.rank {
+  flex: 0 25px;
+  font-size: 22px;
+}
+.co.application.sheet .items-container .item-controls,
+.co.application.sheet .items-container .item-controls-1,
+.co.application.sheet .items-container .item-controls-2,
+.co.application.sheet .items-container .item-controls-3 {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-end;
+}
+.co.application.sheet .items-container .item-controls a,
+.co.application.sheet .items-container .item-controls-1 a,
+.co.application.sheet .items-container .item-controls-2 a,
+.co.application.sheet .items-container .item-controls-3 a,
+.co.application.sheet .items-container .item-controls .item-control,
+.co.application.sheet .items-container .item-controls-1 .item-control,
+.co.application.sheet .items-container .item-controls-2 .item-control,
+.co.application.sheet .items-container .item-controls-3 .item-control {
+  display: inline-block;
+  font-size: 16px;
+  text-align: center;
+  width: 22px;
+}
+.theme-dark .co.application.sheet .items-container .item-controls a .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-1 a .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-2 a .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-3 a .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls .item-control .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-1 .item-control .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-2 .item-control .enabled,
+.theme-dark .co.application.sheet .items-container .item-controls-3 .item-control .enabled {
+  color: #9c03e7;
+}
+.theme-light .co.application.sheet .items-container .item-controls a .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-1 a .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-2 a .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-3 a .enabled,
+.theme-light .co.application.sheet .items-container .item-controls .item-control .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-1 .item-control .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-2 .item-control .enabled,
+.theme-light .co.application.sheet .items-container .item-controls-3 .item-control .enabled {
+  color: #7a02b5;
+}
+.co.application.sheet .items-container .item-controls-1 {
+  flex: 0 0 22px;
+  width: 22px;
+}
+.co.application.sheet .items-container .item-controls-2 {
+  flex: 0 0 44px;
+  width: 44px;
+}
+.co.application.sheet .items-container .item-controls-3 {
+  flex: 0 0 66px;
+  width: 66px;
+}
+.co.application.sheet .theme-dark .items-container {
+  color: #ccc;
+}
+.co.application.sheet .theme-dark .item:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+.co.application.sheet .controls {
+  font-size: 0.8rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  margin-left: auto;
+  gap: 1px;
+}
+.co.application.sheet .controls .chat {
+  margin-right: 3px;
+  font-size: 0.9em;
+}
+.co.application.sheet.item {
+  gap: 0;
+}
+.co.application.sheet.item:not(.minimized) {
+  min-height: 480px;
+  min-width: 540px;
+}
+.co.application.sheet.item .window-content {
+  padding: 0;
+  margin-top: -36px;
+  padding-top: 36px;
+  /*input[type="checkbox"]:checked::after {
+    line-height: 0;
+  }*/
+}
+.co.application.sheet.item .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item .window-content .tab {
+  gap: 0;
+}
+.co.application.sheet.item .window-content .sheet-header {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "img name adjustment" "img tags tags";
+  min-height: 100px;
+  max-height: 100px;
+  overflow: hidden;
+}
+.co.application.sheet.item .window-content .sheet-header img {
+  grid-area: img;
+  align-self: center;
+  width: 100%;
+}
+.co.application.sheet.item .window-content .sheet-header > .name,
+.co.application.sheet.item .window-content .sheet-header > .adjustment-select,
+.co.application.sheet.item .window-content .sheet-header > .tags {
+  margin: 0 8px;
+}
+.co.application.sheet.item .window-content .sheet-header .name {
+  font-size: 2.5rem;
+  grid-area: name;
+  align-content: center;
+}
+.co.application.sheet.item .window-content .sheet-header .name input[type="text"] {
+  font-size: inherit;
+  height: 52px;
+  padding: 0 8px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.co.application.sheet.item .window-content .sheet-header input[type="checkbox"]:disabled {
+  color: var(--color-warm-1);
+}
+.co.application.sheet.item .window-content .sheet-header .adjustment-select {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+  grid-area: adjustment;
+  justify-content: flex-end;
+}
+.co.application.sheet.item .window-content .sheet-header > .tags {
+  grid-area: tags;
+}
+.co.application.sheet.item .window-content .sheet-header .trait {
+  text-align: center;
+  border: 1px solid var(--color-cool-3);
+  margin: 8px 0;
+  padding: 4px 8px;
+}
+.theme-dark .co.application.sheet.item .window-content .sheet-header .trait {
+  background-color: var(--color-dark-3);
+}
+.theme-light .co.application.sheet.item .window-content .sheet-header .trait {
+  background-color: var(--color-light-3);
+}
+.co.application.sheet.item .window-content input {
+  height: auto;
+}
+.co.application.sheet.item .window-content input[type="number"] {
+  text-align: center;
+  font-size: 18px;
+}
+.co.application.sheet.item .window-content input[type="checkbox"] {
+  --checkbox-size: var(--font-size-18);
+  background: none;
+}
+.co.application.sheet.item .window-content > .sheet-tabs {
+  padding-left: calc(100px + 8px);
+  margin-top: -38px;
+}
+.co.application.sheet.item .window-content .border-right input {
+  border-right: none;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions {
+  margin-left: -10px;
+  padding-top: 4px;
+  padding-bottom: 0;
+  position: relative;
+  overflow: hidden;
+  scrollbar-gutter: unset;
+  mask: none;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .action-button {
+  height: 32px;
+  position: absolute;
+  right: 0;
+  top: 10px;
+  width: 80px;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions {
+  max-height: 100%;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions .sheet-tabs {
+  height: 42px;
+  justify-content: center;
+  padding-right: 80px;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions .sheet-tabs [data-tab] {
+  border: 0;
+  flex: 0 1 auto;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions .sheet-tabs [data-tab].active {
+  background: linear-gradient(transparent, var(--color-primary));
+  border: 0;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions .sheet-tabs img {
+  height: 40px;
+}
+.co.application.sheet.item .window-content .tab[data-tab].actions .actions .action-body {
+  display: flex;
+  flex-flow: column nowrap;
+  flex: 1;
+  max-height: calc(100% - 42px);
+}
+.co.application.sheet.item.capacity {
+  --color-capacity-dark: #5d142b;
+  --color-capacity-light: #bf325e;
+}
+.theme-dark .co.application.sheet.item.capacity .sheet-header {
+  background: linear-gradient(5deg, var(--color-capacity-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.capacity .sheet-header {
+  background: linear-gradient(5deg, var(--color-capacity-light) 60%, var(--color-capacity-dark));
+}
+.co.application.sheet.item.capacity .window-content {
+  background-color: var(--color-WindowContent);
+}
+.co.application.sheet.item.capacity .window-content .fa-add {
+  font-size: 22px;
+}
+.co.application.sheet.item.capacity .window-content .action-button {
+  font-size: 14px;
+  margin-right: 10px;
+}
+.co.application.sheet.item.capacity .window-content fieldset {
+  gap: 4px;
+}
+.co.application.sheet.item.capacity .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.capacity .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.capacity .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.capacity .window-content legend {
+  color: var(--color-capacity-light);
+}
+.theme-light .co.application.sheet.item.capacity .window-content legend {
+  color: var(--color-capacity-dark);
+}
+.co.application.sheet.item.capacity .window-content .action.item.active {
+  gap: 0;
+}
+.co.application.sheet.item.capacity .window-content .action-tabs {
+  margin-top: 0px;
+}
+.co.application.sheet.item.capacity .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.capacity .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.capacity .window-content .form-header {
+  background-color: var(--color-capacity-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.capacity .window-content .form-header {
+  background-color: var(--color-capacity-light);
+  color: #222;
+}
+.co.application.sheet.item.capacity .window-content .miniField > input {
+  flex-grow: 0.5;
+}
+.co.application.sheet.item.capacity .window-content .labelModifier {
+  display: grid;
+  grid-template-columns: 0.3fr 0.4fr 0.4fr;
+  column-gap: 10px;
+}
+.co.application.sheet.item.capacity .window-content .labelModifier label {
+  font-weight: bold;
+  padding-left: 15px;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0px 8px;
+  margin-bottom: 4px;
+  padding: 0 8px;
+}
+.theme-dark .co.application.sheet.item.capacity .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-capacity-dark);
+}
+.theme-light .co.application.sheet.item.capacity .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-capacity-light);
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier :nth-child(5) {
+  grid-column: auto / span 2;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier :nth-child(5) label {
+  flex: 2;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier :nth-child(5) input[type="text"] {
+  flex: 11;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier input,
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier select {
+  height: 25px;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier button,
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier .emptyButton {
+  grid-column: 4;
+  grid-row: 1 / 3;
+}
+.co.application.sheet.item.capacity .window-content .modifiers-container .modifier-header {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0 8px;
+  margin: -4px 0 2px 10px;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver select,
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver input,
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver label {
+  height: 25px;
+  align-content: center;
+  line-height: 1;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group.effects .form-fields span {
+  margin-left: 8px;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects label,
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects .form-fields {
+  grid-template-columns: repeat(2, 10fr) 15fr;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target,
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.type {
+  display: flex;
+  flex-flow: column nowrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-top: 2px;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target label,
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.type label {
+  padding-right: 20px;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  padding-bottom: 5px;
+}
+.theme-dark .co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-capacity-dark);
+}
+.theme-light .co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-capacity-light);
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .tags .form-group {
+  display: grid;
+  grid-template-columns: 0px auto;
+  margin: 0;
+  gap: 0;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .center-input {
+  text-align: center;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label {
+  justify-items: center;
+  text-align: center;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label div {
+  width: 120px;
+}
+.co.application.sheet.item.capacity .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula input[type="text"] {
+  text-align: center;
+}
+.co.application.sheet.item.equipment {
+  --color-equipment-dark: #7a581d;
+  --color-equipment-light: #ba872c;
+}
+.theme-dark .co.application.sheet.item.equipment .sheet-header {
+  background: linear-gradient(5deg, var(--color-equipment-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.equipment .sheet-header {
+  background: linear-gradient(5deg, var(--color-equipment-light) 60%, var(--color-equipment-dark));
+}
+.theme-dark .co.application.sheet.item.equipment .window-content {
+  background-color: #00000094;
+}
+.theme-light .co.application.sheet.item.equipment .window-content {
+  background-color: #584a756b;
+}
+.co.application.sheet.item.equipment .window-content .fa-add {
+  font-size: 22px;
+}
+.co.application.sheet.item.equipment .window-content .action-button {
+  font-size: 14px;
+  margin-right: 10px;
+}
+.co.application.sheet.item.equipment .window-content fieldset {
+  gap: 4px;
+}
+.co.application.sheet.item.equipment .window-content .rechargeable {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+}
+.co.application.sheet.item.equipment .window-content .empilage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+}
+.co.application.sheet.item.equipment .window-content .panel-left {
+  order: 1;
+}
+.co.application.sheet.item.equipment .window-content .panel-right {
+  order: 2;
+}
+.co.application.sheet.item.equipment .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.equipment .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.equipment .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.equipment .window-content legend {
+  color: var(--color-equipment-light);
+}
+.theme-light .co.application.sheet.item.equipment .window-content legend {
+  color: var(--color-equipment-dark);
+}
+.co.application.sheet.item.equipment .window-content .action.item.active {
+  gap: 0;
+}
+.co.application.sheet.item.equipment .window-content .action-tabs {
+  margin-top: 0px;
+}
+.co.application.sheet.item.equipment .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.equipment .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.equipment .window-content .form-header {
+  background-color: var(--color-equipment-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.equipment .window-content .form-header {
+  background-color: var(--color-equipment-light);
+  color: #222;
+}
+.co.application.sheet.item.equipment .window-content .miniField > input {
+  flex-grow: 0.5;
+}
+.co.application.sheet.item.equipment .window-content .labelModifier {
+  display: grid;
+  grid-template-columns: 0.3fr 0.4fr 0.4fr;
+  column-gap: 10px;
+}
+.co.application.sheet.item.equipment .window-content .labelModifier label {
+  font-weight: bold;
+  padding-left: 15px;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0px 8px;
+  margin-bottom: 4px;
+  padding: 0 8px;
+}
+.theme-dark .co.application.sheet.item.equipment .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-equipment-dark);
+}
+.theme-light .co.application.sheet.item.equipment .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-equipment-light);
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier :nth-child(5) {
+  grid-column: auto / span 2;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier :nth-child(5) label {
+  flex: 2;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier :nth-child(5) input[type="text"] {
+  flex: 11;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier input,
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier select {
+  height: 25px;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier button,
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier .emptyButton {
+  grid-column: 4;
+  grid-row: 1 / 3;
+}
+.co.application.sheet.item.equipment .window-content .modifiers-container .modifier-header {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0 8px;
+  margin: -4px 0 2px 10px;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver select,
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver input,
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver label {
+  height: 25px;
+  align-content: center;
+  line-height: 1;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group.effects .form-fields span {
+  margin-left: 8px;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects label,
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects .form-fields {
+  grid-template-columns: repeat(2, 10fr) 15fr;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target,
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.type {
+  display: flex;
+  flex-flow: column nowrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-top: 2px;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target label,
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.type label {
+  padding-right: 20px;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  padding-bottom: 5px;
+}
+.theme-dark .co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-equipment-dark);
+}
+.theme-light .co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-equipment-light);
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .center-input {
+  text-align: center;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label {
+  justify-items: center;
+  text-align: center;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label div {
+  width: 120px;
+}
+.co.application.sheet.item.equipment .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula input[type="text"] {
+  text-align: center;
+}
+.co.application.sheet.item.feature {
+  --color-feature-dark: #1a5d71;
+  --color-feature-light: #1eb0db;
+}
+.theme-dark .co.application.sheet.item.feature .sheet-header {
+  background: linear-gradient(5deg, var(--color-feature-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.feature .sheet-header {
+  background: linear-gradient(5deg, var(--color-feature-light) 60%, var(--color-feature-dark));
+}
+.co.application.sheet.item.feature .window-content {
+  gap: 0;
+}
+.theme-dark .co.application.sheet.item.feature .window-content {
+  background-color: #00000094;
+}
+.theme-light .co.application.sheet.item.feature .window-content {
+  background-color: #584a756b;
+}
+.co.application.sheet.item.feature .window-content fieldset {
+  margin-bottom: 15px;
+  gap: 4px;
+}
+.co.application.sheet.item.feature .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.feature .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.feature .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.feature .window-content legend {
+  color: var(--color-feature-light);
+}
+.theme-light .co.application.sheet.item.feature .window-content legend {
+  color: var(--color-feature-dark);
+}
+.co.application.sheet.item.feature .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.feature .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.feature .window-content .form-header {
+  background-color: var(--color-feature-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.feature .window-content .form-header {
+  background-color: var(--color-feature-light);
+  color: #222;
+}
+.co.application.sheet.item.feature .modifier {
+  margin: 1px 0;
+  height: 23px;
+  align-content: center;
+}
+.co.application.sheet.item.feature .modifiers-container .form-group-stacked.like-grid label,
+.co.application.sheet.item.feature .modifiers-container .form-fields.like-grid label,
+.co.application.sheet.item.feature .modifiers-container .form-group-stacked.like-grid .form-fields,
+.co.application.sheet.item.feature .modifiers-container .form-fields.like-grid .form-fields {
+  grid-template-columns: 2fr 2fr 1fr 30px;
+}
+.co.application.sheet.item.path {
+  --color-path-dark: #54145d;
+  --color-path-light: #b234f5;
+}
+.theme-dark .co.application.sheet.item.path .sheet-header {
+  background: linear-gradient(5deg, var(--color-path-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.path .sheet-header {
+  background: linear-gradient(5deg, var(--color-path-light) 60%, var(--color-path-dark));
+}
+.co.application.sheet.item.path .window-content {
+  gap: 0;
+}
+.theme-dark .co.application.sheet.item.path .window-content {
+  background-color: #00000094;
+}
+.theme-light .co.application.sheet.item.path .window-content {
+  background-color: #584a756b;
+}
+.co.application.sheet.item.path .window-content fieldset {
+  margin-bottom: 15px;
+  gap: 4px;
+}
+.co.application.sheet.item.path .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.path .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.path .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.path .window-content legend {
+  color: var(--color-path-light);
+}
+.theme-light .co.application.sheet.item.path .window-content legend {
+  color: var(--color-path-dark);
+}
+.co.application.sheet.item.path .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.path .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.path .window-content .form-header {
+  background-color: var(--color-path-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.path .window-content .form-header {
+  background-color: var(--color-path-light);
+  color: #222;
+}
+.co.application.sheet.item.path .panel-right .capacity-list {
+  margin-right: 7px;
+}
+.co.application.sheet.item.path .modifiers-container .form-group-stacked.like-grid label,
+.co.application.sheet.item.path .modifiers-container .form-fields.like-grid label,
+.co.application.sheet.item.path .modifiers-container .form-group-stacked.like-grid .form-fields,
+.co.application.sheet.item.path .modifiers-container .form-fields.like-grid .form-fields {
+  grid-template-columns: repeat(3, 10fr) 30px;
+}
+.co.application.sheet.item.profile {
+  --color-profile-dark: #14195d;
+  --color-profile-light: #325fbf;
+}
+.theme-dark .co.application.sheet.item.profile .sheet-header {
+  background: linear-gradient(5deg, var(--color-profile-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.profile .sheet-header {
+  background: linear-gradient(5deg, var(--color-profile-light) 60%, var(--color-profile-dark));
+}
+.co.application.sheet.item.profile .window-content {
+  gap: 0;
+}
+.theme-dark .co.application.sheet.item.profile .window-content {
+  background-color: #00000094;
+}
+.theme-light .co.application.sheet.item.profile .window-content {
+  background-color: #584a756b;
+}
+.co.application.sheet.item.profile .window-content fieldset {
+  margin-bottom: 15px;
+  gap: 4px;
+}
+.co.application.sheet.item.profile .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.profile .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.profile .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.profile .window-content legend {
+  color: var(--color-profile-light);
+}
+.theme-light .co.application.sheet.item.profile .window-content legend {
+  color: var(--color-profile-dark);
+}
+.co.application.sheet.item.profile .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.profile .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.profile .window-content .form-header {
+  background-color: var(--color-profile-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.profile .window-content .form-header {
+  background-color: var(--color-profile-light);
+  color: #222;
+}
+.co.application.sheet.item.profile .window-content .panel-right .path-list {
+  margin-right: 7px;
+}
+.co.application.sheet.item.profile .window-content .modifier {
+  margin: 1px 0;
+  height: 23px;
+  align-content: center;
+}
+.co.application.sheet.item.profile .window-content .proficiencies-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: start;
+}
+.co.application.sheet.item.profile .window-content .proficiencies-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: -5px;
+}
+.co.application.sheet.item.profile .window-content .proficiencies-form .form-group .grid {
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+}
+.co.application.sheet.item.profile .window-content .proficiencies-form .form-group .grid label {
+  margin-bottom: -8px;
+}
+.co.application.sheet.item.profile .window-content .proficiencies-form .form-group .grid label input {
+  background-color: transparent;
+  height: auto;
+}
+.co.application.sheet.item.profile .modifiers-container .form-group-stacked.like-grid label,
+.co.application.sheet.item.profile .modifiers-container .form-fields.like-grid label,
+.co.application.sheet.item.profile .modifiers-container .form-group-stacked.like-grid .form-fields,
+.co.application.sheet.item.profile .modifiers-container .form-fields.like-grid .form-fields {
+  grid-template-columns: repeat(3, 10fr) 30px;
+}
+.co.application.sheet.item.attack {
+  --color-attack-dark: #6b0202;
+  --color-attack-light: #d33434;
+}
+.theme-dark .co.application.sheet.item.attack .sheet-header {
+  background: linear-gradient(5deg, var(--color-attack-dark) 60%, #000000);
+}
+.theme-light .co.application.sheet.item.attack .sheet-header {
+  background: linear-gradient(5deg, var(--color-attack-light) 60%, var(--color-attack-dark));
+}
+.co.application.sheet.item.attack .window-content {
+  background-color: var(--color-WindowContent);
+}
+.co.application.sheet.item.attack .window-content .fa-add {
+  font-size: 22px;
+}
+.co.application.sheet.item.attack .window-content .action-button {
+  font-size: 14px;
+  margin-right: 10px;
+}
+.co.application.sheet.item.attack .window-content fieldset {
+  gap: 4px;
+}
+.co.application.sheet.item.attack .window-content .form-group {
+  gap: 10px;
+  margin-top: 3px;
+}
+.co.application.sheet.item.attack .window-content select {
+  text-align: left;
+}
+.co.application.sheet.item.attack .window-content legend {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.theme-dark .co.application.sheet.item.attack .window-content legend {
+  color: var(--color-attack-light);
+}
+.theme-light .co.application.sheet.item.attack .window-content legend {
+  color: var(--color-attack-dark);
+}
+.co.application.sheet.item.attack .window-content .action.item.active {
+  gap: 0;
+}
+.co.application.sheet.item.attack .window-content .action-tabs {
+  margin-top: 0px;
+}
+.co.application.sheet.item.attack .window-content .half-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.co.application.sheet.item.attack .window-content .form-header {
+  padding: 4px 10px 0px 15px;
+  border-radius: 12px 12px 0px 0px;
+}
+.theme-dark .co.application.sheet.item.attack .window-content .form-header {
+  background-color: var(--color-attack-dark);
+  color: #e7d1b1;
+}
+.theme-light .co.application.sheet.item.attack .window-content .form-header {
+  background-color: var(--color-attack-light);
+  color: #222;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0px 8px;
+  margin-bottom: 4px;
+  padding: 0 8px;
+}
+.theme-dark .co.application.sheet.item.attack .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-attack-dark);
+}
+.theme-light .co.application.sheet.item.attack .window-content .modifiers-container .modifier {
+  border: 1px solid var(--color-attack-light);
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier :nth-child(5) {
+  grid-column: auto / span 2;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier :nth-child(5) label {
+  flex: 2;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier :nth-child(5) input[type="text"] {
+  flex: 11;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier input,
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier select {
+  height: 25px;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier button,
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier .emptyButton {
+  grid-column: 4;
+  grid-row: 1 / 3;
+}
+.co.application.sheet.item.attack .window-content .modifiers-container .modifier-header {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0 8px;
+  margin: -4px 0 2px 10px;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver select,
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver input,
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver label {
+  height: 25px;
+  align-content: center;
+  line-height: 1;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group.effects .form-fields span {
+  margin-left: 8px;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects label,
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.effects .form-fields {
+  grid-template-columns: repeat(2, 10fr) 15fr;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target,
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.type {
+  display: flex;
+  flex-flow: column nowrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-top: 2px;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target label,
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.type label {
+  padding-right: 20px;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  padding-bottom: 5px;
+}
+.theme-dark .co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-attack-dark);
+}
+.theme-light .co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.target {
+  border-bottom: 1px solid var(--color-attack-light);
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .center-input {
+  text-align: center;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label {
+  justify-items: center;
+  text-align: center;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula label div {
+  width: 120px;
+}
+.co.application.sheet.item.attack .window-content .resolvers-container .resolver .form-group-stacked.like-grid.formula input[type="text"] {
+  text-align: center;
+}
+.co.application.sheet.actor {
+  gap: 0;
+}
+.co.application.sheet.actor:not(.minimized) {
+  min-height: 480px;
+  min-width: 540px;
+}
+.co.application.sheet.actor .window-content {
+  display: grid;
+  grid-template-columns: minmax(17em, 25%) 1fr;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "header header" "sidebar tabs" "sidebar content";
+  padding: 0;
+}
+.co.application.sheet.actor .window-content .sheet-header {
+  grid-area: header;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar {
+  grid-area: sidebar;
+}
+.co.application.sheet.actor .window-content .sheet-tabs {
+  margin-top: 8px;
+}
+.co.application.sheet.actor .window-content .tab.active {
+  grid-area: content;
+}
+.co.application.sheet.actor .window-content .sheet-header {
+  display: grid;
+  border: 4px solid var(--color-gold);
+  border-bottom: 0;
+  gap: 8px;
+  grid-template-columns: 140px 1fr 180px minmax(64px, min-content);
+  grid-template-rows: auto auto;
+  grid-template-areas: "img   name      traits   level" "img abilities abilities abilities";
+  padding-right: 8px;
+}
+.co.application.sheet.actor .window-content .sheet-header .image-container {
+  grid-area: img;
+  position: relative;
+  max-height: 150px;
+  justify-items: center;
+  align-content: center;
+}
+.co.application.sheet.actor .window-content .sheet-header .image-container .hover-icon {
+  color: var(--color-light-3);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+.co.application.sheet.actor .window-content .sheet-header .image-container .actor-img {
+  max-height: 150px;
+  align-self: center;
+}
+.co.application.sheet.actor .window-content .sheet-header .name {
+  font-size: 2.5rem;
+  grid-area: name;
+  height: 65px;
+  align-content: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.co.application.sheet.actor .window-content .sheet-header .level {
+  grid-area: level;
+  white-space: nowrap;
+}
+.co.application.sheet.actor .window-content .sheet-header .level label {
+  font-size: 1.2rem;
+}
+.co.application.sheet.actor .window-content .sheet-header .level input,
+.co.application.sheet.actor .window-content .sheet-header .level span {
+  font-size: 3rem;
+  height: 65px;
+  text-align: center;
+}
+.co.application.sheet.actor .window-content .sheet-header .level input {
+  padding: 0;
+  width: 68px;
+}
+.co.application.sheet.actor .window-content .sheet-header .abilities {
+  grid-area: abilities;
+}
+.co.application.sheet.actor .window-content .sheet-header .traits {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  grid-area: traits;
+  overflow: hidden;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar {
+  overflow: hidden;
+}
+.theme-light .co.application.sheet.actor .window-content .sheet-sidebar {
+  --color-attack: #e21e26;
+  --color-initiative: #48494f;
+  --color-defense: #0e507c;
+  --color-health: #128541;
+  --color-damages: #800080;
+  --color-resource: #2f4f4f;
+}
+.theme-dark .co.application.sheet.actor .window-content .sheet-sidebar {
+  --color-attack: #720f13;
+  --color-initiative: #303034;
+  --color-defense: #09324e;
+  --color-health: #0c582b;
+  --color-damages: #4d004d;
+  --color-resource: #1c2f2f;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(10, min-content);
+  height: 100%;
+  overflow: hidden scroll;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  mask: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000000 12px, #000000 calc(100% - 12px), rgba(0, 0, 0, 0) 100%);
+  padding: 8px 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .labelled-field {
+  background-color: var(--color-background-grey);
+  border-radius: 12px 0 0 12px;
+  height: 32px;
+  padding: 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .labelled-field i.fas,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .labelled-field i[class="fa-"] {
+  font-size: 18px;
+  line-height: 1.2;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section {
+  background-color: var(--color-primary);
+  grid-column: auto / span 2;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-header {
+  display: flex;
+  flex-direction: column;
+  margin: 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-header .sidebar-label {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  gap: 4px;
+  line-height: 1;
+  margin: 4px;
+  padding: 0;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-header .sidebar-label h4 {
+  font-size: inherit;
+  margin: 0;
+}
+.theme-light .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-header .sidebar-label h4 {
+  color: var(--color-textLight);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field {
+  color: var(--color-background-grey);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.2;
+  margin: 0;
+  overflow: hidden;
+  padding: 2px 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field select,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field select,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field input,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field input {
+  background-color: var(--color-background-grey);
+  border: 0;
+  color: var(--color-primary);
+  flex: 1;
+  font-size: 18px;
+  padding: 0;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field select::placeholder,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field select::placeholder,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field input::placeholder,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field input::placeholder {
+  color: var(--color-primary);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field input,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field input {
+  font-weight: bold;
+  line-height: 1.8;
+  text-align: center;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field select,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field select {
+  font-size: 12px;
+}
+.theme-dark .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field select option,
+.theme-dark .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field select option {
+  background: var(--color-background-grey);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field .slash,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field .slash,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field .max,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field .max {
+  font-size: 16px;
+  font-weight: normal;
+  margin-top: 6px;
+  transform: scaleX(80%);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .field {
+  background-color: var(--color-background-grey);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .labelled-field i {
+  justify-self: flex-start;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-content {
+  padding: 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-content .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .sidebar-section-content .labelled-field {
+  font-weight: normal;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.init-section {
+  background-color: var(--color-initiative);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.init-section .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.init-section .labelled-field {
+  color: var(--color-initiative);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.armor-section,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.dr-section {
+  background-color: var(--color-defense);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.armor-section .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.dr-section .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.armor-section .labelled-field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.dr-section .labelled-field {
+  color: var(--color-defense);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.health-section {
+  background-color: var(--color-health);
+  grid-column: auto / span 3;
+  margin-top: 8px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.health-section .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.health-section .labelled-field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.health-section .labelled-field input {
+  color: var(--color-health);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section {
+  grid-column: auto / span 6;
+  margin-top: 8px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header {
+  display: flex;
+  flex-direction: row;
+  margin: 2px 4px;
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .sidebar-label {
+  flex: 1;
+}
+.theme-light .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .sidebar-label {
+  color: var(--color-textLight);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .field,
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .labelled-field {
+  background-color: inherit;
+  color: inherit;
+  font-size: inherit;
+}
+.theme-light .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .field,
+.theme-light .co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section.speed-section .sidebar-section-header .labelled-field {
+  color: var(--color-textLight);
+}
+.co.application.sheet.actor .window-content .sheet-sidebar .scrollable .sidebar-section .state-modifier {
+  color: var(--color-textLight);
+}
+@-moz-document url-prefix('') {
+  .co.application.sheet.actor .window-content .sheet-sidebar .scrollable {
+    margin-right: 2px;
+  }
+}
+.co.application.sheet.actor .window-content .abilities {
+  box-sizing: border-box;
+  border: 2px solid var(--color-abilities);
+  display: grid;
+  font-size: 20px;
+  grid-template-columns: repeat(7, minmax(80px, 1fr)) auto;
+}
+.co.application.sheet.actor .window-content .abilities .ability {
+  text-align: center;
+}
+.co.application.sheet.actor .window-content .abilities .ability .ability-id {
+  background-color: var(--color-abilities);
+  line-height: 1.8;
+  color: var(--color-background-grey);
+  font-weight: bold;
+}
+.co.application.sheet.actor .window-content .abilities .ability .ability-id i.fas.fa-asterisk {
+  font-size: 11px;
+  vertical-align: super;
+}
+.co.application.sheet.actor .window-content .abilities .ability .ability-id input[type="checkbox"]::after,
+.co.application.sheet.actor .window-content .abilities .ability .ability-id input[type="checkbox"]::before {
+  top: 8px;
+}
+.co.application.sheet.actor .window-content .abilities .ability .ability-mod {
+  border: 2px solid var(--color-abilities);
+  border-radius: 0;
+  display: block;
+  line-height: 1.3;
+  text-align: center;
+  font-size: 26px;
+  font-weight: bold;
+  color: var(--color-abilities);
+  background-color: var(--color-background-grey);
+}
+.co.application.sheet.actor .window-content .abilities .abilities-controls {
+  background-color: var(--color-abilities);
+  line-height: 2.8;
+}
+.co.application.sheet.actor .window-content .abilities .abilities-edit {
+  font-size: 23px;
+  padding: 0px 6px;
+  color: var(--color-background-grey);
+}
+.co.application.sheet.actor .notes .notes-section .details-label {
+  font-weight: bold;
+  font-size: 1rem;
+}
+.co.application.sheet.actor.character:not(.minimized) {
+  min-width: 840px;
+}
+.co.application.sheet.actor.character.character-mini:not(.minimized) {
+  min-width: 350px;
+}
+.co.application.sheet.actor.character .window-content .sheet-header {
+  /*.profiles {
+    margin-left: 16px;
+  }*/
+  background-color: var(--color-characterSheet);
+}
+.co.application.sheet.actor.character .window-content .sheet-header .species,
+.co.application.sheet.actor.character .window-content .sheet-header .profiles {
+  align-items: center;
+  display: flex;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.co.application.sheet.actor.character .window-content .sheet-header .species a,
+.co.application.sheet.actor.character .window-content .sheet-header .profiles a {
+  margin-right: 4px;
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar {
+  background-color: var(--color-characterSheet);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.melee-section,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.ranged-section,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.magic-section {
+  background-color: var(--color-attack);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.melee-section .field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.ranged-section .field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.magic-section .field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.melee-section .labelled-field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.ranged-section .labelled-field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.magic-section .labelled-field {
+  color: var(--color-attack);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section:nth-child(8) .labelled-field i {
+  color: var(--color-damages);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section {
+  background-color: var(--color-resource);
+  margin-top: 8px;
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .labelled-field,
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .labelled-field input {
+  color: var(--color-resource);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .current {
+  width: 25px;
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .fa-clover {
+  cursor: pointer;
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .scrollable .sidebar-section.resource-section .fa-clover:hover {
+  text-shadow: 0px 0px 4px darkred;
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar span.max,
+.co.application.sheet.actor.character .window-content .sheet-sidebar span.slash {
+  color: var(--color-abilities);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar .state-name {
+  list-style: "\1F782";
+  margin-left: 5px;
+  color: var(--color-background-grey);
+}
+.co.application.sheet.actor.character .window-content .sheet-sidebar input.vision-slider:not(:checked)::before {
+  color: var(--color-background-grey);
+}
+.co.application.sheet.actor.character .window-content .dropzone {
+  margin-left: 53px;
+}
+.co.application.sheet.actor.character .window-content .dropzone .item-list {
+  padding: 0;
+}
+.co.application.sheet.actor.character .window-content .no-path .dropzone {
+  margin-left: 28px;
+}
+.co.application.sheet.actor.character .window-content .no-path .dropzone .item-list {
+  padding: 0;
+}
+.co.application.sheet.actor.character .window-content .btn-mini-sheet {
+  border: none;
+  background: none;
+  color: var(--color-characterSheet);
+  margin-right: 30px;
+  font-size: var(--font-size-20);
+}
+.co.application.sheet.actor.character .window-content .btn-mini-sheet:focus {
+  outline: none;
+  box-shadow: none;
+}
+.co.application.sheet.actor.character .window-content .btn-mini-sheet:hover {
+  color: red;
+}
+.co.application.sheet.actor.character .features-container .item-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 5px 10px 0px 10px;
+  column-gap: 20px;
+}
+.co.application.sheet.actor.character .features.section-container {
+  margin: 0;
+  padding: 0;
+}
+.co.application.sheet.actor.character .currency-row {
+  gap: 20px;
+}
+.co.application.sheet.actor.character .currency-row label {
+  text-align: end;
+  font-weight: bold;
+  font-size: 15px;
+}
+.co.application.sheet.actor.character .currency-row .current {
+  margin-left: 0px;
+  font-weight: bold;
+  font-size: 15px;
+  background-color: transparent;
+  border: none;
+  box-shadow: 2px 2px var(--color-abilities);
+  height: 25px;
+}
+.co.application.sheet.actor.character section.biography .misc.folded,
+.co.application.sheet.actor.character section.biography .bio.folded,
+.co.application.sheet.actor.character section.biography .appearance.folded {
+  display: none;
+}
+.co.application.sheet.actor.encounter:not(.minimized) {
+  min-width: 725px;
+}
+.co.application.sheet.actor.encounter .window-content .sheet-header {
+  /* .traits {
+    .trait.size {
+      margin-left: 16px;
+    }
+  }*/
+  background-color: var(--color-encounterSheet);
+}
+.co.application.sheet.actor.encounter .window-content .sheet-sidebar {
+  background-color: var(--color-encounterSheet);
+}
+.co.application.sheet.actor.encounter .window-content .sheet-sidebar .scrollable .sidebar-section:nth-child(5) .labelled-field i {
+  color: var(--color-damages);
+}
+.co.application.sheet.actor.encounter .window-content .sheet-sidebar .state-name {
+  list-style: "\1F782";
+  margin-left: 5px;
+  color: var(--color-background-grey);
+}
+.co.application.sheet.actor.encounter .window-content .properties {
+  max-height: 90%;
+  overflow: hidden;
+}
+.co.application.sheet.actor.encounter .window-content .properties .notes {
+  max-height: calc(100% - 20px);
+  text-wrap: auto;
+}
+.co.application.sheet.actor.encounter .window-content .properties .notes .editor {
+  margin: 8px;
+}
+.co.application.sheet.actor.encounter .window-content .properties prose-mirror.editor {
+  margin: 0;
+}
+.co.application.sheet.actor.encounter .window-content .editor-content {
+  text-wrap: auto;
+}
+.co.application.sheet.actor.encounter .window-content .attack-detail {
+  max-height: 120px;
+  white-space: nowrap;
+  overflow-y: scroll;
+  text-wrap: auto;
+  width: 100%;
+  mask: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000000 12px, #000000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
+}
+.co.application.sheet.actor.encounter .window-content .attack-description {
+  margin-bottom: 5px;
+}
+.co.application.sheet.actor.encounter li.item.attack {
+  border-bottom: 2px solid var(--color-encounterSheet);
+}
+.co.application.sheet.actor.encounter li.item.attack:last-child {
+  border-bottom: none;
+}
+.co.application.sheet.actor.encounter .currency-row {
+  gap: 20px;
+}
+.co.application.sheet.actor.encounter .currency-row label {
+  text-align: end;
+  font-weight: bold;
+  font-size: 15px;
+}
+.co.application.sheet.actor.encounter .currency-row .current {
+  margin-left: 0px;
+  font-weight: bold;
+  font-size: 15px;
+  background-color: transparent;
+  border: none;
+  box-shadow: 2px 2px var(--color-abilities);
+  height: 25px;
+}
+.co.application.sheet.actor.character-mini:not(.minimized) {
+  min-width: 350px;
+  min-height: 250px;
+  height: fit-content;
+  max-height: 900px;
+}
+.co.application.sheet.actor.character-mini.minimized {
+  max-width: var(--minimized-width);
+  max-height: var(--header-height);
+}
+.co.application.sheet.actor.character-mini .window-header .mode-slider {
+  display: none;
+}
+.co.application.sheet.actor.character-mini .window-content {
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+}
+.co.application.sheet.actor.character-mini .window-content .image-container,
+.co.application.sheet.actor.character-mini .window-content .level,
+.co.application.sheet.actor.character-mini .window-content .traits {
+  display: none;
+}
+.co.application.sheet.actor.character-mini .window-content .tab {
+  padding: 5px 0 0 5px;
+  mask: none;
+}
+.co.application.sheet.actor.character-mini .window-content .tab .section-container {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.co.application.sheet.actor.character-mini .window-content .tab .section-container .actions-container {
+  margin-bottom: 0;
+}
+.co.application.sheet.actor.character-mini .window-content .sheet-header {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+.co.application.sheet.actor.character-mini .window-content .abilities {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 17px;
+}
+.co.application.sheet.actor.character-mini .window-content .abilities .ability-id {
+  line-height: normal;
+}
+.co.application.sheet.actor.character-mini .window-content .abilities .ability-mod {
+  line-height: 1;
+  font-size: 22px;
+}
+.co.application.sheet.actor.character-mini .window-content .abilities-edit {
+  display: none;
+}
+.co.application.sheet.actor.character-mini .window-content .btn-mini-sheet {
+  display: none;
+}
+.co.application.sheet.actor.character-mini .window-content .name {
+  font-size: 25px;
+  display: flex;
+  height: 30px;
+  font-weight: bold;
+  justify-content: center;
+  margin: 5px 0px;
+}
+.co.application.sheet.actor.character-mini .window-content .name::before,
+.co.application.sheet.actor.character-mini .window-content .name::after {
+  content: "\f005";
+  /* code de l’icône 'star' */
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "Font Awesome 6 Pro", "Font Awesome 5 Pro";
+  font-weight: 900;
+  /* 'solid' */
+  margin: 0 0.5rem;
+  line-height: 1;
+  vertical-align: middle;
+  pointer-events: none;
+  color: red;
+  font-size: large;
+  align-self: center;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  padding: 5px 0;
+  overflow: visible;
+  mask: none;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .labelled-field {
+  background-color: var(--color-background-grey);
+  border-radius: 12px 0 0 12px;
+  height: 23px;
+  padding: 4px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .labelled-field i.fas,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .labelled-field i[class="fa-"] {
+  font-size: 18px;
+  line-height: 1.2;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section {
+  background-color: var(--color-primary);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .sidebar-label h4 {
+  font-size: inherit;
+  margin: 0;
+}
+.theme-light .co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .sidebar-label h4 {
+  color: var(--color-textLight);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field {
+  color: var(--color-background-grey);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.2;
+  margin: 0;
+  overflow: hidden;
+  padding: 2px 4px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field select,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field select,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field input,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field input {
+  background-color: var(--color-background-grey);
+  border: 0;
+  color: var(--color-primary);
+  flex: 1;
+  font-size: 20px;
+  padding: 0;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field select::placeholder,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field select::placeholder,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field input::placeholder,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field input::placeholder {
+  color: var(--color-primary);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field input,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field input {
+  font-weight: bold;
+  line-height: 1.8;
+  text-align: center;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field select,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field select {
+  font-size: 12px;
+}
+.theme-dark .co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field select option,
+.theme-dark .co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field select option {
+  background: var(--color-background-grey);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field .slash,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field .slash,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field .max,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field .max {
+  font-size: 16px;
+  font-weight: normal;
+  margin-top: 6px;
+  transform: scaleX(80%);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .field {
+  background-color: var(--color-background-grey);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section .labelled-field i {
+  justify-self: flex-start;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section-content {
+  padding: 4px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section-content .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .sidebar-section-content .labelled-field {
+  font-weight: normal;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .armor-section,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .dr-section {
+  background-color: var(--color-defense);
+  padding: 5px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .armor-section .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .dr-section .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .armor-section .labelled-field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .dr-section .labelled-field {
+  color: var(--color-defense);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .health-section {
+  grid-column: auto;
+  margin-top: 0;
+  background-color: var(--color-health);
+  padding: 5px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .health-section .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .health-section .labelled-field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .health-section .labelled-field input {
+  color: var(--color-health);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .hp-section {
+  grid-column: 1 / 3;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section {
+  grid-column: auto;
+  margin-top: 0;
+  background-color: var(--color-resource);
+  padding: 5px;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section .field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section .labelled-field,
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section .labelled-field input {
+  color: var(--color-resource);
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section .fa-clover {
+  cursor: pointer;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .resource-section.mini-section .fa-clover:hover {
+  text-shadow: 0px 0px 4px darkred;
+}
+.co.application.sheet.actor.character-mini .window-content .mini-sidebar .fa-heart-broken {
+  color: var(--color-damages);
+}
+.co select.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+  background-color: #847e87;
+  cursor: not-allowed;
+}
+#interface #ui-left {
+  padding: 0;
+}
+#interface #ui-left button.ui-control {
+  border-radius: 0;
+}
+#interface #ui-left button.ui-control.active,
+#interface #ui-left button.ui-control:hover {
+  z-index: 2;
+}
+#interface #sidebar #sidebar-content {
+  margin-left: -8px;
+}
+#interface #sidebar .tabs {
+  margin-right: 8px;
+  padding: 0;
+}
+#interface #sidebar .tab {
+  border-radius: 0;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+#interface #sidebar .tab#chat {
+  padding: 0;
+}
+#interface #sidebar .chat-message {
+  margin-right: 0;
+}
+#interface #sidebar .chat-form {
+  gap: 2px;
+  padding-right: 0;
+}
+#interface #sidebar .chat-form .chat-controls .control-buttons {
+  gap: 2px;
+}
+#interface #chat-message {
+  border-width: 1px;
+}
+#interface #ui-right-column-1 {
+  padding-bottom: 0;
+}
+#interface #hotbar {
+  margin-bottom: 0;
+}
+.theme-dark #interface #sidebar .chat-message,
+.theme-dark #interface #ui-right-column-1 .chat-message {
+  background: #0b0a13e6;
+  color: var(--color-textLight);
+}
+.theme-dark #interface #sidebar .chat-message span,
+.theme-dark #interface #ui-right-column-1 .chat-message span,
+.theme-dark #interface #sidebar .chat-message label,
+.theme-dark #interface #ui-right-column-1 .chat-message label {
+  color: var(--color-textLight);
+}
+.theme-light #interface #sidebar .chat-message,
+.theme-light #interface #ui-right-column-1 .chat-message {
+  background-color: var(--color-light-3);
+  color: #222;
+}
+.theme-light #interface #sidebar .chat-message span,
+.theme-light #interface #ui-right-column-1 .chat-message span,
+.theme-light #interface #sidebar .chat-message label,
+.theme-light #interface #ui-right-column-1 .chat-message label {
+  color: #222;
+}
+.theme-dark #interface #sidebar .chat-message.whisper,
+.theme-dark #interface #ui-right-column-1 .chat-message.whisper {
+  background: #210000e8;
+}
+.theme-light #interface #sidebar .chat-message.whisper,
+.theme-light #interface #ui-right-column-1 .chat-message.whisper {
+  background: #b5a2a2;
+}
+.theme-dark #interface #sidebar .chat-message.blind,
+.theme-dark #interface #ui-right-column-1 .chat-message.blind {
+  border: 3px solid #990000;
+}
+.theme-light #interface #sidebar .chat-message.blind,
+.theme-light #interface #ui-right-column-1 .chat-message.blind {
+  border: 3px solid var(--color-blind-border);
+}
+#interface #sidebar .chat-message .message-header,
+#interface #ui-right-column-1 .chat-message .message-header {
+  border-bottom: 1px solid #5d142b;
+  display: grid;
+}
+.theme-dark #interface #sidebar .chat-message .message-header,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-header {
+  color: var(--color-textLight);
+}
+.theme-light #interface #sidebar .chat-message .message-header,
+.theme-light #interface #ui-right-column-1 .chat-message .message-header {
+  color: #222;
+}
+#interface #sidebar .chat-message .message-header .message-metadata,
+#interface #ui-right-column-1 .chat-message .message-header .message-metadata {
+  margin-top: -53px;
+}
+#interface #sidebar .chat-message .message-header img,
+#interface #ui-right-column-1 .chat-message .message-header img {
+  max-width: 50px;
+  max-height: 50px;
+  margin-right: 4px;
+}
+#interface #sidebar .chat-message .message-header .title,
+#interface #ui-right-column-1 .chat-message .message-header .title {
+  font-size: 18px;
+  font-weight: bold;
+  display: inline;
+  text-wrap: auto;
+}
+#interface #sidebar .chat-message .message-header .message-sender,
+#interface #ui-right-column-1 .chat-message .message-header .message-sender {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+#interface #sidebar .chat-message .message-content .card-content,
+#interface #ui-right-column-1 .chat-message .message-content .card-content {
+  font-size: 16px;
+  margin: -6px 0px 0px 0px;
+}
+#interface #sidebar .chat-message .message-content .card-content p,
+#interface #ui-right-column-1 .chat-message .message-content .card-content p {
+  margin-bottom: -15px;
+  border: 2px solid var(--color-abilities);
+  border-radius: 15px;
+  background-color: #084f7b66;
+  font-weight: bold;
+  padding: 1px 0 0px 10px;
+}
+#interface #sidebar .chat-message .message-content .attack-card .card-content p,
+#interface #ui-right-column-1 .chat-message .message-content .attack-card .card-content p {
+  border: 2px solid var(--color-encounterSheet);
+  background-color: #5d142b3d;
+}
+#interface #sidebar .chat-message .message-content strong,
+#interface #ui-right-column-1 .chat-message .message-content strong {
+  font-size: 15px;
+}
+#interface #sidebar .chat-message .message-content label,
+#interface #ui-right-column-1 .chat-message .message-content label {
+  font-size: 14px;
+}
+#interface #sidebar .chat-message .message-content .result,
+#interface #ui-right-column-1 .chat-message .message-content .result {
+  display: flex;
+  justify-content: center;
+}
+#interface #sidebar .chat-message .message-content .total-result,
+#interface #ui-right-column-1 .chat-message .message-content .total-result,
+#interface #sidebar .chat-message .message-content .diff-result,
+#interface #ui-right-column-1 .chat-message .message-content .diff-result,
+#interface #sidebar .chat-message .message-content .vs,
+#interface #ui-right-column-1 .chat-message .message-content .vs {
+  font-size: 38px;
+  font-weight: bold;
+  text-align: center;
+}
+#interface #sidebar .chat-message .message-content .total-result label,
+#interface #ui-right-column-1 .chat-message .message-content .total-result label,
+#interface #sidebar .chat-message .message-content .diff-result label,
+#interface #ui-right-column-1 .chat-message .message-content .diff-result label,
+#interface #sidebar .chat-message .message-content .vs label,
+#interface #ui-right-column-1 .chat-message .message-content .vs label {
+  font-size: 20px;
+}
+#interface #sidebar .chat-message .message-content .total-result .vs,
+#interface #ui-right-column-1 .chat-message .message-content .total-result .vs,
+#interface #sidebar .chat-message .message-content .diff-result .vs,
+#interface #ui-right-column-1 .chat-message .message-content .diff-result .vs,
+#interface #sidebar .chat-message .message-content .vs .vs,
+#interface #ui-right-column-1 .chat-message .message-content .vs .vs {
+  flex-basis: 40px;
+}
+#interface #sidebar .chat-message .message-content .display-difficulty,
+#interface #ui-right-column-1 .chat-message .message-content .display-difficulty,
+#interface #sidebar .chat-message .message-content .dice-total,
+#interface #ui-right-column-1 .chat-message .message-content .dice-total {
+  margin-bottom: -10px;
+}
+#interface #sidebar .chat-message .message-content .vs,
+#interface #ui-right-column-1 .chat-message .message-content .vs {
+  margin: 0px 25px;
+  align-self: center;
+}
+#interface #sidebar .chat-message .message-content .result-sentence,
+#interface #ui-right-column-1 .chat-message .message-content .result-sentence {
+  text-align: center;
+  margin: -5px 0px -5px 0px;
+}
+#interface #sidebar .chat-message .message-content .result-sentence span,
+#interface #ui-right-column-1 .chat-message .message-content .result-sentence span {
+  text-align: center;
+  font-size: 20px;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .result-sentence span,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .result-sentence span {
+  color: #0b0a13e6;
+  padding: 0 15px;
+  border-radius: 15px;
+  font-weight: bold;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .result-sentence .success,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .result-sentence .success {
+  background: #2c532c;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .result-sentence .critical,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .result-sentence .critical {
+  background: green;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .result-sentence .failure,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .result-sentence .failure {
+  background: darkred;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .result-sentence .failure.fumble,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .result-sentence .failure.fumble {
+  background: red;
+}
+.theme-light #interface #sidebar .chat-message .message-content .result-sentence .success,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .result-sentence .success {
+  color: #2c532c;
+}
+.theme-light #interface #sidebar .chat-message .message-content .result-sentence .critical,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .result-sentence .critical {
+  color: green;
+}
+.theme-light #interface #sidebar .chat-message .message-content .result-sentence .failure,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .result-sentence .failure {
+  color: darkred;
+}
+.theme-light #interface #sidebar .chat-message .message-content .result-sentence .failure.fumble,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .result-sentence .failure.fumble {
+  color: red;
+}
+#interface #sidebar .chat-message .message-content button,
+#interface #ui-right-column-1 .chat-message .message-content button {
+  background: #084f7b66;
+  justify-self: center;
+  margin-top: 5px;
+  font-weight: bold;
+  padding: 0 10px;
+  box-shadow: 1px 1px 0px 1px #084f7b;
+}
+.theme-dark #interface #sidebar .chat-message .message-content button,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content button {
+  color: var(--color-light-3);
+}
+.theme-light #interface #sidebar .chat-message .message-content button,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content button {
+  color: #222;
+}
+#interface #sidebar .chat-message .message-content button.opposite-roll,
+#interface #ui-right-column-1 .chat-message .message-content button.opposite-roll {
+  height: 40px;
+  font-size: 18px;
+  color: #910000;
+  background: #5d142b3d;
+  border: 2px solid var(--color-encounterSheet);
+  border-radius: 15px;
+  box-shadow: 1px 1px 0px 1px var(--color-encounterSheet);
+  padding: 0px 5px;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .type-card,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .type-card,
+.theme-dark #interface #sidebar .chat-message .message-content .type-card-skill,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .type-card-skill {
+  text-shadow: 0px 0px 4px #795403;
+}
+.theme-light #interface #sidebar .chat-message .message-content .type-card,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .type-card,
+.theme-light #interface #sidebar .chat-message .message-content .type-card-skill,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .type-card-skill {
+  text-shadow: 0 0px 4px #cf7306c4;
+}
+#interface #sidebar .chat-message .message-content .type-card label,
+#interface #ui-right-column-1 .chat-message .message-content .type-card label,
+#interface #sidebar .chat-message .message-content .type-card-skill label,
+#interface #ui-right-column-1 .chat-message .message-content .type-card-skill label {
+  font-size: 25px;
+  font-weight: bold;
+  font-variant: small-caps;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .type-card label,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .type-card label {
+  color: #d11111;
+}
+.theme-light #interface #sidebar .chat-message .message-content .type-card label,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .type-card label {
+  color: #5d142b;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .type-card-skill label,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .type-card-skill label {
+  color: #2a83b9;
+}
+.theme-light #interface #sidebar .chat-message .message-content .type-card-skill label,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .type-card-skill label {
+  color: #084f7b;
+}
+#interface #sidebar .chat-message .message-content .action-name strong,
+#interface #ui-right-column-1 .chat-message .message-content .action-name strong {
+  font-size: 18px;
+  font-style: italic;
+}
+#interface #sidebar .chat-message .message-content .lucky-points,
+#interface #ui-right-column-1 .chat-message .message-content .lucky-points {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+  margin-top: 35px;
+}
+#interface #sidebar .chat-message .message-content .lucky-points .imgLucky,
+#interface #ui-right-column-1 .chat-message .message-content .lucky-points .imgLucky {
+  height: 25px;
+  margin-left: 5px;
+}
+#interface #sidebar .chat-message .message-content .lucky-points label,
+#interface #ui-right-column-1 .chat-message .message-content .lucky-points label {
+  font-size: 17px;
+}
+#interface #sidebar .chat-message .message-content .damage-part,
+#interface #ui-right-column-1 .chat-message .message-content .damage-part {
+  margin: 18px 0px 0px 15px;
+}
+#interface #sidebar .chat-message .message-content .damage-buttons,
+#interface #ui-right-column-1 .chat-message .message-content .damage-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 37px);
+  grid-template-rows: 30px 30px;
+  justify-items: center;
+  border-left: 4px solid var(--color-encounterSheet);
+  padding-left: 10px;
+}
+#interface #sidebar .chat-message .message-content .damage-buttons .fas,
+#interface #ui-right-column-1 .chat-message .message-content .damage-buttons .fas {
+  font-size: 25px;
+  text-shadow: 0px 0px 2px red;
+}
+#interface #sidebar .chat-message .message-content .temp-dm,
+#interface #ui-right-column-1 .chat-message .message-content .temp-dm {
+  grid-column: 1/3;
+}
+#interface #sidebar .chat-message .message-content .dr,
+#interface #ui-right-column-1 .chat-message .message-content .dr {
+  grid-column: 3/5;
+}
+#interface #sidebar .chat-message .message-content .message-card p,
+#interface #ui-right-column-1 .chat-message .message-content .message-card p {
+  font-size: 15px;
+}
+#interface #sidebar .chat-message .message-content .itemTitle,
+#interface #ui-right-column-1 .chat-message .message-content .itemTitle {
+  font-size: 16px;
+  display: flex;
+  align-items: flex-end;
+  margin-top: 3px;
+}
+#interface #sidebar .chat-message .message-content .itemTitle span,
+#interface #ui-right-column-1 .chat-message .message-content .itemTitle span {
+  text-transform: uppercase;
+  font-weight: bold;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#interface #sidebar .chat-message .message-content .itemTitle img,
+#interface #ui-right-column-1 .chat-message .message-content .itemTitle img {
+  height: 27px;
+  margin-right: 5px;
+}
+#interface #sidebar .chat-message .message-content .button-row,
+#interface #ui-right-column-1 .chat-message .message-content .button-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+#interface #sidebar .chat-message .message-content .button-row button,
+#interface #ui-right-column-1 .chat-message .message-content .button-row button {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#interface #sidebar .chat-message .message-content .chatroll .heal,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll .heal {
+  font-size: 22px;
+  margin: 5px;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .chatroll .heal,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .chatroll .heal {
+  color: #3fa13f;
+}
+.theme-light #interface #sidebar .chat-message .message-content .chatroll .heal,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .chatroll .heal {
+  color: #2c532c;
+}
+#interface #sidebar .chat-message .message-content .chatroll .heal-formula,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll .heal-formula {
+  margin-bottom: -10px;
+  border: 2px solid #2c532c;
+  border-radius: 15px;
+  background-color: #087b1f66;
+  font-weight: bold;
+  padding: 1px 0 0px 10px;
+  font-size: 16px;
+}
+#interface #sidebar .chat-message .message-content .chatroll .heal-result,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll .heal-result {
+  font-size: 38px;
+  font-weight: bold;
+  text-align: center;
+}
+#interface #sidebar .chat-message .message-content .chatroll .heal-result label,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll .heal-result label {
+  font-size: 20px;
+}
+#interface #sidebar .chat-message .message-content .chatroll .heal-message,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll .heal-message {
+  width: 150px;
+  margin-left: 30px;
+}
+#interface #sidebar .chat-message .message-content .chatroll p,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll p {
+  margin: 0;
+}
+#interface #sidebar .chat-message .message-content .chatroll h3,
+#interface #ui-right-column-1 .chat-message .message-content .chatroll h3 {
+  text-align: center;
+  margin: -10px 0 0 0;
+}
+.theme-dark #interface #sidebar .chat-message .message-content .chatroll strong,
+.theme-dark #interface #ui-right-column-1 .chat-message .message-content .chatroll strong {
+  color: #e7d1b1;
+}
+.theme-light #interface #sidebar .chat-message .message-content .chatroll strong,
+.theme-light #interface #ui-right-column-1 .chat-message .message-content .chatroll strong {
+  color: #222;
+}
+#interface #sidebar .chat-message .message-content h4.dice-total,
+#interface #ui-right-column-1 .chat-message .message-content h4.dice-total {
+  margin: 0;
+}
+#interface #sidebar .chat-message .message-content .dice-roll,
+#interface #ui-right-column-1 .chat-message .message-content .dice-roll {
+  margin-top: 8px;
+  font-weight: bold;
+}
+.icon.co {
+  background-image: url('/systems/co2/ui/icone_co.webp');
+  background-size: 100%;
+  background-position: center;
+}
+.co-sidebar {
+  flex-direction: column;
+  overflow-y: auto;
+  color: var(--color-text-secondary);
+}
+.co-sidebar.active {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+.co-sidebar section {
+  gap: 0.5rem;
+}
+.co-sidebar section h4 {
+  margin: 0;
+}
+.co-sidebar section h4.divider.center {
+  text-align: center;
+}
+.co-sidebar section a.button {
+  flex-basis: 2rem;
+}
+.co-sidebar .info {
+  font-size: var(--font-size-13);
+}
+.co-sidebar .info .title {
+  margin: 0;
+  font-size: var(--font-size-32);
+  text-align: center;
+  letter-spacing: -0.3px;
+}
+.co-sidebar .info .subtitle {
+  margin: -0.5rem 0 0;
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+.co-sidebar .info > div {
+  display: flex;
+  justify-content: space-between;
+}
+.co-sidebar .info > div .label {
+  color: var(--color-text-emphatic);
+}
+.co-sidebar .info > div .value {
+  color: var(--color-text-secondary);
+}
+.co-sidebar .info .notification-pip {
+  margin-left: 0.25rem;
+  color: var(--color-text-accent);
+  position: initial;
+}
+#co-popout {
+  overflow-y: hidden;
+}
+#co-popout .window-content {
+  gap: 1.5rem;
+  overflow-y: auto;
+}

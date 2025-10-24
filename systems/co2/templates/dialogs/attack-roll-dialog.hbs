@@ -1,0 +1,180 @@
+{{!log "Chroniques Oubliées | dialog attack-roll" this}}
+{{#if (eq type 'attack')}}
+    <section class="attack-roll-1">
+        <div class="icone"><i class="fa-solid fa-dice"></i></div>
+        <div class="form-group">
+        <div class="form-fields-radio">
+            <div class="radio-row">
+                <input type="radio" name="dice" id="diceMalus" value="malus" {{#if (eq dice "malus")}}checked{{/if}} />
+                <label for="dice">{{localize 'CO.ui.rollMalus'}}</label>
+            </div>
+            <div class="radio-row">
+                <input type="radio" name="dice" id="diceStandard" value="standard" {{#if (eq dice "standard")}}checked{{/if}}/>
+                <label for="dice">{{localize 'CO.ui.rollStandard'}}</label>
+            </div>
+            <div class="radio-row">
+                <input type="radio" name="dice" id="diceBonus" value="bonus" {{#if (eq dice "bonus")}}checked{{/if}}/>
+                <label for="dice">{{localize 'CO.ui.rollBonus'}}</label>
+            </div>
+        </div>
+        </div> 
+        {{#if showDifficulty}}
+            <div class="icone"><i class="fas fa-fw fa-shield-alt"></i></div>
+            <div class="form-group diffGroup">
+                <label class="textCenter near">{{localize 'CO.label.long.difficulty'}}</label> 
+                <div class="form-fields" style="{{#if showDifficulty}}visibility:visible;{{else}}visibility:collapse;{{/if}}" >                                               
+                    <input class="field-value textCenter" id="difficulty" name="difficulty" type="text" value="{{difficulty}}" data-dtype="String" data-tooltip="{{difficultyTooltip}}" {{#if auto}}readonly{{/if}}/>
+                </div>
+            </div>
+        {{/if}}
+        <div class="icone"><i class="fa-solid fa-user-secret"></i></div>  
+        <div class="form-group rollMode">
+            <label class="near" for="rollMode">{{localize 'CHAT.RollDefault'}}</label>
+            <div class="form-fields">
+                <select name="rollMode" id="rollMode">
+                    {{selectOptions rollModes selected=rollMode localize=true}}            
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <fieldset class="attack-roll-2">      
+        <!--<legend>{{localize "CO.resolver.types.attack"}}</legend>-->
+        <div class="icone"><i class="fa-solid fa-dice-d20"></i></div>
+        <div class="form-group">
+            <label data-tooltip="{{localize 'CO.tooltip.formulaAttack'}}">Jet d'Attaque</label>            
+            <div class="form-fields flex1">                    
+                <input class="field-value" id="formulaAttack" name="formulaAttack" type="text" value="{{formulaAttack}}" data-dtype="String" data-tooltip="{{formulaAttackTooltip}}" {{#if auto}}readonly{{/if}} />
+            </div>  
+        </div>    
+        <div class="form-group">
+            <label class="textCenter">{{localize 'CO.label.long.bonus'}}</label>              
+            <div class="form-fields" data-tooltip="Saisir un nombre positif">
+                {{ numberInput skillBonus min=0 step=1 name="skillBonus" class="field-value textCenter"}}
+            </div>
+        </div>
+        <div class="form-group">           
+            <label class="textCenter">{{localize 'CO.label.long.malus'}}</label>                
+            <div class="form-fields" data-tooltip="Saisir un nombre négatif">                    
+                {{ numberInput skillMalus max=0 step=1 name="skillMalus" class="field-value textCenter"}}
+            </div>
+        </div> 
+        <div class="form-group">         
+            <label class="textCenter">{{localize 'CO.label.long.critrange'}}</label>       
+            <div class="form-fields">                    
+                <input class="field-value textCenter" id="critical" name="critical" type="text" value="{{critical}}" data-dtype="String" {{#if auto}}readonly{{/if}}/>
+            </div>           
+        </div>         
+    </fieldset>
+            
+    {{#if useComboRolls}}   
+        <fieldset class="dommageDialog">      
+            <!--<legend>{{ localize "CO.resolver.formula.damage"}}</legend>-->
+            <div class="icone"><i class="fa-solid fa-droplet"></i></div>       
+            <div class="form-group">
+                <label data-tooltip="{{localize 'CO.tooltip.formulaDamage'}}">Jet de Dommages</label>          
+                <div class="form-fields">
+                    <input class="field-value" id="formulaDamage" name="formulaDamage" type="text" value="{{formulaDamage}}" data-dtype="String" data-tooltip="{{formulaDamageTooltip}}"/>                    
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="textCenter">{{localize 'CO.label.long.bonus'}}</label>
+                <div class="form-fields flex1" data-tooltip="Saisir un nombre positif">
+                    {{ numberInput damageBonus min=0 step=1 name="damageBonus" class="field-value textCenter"}}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="textCenter">{{localize 'CO.label.long.malus'}}</label>
+                <div class="form-fields" data-tooltip="Saisir un nombre négatif">
+                    {{ numberInput damageMalus max=0 step=1 name="damageMalus" class="field-value textCenter"}}
+                </div>
+            </div>
+            <div class="form-group">  
+                <label class="textCenter">{{localize 'CO.ui.tempDamage'}}</label>
+                <div class="form-fields">
+                    <input class="temp-checkbox" type="checkbox" name="tempDamage" {{checked tempDamage}} data-canBeTempDamage="{{canBeTempDamage}}" />
+                </div>  
+            </div>
+        </fieldset>           
+        
+    <section class="tacticalTargets">   
+    <fieldset class="tacticalOptions">      
+        <legend>{{localize "CO.ui.optionsTactiques"}}</legend>
+        <div class="icone"><i class="fa-solid fa-sliders-up"></i></div>
+        <div class="form-group">            
+            <div class="form-fields-radio">
+                <div>
+                    <input type="radio" name="tactical" id="tacticalNone" value="none" {{#if (eq tactical "none")}}checked{{/if}} />
+                    <label for="tacticalNone">{{localize 'CO.ui.tacticalNone'}}</label>
+                </div>
+                <div>
+                    <input type="radio" name="tactical" id="tacticalConfident" value="confident" {{#if (eq tactical "confident")}}checked{{/if}}/>
+                    <label for="tacticalConfident" data-tooltip="{{localize 'CO.ui.tacticalConfidentAttackTooltip'}}">{{localize 'CO.ui.tacticalConfidentAttack'}}</label>
+                </div>
+                <div>
+                    <input type="radio" name="tactical" id="tacticalPrecise" value="precise" {{#if (eq tactical "precise")}}checked{{/if}}/>
+                    <label for="tacticalPrecise" data-tooltip="{{localize 'CO.ui.tacticalPreciseAttackTooltip'}}">{{localize 'CO.ui.tacticalPreciseAttack'}}</label>
+                </div>
+                <div>
+                    <input type="radio" name="tactical" id="tacticalViolent" value="violent" {{#if (eq tactical "violent")}}checked{{/if}}/>
+                    <label for="tacticalViolent" data-tooltip="{{localize 'CO.ui.tacticalViolentAttackTooltip'}}">{{localize 'CO.ui.tacticalViolentAttack'}}</label>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    {{/if}} 
+    <fieldset class="targetsBox">
+        <legend>{{localize "CO.ui.attackTarget"}}</legend>
+        <div class="targets center">
+            {{#each targets as |target id|}}
+            <div class="target">
+                <img class="actor-image" src="{{token.document.texture.src}}" data-tooltip="{{target.name}}" height="50px" width="50px" data-id="{{actor.id}}" data-uuid="{{uuid}}"/>
+            </div> 
+            {{/each}}
+        </div>
+    </section>
+        
+{{else}}
+    <section class="rollDommages">
+        <div></div>
+        <div class="icone"><i class="fa-solid fa-user-secret"></i></div>
+        <div class="form-group rollMode">
+            <label for="rollMode">{{localize 'CHAT.RollDefault'}}</label>
+            <div class="form-fields">
+                <select name="rollMode" id="rollMode">
+                    {{selectOptions rollModes selected=rollMode localize=true}}            
+                </select>
+            </div>
+        </div>
+        <div></div>
+    </section>
+    
+    <fieldset class="dommageDialog">          
+        <!--<legend>{{ localize "CO.resolver.formula.damage"}}</legend>-->
+        <div class="icone"><i class="fa-solid fa-droplet"></i></div>       
+        <div class="form-group">
+            <label data-tooltip="{{localize 'CO.tooltip.formulaDamage'}}">Jet de Dommages</label>          
+            <div class="form-fields flex1">
+                <input class="field-value" id="formulaDamage" name="formulaDamage" type="text" value="{{formulaDamage}}" data-dtype="String" data-tooltip="{{formulaDamageTooltip}}"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="textCenter">{{localize 'CO.label.long.bonus'}}</label>
+            <div class="form-fields flex1" data-tooltip="Saisir un nombre positif">
+                {{ numberInput damageBonus min=0 step=1 name="damageBonus" class="field-value textCenter"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="textCenter">{{localize 'CO.label.long.malus'}}</label>
+            <div class="form-fields flex1" data-tooltip="Saisir un nombre négatif">
+                {{ numberInput damageMalus max=0 step=1 name="damageMalus" class="field-value textCenter"}}
+            </div>
+        </div>
+        <div class="form-group">  
+            <label class="textCenter">{{localize 'CO.ui.tempDamage'}}</label>
+            <div class="form-fields">
+                <input class="temp-checkbox textCenter" type="checkbox" name="tempDamage" {{checked tempDamage}} data-canBeTempDamage="{{canBeTempDamage}}" />
+            </div>  
+        </div>
+    </fieldset>    
+{{/if}}
