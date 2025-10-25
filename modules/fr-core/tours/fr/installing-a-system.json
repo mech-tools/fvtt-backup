@@ -1,0 +1,12 @@
+{
+  "INSTALLINGASYSTEM.Title": "Installation d'un système",
+  "INSTALLINGASYSTEM.Description": "Cette présentation vous guidera à travers le processus d'installation de votre premier système.",
+  "INSTALLINGASYSTEM.SystemsTabTitle": "L'onglet Systèmes de jeu",
+  "INSTALLINGASYSTEM.SystemsTabContent": "Cet onglet vous montre tous vos systèmes actuellement installés. Vous n'en avez aucun d'installé actuellement, alors allons en chercher un.",
+  "INSTALLINGASYSTEM.BrowseTitle": "Bouton Installer le système",
+  "INSTALLINGASYSTEM.BrowseContent": "Ce bouton ouvrira une liste des systèmes disponibles",
+  "INSTALLINGASYSTEM.SearchingTitle": "Recherche",
+  "INSTALLINGASYSTEM.SearchingContent": "Des centaines de systèmes sont disponibles pour Foundry, et d'autres sont ajoutés régulièrement. Si le votre n'est pas encore implémenté, il existe également des systèmes flexibles pour le jeu générique. Découvrons l'un d'entre eux : \"Simple World Building\".",
+  "INSTALLINGASYSTEM.InstallTitle": "Installation du système",
+  "INSTALLINGASYSTEM.InstallContent": "Une fois que vous en avez trouvé un qui vous plaît, allez-y et cliquez sur le bouton Installer. Vous pouvez installer autant de systèmes que vous le souhaitez - n'hésitez pas à faire des essais - puis rendez-vous dans l'onglet \"Mondes\" lorsque vous serez prêt à créer votre première partie."
+}

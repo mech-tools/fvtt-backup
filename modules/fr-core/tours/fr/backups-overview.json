@@ -1,0 +1,8 @@
+{
+  "TOURS.BACKUPS.Title": "Vue d'ensemble des sauvegardes",
+  "TOURS.BACKUPS.Description": "Cette visite présente une brève vue d'ensemble de la fonctionnalité de sauvegarde intégrée de Foundry VTT.",
+  "TOURS.BACKUPS.IndividualPackagesT": "Sauvegarde des packages",
+  "TOURS.BACKUPS.IndividualPackagesC": "Vous pouvez cliquer avec le bouton droit de la souris sur n'importe quel package pour afficher le menu contextuel. À partir de là, vous pouvez créer, restaurer ou gérer les sauvegardes de ce package particulier.<video src=\"toolclips/backups/create-backup.webm\" autoplay muted loop></video>",
+  "TOURS.BACKUPS.ManageBackupsT": "Gestion des sauvegardes",
+  "TOURS.BACKUPS.ManageBackupsC": "L'interface de gestion de toutes vos sauvegardes et instantanés existants se trouve en cliquant sur ce bouton en haut à droite."
+}
