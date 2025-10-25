@@ -1,20 +1,7 @@
-2025/10/21-23:15:13.028617 79a12f7fe6c0 Recovering log #1820
-2025/10/21-23:15:13.032717 79a12f7fe6c0 Delete type=3 #1818
-2025/10/21-23:15:13.032767 79a12f7fe6c0 Delete type=0 #1820
-2025/10/22-19:13:13.712351 79a12d7ff6c0 Level-0 table #1825: started
-2025/10/22-19:13:13.858087 79a12d7ff6c0 Level-0 table #1825: 8456840 bytes OK
-2025/10/22-19:13:13.862647 79a12d7ff6c0 Delete type=0 #1823
-2025/10/22-19:13:13.869004 79a12d7ff6c0 Manual compaction at level-0 from '!actors!0N8E7GbaOci00BTw' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at '!actors.items!zLMOpuXkzwrdMoMS.cdTHX1HQrFuzQkuZ' @ 243395 : 1
-2025/10/22-19:13:13.869047 79a12d7ff6c0 Compacting 1@0 + 4@1 files
-2025/10/22-19:13:13.929418 79a12d7ff6c0 Generated table #1826@0: 920 keys, 2119676 bytes
-2025/10/22-19:13:13.974014 79a12d7ff6c0 Generated table #1827@0: 1111 keys, 2121477 bytes
-2025/10/22-19:13:14.011417 79a12d7ff6c0 Generated table #1828@0: 1115 keys, 2124159 bytes
-2025/10/22-19:13:14.046554 79a12d7ff6c0 Generated table #1829@0: 1136 keys, 2093903 bytes
-2025/10/22-19:13:14.046580 79a12d7ff6c0 Compacted 1@0 + 4@1 files => 8459215 bytes
-2025/10/22-19:13:14.047642 79a12d7ff6c0 compacted to: files[ 0 4 0 0 0 0 0 ]
-2025/10/22-19:13:14.047923 79a12d7ff6c0 Delete type=2 #1806
-2025/10/22-19:13:14.048851 79a12d7ff6c0 Delete type=2 #1825
-2025/10/22-19:13:14.050540 79a12d7ff6c0 Delete type=2 #1809
-2025/10/22-19:13:14.051011 79a12d7ff6c0 Delete type=2 #1807
-2025/10/22-19:13:14.051562 79a12d7ff6c0 Delete type=2 #1808
-2025/10/22-19:13:14.052103 79a12d7ff6c0 Manual compaction at level-0 from '!actors.items!zLMOpuXkzwrdMoMS.cdTHX1HQrFuzQkuZ' @ 243395 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
+2025/10/22-19:18:15.022859 79a12effd6c0 Recovering log #1824
+2025/10/22-19:18:15.028204 79a12effd6c0 Delete type=0 #1824
+2025/10/22-19:18:15.028312 79a12effd6c0 Delete type=3 #1822
+2025/10/23-11:21:28.363451 79a12d7ff6c0 Level-0 table #1833: started
+2025/10/23-11:21:28.363538 79a12d7ff6c0 Level-0 table #1833: 0 bytes OK
+2025/10/23-11:21:28.364474 79a12d7ff6c0 Delete type=0 #1831
+2025/10/23-11:21:28.368197 79a12d7ff6c0 Manual compaction at level-0 from '!actors!0N8E7GbaOci00BTw' @ 72057594037927935 : 1 .. '!folders!yzj2uMsSR4jjiHkB' @ 0 : 0; will stop at (end)
