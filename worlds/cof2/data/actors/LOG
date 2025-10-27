@@ -1,3 +1,8 @@
 2025/10/25-11:33:34.210373 79a12f7fe6c0 Recovering log #4
 2025/10/25-11:33:34.216064 79a12f7fe6c0 Delete type=0 #4
 2025/10/25-11:33:34.216166 79a12f7fe6c0 Delete type=3 #2
+2025/10/26-17:28:43.715318 79a12d7ff6c0 Level-0 table #9: started
+2025/10/26-17:28:43.715449 79a12d7ff6c0 Level-0 table #9: 0 bytes OK
+2025/10/26-17:28:43.720840 79a12d7ff6c0 Delete type=0 #7
+2025/10/26-17:28:43.725768 79a12d7ff6c0 Manual compaction at level-0 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
+2025/10/26-17:28:43.725905 79a12d7ff6c0 Manual compaction at level-1 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
