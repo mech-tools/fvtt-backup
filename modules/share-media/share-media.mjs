@@ -1397,7 +1397,7 @@ class MediaLayer extends InteractionLayer {
   async addSprite(options) {
     const { src = null, targetArea = null, ...additionalOptions } = options;
     const area = await fromUuid(targetArea);
-    if (!area)
+    if (!area || area.parent.id !== game.canvas?.scene?.id)
       return;
     if (this.sprites.has(targetArea))
       await this.deleteSprite(area.uuid);
@@ -2538,7 +2538,7 @@ class ShareablesManager {
     const handler = this.constructor.PIPELINE_HANDLERS[stepName];
     if (!handler)
       throw new Error(`No handler found for step: ${stepName}`);
-    return (context) => handler.call(this, context);
+    return handler.bind(this);
   }
   static async _handleIsGm(context) {
     if (!game.users.current.isGM) {

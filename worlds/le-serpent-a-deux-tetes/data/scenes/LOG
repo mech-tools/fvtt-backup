@@ -1,15 +1,3 @@
-2025/10/25-11:26:57.519512 79a12ffff6c0 Recovering log #787
-2025/10/25-11:26:57.523528 79a12ffff6c0 Delete type=3 #785
-2025/10/25-11:26:57.523603 79a12ffff6c0 Delete type=0 #787
-2025/10/25-11:33:31.756794 79a12d7ff6c0 Level-0 table #793: started
-2025/10/25-11:33:31.758281 79a12d7ff6c0 Level-0 table #793: 8616 bytes OK
-2025/10/25-11:33:31.759364 79a12d7ff6c0 Delete type=0 #791
-2025/10/25-11:33:31.760997 79a12d7ff6c0 Manual compaction at level-0 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
-2025/10/25-11:33:31.761051 79a12d7ff6c0 Manual compaction at level-1 from '!scenes!05vj1elyyPFfmK3C' @ 72057594037927935 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at '!scenes.tiles!3m1JwBTbD2i22aok.SNqryMJTRLy3xz7C' @ 215148 : 1
-2025/10/25-11:33:31.761059 79a12d7ff6c0 Compacting 1@1 + 1@2 files
-2025/10/25-11:33:31.792215 79a12d7ff6c0 Generated table #794@1: 12159 keys, 1594487 bytes
-2025/10/25-11:33:31.792266 79a12d7ff6c0 Compacted 1@1 + 1@2 files => 1594487 bytes
-2025/10/25-11:33:31.793460 79a12d7ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/10/25-11:33:31.793639 79a12d7ff6c0 Delete type=2 #789
-2025/10/25-11:33:31.794037 79a12d7ff6c0 Delete type=2 #793
-2025/10/25-11:33:31.795885 79a12d7ff6c0 Manual compaction at level-1 from '!scenes.tiles!3m1JwBTbD2i22aok.SNqryMJTRLy3xz7C' @ 215148 : 1 .. '!scenes.walls!zwtyPvaGmVI6DMya.zv23x6GUEHQHsVnO' @ 0 : 0; will stop at (end)
+2025/10/27-18:01:30.603357 79a12effd6c0 Recovering log #792
+2025/10/27-18:01:30.608370 79a12effd6c0 Delete type=3 #790
+2025/10/27-18:01:30.608445 79a12effd6c0 Delete type=0 #792
