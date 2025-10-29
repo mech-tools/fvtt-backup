@@ -1,15 +1,8 @@
-2025/10/26-17:29:13.319160 79a12f7fe6c0 Recovering log #4
-2025/10/26-17:29:13.322046 79a12f7fe6c0 Delete type=0 #4
-2025/10/26-17:29:13.322085 79a12f7fe6c0 Delete type=3 #2
-2025/10/27-18:01:14.921608 79a12d7ff6c0 Level-0 table #9: started
-2025/10/27-18:01:14.923976 79a12d7ff6c0 Level-0 table #9: 27266 bytes OK
-2025/10/27-18:01:14.925494 79a12d7ff6c0 Delete type=0 #7
-2025/10/27-18:01:14.928406 79a12d7ff6c0 Manual compaction at level-0 from '!folders!6PmNgdAU8WO1cFlx' @ 72057594037927935 : 1 .. '!tables.results!phbsplTeleportMi.yJ4FhyyZvenG7AJl' @ 0 : 0; will stop at (end)
-2025/10/27-18:01:14.928566 79a12d7ff6c0 Manual compaction at level-1 from '!folders!6PmNgdAU8WO1cFlx' @ 72057594037927935 : 1 .. '!tables.results!phbsplTeleportMi.yJ4FhyyZvenG7AJl' @ 0 : 0; will stop at '!tables.results!mmWraithManifest.xxZJmMvUL6SGMUIH' @ 887 : 1
-2025/10/27-18:01:14.928575 79a12d7ff6c0 Compacting 1@1 + 1@2 files
-2025/10/27-18:01:14.934027 79a12d7ff6c0 Generated table #10@1: 718 keys, 120277 bytes
-2025/10/27-18:01:14.934067 79a12d7ff6c0 Compacted 1@1 + 1@2 files => 120277 bytes
-2025/10/27-18:01:14.935139 79a12d7ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/10/27-18:01:14.935316 79a12d7ff6c0 Delete type=2 #9
-2025/10/27-18:01:14.935519 79a12d7ff6c0 Delete type=2 #5
-2025/10/27-18:01:14.971076 79a12d7ff6c0 Manual compaction at level-1 from '!tables.results!mmWraithManifest.xxZJmMvUL6SGMUIH' @ 887 : 1 .. '!tables.results!phbsplTeleportMi.yJ4FhyyZvenG7AJl' @ 0 : 0; will stop at (end)
+2025/10/28-17:43:00.565164 79a17cbfa6c0 Recovering log #8
+2025/10/28-17:43:00.568645 79a17cbfa6c0 Delete type=3 #6
+2025/10/28-17:43:00.568695 79a17cbfa6c0 Delete type=0 #8
+2025/10/28-17:43:38.415863 79a12d7ff6c0 Level-0 table #14: started
+2025/10/28-17:43:38.415921 79a12d7ff6c0 Level-0 table #14: 0 bytes OK
+2025/10/28-17:43:38.416828 79a12d7ff6c0 Delete type=0 #12
+2025/10/28-17:43:38.417175 79a12d7ff6c0 Manual compaction at level-0 from '!folders!6PmNgdAU8WO1cFlx' @ 72057594037927935 : 1 .. '!tables.results!phbsplTeleportMi.yJ4FhyyZvenG7AJl' @ 0 : 0; will stop at (end)
+2025/10/28-17:43:38.418395 79a12d7ff6c0 Manual compaction at level-1 from '!folders!6PmNgdAU8WO1cFlx' @ 72057594037927935 : 1 .. '!tables.results!phbsplTeleportMi.yJ4FhyyZvenG7AJl' @ 0 : 0; will stop at (end)
