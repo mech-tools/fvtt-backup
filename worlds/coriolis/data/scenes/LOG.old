@@ -1,8 +1,15 @@
-2025/10/18-16:06:33.344586 73cbe5fef6c0 Recovering log #609
-2025/10/18-16:06:33.348423 73cbe5fef6c0 Delete type=0 #609
-2025/10/18-16:06:33.348477 73cbe5fef6c0 Delete type=3 #605
-2025/10/18-16:07:17.689119 73cbd73ff6c0 Level-0 table #614: started
-2025/10/18-16:07:17.689150 73cbd73ff6c0 Level-0 table #614: 0 bytes OK
-2025/10/18-16:07:17.690167 73cbd73ff6c0 Delete type=0 #612
-2025/10/18-16:07:17.693683 73cbd73ff6c0 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
-2025/10/18-16:07:17.693796 73cbd73ff6c0 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2025/10/18-16:07:25.262898 73cbd7fff6c0 Recovering log #613
+2025/10/18-16:07:25.265898 73cbd7fff6c0 Delete type=0 #613
+2025/10/18-16:07:25.265943 73cbd7fff6c0 Delete type=3 #611
+2025/10/28-13:08:59.157876 73cbd73ff6c0 Level-0 table #618: started
+2025/10/28-13:08:59.162471 73cbd73ff6c0 Level-0 table #618: 242487 bytes OK
+2025/10/28-13:08:59.163950 73cbd73ff6c0 Delete type=0 #616
+2025/10/28-13:08:59.201008 73cbd73ff6c0 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2025/10/28-13:08:59.229577 73cbd73ff6c0 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.tokens.delta.items!Q3SJT2hROzRu7Z1y.yE61GUhiTYbdeTGr.94MlnzFvAbVMlXHf.QmbtKTuMryORnexh' @ 47924 : 1
+2025/10/28-13:08:59.229589 73cbd73ff6c0 Compacting 1@1 + 1@2 files
+2025/10/28-13:08:59.252502 73cbd73ff6c0 Generated table #619@1: 7240 keys, 1214182 bytes
+2025/10/28-13:08:59.252531 73cbd73ff6c0 Compacted 1@1 + 1@2 files => 1214182 bytes
+2025/10/28-13:08:59.253805 73cbd73ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/10/28-13:08:59.253983 73cbd73ff6c0 Delete type=2 #608
+2025/10/28-13:08:59.254473 73cbd73ff6c0 Delete type=2 #618
+2025/10/28-13:08:59.258281 73cbd73ff6c0 Manual compaction at level-1 from '!scenes.tokens.delta.items!Q3SJT2hROzRu7Z1y.yE61GUhiTYbdeTGr.94MlnzFvAbVMlXHf.QmbtKTuMryORnexh' @ 47924 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)

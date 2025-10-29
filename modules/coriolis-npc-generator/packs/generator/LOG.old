@@ -1,16 +1,7 @@
-2025/10/18-16:06:34.646570 73cbe57ee6c0 Recovering log #13
-2025/10/18-16:06:34.646602 73cbe57ee6c0 Level-0 table #15: started
-2025/10/18-16:06:34.647694 73cbe57ee6c0 Level-0 table #15: 593 bytes OK
-2025/10/18-16:06:34.650506 73cbe57ee6c0 Delete type=3 #12
-2025/10/18-16:06:34.650560 73cbe57ee6c0 Delete type=0 #13
-2025/10/18-16:07:17.655425 73cbd73ff6c0 Level-0 table #18: started
-2025/10/18-16:07:17.655476 73cbd73ff6c0 Level-0 table #18: 0 bytes OK
-2025/10/18-16:07:17.656201 73cbd73ff6c0 Delete type=0 #16
-2025/10/18-16:07:17.657417 73cbd73ff6c0 Manual compaction at level-0 from '!macros!FlTMfy4g7ltbYR6O' @ 72057594037927935 : 1 .. '!macros!FlTMfy4g7ltbYR6O' @ 0 : 0; will stop at '!macros!FlTMfy4g7ltbYR6O' @ 2 : 1
-2025/10/18-16:07:17.657435 73cbd73ff6c0 Compacting 1@0 + 1@1 files
-2025/10/18-16:07:17.659006 73cbd73ff6c0 Generated table #19@0: 1 keys, 593 bytes
-2025/10/18-16:07:17.659026 73cbd73ff6c0 Compacted 1@0 + 1@1 files => 593 bytes
-2025/10/18-16:07:17.659919 73cbd73ff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
-2025/10/18-16:07:17.660018 73cbd73ff6c0 Delete type=2 #9
-2025/10/18-16:07:17.660120 73cbd73ff6c0 Delete type=2 #15
-2025/10/18-16:07:17.661409 73cbd73ff6c0 Manual compaction at level-0 from '!macros!FlTMfy4g7ltbYR6O' @ 2 : 1 .. '!macros!FlTMfy4g7ltbYR6O' @ 0 : 0; will stop at (end)
+2025/10/18-16:07:26.686166 73cbe5fef6c0 Recovering log #17
+2025/10/18-16:07:26.690470 73cbe5fef6c0 Delete type=0 #17
+2025/10/18-16:07:26.690521 73cbe5fef6c0 Delete type=3 #14
+2025/10/28-13:08:58.964625 73cbd73ff6c0 Level-0 table #23: started
+2025/10/28-13:08:58.964674 73cbd73ff6c0 Level-0 table #23: 0 bytes OK
+2025/10/28-13:08:58.965447 73cbd73ff6c0 Delete type=0 #21
+2025/10/28-13:08:58.966529 73cbd73ff6c0 Manual compaction at level-0 from '!macros!FlTMfy4g7ltbYR6O' @ 72057594037927935 : 1 .. '!macros!FlTMfy4g7ltbYR6O' @ 0 : 0; will stop at (end)

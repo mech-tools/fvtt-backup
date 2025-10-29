@@ -153,7 +153,7 @@ export default class SR6Item extends Item {
     if (source.system?.attackRating && typeof source.system?.attackRating[0] === 'string') source.system.attackRating = source.system?.attackRating.map(ar => parseInt(ar));
     if (typeof source.system?.defense === 'string') source.system.defense = parseInt(source.system.defense);
     if (typeof source.system?.capacity === 'string') source.system.capacity = parseInt(source.system.capacity);
-    if (typeof source.system?.social === 'string') source.system.capacity = parseInt(source.system.social);
+    if (typeof source.system?.social === 'string') source.system.social = parseInt(source.system.social);
 
     return super.migrateData(source);
   }
@@ -189,6 +189,9 @@ export default class SR6Item extends Item {
       }
       if (game.settings.get(SYSTEM_NAME, "rollStrengthCombat") && this.system.strWeapon === true) {
         closeCombatAttackRatingAttribute = this.actor.system.attributes.agi.pool;
+      }
+      if (this.system.genesisID === "unarmed" && this.system.skill === "close_combat" && this.system.skillSpec === "unarmed") {
+        closeCombatAttackRatingAttribute += this.actor.system.attributes.rea.pool;
       }
       this.calculated.attackRating[0] = parseInt(this.system.attackRating[0]) + parseInt(closeCombatAttackRatingAttribute);
     }

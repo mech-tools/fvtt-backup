@@ -1,11 +1,95 @@
 {
 	"Shadowrun6ActorSheetNPC": "Grunty",
-	"shadowrun6-eden.Shadowrun6ActorSheetNPC": "Grunty Redshirt",
+	"shadowrun6-eden": {
+    "Shadowrun6ActorSheetPC": "SR6 PC Sheet",
+    "Shadowrun6ActorSheetNPC": "SR6 NPC Sheet",
+    "Shadowrun6ActorSheetVehicle": "SR6 Vehicle Sheet",
+    "SR6ItemSheet": "SR6 Item Sheet",
+    "SR6ActiveEffectConfig": "SR6 Effect Config Sheet",
+    "PDFSheet": "Read Only PDF Sheet"
+  },
+  "PDFSheet.no_src": "First Change the Sheet configuration to the Default PDF Page Sheet, configure the PDF url, and then switch it back to the Read Only PDF Sheet configuration.",
   "SYSTEM": {
     "Sidebar": {
       "readme": "Patreon",
       "bugs": "Report Bug",
       "release_notes": "Release Notes"
+    }
+  },
+  "PDF": {
+    "folder": "Shadowrun 6e Rules",
+    "page_abbr": "p.",
+    "book": {
+      "astral_ways": "Astral Ways",
+      "bestial_nature": "Bestial Nature",
+      "body_shop": "Body Shop",
+      "collapsing_now": "Collapsing Now",
+      "companion": "Sixth World Companion",
+      "core": "Core Rulebook",
+      "core_seattle": "Core Rulebook Seattle Ed",
+      "core_berlin": "Core Rulebook Berlin Ed",
+      "de_alpen": "Datapuls Alpen",
+      "de_berlin2080": "Berlin 2080",
+      "de_bundeswehr": "Datapuls Bundeswehr",
+      "de_feuerlaeufer": "Datapuls Feuerlaeufer",
+      "de_other": "Sonstige Quellen aus DE",
+      "de_piraten": "Datapuls Piraten der Deutschen Bucht",
+      "de_revierbericht": "Revierbericht",
+      "de_sota2081": "Datapuls SOTA2081",
+      "de_sota2082": "Datapuls SOTA2082",
+      "de_sota2083": "Datapuls SOTA2083",
+      "de_westphalen": "Datapuls Westphalen",
+      "dealers_of_death": "Dealers of Death",
+      "double_clutch": "Double Clutch",
+      "emerald": "Emerald City",
+      "firing_squad": "Firing Squad",
+      "hack_slash": "Hack & Slash",
+      "kechibi": "Kechibi Code",
+      "krime": "Krime Katalog",
+      "lofwyr": "Lofwyr's Legions",
+      "no_future": "No Future",
+      "power_plays": "Power Plays",
+      "shadow_cast": "Shadow Cast",
+      "sif_new_orleans": "New Orleans",
+      "slip_streams": "Slip Streams",
+      "smooth_operations": "Smooth Operations",
+      "street_wyrd": "Street Wyrd",
+      "tarnished_star": "Tarnished Star"
+    },
+    "code": {
+      "astral_ways": "AW",
+      "bestial_nature": "BEST",
+      "body_shop": "BS",
+      "collapsing_now": "COLL",
+      "companion": "6WC",
+      "core": "Core",
+      "de_alpen": "Alpen",
+      "de_berlin2080": "B2080",
+      "de_bundeswehr": "Bundeswehr",
+      "de_feuerlaeufer": "FEUERL",
+      "de_other": "Sonstiges DE",
+      "de_piraten": "PIR",
+      "de_revierbericht": "Revier",
+      "de_sota2081": "SOTA2081",
+      "de_sota2082": "SOTA2082",
+      "de_sota2083": "SOTA2083",
+      "de_westphalen": "Westphalen",
+      "dealers_of_death": "DD",
+      "double_clutch": "DC",
+      "emerald": "Emerald",
+      "firing_squad": "FS",
+      "hack_slash": "HnS",
+      "kechibi": "KC",
+      "krime": "KK",
+      "lofwyr": "LL",
+      "no_future": "NF",
+      "power_plays": "PP",
+      "shadow_cast": "SC",
+      "sif_new_orleans": "New Orleans",
+      "slip_streams": "SLIP",
+      "smooth_operations": "SO",
+      "street_wyrd": "WYRD",
+      "tarnished_star": "TS"
     }
   },
   "ACTOR": {
@@ -656,6 +740,7 @@
 	    "onroad": "On-Road",
       "points": "Points",
       "pool": "Pool",
+      "pools": "Pools",
       "poolmod": "Pool modifier",
       "programs.short": "P",
       "progSlots": "Prog. slots",
@@ -1441,6 +1526,15 @@
       "expandedSpecializations": {
         "hint": "Use no limit on the number  of specializations a skill may have. You are not required to purchase an expertise before taking additional specializations. Expertises are still limited to one per skill (SWC p.153)",
         "name": "Expanded Specializations"
+      },
+      "pdf": {
+        "hint": "Configure the PDF journal for this Shadowrun Sixth World book.",
+        "offset.name": "Offset",
+        "offset.hint": "Configure the page offset. Example if page 12 is actually page 11, offset is 1."
+      },
+      "dataEntry": {
+        "hint": "Enable to change the GENESIS/Commlink ID and the Shadowrun book & page number an Item is from in the Item Sheet.",
+        "name": "Item Data Entry"
       }
     },
     "sin" : {

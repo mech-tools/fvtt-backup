@@ -1,8 +1,15 @@
-2025/10/18-16:06:33.235050 73cbe5fef6c0 Recovering log #558
-2025/10/18-16:06:33.239465 73cbe5fef6c0 Delete type=0 #558
-2025/10/18-16:06:33.239494 73cbe5fef6c0 Delete type=3 #556
-2025/10/18-16:07:17.681011 73cbd73ff6c0 Level-0 table #563: started
-2025/10/18-16:07:17.681040 73cbd73ff6c0 Level-0 table #563: 0 bytes OK
-2025/10/18-16:07:17.681936 73cbd73ff6c0 Delete type=0 #561
-2025/10/18-16:07:17.683010 73cbd73ff6c0 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
-2025/10/18-16:07:17.684149 73cbd73ff6c0 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
+2025/10/18-16:07:25.128705 73cbe5fef6c0 Recovering log #562
+2025/10/18-16:07:25.133761 73cbe5fef6c0 Delete type=0 #562
+2025/10/18-16:07:25.133862 73cbe5fef6c0 Delete type=3 #560
+2025/10/28-13:08:59.086260 73cbd73ff6c0 Level-0 table #567: started
+2025/10/28-13:08:59.088342 73cbd73ff6c0 Level-0 table #567: 29354 bytes OK
+2025/10/28-13:08:59.089217 73cbd73ff6c0 Delete type=0 #565
+2025/10/28-13:08:59.099178 73cbd73ff6c0 Manual compaction at level-0 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)
+2025/10/28-13:08:59.099311 73cbd73ff6c0 Manual compaction at level-1 from '!combats!GXOzYQHV7UQ5CHYY' @ 72057594037927935 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at '!combats.combatants!m0sCfn6cXiQKAk94.nkcKFsjnb8lRDa5C' @ 6765 : 1
+2025/10/28-13:08:59.099320 73cbd73ff6c0 Compacting 1@1 + 1@2 files
+2025/10/28-13:08:59.100573 73cbd73ff6c0 Generated table #568@1: 35 keys, 7930 bytes
+2025/10/28-13:08:59.100586 73cbd73ff6c0 Compacted 1@1 + 1@2 files => 7930 bytes
+2025/10/28-13:08:59.101385 73cbd73ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/10/28-13:08:59.101453 73cbd73ff6c0 Delete type=2 #567
+2025/10/28-13:08:59.101537 73cbd73ff6c0 Delete type=2 #547
+2025/10/28-13:08:59.106165 73cbd73ff6c0 Manual compaction at level-1 from '!combats.combatants!m0sCfn6cXiQKAk94.nkcKFsjnb8lRDa5C' @ 6765 : 1 .. '!combats.combatants!yFOWOu8hfveFXnn1.ugTeRqLzBOt1rMI5' @ 0 : 0; will stop at (end)

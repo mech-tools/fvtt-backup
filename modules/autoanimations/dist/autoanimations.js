@@ -18294,9 +18294,9 @@ async function teleportation(handler, animationData) {
     animSeq.on(sourceToken);
     animSeq.delay(data2.options.delayMove);
     if (data2.options.teleport) {
-      animSeq.teleportTo({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: true });
+      animSeq.teleportTo({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: !canvas.scene.grid.type });
     } else {
-      animSeq.moveTowards({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: true });
+      animSeq.moveTowards({ x: gridPos[0], y: gridPos[1], elevation: pos.elevation }, { relativeToCenter: !canvas.scene.grid.type });
       animSeq.moveSpeed(data2.options.speed);
     }
     if (data2.options.alpha < 1) {

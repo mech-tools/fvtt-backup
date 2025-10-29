@@ -3,6 +3,8 @@
 /* -------------------------------------------- */
 import SR6Roll from "./SR6Roll.js";
 import { registerSystemSettings } from "./settings.js";
+import { registerSystemSettingsPosti18n } from "./settings-post-i18n.js";
+import { pdfJournalInit } from "./util/pdfJournalInit.js";
 import Shadowrun6Combat from "./Shadowrun6Combat.js";
 import { SR6Config } from "./config.js";
 import { preloadHandlebarsTemplates } from "./templates.js";
@@ -58,7 +60,7 @@ Hooks.once("init", async function () {
     game.sr6.releaseNotes = releaseNotes;
     registerSystemSettings();
     defineHandlebarHelper();
-
+    
     CONFIG.Combat.documentClass = Shadowrun6Combat;
     CONFIG.Combatant.documentClass = Shadowrun6Combatant;
     CONFIG.ui.combat = Shadowrun6CombatTracker;
@@ -77,6 +79,14 @@ Hooks.once("init", async function () {
 
     //	(CONFIG as any).compatibility.mode = 0;
     getData(game).initiative = "@initiative.physical.pool + (@initiative.physical.dicePool)d6";
+
+    // Register custom PDF Sheet
+    foundry.applications.apps.DocumentSheetConfig.registerSheet(
+        CONFIG.JournalEntryPage.documentClass, 
+        "shadowrun6-eden",
+        applications.PDFSheet,
+        { types: ["pdf"] }
+    );
 
     /**
      * Actor configuration (Datamodel > Document > Sheet)
@@ -272,7 +282,9 @@ Hooks.once("init", async function () {
         if ( game.settings.get(SYSTEM_NAME, "hackSlashMatrix") ) {
             CONFIG.SR6.MATRIX_ACTIONS = {...CONFIG.SR6.MATRIX_ACTIONS, ...CONFIG.SR6.MATRIX_ACTIONS_HS};
         }
-        migrateWorld();
+        CONFIG.SR6.DATA_ENTRY = game.settings.get(game.system.id, "dataEntry") || false;
+        await migrateWorld();
+        await pdfJournalInit();
         game.sr6.releaseNotes();
 
         
@@ -673,6 +685,7 @@ Hooks.once("init", async function () {
         if (actor.type === "Player") {
             actor.prototypeToken.updateSource({
                 actorLink: true,
+                displayName: CONST.TOKEN_DISPLAY_MODES.HOVER,
                 disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY
             });
         } else if (actor.type === "NPC") {
@@ -781,6 +794,20 @@ Hooks.once("init", async function () {
     });
 
 });
+
+/**
+ * Init hook. Called from Foundry when i18n localization is ready
+ */
+Hooks.once("i18nInit", async function () {
+    console.log(`SR6E | Continue to initialize Shadowrun 6 System post i18nInit`);
+
+    registerSystemSettingsPosti18n();
+});
+
+/**
+ * ####################################################################################
+ * Legacy Helper functions
+ */
 
 $.fn.closestData = function (dataName, defaultValue = "") {
     let value = this.closest(`[data-${dataName}]`)?.data(dataName);

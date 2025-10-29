@@ -44,7 +44,7 @@
   },
   "compatibility": {
     "minimum": "11",
-    "verified": "12"
+    "verified": "13"
   },
   "authors": [
     {
@@ -65,5 +65,6 @@
       },
       "flags": {}
     }
-  ]
+  ],
+  "flags": {}
 }
