@@ -1,0 +1,34 @@
+<form>
+    <div class="action line-item">
+        {{> "systems/crucible/templates/dice/partials/action-use-header.hbs"}}
+    </div>
+
+    {{#if weaponChoice}}
+    {{formGroup weaponChoice.field value=weaponChoice.value}}
+    {{/if}}
+
+    {{#if hasDice}}
+    <section class="roller flexcol">
+        {{> "systems/crucible/templates/dice/partials/standard-check-roll.hbs"}}
+    </section>
+    {{#if showDetails}}
+    <section class="details flexcol">
+        {{> "systems/crucible/templates/dice/partials/standard-check-details.hbs"}}
+    </section>
+    {{/if}}
+    {{/if}}
+
+    <footer class="form-footer">
+        <div class="split-button">
+            {{#each rollModes as |mode|}}
+            <button type="button" class="ui-control icon {{mode.icon}}" data-action="rollMode"
+                    data-roll-mode="{{mode.action}}" aria-pressed="{{mode.active}}"
+                    data-tooltip aria-label="{{localize mode.label}}"></button>
+            {{/each}}
+        </div>
+        <button type="submit" class="dialog-button frame-brown" data-action="roll">
+            <i class="fas fa-dice"></i>
+            <label>Use Action</label>
+        </button>
+    </footer>
+</form>

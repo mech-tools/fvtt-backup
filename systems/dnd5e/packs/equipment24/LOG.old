@@ -1,15 +1,8 @@
-2025/10/26-17:29:13.303704 79a12effd6c0 Recovering log #4
-2025/10/26-17:29:13.307174 79a12effd6c0 Delete type=0 #4
-2025/10/26-17:29:13.307217 79a12effd6c0 Delete type=3 #2
-2025/10/27-18:01:14.919178 79a12d7ff6c0 Level-0 table #9: started
-2025/10/27-18:01:14.920509 79a12d7ff6c0 Level-0 table #9: 3662 bytes OK
-2025/10/27-18:01:14.921476 79a12d7ff6c0 Delete type=0 #7
-2025/10/27-18:01:14.928384 79a12d7ff6c0 Manual compaction at level-0 from '!folders!0qKr1rbesCSNE0MA' @ 72057594037927935 : 1 .. '!items.effects!phbagNet00000000.67ofG0FVqrrkAHKa' @ 0 : 0; will stop at (end)
-2025/10/27-18:01:14.935670 79a12d7ff6c0 Manual compaction at level-1 from '!folders!0qKr1rbesCSNE0MA' @ 72057594037927935 : 1 .. '!items.effects!phbagNet00000000.67ofG0FVqrrkAHKa' @ 0 : 0; will stop at '!items.effects!dmgEfreetiChain0.iayKhkCEqIpiRViL' @ 984 : 1
-2025/10/27-18:01:14.935685 79a12d7ff6c0 Compacting 1@1 + 1@2 files
-2025/10/27-18:01:14.964106 79a12d7ff6c0 Generated table #10@1: 980 keys, 891052 bytes
-2025/10/27-18:01:14.964140 79a12d7ff6c0 Compacted 1@1 + 1@2 files => 891052 bytes
-2025/10/27-18:01:14.965442 79a12d7ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/10/27-18:01:14.965572 79a12d7ff6c0 Delete type=2 #9
-2025/10/27-18:01:14.965774 79a12d7ff6c0 Delete type=2 #5
-2025/10/27-18:01:14.972853 79a12d7ff6c0 Manual compaction at level-1 from '!items.effects!dmgEfreetiChain0.iayKhkCEqIpiRViL' @ 984 : 1 .. '!items.effects!phbagNet00000000.67ofG0FVqrrkAHKa' @ 0 : 0; will stop at (end)
+2025/10/31-00:42:39.030587 79a17cbfa6c0 Recovering log #17
+2025/10/31-00:42:39.034289 79a17cbfa6c0 Delete type=3 #15
+2025/10/31-00:42:39.034340 79a17cbfa6c0 Delete type=0 #17
+2025/10/31-00:46:52.070046 79a12d7ff6c0 Level-0 table #22: started
+2025/10/31-00:46:52.070090 79a12d7ff6c0 Level-0 table #22: 0 bytes OK
+2025/10/31-00:46:52.071059 79a12d7ff6c0 Delete type=0 #20
+2025/10/31-00:46:52.072524 79a12d7ff6c0 Manual compaction at level-0 from '!folders!0qKr1rbesCSNE0MA' @ 72057594037927935 : 1 .. '!items.effects!phbagNet00000000.67ofG0FVqrrkAHKa' @ 0 : 0; will stop at (end)
+2025/10/31-00:46:52.073763 79a12d7ff6c0 Manual compaction at level-1 from '!folders!0qKr1rbesCSNE0MA' @ 72057594037927935 : 1 .. '!items.effects!phbagNet00000000.67ofG0FVqrrkAHKa' @ 0 : 0; will stop at (end)

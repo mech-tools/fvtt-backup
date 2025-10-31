@@ -1,0 +1,8 @@
+2025/10/31-00:08:17.396599 79a17cbfa6c0 Recovering log #8
+2025/10/31-00:08:17.399596 79a17cbfa6c0 Delete type=3 #6
+2025/10/31-00:08:17.399657 79a17cbfa6c0 Delete type=0 #8
+2025/10/31-00:08:27.151941 79a12d7ff6c0 Level-0 table #13: started
+2025/10/31-00:08:27.151995 79a12d7ff6c0 Level-0 table #13: 0 bytes OK
+2025/10/31-00:08:27.154090 79a12d7ff6c0 Delete type=0 #11
+2025/10/31-00:08:27.159143 79a12d7ff6c0 Manual compaction at level-0 from '!folders!68HWinwhrVQnILl5' @ 72057594037927935 : 1 .. '!items.effects!bloodSense000000.blinded000000000' @ 0 : 0; will stop at (end)
+2025/10/31-00:08:27.159280 79a12d7ff6c0 Manual compaction at level-1 from '!folders!68HWinwhrVQnILl5' @ 72057594037927935 : 1 .. '!items.effects!bloodSense000000.blinded000000000' @ 0 : 0; will stop at (end)

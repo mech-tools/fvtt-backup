@@ -1,0 +1,8 @@
+2025/10/31-00:08:17.469276 79a12f7fe6c0 Recovering log #8
+2025/10/31-00:08:17.472606 79a12f7fe6c0 Delete type=3 #6
+2025/10/31-00:08:17.472679 79a12f7fe6c0 Delete type=0 #8
+2025/10/31-00:08:27.165948 79a12d7ff6c0 Level-0 table #13: started
+2025/10/31-00:08:27.165979 79a12d7ff6c0 Level-0 table #13: 0 bytes OK
+2025/10/31-00:08:27.166776 79a12d7ff6c0 Delete type=0 #11
+2025/10/31-00:08:27.167780 79a12d7ff6c0 Manual compaction at level-0 from '!folders!08mOaWGw5rYKejer' @ 72057594037927935 : 1 .. '!items!zealoussmite0000' @ 0 : 0; will stop at (end)
+2025/10/31-00:08:27.169851 79a12d7ff6c0 Manual compaction at level-1 from '!folders!08mOaWGw5rYKejer' @ 72057594037927935 : 1 .. '!items!zealoussmite0000' @ 0 : 0; will stop at (end)

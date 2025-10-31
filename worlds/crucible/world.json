@@ -1,0 +1,15 @@
+{
+  "title": "Crucible",
+  "id": "crucible",
+  "system": "crucible",
+  "coreVersion": "13.350",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "systemVersion": "0.8.0",
+  "lastPlayed": "Fri Oct 31 2025 00:11:09 GMT+0100 (Central European Standard Time)",
+  "playtime": 2216,
+  "description": "",
+  "flags": {}
+}

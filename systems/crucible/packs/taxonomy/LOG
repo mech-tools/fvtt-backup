@@ -1,0 +1,8 @@
+2025/10/31-00:10:11.614259 79a12ffff6c0 Recovering log #12
+2025/10/31-00:10:11.617559 79a12ffff6c0 Delete type=3 #10
+2025/10/31-00:10:11.617607 79a12ffff6c0 Delete type=0 #12
+2025/10/31-00:11:10.016520 79a12d7ff6c0 Level-0 table #17: started
+2025/10/31-00:11:10.016571 79a12d7ff6c0 Level-0 table #17: 0 bytes OK
+2025/10/31-00:11:10.017321 79a12d7ff6c0 Delete type=0 #15
+2025/10/31-00:11:10.017452 79a12d7ff6c0 Manual compaction at level-0 from '!folders!31EVHmb8A4SDd23W' @ 72057594037927935 : 1 .. '!items!wingedTerror0000' @ 0 : 0; will stop at (end)
+2025/10/31-00:11:10.017505 79a12d7ff6c0 Manual compaction at level-1 from '!folders!31EVHmb8A4SDd23W' @ 72057594037927935 : 1 .. '!items!wingedTerror0000' @ 0 : 0; will stop at (end)

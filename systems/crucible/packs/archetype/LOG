@@ -1,0 +1,8 @@
+2025/10/31-00:10:11.540340 79a12ffff6c0 Recovering log #12
+2025/10/31-00:10:11.543867 79a12ffff6c0 Delete type=3 #10
+2025/10/31-00:10:11.543901 79a12ffff6c0 Delete type=0 #12
+2025/10/31-00:11:10.007136 79a12d7ff6c0 Level-0 table #17: started
+2025/10/31-00:11:10.007176 79a12d7ff6c0 Level-0 table #17: 0 bytes OK
+2025/10/31-00:11:10.008384 79a12d7ff6c0 Delete type=0 #15
+2025/10/31-00:11:10.009515 79a12d7ff6c0 Manual compaction at level-0 from '!folders!6Up7ddrphLept3RW' @ 72057594037927935 : 1 .. '!items!tusker0000000000' @ 0 : 0; will stop at (end)
+2025/10/31-00:11:10.009601 79a12d7ff6c0 Manual compaction at level-1 from '!folders!6Up7ddrphLept3RW' @ 72057594037927935 : 1 .. '!items!tusker0000000000' @ 0 : 0; will stop at (end)

@@ -1,0 +1,8 @@
+2025/10/31-00:10:11.533057 79a12f7fe6c0 Recovering log #12
+2025/10/31-00:10:11.537330 79a12f7fe6c0 Delete type=3 #10
+2025/10/31-00:10:11.537366 79a12f7fe6c0 Delete type=0 #12
+2025/10/31-00:11:10.003261 79a12d7ff6c0 Level-0 table #17: started
+2025/10/31-00:11:10.003348 79a12d7ff6c0 Level-0 table #17: 0 bytes OK
+2025/10/31-00:11:10.005580 79a12d7ff6c0 Delete type=0 #15
+2025/10/31-00:11:10.009461 79a12d7ff6c0 Manual compaction at level-0 from '!items!devilkin00000000' @ 72057594037927935 : 1 .. '!items!orcish0000000000' @ 0 : 0; will stop at (end)
+2025/10/31-00:11:10.009567 79a12d7ff6c0 Manual compaction at level-1 from '!items!devilkin00000000' @ 72057594037927935 : 1 .. '!items!orcish0000000000' @ 0 : 0; will stop at (end)
