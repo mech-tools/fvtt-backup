@@ -1,22 +1,3 @@
-2025/10/31-01:26:18.222412 79a17cbfa6c0 Recovering log #16
-2025/10/31-01:26:18.226744 79a17cbfa6c0 Delete type=0 #16
-2025/10/31-01:26:18.226821 79a17cbfa6c0 Delete type=3 #14
-2025/10/31-01:27:09.241068 79a12d7ff6c0 Level-0 table #21: started
-2025/10/31-01:27:09.242142 79a12d7ff6c0 Level-0 table #21: 1118 bytes OK
-2025/10/31-01:27:09.243021 79a12d7ff6c0 Delete type=0 #19
-2025/10/31-01:27:09.243127 79a12d7ff6c0 Manual compaction at level-0 from '!messages!ddZWCFd9zyPXMIVy' @ 72057594037927935 : 1 .. '!messages!ddZWCFd9zyPXMIVy' @ 0 : 0; will stop at '!messages!ddZWCFd9zyPXMIVy' @ 7 : 1
-2025/10/31-01:27:09.243132 79a12d7ff6c0 Compacting 1@0 + 1@1 files
-2025/10/31-01:27:09.244182 79a12d7ff6c0 Generated table #22@0: 3 keys, 1170 bytes
-2025/10/31-01:27:09.244195 79a12d7ff6c0 Compacted 1@0 + 1@1 files => 1170 bytes
-2025/10/31-01:27:09.244801 79a12d7ff6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
-2025/10/31-01:27:09.244868 79a12d7ff6c0 Delete type=2 #9
-2025/10/31-01:27:09.244942 79a12d7ff6c0 Delete type=2 #21
-2025/10/31-01:27:09.247597 79a12d7ff6c0 Manual compaction at level-0 from '!messages!ddZWCFd9zyPXMIVy' @ 7 : 1 .. '!messages!ddZWCFd9zyPXMIVy' @ 0 : 0; will stop at (end)
-2025/10/31-01:27:09.247696 79a12d7ff6c0 Manual compaction at level-1 from '!messages!ddZWCFd9zyPXMIVy' @ 72057594037927935 : 1 .. '!messages!ddZWCFd9zyPXMIVy' @ 0 : 0; will stop at '!messages!oyfvPhdzHlIcpzTv' @ 5 : 0
-2025/10/31-01:27:09.247701 79a12d7ff6c0 Compacting 1@1 + 1@2 files
-2025/10/31-01:27:09.248718 79a12d7ff6c0 Generated table #23@1: 1 keys, 1118 bytes
-2025/10/31-01:27:09.248731 79a12d7ff6c0 Compacted 1@1 + 1@2 files => 1118 bytes
-2025/10/31-01:27:09.249354 79a12d7ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/10/31-01:27:09.249414 79a12d7ff6c0 Delete type=2 #5
-2025/10/31-01:27:09.249506 79a12d7ff6c0 Delete type=2 #22
-2025/10/31-01:27:09.251951 79a12d7ff6c0 Manual compaction at level-1 from '!messages!oyfvPhdzHlIcpzTv' @ 5 : 0 .. '!messages!ddZWCFd9zyPXMIVy' @ 0 : 0; will stop at (end)
+2025/11/04-01:09:08.608530 79a12f7fe6c0 Recovering log #20
+2025/11/04-01:09:08.613484 79a12f7fe6c0 Delete type=0 #20
+2025/11/04-01:09:08.613544 79a12f7fe6c0 Delete type=3 #18
