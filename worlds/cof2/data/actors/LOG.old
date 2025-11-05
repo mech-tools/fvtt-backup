@@ -1,15 +1,8 @@
-2025/10/31-00:46:57.456575 79a17cbfa6c0 Recovering log #24
-2025/10/31-00:46:57.461774 79a17cbfa6c0 Delete type=0 #24
-2025/10/31-00:46:57.461832 79a17cbfa6c0 Delete type=3 #22
-2025/10/31-01:26:13.981796 79a12d7ff6c0 Level-0 table #29: started
-2025/10/31-01:26:13.984449 79a12d7ff6c0 Level-0 table #29: 10568 bytes OK
-2025/10/31-01:26:13.986158 79a12d7ff6c0 Delete type=0 #27
-2025/10/31-01:26:13.988708 79a12d7ff6c0 Manual compaction at level-0 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
-2025/10/31-01:26:13.992206 79a12d7ff6c0 Manual compaction at level-1 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at '!actors!TVEFzugfQ7WUNDVs' @ 7 : 1
-2025/10/31-01:26:13.992260 79a12d7ff6c0 Compacting 1@1 + 1@2 files
-2025/10/31-01:26:13.994174 79a12d7ff6c0 Generated table #30@1: 1 keys, 2035 bytes
-2025/10/31-01:26:13.994201 79a12d7ff6c0 Compacted 1@1 + 1@2 files => 2035 bytes
-2025/10/31-01:26:13.995284 79a12d7ff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2025/10/31-01:26:13.995411 79a12d7ff6c0 Delete type=2 #5
-2025/10/31-01:26:13.995544 79a12d7ff6c0 Delete type=2 #29
-2025/10/31-01:26:13.997479 79a12d7ff6c0 Manual compaction at level-1 from '!actors!TVEFzugfQ7WUNDVs' @ 7 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
+2025/10/31-01:27:10.874635 79a12ffff6c0 Recovering log #28
+2025/10/31-01:27:10.877853 79a12ffff6c0 Delete type=0 #28
+2025/10/31-01:27:10.877880 79a12ffff6c0 Delete type=3 #26
+2025/11/04-01:09:05.632471 79a12d7ff6c0 Level-0 table #34: started
+2025/11/04-01:09:05.632559 79a12d7ff6c0 Level-0 table #34: 0 bytes OK
+2025/11/04-01:09:05.634603 79a12d7ff6c0 Delete type=0 #32
+2025/11/04-01:09:05.637768 79a12d7ff6c0 Manual compaction at level-0 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
+2025/11/04-01:09:05.637971 79a12d7ff6c0 Manual compaction at level-1 from '!actors!TVEFzugfQ7WUNDVs' @ 72057594037927935 : 1 .. '!actors!TVEFzugfQ7WUNDVs' @ 0 : 0; will stop at (end)
