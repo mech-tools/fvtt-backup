@@ -1,8 +1,8 @@
-2025/10/31-00:10:11.590518 79a12ffff6c0 Recovering log #12
-2025/10/31-00:10:11.594789 79a12ffff6c0 Delete type=3 #10
-2025/10/31-00:10:11.594868 79a12ffff6c0 Delete type=0 #12
-2025/10/31-00:11:10.013579 79a12d7ff6c0 Level-0 table #17: started
-2025/10/31-00:11:10.013617 79a12d7ff6c0 Level-0 table #17: 0 bytes OK
-2025/10/31-00:11:10.014563 79a12d7ff6c0 Delete type=0 #15
-2025/10/31-00:11:10.017390 79a12d7ff6c0 Manual compaction at level-0 from '!items!bindArmament0000' @ 72057594037927935 : 1 .. '!items!protectiveMirage' @ 0 : 0; will stop at (end)
-2025/10/31-00:11:10.017473 79a12d7ff6c0 Manual compaction at level-1 from '!items!bindArmament0000' @ 72057594037927935 : 1 .. '!items!protectiveMirage' @ 0 : 0; will stop at (end)
+2025/11/08-18:42:02.570156 79a12f7fe6c0 Recovering log #20
+2025/11/08-18:42:02.572386 79a12f7fe6c0 Delete type=0 #20
+2025/11/08-18:42:02.572412 79a12f7fe6c0 Delete type=3 #18
+2025/11/08-18:42:04.147365 79a12d7ff6c0 Level-0 table #25: started
+2025/11/08-18:42:04.147389 79a12d7ff6c0 Level-0 table #25: 0 bytes OK
+2025/11/08-18:42:04.148171 79a12d7ff6c0 Delete type=0 #23
+2025/11/08-18:42:04.149949 79a12d7ff6c0 Manual compaction at level-0 from '!items!bindArmament0000' @ 72057594037927935 : 1 .. '!items!protectiveMirage' @ 0 : 0; will stop at (end)
+2025/11/08-18:42:04.150903 79a12d7ff6c0 Manual compaction at level-1 from '!items!bindArmament0000' @ 72057594037927935 : 1 .. '!items!protectiveMirage' @ 0 : 0; will stop at (end)

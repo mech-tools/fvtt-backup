@@ -1,8 +1,8 @@
-2025/10/31-01:27:10.888058 79a12f7fe6c0 Recovering log #29
-2025/10/31-01:27:10.891336 79a12f7fe6c0 Delete type=3 #27
-2025/10/31-01:27:10.891451 79a12f7fe6c0 Delete type=0 #29
-2025/11/04-01:09:05.636902 79a12d7ff6c0 Level-0 table #34: started
-2025/11/04-01:09:05.636929 79a12d7ff6c0 Level-0 table #34: 0 bytes OK
-2025/11/04-01:09:05.637718 79a12d7ff6c0 Delete type=0 #32
-2025/11/04-01:09:05.637822 79a12d7ff6c0 Manual compaction at level-0 from '!messages!I5HKvSO4bu7TzjKm' @ 72057594037927935 : 1 .. '!messages!I5HKvSO4bu7TzjKm' @ 0 : 0; will stop at (end)
-2025/11/04-01:09:05.637843 79a12d7ff6c0 Manual compaction at level-1 from '!messages!I5HKvSO4bu7TzjKm' @ 72057594037927935 : 1 .. '!messages!I5HKvSO4bu7TzjKm' @ 0 : 0; will stop at (end)
+2025/11/04-19:04:13.801427 79a12f7fe6c0 Recovering log #33
+2025/11/04-19:04:13.806522 79a12f7fe6c0 Delete type=0 #33
+2025/11/04-19:04:13.806571 79a12f7fe6c0 Delete type=3 #31
+2025/11/08-12:39:39.908195 79a12d7ff6c0 Level-0 table #38: started
+2025/11/08-12:39:39.908235 79a12d7ff6c0 Level-0 table #38: 0 bytes OK
+2025/11/08-12:39:39.909733 79a12d7ff6c0 Delete type=0 #36
+2025/11/08-12:39:39.912727 79a12d7ff6c0 Manual compaction at level-0 from '!messages!I5HKvSO4bu7TzjKm' @ 72057594037927935 : 1 .. '!messages!I5HKvSO4bu7TzjKm' @ 0 : 0; will stop at (end)
+2025/11/08-12:39:39.912823 79a12d7ff6c0 Manual compaction at level-1 from '!messages!I5HKvSO4bu7TzjKm' @ 72057594037927935 : 1 .. '!messages!I5HKvSO4bu7TzjKm' @ 0 : 0; will stop at (end)

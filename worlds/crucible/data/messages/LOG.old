@@ -1,8 +1,8 @@
-2025/10/31-00:08:17.290009 79a12f7fe6c0 Recovering log #4
-2025/10/31-00:08:17.294362 79a12f7fe6c0 Delete type=0 #4
-2025/10/31-00:08:17.294396 79a12f7fe6c0 Delete type=3 #2
-2025/10/31-00:08:27.170087 79a12d7ff6c0 Level-0 table #9: started
-2025/10/31-00:08:27.170126 79a12d7ff6c0 Level-0 table #9: 0 bytes OK
-2025/10/31-00:08:27.170991 79a12d7ff6c0 Delete type=0 #7
-2025/10/31-00:08:27.172769 79a12d7ff6c0 Manual compaction at level-0 from '!messages!LN9DXnvjMse7a7l8' @ 72057594037927935 : 1 .. '!messages!nfC3oAH4GkN5IlcY' @ 0 : 0; will stop at (end)
-2025/10/31-00:08:27.173930 79a12d7ff6c0 Manual compaction at level-1 from '!messages!LN9DXnvjMse7a7l8' @ 72057594037927935 : 1 .. '!messages!nfC3oAH4GkN5IlcY' @ 0 : 0; will stop at (end)
+2025/11/08-12:39:46.530304 79a12effd6c0 Recovering log #12
+2025/11/08-12:39:46.534211 79a12effd6c0 Delete type=3 #10
+2025/11/08-12:39:46.534310 79a12effd6c0 Delete type=0 #12
+2025/11/08-18:41:58.782544 79a12d7ff6c0 Level-0 table #17: started
+2025/11/08-18:41:58.782595 79a12d7ff6c0 Level-0 table #17: 0 bytes OK
+2025/11/08-18:41:58.783589 79a12d7ff6c0 Delete type=0 #15
+2025/11/08-18:41:58.784758 79a12d7ff6c0 Manual compaction at level-0 from '!messages!LN9DXnvjMse7a7l8' @ 72057594037927935 : 1 .. '!messages!nfC3oAH4GkN5IlcY' @ 0 : 0; will stop at (end)
+2025/11/08-18:41:58.784883 79a12d7ff6c0 Manual compaction at level-1 from '!messages!LN9DXnvjMse7a7l8' @ 72057594037927935 : 1 .. '!messages!nfC3oAH4GkN5IlcY' @ 0 : 0; will stop at (end)
