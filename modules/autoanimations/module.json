@@ -14,7 +14,7 @@
         }
     ],
     "url": "https://github.com/theripper93/autoanimations",
-    "version": "6.4.4",
+    "version": "6.4.5",
     "compatibility": {
         "minimum": "13",
         "verified": "13"
@@ -83,6 +83,11 @@
             "path": "lang/zh-tw.json"
         },
         {
+            "lang": "cs",
+            "name": "Čeština",
+            "path": "lang/cs.json"
+        },
+        {
             "lang": "cn",
             "name": "中文（简体）",
             "path": "lang/zh_Hans.json"
@@ -103,5 +108,5 @@
     },
     "socket": true,
     "manifest": "https://github.com/theripper93/autoanimations/releases/latest/download/module.json",
-    "download": "https://github.com/theripper93/autoanimations/releases/download/6.4.4/module.zip"
+    "download": "https://github.com/theripper93/autoanimations/releases/download/6.4.5/module.zip"
 }

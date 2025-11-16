@@ -1,3 +1,5 @@
-2025/10/28-13:09:38.333957 73cbd7fff6c0 Recovering log #604
-2025/10/28-13:09:38.337468 73cbd7fff6c0 Delete type=3 #602
-2025/10/28-13:09:38.337538 73cbd7fff6c0 Delete type=0 #604
+2025/11/15-11:28:36.839169 7ecbee7ee6c0 Recovering log #608
+2025/11/15-11:28:36.839271 7ecbee7ee6c0 Level-0 table #610: started
+2025/11/15-11:28:36.841217 7ecbee7ee6c0 Level-0 table #610: 1702 bytes OK
+2025/11/15-11:28:36.844935 7ecbee7ee6c0 Delete type=0 #608
+2025/11/15-11:28:36.844995 7ecbee7ee6c0 Delete type=3 #607

@@ -1,5 +1,16 @@
 # Changelog
 
+## [v7.0.3] - 2025-11-02
+- Bugfixes:
+  - Small fix for V12, forgot to add a namespace migration
+
+## [v7.0.2] - 2025-11-02
+- Bugfixes:
+  - Below Tokens: Resolved Particle Effects appearing under tiles when Below Tokens was true
+  - Above Darkness: Fix for above darkness effects (Embers, Stars, Fireflies, etc) displaying particles over Fog of War
+  - Fixed Particle Effect Groups not assigned the correct localization
+  - Fixed Particle Effects in Regions not grouping effect parameters correctly when un-checked
+
 ## [v7.0.1] - 2025-10-27
 - Updates: Updated pt-br translations, thanks Kharmans!
 - Bugfixes:

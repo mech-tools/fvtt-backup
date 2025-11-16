@@ -1,8 +1,3 @@
-2025/10/18-16:07:25.112001 73cbe4fed6c0 Recovering log #515
-2025/10/18-16:07:25.116462 73cbe4fed6c0 Delete type=3 #513
-2025/10/18-16:07:25.116520 73cbe4fed6c0 Delete type=0 #515
-2025/10/28-13:08:59.084647 73cbd73ff6c0 Level-0 table #520: started
-2025/10/28-13:08:59.084705 73cbd73ff6c0 Level-0 table #520: 0 bytes OK
-2025/10/28-13:08:59.086194 73cbd73ff6c0 Delete type=0 #518
-2025/10/28-13:08:59.099133 73cbd73ff6c0 Manual compaction at level-0 from '!cards!2B0V17c4CatbEFwi' @ 72057594037927935 : 1 .. '!cards.cards!B6YRofIYgPwDZcxj.ti1YlIN0eIfXCQU5' @ 0 : 0; will stop at (end)
-2025/10/28-13:08:59.099196 73cbd73ff6c0 Manual compaction at level-1 from '!cards!2B0V17c4CatbEFwi' @ 72057594037927935 : 1 .. '!cards.cards!B6YRofIYgPwDZcxj.ti1YlIN0eIfXCQU5' @ 0 : 0; will stop at (end)
+2025/10/28-13:09:38.324537 73cbe5fef6c0 Recovering log #519
+2025/10/28-13:09:38.329492 73cbe5fef6c0 Delete type=0 #519
+2025/10/28-13:09:38.329548 73cbe5fef6c0 Delete type=3 #517

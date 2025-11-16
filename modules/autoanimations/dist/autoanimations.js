@@ -14344,26 +14344,26 @@ async function version05(flags, isActiveEffect) {
   }
 }
 const flagMigrations = {
-  async handle(item2, options2 = {}) {
-    let flags = item2.flags?.autoanimations;
+  async handle(item3, options2 = {}) {
+    let flags = item3.flags?.autoanimations;
     if (!flags) return;
     if (this.upToDate(flags)) return flags;
     if (flags.version && isNaN(flags.version)) {
       console.error("Your A-A Item data may be corrupted. Please log this in the Automated Animations GitHub issues");
       return flags;
     }
-    let newFlagData = item2.flags.autoanimations;
+    let newFlagData = item3.flags.autoanimations;
     for (let [version, migration] of Object.entries(this.migrations)) {
-      let flagVersion = item2.flags.autoanimations.version;
+      let flagVersion = item3.flags.autoanimations.version;
       if (flagVersion >= Number(version)) continue;
       newFlagData = await migration(newFlagData, options2.isActiveEffect);
     }
     if (!newFlagData) {
-      await item2.update({ "flags.-=autoanimations": null });
+      await item3.update({ "flags.-=autoanimations": null });
       return void 0;
     } else {
-      await item2.update({ "flags.-=autoanimations": null });
-      await item2.update({ "flags.autoanimations": newFlagData });
+      await item3.update({ "flags.-=autoanimations": null });
+      await item3.update({ "flags.autoanimations": newFlagData });
       return newFlagData;
     }
   },
@@ -14372,20 +14372,20 @@ const flagMigrations = {
     return flags.version >= currentFlagVersion;
   },
   migrations: {
-    "1": async (item2) => {
-      return await version01(item2);
+    "1": async (item3) => {
+      return await version01(item3);
     },
-    "2": async (item2) => {
-      return await version02(item2);
+    "2": async (item3) => {
+      return await version02(item3);
     },
-    "3": async (item2) => {
-      return await version03(item2);
+    "3": async (item3) => {
+      return await version03(item3);
     },
-    "4": async (item2) => {
-      return await version04(item2);
+    "4": async (item3) => {
+      return await version04(item3);
     },
-    "5": async (item2, isActiveEffect) => {
-      return await version05(item2, isActiveEffect);
+    "5": async (item3, isActiveEffect) => {
+      return await version05(item3, isActiveEffect);
     }
   }
 };
@@ -15602,11 +15602,11 @@ class AAAutorecFunctions {
     return sortedMenus;
   }
   // If an Autorec section has advanced search features enabled for excluding an Item property, this will check that property against that of the item used
-  static checkExcludedProperty(item2, property, path = "") {
-    if (!path || !property || !item2) {
+  static checkExcludedProperty(item3, property, path = "") {
+    if (!path || !property || !item3) {
       return;
     }
-    let value = path.split(".").reduce((a, b) => a[b], item2);
+    let value = path.split(".").reduce((a, b) => a[b], item3);
     if (typeof value !== "string") {
       debug("Invalid path for Excluded Item type", path);
       return false;
@@ -15618,8 +15618,8 @@ async function handleItem(data2) {
   if (!data2.item) {
     return;
   }
-  const item2 = data2.item;
-  const itemName = item2.name ?? item2.label;
+  const item3 = data2.item;
+  const itemName = item3.name ?? item3.label;
   const rinsedItemName = itemName ? AAAutorecFunctions.rinseName(itemName) : "noitem";
   const ammoItem = data2.ammoItem;
   const rinsedAmmoName = ammoItem?.name ? AAAutorecFunctions.rinseName(ammoItem.name) : "";
@@ -18655,7 +18655,7 @@ async function trafficCop$1(handler) {
   }
 }
 class AutoAnimations {
-  static async playAnimation(sourceToken, targets2, item2, options2 = {}) {
+  static async playAnimation(sourceToken, targets2, item3, options2 = {}) {
     custom_warning("AutoAnimations.playAnimation is deprecated in favor of AutomatedAnimations.PlayAnimation. This will be removed in Version 5");
     if (!Array.isArray(targets2)) {
       targets2 = Array.from(targets2);
@@ -18663,15 +18663,15 @@ class AutoAnimations {
     const data2 = {
       token: sourceToken,
       targets: targets2,
-      item: item2,
+      item: item3,
       ...options2
     };
     const handler = await AAHandler.make(data2);
     trafficCop$1(handler);
   }
 }
-async function playAnimation(sourceToken, item2, options2 = {}) {
-  if (!item2) {
+async function playAnimation(sourceToken, item3, options2 = {}) {
+  if (!item3) {
     return;
   }
   let targets2;
@@ -18689,7 +18689,7 @@ async function playAnimation(sourceToken, item2, options2 = {}) {
   const data2 = {
     token: sourceToken,
     targets: targets2,
-    item: item2,
+    item: item3,
     ...options2
   };
   const handler = await AAHandler.make(data2);
@@ -20414,11 +20414,11 @@ class AutorecSanitizer {
     let menu = this.getMenu();
     let menuKeys = Object.keys(menu);
     for (let i = 0; i < menuKeys.length; i++) {
-      var valueArr = menu[menuKeys[i]].map(function(item2) {
-        return item2.id;
+      var valueArr = menu[menuKeys[i]].map(function(item3) {
+        return item3.id;
       });
-      var isDuplicate = valueArr.some(function(item2, idx) {
-        return valueArr.indexOf(item2) != idx;
+      var isDuplicate = valueArr.some(function(item3, idx) {
+        return valueArr.indexOf(item3) != idx;
       });
       if (isDuplicate) {
         custom_error$1(`The ${game.i18n.localize(`autoanimations.animTypes.${menuKeys[i]}`)} Global Menu contains Duplicate ID's, commencing Sanitization`);
@@ -23287,15 +23287,15 @@ async function checkConcentration(effect) {
     socketlibSocket.executeAsGM("removeTile", tileIdArray);
   }
 }
-async function createRuleElementPF2e(item2) {
+async function createRuleElementPF2e(item3) {
   const aePF2eTypes = ["condition", "effect"];
-  if (!aePF2eTypes.includes(item2.type)) {
+  if (!aePF2eTypes.includes(item3.type)) {
     return;
   }
   if (!AnimationState.enabled) {
     return;
   }
-  const itemId2 = item2.id;
+  const itemId2 = item3.id;
   const aeToken = canvas.tokens.placeables.find((token) => token.actor?.items?.get(itemId2) != null);
   if (!aeToken) {
     debug$1("Failed to find the Token for the Active Effect");
@@ -23303,7 +23303,7 @@ async function createRuleElementPF2e(item2) {
   }
   if (game.settings.get("autoanimations", "disableGrantedAuraEffects")) {
     let tactorId = aeToken.actor.id;
-    let origin = item2.flags?.pf2e?.aura?.origin;
+    let origin = item3.flags?.pf2e?.aura?.origin;
     if (origin) {
       let idSplit = origin.split(".");
       let id = idSplit[idSplit.length - 1];
@@ -23313,7 +23313,7 @@ async function createRuleElementPF2e(item2) {
       }
     }
   }
-  const aeNameField = item2.name.replace(/[^A-Za-z0-9 .*_-]/g, "") + `${aeToken.id}`;
+  const aeNameField = item3.name.replace(/[^A-Za-z0-9 .*_-]/g, "") + `${aeToken.id}`;
   const checkAnim = await Sequencer.EffectManager.getEffects({ object: aeToken, name: aeNameField }).length > 0;
   if (checkAnim) {
     debug$1("Animation is already present on the Token, returning.");
@@ -23322,7 +23322,7 @@ async function createRuleElementPF2e(item2) {
   const data2 = {
     token: aeToken,
     targets: [],
-    item: item2,
+    item: item3,
     activeEffect: true,
     tieToDocuments: true
   };
@@ -23455,11 +23455,11 @@ async function toggleActiveEffectsWfrp(effect, toggle) {
     createActiveEffectsWfrp(effect);
   }
 }
-async function createRuleElementPtu(item2) {
+async function createRuleElementPtu(item3) {
   if (!AnimationState.enabled) {
     return;
   }
-  const itemId2 = item2.id;
+  const itemId2 = item3.id;
   const aeToken = canvas.tokens.placeables.find((token) => token.actor?.items?.get(itemId2) != null);
   if (!aeToken) {
     debug$1("Failed to find the Token for the Active Effect");
@@ -23467,7 +23467,7 @@ async function createRuleElementPtu(item2) {
   }
   if (game.settings.get("autoanimations", "disableGrantedAuraEffects")) {
     let tactorId = aeToken.actor.id;
-    let origin = item2.flags?.ptu?.aura?.origin;
+    let origin = item3.flags?.ptu?.aura?.origin;
     if (origin) {
       let idSplit = origin.split(".");
       let id = idSplit[idSplit.length - 1];
@@ -23477,7 +23477,7 @@ async function createRuleElementPtu(item2) {
       }
     }
   }
-  const aeNameField = item2.name.replace(/[^A-Za-z0-9 .*_-]/g, "") + `${aeToken.id}`;
+  const aeNameField = item3.name.replace(/[^A-Za-z0-9 .*_-]/g, "") + `${aeToken.id}`;
   const checkAnim = await Sequencer.EffectManager.getEffects({ object: aeToken, name: aeNameField }).length > 0;
   if (checkAnim) {
     debug$1("Animation is already present on the Token, returning.");
@@ -23486,7 +23486,7 @@ async function createRuleElementPtu(item2) {
   const data2 = {
     token: aeToken,
     targets: [],
-    item: item2,
+    item: item3,
     activeEffect: true,
     tieToDocuments: true
   };
@@ -23530,16 +23530,16 @@ const ptuDeletedItems = /* @__PURE__ */ new Map();
 function registerActiveEffectHooks() {
   switch (game.system.id) {
     case "pf2e":
-      let shouldContinue = function(item2, userId) {
+      let shouldContinue = function(item3, userId) {
         if (game.user.id !== userId) {
           return false;
         }
-        if (!["condition", "effect", "feat"].includes(item2.type)) {
+        if (!["condition", "effect", "feat"].includes(item3.type)) {
           return false;
         }
         return true;
       };
-      Hooks.on("createItem", (item2, data2, userId) => {
+      Hooks.on("createItem", (item3, data2, userId) => {
         if (game.settings.get("autoanimations", "disableAEAnimations")) {
           debug$1(`Active Effect Animations are Disabled`);
           return;
@@ -23548,27 +23548,27 @@ function registerActiveEffectHooks() {
           return;
         }
         const aePF2eTypes = ["condition", "effect", "feat"];
-        if (!aePF2eTypes.includes(item2.type)) {
+        if (!aePF2eTypes.includes(item3.type)) {
           debug$1("This is not a PF2e Ruleset, exiting early");
           return;
         }
-        if (item2.system?.references?.parent && game.settings.get("autoanimations", "disableNestedEffects")) {
+        if (item3.system?.references?.parent && game.settings.get("autoanimations", "disableNestedEffects")) {
           debug$1("This is a nested Ruleset, exiting early");
           return;
         }
-        createRuleElementPF2e(item2);
+        createRuleElementPF2e(item3);
       });
-      Hooks.on("preDeleteItem", (item2, data2, userId) => {
-        if (shouldContinue(item2, userId)) {
-          pf2eDeletedItems.set(item2.id, {
-            item: item2,
-            token: item2.parent?.token || canvas.tokens.placeables.find((token) => token.actor?.items?.get(item2.id) != null)
+      Hooks.on("preDeleteItem", (item3, data2, userId) => {
+        if (shouldContinue(item3, userId)) {
+          pf2eDeletedItems.set(item3.id, {
+            item: item3,
+            token: item3.parent?.token || canvas.tokens.placeables.find((token) => token.actor?.items?.get(item3.id) != null)
           });
         }
       });
-      Hooks.on("deleteItem", (item2, data2, userId) => {
-        if (shouldContinue(item2, userId)) {
-          let itemData = pf2eDeletedItems.get(item2.id);
+      Hooks.on("deleteItem", (item3, data2, userId) => {
+        if (shouldContinue(item3, userId)) {
+          let itemData = pf2eDeletedItems.get(item3.id);
           if (!itemData) {
             return;
           }
@@ -23577,7 +23577,7 @@ function registerActiveEffectHooks() {
       });
       break;
     case "sfrpg":
-      Hooks.on("updateItem", (item2, diff, action, userId) => {
+      Hooks.on("updateItem", (item3, diff, action, userId) => {
         if (game.user.id !== userId) {
           return;
         }
@@ -23585,14 +23585,14 @@ function registerActiveEffectHooks() {
           if (game.user.id !== userId2) {
             return;
           }
-          if (item2.type !== "feat") {
+          if (item3.type !== "feat") {
             return;
           }
           if (!diff.isActive) {
-            deleteActiveEffects(item2, token);
+            deleteActiveEffects(item3, token);
           } else {
             const sfrpgData = {
-              item: item2,
+              item: item3,
               token,
               targets: game.user.targets
             };
@@ -23637,16 +23637,16 @@ function registerActiveEffectHooks() {
       });
       break;
     case "ptu":
-      let ptuShouldContinue = function(item2, userId) {
+      let ptuShouldContinue = function(item3, userId) {
         if (game.user.id !== userId) {
           return false;
         }
-        if (!["condition", "effect"].includes(item2.type)) {
+        if (!["condition", "effect"].includes(item3.type)) {
           return false;
         }
         return true;
       };
-      Hooks.on("createItem", (item2, data2, userId) => {
+      Hooks.on("createItem", (item3, data2, userId) => {
         if (game.settings.get("autoanimations", "disableAEAnimations")) {
           debug$1(`Active Effect Animations are Disabled`);
           return;
@@ -23655,27 +23655,27 @@ function registerActiveEffectHooks() {
           return;
         }
         const aePtuTypes = ["condition", "effect"];
-        if (!aePtuTypes.includes(item2.type)) {
+        if (!aePtuTypes.includes(item3.type)) {
           debug$1("This is not a PTU Ruleset, exiting early");
           return;
         }
-        if (item2.system?.references?.parent && game.settings.get("autoanimations", "disableNestedEffects")) {
+        if (item3.system?.references?.parent && game.settings.get("autoanimations", "disableNestedEffects")) {
           debug$1("This is a nested Ruleset, exiting early");
           return;
         }
-        createRuleElementPtu(item2);
+        createRuleElementPtu(item3);
       });
-      Hooks.on("preDeleteItem", (item2, data2, userId) => {
-        if (ptuShouldContinue(item2, userId)) {
-          ptuDeletedItems.set(item2.id, {
-            item: item2,
-            token: item2.parent?.token || canvas.tokens.placeables.find((token) => token.actor?.items?.get(item2.id) != null)
+      Hooks.on("preDeleteItem", (item3, data2, userId) => {
+        if (ptuShouldContinue(item3, userId)) {
+          ptuDeletedItems.set(item3.id, {
+            item: item3,
+            token: item3.parent?.token || canvas.tokens.placeables.find((token) => token.actor?.items?.get(item3.id) != null)
           });
         }
       });
-      Hooks.on("deleteItem", (item2, data2, userId) => {
-        if (ptuShouldContinue(item2, userId)) {
-          let itemData = ptuDeletedItems.get(item2.id);
+      Hooks.on("deleteItem", (item3, data2, userId) => {
+        if (ptuShouldContinue(item3, userId)) {
+          let itemData = ptuDeletedItems.get(item3.id);
           if (!itemData) {
             return;
           }
@@ -41495,9 +41495,9 @@ function instance$1B($$self, $$props, $$invalidate) {
             const activeElement = activeWindow.document.activeElement;
             if (A11yHelper.isFocusTarget(activeElement) && A11yHelper.isFocusTarget(buttonsEl) && buttonsEl.contains(activeElement)) {
               for (let cntr = 0; cntr < activeElement.classList.length; cntr++) {
-                const item2 = activeElement.classList.item(cntr);
-                if (item2 !== "dialog-button" && item2 !== "default" && typeof data2.buttons[item2] !== void 0) {
-                  $$invalidate(4, currentButtonId = item2);
+                const item3 = activeElement.classList.item(cntr);
+                if (item3 !== "dialog-button" && item3 !== "default" && typeof data2.buttons[item3] !== void 0) {
+                  $$invalidate(4, currentButtonId = item3);
                   break;
                 }
               }
@@ -52404,12 +52404,12 @@ function instance$1v($$self, $$props, $$invalidate) {
     }
     return slideFade(node, transitionOptions);
   }
-  function handleOnPress(event, item2) {
+  function handleOnPress(event, item3) {
     if (!event) {
       return;
     }
-    if (typeof item2?.onPress === "function") {
-      Promise.resolve(item2.onPress({ event, item: item2, focusSource })).then((result) => {
+    if (typeof item3?.onPress === "function") {
+      Promise.resolve(item3.onPress({ event, item: item3, focusSource })).then((result) => {
         const focusDeferred = !!result;
         if (!focusDeferred) {
           A11yHelper.applyFocusSource(focusSource);
@@ -52419,8 +52419,8 @@ function instance$1v($$self, $$props, $$invalidate) {
       A11yHelper.applyFocusSource(focusSource);
     }
   }
-  function onClick(event, item2) {
-    handleOnPress(event, item2);
+  function onClick(event, item3) {
+    handleOnPress(event, item3);
     if (!closed) {
       closed = true;
       menuEl.dispatchEvent(new CustomEvent("close:popup", { bubbles: true, cancelable: true }));
@@ -52489,9 +52489,9 @@ function instance$1v($$self, $$props, $$invalidate) {
         break;
     }
   }
-  function onKeyupItem(event, item2) {
+  function onKeyupItem(event, item3) {
     if (event.code === keyCode) {
-      handleOnPress(event, item2);
+      handleOnPress(event, item3);
       if (!closed) {
         closed = true;
         event.preventDefault();
@@ -52516,16 +52516,16 @@ function instance$1v($$self, $$props, $$invalidate) {
   }
   const click_handler = (event) => onClick(event);
   const keyup_handler = (event) => onKeyupItem(event);
-  const click_handler_1 = (item2, event) => onClick(event, item2);
-  const keyup_handler_1 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_2 = (item2, event) => onClick(event, item2);
-  const keyup_handler_2 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_3 = (item2, event) => onClick(event, item2);
-  const keyup_handler_3 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_4 = (item2, event) => onClick(event, item2);
-  const keyup_handler_4 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_5 = (item2, event) => onClick(event, item2);
-  const keyup_handler_5 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_1 = (item3, event) => onClick(event, item3);
+  const keyup_handler_1 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_2 = (item3, event) => onClick(event, item3);
+  const keyup_handler_2 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_3 = (item3, event) => onClick(event, item3);
+  const keyup_handler_3 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_4 = (item3, event) => onClick(event, item3);
+  const keyup_handler_4 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_5 = (item3, event) => onClick(event, item3);
+  const keyup_handler_5 = (item3, event) => onKeyupItem(event, item3);
   const click_handler_6 = (event) => onClick(event);
   const keyup_handler_6 = (event) => onKeyupItem(event);
   function nav_binding($$value) {
@@ -52562,31 +52562,31 @@ function instance$1v($$self, $$props, $$invalidate) {
         $$invalidate(4, hasIcon = false);
         const tempItems = [];
         let cntr = -1;
-        for (const item2 of itemList) {
+        for (const item3 of itemList) {
           cntr++;
-          if (!isObject(item2)) {
+          if (!isObject(item3)) {
             throw new TypeError(`TJSMenu error: 'item[${cntr}]' is not an object.`);
           }
-          if (typeof item2.condition === "function" && !item2.condition()) {
+          if (typeof item3.condition === "function" && !item3.condition()) {
             continue;
           }
-          if (typeof item2.condition === "boolean" && !item2.condition) {
+          if (typeof item3.condition === "boolean" && !item3.condition) {
             continue;
           }
           let type;
-          if (TJSSvelte.config.isConfigEmbed(item2.svelte)) {
+          if (TJSSvelte.config.isConfigEmbed(item3.svelte)) {
             type = "class";
-          } else if (typeof item2.icon === "string") {
+          } else if (typeof item3.icon === "string") {
             const result = AssetValidator.parseMedia({
-              url: item2.icon,
+              url: item3.icon,
               mediaTypes: AssetValidator.MediaTypes.img_svg
             });
             type = result.valid ? result.elementType : "font";
             $$invalidate(4, hasIcon = true);
-          } else if (item2.icon === void 0 && typeof item2.label === "string") {
+          } else if (item3.icon === void 0 && typeof item3.label === "string") {
             type = "label";
-          } else if (typeof item2.separator === "string") {
-            if (item2.separator !== "hr") {
+          } else if (typeof item3.separator === "string") {
+            if (item3.separator !== "hr") {
               throw new Error(`TJSMenu error: 'item[${cntr}]' has unknown separator type; only 'hr' is currently supported.`);
             }
             type = "separator-hr";
@@ -52594,7 +52594,7 @@ function instance$1v($$self, $$props, $$invalidate) {
           if (type === void 0) {
             throw new TypeError(`TJSMenu error: Unknown type for 'item[${cntr}]'.`);
           }
-          tempItems.push({ ...item2, "#type": type });
+          tempItems.push({ ...item3, "#type": type });
         }
         $$invalidate(3, allItems = tempItems);
       }
@@ -53647,12 +53647,12 @@ function instance$1u($$self, $$props, $$invalidate) {
     node.style.right = expandLeft ? `${browserClientWidth - adjustedX}px` : null;
     return slideFade(node, transitionOptions);
   }
-  function handleOnPress(event, item2) {
+  function handleOnPress(event, item3) {
     if (!event) {
       return;
     }
-    if (typeof item2?.onPress === "function") {
-      Promise.resolve(item2.onPress({ event, item: item2, focusSource })).then((result) => {
+    if (typeof item3?.onPress === "function") {
+      Promise.resolve(item3.onPress({ event, item: item3, focusSource })).then((result) => {
         const focusDeferred = !!result;
         if (!focusDeferred) {
           A11yHelper.applyFocusSource(focusSource);
@@ -53662,8 +53662,8 @@ function instance$1u($$self, $$props, $$invalidate) {
       A11yHelper.applyFocusSource(focusSource);
     }
   }
-  function onClick(event, item2) {
-    handleOnPress(event, item2);
+  function onClick(event, item3) {
+    handleOnPress(event, item3);
     if (!closed) {
       dispatch2("close:contextmenu");
       closed = true;
@@ -53733,9 +53733,9 @@ function instance$1u($$self, $$props, $$invalidate) {
         break;
     }
   }
-  function onKeyupItem(event, item2) {
+  function onKeyupItem(event, item3) {
     if (event.code === keyCode) {
-      handleOnPress(event, item2);
+      handleOnPress(event, item3);
       if (!closed) {
         closed = true;
         dispatch2("close:contextmenu");
@@ -53759,16 +53759,16 @@ function instance$1u($$self, $$props, $$invalidate) {
   function click_handler(event) {
     bubble.call(this, $$self, event);
   }
-  const click_handler_1 = (item2, event) => onClick(event, item2);
-  const keyup_handler = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_2 = (item2, event) => onClick(event, item2);
-  const keyup_handler_1 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_3 = (item2, event) => onClick(event, item2);
-  const keyup_handler_2 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_4 = (item2, event) => onClick(event, item2);
-  const keyup_handler_3 = (item2, event) => onKeyupItem(event, item2);
-  const click_handler_5 = (item2, event) => onClick(event, item2);
-  const keyup_handler_4 = (item2, event) => onKeyupItem(event, item2);
+  const click_handler_1 = (item3, event) => onClick(event, item3);
+  const keyup_handler = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_2 = (item3, event) => onClick(event, item3);
+  const keyup_handler_1 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_3 = (item3, event) => onClick(event, item3);
+  const keyup_handler_2 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_4 = (item3, event) => onClick(event, item3);
+  const keyup_handler_3 = (item3, event) => onKeyupItem(event, item3);
+  const click_handler_5 = (item3, event) => onClick(event, item3);
+  const keyup_handler_4 = (item3, event) => onKeyupItem(event, item3);
   function nav_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       menuEl = $$value;
@@ -69078,27 +69078,27 @@ class TJSContextMenu {
     }
     const tempItems = [];
     let cntr = -1;
-    for (const item2 of itemList) {
+    for (const item3 of itemList) {
       cntr++;
-      if (!isObject(item2)) {
+      if (!isObject(item3)) {
         throw new TypeError(`TJSContextMenu error: 'item[${cntr}]' is not an object.`);
       }
-      if (typeof item2.condition === "function" && !item2.condition()) {
+      if (typeof item3.condition === "function" && !item3.condition()) {
         continue;
       }
-      if (typeof item2.condition === "boolean" && !item2.condition) {
+      if (typeof item3.condition === "boolean" && !item3.condition) {
         continue;
       }
       let type;
-      if (TJSSvelte.config.isConfigEmbed(item2?.svelte)) {
+      if (TJSSvelte.config.isConfigEmbed(item3?.svelte)) {
         type = "class";
-      } else if (typeof item2.icon === "string") {
-        const result = AssetValidator.parseMedia({ url: item2.icon, mediaTypes: AssetValidator.MediaTypes.img_svg });
+      } else if (typeof item3.icon === "string") {
+        const result = AssetValidator.parseMedia({ url: item3.icon, mediaTypes: AssetValidator.MediaTypes.img_svg });
         type = result.valid ? result.elementType : "font";
-      } else if (item2.icon === void 0 && typeof item2.label === "string") {
+      } else if (item3.icon === void 0 && typeof item3.label === "string") {
         type = "label";
-      } else if (typeof item2.separator === "string") {
-        if (item2.separator !== "hr") {
+      } else if (typeof item3.separator === "string") {
+        if (item3.separator !== "hr") {
           throw new Error(
             `TJSContextMenu error: 'item[${cntr}]' has unknown separator type; only 'hr' is currently supported.`
           );
@@ -69108,7 +69108,7 @@ class TJSContextMenu {
       if (type === void 0) {
         throw new TypeError(`TJSContextMenu error: Unknown type for 'item[${cntr}]'.`);
       }
-      tempItems.push({ ...item2, "#type": type });
+      tempItems.push({ ...item3, "#type": type });
     }
     return tempItems;
   }
@@ -104697,9 +104697,9 @@ function instance$9($$self, $$props, $$invalidate) {
   let nameToAdd;
   let checkAutorec;
   let { animation } = $$props;
-  let { item: item2 } = $$props;
+  let { item: item3 } = $$props;
   const { application } = getContext("#external");
-  const currentLabel = item2.name;
+  const currentLabel = item3.name;
   const menu = animation._data.menu;
   const currentMenu = game.settings.get("autoanimations", `aaAutorec-${menu}`);
   function submitNewEntry() {
@@ -104713,7 +104713,7 @@ function instance$9($$self, $$props, $$invalidate) {
   const click_handler = () => submitNewEntry();
   $$self.$$set = ($$props2) => {
     if ("animation" in $$props2) $$invalidate(4, animation = $$props2.animation);
-    if ("item" in $$props2) $$invalidate(5, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(5, item3 = $$props2.item);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*nameToAdd*/
@@ -104728,7 +104728,7 @@ function instance$9($$self, $$props, $$invalidate) {
     menu,
     submitNewEntry,
     animation,
-    item2,
+    item3,
     input_input_handler,
     click_handler
   ];
@@ -104764,7 +104764,7 @@ class ItemToAutorec extends TJSDialog {
     });
   }
 }
-function copyToFrom(animation, item2, autorecSettings, isAE) {
+function copyToFrom(animation, item3, autorecSettings, isAE) {
   let contents = [];
   let copyFrom = {
     label: "Copy From Autorec",
@@ -104773,7 +104773,7 @@ function copyToFrom(animation, item2, autorecSettings, isAE) {
       if (!animation._data.isEnabled) {
         return;
       }
-      let name = item2.name ?? item2.label;
+      let name = item3.name ?? item3.label;
       const isInAutorec = isAE ? AAAutorecFunctions.singleMenuSearch(
         AAAutorecFunctions.sortAndFilterMenus(autorecSettings),
         AAAutorecFunctions.rinseName(name)
@@ -104818,7 +104818,7 @@ function copyToFrom(animation, item2, autorecSettings, isAE) {
         );
         return;
       }
-      new ItemToAutorec({ animation, item: item2 }).render(true);
+      new ItemToAutorec({ animation, item: item3 }).render(true);
     }
   };
   if (game.user.isGM) {
@@ -105717,16 +105717,16 @@ function instance$7($$self, $$props, $$invalidate) {
   let { animation } = $$props;
   $$subscribe_animation();
   setContext("animation-data", { animation, category: animation, idx: 0 });
-  let { item: item2 } = $$props;
+  let { item: item3 } = $$props;
   const { application } = getContext("#external");
   let aefxMenu = game.settings.get("autoanimations", "aaAutorec-aefx");
   async function applyFlags() {
-    await item2.update({ "flags.-=autoanimations": null });
-    await item2.update({ "flags.autoanimations": $animation });
+    await item3.update({ "flags.-=autoanimations": null });
+    await item3.update({ "flags.autoanimations": $animation });
   }
   async function closeApp() {
-    await item2.update({ "flags.-=autoanimations": null });
-    await item2.update({ "flags.autoanimations": $animation });
+    await item3.update({ "flags.-=autoanimations": null });
+    await item3.update({ "flags.autoanimations": $animation });
     application.close();
   }
   let menu = isInAutorec ? game.i18n.localize(`autoanimations.animTypes.${isInAutorec.menu}`) : "";
@@ -105740,7 +105740,7 @@ function instance$7($$self, $$props, $$invalidate) {
     // Necessary to capture click for Firefox.
   };
   const subMenu = {
-    items: copyToFrom(animation, item2, aefxMenu, true)
+    items: copyToFrom(animation, item3, aefxMenu, true)
   };
   function select_change_handler() {
     $animation.activeEffectType = select_value(this);
@@ -105751,7 +105751,7 @@ function instance$7($$self, $$props, $$invalidate) {
   const click_handler_1 = () => closeApp();
   $$self.$$set = ($$props2) => {
     if ("animation" in $$props2) $$subscribe_animation($$invalidate(0, animation = $$props2.animation));
-    if ("item" in $$props2) $$invalidate(12, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(12, item3 = $$props2.item);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*$animation*/
@@ -105788,7 +105788,7 @@ function instance$7($$self, $$props, $$invalidate) {
     closeApp,
     buttonOverflow,
     subMenu,
-    item2,
+    item3,
     select_change_handler,
     change_handler,
     click_handler,
@@ -106217,9 +106217,9 @@ function instance$6($$self, $$props, $$invalidate) {
   let { elementRoot } = $$props;
   let { storageStore = void 0 } = $$props;
   $$subscribe_storageStore();
-  let { item: item2 } = $$props;
+  let { item: item3 } = $$props;
   let { itemFlags } = $$props;
-  const doc = new TJSDocument(item2);
+  const doc = new TJSDocument(item3);
   component_subscribe($$self, doc, (value) => $$invalidate(8, $doc = value));
   let aaFlags = itemFlags.autoanimations || {};
   const { application } = getContext("#external");
@@ -106237,7 +106237,7 @@ function instance$6($$self, $$props, $$invalidate) {
   if (!newFlagData.hasOwnProperty("version")) {
     newFlagData.version = Object.keys(flagMigrations.migrations).map((n) => Number(n)).reverse()[0];
   }
-  newFlagData.label = item2.label;
+  newFlagData.label = item3.label;
   let animation = new AnimationStore$1(newFlagData);
   component_subscribe($$self, animation, (value) => $$invalidate(12, $animation = value));
   const position = application.position;
@@ -106250,7 +106250,7 @@ function instance$6($$self, $$props, $$invalidate) {
   $$self.$$set = ($$props2) => {
     if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
     if ("storageStore" in $$props2) $$subscribe_storageStore($$invalidate(1, storageStore = $$props2.storageStore));
-    if ("item" in $$props2) $$invalidate(2, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(2, item3 = $$props2.item);
     if ("itemFlags" in $$props2) $$invalidate(6, itemFlags = $$props2.itemFlags);
   };
   $$self.$$.update = () => {
@@ -106268,7 +106268,7 @@ function instance$6($$self, $$props, $$invalidate) {
   return [
     elementRoot,
     storageStore,
-    item2,
+    item3,
     doc,
     animation,
     position,
@@ -106305,8 +106305,8 @@ class AEAppShell extends SvelteComponent {
   get item() {
     return this.$$.ctx[2];
   }
-  set item(item2) {
-    this.$$set({ item: item2 });
+  set item(item3) {
+    this.$$set({ item: item3 });
     flush();
   }
   get itemFlags() {
@@ -106507,14 +106507,14 @@ let ItemInfoDialog$1 = class ItemInfoDialog2 extends TJSDialog {
 };
 class AEMenuApp extends SvelteApp {
   /** @inheritDoc */
-  constructor(item2) {
+  constructor(item3) {
     super({
       svelte: {
         class: AEAppShell,
         target: document.body,
         props: {
-          item: item2,
-          itemFlags: item2.flags,
+          item: item3,
+          itemFlags: item3.flags,
           storageStore: aaSessionStorage.getStore(sessionConstants.activeEffectAppState)
         }
       }
@@ -108192,7 +108192,7 @@ function instance$2($$self, $$props, $$invalidate) {
   let { animation } = $$props;
   $$subscribe_animation();
   setContext("animation-data", { animation, category: animation, idx: 0 });
-  let { item: item2 } = $$props;
+  let { item: item3 } = $$props;
   game.system.id === "dnd5e";
   const { application } = getContext("#external");
   let autorecSettings = {
@@ -108205,12 +108205,12 @@ function instance$2($$self, $$props, $$invalidate) {
     aefx: game.settings.get("autoanimations", "aaAutorec-aefx")
   };
   async function applyFlags() {
-    await item2.update({ "flags.-=autoanimations": null });
-    await item2.update({ "flags.autoanimations": $animation });
+    await item3.update({ "flags.-=autoanimations": null });
+    await item3.update({ "flags.autoanimations": $animation });
   }
   async function closeApp() {
-    await item2.update({ "flags.-=autoanimations": null });
-    await item2.update({ "flags.autoanimations": $animation });
+    await item3.update({ "flags.-=autoanimations": null });
+    await item3.update({ "flags.autoanimations": $animation });
     application.close();
   }
   let filteredSettings = AAAutorecFunctions.sortAndFilterMenus(autorecSettings);
@@ -108224,7 +108224,7 @@ function instance$2($$self, $$props, $$invalidate) {
     // Necessary to capture click for Firefox.
   };
   const subMenu = {
-    items: copyToFrom(animation, item2, autorecSettings)
+    items: copyToFrom(animation, item3, autorecSettings)
   };
   let chosenMenu = $animation.menu;
   function select_change_handler() {
@@ -108240,7 +108240,7 @@ function instance$2($$self, $$props, $$invalidate) {
   const click_handler_1 = () => closeApp();
   $$self.$$set = ($$props2) => {
     if ("animation" in $$props2) $$subscribe_animation($$invalidate(0, animation = $$props2.animation));
-    if ("item" in $$props2) $$invalidate(13, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(13, item3 = $$props2.item);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*$animation*/
@@ -108284,7 +108284,7 @@ function instance$2($$self, $$props, $$invalidate) {
     closeApp,
     buttonOverflow,
     subMenu,
-    item2,
+    item3,
     select_change_handler,
     change_handler,
     click_handler,
@@ -108408,9 +108408,9 @@ function instance$1($$self, $$props, $$invalidate) {
   let { elementRoot } = $$props;
   let { storageStore = void 0 } = $$props;
   $$subscribe_storageStore();
-  let { item: item2 } = $$props;
+  let { item: item3 } = $$props;
   let { itemFlags } = $$props;
-  const doc = new TJSDocument(item2);
+  const doc = new TJSDocument(item3);
   component_subscribe($$self, doc, (value) => $$invalidate(8, $doc = value));
   let aaFlags = itemFlags.autoanimations || {};
   const { application } = getContext("#external");
@@ -108430,7 +108430,7 @@ function instance$1($$self, $$props, $$invalidate) {
   if (!newFlagData.hasOwnProperty("version")) {
     newFlagData.version = Object.keys(flagMigrations.migrations).map((n) => Number(n)).reverse()[0];
   }
-  newFlagData.label = item2.name;
+  newFlagData.label = item3.name;
   let animation = new AnimationStore(newFlagData);
   component_subscribe($$self, animation, (value) => $$invalidate(12, $animation = value));
   const position = application.position;
@@ -108443,7 +108443,7 @@ function instance$1($$self, $$props, $$invalidate) {
   $$self.$$set = ($$props2) => {
     if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
     if ("storageStore" in $$props2) $$subscribe_storageStore($$invalidate(1, storageStore = $$props2.storageStore));
-    if ("item" in $$props2) $$invalidate(2, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(2, item3 = $$props2.item);
     if ("itemFlags" in $$props2) $$invalidate(6, itemFlags = $$props2.itemFlags);
   };
   $$self.$$.update = () => {
@@ -108461,7 +108461,7 @@ function instance$1($$self, $$props, $$invalidate) {
   return [
     elementRoot,
     storageStore,
-    item2,
+    item3,
     doc,
     animation,
     position,
@@ -108498,8 +108498,8 @@ class ItemAppShell extends SvelteComponent {
   get item() {
     return this.$$.ctx[2];
   }
-  set item(item2) {
-    this.$$set({ item: item2 });
+  set item(item3) {
+    this.$$set({ item: item3 });
     flush();
   }
   get itemFlags() {
@@ -108700,14 +108700,14 @@ class ItemInfoDialog extends TJSDialog {
 }
 class ItemMenuApp extends SvelteApp {
   /** @inheritDoc */
-  constructor(item2) {
+  constructor(item3) {
     super({
       svelte: {
         class: ItemAppShell,
         target: document.body,
         props: {
-          item: item2,
-          itemFlags: item2.flags,
+          item: item3,
+          itemFlags: item3.flags,
           storageStore: aaSessionStorage.getStore(sessionConstants.itemAppState)
         }
       }
@@ -108813,7 +108813,7 @@ async function getRequiredData(data2) {
   return { ...data2 };
 }
 async function getItem(data2) {
-  let { item: item2, itemId: itemId2, itemUuid, itemName, token, tokenId, tokenUuid, targets: targets2, actorId: actorId2, actor } = data2;
+  let { item: item3, itemId: itemId2, itemUuid, itemName, token, tokenId, tokenUuid, targets: targets2, actorId: actorId2, actor } = data2;
   return itemUuid ? await getItemFromUuid(itemUuid) : token && itemId2 ? getItemFromToken(token, itemId2) : tokenId && itemId2 ? getItemFromTokenId(tokenId, itemId2) : tokenUuid && itemId2 ? getItemFromTokenUuid(tokenUuid, itemId2) : token && itemName ? getItemFromName(token, itemName) : itemId2 && (actorId2 || actor) ? await getItemFromCompiledUuid(itemId2, actor, actorId2) : itemId2 ? checkDeletedItems(itemId2) || getItemFromIdBlind(itemId2) : null;
 }
 async function getItemFromUuid(uuid) {
@@ -108858,8 +108858,8 @@ function getItemFromIdBlind(id) {
   }
 }
 function getToken(data2) {
-  let { item: item2, itemId: itemId2, itemUuid, itemName, token, tokenId, tokenUuid, targets: targets2, actorId: actorId2, actor } = data2;
-  return item2 ? item2.parent?.token ?? getTokenFromItemID(item2.id) : tokenUuid ? getTokenFromUuid(tokenUuid) : tokenId ? getTokenFromScene(tokenId) || getTokenFromCompiledUuid(tokenId) : itemId2 ? getTokenFromItemID(itemId2) : actor || actorId2 ? getTokenFromActor(actor, actorId2) : null;
+  let { item: item3, itemId: itemId2, itemUuid, itemName, token, tokenId, tokenUuid, targets: targets2, actorId: actorId2, actor } = data2;
+  return item3 ? item3.parent?.token ?? getTokenFromItemID(item3.id) : tokenUuid ? getTokenFromUuid(tokenUuid) : tokenId ? getTokenFromScene(tokenId) || getTokenFromCompiledUuid(tokenId) : itemId2 ? getTokenFromItemID(itemId2) : actor || actorId2 ? getTokenFromActor(actor, actorId2) : null;
 }
 function getTokenFromItemID(id) {
   let tokens = canvas.tokens.placeables.filter((token) => token.actor?.items?.get(id));
@@ -108898,11 +108898,11 @@ function systemHooks$z() {
     if (Object.keys(CONFIG.DND5E.areaTargetTypes).includes(activity?.target?.template?.type) || activity?.damage?.parts?.length && activity?.type != "heal" && playOnDamage) {
       return;
     }
-    const item2 = activity?.item;
-    criticalCheck$1(roll, item2);
-    const ammoItem = item2?.parent?.items?.get(data2?.ammoUpdate?.id) ?? null;
+    const item3 = activity?.item;
+    criticalCheck$1(roll, item3);
+    const ammoItem = item3?.parent?.items?.get(data2?.ammoUpdate?.id) ?? null;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    attackV2(await getRequiredData({ item: item2, actor: item2.parent, roll: item2, rollAttackHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, ammoItem, overrideNames, hit }));
+    attackV2(await getRequiredData({ item: item3, actor: item3.parent, roll: item3, rollAttackHook: { item: item3, roll }, spellLevel: roll?.data?.item?.level ?? void 0, ammoItem, overrideNames, hit }));
   });
   Hooks.on("dnd5e.rollDamageV2", async (rolls, data2) => {
     const roll = rolls[0];
@@ -108914,10 +108914,10 @@ function systemHooks$z() {
     if (Object.keys(CONFIG.DND5E.areaTargetTypes).includes(activity?.target?.template?.type) || activity?.type == "attack" && !playOnDamage) {
       return;
     }
-    const item2 = activity?.item;
-    criticalCheck$1(roll, item2);
+    const item3 = activity?.item;
+    criticalCheck$1(roll, item3);
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    damageV2(await getRequiredData({ hit, item: item2, actor: item2.parent, roll: item2, rollDamageHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, overrideNames }));
+    damageV2(await getRequiredData({ hit, item: item3, actor: item3.parent, roll: item3, rollDamageHook: { item: item3, roll }, spellLevel: roll?.data?.item?.level ?? void 0, overrideNames }));
   });
   Hooks.on("dnd5e.postUseActivity", async (activity, usageConfig, results) => {
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
@@ -108926,9 +108926,9 @@ function systemHooks$z() {
     }
     const config = usageConfig;
     const options2 = results;
-    const item2 = activity?.item;
+    const item3 = activity?.item;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    useItem$2(await getRequiredData({ item: item2, actor: item2.parent, roll: item2, useItemHook: { item: item2, config, options: options2 }, spellLevel: options2?.flags?.dnd5e?.use?.spellLevel || void 0, overrideNames }));
+    useItem$2(await getRequiredData({ item: item3, actor: item3.parent, roll: item3, useItemHook: { item: item3, config, options: options2 }, spellLevel: options2?.flags?.dnd5e?.use?.spellLevel || void 0, overrideNames }));
   });
   Hooks.on("dnd5e.preUseActivity", (activity, config) => {
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
@@ -108944,9 +108944,9 @@ function systemHooks$z() {
     const activity = fromUuidSync(template.flags?.dnd5e?.origin) ?? activityCache[template.flags?.dnd5e?.origin];
     if (!activity) return;
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
-    const item2 = activity?.item;
+    const item3 = activity?.item;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    templateAnimation$6(await getRequiredData({ item: item2, templateData: template, roll: template, isTemplate: true, overrideNames }));
+    templateAnimation$6(await getRequiredData({ item: item3, templateData: template, roll: template, isTemplate: true, overrideNames }));
   });
 }
 async function useItem$2(input) {
@@ -108990,14 +108990,14 @@ async function templateAnimation$6(input) {
 function checkReach$1(data2) {
   data2.reach = data2.item.system?.properties?.rch ? 1 : 0;
 }
-function criticalCheck$1(roll, item2 = {}) {
+function criticalCheck$1(roll, item3 = {}) {
   if (!roll.isCritical && !roll.isFumble) {
     return;
   }
   debug$1("Checking for Crit or Fumble");
   const critical = roll.isCritical;
   const fumble = roll.isFumble;
-  const token = canvas.tokens.get(roll.tokenId) || getTokenFromItem(item2);
+  const token = canvas.tokens.get(roll.tokenId) || getTokenFromItem(item3);
   const critAnim = game.settings.get("autoanimations", "CriticalAnimation");
   const critMissAnim = game.settings.get("autoanimations", "CriticalMissAnimation");
   switch (true) {
@@ -109008,10 +109008,10 @@ function criticalCheck$1(roll, item2 = {}) {
       new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") }).effect().file(critMissAnim).atLocation(token).play();
       break;
   }
-  function getTokenFromItem(item3) {
-    const token2 = item3?.parent?.token;
+  function getTokenFromItem(item4) {
+    const token2 = item4?.parent?.token;
     if (token2) return token2;
-    const tokens = canvas.tokens.placeables.filter((token3) => token3.actor?.items?.get(item3.id));
+    const tokens = canvas.tokens.placeables.filter((token3) => token3.actor?.items?.get(item4.id));
     const fallBack = tokens[0];
     const mostLikely = tokens.find((x) => x.id === _token.id);
     return mostLikely ?? fallBack;
@@ -109028,7 +109028,7 @@ function systemHooks$y() {
       if (workflow.item?.hasAreaTarget || workflow.item?.hasDamage && playOnDamage) {
         return;
       }
-      attack(getWorkflowData(workflow));
+      attack$1(getWorkflowData(workflow));
       criticalCheck(workflow);
     });
     Hooks.on("midi-qol.DamageRollComplete", (workflow) => {
@@ -109045,25 +109045,25 @@ function systemHooks$y() {
       useItem$1(getWorkflowData(workflow));
     });
   } else {
-    Hooks.on("sw5e.rollAttack", async (item2, roll) => {
+    Hooks.on("sw5e.rollAttack", async (item3, roll) => {
       let playOnDamage = game.settings.get("autoanimations", "playonDamageCore");
-      if (item2.hasAreaTarget || item2.hasDamage && playOnDamage) {
+      if (item3.hasAreaTarget || item3.hasDamage && playOnDamage) {
         return;
       }
-      attack(await getRequiredData({ item: item2, actor: item2.actor, workflow: item2 }));
+      attack$1(await getRequiredData({ item: item3, actor: item3.actor, workflow: item3 }));
     });
-    Hooks.on("sw5e.rollDamage", async (item2, roll) => {
+    Hooks.on("sw5e.rollDamage", async (item3, roll) => {
       let playOnDamage = game.settings.get("autoanimations", "playonDamageCore");
-      if (item2.hasAreaTarget || item2.hasAttack && !playOnDamage) {
+      if (item3.hasAreaTarget || item3.hasAttack && !playOnDamage) {
         return;
       }
-      damage(await getRequiredData({ item: item2, actor: item2.actor, workflow: item2 }));
+      damage(await getRequiredData({ item: item3, actor: item3.actor, workflow: item3 }));
     });
-    Hooks.on("sw5e.useItem", async (item2, config, options2) => {
-      if (item2?.hasAreaTarget || item2.hasAttack || item2.hasDamage) {
+    Hooks.on("sw5e.useItem", async (item3, config, options2) => {
+      if (item3?.hasAreaTarget || item3.hasAttack || item3.hasDamage) {
         return;
       }
-      useItem$1(await getRequiredData({ item: item2, actor: item2.actor, workflow: item2 }));
+      useItem$1(await getRequiredData({ item: item3, actor: item3.actor, workflow: item3 }));
     });
   }
   Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
@@ -109082,8 +109082,8 @@ async function useItem$1(input) {
   }
   trafficCop$1(handler);
 }
-async function attack(input) {
-  checkAmmo$1(input);
+async function attack$1(input) {
+  checkAmmo$2(input);
   checkReach(input);
   debug$1("Attack rolled, checking for animations");
   const handler = await AAHandler.make(input);
@@ -109094,7 +109094,7 @@ async function attack(input) {
   trafficCop$1(handler);
 }
 async function damage(input) {
-  checkAmmo$1(input);
+  checkAmmo$2(input);
   checkReach(input);
   debug$1("Damage rolled, checking for animations");
   const handler = await AAHandler.make(input);
@@ -109113,7 +109113,7 @@ async function templateAnimation$5(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-function checkAmmo$1(data2) {
+function checkAmmo$2(data2) {
   const ammoType = data2.item?.system?.consume?.type;
   data2.ammoItem = ammoType === "ammo" ? data2.token?.actor?.items?.get(data2.item?.system?.consume?.target) : null;
 }
@@ -109340,17 +109340,17 @@ function runPF2eWeapons(data2) {
 }
 async function runPF2eSpells(data2) {
   const msg = data2.workflow;
-  const item2 = data2.item;
+  const item3 = data2.item;
   const playOnDamage = data2.playOnDamage;
-  let spellType = getSpellType(item2);
-  if (item2.isVariant) {
+  let spellType = getSpellType(item3);
+  if (item3.isVariant) {
     data2.isVariant = true;
-    data2.originalItem = item2.original;
+    data2.originalItem = item3.original;
   }
   if (foundry.utils.isNewerVersion(game.system.version, "5.8.3")) {
-    if (item2.system.traits.value.includes("healing"))
+    if (item3.system.traits.value.includes("healing"))
       spellType = "heal";
-    else if (item2.system.traits.value.includes("attack"))
+    else if (item3.system.traits.value.includes("attack"))
       spellType = "attack";
     else
       spellType = "save";
@@ -109358,12 +109358,12 @@ async function runPF2eSpells(data2) {
   switch (spellType) {
     case "utility":
     case "save":
-      if (spellHasAOE(item2)) {
+      if (spellHasAOE(item3)) {
         return;
       }
-      if (itemHasDamage(item2) && msg.isDamageRoll) {
+      if (itemHasDamage(item3) && msg.isDamageRoll) {
         playPF2e(data2);
-      } else if (!itemHasDamage(item2)) {
+      } else if (!itemHasDamage(item3)) {
         playPF2e(data2);
       }
       break;
@@ -109375,7 +109375,7 @@ async function runPF2eSpells(data2) {
         playPF2e(data2);
       } else if (!playOnDamage && !msg.isDamageRoll) {
         playPF2e(data2);
-      } else if (!itemHasDamage(item2) && !msg.isDamageRoll) {
+      } else if (!itemHasDamage(item3) && !msg.isDamageRoll) {
         playPF2e(data2);
       }
       break;
@@ -109402,14 +109402,14 @@ async function playPF2e(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-function getSpellType(item2) {
-  return item2.system.spellType?.value;
+function getSpellType(item3) {
+  return item3.system.spellType?.value;
 }
-function spellHasAOE(item2) {
-  return item2.system.area?.value && item2.system.area?.type;
+function spellHasAOE(item3) {
+  return item3.system.area?.value && item3.system.area?.type;
 }
-function itemHasDamage(item2) {
-  let damage2 = item2.system?.damage?.value || item2.system?.damage || item2.system?.damageRolls || {};
+function itemHasDamage(item3) {
+  let damage2 = item3.system?.damage?.value || item3.system?.damage || item3.system?.damageRolls || {};
   return Object.keys(damage2).length;
 }
 function checkOutcome$1(input) {
@@ -109450,11 +109450,11 @@ function systemHooks$v() {
     if (!sourceToken) {
       return;
     }
-    const item2 = sourceToken.actor?.items?.get(itemId2);
-    if (item2.type === "feat") {
+    const item3 = sourceToken.actor?.items?.get(itemId2);
+    if (item3.type === "feat") {
       return;
     }
-    if (!item2.hasAttack && !item2.hasDamage) {
+    if (!item3.hasAttack && !item3.hasDamage) {
       let findData = funkyTest$1(msg);
       let compiledData = await getRequiredData({ itemId: findData.itemId, tokenId: findData.tokenId, actorId: findData.actorId, workflow: msg });
       runStarfinder(compiledData);
@@ -109558,11 +109558,11 @@ function systemHooks$u() {
     if (data2.damage && playtrigger != "onAttack") {
       return;
     }
-    const { token, actor, item: item2 } = getBRSWData(data2);
-    if (item2.flags?.autoanimations?.menu === "templatefx" || item2.flags?.autoanimations?.menu === "preset" && item2.flags?.autoanimations?.presetType === "proToTemp") {
+    const { token, actor, item: item3 } = getBRSWData(data2);
+    if (item3.flags?.autoanimations?.menu === "templatefx" || item3.flags?.autoanimations?.menu === "preset" && item3.flags?.autoanimations?.presetType === "proToTemp") {
       return;
     } else {
-      runSwade(token, actor, item2);
+      runSwade(token, actor, item3);
     }
   });
   Hooks.on("BRSW-RollDamage", async (data2, html) => {
@@ -109570,19 +109570,19 @@ function systemHooks$u() {
     if (!data2.damage || playtrigger != "onDamage") {
       return;
     }
-    const { token, actor, item: item2 } = getBRSWData(data2);
-    if (item2.flags?.autoanimations?.menu === "templatefx" || item2.flags?.autoanimations?.menu === "preset" && item2.flags?.autoanimations?.presetType === "proToTemp") {
+    const { token, actor, item: item3 } = getBRSWData(data2);
+    if (item3.flags?.autoanimations?.menu === "templatefx" || item3.flags?.autoanimations?.menu === "preset" && item3.flags?.autoanimations?.presetType === "proToTemp") {
       return;
     } else {
-      runSwade(token, actor, item2);
+      runSwade(token, actor, item3);
     }
   });
   Hooks.on("BRSW-CreateItemCardNoRoll", async (data2) => {
-    const { token, actor, item: item2 } = getBRSWData(data2);
-    if (item2.flags?.autoanimations?.menu === "templatefx" || item2.flags?.autoanimations?.menu === "preset" && item2.flags?.autoanimations?.presetType === "proToTemp") {
+    const { token, actor, item: item3 } = getBRSWData(data2);
+    if (item3.flags?.autoanimations?.menu === "templatefx" || item3.flags?.autoanimations?.menu === "preset" && item3.flags?.autoanimations?.presetType === "proToTemp") {
       return;
     } else {
-      runSwade(token, actor, item2);
+      runSwade(token, actor, item3);
     }
   });
 }
@@ -109595,8 +109595,8 @@ async function templateAnimation$3(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-async function runSwade(token, actor, item2) {
-  let data2 = await getRequiredData({ token, actor, item: item2 });
+async function runSwade(token, actor, item3) {
+  let data2 = await getRequiredData({ token, actor, item: item3 });
   if (!data2.item) {
     return;
   }
@@ -109721,8 +109721,8 @@ function systemHooks$t() {
       const handler = await AAHandler.make(input);
       await trafficCop$1(handler);
     } else if (template.flags?.wfrp4e?.effectData) {
-      const item2 = await fromUuid(template.flags.wfrp4e.effectData.system.sourceData.item);
-      const effect = item2.effects.get(template.flags.wfrp4e.effectData._id);
+      const item3 = await fromUuid(template.flags.wfrp4e.effectData.system.sourceData.item);
+      const effect = item3.effects.get(template.flags.wfrp4e.effectData._id);
       const input = await getRequiredData({ itemUuid: effect.parent.uuid, templateData: template, workflow: template, isTemplate: true });
       if (!input.item) {
         return;
@@ -109822,22 +109822,22 @@ function systemHooks$r() {
       workflow: msg
     };
     let compiledData = await getRequiredData(data2);
-    const item2 = compiledData.item;
-    if (!item2) {
+    const item3 = compiledData.item;
+    if (!item3) {
       return;
     }
     const actionId = msg.flags.pf1?.metadata?.action;
-    if (item2 && actionId) {
-      const actionName = item2.actions?.get(actionId)?.name ?? "";
+    if (item3 && actionId) {
+      const actionName = item3.actions?.get(actionId)?.name ?? "";
       if (actionName) {
         compiledData.overrideNames.push(actionName);
       }
     }
-    if (item2 instanceof pf1.documents.item.ItemWeaponPF || item2 instanceof pf1.documents.item.ItemAttackPF) {
-      compiledData.extraNames.push(...item2.system.baseTypes || []);
+    if (item3 instanceof pf1.documents.item.ItemWeaponPF || item3 instanceof pf1.documents.item.ItemAttackPF) {
+      compiledData.extraNames.push(...item3.system.baseTypes || []);
       const groupsOnItem = [
-        ...(item2.system.weaponGroups?.value || []).map((key) => pf1.config.weaponGroups[key]),
-        ...item2.system.weaponGroups?.custom || []
+        ...(item3.system.weaponGroups?.value || []).map((key) => pf1.config.weaponGroups[key]),
+        ...item3.system.weaponGroups?.custom || []
       ].filter((x) => !!x);
       compiledData.extraNames.push(...groupsOnItem);
     }
@@ -109858,15 +109858,15 @@ function systemHooks$q() {
     if (msg.user.id !== game.user.id) {
       return;
     }
-    const item2 = await fromUuid(msg.flags?.a5e?.itemId);
+    const item3 = await fromUuid(msg.flags?.a5e?.itemId);
     let templateData = [];
-    while (queue.length && queue[0][0] === item2.uuid) templateData.push(queue.shift()[1]);
+    while (queue.length && queue[0][0] === item3.uuid) templateData.push(queue.shift()[1]);
     if (templateData.length) {
       templateData.forEach((data2) => runA5e$1(data2));
       return;
     }
     const compiledData = await getRequiredData({
-      item: item2,
+      item: item3,
       itemUuid: msg.flags?.a5e?.itemId,
       actorId: msg.speaker?.actorId,
       tokenId: msg.speaker?.token,
@@ -109874,17 +109874,17 @@ function systemHooks$q() {
     });
     runA5e$1(compiledData);
   });
-  Hooks.on("a5e.measuredTemplatePlaced", async (item2, templateData, userId) => {
+  Hooks.on("a5e.measuredTemplatePlaced", async (item3, templateData, userId) => {
     if (userId !== game.user.id) return;
     if (templateData.length) templateData = templateData[0];
     else return;
     const compiledData = await getRequiredData({
-      item: item2,
+      item: item3,
       templateData,
       workflow: templateData,
       isTemplate: true
     });
-    queue.push([item2.uuid, compiledData]);
+    queue.push([item3.uuid, compiledData]);
   });
 }
 async function runA5e$1(input) {
@@ -110098,7 +110098,7 @@ async function checkChatMessage$2(msg) {
   });
   compiledData.attackRoll = findData.attackRoll;
   await setFireModeOptions(compiledData);
-  let isAmmo = checkAmmo(compiledData);
+  let isAmmo = checkAmmo$1(compiledData);
   if (isAmmo) {
     compiledData.ammoItem = isAmmo;
   }
@@ -110110,9 +110110,9 @@ async function checkChatMessage$2(msg) {
   trafficCop$1(handler);
 }
 function getFireMode(data2) {
-  let item2 = data2.item || {};
-  let id = item2.id;
-  let parent = item2.parent;
+  let item3 = data2.item || {};
+  let id = item3.id;
+  let parent = item3.parent;
   let fireMode = parent?.flags?.["cyberpunk-red-core"]?.[`firetype-${id}`] ?? "single";
   data2.fireMode = fireMode;
   return fireMode;
@@ -110130,7 +110130,7 @@ async function setFireModeOptions(data2) {
     data2.overrideRepeat = 10;
   }
 }
-function checkAmmo(data2) {
+function checkAmmo$1(data2) {
   const weapon = data2?.item ?? {};
   const token = data2?.token;
   const actor = token?.actor ?? weapon?.actor ?? null;
@@ -110378,10 +110378,10 @@ async function checkChatMessage$1(msg) {
     debug$1("Unable to locate Item ID from Chat Message HTML");
     return;
   }
-  let item2 = findData.item ?? msg.item ?? msg.itemSource;
+  let item3 = findData.item ?? msg.item ?? msg.itemSource;
   let compiledData = await getRequiredData({
     itemId: findData.itemId,
-    item: item2,
+    item: item3,
     actorId: msg.speaker?.actor || findData.actorId,
     tokenId: msg.speaker?.token || findData.tokenId,
     workflow: msg
@@ -110406,10 +110406,10 @@ function funkyTest(msg) {
   const flagTokenUUID = systemFlags.tokenUuid;
   const flagItemUUID = systemFlags.itemUuid;
   const token = fromUuidSync(flagTokenUUID || elTokenUUID) || canvas.tokens.get(msg.speaker?.token);
-  let item2 = fromUuidSync(flagItemUUID || elItemUUID) || msg.item || msg.itemSource;
-  const actor = item2?.actor || token?.actor || game.actors.get(flagActorID || elActorID);
-  if (!item2) item2 = actor?.items.get(flagItemID || elItemID || msg.rolls?.[0]?.options?.itemId);
-  return { token, item: item2, actor, itemId: item2?.id, actorId: actor?.id, tokenId: token?.id };
+  let item3 = fromUuidSync(flagItemUUID || elItemUUID) || msg.item || msg.itemSource;
+  const actor = item3?.actor || token?.actor || game.actors.get(flagActorID || elActorID);
+  if (!item3) item3 = actor?.items.get(flagItemID || elItemID || msg.rolls?.[0]?.options?.itemId);
+  return { token, item: item3, actor, itemId: item3?.id, actorId: actor?.id, tokenId: token?.id };
 }
 const aaChatmessage = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -110520,15 +110520,15 @@ async function checkChatMessage(msg) {
   }
 }
 async function computeCompiledData(msg, test) {
-  let item2;
+  let item3;
   switch (test.type) {
     case TEST.Skill:
-      item2 = {
+      item3 = {
         name: test.data?.action?.skill
       };
       break;
     case TEST.Drain:
-      item2 = {
+      item3 = {
         name: "drain"
       };
       break;
@@ -110536,13 +110536,13 @@ async function computeCompiledData(msg, test) {
       return;
     default:
       const itemUuid = test.data.sourceItemUuid;
-      item2 = await fromUuid(itemUuid);
-      if (!item2) {
+      item3 = await fromUuid(itemUuid);
+      if (!item3) {
         return;
       }
   }
   const compiledData = await getRequiredData({
-    item: item2,
+    item: item3,
     actorId: msg.speaker?.actor,
     tokenId: msg.speaker?.token,
     workflow: msg
@@ -110602,59 +110602,59 @@ function systemHooks$b() {
     if (userId !== game.user.id) {
       return;
     }
-    const item2 = template.flags?.dnd4e?.item;
-    item2.hasAreaTarget = true;
-    const shouldPlay = shouldPlayAnimation(item2, "template");
+    const item3 = template.flags?.dnd4e?.item;
+    item3.hasAreaTarget = true;
+    const shouldPlay = shouldPlayAnimation(item3, "template");
     if (!shouldPlay) {
       return;
     }
     const reqData = await getRequiredData({
-      item: item2,
+      item: item3,
       templateData: template,
       workflow: template,
       isTemplate: true
     });
     templateAnimation$1(reqData);
   });
-  Hooks.on("dnd4e.rollAttack", async (item2, targetData, speakerData) => {
-    const shouldPlay = shouldPlayAnimation(item2, "attack");
+  Hooks.on("dnd4e.rollAttack", async (item3, targetData, speakerData) => {
+    const shouldPlay = shouldPlayAnimation(item3, "attack");
     if (!shouldPlay) {
       return;
     }
     handleAnimation(
-      item2,
+      item3,
       speakerData,
       targetData.targets,
       targetData.targetHit
     );
   });
-  Hooks.on("dnd4e.rollDamage", async (item2, speakerData) => {
-    const shouldPlay = shouldPlayAnimation(item2, "damage");
+  Hooks.on("dnd4e.rollDamage", async (item3, speakerData) => {
+    const shouldPlay = shouldPlayAnimation(item3, "damage");
     if (!shouldPlay) {
       return;
     }
     const targets2 = Array.from(game.user.targets);
-    handleAnimation(item2, speakerData, targets2);
+    handleAnimation(item3, speakerData, targets2);
   });
-  Hooks.on("dnd4e.rollHealing", async (item2, speakerData) => {
-    const shouldPlay = shouldPlayAnimation(item2, "healing");
+  Hooks.on("dnd4e.rollHealing", async (item3, speakerData) => {
+    const shouldPlay = shouldPlayAnimation(item3, "healing");
     if (!shouldPlay) {
       return;
     }
     const targets2 = Array.from(game.user.targets);
-    handleAnimation(item2, speakerData, targets2);
+    handleAnimation(item3, speakerData, targets2);
   });
-  Hooks.on("dnd4e.usePower", async (item2, speakerData) => {
-    const shouldPlay = shouldPlayAnimation(item2, "usePower");
+  Hooks.on("dnd4e.usePower", async (item3, speakerData) => {
+    const shouldPlay = shouldPlayAnimation(item3, "usePower");
     if (!shouldPlay) {
       return;
     }
     const targets2 = Array.from(game.user.targets);
-    handleAnimation(item2, speakerData, targets2);
+    handleAnimation(item3, speakerData, targets2);
   });
 }
-function shouldPlayAnimation(item2, hookName) {
-  const itemData = item2.system ? item2.system : item2;
+function shouldPlayAnimation(item3, hookName) {
+  const itemData = item3.system ? item3.system : item3;
   const aaHookToUse = itemData.macro?.autoanimationHook ? itemData.macro.autoanimationHook : false;
   console.log(`should play animation for hook ${hookName}?`);
   if (!aaHookToUse) {
@@ -110688,14 +110688,14 @@ function getItemDefault(itemData) {
     return "usePower";
   }
 }
-async function handleAnimation(item2, speakerData, targets2, hitTargets2 = []) {
+async function handleAnimation(item3, speakerData, targets2, hitTargets2 = []) {
   const token = game.scenes.get(speakerData.scene).tokens.get(speakerData.token);
   const workflowData = {
-    item: item2,
+    item: item3,
     token,
     actor: null,
     targets: targets2,
-    workflow: item2
+    workflow: item3
   };
   if (hitTargets2.length) {
     workflowData.hitTargets = hitTargets2;
@@ -110722,18 +110722,84 @@ const aaDnd4e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
 }, Symbol.toStringTag, { value: "Module" }));
 function systemHooks$a() {
   Hooks.on("createChatMessage", async (msg) => {
-    if (msg.flags.criticaled) {
+    const context = msg.flags?.world?.context;
+    if (!context) return;
+    if (context.criticaled) {
       let critAnim = game.settings.get("autoanimations", "CriticalAnimation");
-      new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") }).effect().file(critAnim).atLocation(canvas.tokens.get(msg.flags.targetLoc)).scaleToObject(2).play();
+      let targetToken = null;
+      if (context.targetTokenUuid) {
+        const targetDoc = await fromUuid(context.targetTokenUuid);
+        targetToken = targetDoc?.object || canvas.tokens.get(targetDoc?.id);
+      }
+      if (!targetToken && game.user.targets.size > 0) {
+        targetToken = Array.from(game.user.targets)[0];
+      }
+      if (targetToken) {
+        new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") }).effect().file(critAnim).atLocation(targetToken).scaleToObject(2).play();
+      }
     }
-    if (msg.flags.fumbled) {
+    if (context.fumbled) {
       let critMissAnim = game.settings.get("autoanimations", "CriticalMissAnimation");
-      new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") }).effect().file(critMissAnim).atLocation(canvas.tokens.get(msg.speaker.token)).scaleToObject(2).play();
+      let sourceToken = null;
+      if (context.actorUuid) {
+        const actor = await fromUuid(context.actorUuid);
+        if (actor) {
+          const tokens = actor.getActiveTokens();
+          sourceToken = Array.isArray(tokens) ? tokens[0]?.object : tokens?.object;
+        }
+      }
+      if (!sourceToken && msg.speaker?.token) {
+        sourceToken = canvas.tokens.get(msg.speaker.token);
+      }
+      if (sourceToken) {
+        new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") }).effect().file(critMissAnim).atLocation(sourceToken).scaleToObject(2).play();
+      }
     }
-    if (msg.flags.item) {
-      useItem(await getRequiredData({ item: msg.flags.item, actor: msg.flags.actor, workflow: msg.flags.item }));
-    } else if (msg.flags.action) {
-      useItem(await getRequiredData({ item: msg.flags.action, actor: msg.flags.actor, workflow: msg.flags.action }));
+    if (context.itemUuid) {
+      const item3 = await fromUuid(context.itemUuid);
+      const actor = context.actorUuid ? await fromUuid(context.actorUuid) : null;
+      if (item3) {
+        let targetTokenUuid = context.targetTokenUuid;
+        let targetIds = null;
+        if (targetTokenUuid) {
+          const targetDoc = await fromUuid(targetTokenUuid);
+          if (targetDoc?.id) {
+            targetIds = [targetDoc.id];
+          }
+        }
+        if (context.criticaled !== void 0 || context.fumbled !== void 0 || context.targetTokenUuid) {
+          attack(await getRequiredData({
+            item: item3,
+            itemUuid: context.itemUuid,
+            actor,
+            targetIds,
+            workflow: msg
+          }));
+        } else {
+          useItem(await getRequiredData({
+            item: item3,
+            itemUuid: context.itemUuid,
+            actor,
+            workflow: msg
+          }));
+        }
+      }
+    } else if (context.action) {
+      const action = context.action;
+      const actor = context.actorUuid ? await fromUuid(context.actorUuid) : null;
+      let item3 = null;
+      if (context.itemUuid) {
+        item3 = await fromUuid(context.itemUuid);
+      } else if (action.parentuuid) {
+        item3 = await fromUuid(action.parentuuid);
+      }
+      if (actor || item3) {
+        useItem(await getRequiredData({
+          item: item3,
+          actor,
+          workflow: msg
+        }));
+      }
     }
   });
 }
@@ -110745,6 +110811,20 @@ async function useItem(input) {
     return;
   }
   trafficCop$1(handler);
+}
+async function attack(input) {
+  checkAmmo(input);
+  debug$1("Attack rolled, checking for animations");
+  const handler = await AAHandler.make(input);
+  if (!handler?.item || !handler?.sourceToken) {
+    console.log("Automated Animations: No Item or Source Token", handler);
+    return;
+  }
+  trafficCop$1(handler);
+}
+function checkAmmo(data2) {
+  const ammoType = data2.item?.system?.consume?.type;
+  data2.ammoItem = ammoType === "ammo" ? data2.token?.actor?.items?.get(data2.item?.system?.consume?.target) : null;
 }
 const aaArs = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -110835,17 +110915,17 @@ async function templateAnimation(input) {
 }
 async function runPtu(data2) {
   const msg = data2.workflow;
-  const item2 = data2.item;
+  const item3 = data2.item;
   const playOnDamage = data2.playOnDamage;
   const isDamageRoll = msg.isDamageRoll;
-  if (item2.type === "effect" || item2.type === "condition") {
+  if (item3.type === "effect" || item3.type === "condition") {
     debug$1("PTU | This is a Condition or Effect, exiting main workflow");
     return;
   }
   if (!msg.isRoll) {
     return;
   }
-  if (moveHasAOE(item2)) {
+  if (moveHasAOE(item3)) {
     return;
   }
   if (playOnDamage && isDamageRoll || !playOnDamage && !isDamageRoll) {
@@ -110860,8 +110940,8 @@ async function playPtu(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-function moveHasAOE(item2) {
-  return item2.system.area?.value && item2.system.area?.type;
+function moveHasAOE(item3) {
+  return item3.system.area?.value && item3.system.area?.type;
 }
 function checkOutcome(input) {
   let outcome = input.workflow.flags?.ptu?.context?.outcome;
@@ -110995,16 +111075,16 @@ async function computeCompiledDataAnarchy(msg, anarchyData) {
   let actor = game.actors.get(anarchyData?.attackRoll?.actor?.id);
   debug$1("Anarchy actor", actor);
   let weaponId = anarchyData?.attackRoll?.weapon.id;
-  let item2 = {
+  let item3 = {
     id: weaponId,
     name: actor?.items?.get(weaponId)?.name
   };
   debug$1("Anarchy content to  getRequiredData:", {
-    item: item2,
+    item: item3,
     actorId: actor
   });
   const compiledData = await getRequiredData({
-    item: item2,
+    item: item3,
     actorId: msg.speaker?.actor,
     workflow: msg
   });
@@ -111248,6 +111328,9 @@ function systemHooks() {
     if (msg.type != "dualityRoll" && msg.type != "adversaryRoll") {
       return;
     }
+    if (msg.user.id !== game.user.id) {
+      return;
+    }
     let data2 = msg.system ?? msg.flags?.daggerheart;
     checkDHMessage(data2);
   });
@@ -111273,12 +111356,16 @@ function getTargetsDH() {
 }
 function getItemDH(selection, source2, itemTitle) {
   const actor = fromUuidSync(source2);
-  let item2 = actor.items.find((i) => i._id == selection);
-  if (!item2) {
-    let DHItem = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
-    item2 = DHItem;
+  let item3 = actor.items.find((i) => i._id == selection);
+  if (itemTitle.indexOf(":")) {
+    let DHItemSubName = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
+    item2 = DHItemSubName;
   }
-  return item2;
+  if (!item3) {
+    let DHItem = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
+    item3 = DHItem;
+  }
+  return item3;
 }
 const aaDaggerheart = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -111387,13 +111474,13 @@ function registerAAItemHooks() {
           icon: "fas fa-biohazard",
           label: "A-A",
           async onClickAction() {
-            const item2 = this.document;
-            await flagMigrations.handle(item2);
+            const item3 = this.document;
+            await flagMigrations.handle(item3);
             const pf2eRuleTypes = ["condition", "effect"];
             if (game.system.id === "pf1" && itemSheet.item?.type === "buff" || game.system.id === "pf2e" && pf2eRuleTypes.includes(itemSheet.item?.type)) {
-              new AEMenuApp(item2, {}).render(true, { focus: true });
+              new AEMenuApp(item3, {}).render(true, { focus: true });
             } else {
-              new ItemMenuApp(item2, {}).render(true, { focus: true });
+              new ItemMenuApp(item3, {}).render(true, { focus: true });
             }
           }
         }
@@ -111401,8 +111488,8 @@ function registerAAItemHooks() {
     });
   });
 }
-Hooks.on("aa.workflow", async (token, item2, options2) => {
-  playAnimation(token, item2, options2);
+Hooks.on("aa.workflow", async (token, item3, options2) => {
+  playAnimation(token, item3, options2);
 });
 Hooks.on("aa.initialize", async () => {
   const s3Location = game.settings.get("autoanimations", "jb2aLocation");
@@ -111424,8 +111511,8 @@ Hooks.once("ready", async function() {
   gameSettings.initialize();
   autoRecStores.initialize();
   handleAutorec();
-  Hooks.on("deleteItem", async (item2) => {
-    storeDeletedItems(item2);
+  Hooks.on("deleteItem", async (item3) => {
+    storeDeletedItems(item3);
   });
   const systemIdClean = game.system.id.replace(/\-/g, "");
   systemSupport[systemIdClean] ? systemSupport[systemIdClean].systemHooks() : systemHooks$f();
@@ -111433,8 +111520,8 @@ Hooks.once("ready", async function() {
   handleTemplates();
   Hooks.callAll("aa.initialize");
 });
-function storeDeletedItems(item2) {
-  aaDeletedItems.set(item2.id, item2);
+function storeDeletedItems(item3) {
+  aaDeletedItems.set(item3.id, item3);
 }
 function handleAutorec() {
   let versionCheck = game.settings.get("autoanimations", "aaAutorec").version;
@@ -111450,7 +111537,7 @@ function handleAutorec() {
 window.AutoAnimations = AutoAnimations;
 window.AutomatedAnimations = {
   AutorecManager: AAAutorecManager,
-  playAnimation: (sourceToken, item2, options2 = {}) => playAnimation(sourceToken, item2, options2)
+  playAnimation: (sourceToken, item3, options2 = {}) => playAnimation(sourceToken, item3, options2)
 };
 function handleTemplates() {
   let templatesGridHidden = game.settings.get("autoanimations", "hideTemplateGrid");

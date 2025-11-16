@@ -86,7 +86,15 @@ var MEDIA_HOOKS = [
   { on: "renderJournalSheet", htmlContext: [".journal-entry-page:not(form)"] },
   { on: "renderActorSheet", htmlContext: [".editor-content:not(.ProseMirror)"] },
   { on: "renderItemSheet", htmlContext: [".editor-content:not(.ProseMirror)"] },
-  { on: "renderItemSheet5e", htmlContext: [".editor-content:not(.ProseMirror)"] }
+  { on: "renderItemSheet5e", htmlContext: [".editor-content:not(.ProseMirror)"] },
+  {
+    on: "renderEnhancedJournal",
+    htmlContext: [
+      ".journal-entry-page:not(.ProseMirror)",
+      ".editor-parent:not(.editing)",
+      ".list-container .sheet-body"
+    ]
+  }
 ];
 var MEDIA_VALIDATORS = {
   [MEDIA_TYPES.img]: (element) => element.complete && element.naturalWidth !== 0,
