@@ -3,14 +3,14 @@
   "id": "le-serpent-a-deux-tetes",
   "system": "CoC7",
   "joinTheme": "default",
-  "coreVersion": "13.350",
+  "coreVersion": "13.351",
   "compatibility": {
     "minimum": "13",
-    "verified": "13.350"
+    "verified": "13.351"
   },
   "systemVersion": "7.23",
-  "lastPlayed": "Tue Nov 04 2025 18:19:09 GMT+0100 (Central European Standard Time)",
-  "playtime": 42937084,
+  "lastPlayed": "Mon Nov 17 2025 12:20:57 GMT+0100 (Central European Standard Time)",
+  "playtime": 42943384,
   "background": "modules/le-serpent-a-deux-tetes/assets/title-page.webp",
   "safeMode": false,
   "description": "",
