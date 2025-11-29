@@ -1023,6 +1023,7 @@ export class SR6Config {
 
         system_physical_mod: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.localize("shadowrun6.monitor.physical_monitor")}),
         system_stun_mod: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.localize("shadowrun6.monitor.stun_monitor")}),
+        system_overflow_mod: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.localize("shadowrun6.monitor.overflow_monitor")}),
 
         system_attackrating_physical_mod: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.localize("shadowrun6.attack_rating.physical")}),
         system_attackrating_astral_mod:game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.localize("shadowrun6.attack_rating.astral")}),             // Magic AR
@@ -1069,6 +1070,7 @@ export class SR6Config {
         system_skills_cracking_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.cracking")})}),
         system_skills_electronics_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.electronics")})}),
         system_skills_enchanting_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.enchanting")})}),
+        system_skills_engineering_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.engineering")})}),
         system_skills_exotic__weapons_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.exotic_weapons")})}),
         system_skills_firearms_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.firearms")})}),
         system_skills_influence_modifier: game.i18n.format("shadowrun6.active_effect.Modifier", {attribute: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.influence")})}),
@@ -1091,6 +1093,7 @@ export class SR6Config {
         system_skills_cracking_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.cracking")})}),
         system_skills_electronics_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.electronics")})}),
         system_skills_enchanting_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.enchanting")})}),
+        system_skills_engineering_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.engineering")})}),
         system_skills_exotic__weapons_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.exotic_weapons")})}),
         system_skills_firearms_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.firearms")})}),
         system_skills_influence_points: game.i18n.format("shadowrun6.active_effect.Pool", {pool: game.i18n.format("shadowrun6.active_effect.Skill", {skill: game.i18n.localize("skill.influence")})}),

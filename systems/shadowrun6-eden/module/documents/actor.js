@@ -104,9 +104,51 @@ export default class Shadowrun6Actor extends Actor {
     prepareEmbeddedDocuments() {
         console.log("SR6E | Shadowrun6Actor.prepareEmbeddedDocuments()", this.name, this.uuid);
         this._embeddedPreparation = true;
-        super.prepareEmbeddedDocuments();
+        super.prepareEmbeddedDocuments(); // calls super.prepareEmbeddedDocuments() and then this.applyActiveEffects();
         delete this._embeddedPreparation;
     }
+
+    /**
+     * @Override
+     * Copies FoundryV13 method to add in `@item` support in the value field
+     * Apply any transformations to the Actor data which are caused by ActiveEffects.
+     */
+    applyActiveEffects() {
+        const overrides = {};
+        this.statuses.clear();
+
+        // Organize non-disabled effects by their application priority
+        const changes = [];
+        for ( const effect of this.allApplicableEffects() ) {
+            if ( !effect.active ) continue;
+            changes.push(...effect.changes.map(change => {
+                const c = foundry.utils.deepClone(change);
+                c.effect = effect;
+                c.priority = c.priority ?? (c.mode * 10);
+                return c;
+            }));
+            for ( const statusId of effect.statuses ) this.statuses.add(statusId);
+        }
+        changes.sort((a, b) => a.priority - b.priority);
+
+        // Apply all changes
+        for ( const change of changes ) {
+            if ( !change.key ) continue;
+
+            // shadowrun6-eden adds @item support:
+            if ( typeof change.value === "string" && change.value?.startsWith('@item') && change.effect.parent?.documentName === 'Item') {
+                const key = change.value.substring(6);
+                change.value = foundry.utils.getProperty(change.effect.parent, key);
+            }
+
+            const changes = change.effect.apply(this, change);
+            Object.assign(overrides, changes);
+        }
+
+        // Expand the set of final overrides
+        this.overrides = foundry.utils.expandObject(overrides);
+    }
+
     /**
      * @Override
      * TODO rework move to prepareBaseData() and prepareDerivedData()
@@ -570,7 +612,7 @@ export default class Shadowrun6Actor extends Actor {
                 data.physical.base = 8 + Math.round(data.attributes["bod"].pool / 2);
                 data.physical.max = data.physical.base + data.physical.mod;
                 data.physical.value = data.physical.max - data.physical.dmg;
-                data.overflow.max = data.attributes["bod"].pool * 2;
+                data.overflow.max = data.attributes["bod"].pool * 2 + (data.overflow.mod ?? 0);
                 data.overflow.value = 100-Math.round(data.overflow.dmg / data.overflow.max * 100);
             }
             if (data.stun) {
@@ -841,7 +883,7 @@ export default class Shadowrun6Actor extends Actor {
                 data.skills[id].poolS = 0;
                 data.skills[id].poolE = 0;
                 if (data.skills[id].specialization) {
-                    if(id == 'exotic_weapons') {
+                    if(id === 'exotic_weapons') {
                         data.skills[id].exotic = true;
                         data.skills[id].poolS = data.skills[id].pool;
                     } else {
@@ -849,13 +891,14 @@ export default class Shadowrun6Actor extends Actor {
                     }
                 }
                 if (data.skills[id].expertise) {
-                    if(id == 'exotic_weapons') {
+                    if(id === 'exotic_weapons') {
                         data.skills[id].exotic = true;
                         data.skills[id].poolE = data.skills[id].pool;
                     } else {
                         data.skills[id].poolE = data.skills[id].pool + 3;
                     }
                 }
+                if(id === 'exotic_weapons') data.skills[id].pool = 0 // Only specializations have a dicepool
                 if (data.skills[id].pool < 0) {
                     data.skills[id].pool = 0;
                 }
@@ -1678,7 +1721,7 @@ export default class Shadowrun6Actor extends Actor {
         if (!skillId)
             throw "Skill ID may not be undefined";
         const skl = system.skills[skillId];
-        console.log("SR6E | _getSkillPool", skl);
+        // console.log("SR6E | _getSkillPool", skl);
         if (!skillId) {
             throw "Unknown skill '" + skillId + "'";
         }
@@ -1695,20 +1738,23 @@ export default class Shadowrun6Actor extends Actor {
             else
                 return 0;
         }
-        if (spec) {
+        if (spec && skillId !== 'exotic_weapons') {
             if (spec == skl.expertise) {
                 value += 3;
             }
             else if (spec == skl.specialization) {
                 value += 2;
             }
+        } else if (skillId === 'exotic_weapons') {
+            console.log('JEROEN', this.name, skillId, spec, attrib)
+            // TODO Should be pool 0 if not specialized
         }
         // Add attribute
         // console.log("SR6E | _getSkillPool | value", value);
         // console.log("SR6E | _getSkillPool | attrib", parseInt(system.attributes[attrib].pool));
         value = parseInt("" + value);
         value += parseInt(system.attributes[attrib].pool);
-        console.log("SR6E | _getSkillPool | value", value);
+        // console.log("SR6E | _getSkillPool | value", value);
         return value;
     }
     //---------------------------------------------------------
@@ -2373,8 +2419,6 @@ export default class Shadowrun6Actor extends Actor {
                         importedItem.system.description = `<h3>${item.name}</h3>${importedItem.system.description}`;
                         importedItem.name = item.data.customName;
                     } else {
-                        console.log('JEROEN genesisID', item.data.genesisID);
-                        console.log('JEROEN name', item.name);
                         importedItem.name = item.name;
                     }
                     if (item.data.notes) importedItem.system.description += `<hr><p>${item.data.notes}</p>`;

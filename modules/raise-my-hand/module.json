@@ -10,7 +10,7 @@
       "flags": {}
     }
   ],
-  "version": "2.0.1",
+  "version": "2.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14.349"
@@ -57,6 +57,6 @@
   "bugs": "https://github.com/henry-malinowski/raise-my-hand-plus/issues",
   "changelog": "https://github.com/henry-malinowski/raise-my-hand-plus/blob/main/CHANGELOG.md",
   "url": "https://github.com/henry-malinowski/raise-my-hand-plus",
-  "manifest": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/download/v2.0.1/module.json",
-  "download": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/download/v2.0.1/module.zip"
+  "manifest": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/download/v2.1.0/module.json",
+  "download": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/download/v2.1.0/module.zip"
 }

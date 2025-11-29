@@ -1,3 +1,7 @@
-2025/10/28-13:09:39.687547 73cbe57ee6c0 Recovering log #132
-2025/10/28-13:09:39.692684 73cbe57ee6c0 Delete type=0 #132
-2025/10/28-13:09:39.692717 73cbe57ee6c0 Delete type=3 #130
+2025/11/15-11:28:38.570178 7ecbeefef6c0 Recovering log #135
+2025/11/15-11:28:38.575019 7ecbeefef6c0 Delete type=0 #135
+2025/11/15-11:28:38.575073 7ecbeefef6c0 Delete type=3 #134
+2025/11/28-09:26:29.309596 7ec9cffff6c0 Level-0 table #139: started
+2025/11/28-09:26:29.309649 7ec9cffff6c0 Level-0 table #139: 0 bytes OK
+2025/11/28-09:26:29.310690 7ec9cffff6c0 Delete type=0 #137
+2025/11/28-09:26:29.311066 7ec9cffff6c0 Manual compaction at level-0 from '!folders!6RoSRrK7DKEQcH22' @ 72057594037927935 : 1 .. '!scenes.walls!s5ElU6kFuSeZaRZl.vFfdcB0MyMAPza0V' @ 0 : 0; will stop at (end)

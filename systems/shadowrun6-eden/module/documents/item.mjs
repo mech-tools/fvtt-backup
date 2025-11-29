@@ -154,6 +154,7 @@ export default class SR6Item extends Item {
     if (typeof source.system?.defense === 'string') source.system.defense = parseInt(source.system.defense);
     if (typeof source.system?.capacity === 'string') source.system.capacity = parseInt(source.system.capacity);
     if (typeof source.system?.social === 'string') source.system.social = parseInt(source.system.social);
+    if (typeof source.system?.rating === 'string') source.system.rating = parseInt(source.system.rating);
 
     return super.migrateData(source);
   }
@@ -364,9 +365,13 @@ export default class SR6Item extends Item {
         // Don't allow Gear Mods to upgrade a weapon's AR if its already 0
         continue;
       }
-      if ( change.value.startsWith('@actor') && this.actor) {
+      if ( typeof change.value === "string" && change.value?.startsWith('@actor') && this.actor) {
         const key = change.value.substring(7);
         change.value = foundry.utils.getProperty(this.actor, key);
+      }
+      if ( typeof change.value === "string" && change.value?.startsWith('@item')) {
+        const key = change.value.substring(6);
+        change.value = foundry.utils.getProperty(this, key);
       }
 
       const changes = change.effect.apply(this, change);

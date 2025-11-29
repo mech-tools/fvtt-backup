@@ -1,5 +1,3 @@
-2025/11/15-11:28:37.124454 7ecbedfed6c0 Recovering log #1561
-2025/11/15-11:28:37.124532 7ecbedfed6c0 Level-0 table #1563: started
-2025/11/15-11:28:37.127349 7ecbedfed6c0 Level-0 table #1563: 1654 bytes OK
-2025/11/15-11:28:37.131570 7ecbedfed6c0 Delete type=3 #1560
-2025/11/15-11:28:37.131648 7ecbedfed6c0 Delete type=0 #1561
+2025/11/28-09:27:41.807019 7ecbed7ec6c0 Recovering log #1565
+2025/11/28-09:27:41.810948 7ecbed7ec6c0 Delete type=3 #1562
+2025/11/28-09:27:41.810984 7ecbed7ec6c0 Delete type=0 #1565
