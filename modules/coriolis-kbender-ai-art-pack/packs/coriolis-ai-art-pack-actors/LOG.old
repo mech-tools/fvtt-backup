@@ -1,7 +1,5 @@
-2025/11/15-11:28:38.558309 7ecbee7ee6c0 Recovering log #128
-2025/11/15-11:28:38.562908 7ecbee7ee6c0 Delete type=0 #128
-2025/11/15-11:28:38.562958 7ecbee7ee6c0 Delete type=3 #127
-2025/11/28-09:26:29.304735 7ec9cffff6c0 Level-0 table #132: started
-2025/11/28-09:26:29.304793 7ec9cffff6c0 Level-0 table #132: 0 bytes OK
-2025/11/28-09:26:29.306410 7ec9cffff6c0 Delete type=0 #130
-2025/11/28-09:26:29.310766 7ec9cffff6c0 Manual compaction at level-0 from '!actors!4e6mtVLsqCxstrra' @ 72057594037927935 : 1 .. '!folders!SWbNJlm8UF1ziNP6' @ 0 : 0; will stop at (end)
+2025/12/03-23:04:37.650955 7ecbee7ee6c0 Log #3: 26 ops saved to Table #4 OK
+2025/12/03-23:04:37.651078 7ecbee7ee6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/coriolis-ai-art-pack-actors/000003.log: OK
+2025/12/03-23:04:37.651169 7ecbee7ee6c0 Table #4: 26 entries OK
+2025/12/03-23:04:37.651303 7ecbee7ee6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/coriolis-ai-art-pack-actors/MANIFEST-000002: OK
+2025/12/03-23:04:37.652676 7ecbee7ee6c0 **** Repaired leveldb /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/coriolis-ai-art-pack-actors; recovered 1 files; 19982 bytes. Some data may have been lost. ****
