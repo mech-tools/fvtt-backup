@@ -23114,25 +23114,25 @@ class AAAutorecManager {
     };
     let mergeMenu = updatedImport;
     let mergeList = [];
-    if (options2.melee) {
+    if (options2.melee || options2.submitAll) {
       mergeList.push("melee");
     }
-    if (options2.range) {
+    if (options2.range || options2.submitAll) {
       mergeList.push("range");
     }
-    if (options2.ontoken) {
+    if (options2.ontoken || options2.submitAll) {
       mergeList.push("ontoken");
     }
-    if (options2.templatefx) {
+    if (options2.templatefx || options2.submitAll) {
       mergeList.push("templatefx");
     }
-    if (options2.aura) {
+    if (options2.aura || options2.submitAll) {
       mergeList.push("aura");
     }
-    if (options2.preset) {
+    if (options2.preset || options2.submitAll) {
       mergeList.push("preset");
     }
-    if (options2.aefx) {
+    if (options2.aefx || options2.submitAll) {
       mergeList.push("aefx");
     }
     for (var i = 0; i < mergeList.length; i++) {
@@ -111323,49 +111323,32 @@ const aaDeathinspace = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defi
   __proto__: null,
   systemHooks: systemHooks$2
 }, Symbol.toStringTag, { value: "Module" }));
+const VALID_MESSAGE_TYPES = ["adversaryRoll", "dualityRoll"];
 function systemHooks$1() {
-  Hooks.on("createChatMessage", async (msg) => {
-    if (msg.type != "dualityRoll" && msg.type != "adversaryRoll") {
-      return;
-    }
-    if (msg.user.id !== game.user.id) {
-      return;
-    }
-    let data2 = msg.system ?? msg.flags?.daggerheart;
-    checkDHMessage(data2);
-  });
+  Hooks.on("createChatMessage", handleChatMessageCreation);
 }
-async function checkDHMessage(msg) {
-  if (!msg.source.item) {
-    return;
-  }
-  let compiledData = await getRequiredData({
-    name: msg.title,
-    item: getItemDH(msg.source.item, msg.source.actor, msg.title),
-    actorId: canvas.scene.tokens.get(msg.source.actor),
-    targets: getTargetsDH(),
-    ///msg.targets,
-    workflow: msg
+async function handleChatMessageCreation(msg, _options, _userId) {
+  if (!msg.isAuthor || !VALID_MESSAGE_TYPES.includes(msg.type)) return;
+  const workflowData = msg.system ?? msg.flags?.daggerheart;
+  if (!workflowData?.source?.item) return;
+  const { item: itemId2, actor: actorUuid } = workflowData.source;
+  const actor = await fromUuid(actorUuid);
+  const item2 = actor?.items.get(itemId2);
+  if (!actor || !item2)
+    return console.warn(
+      `Daggerheart Workflow: Could not find Item (${itemId2}) or Actor (${actorUuid}) for ChatMessage.`,
+      {
+        msg,
+        actor,
+        item: item2
+      }
+    );
+  const handler = await AAHandler.make({
+    item: item2,
+    actor,
+    targets: Array.from(game.user.targets)
   });
-  const handler = await AAHandler.make(compiledData);
   trafficCop$1(handler);
-}
-function getTargetsDH() {
-  const targetarray = Array.from(game.user.targets);
-  return targetarray;
-}
-function getItemDH(selection, source2, itemTitle) {
-  const actor = fromUuidSync(source2);
-  let item2 = actor.items.find((i) => i._id == selection);
-  if (itemTitle.indexOf(":")) {
-    let DHItemSubName = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
-    item2 = DHItemSubName;
-  }
-  if (!item2) {
-    let DHItem = { name: itemTitle.substring(itemTitle.indexOf(":") + 2) };
-    item2 = DHItem;
-  }
-  return item2;
 }
 const aaDaggerheart = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,

@@ -1,7 +1,7 @@
 {
     "id": "alienrpg",
-    "title": "Alien RPG",
-    "description": "The Alien RPG system for Foundry VTT!",
+    "title": "Alien Evolved",
+    "description": "The Alien Enhanced system for FoundryVTT",
     "authors": [
         {
             "name": "Paul Watson"
@@ -18,7 +18,7 @@
             }
         ]
     },
-    "version": "3.3.6",
+    "version": "4.0.4",
     "compatibility": {
         "minimum": "13",
         "verified": "13",
@@ -26,11 +26,129 @@
     },
     "scripts": [],
     "esmodules": [
-        "module/alienrpg.js"
+        "module/alienrpg.mjs"
     ],
     "styles": [
         "css/alienrpg.css"
     ],
+    "documentTypes": {
+        "ActiveEffect": {
+            "abilityModifier": {}
+        },
+        "Actor": {
+            "character": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "creature": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "synthetic": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "vehicles": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "colony": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "spacecraft": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "planet": {
+                "htmlFields": [
+                    "notes"
+                ]
+            },
+            "territory": {
+                "htmlFields": [
+                    "notes"
+                ]
+            }
+        },
+        "Item": {
+            "item": {
+                "htmlFields": [
+                    "notes",
+                    "comment"
+                ]
+            },
+            "weapon": {
+                "htmlFields": [
+                    "notes",
+                    "comment"
+                ]
+            },
+            "armor": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "talent": {
+                "htmlFields": [
+                    "comment",
+                    "notes"
+                ]
+            },
+            "specialty": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "spacecraftweapons": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "spacecraftmods": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "agenda": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "colony-initiative": {
+                "htmlFields": [
+                    "comment",
+                    "notes"
+                ]
+            },
+            "planet-system": {
+                "htmlFields": [
+                    "comment"
+                ]
+            },
+            "spacecraft-crit": {
+                "htmlFields": [
+                    "effects"
+                ]
+            },
+            "critical-injury": {
+                "htmlFields": [
+                    "effects"
+                ]
+            },
+            "skill-stunts": {
+                "htmlFields": [
+                    "description"
+                ]
+            }
+        }
+    },
     "languages": [
         {
             "lang": "en",
@@ -102,12 +220,12 @@
     "background": "systems/alienrpg/images/egg.webp",
     "socket": true,
     "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
-    "download": "https://github.com/pwatson100/alienrpg/releases/download/3.3.6/master.zip",
+    "download": "https://github.com/pwatson100/alienrpg/releases/download/4.0.4/master.zip",
     "protected": false,
     "initiative": "1d10",
     "bugs": "https://github.com/pwatson100/alienrpg/issues",
     "grid": {
-        "distance": 5,
+        "distance": 2,
         "units": "m"
     },
     "primaryTokenAttribute": "health",

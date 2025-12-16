@@ -2,7 +2,7 @@ import { pasteDataUpdate } from '../../applications/formUtils.js';
 import { BrushMenu } from '../brush.js';
 import { MODULE_ID, PIVOTS, SUPPORTED_PLACEABLES } from '../constants.js';
 import { Scenescape } from '../scenescape/scenescape.js';
-import { applyPresetToScene, isAudio, localFormat, localize, spawnSceneAsPreset } from '../utils.js';
+import { applyPresetToScene, localFormat, localize, spawnSceneAsPreset } from '../utils.js';
 import { PresetPackFolder, PresetStorage, VirtualFileFolder } from './collection.js';
 import { PresetBrowser } from './browser/browserApp.js';
 import { Preset } from './preset.js';
@@ -710,6 +710,7 @@ export class PresetContainerV2 extends foundry.applications.api.HandlebarsApplic
     if (!controlled.length) return;
 
     for (const s of selected) {
+      await s.load({ force: true, callHook: true });
       pasteDataUpdate(controlled, s, false, true);
     }
   }

@@ -36,7 +36,7 @@ export class FileIndexer {
   static _registeredCacheFiles = [];
 
   static async collection() {
-    // Add preset collection to CONFIG, will allows retrieval via fromUuid
+    // TODO: Add preset collection to CONFIG, will allow retrieval via fromUuid
 
     if (CONFIG.debug.MassEdit) console.time('Virtual File Directory');
 
@@ -174,72 +174,87 @@ export class FileIndexer {
         }
       }
 
-      // If pre-generated caches have been found we want to load and merge them here
-      for (const cacheFile of foundCaches) {
-        const cache = await this.loadIndexCache(cacheFile);
-        if (cache) this.mergeCaches(scannedSources, cache);
-      }
-
-      // User can specify if he wants the tags associated with images/video to be retained or not.
-      // overrideNullTagsOnly - true - will essentially override user changes to pre-cached directories
-      // overrideNullTagsOnly - false - pre-cached directory tags will be ignored, favoring user tags
-      console.log(settings);
-      if (!settings.fresh) {
-        const currentCache = await this.loadIndexCache(CACHE_PATH + '/' + CACHE_NAME);
-        if (currentCache) {
-          this.mergeCaches(scannedSources, currentCache, {
-            tagsOnly: true,
-            overrideNullTagsOnly: settings.overrideTags,
-          });
-        }
-      }
-
-      if (scannedSources.length) await this._writeIndexToCache(scannedSources);
-      else if (settings.fresh) await this._writeIndexToCache([]);
-      this._collection = null;
-
+      new IndexMergeConfirmationForm(scannedSources, foundCaches).render(true);
       ui.notifications.info(`MassEdit Index build finished.`);
-
-      foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id)?.render(true);
     } catch (e) {
       console.log(e);
+      this._buildingIndex = false;
     }
+  }
 
+  /**
+   * Called to resolve an index merge being handled by IndexMergeConfirmationForm
+   * @param {*} param0
+   */
+  static async resolveBuildMerge({
+    exit = false,
+    currentCache = [],
+    scannedCache = [],
+    foundCaches = [],
+    merge = true,
+  } = {}) {
+    if (!exit) {
+      // perform merges
+      if (merge) {
+        this.mergeCaches(currentCache, scannedCache);
+        for (const cache of foundCaches) {
+          this.mergeCaches(currentCache, cache);
+        }
+
+        await this._writeIndexToCache(currentCache);
+      } else {
+        // TODO: Ask for confirmation to overwrite current cache?
+        for (const cache of foundCaches) {
+          this.mergeCaches(scannedCache, cache);
+        }
+
+        this.mergeCaches(scannedCache, currentCache, false);
+
+        if (scannedCache.length) await this._writeIndexToCache(scannedCache);
+        else await this._writeIndexToCache([]);
+      }
+
+      this._collection = null;
+      foundry.applications.instances.get(PresetBrowser.DEFAULT_OPTIONS.id)?.render(true);
+    }
     this._buildingIndex = false;
   }
 
-  static mergeCaches(cacheTo, cacheFrom, { tagsOnly = false, overrideNullTagsOnly = false } = {}) {
+  /**
+   * Merges two caches together
+   * @param {*} cacheTo
+   * @param {*} cacheFrom
+   * @param {Boolean} insert should missing dirs/files within cacheTo be inserted from cacheFrom
+   */
+  static mergeCaches(cacheTo, cacheFrom, insert = true) {
     for (const indexSourceFrom of cacheFrom) {
       const indexSourceTo = cacheTo.find(
         (i) => i.source === indexSourceFrom.source && sameBucket(i.bucket, indexSourceFrom.bucket)
       );
       if (indexSourceTo) {
-        this.mergeIndex(indexSourceTo.index, indexSourceFrom.index, {
-          tagsOnly,
-          overrideNullTagsOnly,
-        });
-      } else if (!tagsOnly) cacheTo.push(indexSourceFrom);
+        this.mergeIndex(indexSourceTo.index, indexSourceFrom.index, insert);
+      } else if (insert) cacheTo.push(indexSourceFrom);
     }
   }
 
-  // options to only merge tags if they didn't have any
-  static mergeIndex(indexTo, indexFrom, { tagsOnly = false, overrideNullTagsOnly = false } = {}) {
+  /**
+   * Merges two indexes together
+   * @param {*} indexTo
+   * @param {*} indexFrom
+   * @param {Boolean} insert should missing dirs/files within indexTo be inserted from indexFrom
+   */
+  static mergeIndex(indexTo, indexFrom, insert = true) {
     for (const dirFrom of indexFrom) {
       const dirTo = indexTo.find((dir) => dir.dir === dirFrom.dir);
       if (dirTo) {
-        // TODO: We may want to merge customizable fields here
-        if (!tagsOnly) {
-          dirTo.icon = dirFrom.icon;
-          dirTo.subtext = dirFrom.subtext;
-        }
+        // Meta fields
+        if (dirFrom.icon) dirTo.icon = dirFrom.icon;
+        if (dirFrom.subtext) dirTo.subtext = dirFrom.subtext;
 
         // Merge directories
         if (dirFrom.dirs) {
-          if (dirTo.dirs) {
-            this.mergeIndex(dirTo.dirs, dirFrom.dirs, { tagsOnly, overrideNullTagsOnly });
-          } else if (!tagsOnly) {
-            dirTo.dirs = dirFrom.dirs;
-          }
+          if (dirTo.dirs) this.mergeIndex(dirTo.dirs, dirFrom.dirs, insert);
+          else if (insert) dirTo.dirs = dirFrom.dirs;
         }
 
         // Merge files
@@ -249,16 +264,19 @@ export class FileIndexer {
               const fileTo = dirTo.files?.find((f) => f.name === fileFrom.name);
 
               if (fileTo) {
-                // TODO: We may want to merge customizable fields here
-                if (!overrideNullTagsOnly || fileTo.tags == null) fileTo.tags = fileFrom.tags;
-              } else if (!tagsOnly) {
+                if (fileTo.tags && fileFrom.tags) {
+                  fileFrom.tags.forEach((tag) => {
+                    if (!fileTo.tags.includes(tag)) fileTo.tags.push(tag);
+                  });
+                } else if (fileFrom.tags) fileTo.tags = fileFrom.tags;
+              } else if (insert) {
                 if (!dirTo.files) dirTo.files = [];
                 dirTo.files.push(fileFrom);
               }
             }
-          } else if (!tagsOnly) dirTo.files = dirFrom.files;
+          } else if (insert) dirTo.files = dirFrom.files;
         }
-      } else if (!tagsOnly) indexTo.push(dirFrom);
+      } else if (insert) indexTo.push(dirFrom);
     }
   }
 
@@ -282,19 +300,22 @@ export class FileIndexer {
     notify = true,
     source = 'data',
     processAutoSave = false,
+    fileExport = false,
+    name = CACHE_NAME,
   } = {}) {
     if (folders) {
       const cache = [];
       for (const sourceFolder of folders) {
         const sourceCache = {
           source: sourceFolder.name,
-          index: sourceFolder.children.map((ch) => this._cacheFolder(ch.folder)),
+          index: sourceFolder.children.map((ch) => this._cacheFolder(ch.folder, ch)),
         };
         if (sourceFolder.bucket) sourceCache.bucket = sourceFolder.bucket;
         cache.push(sourceCache);
       }
 
-      this._writeIndexToCache(cache, { path, notify, source });
+      if (fileExport) this._exportIndexDownload(cache);
+      else this._writeIndexToCache(cache, { path, notify, source, name });
     }
 
     if (processAutoSave && this._collection) {
@@ -337,22 +358,43 @@ export class FileIndexer {
 
           const sourceCache = {
             source: wFolder.name,
-            index: wFolder.children.map((ch) => this._cacheFolder(ch.folder)),
+            index: wFolder.children.map((ch) => this._cacheFolder(ch.folder, ch)),
           };
 
           this.mergeCaches(index, [sourceCache]);
         }
 
-        this._writeIndexToCache(index, { path: location.target, notify: false, source: location.source });
+        this._writeIndexToCache(index, { path: location.target, notify: false, source: location.source, name });
       }
     }
   }
 
-  static async _writeIndexToCache(index, { path = CACHE_PATH, notify = true, source = 'data' } = {}) {
+  static async _writeIndexToCache(
+    index,
+    { path = CACHE_PATH, notify = true, source = 'data', name = CACHE_NAME } = {}
+  ) {
     const str = JSON.stringify(index);
 
-    const tFile = await StringCompress.compress(str);
+    const blob = await StringCompress.compress(str);
+    const tFile = new File([blob], name);
     await foundry.applications.apps.FilePicker.upload(source, path, tFile, {}, { notify });
+  }
+
+  static async _exportIndexDownload(index) {
+    const blob = await StringCompress.compress(JSON.stringify(index));
+
+    // Create an element to trigger the download
+    const a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = CACHE_NAME;
+
+    // Dispatch a click event to the element
+    a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    setTimeout(() => window.URL.revokeObjectURL(a.href), 100);
+  }
+
+  static async _importCache(cache) {
+    new IndexMergeConfirmationForm([], [], cache).render(true);
   }
 
   static async saveFolderToCache(folder, notify = true) {
@@ -381,10 +423,12 @@ export class FileIndexer {
     });
   }
 
-  static _cacheFolder(folder) {
+  static _cacheFolder(folder, ch) {
     const fDic = { dir: encodeURIComponentSafely(folder.name) };
+    if (folder.subtext) fDic.subtext = folder.subtext;
+    if (folder.icon) fDic.icon = folder.icon;
     if (folder.presets.length) fDic.files = folder.presets.map((p) => this._cachePreset(p));
-    if (folder.children.length) fDic.dirs = folder.children.map((ch) => this._cacheFolder(ch.folder));
+    if (folder.children.length) fDic.dirs = folder.children.map((ch) => this._cacheFolder(ch.folder, ch));
     return fDic;
   }
 
@@ -425,6 +469,7 @@ export class FileIndexer {
 
     const types = new Set(['ALL']);
     node.entries = [];
+    const presets = [];
     if (cache.files) {
       for (const file of cache.files) {
         const preset = VirtualFilePreset.fromSrc(
@@ -439,6 +484,7 @@ export class FileIndexer {
 
         this._collection._meIndex.set(preset.uuid, preset);
         node.entries.push({ _id: preset.uuid });
+        presets.push(preset);
         types.add(preset.documentName);
       }
     }
@@ -456,6 +502,7 @@ export class FileIndexer {
       bucket: options.bucket,
       types: Array.from(types),
       children: node.children,
+      presets,
     });
     node.children.forEach((ch) => (ch.folder.parent = node.folder));
 
@@ -699,8 +746,7 @@ class StringCompress {
       chunks.push(chunk);
     }
     const blob = new Blob(chunks);
-    const file = new File([blob], CACHE_NAME);
-    return file;
+    return blob;
   }
 
   /**
@@ -750,12 +796,12 @@ class StringCompress {
   }
 }
 
+const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
+
 /**
  * Form to help configure and execute index build.
  */
-export class IndexerForm extends foundry.applications.api.HandlebarsApplicationMixin(
-  foundry.applications.api.ApplicationV2
-) {
+export class IndexerForm extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
   static DEFAULT_OPTIONS = {
     id: 'me-indexer',
@@ -766,7 +812,7 @@ export class IndexerForm extends foundry.applications.api.HandlebarsApplicationM
       closeOnSubmit: false,
     },
     window: {
-      contentClasses: ['standard-form', 'mass-edit-dark-window'],
+      contentClasses: ['standard-form'],
       title: 'Directory Indexer',
       resizable: false,
       icon: 'fas fa-file-search',
@@ -780,6 +826,8 @@ export class IndexerForm extends foundry.applications.api.HandlebarsApplicationM
       delete: IndexerForm._onDeleteDirectory,
       generate: IndexerForm._onGenerateIndex,
       toggle: IndexerForm._onToggleSetting,
+      export: IndexerForm._onExport,
+      import: IndexerForm._onImport,
     },
   };
 
@@ -866,6 +914,55 @@ export class IndexerForm extends foundry.applications.api.HandlebarsApplicationM
     if (render) await this.render();
   }
 
+  static _onExport() {
+    FileIndexer.saveIndexToCache({ fileExport: true });
+  }
+
+  static async _onImport() {
+    await foundry.applications.api.DialogV2.wait({
+      window: { title: `Import` },
+      position: { width: 500 },
+      content: await foundry.applications.handlebars.renderTemplate('templates/apps/import-data.hbs', {
+        hint1: 'Utility for importing a VIRTUAL DIRECTORY index.',
+        hint2: `Select exported or automatically created '${CACHE_NAME}'`,
+      }),
+      buttons: [
+        {
+          action: 'import',
+          label: 'Import',
+          icon: 'fa-solid fa-file-import',
+          callback: (event, button) => {
+            const form = button.form;
+            if (!form.data.files.length) {
+              return ui.notifications.error('You have not provided a file!');
+            }
+
+            try {
+              StringCompress.decompress(form.data.files[0].stream()).then((str) => {
+                const cache = JSON.parse(str);
+                if (Array.isArray(cache) && cache.length && cache[0].source) {
+                  FileIndexer._importCache(cache);
+                } else {
+                  ui.notifications.warn('Unrecognizable index format.');
+                }
+              });
+            } catch (e) {
+              ui.notifications.warn('Unrecognizable index format.');
+            }
+
+            this.close();
+          },
+          default: true,
+        },
+        {
+          action: 'no',
+          label: 'Cancel',
+          icon: 'fa-solid fa-xmark',
+        },
+      ],
+    });
+  }
+
   async selectFolder(callback) {
     new FilePicker({
       type: 'folder',
@@ -898,6 +995,139 @@ export class IndexerForm extends foundry.applications.api.HandlebarsApplicationM
   }
 }
 
+/**
+ * Form to prompt the user for index merge behavior.
+ */
+export class IndexMergeConfirmationForm extends HandlebarsApplicationMixin(ApplicationV2) {
+  constructor(scannedCache, foundCaches, importedCache) {
+    super();
+    this._scannedCache = scannedCache;
+    this._foundCaches = foundCaches;
+    this._importedCache = importedCache;
+  }
+
+  /** @override */
+  static DEFAULT_OPTIONS = {
+    id: 'me-indexer-merge-confirm',
+    tag: 'form',
+    form: {
+      handler: IndexMergeConfirmationForm._onSubmit,
+      submitOnChange: false,
+      closeOnSubmit: true,
+    },
+    window: {
+      contentClasses: ['standard-form'],
+      title: 'Index Merge',
+      resizable: false,
+      icon: 'fa-solid fa-merge',
+    },
+    position: {
+      width: 500,
+      height: 'auto',
+    },
+    actions: {},
+  };
+
+  /** @override */
+  static PARTS = {
+    main: { template: `modules/${MODULE_ID}/templates/preset/indexer-merge.hbs` },
+  };
+
+  /** @override */
+  async _prepareContext(options) {
+    this._currentCache = await FileIndexer.loadIndexCache(CACHE_PATH + '/' + CACHE_NAME);
+
+    const current = this._prepareCounts(this._currentCache);
+    const scan = this._prepareCounts(this._scannedCache);
+
+    this._foundCachesLoaded = [];
+    const found = [];
+    for (const cacheFile of this._foundCaches) {
+      const cache = await FileIndexer.loadIndexCache(cacheFile);
+      if (cache) {
+        this._foundCachesLoaded.push(cache);
+        const count = this._prepareCounts(cache);
+        count.name = cacheFile.split('/').slice(0, -1).join('/');
+        found.push(count);
+      }
+    }
+
+    if (this._importedCache) {
+      const count = this._prepareCounts(this._importedCache);
+      count.name = 'File Import';
+      found.push(count);
+    }
+
+    const registered = [];
+    // for (const cacheFile of FileIndexer._registeredCacheFiles) {
+    //   const cache = await FileIndexer.loadIndexCache(cacheFile);
+    //   if (cache) {
+    //     const count = this._prepareCounts(cache);
+    //     count.name = cacheFile.split('/').slice(0, -1).join('/');
+    //     registered.push(count);
+    //   }
+    // }
+
+    // Generate total counts
+    const total = { folderCount: 0, fileCount: 0, tagCount: 0 };
+    [scan, ...found].forEach((count) => {
+      total.folderCount += count.folderCount;
+      total.fileCount += count.fileCount;
+      total.tagCount += count.tagCount;
+    });
+
+    return {
+      current,
+      scan: scan.folderCount ? scan : null,
+      found: found.length ? found : null,
+      registered: registered.length ? registered : null,
+      total,
+    };
+  }
+
+  _prepareCounts(cache, count = { folderCount: 0, fileCount: 0, tagCount: 0 }) {
+    for (const source of cache) this._countDirs(source.index, count);
+    return count;
+  }
+
+  _countDirs(dirs, count) {
+    if (!dirs) return count;
+
+    for (const dir of dirs) {
+      count.folderCount++;
+      if (dir.files) {
+        for (const file of dir.files) {
+          count.fileCount++;
+          if (file.tags) count.tagCount += file.tags.length;
+        }
+      }
+
+      this._countDirs(dir.dirs, count);
+    }
+
+    return count;
+  }
+
+  static async _onSubmit(event, html, formData) {
+    this._resolved = true;
+    FileIndexer.resolveBuildMerge({
+      currentCache: this._currentCache,
+      scannedCache: this._scannedCache,
+      foundCaches: this._importedCache ? [this._importedCache] : this._foundCachesLoaded,
+      merge: !formData.object.overwrite,
+    });
+  }
+
+  async close(options = {}) {
+    if (!this._resolved)
+      FileIndexer.resolveBuildMerge({
+        exit: true,
+      });
+
+    return super.close(options);
+  }
+}
+
 export class FileIndexerAPI {
   static async readCacheFile(cacheFile) {
     return FileIndexer.loadIndexCache(cacheFile);
@@ -905,6 +1135,11 @@ export class FileIndexerAPI {
 
   static registerCacheFile(cacheFile) {
     FileIndexer._registeredCacheFiles.push(cacheFile);
+  }
+
+  static async saveCache({ source = 'data', path = '', name = CACHE_NAME } = {}) {
+    await FileIndexer.collection();
+    FileIndexer.saveIndexToCache({ path, source, name });
   }
 }
 

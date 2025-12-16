@@ -1,7 +1,14 @@
-2025/12/03-23:04:37.639001 7ecbedfed6c0 Log #29: 13 ops saved to Table #30 OK
-2025/12/03-23:04:37.639183 7ecbedfed6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/Coriolis-Ai-Art-Pack-Macros/000029.log: OK
-2025/12/03-23:04:37.639405 7ecbedfed6c0 Table #28: 41 entries OK
-2025/12/03-23:04:37.639525 7ecbedfed6c0 Table #18: 4 entries OK
-2025/12/03-23:04:37.639630 7ecbedfed6c0 Table #30: 13 entries OK
-2025/12/03-23:04:37.639768 7ecbedfed6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/Coriolis-Ai-Art-Pack-Macros/MANIFEST-000027: OK
-2025/12/03-23:04:37.641156 7ecbedfed6c0 **** Repaired leveldb /home/ubuntu/foundry/bolt/foundrydata/Data/modules/coriolis-kbender-ai-art-pack/packs/Coriolis-Ai-Art-Pack-Macros; recovered 3 files; 46331 bytes. Some data may have been lost. ****
+2025/12/03-23:04:37.645657 7ecbed7ec6c0 Delete type=3 #1
+2025/12/15-20:45:07.522668 7ec9cffff6c0 Level-0 table #34: started
+2025/12/15-20:45:07.523968 7ec9cffff6c0 Level-0 table #34: 13427 bytes OK
+2025/12/15-20:45:07.524936 7ec9cffff6c0 Delete type=0 #32
+2025/12/15-20:45:07.528562 7ec9cffff6c0 Manual compaction at level-0 from '!folders!cSyPT5Tq9HGIHW2A' @ 72057594037927935 : 1 .. '!macros!zhy4tbjPKuwgWnRW' @ 0 : 0; will stop at '!macros!oCH4IEeXLuL0TnLF' @ 8 : 1
+2025/12/15-20:45:07.528573 7ec9cffff6c0 Compacting 4@0 + 0@1 files
+2025/12/15-20:45:07.530091 7ec9cffff6c0 Generated table #35@0: 13 keys, 13676 bytes
+2025/12/15-20:45:07.530109 7ec9cffff6c0 Compacted 4@0 + 0@1 files => 13676 bytes
+2025/12/15-20:45:07.531016 7ec9cffff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/12/15-20:45:07.531095 7ec9cffff6c0 Delete type=2 #34
+2025/12/15-20:45:07.531185 7ec9cffff6c0 Delete type=2 #28
+2025/12/15-20:45:07.531272 7ec9cffff6c0 Delete type=2 #18
+2025/12/15-20:45:07.531571 7ec9cffff6c0 Delete type=2 #30
+2025/12/15-20:45:07.531732 7ec9cffff6c0 Manual compaction at level-0 from '!macros!oCH4IEeXLuL0TnLF' @ 8 : 1 .. '!macros!zhy4tbjPKuwgWnRW' @ 0 : 0; will stop at (end)
