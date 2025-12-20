@@ -1,8 +1,16 @@
-2025/12/03-23:04:36.168175 7ecbee7ee6c0 Recovering log #644
-2025/12/03-23:04:36.171297 7ecbee7ee6c0 Delete type=0 #644
-2025/12/03-23:04:36.171331 7ecbee7ee6c0 Delete type=3 #642
-2025/12/15-20:45:07.703993 7ec9cffff6c0 Level-0 table #649: started
-2025/12/15-20:45:07.704013 7ec9cffff6c0 Level-0 table #649: 0 bytes OK
-2025/12/15-20:45:07.704633 7ec9cffff6c0 Delete type=0 #647
-2025/12/15-20:45:07.715677 7ec9cffff6c0 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
-2025/12/15-20:45:07.715813 7ec9cffff6c0 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2025/12/15-20:45:48.629901 7ecbedfed6c0 Recovering log #648
+2025/12/15-20:45:48.635115 7ecbedfed6c0 Delete type=0 #648
+2025/12/15-20:45:48.635166 7ecbedfed6c0 Delete type=3 #646
+2025/12/19-21:59:55.187658 7ec9cffff6c0 Level-0 table #653: started
+2025/12/19-21:59:55.189717 7ec9cffff6c0 Level-0 table #653: 24566 bytes OK
+2025/12/19-21:59:55.191709 7ec9cffff6c0 Delete type=0 #651
+2025/12/19-21:59:55.193668 7ec9cffff6c0 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2025/12/19-21:59:55.193711 7ec9cffff6c0 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal.pages!tD0Sj2t7UzjQgS4U.jWmCGghZJrTf4UQy' @ 7596 : 1
+2025/12/19-21:59:55.193718 7ec9cffff6c0 Compacting 1@1 + 1@2 files
+2025/12/19-21:59:55.227519 7ec9cffff6c0 Generated table #654@1: 1053 keys, 2114427 bytes
+2025/12/19-21:59:55.229317 7ec9cffff6c0 Generated table #655@1: 5 keys, 3416 bytes
+2025/12/19-21:59:55.229334 7ec9cffff6c0 Compacted 1@1 + 1@2 files => 2117843 bytes
+2025/12/19-21:59:55.230470 7ec9cffff6c0 compacted to: files[ 0 0 3 0 0 0 0 ]
+2025/12/19-21:59:55.230868 7ec9cffff6c0 Delete type=2 #640
+2025/12/19-21:59:55.231441 7ec9cffff6c0 Delete type=2 #653
+2025/12/19-21:59:55.268147 7ec9cffff6c0 Manual compaction at level-1 from '!journal.pages!tD0Sj2t7UzjQgS4U.jWmCGghZJrTf4UQy' @ 7596 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
