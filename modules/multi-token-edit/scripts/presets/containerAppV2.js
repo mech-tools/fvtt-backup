@@ -551,8 +551,7 @@ export class PresetContainerV2 extends foundry.applications.api.HandlebarsApplic
         condition: (item) =>
           game.user.isGM &&
           !this.presetsDisableDelete &&
-          (this.presetsForceAllowDelete ||
-            (Preset.isEditable(item.dataset.uuid) && !item.classList.contains('virtual'))),
+          (this.presetsForceAllowDelete || Preset.isEditable(item.dataset.uuid)),
         callback: (item) => this._onDeleteSelectedPresets(item),
         sort: 1100,
       },
@@ -678,9 +677,7 @@ export class PresetContainerV2 extends foundry.applications.api.HandlebarsApplic
         condition: (header) => {
           const uuid = header.closest('.folder').dataset.uuid;
           const folder = fromUuidSync(uuid);
-          return (
-            !(folder instanceof VirtualFileFolder || folder instanceof PresetPackFolder) && !folder.collection.locked
-          );
+          return !(folder instanceof PresetPackFolder) && !folder.collection?.locked;
         },
         callback: (header) =>
           this._onFolderDelete($(header).closest('.folder').data('uuid'), {
@@ -1080,37 +1077,6 @@ export function itemSelect(event, element, itemList) {
       if (item.hasClass('selected')) item.addClass('last-selected');
     }
   }
-}
-
-/**
- * Check if mouse is currently within bound of an application
- * @param {*} event
- * @returns
- */
-function checkMouseInWindow(event) {
-  let inWindow = false;
-
-  if (ui.sidebar?.element?.length) {
-    inWindow = _coordOverElement(event.pageX, event.pageY, $(ui.sidebar.element));
-  }
-  if (!inWindow) {
-    inWindow = _coordOverElement(event.pageX, event.pageY, $(event.target).closest('.application'));
-  }
-
-  return inWindow;
-}
-
-function _coordOverElement(x, y, element) {
-  var offset = element.offset();
-  let appX = offset.left;
-  let appY = offset.top;
-  let appW = element.width();
-  let appH = element.height();
-
-  if (x > appX && x < appX + appW && y > appY && y < appY + appH) {
-    return true;
-  }
-  return false;
 }
 
 /**

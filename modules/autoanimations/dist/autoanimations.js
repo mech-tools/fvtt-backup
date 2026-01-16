@@ -15517,14 +15517,10 @@ class AAAutorecFunctions {
     return newName;
   }
   static sortAndFilterMenus(menus) {
-    let combinedMenus = [
-      ...menus.melee,
-      ...menus.range,
-      ...menus.ontoken,
-      ...menus.templatefx,
-      ...menus.aura,
-      ...menus.preset
-    ];
+    let combinedMenus = [];
+    for (const key in menus) {
+      combinedMenus = [...combinedMenus, ...menus[key]];
+    }
     let sortedMenus2 = combinedMenus.sort((a, b) => b.label?.replace(/\s+/g, "").length - a.label?.replace(/\s+/g, "").length);
     return {
       exactMatchMenus: sortedMenus2.filter((x) => x.advanced?.exactMatch),
@@ -15572,6 +15568,9 @@ class AAAutorecFunctions {
     if (!rinsedName) {
       custom_warning("No Name was provided for the Global Menu search");
       return;
+    }
+    if (!Array.isArray(menu)) {
+      menu = Object.values(menu).flat();
     }
     let sortedMenu = menu.sort((a, b) => b.label.replace(/\s+/g, "").length - a.label?.replace(/\s+/g, "").length);
     let exactMatchMenus = sortedMenu.filter((x) => x.advanced?.exactMatch);
@@ -15640,7 +15639,7 @@ async function handleItem(data2) {
     templatefx: game.settings.get("autoanimations", "aaAutorec-templatefx"),
     aura: game.settings.get("autoanimations", "aaAutorec-aura"),
     preset: game.settings.get("autoanimations", "aaAutorec-preset"),
-    aefx: game.settings.get("autoanimations", "aaAutorec-aefx")
+    aefx: data2.activeEffect ? game.settings.get("autoanimations", "aaAutorec-aefx") : []
   };
   let menus = AAAutorecFunctions.sortAndFilterMenus(autorecSettings);
   let autorecObject;
@@ -17088,6 +17087,9 @@ async function melee$3(handler, animationData) {
   }
   if (handler.systemId === "alienrpg") {
     switchDistance = canvas.grid.distance * 1.5;
+  }
+  if (handler.systemId === "gurps") {
+    switchDistance = 0;
   }
   let rangeArray = [];
   let meleeArray = [];
@@ -103427,6 +103429,22 @@ class AAGameSettings extends TJSGameSettingsWithUI {
           }
         });
         break;
+      case "impmal":
+        settings.push({
+          namespace,
+          key: "criticalAnimation",
+          folder: game.system.title || game.system.name,
+          options: {
+            name: "autoanimations.settings.criticalAnimation",
+            //name: 'Choose A File',
+            scope: scope.world,
+            config: true,
+            type: String,
+            default: "",
+            filePicker: "imagevideo"
+          }
+        });
+        break;
       case "cyberpunk-red-core":
         settings.push({
           namespace,
@@ -104776,10 +104794,12 @@ function copyToFrom(animation, item2, autorecSettings, isAE) {
       let name = item2.name ?? item2.label;
       const isInAutorec = isAE ? AAAutorecFunctions.singleMenuSearch(
         AAAutorecFunctions.sortAndFilterMenus(autorecSettings),
-        AAAutorecFunctions.rinseName(name)
+        AAAutorecFunctions.rinseName(name),
+        name
       ) : AAAutorecFunctions.allMenuSearch(
         AAAutorecFunctions.sortAndFilterMenus(autorecSettings),
-        AAAutorecFunctions.rinseName(name)
+        AAAutorecFunctions.rinseName(name),
+        name
       );
       if (!isInAutorec) {
         custom_notify("There is no matching Global entry to copy from");
@@ -105606,7 +105626,7 @@ function create_fragment$9(ctx) {
       }
       const tjstoggleiconbutton_changes = {};
       if (dirty & /*$$scope*/
-      2097152) {
+      4194304) {
         tjstoggleiconbutton_changes.$$scope = { dirty, ctx: ctx2 };
       }
       tjstoggleiconbutton.$set(tjstoggleiconbutton_changes);
@@ -105739,8 +105759,16 @@ function instance$7($$self, $$props, $$invalidate) {
     clickPropagate: false
     // Necessary to capture click for Firefox.
   };
+  const objectAefxMenu = aefxMenu.reduce(
+    (obj2, item3) => {
+      obj2[item3.activeEffectType] ??= [];
+      obj2[item3.activeEffectType].push(item3);
+      return obj2;
+    },
+    {}
+  );
   const subMenu = {
-    items: copyToFrom(animation, item2, aefxMenu, true)
+    items: copyToFrom(animation, item2, objectAefxMenu, true)
   };
   function select_change_handler() {
     $animation.activeEffectType = select_value(this);
@@ -108885,7 +108913,7 @@ function getTokenFromActor(actor, actorId2) {
   return Array.isArray(token) ? token[0] : token;
 }
 const activityCache = {};
-function systemHooks$A() {
+function systemHooks$B() {
   if (!foundry.utils.isNewerVersion(game.system.version, 3.9)) return ui.notifications.error(`Automated Animations: This version of Automated Animations requires DnD5e 4.3 or higher, please downgrade to Automated Animations 5.0.10 or update your game system.`, { permanent: true });
   Hooks.on("dnd5e.rollAttackV2", async (rolls, data2) => {
     const roll = rolls[0];
@@ -109019,9 +109047,9 @@ function criticalCheck$1(roll, item2 = {}) {
 }
 const aaDnd5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$A
+  systemHooks: systemHooks$B
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$z() {
+function systemHooks$A() {
   if (game.modules.get("midi-qol")?.active) {
     Hooks.on("midi-qol.AttackRollComplete", (workflow) => {
       let playOnDamage = game.settings.get("autoanimations", "playonDamage");
@@ -109156,9 +109184,9 @@ function criticalCheck(workflow) {
 }
 const aaSw5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$z
+  systemHooks: systemHooks$A
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$y() {
+function systemHooks$z() {
   Hooks.on("DL.Action", async (data2) => {
     const eventType = data2.type;
     let compiledData = await getRequiredData({
@@ -109202,7 +109230,7 @@ async function runDemonlord(data2) {
 }
 const aaDemonlord = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$y
+  systemHooks: systemHooks$z
 }, Symbol.toStringTag, { value: "Module" }));
 const PF2E_SIZE_TO_REACH = {
   tiny: 0,
@@ -109212,7 +109240,7 @@ const PF2E_SIZE_TO_REACH = {
   huge: 10,
   grg: 15
 };
-function systemHooks$x() {
+function systemHooks$y() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -109429,9 +109457,9 @@ function checkOutcome$1(input) {
 }
 const aaPf2e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$x
+  systemHooks: systemHooks$y
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$w() {
+function systemHooks$x() {
   Hooks.on("createChatMessage", async (msg) => {
     function extractItemId(content) {
       try {
@@ -109512,9 +109540,9 @@ function funkyTest$1(msg) {
 }
 const aaSfrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$w
+  systemHooks: systemHooks$x
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$v() {
+function systemHooks$w() {
   Hooks.on("swadeAction", async (SwadeTokenOrActor, SwadeItem, SwadeAction, SwadeRoll, userId) => {
     if (!SwadeRoll) {
       return;
@@ -109605,9 +109633,9 @@ async function runSwade(token, actor, item2) {
 }
 const aaSwade = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$v
+  systemHooks: systemHooks$w
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$u() {
+function systemHooks$v() {
   BaseWFRP4eItemSheet.DEFAULT_OPTIONS.window.controls.push({
     class: "aaItemSettings",
     icon: "fas fa-biohazard",
@@ -109777,9 +109805,9 @@ function compileTargets$2(targets2) {
 }
 const aaWfrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$u
+  systemHooks: systemHooks$v
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$t() {
+function systemHooks$u() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -109800,9 +109828,9 @@ async function runDcc(input) {
 }
 const aaDcc = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$t
+  systemHooks: systemHooks$u
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$s() {
+function systemHooks$t() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -109850,9 +109878,9 @@ async function runPF1(requiredData) {
 }
 const aaPf1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$s
+  systemHooks: systemHooks$t
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$r() {
+function systemHooks$s() {
   const queue = [];
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
@@ -109894,9 +109922,9 @@ async function runA5e$1(input) {
 }
 const aaA5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$r
+  systemHooks: systemHooks$s
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$q() {
+function systemHooks$r() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -109919,9 +109947,9 @@ async function runA5e(input) {
 }
 const aaForbiddenLands = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$q
+  systemHooks: systemHooks$r
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$p() {
+function systemHooks$q() {
   Hooks.on("ffgDiceMessage", async (roll) => {
     let compiledData = await getRequiredData({
       item: roll.data,
@@ -109939,9 +109967,9 @@ async function runStarwarsffg(input) {
 }
 const aaStarwarsffg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$p
+  systemHooks: systemHooks$q
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$o() {
+function systemHooks$p() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -109964,9 +109992,9 @@ async function runOse(input) {
 }
 const aaOse = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$o
+  systemHooks: systemHooks$p
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$n() {
+function systemHooks$o() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -109997,9 +110025,9 @@ async function runD35E(input) {
 }
 const aaD35E = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$n
+  systemHooks: systemHooks$o
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$m() {
+function systemHooks$n() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -110041,9 +110069,9 @@ async function runCypherSystem(input) {
 }
 const aaCyphersystem = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$m
+  systemHooks: systemHooks$n
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$l() {
+function systemHooks$m() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -110074,9 +110102,9 @@ async function runAlienRPG(input) {
 }
 const aaAlienrpg = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$l
+  systemHooks: systemHooks$m
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$k() {
+function systemHooks$l() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage$2(msg);
   });
@@ -110234,9 +110262,9 @@ async function isHit(data2) {
 }
 const aaCyberpunkred = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$k
+  systemHooks: systemHooks$l
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$j() {
+function systemHooks$k() {
   Hooks.on("createChatMessage", async (msg) => {
     checkMessage$1(msg);
   });
@@ -110276,9 +110304,9 @@ async function checkMessage$1(msg) {
 }
 const aaTheWitcherTRPG = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$j
+  systemHooks: systemHooks$k
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$i() {
+function systemHooks$j() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -110313,9 +110341,9 @@ async function runTwoDSix(data2) {
 }
 const aaTwodsix = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$i
+  systemHooks: systemHooks$j
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$h() {
+function systemHooks$i() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id || !AnimationState.enabled) {
       return;
@@ -110362,9 +110390,9 @@ async function runOd6s(input) {
 }
 const aaOd6s = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$h
+  systemHooks: systemHooks$i
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$g() {
+function systemHooks$h() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage$1(msg);
   });
@@ -110413,9 +110441,9 @@ function funkyTest(msg) {
 }
 const aaChatmessage = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$g
+  systemHooks: systemHooks$h
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$f() {
+function systemHooks$g() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -110477,9 +110505,9 @@ async function templateAnimation$2(input) {
 }
 const aaDarkheresy = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$f
+  systemHooks: systemHooks$g
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$e() {
+function systemHooks$f() {
   Hooks.on("createChatMessage", async (msg) => {
     checkChatMessage(msg);
   });
@@ -110574,9 +110602,9 @@ async function tryAnnimationWith$1(compiledData, itemNameOverride) {
 }
 const aaShadowrun5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$e
+  systemHooks: systemHooks$f
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$d() {
+function systemHooks$e() {
   Hooks.on("ds4.rollItem", async (data2) => {
     let compiledData = await getRequiredData({
       itemId: data2.id,
@@ -110595,9 +110623,9 @@ async function runDs4(input) {
 }
 const aaDs4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$d
+  systemHooks: systemHooks$e
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$c() {
+function systemHooks$d() {
   Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
     if (userId !== game.user.id) {
       return;
@@ -110718,9 +110746,9 @@ async function templateAnimation$1(input) {
 }
 const aaDnd4e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$c
+  systemHooks: systemHooks$d
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$b() {
+function systemHooks$c() {
   Hooks.on("createChatMessage", async (msg) => {
     const context = msg.flags?.world?.context;
     if (!context) return;
@@ -110828,9 +110856,9 @@ function checkAmmo(data2) {
 }
 const aaArs = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$b
+  systemHooks: systemHooks$c
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$a() {
+function systemHooks$b() {
   Hooks.on("chatOutput", async (data2) => {
     let compiledData = await getRequiredData({
       itemId,
@@ -110849,9 +110877,9 @@ async function runEd4(input) {
 }
 const aaEd4e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$a
+  systemHooks: systemHooks$b
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$9() {
+function systemHooks$a() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -110960,9 +110988,9 @@ function checkOutcome(input) {
 }
 const aaPtu = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$9
+  systemHooks: systemHooks$a
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$8() {
+function systemHooks$9() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) return;
     const itemData = getHandlerInputData(msg);
@@ -111035,9 +111063,9 @@ function rinseHeader(headerText) {
 }
 const aaLancer = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$8
+  systemHooks: systemHooks$9
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$7() {
+function systemHooks$8() {
   Hooks.on("renderChatMessage", async (msg) => {
     let rawDataMsg = msg.getFlag("anarchy", "message-data");
     if (!rawDataMsg) {
@@ -111105,9 +111133,9 @@ async function tryAnnimationWith(compiledData, itemNameOverride) {
 }
 const aaShadowrunAnarchy = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$7
+  systemHooks: systemHooks$8
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$6() {
+function systemHooks$7() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.user.id !== game.user.id) {
       return;
@@ -111141,7 +111169,7 @@ async function runWrathandGlory(input) {
 }
 const aaWrathAndGlory = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$6
+  systemHooks: systemHooks$7
 }, Symbol.toStringTag, { value: "Module" }));
 const idLocations = [
   [".magic-roll", "data-spell-id"],
@@ -111149,7 +111177,7 @@ const idLocations = [
   [".skill-roll", "data-skill-id"],
   [".ability-use", "data-ability-id"]
 ];
-function systemHooks$5() {
+function systemHooks$6() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -111184,71 +111212,42 @@ async function runDragonbane(input) {
 }
 const aaDragonbane = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$5
+  systemHooks: systemHooks$6
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$4() {
+function systemHooks$5() {
   Hooks.on("createChatMessage", async (msg) => {
-    if (msg.user.id !== game.user.id) {
+    if (msg.author.id !== game.user.id) {
       return;
     }
-    const systemName = "impmal";
-    if (msg.flags[systemName]?.test) {
-      if (msg.flags[systemName].test.class == "WeaponTest") {
-        let compiledData = await getRequiredData({
-          actorId: msg.speaker.actor ?? msg.flags[systemName].test.context.speaker.actor,
-          targets: compileTargets(msg.flags[systemName].test.context.targetSpeakers),
-          itemId: msg.flags[systemName].test.context.weaponId,
-          workflow: msg
-        });
-        if (msg.flags[systemName].test.data.burst == true) compiledData.overrideRepeat = 3;
-        if (msg.flags[systemName].test.data.rapidFire == true) compiledData.overrideRepeat = 6;
-        if (!compiledData.item) {
-          return;
-        }
-        runImpMal(compiledData);
-      } else {
-        let compiledData = await getRequiredData({
-          actorId: msg.speaker.actor ?? msg.flags[systemName].test.context.speaker.actor,
-          targets: compileTargets(msg.flags[systemName].test.context.targetSpeakers),
-          itemId: msg.flags[systemName].test.context.powerId,
-          workflow: msg
-        });
-        if (!compiledData.item) {
-          return;
-        }
-        runImpMal(compiledData);
+    if (msg.system.class == "WeaponTest") {
+      let compiledData = await getRequiredData({
+        actorId: msg.speaker.actor ?? msg.system.context.speaker.actor,
+        targets: compileTargets(msg.system.context.targetSpeakers),
+        itemId: msg.system.context.weaponId,
+        workflow: msg
+      });
+      if (msg.system.data.burst == true) compiledData.overrideRepeat = 3;
+      if (msg.system.data.rapidFire == true) compiledData.overrideRepeat = 6;
+      if (!compiledData.item) {
+        return;
       }
+      runImpMal(compiledData);
+      checkCrit(msg);
     } else {
-      if (msg.system.class == "WeaponTest") {
-        let compiledData = await getRequiredData({
-          actorId: msg.speaker.actor ?? msg.system.context.speaker.actor,
-          targets: compileTargets(msg.system.context.targetSpeakers),
-          itemId: msg.system.context.weaponId,
-          workflow: msg
-        });
-        if (msg.system.data.burst == true) compiledData.overrideRepeat = 3;
-        if (msg.system.data.rapidFire == true) compiledData.overrideRepeat = 6;
-        if (!compiledData.item) {
-          return;
-        }
-        runImpMal(compiledData);
-        checkCrit(msg.system.result);
-      } else {
-        let itemUuid = msg.system.context?.itemUsedUuid;
-        let itemId2 = msg.system.context?.powerId ?? msg.system.context?.skillItemId;
-        let compiledData = await getRequiredData({
-          actorId: msg.speaker.actor ?? msg.system.context?.speaker.actor,
-          targets: compileTargets(msg.system.context?.targetSpeakers),
-          itemUuid,
-          itemId: itemId2,
-          item: itemId2 || itemUuid ? null : { name: msg.system.context?.skill },
-          workflow: msg
-        });
-        if (!compiledData.item) {
-          return;
-        }
-        runImpMal(compiledData);
+      let itemUuid = msg.system.context?.itemUsedUuid;
+      let itemId2 = msg.system.context?.powerId ?? msg.system.context?.skillItemId;
+      let compiledData = await getRequiredData({
+        actorId: msg.speaker.actor ?? msg.system.context?.speaker.actor,
+        targets: compileTargets(msg.system.context?.targetSpeakers),
+        itemUuid,
+        itemId: itemId2,
+        item: itemId2 || itemUuid ? null : { name: msg.system.context?.skill },
+        workflow: msg
+      });
+      if (!compiledData.item) {
+        return;
       }
+      runImpMal(compiledData);
     }
   });
 }
@@ -111256,27 +111255,27 @@ function compileTargets(targets2) {
   if (!targets2) {
     return [];
   }
-  return Array.from(targets2).map((sceneTarget) => canvas.tokens.get(sceneTarget.token));
+  return Array.from(targets2).map((target2) => game.scenes.get(target2.scene)?.tokens.get(target2.token));
 }
 async function runImpMal(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-async function checkCrit(result) {
-  if (!result.critical) return;
+async function checkCrit(msg) {
+  if (!msg.system.result.critical) return;
   let critAnim = game.settings.get("autoanimations", "criticalAnimation");
   if (!critAnim) return;
   let critSequence = new Sequence({ moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") });
-  for (let target2 of game.user.targets) {
+  for (let target2 of compileTargets(msg.system.context?.targetSpeakers)) {
     critSequence.effect().file(critAnim).atLocation(target2).missed().delay(100);
   }
   critSequence.play();
 }
 const aaImpMal = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$4
+  systemHooks: systemHooks$5
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$3() {
+function systemHooks$4() {
   Hooks.on("createChatMessage", async (msg) => {
     checkMessage(msg);
   });
@@ -111300,9 +111299,9 @@ async function checkMessage(msg) {
 }
 const aaSalvageUnion = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$3
+  systemHooks: systemHooks$4
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$2() {
+function systemHooks$3() {
   Hooks.on("chatOutput", async (data2) => {
     let compiledData = await getRequiredData({
       itemId,
@@ -111321,10 +111320,10 @@ async function runDeathInSpace(input) {
 }
 const aaDeathinspace = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$2
+  systemHooks: systemHooks$3
 }, Symbol.toStringTag, { value: "Module" }));
 const VALID_MESSAGE_TYPES = ["adversaryRoll", "dualityRoll"];
-function systemHooks$1() {
+function systemHooks$2() {
   Hooks.on("createChatMessage", handleChatMessageCreation);
 }
 async function handleChatMessageCreation(msg, _options, _userId) {
@@ -111343,18 +111342,19 @@ async function handleChatMessageCreation(msg, _options, _userId) {
         item: item2
       }
     );
-  const handler = await AAHandler.make({
+  const compiledData = await getRequiredData({
     item: item2,
     actor,
     targets: Array.from(game.user.targets)
   });
+  const handler = await AAHandler.make(compiledData);
   trafficCop$1(handler);
 }
 const aaDaggerheart = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$1
+  systemHooks: systemHooks$2
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks() {
+function systemHooks$1() {
   Hooks.on("fadeAttackRoll", async (data2) => {
     const targetTokens = await Promise.all(data2.targets.map((uuid) => fromUuid(uuid)));
     data2.targets = targetTokens.map((token) => token.object);
@@ -111373,6 +111373,299 @@ async function runFade(data2) {
   trafficCop$1(handler);
 }
 const aaFade = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  systemHooks: systemHooks$1
+}, Symbol.toStringTag, { value: "Module" }));
+const SHAPE_MAP = {
+  "circle": "circle",
+  "vines": "circle",
+  "cone": "cone",
+  "square": "rect",
+  "rect": "rect",
+  "ray": "ray",
+  "line": "ray"
+};
+let pendingGurpsInput = null;
+function getGurpsReach(reachString) {
+  if (!reachString) return 1;
+  const clean = reachString.toString().toUpperCase().replace(/[^0-9C,-]/g, "");
+  const parts = clean.split(/[,-]/);
+  let maxReach = 0;
+  for (let part of parts) {
+    if (part === "C") continue;
+    const num = parseInt(part);
+    if (!isNaN(num) && num > maxReach) maxReach = num;
+  }
+  return maxReach === 0 ? 1 : maxReach;
+}
+function systemHooks() {
+  Hooks.on("createChatMessage", async (msg) => {
+    if (msg.author.id !== game.user.id) return;
+    if (game.system.id !== "gurps") return;
+    const parsedData = parseGurpsMessage(msg);
+    if (!parsedData) return;
+    await gurpsWorkflow(parsedData);
+  });
+  Hooks.on("createMeasuredTemplate", async (templateDocument, context, userId) => {
+    if (userId !== game.user.id) return;
+    if (pendingGurpsInput) {
+      const pending = pendingGurpsInput;
+      if (pending.expectedShape && templateDocument.t !== pending.expectedShape) return;
+      setTimeout(async () => {
+        const input = pending.input;
+        input.templateData = templateDocument;
+        const newHandler = await AAHandler.make(input);
+        if (pending.forcedReachCheck !== void 0) {
+          newHandler.reachCheck = pending.forcedReachCheck;
+        }
+        trafficCop$1(newHandler);
+        pendingGurpsInput = null;
+      }, 100);
+    }
+  });
+  Hooks.on("renderSceneControls", (controls) => {
+    if (pendingGurpsInput) {
+      if (Date.now() - pendingGurpsInput.timestamp < 1e3) return;
+      if (ui.controls.control.name !== "measure") {
+        pendingGurpsInput = null;
+      }
+    }
+  });
+}
+async function gurpsWorkflow(data2) {
+  const rawReach = data2.reach !== void 0 ? data2.reach : 1;
+  const units = (canvas.scene.grid.units || "").toLowerCase().trim();
+  const gridDist = canvas.scene.grid.distance;
+  let finalReachDistance;
+  if (units === "ft" || units === "feet") {
+    finalReachDistance = rawReach * 3 / gridDist;
+  } else if (["m", "mt", "mts", "meter", "meters", "yd", "yard", "yards"].includes(units)) {
+    finalReachDistance = rawReach / gridDist;
+  } else {
+    finalReachDistance = rawReach;
+  }
+  const finalReachCheck = finalReachDistance + 0.01;
+  const input = {
+    item: data2.item,
+    token: data2.token,
+    actor: data2.actor,
+    targets: data2.targets,
+    hitTargets: data2.hitTargets,
+    overrideNames: [data2.attackName]
+  };
+  const probeHandler = await AAHandler.make(input);
+  if (!probeHandler?.item) return;
+  probeHandler.reachCheck = finalReachCheck;
+  if (pendingGurpsInput) {
+    pendingGurpsInput = null;
+  }
+  const animMenu = probeHandler.animationData?.menu;
+  const isTemplateFx = animMenu === "templatefx";
+  const isPresetTemplate = animMenu === "preset" && ["thunderwave", "proToTemp"].includes(probeHandler.animationData.presetType);
+  const isTeleportPreset = animMenu === "preset" && ["teleportation"].includes(probeHandler.animationData.presetType);
+  if (isTemplateFx || isPresetTemplate) {
+    let expectedFoundryShape = void 0;
+    if (isTemplateFx) {
+      const aaShape = probeHandler.animationData?.primary?.video?.menuType || "circle";
+      expectedFoundryShape = SHAPE_MAP[aaShape] || "circle";
+    }
+    const lastTemplate = canvas.templates.placeables[canvas.templates.placeables.length - 1];
+    const isValidTemplate = lastTemplate && lastTemplate.document.author.id === game.user.id && (!expectedFoundryShape || lastTemplate.document.t === expectedFoundryShape);
+    if (isValidTemplate) {
+      input.templateData = lastTemplate.document;
+      const finalHandler = await AAHandler.make(input);
+      finalHandler.reachCheck = finalReachCheck;
+      trafficCop$1(finalHandler);
+      return;
+    }
+    const shapeName = expectedFoundryShape ? expectedFoundryShape.toLowerCase() : "any";
+    ui.notifications.info(`"${data2.attackName}": Add ${shapeName} template...`);
+    pendingGurpsInput = {
+      input,
+      expectedShape: expectedFoundryShape,
+      timestamp: Date.now(),
+      forcedReachCheck: finalReachCheck
+    };
+    if (canvas.templates.activate) canvas.templates.activate();
+    const toolToSelect = expectedFoundryShape || "circle";
+    if (ui.controls) {
+      ui.controls.render(true, { control: "measure", tool: toolToSelect });
+    }
+    const myTimestamp = pendingGurpsInput.timestamp;
+    setTimeout(() => {
+      if (pendingGurpsInput && pendingGurpsInput.timestamp === myTimestamp) {
+        pendingGurpsInput = null;
+      }
+    }, 6e4);
+    return;
+  } else if (isTeleportPreset) {
+    ui.notifications.info(`"${data2.attackName}": Click on a destination...`);
+  }
+  trafficCop$1(probeHandler);
+}
+function parseGurpsMessage(msg) {
+  const content = document.createElement("div");
+  content.innerHTML = msg.content;
+  if (content.classList.contains("damage-chat-message") || content.querySelector(".damage-chat-message") || !content.querySelector(".success")) {
+    return null;
+  }
+  const links = content.querySelectorAll(".gurpslink");
+  let foundData = null;
+  for (const link of links) {
+    const otf = link.getAttribute("data-otf");
+    if (!otf) continue;
+    const colonIndex = otf.indexOf(":");
+    if (colonIndex > -1) {
+      const prefix2 = otf.substring(0, colonIndex);
+      const rawName = otf.substring(colonIndex + 1);
+      foundData = {
+        prefix: prefix2,
+        fullName: rawName.replace(/^"+|"+$/g, "").trim()
+      };
+      break;
+    } else {
+      foundData = {
+        prefix: "",
+        fullName: otf.replace(/^"+|"+$/g, "").trim()
+      };
+      break;
+    }
+  }
+  if (!foundData) return null;
+  let token = canvas.tokens.get(msg.speaker.token);
+  let actor = token?.actor;
+  if (!actor) {
+    actor = game.actors.get(msg.speaker.actor);
+    if (actor) {
+      token = actor.getActiveTokens()[0];
+    }
+  }
+  if (!token || !actor) return null;
+  const prefix = foundData.prefix.toLowerCase();
+  let realItem = null;
+  let entryReachString = null;
+  let searchList = [];
+  if (["m", "p", "b"].includes(prefix)) {
+    searchList = Object.values(actor.system.melee || {});
+  } else if (prefix === "r") {
+    searchList = Object.values(actor.system.ranged || {});
+  } else if (prefix === "sp") {
+    searchList = Object.values(actor.system.spells || {});
+  } else if (prefix === "sk") {
+    searchList = Object.values(actor.system.skills || {});
+  }
+  const entry = searchList.find((e) => {
+    let constructedName = e.name;
+    if (e.mode && e.mode.trim() !== "") {
+      constructedName += ` (${e.mode})`;
+    }
+    return constructedName === foundData.fullName;
+  });
+  if (entry) {
+    if (entry.fromItem) {
+      realItem = actor.items.get(entry.fromItem);
+    }
+    if (["m", "p", "b"].includes(prefix) && entry.reach) {
+      entryReachString = entry.reach;
+    }
+  }
+  if (!realItem) {
+    const cleanNameSimple = foundData.fullName.split("(")[0].trim();
+    const typeMap = {
+      "m": ["equipment", "trait", "feature"],
+      "r": ["equipment", "trait", "feature"],
+      "p": ["equipment", "trait", "feature"],
+      "b": ["equipment", "trait", "feature"],
+      "sp": ["spell"],
+      "sk": ["skill"]
+    };
+    const allowedTypes = typeMap[prefix] || ["weapon", "equipment", "trait", "feature"];
+    const candidates = actor.items.filter((i) => {
+      const nameMatch = i.name === cleanNameSimple || i.name === foundData.fullName;
+      const typeMatch = allowedTypes.includes(i.type);
+      return nameMatch && typeMatch;
+    });
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => {
+        if (a.type === "equipment" && b.type !== "equipment") return -1;
+        if (b.type === "equipment" && a.type !== "equipment") return 1;
+        return 0;
+      });
+      realItem = candidates[0];
+    }
+  }
+  let finalDisplayName = foundData.fullName;
+  if (prefix === "p") finalDisplayName = `Parry: ${foundData.fullName}`;
+  if (prefix === "b") finalDisplayName = `Block: ${foundData.fullName}`;
+  const calculatedReach = getGurpsReach(entryReachString);
+  let finalItem;
+  if (realItem) {
+    finalItem = realItem.toObject();
+    delete finalItem._id;
+    delete finalItem.id;
+    finalItem.name = finalDisplayName;
+    finalItem.flags ??= {};
+    finalItem.flags.autoanimations ??= {};
+    finalItem.parent = actor;
+  } else {
+    let fallbackImg = "icons/svg/item-bag.svg";
+    let fallbackType = "weapon";
+    switch (prefix) {
+      case "m":
+        fallbackImg = "icons/svg/sword.svg";
+        fallbackType = "equipment";
+        break;
+      case "p":
+        fallbackImg = "icons/svg/sword.svg";
+        fallbackType = "equipment";
+        break;
+      case "b":
+        fallbackImg = "icons/svg/shield.svg";
+        fallbackType = "equipment";
+        break;
+      case "r":
+        fallbackImg = "icons/svg/target.svg";
+        fallbackType = "equipment";
+        break;
+      case "sp":
+        fallbackImg = "icons/svg/daze.svg";
+        fallbackType = "spell";
+        break;
+      case "sk":
+        fallbackImg = "icons/svg/dice-target.svg";
+        fallbackType = "skill";
+        break;
+    }
+    finalItem = {
+      name: finalDisplayName,
+      img: fallbackImg,
+      type: fallbackType,
+      flags: { autoanimations: {} },
+      system: {},
+      parent: actor
+    };
+  }
+  finalItem.getFlag = function(scope, key) {
+    return this.flags?.[scope]?.[key];
+  };
+  finalItem.update = async function(updates) {
+    foundry.utils.mergeObject(this, updates);
+    return this;
+  };
+  finalItem.prepareData = function() {
+    return;
+  };
+  return {
+    item: finalItem,
+    token,
+    actor,
+    targets: Array.from(game.user.targets),
+    hitTargets: Array.from(game.user.targets),
+    attackName: finalDisplayName,
+    reach: calculatedReach
+  };
+}
+const aaGurps = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   systemHooks
 }, Symbol.toStringTag, { value: "Module" }));
@@ -111398,6 +111691,7 @@ const systemSupport = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defin
   earthdawn4e: aaEd4e,
   fantasticdepths: aaFade,
   forbiddenlands: aaForbiddenLands,
+  gurps: aaGurps,
   impmal: aaImpMal,
   lancer: aaLancer,
   od6s: aaOd6s,
@@ -111521,7 +111815,7 @@ Hooks.once("ready", async function() {
     storeDeletedItems(item2);
   });
   const systemIdClean = game.system.id.replace(/\-/g, "");
-  systemSupport[systemIdClean] ? systemSupport[systemIdClean].systemHooks() : systemHooks$g();
+  systemSupport[systemIdClean] ? systemSupport[systemIdClean].systemHooks() : systemHooks$h();
   registerActiveEffectHooks();
   handleTemplates();
   Hooks.callAll("aa.initialize");

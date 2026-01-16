@@ -2,76 +2,98 @@
   "id": "coriolis-corerules",
   "title": "Coriolis Core Rulebook",
   "description": "A Module containing all the data from the Coriolis Core Rule Book.",
-  "authors": [{
-    "name": "Alex Okafor"
-  }],
-  "version": "6.0.0",
+  "authors": [
+    {
+      "name": "Cussa Mitre",
+      "url": "https://hodpub.com",
+      "discord": "CussaMitre"
+    },
+    {
+      "name": "Alex Okafor"
+    }
+  ],
+  "version": "6.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
   },
   "scripts": [],
-  "esmodules": ["modules/coriolis.js"],
+  "esmodules": [
+    "modules/coriolis.js"
+  ],
   "relationships": {
-    "systems": [{
-      "id": "yzecoriolis",
-      "type": "system",
-      "manifest": "https://github.com/winks-vtt/yze-coriolis/releases/latest/download/system.json",
-      "compatibility": {
-        "verified": "3.9.2"
+    "systems": [
+      {
+        "id": "yzecoriolis",
+        "type": "system",
+        "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-corerules/coriolis-corerules-latest.json",
+        "compatibility": {
+          "verified": "3.9.2"
+        }
       }
-    }]
+    ]
   },
-  "styles": ["/css/corioliscore.css"],
-  "packs": [{
-    "name": "actor",
-    "system": "yzecoriolis",
-    "label": "Coriolis Actors",
-    "path": "packs/actor.db",
-    "type": "Actor",
-    "module": "coriolis-corerules"
-  }, {
-    "name": "item",
-    "system": "yzecoriolis",
-    "label": "Coriolis Items",
-    "path": "packs/item.db",
-    "type": "Item",
-    "module": "coriolis-corerules"
-  }, {
-    "name": "journalentry",
-    "system": "yzecoriolis",
-    "label": "Coriolis Journals",
-    "path": "packs/journalentry.db",
-    "type": "JournalEntry",
-    "module": "coriolis-corerules"
-  }, {
-    "name": "playlist",
-    "system": "yzecoriolis",
-    "label": "Coriolis Playlists",
-    "path": "packs/playlist.db",
-    "type": "Playlist",
-    "module": "coriolis-corerules"
-  }, {
-    "name": "scene",
-    "system": "yzecoriolis",
-    "label": "Coriolis Scenes",
-    "path": "packs/scene.db",
-    "type": "Scene",
-    "module": "coriolis-corerules"
-  }, {
-    "name": "table",
-    "system": "yzecoriolis",
-    "label": "Coriolis Roll Tables",
-    "path": "packs/table.db",
-    "type": "RollTable",
-    "module": "coriolis-corerules"
-  }],
-  "languages": [{
-    "lang": "en",
-    "name": "English",
-    "path": "lang/en.json"
-  }],
-  "protected": true,
+  "styles": [
+    "/css/corioliscore.css"
+  ],
+  "packs": [
+    {
+      "name": "actor",
+      "system": "yzecoriolis",
+      "label": "Coriolis Actors",
+      "path": "packs/actor",
+      "type": "Actor",
+      "module": "coriolis-corerules"
+    },
+    {
+      "name": "item",
+      "system": "yzecoriolis",
+      "label": "Coriolis Items",
+      "path": "packs/item",
+      "type": "Item",
+      "module": "coriolis-corerules"
+    },
+    {
+      "name": "journalentry",
+      "system": "yzecoriolis",
+      "label": "Coriolis Journals",
+      "path": "packs/journalentry",
+      "type": "JournalEntry",
+      "module": "coriolis-corerules"
+    },
+    {
+      "name": "playlist",
+      "system": "yzecoriolis",
+      "label": "Coriolis Playlists",
+      "path": "packs/playlist",
+      "type": "Playlist",
+      "module": "coriolis-corerules"
+    },
+    {
+      "name": "scene",
+      "system": "yzecoriolis",
+      "label": "Coriolis Scenes",
+      "path": "packs/scene",
+      "type": "Scene",
+      "module": "coriolis-corerules"
+    },
+    {
+      "name": "table",
+      "system": "yzecoriolis",
+      "label": "Coriolis Roll Tables",
+      "path": "packs/table",
+      "type": "RollTable",
+      "module": "coriolis-corerules"
+    }
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
   "url": "https://frialigan.se/",
-  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-corerules/coriolis-corerules-latest.json"
+  "manifest": "https://foundrymodulesbucket.s3.eu-north-1.amazonaws.com/coriolis-corerules/coriolis-corerules-latest.json",
+  "protected": true
 }

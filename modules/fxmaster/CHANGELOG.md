@@ -1,5 +1,15 @@
 # Changelog
 
+## [v7.2.2] - 2026-01-05
+- Made a few adjustments to reduce minimum density for Spiders particle effect
+- Resolved User-made Particle Effects from FXMaster+ not sorting alphabetically in the Particle Effects Management window
+- Added a few integration pieces for my upcoming Gambit's Lounge module Gambit's Image Viewer, which will add functionality enabling Particle Effects in an Image Popout window.
+- Added a note to the Animation Effects window to indicate it will be removed in the V14 release
+
+## [v7.2.1] - 2025-12-20
+- A number of fixes to masks, including some important changes to prevent losing webgl context
+- Updated pt-br localization, thanks Kharmans!
+
 ## [v7.2.0] - 2025-12-17
 - Welcome to FXMaster V7.2! This release focused on performance and consistency improvements for Particle Effects, accomplished in a couple of ways:
   - First, all particle effects have had a pass on their density parameter with more normalized density ranges they can generate Particle effects within. This should prevent issues where you could apply an effect with maximum density on a huge scene and crash it (tested on scenes up to about 16000x12000). Density will now normalize to the number of cells present on a scene. I've tested each of these individually to try to find a good balance between performance and density, happy to hear any feedback (preferably on my Gambit's Lounge Discord) as these can be adjusted further in the future. 
