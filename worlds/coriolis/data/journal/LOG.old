@@ -1,8 +1,15 @@
-2026/01/15-22:28:43.939773 7f68b59fa6c0 Recovering log #658
-2026/01/15-22:28:43.944639 7f68b59fa6c0 Delete type=0 #658
-2026/01/15-22:28:43.944707 7f68b59fa6c0 Delete type=3 #656
-2026/01/25-11:14:19.683704 7f68663d06c0 Level-0 table #664: started
-2026/01/25-11:14:19.683747 7f68663d06c0 Level-0 table #664: 0 bytes OK
-2026/01/25-11:14:19.684865 7f68663d06c0 Delete type=0 #662
-2026/01/25-11:14:19.688513 7f68663d06c0 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
-2026/01/25-11:14:19.688666 7f68663d06c0 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2026/01/25-11:15:29.147413 7f68b51f96c0 Recovering log #663
+2026/01/25-11:15:29.151614 7f68b51f96c0 Delete type=3 #661
+2026/01/25-11:15:29.151729 7f68b51f96c0 Delete type=0 #663
+2026/02/03-13:30:34.551714 7f68663d06c0 Level-0 table #668: started
+2026/02/03-13:30:34.554058 7f68663d06c0 Level-0 table #668: 33414 bytes OK
+2026/02/03-13:30:34.555021 7f68663d06c0 Delete type=0 #666
+2026/02/03-13:30:34.558211 7f68663d06c0 Manual compaction at level-0 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)
+2026/02/03-13:30:34.558337 7f68663d06c0 Manual compaction at level-1 from '!journal!00KhSZV4xsbs0ePa' @ 72057594037927935 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at '!journal!snvxwVeLwriMDIIF' @ 7635 : 1
+2026/02/03-13:30:34.558566 7f68663d06c0 Compacting 1@1 + 1@2 files
+2026/02/03-13:30:34.607606 7f68663d06c0 Generated table #669@1: 1056 keys, 2113249 bytes
+2026/02/03-13:30:34.607656 7f68663d06c0 Compacted 1@1 + 1@2 files => 2113249 bytes
+2026/02/03-13:30:34.608806 7f68663d06c0 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/02/03-13:30:34.609077 7f68663d06c0 Delete type=2 #668
+2026/02/03-13:30:34.609584 7f68663d06c0 Delete type=2 #660
+2026/02/03-13:30:34.621533 7f68663d06c0 Manual compaction at level-1 from '!journal!snvxwVeLwriMDIIF' @ 7635 : 1 .. '!journal.pages!zrcdiw4k31Ks12Hb.Dbc7AxgPH8QBVLSw' @ 0 : 0; will stop at (end)

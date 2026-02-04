@@ -1,8 +1,15 @@
-2026/01/15-22:28:44.042890 7f68b59fa6c0 Recovering log #644
-2026/01/15-22:28:44.047335 7f68b59fa6c0 Delete type=0 #644
-2026/01/15-22:28:44.047394 7f68b59fa6c0 Delete type=3 #642
-2026/01/25-11:14:19.691589 7f68663d06c0 Level-0 table #650: started
-2026/01/25-11:14:19.691632 7f68663d06c0 Level-0 table #650: 0 bytes OK
-2026/01/25-11:14:19.692688 7f68663d06c0 Delete type=0 #648
-2026/01/25-11:14:19.695886 7f68663d06c0 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
-2026/01/25-11:14:19.696559 7f68663d06c0 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2026/01/25-11:15:29.239677 7f68b49f86c0 Recovering log #649
+2026/01/25-11:15:29.243903 7f68b49f86c0 Delete type=3 #647
+2026/01/25-11:15:29.243972 7f68b49f86c0 Delete type=0 #649
+2026/02/03-13:30:34.610584 7f68663d06c0 Level-0 table #654: started
+2026/02/03-13:30:34.619515 7f68663d06c0 Level-0 table #654: 330155 bytes OK
+2026/02/03-13:30:34.620952 7f68663d06c0 Delete type=0 #652
+2026/02/03-13:30:34.626660 7f68663d06c0 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2026/02/03-13:30:34.630521 7f68663d06c0 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.tokens.delta.effects!Q0EDMaqlONRXJ6W0.vSKeqRL97XsxQqcJ.3FOIBxUIAEfqdPlo.gXjahvbUJxq6uHHQ' @ 50963 : 1
+2026/02/03-13:30:34.630529 7f68663d06c0 Compacting 1@1 + 1@2 files
+2026/02/03-13:30:34.661538 7f68663d06c0 Generated table #655@1: 7328 keys, 1239262 bytes
+2026/02/03-13:30:34.661580 7f68663d06c0 Compacted 1@1 + 1@2 files => 1239262 bytes
+2026/02/03-13:30:34.663961 7f68663d06c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/02/03-13:30:34.664192 7f68663d06c0 Delete type=2 #646
+2026/02/03-13:30:34.664763 7f68663d06c0 Delete type=2 #654
+2026/02/03-13:30:34.671382 7f68663d06c0 Manual compaction at level-1 from '!scenes.tokens.delta.effects!Q0EDMaqlONRXJ6W0.vSKeqRL97XsxQqcJ.3FOIBxUIAEfqdPlo.gXjahvbUJxq6uHHQ' @ 50963 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)

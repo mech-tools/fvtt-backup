@@ -15902,8 +15902,10 @@ class AAHandler {
   // Sets the Size of the effect
   getSize(isRadius = false, size = 1, token, addToken = false) {
     const td = token.document;
-    const maxSize = Math.max(td.width * td.texture.scaleX, td.height * td.texture.scaleY);
-    return isRadius ? addToken ? size * 2 + maxSize : size * 2 : maxSize * 1.5 * size;
+    const maxSize = Math.max(td.width * td.texture.scaleX, td.height * td.texture.scaleY) / (td.ring.enabled * td.ring.subject.scale || 1);
+    if (isRadius && addToken) return size * 2 + maxSize;
+    if (isRadius) return size * 2;
+    return maxSize * 1.5 * size;
   }
   getDistance(target2) {
     if (this.systemId === "pf1") {
@@ -111235,7 +111237,7 @@ function systemHooks$5() {
       checkCrit(msg);
     } else {
       let itemUuid = msg.system.context?.itemUsedUuid;
-      let itemId2 = msg.system.context?.powerId ?? msg.system.context?.skillItemId;
+      let itemId2 = msg.system.context?.powerId ?? msg.system.context?.itemId ?? msg.system.context?.weaponId ?? msg.system.context?.skillItemId;
       let compiledData = await getRequiredData({
         actorId: msg.speaker.actor ?? msg.system.context?.speaker.actor,
         targets: compileTargets(msg.system.context?.targetSpeakers),
@@ -111255,7 +111257,10 @@ function compileTargets(targets2) {
   if (!targets2) {
     return [];
   }
-  return Array.from(targets2).map((target2) => game.scenes.get(target2.scene)?.tokens.get(target2.token));
+  return Array.from(targets2).map((target2) => {
+    let token = game.scenes.get(target2.scene)?.tokens.get(target2.token);
+    return token?.constructor.name === "TokenDocument" ? token?.object : token;
+  });
 }
 async function runImpMal(input) {
   const handler = await AAHandler.make(input);
