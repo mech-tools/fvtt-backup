@@ -2,9 +2,9 @@
     "id": "_chatcommands",
     "title": "Chat Commander",
     "description": "Extends built-in commands with autocompletion and enables modules to register their own commands.",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "library": true,
-    "compatibility": {"minimum": "13.341", "verified": "13.342"},
+    "compatibility": {"minimum": "13.341", "verified": "13.351"},
     "authors": [
         {
             "name": "Adrian Haberecht",
@@ -17,11 +17,18 @@
     "languages": [
         {"lang": "de", "name": "Deutsch", "path": "lang/de.json"},
         {"lang": "en", "name": "English", "path": "lang/en.json"},
-        {"lang": "pl", "name": "Polski", "path": "lang/pl.json"}
+        {"lang": "it", "name": "Italiano", "path": "lang/it.json"},
+        {"lang": "pl", "name": "Polski", "path": "lang/pl.json"},
+        {
+            "lang": "pt-BR",
+            "name": "Português (Brasil)",
+            "path": "lang/pt-BR.json"
+        },
+        {"lang": "ru", "name": "Русский", "path": "lang/ru.json"}
     ],
     "url": "https://gitlab.com/woodentavern/foundryvtt-chat-command-lib",
     "manifest": "https://gitlab.com/woodentavern/foundryvtt-chat-command-lib/-/raw/master/src/module.json",
-    "download": "https://gitlab.com/api/v4/projects/43336899/packages/generic/releases/2.0.4/_chatcommands-v2.0.4.zip",
+    "download": "https://gitlab.com/api/v4/projects/43336899/packages/generic/releases/2.0.5/_chatcommands-v2.0.5.zip",
     "license": "https://gitlab.com/woodentavern/foundryvtt-chat-command-lib/-/blob/master/LICENSE",
     "readme": "https://gitlab.com/woodentavern/foundryvtt-chat-command-lib/-/blob/master/README.md",
     "bugs": "https://gitlab.com/woodentavern/foundryvtt-chat-command-lib/-/issues",

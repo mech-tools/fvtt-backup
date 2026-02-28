@@ -1,0 +1,39 @@
+{
+    "_chatcommands": {
+        "settings": {
+            "enableAutocomplete": "Abilita completamento automatico",
+            "enableAutocompleteHint": "Mostra un menu di completamento automatico durante l'inserimento dei comandi nella chat. Richiede un riavvio per essere applicato.",
+            "maxEntries": "Numero massimo voci completamento",
+            "maxEntriesHint": "Limita quante voci possono essere mostrate nel menu di completamento automatico. Le voci aggiuntive verranno sostituite con un messaggio di overflow.",
+            "autocompleteCore": "Completamento automatico comandi base",
+            "autocompleteCoreHint": "Includi i comandi base di FoundryVTT nel completamento automatico. Richiede un riavvio per essere applicato.",
+            "displayFooter": "Mostra alias e modulo",
+            "displayFooterHint": "Mostra alias e modulo di origine durante il completamento automatico dei comandi."
+        },
+        "extraEntries": "Inserisci parametri per trovare risultati aggiuntivi.",
+        "noEntries": "Nessun comando registrato corrisponde al tuo input.",
+        "insufficientPermissions": "Non hai i permessi per usare il comando {command}.",
+        "coreCommands": {
+            "ic": "Invia un messaggio come il personaggio attualmente selezionato o associato.",
+            "ooc": "Invia un messaggio fuori dal personaggio.",
+            "emote": "Esegui un'emozione come il personaggio attualmente selezionato o associato.",
+            "whisper": {
+                "description": "Invia un messaggio privato a un altro giocatore.",
+                "gm": "Game Master",
+                "players": "Giocatori"
+            },
+            "roll": {
+                "basic": "Tira dei dadi.",
+                "gm": "Tira dei dadi visibili solo a te e al Game Master.",
+                "blind": "Tira dei dadi visibili solo al Game Master.",
+                "self": "Tira dei dadi visibili solo a te.",
+                "public": "Tira dei dadi visibili a tutti.",
+                "simpleInfo": "Sintassi base: <span class='parameter'>Quantità</span>d<span class='parameter'>Facce</span>+,-,*,/<span class='parameter'>Altri tiri o numeri</span>",
+                "descriptionInfo": "Tiri con etichette: <span class='parameter'>Tiro</span>[<span class='parameter'>Descrizione dei dadi</span>] # <span class='parameter'>Descrizione del tiro</span>",
+                "modifierInfo": "Modificatori: Vedi <a href='https://foundryvtt.com/article/dice-modifiers/'>Modificatori dei dadi</a>.",
+                "advancedInfo": "Pool, variabili e funzioni: Vedi <a href='https://foundryvtt.com/article/dice-advanced/'>Dadi Avanzati</a>.",
+                "recent": "Usati di recente"
+            }
+        }
+    }
+}

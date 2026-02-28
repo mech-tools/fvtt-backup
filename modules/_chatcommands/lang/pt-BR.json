@@ -1,0 +1,39 @@
+{
+    "_chatcommands": {
+        "settings": {
+            "enableAutocomplete": "Habilitar Auto-Preenchimento",
+            "enableAutocompleteHint": "Exibe um menu de preenchimento automático ao inserir comandos no chat. Requer atualização da página para aplicar.",
+            "maxEntries": "Máximo de Entradas do Auto-Preenchimento",
+            "maxEntriesHint": "Limita o número de entradas que podem ser exibidas no menu de preenchimento automático. Entradas adicionais serão substituídas por uma mensagem de excesso.",
+            "autocompleteCore": "Auto-Completar Comandos Principais",
+            "autocompleteCoreHint": "Inclui comandos básicos do Foundry VTT para preenchimento automático. Requer atualização da página para aplicar.",
+            "displayFooter": "Mostrar Aliases e Módulo",
+            "displayFooterHint": "Exibir aliases e o módulo de origem ao completar comandos automaticamente."
+        },
+        "extraEntries": "Insira parâmetros para encontrar resultados adicionais.",
+        "noEntries": "Nenhum comando registrado corresponde à sua entrada.",
+        "insufficientPermissions": "Você não tem permissão para usar o comando {command}.",
+        "coreCommands": {
+            "ic": "Envia uma mensagem como o personagem atualmente selecionado ou associado.",
+            "ooc": "Envia uma mensagem fora do personagem.",
+            "emote": "Execute um emote como o personagem atualmente selecionado ou associado.",
+            "whisper": {
+                "description": "Enviar uma mensagem privada para outro jogador.",
+                "gm": "Mestres",
+                "players": "Jogadores"
+            },
+            "roll": {
+                "basic": "Role alguns dados.",
+                "gm": "Role alguns dados que sejam visíveis apenas para você e o Mestre.",
+                "blind": "Role alguns dados que sejam visíveis apenas para o Mestre.",
+                "self": "Role alguns dados que sejam visíveis apenas para você.",
+                "public": "Role alguns dados que sejam visíveis para todos.",
+                "simpleInfo": "Sintaxe básica: <span class='parameter'>Quantidade</span>d<span class='parameter'>Lados</span>+,-,*,/<span class='parameter'>Mais rolagens ou números</span>",
+                "descriptionInfo": "Rolagens nomeadas: <span class='parameter'>Rolagem</span>[<span class='parameter'>Descrição do dado</span>] # <span class='parameter'>Descrição da rolagem</span>",
+                "modifierInfo": "Modifiers: See <a href='https://foundryvtt.com/article/dice-modifiers/'>Dice Modifiers</a>.",
+                "advancedInfo": "Pools, variáveis e funções: Veja <a href='https://foundryvtt.com/article/dice-advanced/'>Advanced Dice</a>.",
+                "recent": "Usado recentemente"
+            }
+        }
+    }
+}

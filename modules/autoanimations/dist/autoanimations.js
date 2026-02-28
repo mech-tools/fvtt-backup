@@ -15618,15 +15618,13 @@ async function handleItem(data2) {
     return;
   }
   const item2 = data2.item;
+  const activity = data2.activity;
   const itemName = item2.name ?? item2.label;
   const rinsedItemName = itemName ? AAAutorecFunctions.rinseName(itemName) : "noitem";
   const ammoItem = data2.ammoItem;
   const rinsedAmmoName = ammoItem?.name ? AAAutorecFunctions.rinseName(ammoItem.name) : "";
   const itemFlags = await flagMigrations.handle(data2.item, { activeEffect: data2.activeEffect }) || {};
-  const itemIsEnabled = !!itemFlags.killAnim ? false : itemFlags.isEnabled ?? true;
-  if (!itemIsEnabled) {
-    return false;
-  }
+  const activityFlags = activity ? await flagMigrations.handle(activity, { activeEffect: data2.activeEffect }) || {} : null;
   const ammoFlags = ammoItem ? await flagMigrations.handle(ammoItem, { activeEffect: data2.activeEffect }) || { isEnabled: true } : null;
   let autorecDisabled = game.settings.get("autoanimations", "disableAutoRec");
   if (autorecDisabled) {
@@ -15653,6 +15651,14 @@ async function handleItem(data2) {
       return autorecObject;
     }
   }
+  const activityIsEnabled = activityFlags ? !!activityFlags.killAnim ? false : activityFlags.isEnabled ?? true : true;
+  if (!activityIsEnabled) {
+    return false;
+  }
+  const itemIsEnabled = !!itemFlags.killAnim ? false : itemFlags.isEnabled ?? true;
+  if (!itemIsEnabled) {
+    return false;
+  }
   if (data2.activeEffect) {
     if (itemFlags.isCustomized) {
       return itemFlags;
@@ -15661,7 +15667,9 @@ async function handleItem(data2) {
       return autorecObject;
     }
   } else {
-    if (itemFlags.isCustomized) {
+    if (activityFlags?.isCustomized) {
+      return activityFlags;
+    } else if (itemFlags.isCustomized) {
       return itemFlags;
     } else if (!autorecDisabled) {
       const prioritizedNames = [...data2.overrideNames || [], itemName, ...data2.extraNames || []];
@@ -15873,7 +15881,7 @@ class AAHandler {
     if (data2.hit && !this.hitTargets) this.hitTargets = data2.targets;
     this.hitTargets ??= [];
     this.hitTargetsId = Array.from(this.hitTargets.filter((actor) => actor.id).map((actor) => actor.id));
-    this.playOnMiss = data2.playOnMiss ?? (game.modules.get("midi-qol")?.active || game.system.id === "pf2e" || game.system.id === "dnd5e" ? game.settings.get("autoanimations", "playonmiss") : false) ?? false;
+    this.playOnMiss = data2.playOnMiss ?? (game.modules.get("midi-qol")?.active || game.system.id === "pf2e" || game.system.id === "sf2e" || game.system.id === "dnd5e" ? game.settings.get("autoanimations", "playonmiss") : false) ?? false;
     this.menu = this.animationData.menu;
     this.templateData = data2.templateData;
     this.sequenceData = { moduleName: "Automated Animations", softFail: !game.settings.get("autoanimations", "debug") };
@@ -18625,6 +18633,7 @@ async function trafficCop$1(handler) {
     }
     switch (game.system.id) {
       case "a5e":
+      case "sf2e":
       case "pf2e":
       case "sw5e":
       case "tormenta20":
@@ -23307,7 +23316,7 @@ async function createRuleElementPF2e(item2) {
   }
   if (game.settings.get("autoanimations", "disableGrantedAuraEffects")) {
     let tactorId = aeToken.actor.id;
-    let origin = item2.flags?.pf2e?.aura?.origin;
+    let origin = item2.flags?.system?.aura?.origin;
     if (origin) {
       let idSplit = origin.split(".");
       let id = idSplit[idSplit.length - 1];
@@ -23534,6 +23543,7 @@ const ptuDeletedItems = /* @__PURE__ */ new Map();
 function registerActiveEffectHooks() {
   switch (game.system.id) {
     case "pf2e":
+    case "sf2e":
       let shouldContinue = function(item2, userId) {
         if (game.user.id !== userId) {
           return false;
@@ -99953,7 +99963,7 @@ class CategoryStore extends WorldArrayObjectStore {
       scrollTop: aaSessionStorage.getStore(`${constants.moduleId}-category-scrolltop-${key}`, 0),
       // This allow setting the current Index of the section for the Video Preview app
       videoIDX: writable(void 0),
-      animationSourceOption: game.system.id === "dnd5e" || game.system.id === "pf2e"
+      animationSourceOption: game.system.id === "dnd5e" || game.system.id === "pf2e" || game.system.id === "sf2e"
     };
   }
   get filterSearch() {
@@ -103348,6 +103358,7 @@ class AAGameSettings extends TJSGameSettingsWithUI {
         });
         break;
       case "pf2e":
+      case "sf2e":
         settings.push({
           namespace,
           key: "playonDamageCore",
@@ -107689,7 +107700,7 @@ function create_default_slot$1(ctx) {
   let current;
   tjsmenu = new TJSMenu({ props: { menu: (
     /*subMenu*/
-    ctx[12]
+    ctx[13]
   ) } });
   return {
     c() {
@@ -107897,7 +107908,8 @@ function create_fragment$3(ctx) {
   });
   slider1 = new Slider({
     props: {
-      label: localize("autoanimations.menus.customize") + " Item",
+      label: localize("autoanimations.menus.customize") + " " + /*documentLabel*/
+      ctx[9],
       field: "isCustomized"
     }
   });
@@ -107923,7 +107935,7 @@ function create_fragment$3(ctx) {
     props: {
       button: (
         /*buttonOverflow*/
-        ctx[11]
+        ctx[12]
       ),
       slot: "summary-end",
       $$slots: { default: [create_default_slot$1] },
@@ -108020,7 +108032,7 @@ function create_fragment$3(ctx) {
         ctx[2].menu === void 0
       ) add_render_callback(() => (
         /*select_change_handler*/
-        ctx[14].call(select)
+        ctx[15].call(select)
       ));
       set_style(div4, "grid-row", "2/3");
       set_style(div4, "grid-column", "2/4");
@@ -108085,21 +108097,21 @@ function create_fragment$3(ctx) {
             select,
             "change",
             /*select_change_handler*/
-            ctx[14]
+            ctx[15]
           ),
           listen(
             select,
             "change",
             /*change_handler*/
-            ctx[15]
+            ctx[16]
           ),
           listen(button0, "click", prevent_default(
             /*click_handler*/
-            ctx[16]
+            ctx[17]
           )),
           listen(button1, "click", prevent_default(
             /*click_handler_1*/
-            ctx[17]
+            ctx[18]
           ))
         ];
         mounted = true;
@@ -108133,7 +108145,7 @@ function create_fragment$3(ctx) {
       }
       const tjstoggleiconbutton_changes = {};
       if (dirty & /*$$scope*/
-      8388608) {
+      16777216) {
         tjstoggleiconbutton_changes.$$scope = { dirty, ctx: ctx2 };
       }
       tjstoggleiconbutton.$set(tjstoggleiconbutton_changes);
@@ -108223,6 +108235,7 @@ function instance$2($$self, $$props, $$invalidate) {
   $$subscribe_animation();
   setContext("animation-data", { animation, category: animation, idx: 0 });
   let { item: item2 } = $$props;
+  const documentLabel = item2?.documentName === "Activity" ? "Activity" : "Item";
   game.system.id === "dnd5e";
   const { application } = getContext("#external");
   let autorecSettings = {
@@ -108270,7 +108283,7 @@ function instance$2($$self, $$props, $$invalidate) {
   const click_handler_1 = () => closeApp();
   $$self.$$set = ($$props2) => {
     if ("animation" in $$props2) $$subscribe_animation($$invalidate(0, animation = $$props2.animation));
-    if ("item" in $$props2) $$invalidate(13, item2 = $$props2.item);
+    if ("item" in $$props2) $$invalidate(14, item2 = $$props2.item);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*$animation*/
@@ -108310,6 +108323,7 @@ function instance$2($$self, $$props, $$invalidate) {
     disabledLabel,
     isInAutorec,
     isInAEAutorec,
+    documentLabel,
     applyFlags,
     closeApp,
     buttonOverflow,
@@ -108324,7 +108338,7 @@ function instance$2($$self, $$props, $$invalidate) {
 class CategoryControl extends SvelteComponent {
   constructor(options2) {
     super();
-    init(this, options2, instance$2, create_fragment$3, safe_not_equal, { animation: 0, item: 13 });
+    init(this, options2, instance$2, create_fragment$3, safe_not_equal, { animation: 0, item: 14 });
   }
 }
 function create_default_slot(ctx) {
@@ -108376,7 +108390,7 @@ function create_fragment$2(ctx) {
   let updating_elementRoot;
   let current;
   function applicationshell_elementRoot_binding(value) {
-    ctx[9](value);
+    ctx[10](value);
   }
   let applicationshell_props = {
     stylesContent: { color: "black" },
@@ -108403,7 +108417,7 @@ function create_fragment$2(ctx) {
     p(ctx2, [dirty]) {
       const applicationshell_changes = {};
       if (dirty & /*$$scope, item*/
-      65540) {
+      131076) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty & /*elementRoot*/
@@ -108431,18 +108445,19 @@ function create_fragment$2(ctx) {
 }
 function instance$1($$self, $$props, $$invalidate) {
   let $position;
-  let $storageStore, $$unsubscribe_storageStore = noop, $$subscribe_storageStore = () => ($$unsubscribe_storageStore(), $$unsubscribe_storageStore = subscribe(storageStore, ($$value) => $$invalidate(11, $storageStore = $$value)), storageStore);
-  let $doc;
+  let $storageStore, $$unsubscribe_storageStore = noop, $$subscribe_storageStore = () => ($$unsubscribe_storageStore(), $$unsubscribe_storageStore = subscribe(storageStore, ($$value) => $$invalidate(12, $storageStore = $$value)), storageStore);
   let $animation;
+  let $doc;
   $$self.$$.on_destroy.push(() => $$unsubscribe_storageStore());
   let { elementRoot } = $$props;
   let { storageStore = void 0 } = $$props;
   $$subscribe_storageStore();
   let { item: item2 } = $$props;
   let { itemFlags } = $$props;
-  const doc = new TJSDocument(item2);
-  component_subscribe($$self, doc, (value) => $$invalidate(8, $doc = value));
-  let aaFlags = itemFlags.autoanimations || {};
+  const isValidDocument = item2 instanceof foundry.abstract.Document;
+  const doc = isValidDocument ? new TJSDocument(item2) : null;
+  component_subscribe($$self, doc, (value) => $$invalidate(9, $doc = value));
+  let aaFlags = itemFlags?.autoanimations || {};
   const { application } = getContext("#external");
   let newFlagData = foundry.utils.deepClone(aaFlags);
   if (!newFlagData.hasOwnProperty("menu")) {
@@ -108460,9 +108475,9 @@ function instance$1($$self, $$props, $$invalidate) {
   if (!newFlagData.hasOwnProperty("version")) {
     newFlagData.version = Object.keys(flagMigrations.migrations).map((n) => Number(n)).reverse()[0];
   }
-  newFlagData.label = item2.name;
+  newFlagData.label = item2.name ?? item2.label ?? "";
   let animation = new AnimationStore(newFlagData);
-  component_subscribe($$self, animation, (value) => $$invalidate(12, $animation = value));
+  component_subscribe($$self, animation, (value) => $$invalidate(8, $animation = value));
   const position = application.position;
   component_subscribe($$self, position, (value) => $$invalidate(7, $position = value));
   const storeAppState = foundry.utils.debounce(() => set_store_value(storageStore, $storageStore = application.state.current(), $storageStore), 500);
@@ -108477,10 +108492,14 @@ function instance$1($$self, $$props, $$invalidate) {
     if ("itemFlags" in $$props2) $$invalidate(6, itemFlags = $$props2.itemFlags);
   };
   $$self.$$.update = () => {
-    if ($$self.$$.dirty & /*$doc*/
-    256) {
+    if ($$self.$$.dirty & /*$doc, item, $animation*/
+    772) {
       {
-        set_store_value(animation, $animation.label = $doc.name, $animation);
+        if (doc) {
+          set_store_value(animation, $animation.label = $doc?.name ?? item2?.name ?? item2?.label ?? $animation.label, $animation);
+        } else if (item2?.name || item2?.label) {
+          set_store_value(animation, $animation.label = item2.name ?? item2.label, $animation);
+        }
       }
     }
     if ($$self.$$.dirty & /*$position*/
@@ -108497,6 +108516,7 @@ function instance$1($$self, $$props, $$invalidate) {
     position,
     itemFlags,
     $position,
+    $animation,
     $doc,
     applicationshell_elementRoot_binding
   ];
@@ -108915,7 +108935,7 @@ function getTokenFromActor(actor, actorId2) {
   return Array.isArray(token) ? token[0] : token;
 }
 const activityCache = {};
-function systemHooks$B() {
+function systemHooks$C() {
   if (!foundry.utils.isNewerVersion(game.system.version, 3.9)) return ui.notifications.error(`Automated Animations: This version of Automated Animations requires DnD5e 4.3 or higher, please downgrade to Automated Animations 5.0.10 or update your game system.`, { permanent: true });
   Hooks.on("dnd5e.rollAttackV2", async (rolls, data2) => {
     const roll = rolls[0];
@@ -108932,7 +108952,7 @@ function systemHooks$B() {
     criticalCheck$1(roll, item2);
     const ammoItem = item2?.parent?.items?.get(data2?.ammoUpdate?.id) ?? null;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    attackV2(await getRequiredData({ item: item2, actor: item2.parent, roll: item2, rollAttackHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, ammoItem, overrideNames, hit }));
+    attackV2(await getRequiredData({ item: item2, actor: item2.parent, activity, roll: item2, rollAttackHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, ammoItem, overrideNames, hit }));
   });
   Hooks.on("dnd5e.rollDamageV2", async (rolls, data2) => {
     const roll = rolls[0];
@@ -108947,7 +108967,7 @@ function systemHooks$B() {
     const item2 = activity?.item;
     criticalCheck$1(roll, item2);
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    damageV2(await getRequiredData({ hit, item: item2, actor: item2.parent, roll: item2, rollDamageHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, overrideNames }));
+    damageV2(await getRequiredData({ hit, item: item2, actor: item2.parent, activity, roll: item2, rollDamageHook: { item: item2, roll }, spellLevel: roll?.data?.item?.level ?? void 0, overrideNames }));
   });
   Hooks.on("dnd5e.postUseActivity", async (activity, usageConfig, results) => {
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
@@ -108958,7 +108978,7 @@ function systemHooks$B() {
     const options2 = results;
     const item2 = activity?.item;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    useItem$2(await getRequiredData({ item: item2, actor: item2.parent, roll: item2, useItemHook: { item: item2, config, options: options2 }, spellLevel: options2?.flags?.dnd5e?.use?.spellLevel || void 0, overrideNames }));
+    useItem$2(await getRequiredData({ item: item2, actor: item2.parent, activity, roll: item2, useItemHook: { item: item2, config, options: options2 }, spellLevel: options2?.flags?.dnd5e?.use?.spellLevel || void 0, overrideNames }));
   });
   Hooks.on("dnd5e.preUseActivity", (activity, config) => {
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
@@ -108976,7 +108996,7 @@ function systemHooks$B() {
     if (activity?.description?.chatFlavor?.includes("[noaa]")) return;
     const item2 = activity?.item;
     const overrideNames = activity?.name && !["heal", "summon"].includes(activity?.name?.trim()) ? [activity.name] : [];
-    templateAnimation$6(await getRequiredData({ item: item2, templateData: template, roll: template, isTemplate: true, overrideNames }));
+    templateAnimation$7(await getRequiredData({ item: item2, activity, templateData: template, roll: template, isTemplate: true, overrideNames }));
   });
 }
 async function useItem$2(input) {
@@ -109008,7 +109028,7 @@ async function damageV2(input) {
   }
   trafficCop$1(handler);
 }
-async function templateAnimation$6(input) {
+async function templateAnimation$7(input) {
   debug$1("Template placed, checking for animations");
   if (!input.item) {
     debug$1("No Item could be found");
@@ -109049,9 +109069,9 @@ function criticalCheck$1(roll, item2 = {}) {
 }
 const aaDnd5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$B
+  systemHooks: systemHooks$C
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$A() {
+function systemHooks$B() {
   if (game.modules.get("midi-qol")?.active) {
     Hooks.on("midi-qol.AttackRollComplete", (workflow) => {
       let playOnDamage = game.settings.get("autoanimations", "playonDamage");
@@ -109100,7 +109120,7 @@ function systemHooks$A() {
     if (userId !== game.user.id) {
       return;
     }
-    templateAnimation$5(await getRequiredData({ itemUuid: template.flags?.sw5e?.origin, templateData: template, workflow: template, isTemplate: true }));
+    templateAnimation$6(await getRequiredData({ itemUuid: template.flags?.sw5e?.origin, templateData: template, workflow: template, isTemplate: true }));
   });
 }
 async function useItem$1(input) {
@@ -109134,7 +109154,7 @@ async function damage(input) {
   }
   trafficCop$1(handler);
 }
-async function templateAnimation$5(input) {
+async function templateAnimation$6(input) {
   debug$1("Template placed, checking for animations");
   if (!input.item) {
     debug$1("No Item could be found");
@@ -109186,9 +109206,9 @@ function criticalCheck(workflow) {
 }
 const aaSw5e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$A
+  systemHooks: systemHooks$B
 }, Symbol.toStringTag, { value: "Module" }));
-function systemHooks$z() {
+function systemHooks$A() {
   Hooks.on("DL.Action", async (data2) => {
     const eventType = data2.type;
     let compiledData = await getRequiredData({
@@ -109232,7 +109252,7 @@ async function runDemonlord(data2) {
 }
 const aaDemonlord = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  systemHooks: systemHooks$z
+  systemHooks: systemHooks$A
 }, Symbol.toStringTag, { value: "Module" }));
 const PF2E_SIZE_TO_REACH = {
   tiny: 0,
@@ -109242,7 +109262,7 @@ const PF2E_SIZE_TO_REACH = {
   huge: 10,
   grg: 15
 };
-function systemHooks$y() {
+function systemHooks$z() {
   Hooks.on("createChatMessage", async (msg) => {
     if (msg.author.id !== game.user.id) {
       return;
@@ -109270,7 +109290,7 @@ function systemHooks$y() {
       debug$1("No Item Found, exiting main Workflow");
       return;
     }
-    compiledData.hitTargets = checkOutcome$1(compiledData);
+    compiledData.hitTargets = checkOutcome$2(compiledData);
     runPF2e(compiledData);
   });
   Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
@@ -109284,10 +109304,10 @@ function systemHooks$y() {
       isTemplate: true
     });
     if (template.item) compiledData.item = template.item;
-    templateAnimation$4(compiledData);
+    templateAnimation$5(compiledData);
   });
 }
-async function templateAnimation$4(input) {
+async function templateAnimation$5(input) {
   debug$1("Template placed, checking for animations");
   if (!input.item) {
     debug$1("No Item could be found");
@@ -109333,13 +109353,13 @@ async function runPF2e(data2) {
       break;
     default:
       if (data2.item?.type === "feat" || data2.item.type === "action") {
-        let hasAOE = await checkFeatForAOE(data2);
+        let hasAOE = await checkFeatForAOE$1(data2);
         if (hasAOE) {
           playPF2e(data2);
           return;
         }
       }
-      let hasDamage = itemHasDamage(data2.item);
+      let hasDamage = itemHasDamage$1(data2.item);
       if (hasDamage && data2.playOnDamage && data2.workflow.isDamageRoll) {
         playPF2e(data2);
       } else if (!hasDamage && !data2.workflow.isDamageRoll) {
@@ -109349,7 +109369,7 @@ async function runPF2e(data2) {
       }
   }
 }
-async function checkFeatForAOE(data2) {
+async function checkFeatForAOE$1(data2) {
   return data2.item?.system?.description?.value?.includes("@Template");
 }
 function runPF2eWeapons(data2) {
@@ -109372,7 +109392,7 @@ async function runPF2eSpells(data2) {
   const msg = data2.workflow;
   const item2 = data2.item;
   const playOnDamage = data2.playOnDamage;
-  let spellType = getSpellType(item2);
+  let spellType = getSpellType$1(item2);
   if (item2.isVariant) {
     data2.isVariant = true;
     data2.originalItem = item2.original;
@@ -109388,12 +109408,12 @@ async function runPF2eSpells(data2) {
   switch (spellType) {
     case "utility":
     case "save":
-      if (spellHasAOE(item2)) {
+      if (spellHasAOE$1(item2)) {
         return;
       }
-      if (itemHasDamage(item2) && msg.isDamageRoll) {
+      if (itemHasDamage$1(item2) && msg.isDamageRoll) {
         playPF2e(data2);
-      } else if (!itemHasDamage(item2)) {
+      } else if (!itemHasDamage$1(item2)) {
         playPF2e(data2);
       }
       break;
@@ -109405,7 +109425,7 @@ async function runPF2eSpells(data2) {
         playPF2e(data2);
       } else if (!playOnDamage && !msg.isDamageRoll) {
         playPF2e(data2);
-      } else if (!itemHasDamage(item2) && !msg.isDamageRoll) {
+      } else if (!itemHasDamage$1(item2) && !msg.isDamageRoll) {
         playPF2e(data2);
       }
       break;
@@ -109432,17 +109452,17 @@ async function playPF2e(input) {
   const handler = await AAHandler.make(input);
   trafficCop$1(handler);
 }
-function getSpellType(item2) {
+function getSpellType$1(item2) {
   return item2.system.spellType?.value;
 }
-function spellHasAOE(item2) {
+function spellHasAOE$1(item2) {
   return item2.system.area?.value && item2.system.area?.type;
 }
-function itemHasDamage(item2) {
+function itemHasDamage$1(item2) {
   let damage2 = item2.system?.damage?.value || item2.system?.damage || item2.system?.damageRolls || {};
   return Object.keys(damage2).length;
 }
-function checkOutcome$1(input) {
+function checkOutcome$2(input) {
   let outcome = input.workflow.flags?.pf2e?.context?.outcome;
   outcome = outcome ? outcome.toLowerCase() : "";
   let hitTargets2;
@@ -109458,6 +109478,236 @@ function checkOutcome$1(input) {
   return hitTargets2;
 }
 const aaPf2e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  systemHooks: systemHooks$z
+}, Symbol.toStringTag, { value: "Module" }));
+const SF2E_SIZE_TO_REACH = {
+  tiny: 0,
+  sm: 5,
+  med: 5,
+  lg: 5,
+  huge: 10,
+  grg: 15
+};
+function systemHooks$y() {
+  Hooks.on("createChatMessage", async (msg) => {
+    if (msg.author.id !== game.user.id) {
+      return;
+    }
+    const playOnDmg = game.settings.get("autoanimations", "playonDamageCore");
+    if (msg.flags.sf2e?.context?.type === "damage-taken") {
+      debug$1("Caught a damage-taken message thats not meant to be animated, exiting main workflow");
+      return;
+    }
+    let compiledData = await getRequiredData({
+      item: msg.item,
+      itemId: msg.flags.sf2e?.origin?.uuid,
+      token: msg.token?.object,
+      tokenId: msg.speaker?.token,
+      actorId: msg.speaker?.actor,
+      workflow: msg,
+      playOnDamage: playOnDmg,
+      bypassTemplates: true
+    });
+    if (compiledData.item?.type === "effect" || compiledData.item?.type === "condition") {
+      debug$1("This is a Condition or Effect, exiting main workflow");
+      return;
+    }
+    if (!compiledData.item) {
+      debug$1("No Item Found, exiting main Workflow");
+      return;
+    }
+    compiledData.hitTargets = checkOutcome$1(compiledData);
+    runSF2e(compiledData);
+  });
+  Hooks.on("createMeasuredTemplate", async (template, data2, userId) => {
+    if (userId !== game.user.id) {
+      return;
+    }
+    let compiledData = await getRequiredData({
+      itemUuid: template.flags?.sf2e?.origin?.uuid,
+      templateData: template,
+      workflow: template,
+      isTemplate: true
+    });
+    if (template.item) compiledData.item = template.item;
+    templateAnimation$4(compiledData);
+  });
+}
+async function templateAnimation$4(input) {
+  debug$1("Template placed, checking for animations");
+  if (!input.item) {
+    debug$1("No Item could be found");
+    return;
+  }
+  if (foundry.utils.isNewerVersion(game.system.version, "5")) {
+    if (input.item.isVariant) {
+      input.isVariant = true;
+      input.originalItem = input.item.original;
+    }
+  } else {
+    const templateName = input.templateData.flags?.sf2e?.origin?.name;
+    if (templateName && input.item.name !== templateName) {
+      const overlayId = input.item.overlays.find((o) => o.name == templateName)?._id;
+      if (overlayId) {
+        input.item = input.item.loadVariant({ overlayIds: [overlayId] });
+        input.isVariant = true;
+        input.originalItem = input.item?.original;
+      }
+    }
+  }
+  if (data.item.type === "weapon") {
+    const baseType = game.i18n.localize(CONFIG.PF2E.baseWeaponTypes[input.item.system?.baseType]);
+    const group = game.i18n.localize(CONFIG.PF2E.weaponGroups[input.item.system?.group]);
+    input.extraNames.push(baseType, group);
+  }
+  const handler = await AAHandler.make(input);
+  trafficCop$1(handler);
+}
+async function runSF2e(data2) {
+  const itemType = data2.item.type;
+  switch (itemType) {
+    case "effect":
+    case "condition":
+      debug$1("This is an Effect or Condition, exiting main workflow in deference to Active Effects");
+      break;
+    case "spell":
+      runSF2eSpells(data2);
+      break;
+    case "weapon":
+      if (!data2.workflow.isRoll) {
+        return;
+      }
+      runSF2eWeapons(data2);
+      break;
+    case "consumable":
+      playSF2e(data2);
+      break;
+    default:
+      if (data2.item?.type === "feat" || data2.item.type === "action") {
+        let hasAOE = await checkFeatForAOE(data2);
+        if (hasAOE) {
+          playSF2e(data2);
+          return;
+        }
+      }
+      let hasDamage = itemHasDamage(data2.item);
+      if (hasDamage && data2.playOnDamage && data2.workflow.isDamageRoll) {
+        playSF2e(data2);
+      } else if (!hasDamage && !data2.workflow.isDamageRoll) {
+        playSF2e(data2);
+      } else if (hasDamage && !data2.playOnDamage && !data2.workflow.isDamageRoll) {
+        playSF2e(data2);
+      }
+  }
+}
+async function checkFeatForAOE(data2) {
+  return data2.item?.system?.description?.value?.includes("@Template");
+}
+function runSF2eWeapons(data2) {
+  const playOnDamage = data2.playOnDamage;
+  const msg = data2.workflow;
+  const isAttackRoll = msg.flags.sf2e?.context?.type?.includes("attack");
+  data2.extraNames = [];
+  if (data2.item.type === "weapon") {
+    const baseType = game.i18n.localize(CONFIG.PF2E.baseWeaponTypes[data2.item.baseType]);
+    const group = game.i18n.localize(CONFIG.PF2E.weaponGroups[data2.item.group]);
+    data2.extraNames.push(baseType, group);
+  }
+  if (playOnDamage && msg.isDamageRoll) {
+    playSF2e(data2);
+  } else if (!playOnDamage && isAttackRoll) {
+    playSF2e(data2);
+  }
+}
+async function runSF2eSpells(data2) {
+  const msg = data2.workflow;
+  const item2 = data2.item;
+  const playOnDamage = data2.playOnDamage;
+  let spellType = getSpellType(item2);
+  if (item2.isVariant) {
+    data2.isVariant = true;
+    data2.originalItem = item2.original;
+  }
+  if (item2.system.traits.value.includes("healing"))
+    spellType = "heal";
+  else if (item2.system.traits.value.includes("attack"))
+    spellType = "attack";
+  else
+    spellType = "save";
+  switch (spellType) {
+    case "utility":
+    case "save":
+      if (spellHasAOE(item2)) {
+        return;
+      }
+      if (itemHasDamage(item2) && msg.isDamageRoll) {
+        playSF2e(data2);
+      } else if (!itemHasDamage(item2)) {
+        playSF2e(data2);
+      }
+      break;
+    case "attack":
+      if (!msg.isRoll) {
+        return;
+      }
+      if (playOnDamage && msg.isDamageRoll) {
+        playSF2e(data2);
+      } else if (!playOnDamage && !msg.isDamageRoll) {
+        playSF2e(data2);
+      } else if (!itemHasDamage(item2) && !msg.isDamageRoll) {
+        playSF2e(data2);
+      }
+      break;
+    case "heal":
+      if (msg.isDamageRoll) {
+        playSF2e(data2);
+      }
+      break;
+  }
+}
+async function playSF2e(input) {
+  if (!input.item) {
+    debug$1("No Item could be found");
+    return;
+  }
+  if (input.item.traits) {
+    const reachTrait = input.item.traits.find((t) => /^reach-\d+$/.test(t));
+    let reachValue = reachTrait ? Number(reachTrait.replace("reach-", "")) : SF2E_SIZE_TO_REACH[input.item.actor?.size ?? "med"];
+    if (!reachTrait && input.item.traits.has("reach")) {
+      reachValue += 5;
+    }
+    input.reach = Math.round(reachValue / 5) - 1;
+  }
+  const handler = await AAHandler.make(input);
+  trafficCop$1(handler);
+}
+function getSpellType(item2) {
+  return item2.system.spellType?.value;
+}
+function spellHasAOE(item2) {
+  return item2.system.area?.value && item2.system.area?.type;
+}
+function itemHasDamage(item2) {
+  let damage2 = item2.system?.damage?.value || item2.system?.damage || item2.system?.damageRolls || {};
+  return Object.keys(damage2).length;
+}
+function checkOutcome$1(input) {
+  let outcome = input.workflow.flags?.sf2e?.context?.outcome;
+  outcome = outcome ? outcome.toLowerCase() : "";
+  let hitTargets2;
+  if (input.targets.length < 2 && !game.settings.get("autoanimations", "playonDamageCore") && outcome) {
+    if (outcome === "success" || outcome === "criticalsuccess") {
+      hitTargets2 = input.targets;
+    } else {
+      hitTargets2 = [];
+    }
+  } else {
+    hitTargets2 = input.targets;
+  }
+  return hitTargets2;
+}
+const aaSf2e = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   systemHooks: systemHooks$y
 }, Symbol.toStringTag, { value: "Module" }));
@@ -111705,6 +111955,7 @@ const systemSupport = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defin
   pf2e: aaPf2e,
   ptu: aaPtu,
   salvageunion: aaSalvageUnion,
+  sf2e: aaSf2e,
   sfrpg: aaSfrpg,
   shadowrun5e: aaShadowrun5e,
   standard: aaChatmessage,
@@ -111737,7 +111988,7 @@ function registerAAItemHooks() {
       onclick: async () => {
         await flagMigrations.handle(itemSheet2.item);
         const pf2eRuleTypes = ["condition", "effect"];
-        if (game.system.id === "pf1" && itemSheet2.item?.type === "buff" || game.system.id === "pf2e" && pf2eRuleTypes.includes(itemSheet2.item?.type)) {
+        if (game.system.id === "pf1" && itemSheet2.item?.type === "buff" || (game.system.id === "pf2e" || game.system.id === "sf2e") && pf2eRuleTypes.includes(itemSheet2.item?.type)) {
           new AEMenuApp(itemSheet2.item, {}).render(true, { focus: true });
         } else {
           new ItemMenuApp(itemSheet2.item, {}).render(true, { focus: true });
@@ -111747,7 +111998,7 @@ function registerAAItemHooks() {
     buttons.splice(0, 0, buttonOptions);
   });
   Hooks.on("getHeaderControlsApplicationV2", (sheet, buttons) => {
-    if (!["Item", "ActiveEffect"].includes(sheet.document?.documentName)) return;
+    if (!["Item", "ActiveEffect", "Activity"].includes(sheet.document?.documentName)) return;
     if (!game.user.isGM && game.settings.get("autoanimations", "hideFromPlayers")) {
       return;
     }
@@ -111759,10 +112010,10 @@ function registerAAItemHooks() {
       onClick: async () => {
         await flagMigrations.handle(document2);
         const pf2eRuleTypes = ["condition", "effect"];
-        if (game.system.id === "pf1" && document2?.type === "buff" || game.system.id === "pf2e" && pf2eRuleTypes.includes(document2?.type)) {
+        if (game.system.id === "pf1" && document2?.type === "buff" || (game.system.id === "pf2e" || game.system.id === "sf2e") && pf2eRuleTypes.includes(document2?.type)) {
           new AEMenuApp(document2, {}).render(true, { focus: true });
         } else {
-          if (document2.documentName === "Item") {
+          if (document2.documentName === "Item" || document2.documentName === "Activity") {
             new ItemMenuApp(document2, {}).render(true, { focus: true });
           } else if (document2.documentName === "ActiveEffect") {
             new AEMenuApp(document2, {}).render(true, { focus: true });
@@ -111782,7 +112033,7 @@ function registerAAItemHooks() {
             const item2 = this.document;
             await flagMigrations.handle(item2);
             const pf2eRuleTypes = ["condition", "effect"];
-            if (game.system.id === "pf1" && itemSheet.item?.type === "buff" || game.system.id === "pf2e" && pf2eRuleTypes.includes(itemSheet.item?.type)) {
+            if (game.system.id === "pf1" && itemSheet.item?.type === "buff" || (game.system.id === "pf2e" || game.system.id === "sf2e") && pf2eRuleTypes.includes(itemSheet.item?.type)) {
               new AEMenuApp(item2, {}).render(true, { focus: true });
             } else {
               new ItemMenuApp(item2, {}).render(true, { focus: true });

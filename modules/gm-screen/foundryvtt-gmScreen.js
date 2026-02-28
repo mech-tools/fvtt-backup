@@ -529,7 +529,7 @@ class F extends foundry.applications.sheets.journal.JournalEntryPageHandlebarsSh
           s.innerHTML = `<img src="${this.options.document.src}" alt="${this.options.document.image.caption || "image"}"></img>`;
           break;
         case "pdf":
-          s.innerHTML = `<iframe src="scripts/pdfjs/web/viewer.html?file=/${this.options.document.src}"></iframe>`;
+          s.innerHTML = `<iframe src="scripts/pdfjs/web/viewer.html?file=${this.options.document.src?.startsWith("https://") || this.options.document.src?.startsWith("http://") ? this.options.document.src : `/${this.options.document.src}`}"></iframe>`;
           break;
         case "video":
           s.innerHTML = `<video src="${this.options.document.src}" ${this.options.document.video.controls ? "controls" : ""} ${this.options.document.video.autoplay ? "autoplay" : ""}></video>`;
@@ -1342,7 +1342,8 @@ class M extends foundry.applications.api.HandlebarsApplicationMixin(
       expanded: this.expanded,
       hidden: !this.hasUserViewableGrids,
       displayDrawer: this.displayDrawer,
-      darkTheme: a().settings.get("core", "uiConfig")?.colorScheme?.interface === "dark"
+      darkThemeUI: a().settings.get("core", "uiConfig")?.colorScheme?.interface === "dark",
+      darkThemeApps: a().settings.get("core", "uiConfig")?.colorScheme?.applications === "dark"
     });
     return p.tabs = Object.keys(d).map((m) => ({
       id: d[m].grid.id,

@@ -11,18 +11,54 @@
 <h2 style="text-align: center;">Supporting The Module</h2>
 <p style="text-align: center;"><a href="https://ko-fi.com/gambit07" target="_blank" rel="nofollow noopener"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" /></a> <a href="https://www.patreon.com/GambitsLounge" target="_blank" rel="nofollow noopener"> <img src="https://img.shields.io/badge/Patreon-Gambits Lounge-F96854?style=for-the-badge&amp;logo=patreon" alt="Patreon Gambits Lounge" /> </a></p>
 <hr/>
-<p>Welcome to the official release of FXMaster V7! This is a massive overhaul of Filters which have essentially been re-built from the ground up. Scene Filters can now be masked by regions, and Filters can be played directly within Regions. To allow making filters to look more realistic, there is a new Edge Fade % parameter that will gradually fade a given effect to the region borders. Beyond Filter exclusive functionality, regions have been given much more flexibility by allowing elevation restrictions for both Particles and Filters. This will be super helpful for users of the Levels module, and more generally the upcoming Foundry V14 core levels integration. Particles and Filters have also received another often requested feature, the ability to place tokens above or below a given effect. Finally, many Particles and Filters have seen tweaks and functionality enhancements in V7. One special callout is the Lightning Filter effect, which now has a Thunder aware mode to sync lightning flashes up with Thunder sounds.</p>
+<p>Welcome to the official release of FXMaster V7.4! This release brings some big updates to get ready for V14! This includes handling for new region shapes, new edge fade region handling, some initial compatability with V14's levels, and more! I've bumped max compatability for both FXMaster and FXMaster+ to V14, I believe it is now ready for any enterprising users who would like to test it on pre-release V14 versions. This release also brings a brand new preset api which has been used by Tyler to integrate the excellent <a href="https://foundryvtt.com/packages/calendaria" target="_blank" style="color: #dd6b20; text-decoration: none; font-weight: bold;">Calendaria</a> module directly with FXMaster! Preset effects combine a number of different particle and/or filter effects to create a convincing environmental effect, the api contains an enhanced integration with FXMaster+ as well to use the expanded effects from that module when present in Calendaria. To support Tyler and his continuing work on Calendaria and other free modules, consider supporting him on <a href="https://patreon.com/3deathsaves" target="_blank" style="color: #dd6b20; text-decoration: none; font-weight: bold;">Patreon</a>. Hope everyone enjoys!</p>
 
-**<p>Any support via the <a href="https://www.patreon.com/GambitsLounge" target="_blank" rel="nofollow noopener">Patreon</a> or <a href="https://ko-fi.com/gambit07" target="_blank" rel="nofollow noopener">Ko-fi</a> is greatly appreciated! If you are a Patreon subscriber you will receive access to the FXMaster+ module. FXMaster+ can be accessed from Patreon, and it's where I will be adding new particle effects and filters moving forward. For the month of December, it will get you access to the 🔵Ice, 🟤Duststorm, 🟤Sandstorm, 🟢Ghosts, 🟡Sunlight, 🟢Magic Crystals, 🟡Fireflies, 🌸Sakura Bloom, 🌸Sakura Blossoms — Effects previewed below:</p>**
+**<p>Any support via the <a href="https://www.patreon.com/GambitsLounge" target="_blank" rel="nofollow noopener">Patreon</a> or <a href="https://ko-fi.com/gambit07" target="_blank" rel="nofollow noopener">Ko-fi</a> is greatly appreciated! If you are a Patreon subscriber you will receive access to the FXMaster+ module. FXMaster+ can be accessed from Patreon, and it's where I will be adding new particle effects and filters moving forward. For the month of February, it will get you access to the 🟡Lightning Bolts,🔵Fish, 🟢Glitch, 🔵Ice, 🟤Duststorm, 🟤Sandstorm, 🟢Ghosts, 🟡Sunlight, 🟢Magic Crystals, 🟡Fireflies, 🌸Sakura Bloom, and 🌸Sakura Blossoms Effects - Effects are previewed below:</p>**
 
-<video
-  autoplay
-  muted
-  playsinline
-  loop
-  preload="auto"
-  src="https://github.com/user-attachments/assets/e4a6a6e6-723f-4d03-9e1c-591c5b2c03c6">
-</video>
+  <video
+    autoplay
+    muted
+    playsinline
+    loop
+    preload="auto"
+    src="https://github.com/user-attachments/assets/c85cc30c-18a2-4de4-8057-87c70a7dcbf4">
+  </video>
+
+<details>
+  <summary>Fish (click to expand)</summary>
+  <video
+    autoplay
+    muted
+    playsinline
+    loop
+    preload="auto"
+    src="https://github.com/user-attachments/assets/8e55950b-d19b-4222-a769-7782a7fa1e3e">
+  </video>
+</details>
+
+<details>
+  <summary>Glitch (click to expand)</summary>
+  <video
+    autoplay
+    muted
+    playsinline
+    loop
+    preload="auto"
+    src="https://github.com/user-attachments/assets/5a31c44b-018e-46e0-b903-b34b6ac73448">
+  </video>
+</details>
+
+<details>
+  <summary>Ice (click to expand)</summary>
+  <video
+    autoplay
+    muted
+    playsinline
+    loop
+    preload="auto"
+    src="https://github.com/user-attachments/assets/e4a6a6e6-723f-4d03-9e1c-591c5b2c03c6">
+  </video>
+</details>
 
 <details>
   <summary>Duststorm + Sandstorm (click to expand)</summary>
@@ -127,9 +163,11 @@ This module also provides ways to easily configure these effects.
     - [Filter Effects](#filter-effects)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/filter-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/filter-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/filter-dark.svg" alt="Filter Effects Icon" height="20" width="20" style="vertical-align:middle;"></picture>
       - [Filter Effects via Region Behavior](#filter-effects-via-region-behavior)
       - [Masking Filter Effects](#masking-filter-effects)
+    - [API Effects UI Manager](#api-effects-ui-manager)
     - [Save Particle and Filter Effects as a Macro](#save-particle-and-filter-effects-as-a-macro)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/floppy-disk-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/floppy-disk-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/floppy-disk-dark.svg" alt="Save Particle and Filter Effects as a Macro Icon" height="20" width="20" style="vertical-align:middle;"></picture>
     - [Clear Particle and Filter Effects](#clear-particle-and-filter-effects)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/trash-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/trash-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/trash-dark.svg" alt="Clear Particle and Filter Effects Icon" height="20" width="20" style="vertical-align:middle;"></picture>
   - [Developer API](#developer-api)
+    - [Presets API](#presets-api)
     - [Filter Effects](#filter-effects)
       - [Available Filter Effects With Supported Options](#available-filter-effects-with-supported-options)
     - [Particle Effects](#particle-effects)
@@ -167,11 +205,12 @@ https://github.com/gambit07/fxmaster/releases/latest/download/module.json
 - Q: Can I provide my own effects?
 
   A: You can provide your own Animation Effects via the Custom folder in the module's settings.
-  It's not possible to provide your own Particle Effects or Filter Effects.
+  You can provide your own Particle Effects when using FXMaster+ in the Manage User Particle Effects menu.
+  It's not possible to provide your own Filter Effects.
 
 ## Usage
 
-The functionality of FXMaster can be accessed via _Effect Controls_ <picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/wand-magic-sparkles-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/wand-magic-sparkles-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/wand-magic-sparkles-dark.svg" alt="Effect Controls Icon" height="20" width="20" style="vertical-align:middle;"></picture> in scene controls. Each FXMaster app has its own tool inside scene controls.
+The functionality of FXMaster can be accessed via _FXMaster Controls_ <picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/wand-magic-sparkles-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/wand-magic-sparkles-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/wand-magic-sparkles-dark.svg" alt="FXMaster Controls Icon" height="20" width="20" style="vertical-align:middle;"></picture> in scene controls. Each FXMaster app has its own tool inside scene controls.
 
 ### Animation Effects&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/hat-wizard-light.svg" media="(prefers-color-scheme: dark)"><source srcset="./media/font-awesome/hat-wizard-dark.svg" media="(prefers-color-scheme: light)"><img src="./media/font-awesome/hat-wizard-dark.svg" alt="" aria-hidden="true" role="presentation" height="20" width="20" style="vertical-align:middle;"></picture>
 > ⚠️ **Notice**
@@ -209,11 +248,11 @@ _Animation Effects_ details can be viewed by right clicking an animation icon in
 
 _Particle Effects_ include weather effects like rain, fog, clouds, and snow, but also other global particle effects such as birds flying across the scene or spiders crawling around. 
 
-There are two ways to implement _Particle Effects_: via the _Effect Controls_ menu for global _Particle Effects_, or via a [Region](https://foundryvtt.com/article/scene-regions/) using the _FXMaster: Particle Effects_ Region behavior.
+There are two ways to implement _Particle Effects_: via the _FXMaster Controls_ menu for global _Particle Effects_, or via a [Region](https://foundryvtt.com/article/scene-regions/) using the _FXMaster: Particle Effects_ Region behavior.
 
-#### Particle Effects via Effect Controls App
+#### Particle Effects via FXMaster Controls App
 
-Clicking on the _Effect Controls_ tool opens the _Particle Effects Management_ app:
+Clicking on the _FXMaster Controls_ tool opens the _Particle Effects Management_ app:
 
 ![Particle Effects Management](./media/screenshots/particle-effects-management.webp)
 
@@ -237,22 +276,22 @@ After adding a Region, open the Region config menu and navigate to the Behaviors
   - For region elevation, use the **Elevation Constraints** dropdown.
 
 - **Elevation Constraints**
-  - **None** — No elevation restrictions are considered.
-  - **Tokens POV** — Visibility will be restricted to a given token’s POV.
+  - **None** - No elevation restrictions are considered.
+  - **Tokens POV** - Visibility will be restricted to a given token’s POV.
     - Example: If the region elevation bottom is set to 10 feet and the region elevation top is set to 20 feet, the particle effect will be visible to the token while their elevation is between 10 and 20 feet.
     - Example: If the region elevation bottom is set to 10 feet and the region elevation top is infinite, the particle effect will be visible to the token while their elevation is 10 feet or above.
     - Example: If the region elevation bottom is infinite and the region elevation top is set to 20 feet, the particle effect will be visible to the token while their elevation is 20 feet or below.
-  - **Specific Tokens POV** — Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the particle effect.
-  - **Always Visible for GM** — Ignores **Tokens POV** for GM and makes the effect always visible.
+  - **Specific Tokens POV** - Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the particle effect.
+  - **Always Visible for GM** - Ignores **Tokens POV** for GM and makes the effect always visible.
 
 - In addition, you can subscribe the Particle Region behavior to the **Token Enters** and **Token Exits** events.
   - These events can work in concert with the **Elevation Constraints** options, or on their own.
 
 - **Events**
-  - **Token Enters** — Effect becomes visible when a token enters the bounds of the region.
+  - **Token Enters** - Effect becomes visible when a token enters the bounds of the region.
     - This event can be paired with **Token Exits** to turn an effect on and off when a token moves in/out.
     - Alternatively, you can only add **Token Enters**; in that case the effect becomes visible once a token enters and remains visible even if they exit.
-  - **Token Exits** — Effect becomes not visible when a token exits the bounds of the region.
+  - **Token Exits** - Effect becomes not visible when a token exits the bounds of the region.
 
 
 #### Masking Particle Effects
@@ -261,25 +300,25 @@ By default, _Particle Effects_ added via the app are displayed across the entire
 
 - When using "FXMaster: Suppress Scene Particles", there is additional region elevation visibility handling.
 - **Elevation Constraints**
-  - **None** — No elevation restrictions are considered.
-  - **Tokens POV** — Visibility suppression will be restricted to a given token’s POV.
-  - **Specific Tokens POV** — Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the suppression.
-  - **Always Visible for GM** — Ignores **Tokens POV** for GM and makes the suppression always visible.
+  - **None** - No elevation restrictions are considered.
+  - **Tokens POV** - Visibility suppression will be restricted to a given token’s POV.
+  - **Specific Tokens POV** - Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the suppression.
+  - **Always Visible for GM** - Ignores **Tokens POV** for GM and makes the suppression always visible.
 
 - In addition, you can subscribe the Particle Region behavior to the **Token Enters** and **Token Exits** events.
   - These events can work in concert with the **Elevation Constraints** options, or on their own.
 
 - **Events**
-  - **Token Enters** — Effect becomes suppressed when a token enters the bounds of the region.
+  - **Token Enters** - Effect becomes suppressed when a token enters the bounds of the region.
     - This event can be paired with **Token Exits** to turn suppression on and off when a token moves in/out.
     - Alternatively, you can only add **Token Enters**; in that case the effect becomes suppressed once a token enters and remains suppressed even if they exit.
-  - **Token Exits** — Suppression becomes disabled when a token exits the bounds of the region.
+  - **Token Exits** - Suppression becomes disabled when a token exits the bounds of the region.
 
 _Particle Effects_ are only displayed outside the region areas when masked. If a Hole shape is added to the region, scene particle effects will display in the hole area cutout.
 
 #### ⚠ Performance Note
 
-The _Particle Effects_ provided by FXMaster have recently had an overhaul for Performance in versions 7.2.0+. I've normalized particle density and added in support for Foundrys built-in Performance Mode client setting. FXMaster will now adjust density based on that setting, where percentage is the fraction of total particles set in the manager that will be emitted, Maximum = 100%, High = 75%, Medium = 50%, Low = 25%. These changes allow much more flexibility for the GM across different player PC configurations and should prevent issues that could occur in the past on very large scenes where maximum density for a given particle effect could crash the scene. If there is an issue where too many particle effects cause a crash, launch the world in safe configuration
+The _Particle Effects_ provided by FXMaster have recently had an overhaul for Performance in versions 7.2.0+. I've normalized particle density and added in support for Foundrys built-in Performance Mode client setting. FXMaster will now adjust density based on that setting, where percentage is the fraction of total particles set in the manager that will be emitted, Maximum = 100%, High = 75%, Medium = 50%, Low = 25% <b>(NOTE: Your players must know to use the performance mode setting within Foundry, so keep that in mind if a player has issues with performance related to effects)</b>. These changes allow much more flexibility for the GM across different player PC configurations and should prevent issues that could occur in the past on very large scenes where maximum density for a given particle effect could crash the scene. If there is an issue where too many particle effects cause a crash, launch the world in safe configuration
 and delete the configured _Particle Effects_ for the scene by running the following as a script macro or in the
 developer console (F12):
 
@@ -292,9 +331,9 @@ You can then safely reactivate your modules.
 ### Filter Effects&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/filter-light.svg" media="(prefers-color-scheme: dark)"><source srcset="./media/font-awesome/filter-dark.svg" media="(prefers-color-scheme: light)"><img src="./media/font-awesome/filter-dark.svg" alt="" aria-hidden="true" role="presentation" height="20" width="20" style="vertical-align:middle;"></picture>
 
 _Filter Effects_ include effects that change the underlying scene visuals in some way like altering the color, displaying an old film effect, or adding underwater displacement.
-There are two ways to implement _Filter Effects_: via the _Effect Controls_ menu for global _Filter Effects_, or via a [Region](https://foundryvtt.com/article/scene-regions/) using the _FXMaster: Filter Effects_ Region behavior.
+There are two ways to implement _Filter Effects_: via the _FXMaster Controls_ menu for global _Filter Effects_, or via a [Region](https://foundryvtt.com/article/scene-regions/) using the _FXMaster: Filter Effects_ Region behavior.
 
-#### Filter Effects via Effect Controls App
+#### Filter Effects via FXMaster Controls App
 
 Clicking on this tool opens the _Filter Effects Management_ app:
 
@@ -323,22 +362,22 @@ After adding a Region, open the Region config menu and navigate to the Behaviors
   - For region elevation, use the **Elevation Constraints** dropdown.
 
 - **Elevation Constraints**
-  - **None** — No elevation restrictions are considered.
-  - **Tokens POV** — Visibility will be restricted to a given token’s POV.
+  - **None** - No elevation restrictions are considered.
+  - **Tokens POV** - Visibility will be restricted to a given token’s POV.
     - Example: If the region elevation bottom is set to 10 feet and the region elevation top is set to 20 feet, the filter effect will be visible to the token while their elevation is between 10 and 20 feet.
     - Example: If the region elevation bottom is set to 10 feet and the region elevation top is infinite, the filter effect will be visible to the token while their elevation is 10 feet or above.
     - Example: If the region elevation bottom is infinite and the region elevation top is set to 20 feet, the filter effect will be visible to the token while their elevation is 20 feet or below.
-  - **Specific Tokens POV** — Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the filter effect.
-  - **Always Visible for GM** — Ignores **Tokens POV** for GM and makes the effect always visible.
+  - **Specific Tokens POV** - Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the filter effect.
+  - **Always Visible for GM** - Ignores **Tokens POV** for GM and makes the effect always visible.
 
 - In addition, you can subscribe the Filter Region behavior to the **Token Enters** and **Token Exits** events.
   - These events can work in concert with the **Elevation Constraints** options, or on their own.
 
 - **Events**
-  - **Token Enters** — Effect becomes visible when a token enters the bounds of the region.
+  - **Token Enters** - Effect becomes visible when a token enters the bounds of the region.
     - This event can be paired with **Token Exits** to turn an effect on and off when a token moves in/out.
     - Alternatively, you can only add **Token Enters**; in that case the effect becomes visible once a token enters and remains visible even if they exit.
-  - **Token Exits** — Effect becomes not visible when a token exits the bounds of the region.
+  - **Token Exits** - Effect becomes not visible when a token exits the bounds of the region.
 
 #### Masking Filter Effects
 
@@ -346,21 +385,41 @@ By default, _Filter Effects_ added via the scene app are displayed across the en
 
 - When using "FXMaster: Suppress Scene Filters", there is additional region elevation visibility handling.
 - **Elevation Constraints**
-  - **None** — No elevation restrictions are considered.
-  - **Tokens POV** — Suppression will be restricted to a given token’s POV.
-  - **Specific Tokens POV** — Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the suppression.
-  - **Always Visible for GM** — Ignores **Tokens POV** for GM and makes the suppression always visible.
+  - **None** - No elevation restrictions are considered.
+  - **Tokens POV** - Suppression will be restricted to a given token’s POV.
+  - **Specific Tokens POV** - Same visibility as **Tokens POV**, but only allows visibility for Token UUIDs entered. Any Token UUID not entered will not be able to see the suppression.
+  - **Always Visible for GM** - Ignores **Tokens POV** for GM and makes the suppression always visible.
 
 - In addition, you can subscribe the Filter Region behavior to the **Token Enters** and **Token Exits** events.
   - These events can work in concert with the **Elevation Constraints** options, or on their own.
 
 - **Events**
-  - **Token Enters** — Suppression becomes visible when a token enters the bounds of the region.
+  - **Token Enters** - Suppression becomes visible when a token enters the bounds of the region.
     - This event can be paired with **Token Exits** to turn suppression on and off when a token moves in/out.
     - Alternatively, you can only add **Token Enters**; in that case the suppression becomes visible once a token enters and remains visible even if they exit.
-  - **Token Exits** — Suppression becomes disabled when a token exits the bounds of the region.
+  - **Token Exits** - Suppression becomes disabled when a token exits the bounds of the region.
 
 _Filter Effects_ are only displayed outside the region areas when masked. If a Hole shape is added to the region, scene filter effects will display in the hole area cutout.
+
+### API Effects UI Manager
+
+The _API Effects_ manager is a utility for inspecting, editing, and removing scene-wide effects that were added via macros or other modules through FXMaster’s APIs.
+
+To open: **Scene Controls → FXMaster Controls → API Effects** (plug icon).
+
+What it shows:
+
+- Scene-wide _Particle_ and _Filter_ entries that were added programmatically.
+- Each row can be expanded to view the raw JSON parameters stored for that effect (`type`, `options`, etc).
+
+Actions:
+
+- **Edit** (pencil) - Opens an editor for that single effect instance.
+- **Delete** (trash) - Removes that single API-created effect from the Scene.
+
+Notes:
+
+- The **Presets API** below creates multiple entries with ids like `apiPreset_<presetName>_p0` / `apiPreset_<presetName>_f0`, which will show up here if you ever need to inspect or remove them manually.
 
 ### Save Particle and Filter Effects as a Macro&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/floppy-disk-light.svg" media="(prefers-color-scheme: dark)"><source srcset="./media/font-awesome/floppy-disk-dark.svg" media="(prefers-color-scheme: light)"><img src="./media/font-awesome/floppy-disk-dark.svg" alt="" aria-hidden="true" role="presentation" height="20" width="20" style="vertical-align:middle;"></picture>
 
@@ -379,6 +438,66 @@ current scene.
 ## Developer API
 
 FXMaster provides functionality to interact with _Filter Effects_ and _Particle Effects_ from other packages and macros.
+
+### Presets API
+
+FXMaster’s _Preset API_ lets other modules and macros apply curated, scene-wide “environment” effects by name. Each preset can include multiple _Particle Effects_ and/or _Filter Effects_, and FXMaster will apply them as a single unit.
+
+Presets are resolved dynamically:
+
+- If **FXMaster+** is active and a preset has an FXMaster+ variant, that tier is preferred.
+- Otherwise, the core FXMaster variant is used when available.
+
+#### Accessing the API
+
+The Presets API is exposed in two places:
+
+```js
+// Global
+FXMASTER.api.presets
+
+// Via the module object
+game.modules.get("fxmaster")?.api?.presets
+```
+
+> **Tip:** Call these from a macro after the world is ready (e.g. `Hooks.once("ready", ...)`) so `FXMASTER` and `CONFIG.fxmaster` are initialized.
+
+#### Common operations
+
+```js
+// Play or update a preset on the current scene
+await FXMASTER.api.presets.play("sunshower", { direction: "north" });
+
+// Toggle a preset on/off
+await FXMASTER.api.presets.toggle("blizzard", { topDown: true });
+
+// Stop a preset
+await FXMASTER.api.presets.stop("blizzard");
+
+// Stop any active presets created by this API, then play
+await FXMASTER.api.presets.switch("acid-rain");
+
+// Introspection helpers
+console.log(FXMASTER.api.presets.list());        // all known preset names
+console.log(FXMASTER.api.presets.listValid());   // presets valid for this world
+console.log(FXMASTER.api.presets.listActive());  // active presets on the current scene, or a given scene instance or uuid
+```
+
+#### Options
+
+All preset methods accept an optional `opts` object.
+
+| Option         | Type                | Default | Description |
+| -------------- | ------------------- | ------- | ----------- |
+| `topDown`      | `boolean`           | `false` | Prefer the preset's top-down variant (if defined). |
+| `direction`    | `string` | -       | Overrides the direction used by the preset. Strings support `north/south/east/west/northeast/northwest/southeast/southwest`. |
+| `belowTokens`  | `boolean`           | -       | Overrides whether the effect renders below tokens (where supported). |
+| `soundFx`      | `boolean`           | -       | Enables/disables `soundFxEnabled` for preset effects **when FXMaster+ is active**. If FXMaster+ isn’t active, sound FX are forced off. |
+
+#### Notes
+
+- Presets created by this API are stored on the Scene using keys that start with `apiPreset_...`. They do **not** modify FXMaster’s `core_*` entries or any effects created by other modules.
+- You can inspect and clean up any API-created effects (including presets) using the **API Effects UI Manager** above.
 
 ### Filter Effects
 
