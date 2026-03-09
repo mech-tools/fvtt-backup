@@ -3,3 +3,22 @@
 2026/02/28-21:27:56.746177 728fa7fff6c0 Level-0 table #769: 2245 bytes OK
 2026/02/28-21:27:56.750038 728fa7fff6c0 Delete type=3 #766
 2026/02/28-21:27:56.750118 728fa7fff6c0 Delete type=0 #767
+2026/03/08-21:45:07.803473 728fa5dff6c0 Level-0 table #772: started
+2026/03/08-21:45:07.805128 728fa5dff6c0 Level-0 table #772: 3429 bytes OK
+2026/03/08-21:45:07.806222 728fa5dff6c0 Delete type=0 #770
+2026/03/08-21:45:07.812973 728fa5dff6c0 Manual compaction at level-0 from '!settings!0nsYOCf7KZldKQxE' @ 72057594037927935 : 1 .. '!settings!ztM48ZnGnPGcYeI9' @ 0 : 0; will stop at '!settings!x9iPgCcfQsg8vyqR' @ 23921 : 1
+2026/03/08-21:45:07.812988 728fa5dff6c0 Compacting 2@0 + 0@1 files
+2026/03/08-21:45:07.815137 728fa5dff6c0 Generated table #773@0: 4 keys, 2267 bytes
+2026/03/08-21:45:07.815165 728fa5dff6c0 Compacted 2@0 + 0@1 files => 2267 bytes
+2026/03/08-21:45:07.816105 728fa5dff6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/08-21:45:07.816224 728fa5dff6c0 Delete type=2 #769
+2026/03/08-21:45:07.816348 728fa5dff6c0 Delete type=2 #772
+2026/03/08-21:45:07.816548 728fa5dff6c0 Manual compaction at level-0 from '!settings!x9iPgCcfQsg8vyqR' @ 23921 : 1 .. '!settings!ztM48ZnGnPGcYeI9' @ 0 : 0; will stop at (end)
+2026/03/08-21:45:07.867671 728fa5dff6c0 Manual compaction at level-1 from '!settings!0nsYOCf7KZldKQxE' @ 72057594037927935 : 1 .. '!settings!ztM48ZnGnPGcYeI9' @ 0 : 0; will stop at '!settings!x9iPgCcfQsg8vyqR' @ 23931 : 1
+2026/03/08-21:45:07.867685 728fa5dff6c0 Compacting 1@1 + 1@2 files
+2026/03/08-21:45:07.870168 728fa5dff6c0 Generated table #774@1: 235 keys, 37344 bytes
+2026/03/08-21:45:07.870187 728fa5dff6c0 Compacted 1@1 + 1@2 files => 37344 bytes
+2026/03/08-21:45:07.871544 728fa5dff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/08-21:45:07.871628 728fa5dff6c0 Delete type=2 #773
+2026/03/08-21:45:07.871730 728fa5dff6c0 Delete type=2 #765
+2026/03/08-21:45:07.873716 728fa5dff6c0 Manual compaction at level-1 from '!settings!x9iPgCcfQsg8vyqR' @ 23931 : 1 .. '!settings!ztM48ZnGnPGcYeI9' @ 0 : 0; will stop at (end)
