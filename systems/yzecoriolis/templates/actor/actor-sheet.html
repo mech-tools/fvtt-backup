@@ -142,8 +142,10 @@
           <a class="item nav-link active" data-tab="stats">{{localize "YZECORIOLIS.SheetStats"}}</a>
           <a class="item nav-link" data-tab="talents">{{localize "YZECORIOLIS.SheetTalents"}}</a>
           <a class="item nav-link" data-tab="gear">{{localize "YZECORIOLIS.SheetItems"}}</a>
+          {{#if owner}}
           <a class="item nav-link" data-tab="bio">{{localize "YZECORIOLIS.SheetBio"}}</a>
           <a class="item nav-link" data-tab="charnotes">{{localize "YZECORIOLIS.CharNotes"}}</a>
+          {{/if }}
         </nav>
 
         <section class="sheet-panels">
@@ -156,6 +158,7 @@
           {{!-- Gear Tab --}}
           {{> "systems/yzecoriolis/templates/actor/parts/actor-gear.html"}}
 
+          {{#if owner}}
           {{!-- Bio Tab --}}
           {{> "systems/yzecoriolis/templates/actor/parts/actor-bio.html"}}
 
@@ -163,6 +166,7 @@
           <div class="tab charnotes" data-group="primary" data-tab="charnotes">
             {{editor bioNotes target="system.notes" button=true owner=owner editable=editable}}
           </div>
+          {{/if }}
         </section>
       </div>
     </div>

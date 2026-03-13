@@ -26,8 +26,8 @@ function addCursorHiderBehavior(foundryGame, settings) {
 
 		toggleCursor();
 	});
-	updatePlayerListControls(foundryGame, settings, $(`#player-list`));
-	Hooks.on('renderPlayerList', (playerList, $html, data) => {
+	updatePlayerListControls(foundryGame, settings, document.getElementById(`players`));
+	Hooks.on('renderPlayers', (playerList, $html, data) => {
 		updatePlayerListControls(foundryGame, settings, $html);
 	});
 	setInterval(() => {
@@ -42,8 +42,8 @@ function addCursorHiderBehavior(foundryGame, settings) {
 }
 
 function updatePlayerListControls(foundryGame, settings, $html) {
-	$html.find(`.cursorhider`).remove();
-	$html.find(`.player`).each((idx, elem) => {
+	$html.querySelectorAll(`.cursorhider`).forEach(e => e.remove());
+	$html.querySelectorAll(`#players-active .player`).forEach(elem => {
 		const userId = elem.dataset.userId;
 		const isHidden = hiddenUsers.has(userId);
 		const styles = `flex:0 0 17px;width:17px;height:16px;border:0`;
@@ -52,12 +52,12 @@ function updatePlayerListControls(foundryGame, settings, $html) {
 		const $img = $(`<img class=cursorhider style="${styles}" src="${src}" alt="${alt}" title="${alt}" />`);
 		if (!settings.showIconAlways) {
 			$img.css(`visibility`, `hidden`);
-			$html.on(`mouseenter`, () => {
-				$img.css(`visibility`, `visible`);
-			})
-			$html.on(`mouseleave`, () => {
+			$html.addEventListener('mouseenter', () => {
+				$img.css('visibility', 'visible');
+			});
+			$html.addEventListener('mouseleave', () => {
 				$img.css(`visibility`, `hidden`);
-			})
+			});
 		}
 		if (userId === foundryGame.user.id && foundryGame.user.hasRole(settings[Const.MINIMUM_PERMISSION])) {
 			$img.css(`cursor`, `pointer`);

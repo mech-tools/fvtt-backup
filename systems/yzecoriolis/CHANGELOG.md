@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/hodpub/yze-coriolis/compare/v4.2.0...v4.3.0) (2026-03-06)
+
+
+### Features
+
+* hide actor notes and bio tabs for non-owners ([7f18856](https://github.com/hodpub/yze-coriolis/commit/7f1885610917fe5f61a4ba5724d0eb328e1428c9))
+
 ## [4.2.0](https://github.com/hodpub/yze-coriolis/compare/v4.1.0...v4.2.0) (2025-12-02)
 
 

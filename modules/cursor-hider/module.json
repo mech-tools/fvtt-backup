@@ -1,6 +1,6 @@
 {
   "description": "Allows individual participants in the game to hide the position of their mouse cursor temporarily or permanently.",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "id": "cursor-hider",
   "authors": [
     {
@@ -10,7 +10,7 @@
   "title": "Cursor Hider",
   "compatibility": {
     "minimum": "13",
-    "verified": "13.345"
+    "verified": "13.351"
   },
   "esmodules": [
     "main.js"
@@ -44,6 +44,6 @@
   },
   "socket": true,
   "url": "https://gitlab.com/foundry-azzurite/cursor-hider",
-  "manifest": "https://gitlab.com/foundry-azzurite/cursor-hider/-/jobs/artifacts/1.3.3/raw/dist/cursor-hider/module.json?job=build",
-  "download": "https://gitlab.com/foundry-azzurite/cursor-hider/-/jobs/artifacts/1.3.3/raw/dist/cursor-hider.zip?job=build"
+  "manifest": "https://gitlab.com/foundry-azzurite/cursor-hider/-/jobs/artifacts/1.3.4/raw/dist/cursor-hider/module.json?job=build",
+  "download": "https://gitlab.com/foundry-azzurite/cursor-hider/-/jobs/artifacts/1.3.4/raw/dist/cursor-hider.zip?job=build"
 }

@@ -1,3 +1,24 @@
-2026/02/27-10:46:45.555839 7f6867fff6c0 Recovering log #653
-2026/02/27-10:46:45.559718 7f6867fff6c0 Delete type=3 #651
-2026/02/27-10:46:45.559789 7f6867fff6c0 Delete type=0 #653
+2026/02/28-21:36:16.904738 750d20ff86c0 Recovering log #656
+2026/02/28-21:36:16.905020 750d20ff86c0 Level-0 table #658: started
+2026/02/28-21:36:16.907609 750d20ff86c0 Level-0 table #658: 2150 bytes OK
+2026/02/28-21:36:16.911449 750d20ff86c0 Delete type=0 #656
+2026/02/28-21:36:16.911512 750d20ff86c0 Delete type=3 #655
+2026/03/12-12:12:58.815432 750cd2bff6c0 Level-0 table #661: started
+2026/03/12-12:12:58.817537 750cd2bff6c0 Level-0 table #661: 37292 bytes OK
+2026/03/12-12:12:58.818443 750cd2bff6c0 Delete type=0 #659
+2026/03/12-12:12:58.897144 750cd2bff6c0 Manual compaction at level-0 from '!messages!1z6cptd4BXzCM9hG' @ 72057594037927935 : 1 .. '!messages!xmMyTBjETp0180Bn' @ 0 : 0; will stop at '!messages!HGZApaRZFCRv4NKq' @ 11426 : 1
+2026/03/12-12:12:58.897155 750cd2bff6c0 Compacting 2@0 + 0@1 files
+2026/03/12-12:12:58.899157 750cd2bff6c0 Generated table #662@0: 22 keys, 19398 bytes
+2026/03/12-12:12:58.899181 750cd2bff6c0 Compacted 2@0 + 0@1 files => 19398 bytes
+2026/03/12-12:12:58.900069 750cd2bff6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/12-12:12:58.900140 750cd2bff6c0 Delete type=2 #658
+2026/03/12-12:12:58.900215 750cd2bff6c0 Delete type=2 #661
+2026/03/12-12:12:58.900468 750cd2bff6c0 Manual compaction at level-0 from '!messages!HGZApaRZFCRv4NKq' @ 11426 : 1 .. '!messages!xmMyTBjETp0180Bn' @ 0 : 0; will stop at (end)
+2026/03/12-12:12:58.903095 750cd2bff6c0 Manual compaction at level-1 from '!messages!1z6cptd4BXzCM9hG' @ 72057594037927935 : 1 .. '!messages!xmMyTBjETp0180Bn' @ 0 : 0; will stop at '!messages!xmMyTBjETp0180Bn' @ 11446 : 1
+2026/03/12-12:12:58.903106 750cd2bff6c0 Compacting 1@1 + 1@2 files
+2026/03/12-12:12:58.904862 750cd2bff6c0 Generated table #663@1: 31 keys, 26666 bytes
+2026/03/12-12:12:58.904879 750cd2bff6c0 Compacted 1@1 + 1@2 files => 26666 bytes
+2026/03/12-12:12:58.905911 750cd2bff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/12-12:12:58.906015 750cd2bff6c0 Delete type=2 #650
+2026/03/12-12:12:58.906097 750cd2bff6c0 Delete type=2 #662
+2026/03/12-12:12:58.912106 750cd2bff6c0 Manual compaction at level-1 from '!messages!xmMyTBjETp0180Bn' @ 11446 : 1 .. '!messages!xmMyTBjETp0180Bn' @ 0 : 0; will stop at (end)

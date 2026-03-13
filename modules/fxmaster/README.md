@@ -403,7 +403,7 @@ _Filter Effects_ are only displayed outside the region areas when masked. If a H
 
 ### API Effects UI Manager
 
-The _API Effects_ manager is a utility for inspecting, editing, and removing scene-wide effects that were added via macros or other modules through FXMaster’s APIs.
+The _API Effects_ manager is a utility for inspecting, editing, and removing scene-wide effects that were added via macros or presets through FXMaster’s APIs.
 
 To open: **Scene Controls → FXMaster Controls → API Effects** (plug icon).
 
@@ -441,7 +441,7 @@ FXMaster provides functionality to interact with _Filter Effects_ and _Particle 
 
 ### Presets API
 
-FXMaster’s _Preset API_ lets other modules and macros apply curated, scene-wide “environment” effects by name. Each preset can include multiple _Particle Effects_ and/or _Filter Effects_, and FXMaster will apply them as a single unit.
+FXMaster’s _Preset API_ lets other modules and macros apply curated, scene-wide environment effects by name. Each preset can include multiple _Particle Effects_ and/or _Filter Effects_, FXMaster will apply them as a single unit.
 
 Presets are resolved dynamically:
 
@@ -450,14 +450,11 @@ Presets are resolved dynamically:
 
 #### Accessing the API
 
-The Presets API is exposed in two places:
+The Presets API is exposed via:
 
 ```js
 // Global
 FXMASTER.api.presets
-
-// Via the module object
-game.modules.get("fxmaster")?.api?.presets
 ```
 
 > **Tip:** Call these from a macro after the world is ready (e.g. `Hooks.once("ready", ...)`) so `FXMASTER` and `CONFIG.fxmaster` are initialized.
@@ -466,10 +463,10 @@ game.modules.get("fxmaster")?.api?.presets
 
 ```js
 // Play or update a preset on the current scene
-await FXMASTER.api.presets.play("sunshower", { direction: "north" });
+await FXMASTER.api.presets.play("sunshower", { direction: "north", silent: true });
 
 // Toggle a preset on/off
-await FXMASTER.api.presets.toggle("blizzard", { topDown: true });
+await FXMASTER.api.presets.toggle("blizzard", { topDown: true, soundFx: true });
 
 // Stop a preset
 await FXMASTER.api.presets.stop("blizzard");
@@ -478,9 +475,10 @@ await FXMASTER.api.presets.stop("blizzard");
 await FXMASTER.api.presets.switch("acid-rain");
 
 // Introspection helpers
-console.log(FXMASTER.api.presets.list());        // all known preset names
-console.log(FXMASTER.api.presets.listValid());   // presets valid for this world
-console.log(FXMASTER.api.presets.listActive());  // active presets on the current scene, or a given scene instance or uuid
+console.log(FXMASTER.api.presets.list());                                // all known preset names
+console.log(FXMASTER.api.presets.listValid());                           // presets valid for this world
+console.log(FXMASTER.api.presets.listActive());                          // active presets on the current scene
+console.log(FXMASTER.api.presets.listActive({ scene: "<sceneUuid>" }))   // active presets on a given scene uuid
 ```
 
 #### Options
@@ -491,8 +489,9 @@ All preset methods accept an optional `opts` object.
 | -------------- | ------------------- | ------- | ----------- |
 | `topDown`      | `boolean`           | `false` | Prefer the preset's top-down variant (if defined). |
 | `direction`    | `string` | -       | Overrides the direction used by the preset. Strings support `north/south/east/west/northeast/northwest/southeast/southwest`. |
-| `belowTokens`  | `boolean`           | -       | Overrides whether the effect renders below tokens (where supported). |
+| `belowTokens`  | `boolean`           | -       | Overrides whether the effect renders below tokens. |
 | `soundFx`      | `boolean`           | -       | Enables/disables `soundFxEnabled` for preset effects **when FXMaster+ is active**. If FXMaster+ isn’t active, sound FX are forced off. |
+| `silent`       | `boolean`           | `false` | Suppress UI warning notifications (e.g. if a preset name can’t be resolved). |
 
 #### Notes
 

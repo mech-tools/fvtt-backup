@@ -1,3 +1,24 @@
-2026/02/27-10:46:45.702312 7f68b49f86c0 Recovering log #663
-2026/02/27-10:46:45.707380 7f68b49f86c0 Delete type=3 #661
-2026/02/27-10:46:45.707455 7f68b49f86c0 Delete type=0 #663
+2026/02/28-21:36:17.134341 750d217f96c0 Recovering log #667
+2026/02/28-21:36:17.135277 750d217f96c0 Level-0 table #669: started
+2026/02/28-21:36:17.137766 750d217f96c0 Level-0 table #669: 96792 bytes OK
+2026/02/28-21:36:17.140867 750d217f96c0 Delete type=3 #666
+2026/02/28-21:36:17.140911 750d217f96c0 Delete type=0 #667
+2026/02/28-21:36:17.956233 750cd2bff6c0 Moved #669 to level-1 96792 bytes OK: files[ 0 1 1 0 0 0 0 ]
+2026/02/28-21:36:17.960998 750cd2bff6c0 Compacting 1@1 + 1@2 files
+2026/02/28-21:36:18.003811 750cd2bff6c0 Generated table #671@1: 7375 keys, 1252556 bytes
+2026/02/28-21:36:18.003844 750cd2bff6c0 Compacted 1@1 + 1@2 files => 1252556 bytes
+2026/02/28-21:36:18.004878 750cd2bff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/02/28-21:36:18.005115 750cd2bff6c0 Delete type=2 #665
+2026/02/28-21:36:18.005497 750cd2bff6c0 Delete type=2 #669
+2026/03/12-12:12:58.972983 750cd2bff6c0 Level-0 table #673: started
+2026/03/12-12:12:58.975901 750cd2bff6c0 Level-0 table #673: 99771 bytes OK
+2026/03/12-12:12:58.977076 750cd2bff6c0 Delete type=0 #670
+2026/03/12-12:12:58.982737 750cd2bff6c0 Manual compaction at level-0 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
+2026/03/12-12:12:58.992406 750cd2bff6c0 Manual compaction at level-1 from '!scenes!0HBQqZwdf4ommAmB' @ 72057594037927935 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at '!scenes.tokens.delta.effects!kykQc3wx6zEuBvng.EEBumUbTt8ZJQfe6.TZB4BusXGLxqQsf9.28MD2jljRAdK5F7a' @ 52911 : 1
+2026/03/12-12:12:58.992433 750cd2bff6c0 Compacting 1@1 + 1@2 files
+2026/03/12-12:12:59.048596 750cd2bff6c0 Generated table #674@1: 7355 keys, 1248457 bytes
+2026/03/12-12:12:59.048621 750cd2bff6c0 Compacted 1@1 + 1@2 files => 1248457 bytes
+2026/03/12-12:12:59.050379 750cd2bff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/12-12:12:59.050565 750cd2bff6c0 Delete type=2 #673
+2026/03/12-12:12:59.050830 750cd2bff6c0 Delete type=2 #671
+2026/03/12-12:12:59.054908 750cd2bff6c0 Manual compaction at level-1 from '!scenes.tokens.delta.effects!kykQc3wx6zEuBvng.EEBumUbTt8ZJQfe6.TZB4BusXGLxqQsf9.28MD2jljRAdK5F7a' @ 52911 : 1 .. '!scenes.walls!zYkd0JvDuwRj0MJB.zyMCvCLmwQzkbrCl' @ 0 : 0; will stop at (end)
