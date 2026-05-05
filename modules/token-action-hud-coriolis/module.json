@@ -1,70 +1,70 @@
 {
-  "id": "token-action-hud-coriolis",
-  "title": "Token Action HUD Coriolis",
-  "description": "Provide support for the coriolis game system with Token Action HUD Core",
-  "version": "1.4.1",
-  "compatibility": {
-    "minimum": "10",
-    "verified": "13"
-  },
-  "authors": [
-    {
-      "name": "kbender",
-      "url": "https://github.com/kbender84",
-      "email": "kbender@wp.pl",
-      "discord": "kbender#0388",
-      "flags": {}
-    }
-  ],
-  "relationships": {
-    "systems": [
-      {
-        "id": "yzecoriolis",
-        "type": "system",
-        "compatibility": {}
-      }
+    "id": "token-action-hud-coriolis",
+    "title": "Token Action HUD Coriolis",
+    "description": "Provide support for the coriolis game system with Token Action HUD Core",
+    "version": "1.4.3",
+    "compatibility": {
+        "minimum": 10,
+        "verified": 13
+    },
+    "authors": [
+        {
+            "name": "kbender",
+            "url": "https://github.com/kbender84",
+            "email": "kbender@wp.pl",
+            "discord": "kbender#0388",
+            "patreon": "benderworks"
+        }
     ],
-    "requires": [
-      {
-        "id": "token-action-hud-core",
-        "type": "module",
-        "compatibility": {}
-      }
-    ]
-  },
-  "esmodules": [
-    "scripts/module.js"
-  ],
+    "relationships": {
+        "systems": [
+            {
+                "id": "yzecoriolis",
+                "type": "system",
+                "compatibility": [
+                    {
+                        "minimum": "3.0.5",
+                        "verified": "3.0.5"
+                    }
+                ]
+            }
+        ],
+        "requires": [
+            {
+                "id": "token-action-hud-core",
+                "type": "module",
+                "compatibility": [
+                    {
+                        "minimum": "2",
+                        "verified": "2"                    }
+                ]
+            }
+        ]
+    },
+    "esmodules": [
+        "scripts/module.js"
+    ],
   "packs": [
     {
       "name": "token-action-hud-coriolis-macros",
       "label": "TAH Coriilis Macros",
       "path": "packs/token-action-hud-coriolis-macros",
       "type": "Macro",
-      "system": "yzecoriolis",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      "module": "token-action-hud-coriolis"
     },
     {
       "name": "token-action-hud-coriolis-rolltables",
       "label": "TAH Coriolis RollTables",
       "path": "packs/token-action-hud-coriolis-rolltables",
-      "type": "RollTable",
-      "system": "yzecoriolis",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      },
-      "flags": {}
+      "module": "token-action-hud-coriolis",
+      "entity": "RollTable",
+      "type": "RollTable"
+
     }
   ],
-  "url": "https://github.com/kbender84/token-action-hud-coriolis",
-  "manifest": "https://github.com/kbender84/token-action-hud-coriolis/releases/download/1.4.1/module.json",
-  "download": "https://github.com/kbender84/token-action-hud-coriolis/releases/download/1.4.1/token-action-hud-coriolis.zip",
-  "license": "LICENSE",
-  "readme": "README.md",
-  "flags": {}
+    "url": "https://github.com/kbender84/token-action-hud-coriolis",
+    "manifest": "https://github.com/kbender84/token-action-hud-coriolis/releases/download/1.4.3/module.json",
+    "download": "https://github.com/kbender84/token-action-hud-coriolis/releases/download/1.4.3/token-action-hud-coriolis.zip",
+    "license": "LICENSE",
+    "readme": "README.md"
 }

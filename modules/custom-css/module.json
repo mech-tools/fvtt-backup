@@ -2,11 +2,10 @@
     "id": "custom-css",
     "title": "Custom CSS",
     "description": "Add custom CSS to your world",
-    "version": "2.4.3",
+    "version": "2.4.4",
     "compatibility": {
         "minimum": 13,
-        "verified": 13,
-        "maximum": 13
+        "verified": 14
     },
     "authors": [
         {
@@ -52,7 +51,7 @@
     ],
     "manifest": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/latest/download/module.json",
     "url": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS",
-    "download": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/download/2.4.3/custom-css.zip",
+    "download": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases/download/2.4.4/custom-css.zip",
     "readme": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/blob/master/readme.md",
     "bugs": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/issues",
     "changelog": "https://github.com/yorkshirelandscape/FoundryVTT-Custom-CSS/releases",

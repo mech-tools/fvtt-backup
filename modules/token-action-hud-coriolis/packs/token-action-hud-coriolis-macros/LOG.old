@@ -1,7 +1,4 @@
-2026/02/28-21:36:18.971762 750d21ffa6c0 Recovering log #160
-2026/02/28-21:36:18.975169 750d21ffa6c0 Delete type=0 #160
-2026/02/28-21:36:18.975213 750d21ffa6c0 Delete type=3 #159
-2026/03/12-12:12:58.805355 750cd2bff6c0 Level-0 table #164: started
-2026/03/12-12:12:58.805389 750cd2bff6c0 Level-0 table #164: 0 bytes OK
-2026/03/12-12:12:58.806539 750cd2bff6c0 Delete type=0 #162
-2026/03/12-12:12:58.808617 750cd2bff6c0 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2026/05/04-09:05:50.377843 7058fddfa6c0 Log #3: 0 ops saved to Table #4 OK
+2026/05/04-09:05:50.378077 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-macros/000003.log: OK
+2026/05/04-09:05:50.378215 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-macros/MANIFEST-000002: OK
+2026/05/04-09:05:50.380371 7058fddfa6c0 **** Repaired leveldb /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-macros; recovered 0 files; 0 bytes. Some data may have been lost. ****

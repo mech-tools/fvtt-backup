@@ -5,7 +5,7 @@
   --tah-hud-width: 200px;
   --tah-button-background: var(--tah-button-background-color);
   --tah-button-background-color: #0b0a1360;
-  --tah-button-border: none;
+  --tah-button-border: 1px solid transparent;
   --tah-button-box-shadow: 0 2px 0 -1px #0c0c0c,
     0 0 0 1px #060606,
     0 0 5px #000000ff;
@@ -13,9 +13,9 @@
   --tah-button-text-color: var(--tah-text-primary-color);
   --tah-button-height: 32px;
   --tah-button-min-width: 32px;
-  --tah-button-text-shadow: 1px 1px 1px #0b0a13, 1px 1px 1px #0b0a13, 1px 1px 3px #0b0a13, 1px 1px 5px #0b0a13;
+  --tah-button-text-shadow: -1px -1px 3px rgba(0, 0, 0, 0.25), 1px 1px 1px rgba(0, 0, 0, 1), 1px 1px 3px rgba(0, 0, 0, 0.5);
   --tah-button-hover-background-color: #ffffff40;
-  --tah-button-hover-border: none;
+  --tah-button-hover-border: 1px solid transparent;
   --tah-button-hover-box-shadow: none;
   --tah-button-hover-text-primary-color: #ffffff;
   --tah-button-hover-text-secondary-color: var(--tah-text-hover-secondary-color);
@@ -34,14 +34,14 @@
   --tah-button-image-height: var(--tah-button-height);
   --tah-button-image-width: var(--tah-button-min-width);
   --tah-icon-color: var(--tah-text-primary-color);
-  --tah-icon-text-shadow: 1px 1px 1px #0b0a13, 1px 1px 1px #0b0a13, 1px 1px 3px #0b0a13, 1px 1px 5px #0b0a13;
+  --tah-icon-text-shadow: -1px -1px 3px rgba(0, 0, 0, 0.25), 1px 1px 1px rgba(0, 0, 0, 1), 1px 1px 3px rgba(0, 0, 0, 0.5);
   --tah-icon-hover-color: #ffffff;
   --tah-icon-hover-text-shadow: 0 0 8px var(--color-shadow-primary);
   --tah-text-primary-color: #efe6d8;
   --tah-text-secondary-color: #d0b8a3;
   --tah-text-tertiary-color: #ff6400;
   --tah-character-name-color: var(--tah-text-primary-color);
-  --tah-character-name-text-shadow: 1px 1px 1px #0b0a13, 1px 1px 1px #0b0a13, 1px 1px 3px #0b0a13, 1px 1px 5px #0b0a13;
+  --tah-character-name-text-shadow: -1px -1px 3px rgba(0, 0, 0, 0.25), 1px 1px 1px rgba(0, 0, 0, 1), 1px 1px 3px rgba(0, 0, 0, 0.5);
   --tah-list-subgroup-title-icon-color: var(--tah-text-primary-color);
   --tah-list-subgroup-title-hover-icon-color: #ffffff;
   --tah-list-subgroup-title-font-size: var(--font-size-16);
@@ -51,7 +51,7 @@
   --tah-text-hover-primary-color: var(--tah-text-primary-color);
   --tah-text-hover-secondary-color: var(--tah-text-secondary-color);
   --tah-text-hover-tertiary-color: var(--tah-text-tertiary-color);
-  --tah-text-shadow: 1px 1px 1px #0b0a13, 1px 1px 1px #0b0a13, 1px 1px 3px #0b0a13, 1px 1px 5px #0b0a13;
+  --tah-text-shadow: -1px -1px 3px rgba(0, 0, 0, 0.25), 1px 1px 1px rgba(0, 0, 0, 1), 1px 1px 3px rgba(0, 0, 0, 0.5);
   flex: 0;
   height: min-content;
   margin: 0;
@@ -101,6 +101,9 @@
   /* -------------------------------------------- */
   /* Groups                                       */
   /* -------------------------------------------- */
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-icon {
+  align-content: center;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud #tah-character-name {
   color: var(--tah-character-name-color);
@@ -160,7 +163,7 @@
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box {
   align-items: center;
   background-color: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 0;
   color: var(--tah-button-text-color);
   display: flex;
@@ -178,10 +181,6 @@
   /* -------------------------------------------- */
   /* -------------------------------------------- */
   /* Toggleable Button                            */
-  /* -------------------------------------------- */
-  /* -------------------------------------------- */
-  /* -------------------------------------------- */
-  /*  Edit Group Icon                             */
   /* -------------------------------------------- */
   /* -------------------------------------------- */
 }
@@ -231,7 +230,10 @@
   color: var(--tah-button-active-text-color);
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box.active.activeText > .tah-button-content:after {
-  content: "*";
+  content: "\f00c";
+  font-family: "Font Awesome 7 Pro", "Font Awesome 6 Pro";
+  font-weight: 900;
+  margin-left: 0.25rem;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box.shrink {
   min-width: min-content;
@@ -285,14 +287,6 @@
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box .tah-info-container .tah-info.tah-spotlight {
   color: var(--tah-text-tertiary-color);
 }
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box > .tah-edit-group-icon {
-  font-size: 8px;
-  position: relative;
-  visibility: hidden;
-}
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-box:hover:not(.disable-edit) > .tah-edit-group-icon {
-  visibility: visible;
-}
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-icon {
   background: transparent;
   border: 0;
@@ -303,6 +297,7 @@
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-icon:hover,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-icon:focus {
   box-shadow: none;
+  outline: none;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-icon:hover > i,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-button-icon:focus > i {
@@ -325,6 +320,62 @@
   filter: none;
   flex-direction: column;
   overflow-x: hidden;
+  /* Hide nested subgroups in docked HUD */
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-group-button,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-subgroup-button {
+  border: 1px dashed var(--tah-text-primary-color, #fff);
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-group-button .tah-drop-icon,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-subgroup-button .tah-drop-icon {
+  display: none;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups [data-part="subgroup"] .tah-add-subgroup-button {
+  display: none;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-unlocked .tah-collapse-icon,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-unlocked .tah-expand-icon {
+  display: none;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-action-button {
+  align-items: center;
+  aspect-ratio: 1;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--tah-text-primary-color, #fff);
+  border-radius: 4px;
+  color: var(--tah-text-primary-color, #fff);
+  cursor: pointer;
+  display: inline-flex;
+  height: var(--tah-button-height);
+  justify-content: center;
+  justify-self: center;
+  margin: 0;
+  opacity: 0.6;
+  padding: 0;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-add-action-button:hover {
+  border-color: var(--tah-text-hover-primary-color, #fff);
+  color: var(--tah-text-hover-primary-color, #fff);
+  opacity: 1;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-group-button,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-subgroup-button {
+  opacity: 0.5;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-group-button .tah-add-icon,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-subgroup-button .tah-add-icon {
+  display: none;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-group-button.tah-drop-indicator,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-subgroup-button.tah-drop-indicator {
+  background: var(--color-warm-1, #ee9b3a);
+  border-color: var(--color-warm-1, #ee9b3a);
+  opacity: 1;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-group-button.tah-drop-indicator .tah-drop-icon,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups.tah-drag-active .tah-add-subgroup-button.tah-drop-indicator .tah-drop-icon {
+  color: var(--color-cool-5, #0b0a13);
+  display: inline-block;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-groups {
   width: max-content;
@@ -381,7 +432,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--tah-gap);
-  width: max-content;
+  min-width: max-content;
+  width: 100%;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroups,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroups {
@@ -435,13 +487,9 @@
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title:hover > .tah-expand-icon:not(.tah-hidden) {
   visibility: visible;
 }
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title:hover:not(.disable-edit) > .tah-edit-icon,
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title:hover:not(.disable-edit) > .tah-edit-icon {
-  visibility: visible;
-}
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title:hover > i,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title:hover > i {
-  color: var(--tah-list-subgroup-title-hover-icon-color);
+  bottom: 1px;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title > i,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title > i {
@@ -450,16 +498,6 @@
   pointer-events: none;
   position: relative;
   visibility: hidden;
-}
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title > i.tah-collapse-icon,
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title > i.tah-collapse-icon {
-  bottom: 1px;
-}
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title > i.tah-edit-icon,
-#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title > i.tah-edit-icon {
-  padding-right: 10px;
-  position: absolute;
-  right: 0;
 }
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group .tah-list-subgroup .tah-list-subgroup-title .tah-info,
 #token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup .tah-list-subgroup .tah-list-subgroup-title .tah-info {
@@ -501,4 +539,39 @@
   align-items: center;
   display: grid;
   width: 100%;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-before,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-before,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-after {
+  position: relative;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-before::after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-before::after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-after::after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-after::after {
+  background: var(--color-warm-1, #ee9b3a);
+  border-radius: 2px;
+  content: "";
+  height: 3px;
+  left: 10%;
+  pointer-events: none;
+  position: absolute;
+  width: 80%;
+  z-index: 100;
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-before::after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-before::after {
+  top: 0;
+  left: 10%;
+  right: auto;
+  transform: translateY(-50%);
+}
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-group [data-part="action"].tah-drop-action-after::after,
+#token-action-hud-app.tah-style-docked-left-v13 #token-action-hud .tah-groups .tah-tab-subgroup [data-part="action"].tah-drop-action-after::after {
+  bottom: 0;
+  top: auto;
+  left: 10%;
+  right: auto;
+  transform: translateY(50%);
 }

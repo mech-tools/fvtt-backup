@@ -19,6 +19,7 @@ Out of the box, the following are available:
 | earthdawn4e | Candle, Lantern (Hooded), Lantern (Bullseye), Torch | en
 | everyday-heroes | Flashlight/Headlamp, Glow Sticks | en
 | gurps | "Candle, Tallow", "Flashlight, Heavy", Mini Flashlight, Micro Flashlight, Survival Flashlight, Lantern, Torch, Bull's-Eye Lantern, "Electric Lantern, Small", "Electric Lantern, Large", Small Tactical Light, Large Tactical Light, Floodlight | en
+| mosh | Chemlight, Flashlight, Lighter | en
 | ose | Torches, Lantern | en
 | pf1 | Candle, Lamp, Lantern, Bullseye Lantern, Hooded Lantern, Miner's Lantern, Torch | en
 | pf2e | Candle, Lantern (Hooded), Lantern (Bull's Eye), Torch. Everburning Torch | en
@@ -104,7 +105,7 @@ The JSON has one top-level property per system, keyed by the Foundry id of the s
     * If your system doesn't count inventory, make sure all of your light sources either don't specify this field or set it to `false`.
     * If you find "counting your candles" a complete distraction from your game, you can turn this feature off using the "GM Uses Inventory" and "Player Uses Inventory" settings.
   * The `states` specifies how many states the light source toggles through. This allows for sources like hooded lanterns to toggle "high - low - off" if desired. It can be omitted and the number of states will be one more than the number of objects you supply to the `light` array. 
-  * The `light` value is an array of objects that specify the light properties for each "on" light state. It has no default.
+  * The `light` value is an array of objects that specify the light properties for each "on" light state. It has no default. [NB: Torch currently has a bug that limits you to only up to two "on" states, so `states` above can be no more than 2. This will be addressed in a future release.] 
     * Values for the "off" state are taken from the settings for the actor's prototype token.
     * If you supply a single object rather than an array of objects, the module will treat it as an array of one item,  (a light source with a single "on" state, the most common condition), and `states` will default to 2.
   * In `animation`, the `type` field can currently take one of the following values. Aside from the first two, they match the list in the GUI in pretty obvious ways.

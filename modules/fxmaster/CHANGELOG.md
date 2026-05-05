@@ -1,5 +1,67 @@
 # Changelog
 
+## [v8.0.5] - 2026-04-26
+- Bugfix for Region behaviors elevation constraints not working to hide particle or filter Effects
+- Bugfix for Foundry's native Suppress Weather handling not always covering all regions if multiple regions with the behavior were present
+- Updated the FXMaster Tools button to FXMaster Tools Overview. This is now a clickable button and opens an overview window of the various functionality you can expect in FXMaster (and FXMaster+ if present). Also contains video popouts for specific examples on how to accomplish some common tasks in FXMaster.
+
+## [v8.0.4] - 2026-04-26
+- Bugfix for Region behaviors elevation constraints not working to hide particle or filter Effects
+- Bugfix for Foundry's native Suppress Weather handling not always covering all regions if multiple regions with the behavior were present
+- Updated the FXMaster Tools button to FXMaster Tools Overview. This is now a clickable button and opens an overview window of the various functionality you can expect in FXMaster (and FXMaster+ if present). Also contains video popouts for specific examples on how to accomplish some common tasks in FXMaster.
+
+## [v8.0.3] - 2026-04-26
+- Bugfix #2 for V13 where certain Particle Effects would render with a full white overlay
+
+## [v8.0.3] - 2026-04-26
+- Bugfix #2 for V13 where certain Particle Effects would render with a full white overlay
+
+## [v8.0.2] - 2026-04-26
+- Bugfix #2 for V13 where certain Particle Effects would render with a full white overlay
+
+## [v8.0.2] - 2026-04-26
+- Bugfix #2 for V13 where certain Particle Effects would render with a full white overlay
+
+## [v8.0.1] - 2026-04-25
+- Bugfix for V13 where certain Particle Effects would render with a full white overlay
+
+## [v8.0.0] - 2026-04-25
+Welcome to FXMaster V8.0.0! This can be considered the full release for Foundry V14. A few things to note, as noted the Animation Effects functionality in FXMaster has been removed in this build. Additionally, support for V12 has been removed, FXMaster now contains compatability for V13+.
+- Complete revamp for V14's Levels. Filters and Particles can be placed on specific levels for a scene with a new Scene multi-select. Regions now also respect multi-level placement for effects, and region suppression can be applied to specific levels. This update should allow a ton of flexibility when setting up your scenes, hope everyone enjoys!
+- Complete revamp of Particle and Filter layering. There is now a dedicated 'Manage Layers' button in FXMaster controls that allows placing particles and filters above or beneath other particles and filters for Scene, Region, and API effects
+- Added new API under FXMASTER.api.effects. Newly created macros in V8 will use this API. It accepts play, stop, and toggle along with a Skip Fading parameter if you wish to create the macro effects without a fade in/fade out for additional api flexibility.
+- Added a new dialog when saving macros on a scene. This dialog allows you to name the macro, and toggle optionals for a Play or Toggle macro as well as Skip Fading true/false parameter
+- Improved Manage API Effects window with additional detail for whether the API is a preset or effect type. Also includes the Macro name if present to easily identify different particle/filter sets
+- Added new Below Tiles parameter for both Particles and Filters. This will cause Particle or Filter effects to not apply overtop of Tiles on a map. If the Tile is set as an overhead with occlusion, the effect will display beneath the Tile unless the Tiles Restricts Weather option is enabled.
+- Added new Below Foreground parameter for both Particles and Filters. This will cause Particle or Filter effects to not apply to the Foreground of a Scene or Level.
+- Added new Darkness Activation parameter to allow playing Particle or Filter effects only within a specified darkness range.
+- Tiles 'Restricts Weather' parameter now suppresses Filters when beneath the tile elevation, previously only supported Particles.
+- New presets API parameters for belowTiles, belowForeground, darknessActivationEnabled, darknessActivationMin, darknessActivationMax, and levels
+- Fix range sliders moving with mouse scrollwheel while not focused in V14 and some other oddities
+- Added Blend mode to Color filter (Normal, Multiply, Color Burn, Darken, etc)
+- Reduced Fog Filters max brightness blend
+- Updated Tooltips to also display when hovering parameter tooltips, instead of only on the parameters themselves
+- Resolved power icon css placement issues in V14
+
+## [v7.5.2] - 2026-04-01
+- Official compatability with V14! (It was already compatible, but now with extra compatability)
+- Resolved Hail, Rain, and Snow Particle Effects not generating in regions correctly due to the wrong origin spawn
+- Updated pt-br localizations, thanks Kharmans!
+- Updated pl localizations, thanks Lioheart!
+
+## [v7.5.1] - 2026-03-30
+- Resolved a few missing localizations
+
+## [v7.5.0] - 2026-03-30
+Welcome to FXMaster's 7.5 release! This release brings some updates to the masking pipeline to continue my V7+ efforts of allowing more naturalistic effects
+- Added new Edge Fade % parameter for Particle Region Behaviors! This is a region level option instead of Filters region per-effect level option, so any particle on a given region will receive the Edge Fade % parameter when set. This should allow for more realistic particles within a region shape, especially larger particles like clouds and fog (although smaller particles benefit as well).
+- Added new Edge Fade % parameter for both Particle and Filter Suppression regions. This functionality allows for scene level effects to blend into suppression regions, removing the hard edge cutoff in previous versions.
+- New localizations for March' FXMaster+ effect, Water!
+- Updated Presets API. Set hail slightly smaller, and increased the duration between lightning flashes for Thunderstorm
+- Re-organized utils and hooks and squashed a few small bugs
+- Resolved missing InQuad ease function
+- Hardened masking generally to avoid masks disconnecting from the canvas when many overlapping regions with the same particle/filter effects were present
+
 ## [v7.4.2] - 2026-02-27
 - Added new Presets API parameters for additional flexibility. New parameters are Speed, Density, and Color. Speed and Density are best effort approaches, the percentage increase/decrease acts against the medium (default value) for a given preset, if that value is already at min/max for a given preset, there will be no change. Similarly if already close to min/max, low and very low may both display the same because they both reach the absolute minimum/maximum value.
   - Speed: One of very-low (-100%), low (-50%), medium, high (+50%), very-high (+100%) - Default medium.

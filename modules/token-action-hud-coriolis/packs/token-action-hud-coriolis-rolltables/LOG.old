@@ -1,7 +1,5 @@
-2026/02/28-21:36:18.979334 750d217f96c0 Recovering log #162
-2026/02/28-21:36:18.982856 750d217f96c0 Delete type=3 #161
-2026/02/28-21:36:18.982899 750d217f96c0 Delete type=0 #162
-2026/03/12-12:12:58.806595 750cd2bff6c0 Level-0 table #166: started
-2026/03/12-12:12:58.806629 750cd2bff6c0 Level-0 table #166: 0 bytes OK
-2026/03/12-12:12:58.807608 750cd2bff6c0 Delete type=0 #164
-2026/03/12-12:12:58.808637 750cd2bff6c0 Manual compaction at level-0 from '!folders!VZQw73b1w3f2RPcz' @ 72057594037927935 : 1 .. '!tables.results!uWv34qX8W7TDXDp2.xX65gXvPhhA054Qv' @ 0 : 0; will stop at (end)
+2026/05/04-09:05:50.398078 7058fddfa6c0 Log #3: 879 ops saved to Table #4 OK
+2026/05/04-09:05:50.398275 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables/000003.log: OK
+2026/05/04-09:05:50.398722 7058fddfa6c0 Table #4: 879 entries OK
+2026/05/04-09:05:50.398876 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables/MANIFEST-000002: OK
+2026/05/04-09:05:50.400704 7058fddfa6c0 **** Repaired leveldb /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables; recovered 1 files; 61619 bytes. Some data may have been lost. ****
