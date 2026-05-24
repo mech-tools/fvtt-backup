@@ -1,3 +1,28 @@
+14.361.1
+- Mise à jour pour la version 14.361
+
+14.360.2
+- Correction des PanX en Déplacer la vue en X
+- Correction Zoom In, Zoom Out
+
+14.360.1
+- Mise à jour pour la version 14.360
+- Traduction manquante pour modes d'occlusion et alpha d'occlusion
+
+14.359.2
+- Uniformisation : Monde remplacé par monde
+
+14.359.1
+- Mise à jour pour la version 14.359 : première version 14 stable
+
+13.351.2
+- Terminer la rencontre => Finir la rencontre
+
+13.351.1
+- Mise à jour pour la version 13.351
+- Renommage de Créer Compendium en Créer un compendium : [#25](https://github.com/Fonderie-VTT/fr-core/pull/25)
+- Pour les notifications, contrôlé remplacé par sélectionné : [#26](https://github.com/Fonderie-VTT/fr-core/pull/26)
+
 13.346.1
 - Mise à jour pour la version 13.346
 - Correction de PackageDependenciesAutomaticPlural (merci Rectulo)

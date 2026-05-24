@@ -1,0 +1,65 @@
+{
+  "id": "cleenmain-roidesgobelins",
+  "title": "Clé en main - Le roi des gobelins",
+  "description": "Module contenant la campagne Le Roi des gobelins pour Clé en main",
+  "version": "3.1.0",
+  "compatibility": {
+    "minimum": "14",
+    "maximum": "14",
+    "verified": "14"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "cleenmain",
+        "type": "system",
+        "manifest": "https://github.com/12-Monkeys-Developers/cleenmain/releases/latest/download/system.json",
+        "compatibility": {
+          "verified": "3.2.0"
+        }
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "Khaali"
+    },
+    {
+      "name": "Kristov"
+    }
+  ],
+  "esmodules": ["module/cleenmain-roidesgobelins.mjs"],
+  "styles": ["cleenmain-roidesgobelins.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/fr.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "cleenmain_roidesgobelins",
+      "label": "Le roi des gobelins pour Clé en main",
+      "path": "packs/cleenmain-roidesgobelins",
+      "type": "Adventure",
+      "module": "cleenmain-roidesgobelins",
+      "system": "cleenmain",
+      "banner": "modules/cleenmain-roidesgobelins/assets/aspect/banner_compendium.webp",
+      "ownership": {
+        "PLAYER": "NONE",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "socket": true,
+  "protected": true,
+  "manifest": "https://r2.foundryvtt.com/packages-public/cleenmain-roidesgobelins/module.json",
+  "url": "https://www.les12singes.com/cthulhu-hack/429-cem-roi-des-gobelins-module-foundry-vtt.html"
+}

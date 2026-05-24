@@ -1,0 +1,52 @@
+<div class="tab-bio">
+  {{#ifn isNpc}}
+  <p>&nbsp;</p>
+    {{/ifn}}
+  {{#if unlocked}}
+    <div class="description-block">
+      <div class="bioelement-title">{{localize "CLEENMAIN.label.description"}}</div>
+      {{formInput systemFields.description enriched=descriptionhtml value=system.description}}
+    </div>
+    {{#if isNpc}}
+      <div class="description-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.equipment"}}</div>
+        {{formInput systemFields.equipment enriched=equipmenthtml value=system.equipment}}
+      </div>
+      <div class="description-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.tactic"}}</div>
+        {{formInput systemFields.tactic enriched=tactichtml value=system.tactic}}
+      </div>        
+      <div class="traits-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.traits"}}</div>
+        {{formInput systemFields.traits enriched=traitshtml value=system.traits}}
+      </div>
+    {{/if}}
+  {{else}}
+    {{#if (isNotEmptyString actorSystem.description)}}
+    <div class="description-block">
+      <div class="bioelement-title">{{localize "CLEENMAIN.label.description"}}</div>
+      {{{descriptionhtml}}}
+    </div>
+    {{/if}}
+    {{#if isNpc}}
+      {{#if (isNotEmptyString actorSystem.equipment)}}
+      <div class="description-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.equipment"}}</div>
+        {{{equipmenthtml}}}
+      </div>
+      {{/if}}
+      {{#if (isNotEmptyString actorSystem.tactic)}}
+      <div class="description-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.tactic"}}</div>
+        {{{actorSystem.tactic}}}
+      </div>  
+      {{/if}}
+      {{#if (isNotEmptyString actorSystem.traits)}}
+      <div class="traits-block">
+        <div class="bioelement-title">{{localize "CLEENMAIN.label.traits"}}</div>
+        {{{actorSystem.traits}}}
+      </div>
+      {{/if}}
+    {{/if}}
+  {{/if}}
+</div>

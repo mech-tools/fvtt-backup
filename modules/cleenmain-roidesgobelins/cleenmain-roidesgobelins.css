@@ -1,0 +1,1359 @@
+@font-face {
+  font-family: "Beast Wars";
+  src: url("./assets/fonts/beast_wars.ttf");
+}
+@font-face {
+  font-family: "Meroitic Demotic";
+  src: url("./assets/fonts/mero_dem.ttf");
+}
+@font-face {
+  font-family: "Throrian Formal";
+  src: url("./assets/fonts/throrian_formal.otf");
+}
+@font-face {
+  font-family: "Throrian Common";
+  src: url("./assets/fonts/throrian_commonface.otf");
+}
+@font-face {
+  font-family: "Kokila";
+  src: url("./assets/fonts/kokila.ttf");
+}
+@font-face {
+  font-family: "Kokila";
+  src: url("./assets/fonts/kokilai.ttf");
+  font-style: italic;
+}
+@font-face {
+  font-family: "Kokila";
+  src: url("./assets/fonts/kokilab.ttf");
+  font-weight: bold;
+}
+@font-face {
+  font-family: "Kokila";
+  src: url("./assets/fonts/kokilabi.ttf");
+  font-weight: bold;
+  font-style: italic;
+}
+.scrollable {
+  padding-right: initial;
+  scrollbar-gutter: auto;
+}
+.scrollable .window-content {
+  overflow-y: scroll;
+}
+.roidesgobelins-mod {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  font: 1.1rem "Kokila";
+  color: black;
+}
+.roidesgobelins-mod input {
+  color: #456;
+}
+.roidesgobelins-mod h2 {
+  font-family: "Beast Wars";
+  font-size: 2.5rem;
+  color: black;
+  margin: 0 0.2em 0.5em 0.2em;
+  border-bottom: double black;
+}
+.roidesgobelins-mod h3 {
+  font-family: "Throrian Formal";
+  font-size: 1.5rem;
+  color: black;
+  padding-top: 0.5em;
+  border-bottom: double black;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  margin-left: 10px;
+}
+.roidesgobelins-mod h4 {
+  font-family: "Throrian Formal";
+  font-size: 1rem;
+  color: black;
+  padding: none;
+  border: none;
+  margin-bottom: none;
+  margin-left: 10px;
+}
+.roidesgobelins-mod p {
+  background: transparent;
+  font-size: 1.3rem;
+  margin: 10px;
+  text-indent: 1.5em;
+  text-align: justify;
+}
+.roidesgobelins-mod .introend {
+  font-family: "Throrian Formal";
+  font-size: 8rem;
+  text-align: center;
+  transform: rotate(180deg);
+}
+.roidesgobelins-mod li {
+  padding-top: 0.3em;
+  font-size: 1.3rem;
+  margin-right: 10px;
+  text-align: justify;
+}
+.roidesgobelins-mod .content-link {
+  background: none;
+  padding: 0px;
+  text-indent: 0em;
+  border: none;
+  white-space: nowrap;
+  word-break: break-all;
+  font-weight: bold;
+  color: black;
+  min-width: 25em;
+  min-height: 4em;
+  background-color: #11ffee00;
+  border: 5px;
+}
+.roidesgobelins-mod .rolltag {
+  font-weight: bold;
+  color: #423030;
+}
+.roidesgobelins-mod .encart {
+  background-color: #b3b3b3;
+  margin: 5em;
+  padding-top: 0;
+  padding-bottom: 0.5em;
+  border: 2px solid black;
+}
+.roidesgobelins-mod .encart h3 {
+  font-family: "Beast Wars";
+  text-align: center;
+  color: black;
+  border-bottom-style: double;
+  border-bottom-color: black;
+  font-size: 1.8em;
+  padding: 0.5em 0 0.5em 0;
+}
+.roidesgobelins-mod .insertcenter {
+  padding: 0 5px 5px 5px;
+  margin-top: 0px;
+  margin-right: 10px;
+  margin-bottom: 5px;
+  margin-left: 10px;
+  break-inside: avoid;
+  font-style: normal;
+  border: none;
+  text-align: center;
+}
+.roidesgobelins-mod .creditstitle {
+  font-family: "Beast Wars";
+  font-size: 3em;
+  color: black;
+  padding-top: 0.5em;
+  margin: 0.5em 0;
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .creditssubtitle {
+  font-family: "Beast Wars";
+  font-size: 1.5em;
+  color: black;
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .credits {
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .creditsstrong {
+  font-family: "Beast Wars";
+  font-size: 1.3em;
+  padding-top: 0.5em;
+  color: black;
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .creditsend {
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .conseil-image {
+  width: 50px;
+  height: 50px;
+  border: none;
+  float: left;
+  margin-right: 10px;
+}
+.roidesgobelins-mod .conseil-foundry {
+  background-color: #ff66008e;
+  text-indent: 0cm;
+  border-style: solid;
+  border: 2px solid black;
+  border-radius: 8px 8px 8px 8px;
+  box-shadow: 0 8px 8px -7px var(--color-shadow-dark);
+  padding: 10px 14px 16px 18px;
+}
+.roidesgobelins-mod .tabletitle {
+  font-family: "Beast Wars";
+  font-size: 1.5em;
+  color: black;
+  text-align: center;
+}
+.roidesgobelins-mod table {
+  table-layout: fixed;
+  background-color: transparent;
+}
+.roidesgobelins-mod tr {
+  text-align: center;
+  border: 2px solid black;
+}
+.roidesgobelins-mod td {
+  text-align: center;
+}
+.roidesgobelins-mod .imgintro {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 70%;
+  border: none;
+}
+.roidesgobelins-mod .imgcenter {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+  border: none;
+}
+.roidesgobelins-mod .imgsmall {
+  width: 200px;
+}
+.roidesgobelins-mod .insertright {
+  max-width: 40%;
+  padding-right: 5px;
+  padding-left: 5px;
+  margin-right: 10px;
+  break-inside: avoid;
+  font-style: normal;
+  float: right;
+  border: none;
+  text-align: center;
+}
+.roidesgobelins-mod .decofont {
+  font-family: "Meroitic Demotic";
+  font-size: 3rem;
+  color: #a2aaaa;
+  text-align: center;
+  text-indent: 0em;
+}
+.roidesgobelins-mod .runeline {
+  font: 1rem "Meroitic Demotic";
+  letter-spacing: 1rem;
+  text-indent: 0em;
+  margin: 0px;
+  color: #717979;
+  text-align: center;
+  border-style: solid;
+  border-color: #4e5353;
+  border-width: 3px 0 3px 0;
+}
+.roidesgobelins-mod .titre_objectif {
+  font-family: "Beast Wars";
+  font-size: 1.5rem;
+  color: black;
+  margin: 0 0.2em 0.5em 0.2em;
+  border-bottom: double black;
+  text-align: center;
+}
+.roidesgobelins-mod .far {
+  text-indent: 0em;
+}
+.roidesgobelins-mod .fad {
+  text-indent: 0em;
+}
+.roidesgobelins-mod .conseil {
+  height: 10px;
+  margin-left: 5px;
+}
+.roidesgobelins-forms {
+  color: black;
+}
+.roidesgobelins-forms input {
+  color: black;
+  background: rgba(0, 0, 0, 0.1);
+}
+.roidesgobelins-forms input.checkbox {
+  width: 2em;
+  background: none;
+}
+.roidesgobelins-forms select {
+  color: black;
+  background: rgba(0, 0, 0, 0.1);
+}
+.roidesgobelins-forms .jauge {
+  font-family: "Beast Wars";
+  font-size: 1.5em;
+  padding-top: 0.5em;
+  margin: 0.5em 1em;
+  text-align: justify;
+}
+.roidesgobelins-forms .bilantitle {
+  font-family: "Beast Wars";
+  font-size: 2em;
+  padding-top: 1em;
+  text-align: center;
+}
+.roidesgobelins-forms .boxlisttitle {
+  font-family: "Beast Wars";
+  font-size: 1em;
+  padding-top: 0.5em;
+  text-align: center;
+}
+.roidesgobelins-forms .boxlist {
+  text-align: center;
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+.roidesgobelins-forms .modjauge {
+  font-family: "Throrian Formal";
+  font-size: 0.8em;
+  margin-left: 1em;
+}
+.roidesgobelins-forms .jauge-input {
+  margin-left: 1em;
+  width: 3em;
+}
+.roidesgobelins-forms .button {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 23px 32px;
+  text-align: center;
+  text-decoration: none;
+  margin: 8px 2px;
+  cursor: pointer;
+}
+.roidesgobelins-forms .objectif-titre {
+  font-family: "Beast Wars";
+  font-size: 1em;
+  padding-top: 0.5em;
+  text-align: center;
+}
+.roidesgobelins-forms .reroll-objectif {
+  font: 1rem "Throrian Formal";
+}
+.roidesgobelins-forms .choix_tab {
+  color: black;
+}
+.roidesgobelins-forms .tab-bilan {
+  padding-top: 5px;
+  font: 1rem "Throrian Formal";
+}
+.roidesgobelins-forms .tab-bilan:hover {
+  color: #4c80578c;
+  text-shadow: 0px 0px 30px #49bb6b;
+  -moz-transition: all 0.1s ease-in;
+  -o-transition: all 0.1s ease-in;
+  -webkit-transition: all 0.1s ease-in;
+  transition: all 0.1s ease-in;
+}
+.roidesgobelins-sidebar {
+  flex-direction: column;
+  overflow-y: auto;
+  margin: 20px 0;
+}
+.roidesgobelins-sidebar section {
+  gap: 0.5rem;
+}
+.roidesgobelins-sidebar section h4 {
+  margin: 0;
+  font: 20px "Throrian Formal";
+}
+.roidesgobelins-sidebar section .icon {
+  flex-basis: 2rem;
+  margin: 12px 10px;
+  text-align: center;
+}
+.roidesgobelins-sidebar section .justifycenter {
+  justify-content: center;
+}
+.roidesgobelins-sidebar .info {
+  font-size: var(--font-size-13);
+}
+.roidesgobelins-sidebar .info .title {
+  margin: 0;
+  font: 25px "Throrian Formal";
+  text-align: center;
+}
+.roidesgobelins-sidebar .info .subtitle {
+  margin: -0.5rem 0 0;
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+.cleenmain.sheet.player .window-content {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "Kokila";
+}
+.cleenmain.sheet.player .window-content h1 {
+  font: 1.2rem "Beast Wars";
+  color: #15331c8c;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.player .window-content h2 {
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+}
+.cleenmain.sheet.player .window-content textarea {
+  resize: none;
+}
+.cleenmain.sheet.player .window-content .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.player .window-content input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  color: #456;
+}
+.cleenmain.sheet.player .window-content input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.player .window-content select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+  color: #456;
+}
+.cleenmain.sheet.player .window-content form {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .window-content .right-icon {
+  margin-left: auto;
+}
+.cleenmain.sheet.player .main {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.cleenmain.sheet.player .main .leftcolumn {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  flex-shrink: 0;
+  width: 235px;
+  margin-right: 50px;
+}
+.cleenmain.sheet.player .main .leftcolumn .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 0 0 2em 0;
+  font: 1.3rem "Beast Wars";
+}
+.cleenmain.sheet.player .main .leftcolumn .skills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line {
+  font: 0.8rem "Throrian Formal";
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-name {
+  width: 70%;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-value {
+  background: #fffdfc;
+  border: 1px solid #928e8e;
+  border-radius: 5px;
+  width: 10%;
+  text-align: center;
+  margin-right: 5px;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-dev {
+  width: 10%;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-roll {
+  width: 20%;
+  text-align: center;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .item-delete {
+  width: 10%;
+}
+.cleenmain.sheet.player .main .central {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.cleenmain.sheet.player .main .central .intro-block {
+  display: flex;
+  flex-direction: row;
+  margin: 0 0 1em 0;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-left {
+  align-self: center;
+  width: 100px;
+  height: 129px;
+  object-fit: contain;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right {
+  display: flex;
+  flex-flow: column nowrap;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .right-icon {
+  align-self: flex-end;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .space-between {
+  justify-content: space-between;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line {
+  font: 0.8rem "Throrian Formal";
+  display: flex;
+  flex-flow: row nowrap;
+  margin: 0.5em;
+  white-space: nowrap;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .pcname {
+  font: 1.6rem "Beast Wars";
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  font: 1rem "Throrian Formal";
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .input-heroism {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .input-heroism input {
+  width: 2em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .right-icon {
+  margin: 0 0 0 0.5em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .name-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .heroism-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  margin: 0.3em 0.3em 0 0.3em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  font: 1rem "Throrian Formal";
+  white-space: normal;
+  margin-top: 0.3em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block .health-input {
+  width: 2em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block .badshape-text {
+  color: #912828;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block select {
+  margin: 0 0.5em 0 0;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block .wounds-input {
+  width: 1em;
+}
+.cleenmain.sheet.player .main .central .sheet-tabs {
+  display: flex;
+  flex-direction: row;
+  font-size: 1, 5em;
+  border-top: 0px;
+}
+.cleenmain.sheet.player .main .central .tab-name {
+  background: #fffdfc;
+  font: 1rem "Beast Wars";
+  color: #23532d8c;
+  border: 1px solid #456;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  text-align: center;
+  padding: 0.5em 0.5em 0.3em 0.5em;
+}
+.cleenmain.sheet.player .main .central .tab-name.active {
+  border: 1px solid black;
+  color: #456;
+  border-bottom-width: 0;
+}
+.cleenmain.sheet.player .main .central .sheet-body {
+  background: none;
+}
+.cleenmain.sheet.player .right-icon {
+  font: 1.1rem "Kokila";
+  font-size: 1.2rem;
+  color: #1169248c;
+}
+.cleenmain.sheet.npc .window-content {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "Kokila";
+}
+.cleenmain.sheet.npc .window-content h2 {
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+}
+.cleenmain.sheet.npc .window-content .input-short {
+  width: 2em;
+}
+.cleenmain.sheet.npc .window-content .input-verylong {
+  width: 20em;
+}
+.cleenmain.sheet.npc .window-content .input-long {
+  width: 10em;
+}
+.cleenmain.sheet.npc .window-content h1 {
+  font: 1.2rem "Beast Wars";
+  color: #15331c8c;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.npc .window-content .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.npc .window-content input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  color: #456;
+}
+.cleenmain.sheet.npc .window-content input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.npc .window-content select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+  color: #456;
+}
+.cleenmain.sheet.npc .window-content .checkbox {
+  height: 1em;
+}
+.cleenmain.sheet.npc .window-content .npc-main {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 70%;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .name-line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .name-line .name-text {
+  font: 2em "Beast Wars";
+  color: #15331c8c;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .name-line input {
+  height: 2em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .name-line .sheet-change-lock {
+  margin-left: auto;
+  padding-left: 1em;
+  color: #1169248c;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .activity-line {
+  margin: 0 0.5em 1em 1em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .activity-line .activity-text {
+  font: 1.1em "Beast Wars";
+  color: #15331c8c;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .level-line {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .level-line select {
+  margin: 0.5em 0.5em;
+  width: 12em;
+  height: auto;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line {
+  display: flex;
+  flex-direction: row;
+  margin: 0.5em 0.5em;
+  font: 0.9rem "Throrian Formal";
+  color: black;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .line-label {
+  font-weight: bold;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .weapon-el {
+  margin: 0 0 0 1rem;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .item-create {
+  padding-left: 0.5em;
+  color: #1169248c;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line {
+  font: 0.8rem "Throrian Formal";
+  color: black;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block {
+  display: flex;
+  flex-direction: row;
+  padding: 0.5em 0.5em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-label {
+  font-weight: bold;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-value {
+  display: flex;
+  flex-direction: row;
+  padding: 0 0.2em 0 0.2em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-nonedit {
+  width: 25%;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-edit {
+  width: 50%;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .npchealth-line {
+  display: flex;
+  flex-direction: row;
+  margin: 1rem;
+  font: 0.8rem "Throrian Formal";
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .npchealth-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .npchealth-line input {
+  padding-bottom: 0.2rem;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-left .npchealth-line .health-block {
+  display: flex;
+  flex-direction: row;
+  margin-left: 1em;
+}
+.cleenmain.sheet.npc .window-content .npc-main .npcstat-block .npcstat-block-right {
+  flex-basis: 30%;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.cleenmain.sheet.item .window-content {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  background-size: 100% auto;
+  background-color: #fffdfc;
+  font: 1.1rem "Kokila";
+}
+.cleenmain.sheet.item .window-content h1 {
+  font: 1.2rem "Beast Wars";
+  color: #15331c8c;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.item .window-content h2 {
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+}
+.cleenmain.sheet.item .window-content .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+  font: 1.1rem "Kokila";
+}
+.cleenmain.sheet.item .window-content input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+  color: #456;
+}
+.cleenmain.sheet.item .window-content .checkbox {
+  height: 1em;
+}
+.cleenmain.sheet.item .window-content select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+  color: #456;
+}
+.cleenmain.sheet.item .window-content input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.item .window-content .sheet-header input {
+  font-size: 2rem;
+  text-align: center;
+}
+.cleenmain-scrollable {
+  padding-right: initial;
+  scrollbar-gutter: auto;
+}
+.cleenmain-scrollable .window-content {
+  overflow-y: scroll;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  background-color: #fffdfc;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content .boon-line {
+  display: flex;
+  flex-direction: row;
+  font: 0.8rem "Throrian Formal";
+}
+.cleenmain.sheet.item .sheet-content .boon-line .boon-block {
+  display: flex;
+  flex-direction: row;
+  flex-basis: 50%;
+}
+.cleenmain.sheet.item .sheet-content .boon-line .boon-block .label-dev {
+  padding-top: 0.4em;
+}
+.cleenmain.sheet.item {
+  background-color: #fffdfc;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.item .sheet-content .skill-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.item .sheet-content .skill-block input {
+  width: 2em;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content select {
+  margin: 0 0.5em 0 0;
+}
+.cleenmain.sheet.item .sheet-content .boon-line {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.vehicle .window-content {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "Kokila";
+}
+.cleenmain.sheet.vehicle .window-content h1 {
+  font: 1.2rem "Beast Wars";
+  color: #15331c8c;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.vehicle .window-content h2 {
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+}
+.cleenmain.sheet.vehicle .window-content .input-short {
+  width: 2em;
+}
+.cleenmain.sheet.vehicle .window-content .input-verylong {
+  width: 20em;
+}
+.cleenmain.sheet.vehicle .window-content .input-long {
+  width: 10em;
+}
+.cleenmain.sheet.vehicle .window-content .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.vehicle .window-content input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+}
+.cleenmain.sheet.vehicle .window-content input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.vehicle .window-content select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 70%;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line .name-text {
+  font: 2em "Beast Wars";
+  color: #15331c8c;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line input {
+  height: 2em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line .sheet-change-lock {
+  margin-left: auto;
+  padding-left: 1em;
+  color: #1169248c;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+  font: 0.9rem "Throrian Formal";
+  color: black;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .line label {
+  font-weight: bold;
+  padding-right: 10px;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .line input {
+  width: 40px;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line {
+  display: flex;
+  flex-direction: row;
+  margin: 1rem;
+  font: 0.8rem "Throrian Formal";
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line input {
+  padding-bottom: 0.2rem;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line .health-block {
+  display: flex;
+  flex-direction: row;
+  margin-left: 1em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .vehiclestat-block .vehiclestat-block-right {
+  flex-basis: 30%;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .editor {
+  min-height: 10em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .editor .editor-content {
+  min-height: 10em;
+}
+.cleenmain.sheet.vehicle .window-content .vehicle-main .editor .tox.tox-tinymce {
+  min-height: 20em;
+}
+.cleenmain.sheet.vehicle .window-content .description-block {
+  font: 1.1rem "Kokila";
+  padding: 0.5em;
+}
+.cleenmain.sheet.vehicle .window-content .description-title {
+  font: 1.5rem "Beast Wars";
+  border-bottom: 2px solid #23532d8c;
+}
+.boons-tab .item-create {
+  margin-left: auto;
+}
+.boons-tab .boon-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.boons-tab .boon-group .boon-card {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  width: 50%;
+  padding: 1em 0.5em 0 0.5em;
+}
+.boons-tab .boon-group .boon-card .boon-name-line {
+  display: flex;
+  flex-flow: row wrap;
+}
+.boons-tab .boon-group .boon-card .boon-name-line .boxicon {
+  padding: 0.3em 0.5em 0 0;
+  font-size: 0.8em;
+}
+.boons-tab .boon-group .boon-card .boon-name-line .boon-name {
+  font: 1.2rem "Throrian Formal";
+  color: #15331c8c;
+}
+.boons-tab .boon-group .boon-card .boon-used-line {
+  font: 0.8rem "Throrian Formal";
+}
+.boons-tab .boon-group .boon-card .boon-description {
+  background: url('./assets/artwork/css/marble.webp');
+  padding: 0.5em;
+  box-shadow: inset 0 0 3px black;
+  color: #0d20128c;
+  font: 1.2rem "Kokila";
+  max-width: 400px;
+}
+.boons-tab .boon-group .boon-card .icon-group {
+  margin-left: auto;
+}
+.tab-bio {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2em 0;
+}
+.tab-bio .line-label {
+  color: #15331c8c;
+}
+.tab-bio .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 1em 0 0.5em 0;
+}
+.tab-bio .title-line .item-create {
+  margin-left: auto;
+}
+.tab-bio .bioelement-title {
+  font: 1.5rem "Beast Wars";
+  border-bottom: 2px solid #23532d8c;
+}
+.tab-bio .description-block {
+  font: 1.1rem "Kokila";
+  padding: 0.5em;
+}
+.tab-bio .traits-block {
+  font: 1.1rem "Kokila";
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+.tab-bio .editor {
+  min-height: 10em;
+}
+.tab-bio .editor .editor-content {
+  min-height: 10em;
+}
+.tab-bio .editor .tox.tox-tinymce {
+  min-height: 20em;
+}
+.cleenmain.sheet.player .main .central .combat-tab {
+  margin: 1em 0 0.5em 0;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.player .main .central .combat-tab .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.cleenmain.sheet.player .main .central .combat-tab .item-create {
+  margin-left: auto;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list {
+  font: 0.8rem "Throrian Formal";
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-bottom: 0.5em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .combat-group-label {
+  font-style: italic;
+  padding-right: 0.5em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .trainings-group {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .trainings-group .trainings-name {
+  margin: 0 0.6em 0 0.2em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list {
+  font: 0.8rem "Throrian Formal";
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line .bonus-name {
+  padding: 0 0.5em 0 1em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line .bonus-text {
+  background: #fffdfc;
+  border: 1px solid #928e8e;
+  border-radius: 5px;
+  width: 10%;
+  text-align: center;
+}
+.cleenmain.sheet.player .main .central .combat-tab .combat-table-head {
+  font: 1rem "Beast Wars";
+}
+.cleenmain.sheet.player .main .central .combat-tab .combat-table {
+  font: normal 1.2rem "Kokila";
+}
+.notes-tab {
+  display: flex;
+  flex-direction: column;
+  margin: 1em;
+  font: 1.1rem "Kokila";
+}
+.notes-tab .editor {
+  min-height: 200px;
+  max-height: 400px;
+  width: auto;
+}
+.notes-tab .editor .editor-content {
+  min-height: 200px;
+  max-height: 400px;
+  margin: 1em;
+}
+.notes-tab .editor .tox.tox-tinymce {
+  min-height: auto;
+}
+.equipment-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2em 0;
+}
+.equipment-tab .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 1em 0 0.5em 0;
+}
+.equipment-tab .title-line .item-create {
+  margin-left: auto;
+}
+.equipment-tab .equipment-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+.equipment-tab .equipment-column .equipment-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  margin: 0.3em 0.3em 0 0.3em;
+  border-bottom: 1px solid #15331c8c;
+}
+.equipment-tab .equipment-column .equipment-line .image-container {
+  background-size: 26px;
+  background-repeat: no-repeat;
+  height: 26px;
+  width: 26px;
+  align-self: center;
+  object-fit: contain;
+}
+.equipment-tab .equipment-column .equipment-line .equipment-name {
+  font: 1rem "Throrian Formal";
+  padding-left: 0.5em;
+  align-self: center;
+}
+.equipment-tab .equipment-column .equipment-line .icon-group {
+  margin-left: auto;
+}
+.equipment-tab label {
+  display: flex;
+  flex-direction: row;
+}
+.equipment-tab label .item-create {
+  margin-left: auto;
+}
+.cem-dialog {
+  background-color: #fffdfc;
+  display: flex;
+  flex-direction: column;
+  font: 1rem "Kokila";
+  color: black;
+}
+.cem-dialog .tooltip {
+  position: relative;
+  display: inline-block;
+}
+.cem-dialog .intro {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.cem-dialog .intro .introImg {
+  border: none;
+  padding: 5px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  object-position: center;
+  align-self: center;
+}
+.cem-dialog .intro .introtext {
+  font: bold 1.2rem "Beast Wars";
+  margin: 0.5em;
+  padding-top: 1.5em;
+  text-align: center;
+}
+.cem-dialog .formula {
+  text-align: center;
+  margin: 0.5em;
+  font: bold 1.2rem "Beast Wars";
+}
+.cem-dialog .rollmodifier {
+  display: flex;
+  flex-direction: row;
+  margin: 0 0 1em 1em;
+}
+.cem-dialog .rollmodifier input {
+  width: 5em;
+  margin: 0 0 1em 1em;
+  color: black;
+  background: rgba(0, 0, 0, 0.1);
+}
+.cem-dialog .rollmodifier select {
+  width: 5em;
+  margin: 0 0 1em 1em;
+  color: black;
+  background: rgba(0, 0, 0, 0.1);
+}
+.cem-dialog .heroismmodifier input {
+  width: 1em;
+}
+.cem-dialog .paddingend {
+  padding: 0 0 5em 0;
+}
+.cem-dialog .bonus-label {
+  font: 1rem "Kokila";
+}
+.cem-dialog .bonus h2 {
+  margin: 10px 0px 0px 10px;
+  font-weight: bold;
+  color: black;
+}
+.cem-dialog table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  background: none;
+}
+.cem-dialog td {
+  width: 25%;
+}
+.cem-dialog td input {
+  width: 3em;
+  color: black;
+  background: rgba(0, 0, 0, 0.1);
+}
+.cem-dialog td input[type="number"]::-webkit-inner-spin-button,
+.cem-dialog td input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+}
+.chatroll {
+  background: repeat url('./assets/artwork/css/marble.webp');
+  background-color: #fffdfc;
+  display: flex;
+  flex-direction: column;
+  font: 1rem "Kokila";
+  color: #15331c8c;
+}
+.chatroll .intro {
+  background: none;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.chatroll .intro .introImg {
+  border: none;
+  padding: 5px;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  object-position: center;
+  align-self: center;
+}
+.chatroll .intro .introText {
+  width: 210px;
+  min-height: 60px;
+  padding-top: 0.5em;
+  font: 1rem "Beast Wars";
+  text-align: center;
+}
+.chatroll .dice.d6 {
+  position: relative;
+  width: 24px;
+  line-height: 24px;
+  margin-right: 5px;
+  /* float: left; */
+  /* background-image: url('assets/image/d6-grey.svg'); */
+  /* background-repeat: no-repeat; */
+  /* background-size: 100px; */
+  font-size: var(--font-size-16);
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+}
+.chatroll .modifierText {
+  margin-bottom: 5px;
+  color: #2b3110;
+  font: italic 0.9rem "Beast Wars";
+  text-align: center;
+}
+.chatroll .formulaText {
+  padding: 1em 0 0 0;
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+  text-align: center;
+}
+.chatroll .formulaTooltip {
+  position: relative;
+  display: inline-block;
+}
+.chatroll .finalText {
+  font: 1rem "Throrian Formal";
+  color: #15331c8c;
+  text-align: center;
+}
+.chatroll .endimg {
+  background: center / contain no-repeat url('./assets/artwork/ambiance/crane_deco.webp');
+  height: 70px;
+}
+#combat-tracker .combatant .token-name .player {
+  background-color: #1d351d;
+}
+#combat-tracker .combatant .token-name .npc {
+  background-color: #5c5353;
+}

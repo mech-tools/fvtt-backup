@@ -1,12 +1,12 @@
 {
   "id": "fr-core",
   "title": "FR - Traduction du core",
-  "version": "13.346.1",
+  "version": "14.361.1",
   "description": "<p>Traduction en Français du Core FoundryVTT.</p> <p> *** Rejoignez la communauté Discord FR - La Fonderie - :<a href='https://discord.gg/pPSDNJk'> https://discord.gg/pPSDNJk </a></p>",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13",
-    "maximum": "13"
+    "minimum": "14",
+    "verified": "14",
+    "maximum": "14"
   },
   "coreTranslation": true,
   "authors": [
@@ -109,5 +109,5 @@
   ],
   "url": "https://github.com/Fonderie-VTT/fr-core",
   "manifest": "https://github.com/Fonderie-VTT/fr-core/releases/latest/download/module.json",
-  "download": "https://github.com/Fonderie-VTT/fr-core/releases/download/13.346.1/module.zip"
+  "download": "https://github.com/Fonderie-VTT/fr-core/releases/download/14.361.1/module.zip"
 }

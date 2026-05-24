@@ -1,0 +1,14 @@
+{
+  "title": "Le Roi des Gobelins",
+  "system": "cleenmain",
+  "id": "le-roi-des-gobelins",
+  "coreVersion": "14.363",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "systemVersion": "3.2.0",
+  "lastPlayed": "Sun May 24 2026 00:16:01 GMT+0200 (Central European Summer Time)",
+  "description": "",
+  "flags": {}
+}

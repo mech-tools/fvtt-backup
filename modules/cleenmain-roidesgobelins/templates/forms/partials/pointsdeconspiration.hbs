@@ -1,0 +1,22 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="pointsdeconspiration">
+<div class="jauge">PC Obsidienne : {{formdata.pc_obsidienne_consolide}}</div>
+<div class="jauge">PC Basalte : {{formdata.pc_basalte_consolide}}</div>
+<div class="jauge">PC Granit : {{formdata.pc_granit_consolide}}</div>
+<div style="padding-top:1rem;" class="modjauge">Modificateur libre pour les PC Obsidienne :
+  <input class="jauge-input" name="inputtext" data-field="pc_obsidienne_free" type="number"
+    value="{{formdata.pc_obsidienne_free}}" />
+</div>
+<div class="modjauge">Modificateur libre pour les PC Basalte :
+  <input class="jauge-input" name="inputtext" data-field="pc_basalte_free" type="number"
+    value="{{formdata.pc_basalte_free}}" />
+</div>
+<div class="modjauge">Modificateur libre pour les PC Granit :
+  <input class="jauge-input" name="inputtext" data-field="pc_granit_free" type="number"
+    value="{{formdata.pc_granit_free}}" />
+</div>
+{{#each formdata.objectifs.user as |user id|}}
+<div class="jauge">PC {{user.name}} : <input class="jauge-input" name="inputpc" data-field="pc" data-id={{user.id}}
+    type="number" value="{{user.pc}}" />
+</div>
+{{/each}}
+</section>

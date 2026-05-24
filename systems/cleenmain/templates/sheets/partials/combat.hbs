@@ -1,0 +1,151 @@
+<div class="combat-tab">
+    <!-- PROTECTIONS PART -->
+    <div class="title-line">
+        <h1 class="combat-domain-label">{{localize "CLEENMAIN.label.protections"}}  ( <span class="tooltip" data-tooltip="{{localize "CLEENMAIN.tooltip.protection"}}">{{protection}}</span> ) {{#if defenceModifier}}<span class="tooltip" data-tooltip="{{localize "CLEENMAIN.tooltip.defence_modifier"}}">{{defenceModifier}}</span>{{/if}}
+            {{#if unlocked}}
+                <a class="item-create right-icon" data-action="itemCreate" data-type="armor" title="{{localize 'CLEENMAIN.armor.add'}}"><i class="fas fa-plus"></i></a>
+            {{/if}}
+        </h1>
+    </div>
+    <div class="trainings-list">
+        <div class="combat-group-label">{{localize "CLEENMAIN.label.trainings"}}</div>
+        <div class="trainings-group">
+            {{#if unlocked}}
+                <input class="checkbox" name="system.trainings.armors.war" type="checkbox" {{checked actorSystem.trainings.armors.war}}>
+            {{else}}
+                <i class="{{getCheckboxIcon  actorSystem.trainings.armors.war}}"></i>
+            {{/if}}
+            <div class="trainings-name">{{localize "CLEENMAIN.armor.category.war"}}</div>
+        </div>
+        <div class="trainings-group">
+            {{#if unlocked}}
+                <input class="checkbox" name="system.trainings.armors.heavy" type="checkbox" {{checked actorSystem.trainings.armors.heavy}}>
+            {{else}}
+                <i class="{{getCheckboxIcon  actorSystem.trainings.armors.heavy}}"></i>
+            {{/if}}
+            <div class="trainings-name">{{localize "CLEENMAIN.armor.category.heavy"}}</div>
+        </div>
+        <div class="trainings-group">
+            {{#if unlocked}}
+                <input class="checkbox" name="system.trainings.armors.shield" type="checkbox" {{checked actorSystem.trainings.armors.shield}}>
+            {{else}}
+                <i class="{{getCheckboxIcon  actorSystem.trainings.armors.shield}}"></i>
+            {{/if}}
+            <div class="trainings-name">{{localize "CLEENMAIN.armor.category.shield"}}</div>
+        </div>
+    </div>
+    <div class="combat-table-head armors droppable">
+        <table>
+            <thead>
+                    <tr>
+                        <th>{{localize "CLEENMAIN.label.armors"}}</th>
+                        <th>{{localize "CLEENMAIN.label.category"}}</th>
+                        <th>{{localize "CLEENMAIN.armor.protection"}}</th>
+                        <th>{{localize "CLEENMAIN.armor.malus"}}</th>
+                        <th>{{localize "CLEENMAIN.armor.special"}}</th>
+                        <th></th>
+                    </tr>
+            </thead>
+            {{#each armors as |item id|}}
+                {{#ife item.system.state "active"}}
+                    <tr class="combat-table item draggable" data-item-id="{{item._id}}">
+                        <th>{{name}}</th>
+                        <th>{{getCategoryLabel "armor" item.system.category}}</th>
+                        <th>{{item.system.protection}}</th>
+                        <th>{{getArmorMalus @root.actor item}}</th> 
+                        <th>{{item.system.special}}</th>
+                        {{#if ../unlocked}}
+                            <th>
+                                <a data-action="itemEdit" data-item-id="{{item._id}}" title="{{localize 'CLEENMAIN.sheet.edit'}}"><i class="fas fa-pen"></i></a>
+                                <a data-action="itemDelete" data-item-id="{{item._id}}" title="{{localize 'CLEENMAIN.sheet.delete'}}"><i class="fas fa-trash"></i></a>
+                            </th>
+                        {{/if}}
+                    </tr>
+                {{/ife}}
+            {{/each}}
+        </table>
+    </div>
+
+    <!-- WEAPONS PART -->
+    <div class="title-line">
+        <h1 class="combat-domain-label">{{localize "CLEENMAIN.label.weapons"}}
+            {{#if unlocked}}
+                <a class="item-create right-icon" data-action="itemCreate" data-type="weapon" title="{{localize 'CLEENMAIN.weapon.add'}}"><i class="fas fa-plus"></i></a>
+            {{/if}}
+        </h1>
+    </div>
+    <div class="trainings-list">
+        <div class="combat-group-label">{{localize "CLEENMAIN.label.trainings"}}</div>
+        <div class="trainings-group">
+            {{#if unlocked}}
+                <input class="checkbox" name="system.trainings.weapons.war" type="checkbox" {{checked actorSystem.trainings.weapons.war}}>
+            {{else}}
+                <i class="{{getCheckboxIcon  actorSystem.trainings.weapons.war}}"></i>
+            {{/if}}
+            <div class="trainings-name">{{localize "CLEENMAIN.weapon.category.war"}}</div>
+        </div>
+        <div class="trainings-group">
+            {{#if unlocked}}
+                <input class="checkbox" name="system.trainings.weapons.heavy" type="checkbox" {{checked actorSystem.trainings.weapons.heavy}}>
+            {{else}}
+                <i class="{{getCheckboxIcon  actorSystem.trainings.weapons.heavy}}"></i>
+            {{/if}}
+            <div class="trainings-name">{{localize "CLEENMAIN.weapon.category.heavy"}}</div>
+        </div>
+    </div>
+    <div class="bonus-list">
+        <div class="combat-group-label">{{localize "CLEENMAIN.label.bonus"}} :</div>
+        <div class="bonus-line">            
+            {{#if unlocked}}
+                <div class="bonus-name">{{localize "CLEENMAIN.label.melee"}}</div>
+                <input class="bonus-text input-small" id="bonusmelee" name="system.damageBonus.melee" type="number" value="{{actorSystem.damageBonus.melee}}"/>
+                <div class="bonus-name">{{localize "CLEENMAIN.label.ranged"}}</div>
+                <input class="bonus-text input-small" id="bonusranged" name="system.damageBonus.ranged" type="number" value="{{actorSystem.damageBonus.ranged}}"/>
+            {{else}}
+                <div class="bonus-name">{{localize "CLEENMAIN.label.melee"}}</div>
+                <div class="bonus-text input-small">{{meleeBonus}}</div>
+                <div class="bonus-name">{{localize "CLEENMAIN.label.ranged"}}</div>
+                <div class="bonus-text input-small">{{rangedBonus}}</div>
+            {{/if}}
+        </div>
+    </div>
+    <div class="weapons droppable">
+        <table>
+            <thead class="combat-table-head">
+                <tr>
+                    <th>{{localize "CLEENMAIN.weapon.name"}}</th>
+                    <th>{{localize "CLEENMAIN.label.category"}}</th>
+                    <th>{{localize "CLEENMAIN.weapon.skillName"}}</th>
+                    <th>{{localize "CLEENMAIN.weapon.attack"}}</th>
+                    <th>{{localize "CLEENMAIN.weapon.damage"}}</th>
+                    <th>{{localize "CLEENMAIN.weapon.sixPlus"}}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            {{#each weapons as |item id|}}
+                {{#ife item.system.state "active"}}
+                    <tr class="combat-table item" data-item-id="{{item._id}}">
+                        <th>{{name}}</th>
+                        <th>{{getCategoryLabel "weapon" item.system.category}}</th>
+                        <th class="droppable" {{#if (checkNoWeaponSkill @root.actor item)}}data-tooltip="{{localize "CLEENMAIN.tooltip.noskill"}}"{{/if}}>{{getWeaponSkillName @root.actor item}}</th>
+                        <th>{{getWeaponSkill @root.actor item}}<a data-action="weaponAttackRoll" data-item-id="{{_id}}"><i class="fas fa-dice"></i></a></th>
+                        <th>{{getWeaponDamage @root.actor item}}<a data-action="weaponDamageRoll" data-item-id="{{_id}}"><i class="fas fa-dice"></i></a></th>
+                        <th>
+                            {{#if unlocked}}
+                                <input class="checkbox" name="item.system.sixPlus" type="checkbox" {{checked item.system.sixPlus}}>
+                            {{else}}
+                                <i class="{{getCheckboxIcon  item.system.sixPlus}}"></i>
+                            {{/if}}
+                        </th>
+                        <th>
+                            {{#if ../unlocked}}
+                                <a data-action="itemEdit" data-item-id="{{item._id}}" title="{{localize 'CLEENMAIN.sheet.edit'}}"><i class="fas fa-pen"></i></a>
+                                <a data-action="itemDelete" data-item-id="{{item._id}}" title="{{localize 'CLEENMAIN.sheet.delete'}}"><i class="fas fa-trash"></i></a>
+                            {{/if}}
+                        </th>
+                    </tr>
+                {{/ife}}
+            {{/each}}
+        </table>
+    </div>
+</div>

@@ -1,0 +1,426 @@
+{
+    "TYPES": {
+        "Actor":{
+            "player": "Joueur",
+            "npc": "PNJ",
+            "vehicle": "Véhicule"
+        },
+
+        "Item": {
+            "weapon": "Arme",
+            "armor": "Armure",
+            "equipment": "Objet",
+            "boon": "Atout",
+            "skill": "Compétence"
+        }
+    },
+    
+    "CLEENMAIN": {
+        "label": {
+            "activity": "Activity",
+            "armors": "Armors",
+            "biotechboonuse": "Utiliser le niveau héroïque d'un atout",
+            "bond": "Bond",
+            "bonus": "Damage Bonus",
+            "bio": "Biography",
+            "boons": "Boons",
+            "boon": "Boon",
+            "cap_off": "Attacks",
+            "category": "Category",
+            "character": "Character",
+            "combat": "Combat",
+            "description": "Description",
+            "equipment": "Equipment",
+            "experience": "Expérience",
+            "experience_total": "Total d'expérience",
+            "elite": "Elite",
+            "flaw": "Flaw",
+            "goal": "Goal",
+            "health": "Health",
+            "heroism": "Heroism",
+            "melee": "Hand-to-hand",
+            "name": "Name",
+            "origin": "Origin",
+            "quote": "Quote",
+            "protections": "Protections",
+            "ranged": "Distance",
+            "skills" : "Skills",
+            "supportNumber": "Support number",
+            "tactic": "Tactic",
+            "trainings": "Trained in : ",
+            "traits": "Personality traits",
+            "type": "Type",
+            "unlock_sheet": "Unlock Sheet",
+            "wealth": "Wealth",
+            "weapons": "Weapons",
+            "wounds": "Wounds"
+        },
+        "combatTracker": {
+            "tourNotPlayed": "Click when the tour has not been played",
+            "tourPlayed": "CLick when the tour has been played"
+        },
+        "armor": {
+            "category": {
+                "standard": "Standard",
+                "war": "War Armor",
+                "heavy": "Heavy armor",
+                "shield": "Shields"
+            },
+            "add": "New armor",
+            "malus": "Malus",
+            "quality": "Quality",
+            "protection": "Protection",
+            "special": "Special"
+        },
+        "bonus":{
+            "lethalattack":{
+                "label": "lethalattack",
+                "description": "les dégâts de l’attaque augmentent de 1d6. Plusieurs Attaques meurtrières augmentent les dégâts d’autant de d6 que d’Attaques meurtrières.",
+                "chatmessage": "Bonus: Lethal Attack (x{lethalattack})."
+            },
+            "multipleattacks":{
+                "label": "multipleattacks",
+                "description": "l’attaque vise deux cibles à la fois, à condition qu’elles soient accessibles au personnage – à son contact pour une attaque de corps à corps, groupées pour un tir. Un seul test est effectué et les dégâts, après tous les autres calculs, sont divisés par 2 et, si nécessaire, arrondis au nombre entier supérieur.",
+                "chatmessage": "Bonus: multipleattacks."
+            },
+            "efficiency":{
+                "label": "efficiency",
+                "description":  "l’action en cours bénéficie d’un bonus de 2. Plusieurs Efficacités confèrent un bonus de 2 pour chaque Efficacité.",
+                "chatmessage": "Bonus: efficiency (x{efficiency})."
+            },
+            "caution":{
+                "label": "caution",
+                "description":  "le prochain test de Défense, Réflexes, Résistance ou Volonté du personnage bénéficie d’un bonus de 2. Plusieurs Prudences augmentent le nombre de tests successifs bénéficiant de ce bonus.",
+                "chatmessage": "Bonus: caution (x{caution})."
+            },
+            "quick":{
+                "label": "quick",
+                "description":  "en combat, une attaque rapide ne donne pas la main à l’adversaire. En dehors d’un combat, la durée d’exécution d’une tâche est divisée par deux. Non cumulable.",
+                "chatmessage": "Bonus: quick."
+            }
+        },
+        "boon":{
+            "add": "New boon",
+            "delete": "Delete boon",
+            "developedinfo": "Check when learned:",
+            "limiteduseinfo": "Check for limited Use boon",
+            "used": "Used"
+        },
+        "weapon": {
+            "category": {
+                "standard": "Standard",
+                "war": "War weapon",
+                "heavy": "Heavy weapon"
+            },
+            "type": {
+                "melee": "Melee",
+                "ranged": "Ranged"
+            },
+            "add": "New weapon",
+            "delete": "Delete weapon",
+            "diceRerollNb": "Rerolls",
+            "name": "Name",
+            "attack": "Attack",
+            "targets": "targets",
+            "damage": "Damage",
+            "range": "Range",
+            "rollBonus": "Roll bonus",
+            "sixPlus": "6+",
+            "skillValueNpc": "skill",
+            "skillValueNpcElite": "skill (elite)",
+            "skillName": "Skill",
+            "special": "Special",
+            "zone": "Zone"
+        },
+        "chatmessage":{
+            "badshapedamage": "In bad shape",
+            "biotechBoonRollFail": "La température corporelle monte, un point de biotech est dépensé... ",
+            "biotechBoonRollIntro": "{actingCharName} utilise le niveau héroïque d'un de ses atouts",
+            "biotechBoonRollSuccess": "La température corporelle reste stable, pas de dépense de point de biotech. ",
+            "custommodifier": "Custom modifier used : ({rollModifier}).",
+            "heroismmodifier": "One Heroism point used : +{dice}d6",
+            "rollformula": "Dices rolled: ",
+            "rollresult": "Result of the dice roll: ",
+            "rollDamageFormula": "Damage roll:",
+            "damageresult": "Damage result: ",
+            "weapon": "Weapon ({nbDices}d6)",
+            "heroism": "Heroism",
+            "lethalattack": "Lethal",
+            "explosive": "Explosive",
+            "reRollNumber": "Reroll dices: ",
+            "reRollDone": "Reroll done: "
+        },
+        "dialog":{
+            "biotech": "Utiliser un point Biotech pour +1d6",
+            "biotechBonus1d6": "Utiliser un point Biotech pour +2d6",
+            "bonus": "Add a bonus?",
+            "button":{
+                "cancel": "Cancel",
+                "roll": "Roll",
+                "validate": "Validate"
+            },
+            "display_help_title": "Résumé de règles",
+            "rollmodifier": "Modifier for the roll: ",
+            "nbReroll": "Reroll maximum number:",
+            "heroism": "Spend an heroism point for +1d6",
+            "heroismBonus1d6": "Spend an heroism point for +2d6",
+            "introskill": "{actingCharName} uses the skill {itemName}.",
+            "titleskill": "Roll of {itemName}",
+            "introweapon": "{actingCharName} attacks with {itemName}.",
+            "titleweapon": "Attack of {itemName}",
+            "introdamage": "{actingCharName} does damage with {itemName}.",
+            "titledamage": "Damages of {itemName}",
+            "introBadShape": "{actingCharName} is in bad shape and uses the skill {itemName}.",
+            "penalty": "Add a penalty?",
+            "display_portrait_title":"Display portrait",
+            "display_portrait":"Do you want to display the NPC portrait to all players ?"
+        },
+        "notification":{
+            "heroismNoMorePoints": "You have no more heroism points !", 
+            "heroismNotEnoughPoints": "You haven't enough heroisme points !"
+        },
+        "elite":{
+            "defence": "Defence (elite)",
+            "description":"Uses advanced skill values and doubles health points.",
+            "skill": "Skill (elite)"
+        },
+        "equipment":{
+            "add": "New equipment",
+            "active": "In hand, active",
+            "equipped": "In a bag, nearby",
+            "other": "Stashed at home, not available quickly"
+        },
+        "health": {
+            "current": "Valeur actuelle",
+            "max": "Maximum",
+            "twopcs": "2 PCs",
+            "threepcs": "3 PCs",
+            "fourpcs": "4 PCs",
+            "fivepcs": "5 PCs",
+            "status": {
+                "normal": "Normal",
+                "badshape": "Bad shape",
+                "unconscious": "Unconscious",
+                "riskofdeath": "Risk of death"
+            }
+        },
+        "heroism": {
+            "current": "Current",
+            "max": "Maximum",
+            "spend": "Spend 1 point (left click) or 2 points (right click)"
+        },
+        "npccategory": {
+                    "support": "Support",
+                    "secondfiddle": "Second Fiddle",
+                    "boss": "Boss"
+        },
+        "npcskill":{
+            "physical": {
+                "name": "Physical",
+                "description": "TODO"
+            },
+            "dexterity": {
+                "name": "Dexterity",
+                "description": "TODO"
+            },
+            "social": {
+                "name": "Social",
+                "description": "TODO"
+            },
+            "mental": {
+                "name": "Mental",
+                "description": "TODO"
+            }
+        },
+        "penalty":{
+            "minorinjury":{
+                "label": "minorinjury",
+                "description":  "les dégâts sont divisés par 2 et, si nécessaire, arrondis au nombre entier supérieur",
+                "chatmessage": "Penalty: minorinjury."
+            },
+            "danger":{
+                "label": "danger",
+                "description":  "le prochain test de Défense, Réflexes, Résistance ou Volonté du personnage subit un malus de 2. D’autres Dangers augmentent le nombre de tests successifs subissant ce malus.",
+                "chatmessage": "Penalty: danger (x{danger})."
+            },
+            "difficulty":{
+                "label": "difficulty",
+                "description":  "l’action en cours subit un malus de 2. Plusieurs Difficultés imposent un malus de 2 pour chaque Difficulté.",
+                "chatmessage": "Penalty: difficulty (x{difficulty})."
+            },
+            "risk": {
+                "label": "risk",
+                "description": "en combat, une action lente donne la main à l’adversaire, même s’il ne s’agissait pas d’une attaque. En dehors d’un combat, la durée d’une tâche augmente de moitié. Non cumulable.",
+                "chatmessage": "Penalty: (x{risk})."
+            },
+            "slowness":{
+                "label": "slowness",
+                "description":  "si l’action en cours échoue, un incident, déterminé par le MJ, survient. Par exemple l’arme est coincée ou détruite, le personnage glisse et tombe au sol, il lâche un objet, un de ses vêtements s’accroche quelque part et lui fait perdre une action, l’attaque touche un allié, etc. Plusieurs Risques différents exposent le personnage à des déboires multiples simultanés. Plusieurs risques identiques ne sont pas cumulables.",
+                "chatmessage": "Penalty: slowness."
+            }
+        },
+        "options":{
+            "numberofplayers":{
+                "name":"Nombre de Joueuses et joueurs",
+                "hint": "Le nombre de joueuses et joueurs modifiera la vitalité des PNJs (valeur doit être entre 2 et 5).",
+                "two": "Two players",
+                "three": "Three players",
+                "four": "Four players",
+                "five": "Five players"
+            },
+            "advancedrules":{
+                "name":"Advanced rules",
+                "hint": "Use the system advanced rules."
+            }
+        },
+        "sheet":{
+            "edit": "Modify",
+            "delete": "Delete",
+            "tab":{
+                "boons": "Boons",
+                "bio": "Biography",
+                "combat": "Combat",
+                "equipment": "Equipment",
+                "notes": "Notes"
+            }
+        },        
+        "skill":{
+            "acrobatics":{
+                "name": "Acrobatics",
+                "description": "Les activités gymniques comme les sauts, la voltige, l’escalade ou la contorsion."
+            },
+            "art": {
+                "name": "Art",
+                "description": "Effectuer et comprendre des œuvres artistiques. Chaque art maîtrisé est indiqué entre parenthèses derrière le nom de la compétence. Par exemple : Art (Musique)."
+            },
+            "athletics": {
+                "name": "Athletics",
+                "description": "Les activités physicals intenses comme la course, la nage ou le grimper à la corde."
+            },
+            "authority": {
+                "name": "Authority",
+                "description": "Diriger un groupe, intimider un interlocuteur, donner des ordres, etc."
+            },
+            "combat": {
+                "name": "Combat",
+                "description": "Sert pour combattre, avec des armes ou à mains nues. Chaque famille d’armes maîtrisée est indiquée entre parenthèses derrière le nom de la compétence. Par exemple : Combat (épée)."
+            },
+            "meleecombat": {
+                "name": "Melee combat",
+                "description": "Combattre avec des weapons de mêlée ou à mains nues."
+            },
+            "rangedcombat": {
+                "name": "Ranged combat",
+                "description": "Viser, tirer avec une weapon, lancer."
+            },
+            "knowledge": {
+                "name": "Knowledge",
+                "description": "Déterminer les informations détenues sur un sujet particulier. Chaque famille de savoir connu est indiquée entre parenthèses derrière le nom de la compétence. Par exemple : Connaissance (Histoire)."
+            },
+            "defence": {
+                "name": "Defence",
+                "description": "Eviter d’être touché par une attaque grâce à une esquive, une parade ou l’utilisation d’un élément de l’environnement"
+            },
+            "stealth": {
+                "name": "Stealth",
+                "description": "Ne pas se faire remarquer, se déplacer en silence, se dissimuler, prendre un objet sans être vu, camoufler un objet sur soi ou dans un lieu."
+            },
+            "research": {
+                "name": "Research",
+                "description": "Effectuer des recherches documentaires, mais aussi lire et analyser un texte, écrire un document, etc."
+            },
+            "riding": {
+                "name": "Riding",
+                "description": "Dresser, chevaucher et s’occuper d’une monture."
+            },
+            "eloquence": {
+                "name": "Eloquence",
+                "description": "Parler à un auditoire, influencer un interlocuteur, calmer des personnes hostiles, séduire, etc."
+            },
+            "intellect": {
+                "name": "Intellect",
+                "description": "Résoudre un problème, calculer, trouver le meilleur coup à jouer, etc."
+            },
+            "language": {
+                "name": "Langue",
+                "description": "Parler une langue. Chaque langue maîtrisée est indiquée entre parenthèses derrière le nom de la compétence. Par exemple : Langue (Français)."
+            },
+            "muscles": {
+                "name": "Muscles",
+                "description": "Les actions purement physiques sans technique spécifique comme défoncer une porte, tordre une barre de fer ou hisser un poids"
+            },
+            "perception": {
+                "name": "Perception",
+                "description": "Mobiliser ses cinq sens, de manière volontaire ou instinctive."
+            },
+            "drive": {
+                "name": "Pilot",
+                "description": "Conduire un véhicule. Chaque type de véhicule maîtrisé est indiqué entre parenthèses derrière le nom de la compétence. Par exemple : Pilotage (Automobiles)."
+            },
+            "psychology": {
+                "name": "Psychologie",
+                "description": "Cerner un interlocuteur, saisir ses ressentis et comprendre ses motivations."
+            },
+            "reflexes": {
+                "name": "Reflexes",
+                "description": "Réagir à un imprévu, effectuer un mouvement vif et être le plus rapide."
+            },
+            "resistance": {
+                "name": "Resistance",
+                "description": "Résister physicalment et endurer des efforts prolongés."
+            },
+            "healing": {
+                "name": "Healing",
+                "description": "Effectuer les gestes d’urgence et soigner."
+            },
+            "survival": {
+                "name": "Survival",
+                "description": "Chasser, monter un camp, suivre des traces et trouver son chemin."
+            },
+            "technical": {
+                "name": "Technical",
+                "description": "Effectuer et comprendre des tâches artisanales ou technologiques. Chaque technologie ou artisanat maîtrisé est indiqué entre parenthèses derrière le nom de la compétence. Par exemple : Technique (Mécanique)."
+            },
+            "willpower": {
+                "name": "Willpower",
+                "description": "Se concentrer, résister aux influences extérieures, se maîtriser."
+            },
+            "physical": {
+                "name": "Physique",
+                "description": ""
+            },
+            "dexterity": {
+                "name": "Habilité",
+                "description": ""
+            },
+            "social": {
+                "name": "Social",
+                "description": ""
+            },
+            "mental": {
+                "name": "Mental",
+                "description": ""
+            },
+            "add": "New skill",
+            "delete": "Delete skill",
+            "isDeveloped": "Check if developed",
+            "isPhysical": "Check if physical skill"
+        },
+        "tooltip":{
+            "armormalus": "Armor malus: ",
+            "badshape": "In bad shape : ",
+            "defence_modifier": "Modificateur au prochain jet de de défense",
+            "protection": "Valeur totale de protection",
+            "skill" : "Skill: ",
+            "untrained": "Untrained penalty",
+            "weaponbonus": "Weapon bonus: "
+        },
+        "wealth": {
+            "platinium": "Platinium",
+            "gold": "Gold",
+            "electrum": "Electrum",
+            "silver": "Silver",
+            "copper": "Copper"
+        }
+    }
+}

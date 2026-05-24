@@ -1,0 +1,92 @@
+{
+  "id": "cleenmain",
+  "title": "Clé en main",
+  "description": "Le système Clé en main pour FoundryVTT.",
+  "url": "https://github.com/12-Monkeys-Developers/cleenmain",
+  "version": "3.2.0",
+  "compatibility": {
+    "minimum": "14",
+    "maximum": "14",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Khaali",
+      "flags": {}
+    },
+    {
+      "name": "Kristov",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "cleenmain.js"
+  ],
+  "styles": [
+    "cleenmain.css"
+  ],
+  "documentTypes": {
+    "Actor": {
+      "player": { "htmlFields": ["activity","description", "traits"] },
+      "npc": { "htmlFields": ["activity","description", "equipment", "traits", "tactic"] },
+      "vehicle": { "htmlFields": ["description"] }
+    },
+    "Item": {
+      "armor": { "htmlFields": ["description"] },
+      "boon": { "htmlFields": ["description"] },
+      "equipment": { "htmlFields": ["description"] },
+      "skill": { "htmlFields": ["description"] },
+      "weapon": { "htmlFields": ["description"] }
+    }
+  },
+  "packs": [
+    {
+      "name": "systemuserguidefr",
+      "label": "Guide utilisateur du système",
+      "system": "cleenmain",
+      "path": "packs/userguide",
+      "type": "JournalEntry",
+      "private": false,
+      "flags": {},
+      "banner": "systems/cleenmain/assets/image/banner.webp"
+    }
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "French",
+      "path": "lang/fr.json",
+      "flags": {}
+    }
+  ],
+  "media": [
+    {
+      "type": "cover",
+      "url": "systems/cleenmain/assets/image/logo_cem.webp",
+      "loop": false,
+      "flags": {}
+    },
+    {
+      "type": "setup",
+      "loop": false,
+      "thumbnail": "systems/cleenmain/assets/image/logo_cem.webp",
+      "flags": {}
+    }
+  ],
+  "grid": {
+    "distance": 1,
+    "units": "m",
+    "type": 0
+  },
+  "primaryTokenAttribute": "health",
+  "initiative": "3d6+@reflexes",
+  "manifest": "https://github.com/12-Monkeys-Developers/cleenmain/releases/latest/download/system.json",
+  "download": "https://github.com/12-Monkeys-Developers/cleenmain/releases/download/3.2.0/system.zip",
+  "license": "LICENSE"
+}

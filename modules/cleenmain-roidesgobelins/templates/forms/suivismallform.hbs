@@ -1,0 +1,13 @@
+<form autocomplete="off">
+
+  <div class="roidesgobelins-mod">
+      <div class="roidesgobelins-forms">
+          <div class="boxlisttitle">{{localize formdata.title}}</div>
+        <div class="boxlist">
+          {{#each formdata.boxes as |singlebox id|}}
+          <input class="checkbox" data-field="{{id}}" name="boxelement" type="checkbox" {{checked singlebox.value}}/>
+          {{/each}}
+        </div>
+      </div>
+  </div>
+</form>

@@ -1,0 +1,115 @@
+<form autocomplete="off">
+  <div class="roidesgobelins-mod">
+      <div class="roidesgobelins-forms">
+        <table>
+          <tbody>
+            <tr class="objectif-titre"style="border-bottom: solid;">
+            <th>Joueuse / Joueur</th>
+            <th>Personnage</th>
+            <th>Objectif</th>
+          </tr>
+          <tr>
+            <td class="objectif-titre">Scénario 1</td>
+            <td colspan="2">
+              {{#if formdata.isGM}}
+              <button class="button reroll-objectif" name="button" data-field="scenario1">Attribuer aléatoirement</button>
+              {{/if}}</td>
+          </tr>
+          {{#each formdata.user as |user id|}}
+          <tr>
+            <td class="objectif-titre">{{user.name}}</td>
+            {{#if ../formdata.isGM}}
+            <td><input class="input-long" name="inputtext" data-field="charname" data-id={{user.id}} data-group="scenario1" type="text" value="{{user.scenario1.charname}}" /></td>
+            <td><input class="input-long" name="inputtext" data-field="objectif" data-id={{user.id}} data-group="scenario1" type="text" value="{{user.scenario1.objectif}}" /></td>
+            {{else}}
+            <td>{{user.scenario1.charname}}</td>
+            <td>{{user.scenario1.objectif}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+          <tr style="border-bottom: solid;"></tr>
+          <tr>
+            <td class="objectif-titre">Scénario 2</td>
+            <td colspan="2">
+              {{#if formdata.isGM}}
+              <button class="button reroll-objectif" name="button" data-field="scenario2">Attribuer aléatoirement</button>
+              {{/if}}</td>
+          </tr>
+          {{#each formdata.user as |user id|}}
+          <tr>
+            <td class="objectif-titre">{{user.name}}</td>
+            {{#if ../formdata.isGM}}
+            <td><input class="input-long" name="inputtext" data-field="charname" data-id={{user.id}} data-group="scenario2" type="text" value="{{user.scenario2.charname}}" /></td>
+            <td><input class="input-long" name="inputtext" data-field="objectif" data-id={{user.id}} data-group="scenario2" type="text" value="{{user.scenario2.objectif}}" /></td>
+            {{else}}
+            <td>{{user.scenario2.charname}}</td>
+            <td>{{user.scenario2.objectif}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+          <tr style="border-bottom: solid;"></tr>
+          <tr>
+            <td class="objectif-titre">Scénario 3</td>
+            <td colspan="2">
+              {{#if formdata.isGM}}
+              <button class="button reroll-objectif" name="button" data-field="scenario3">Attribuer aléatoirement</button>
+              {{/if}}</td>
+          </tr>
+          {{#each formdata.user as |user id|}}
+          <tr>
+            <td class="objectif-titre">{{user.name}}</td>
+            {{#if ../formdata.isGM}}
+            <td><input class="input-long" name="inputtext" data-field="charname" data-id={{user.id}} data-group="scenario3" type="text" value="{{user.scenario3.charname}}" /></td>
+            <td><input class="input-long" name="inputtext" data-field="objectif" data-id={{user.id}} data-group="scenario3" type="text" value="{{user.scenario3.objectif}}" /></td>
+            {{else}}
+            <td>{{user.scenario3.charname}}</td>
+            <td>{{user.scenario3.objectif}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+          <tr style="border-bottom: solid;"></tr>
+          <tr>
+            <td class="objectif-titre">Scénario 4</td>
+            <td colspan="2">
+              {{#if formdata.isGM}}
+              <button class="button reroll-objectif" name="button" data-field="scenario4">Attribuer aléatoirement</button>
+              {{/if}}</td>
+          </tr>
+          {{#each formdata.user as |user id|}}
+          <tr>
+            <td class="objectif-titre">{{user.name}}</td>
+            {{#if ../formdata.isGM}}
+            <td><input class="input-long" name="inputtext" data-field="charname" data-id={{user.id}} data-group="scenario4" type="text" value="{{user.scenario4.charname}}" /></td>
+            <td><input class="input-long" name="inputtext" data-field="objectif" data-id={{user.id}} data-group="scenario4" type="text" value="{{user.scenario4.objectif}}" /></td>
+            {{else}}
+            <td>{{user.scenario4.charname}}</td>
+            <td>{{user.scenario4.objectif}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+          <tr style="border-bottom: solid;"></tr>
+          <tr>
+            <td class="objectif-titre">Scénario 5</td>
+            <td colspan="2">
+              {{#if formdata.isGM}}
+              <button class="button reroll-objectif" name="button" data-field="scenario5">Attribuer aléatoirement</button>
+              {{/if}}</td>
+          </tr>
+          {{#each formdata.user as |user id|}}
+          <tr>
+            <td class="objectif-titre">{{user.name}}</td>
+            {{#if ../formdata.isGM}}
+            <td><input class="input-long" name="inputtext" data-field="charname" data-id={{user.id}} data-group="scenario5" type="text" value="{{user.scenario5.charname}}" /></td>
+            <td><input class="input-long" name="inputtext" data-field="objectif" data-id={{user.id}} data-group="scenario5" type="text" value="{{user.scenario5.objectif}}" /></td>
+            {{else}}
+            <td>{{user.scenario5.charname}}</td>
+            <td>{{user.scenario5.objectif}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+          <tr style="border-bottom: solid;"></tr>
+          </tbody>
+        </table>
+      </div>
+  </div>
+</form>

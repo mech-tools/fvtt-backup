@@ -1,0 +1,30 @@
+{
+  "cleenmain-roidesgobelins": {
+    "label": {
+      "character": "personnage"
+    },
+    "gmtools": {
+      "thisformtitle": "CASES D’INCIDENTS",
+      "suivi_small": "Petit formulaire",
+      "regles": "Règles",
+      "bilan_title": "Bilan des scénarios",
+      "tabs": {
+        "bilanscen1": "La traversée des terres abandonnées",
+        "bilanscen2": "À la recherche du temple oublié",
+        "bilanscen3": "La Couronne d’Autorité",
+        "bilanscen4": "De retour dans les montagnes",
+        "pointsdeconspiration": "Points de conspiration"
+      },
+      "objectifsform": "Suivi des objectifs"
+    },
+    "sidebar": {
+      "forms": "Formulaires",
+      "help": "Aides",
+      "support": "Support",
+      "discordSinges": "Discord des XII Singes",
+      "discordSingesTooltip": "Rejoignez le Discord des XII Singes pour discuter du système Cthulhu Hack et trouver du support dans le canal Foundry.",
+      "discordLaFonderie": "Discord de la Fonderie",
+      "discordLaFonderieTooltip": "Rejoignez le serveur francophone dédié à Foundry VTT et son canal Cthulhu Hack"
+    }
+  }
+}

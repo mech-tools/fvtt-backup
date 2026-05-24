@@ -1,0 +1,1 @@
+Ce module contient l'intégralité de la campagne Roi des gobelins pour le systèmes Clé en main.
