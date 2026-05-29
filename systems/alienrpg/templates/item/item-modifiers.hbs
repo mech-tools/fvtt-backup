@@ -1,32 +1,36 @@
-  <section class='tab modifiers scrollable {{tab.cssClass}}' data-group='primary' data-tab='modifiers'>
+<section class='tab modifiers scrollable {{tab.cssClass}}' data-group='primary' data-tab='modifiers'>
 	{{#if (ne system.header.type.value '9')}}
-		<h2 class='resource-label'>{{localize 'ALIENRPG.Attributes'}}</h2>
-		<div class='grid-2col'>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.health.value' class='resource-label'>{{localize 'ALIENRPG.Health'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.health.value' value='{{system.modifiers.attributes.health.value}}' data-dtype='Number' />
-			</div>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.stress.value' class='resource-label'>{{localize 'ALIENRPG.Stress'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.stress.value' value='{{system.modifiers.attributes.stress.value}}' data-dtype='Number' />
-			</div>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.str.value' class='resource-label'>{{localize 'ALIENRPG.AbilityStr'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.str.value' value='{{system.modifiers.attributes.str.value}}' data-dtype='Number' />
-			</div>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.wit.value' class='resource-label'>{{localize 'ALIENRPG.AbilityWit'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.wit.value' value='{{system.modifiers.attributes.wit.value}}' data-dtype='Number' />
-			</div>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.agl.value' class='resource-label'>{{localize 'ALIENRPG.AbilityAgl'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.agl.value' value='{{system.modifiers.attributes.agl.value}}' data-dtype='Number' />
-			</div>
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.attributes.emp.value' class='resource-label'>{{localize 'ALIENRPG.AbilityEmp'}}</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.attributes.emp.value' value='{{system.modifiers.attributes.emp.value}}' data-dtype='Number' />
-			</div>
+	<h2 class='resource-label'>{{localize 'ALIENRPG.Attributes'}}</h2>
+	<div class='grid-2col'>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.health.value' class='resource-label'>{{localize 'ALIENRPG.Health'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.health.value' value='{{system.modifiers.attributes.health.value}}' data-dtype='Number' />
 		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.stress.value' class='resource-label'>{{localize 'ALIENRPG.Stress'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.stress.value' value='{{system.modifiers.attributes.stress.value}}' data-dtype='Number' />
+		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.str.value' class='resource-label'>{{localize 'ALIENRPG.AbilityStr'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.str.value' value='{{system.modifiers.attributes.str.value}}' data-dtype='Number' />
+		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.wit.value' class='resource-label'>{{localize 'ALIENRPG.AbilityWit'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.wit.value' value='{{system.modifiers.attributes.wit.value}}' data-dtype='Number' />
+		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.agl.value' class='resource-label'>{{localize 'ALIENRPG.AbilityAgl'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.agl.value' value='{{system.modifiers.attributes.agl.value}}' data-dtype='Number' />
+		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.emp.value' class='resource-label'>{{localize 'ALIENRPG.AbilityEmp'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.emp.value' value='{{system.modifiers.attributes.emp.value}}' data-dtype='Number' />
+		</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.attributes.resolve.value' class='resource-label'>{{localize 'ALIENRPG.Resolve'}}</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.attributes.resolve.value' value='{{system.modifiers.attributes.resolve.value}}' data-dtype='Number' />
+		</div>
+	</div>
 	{{/if}}
 
 	<h2 class='resource-label'>{{localize 'ALIENRPG.Skills'}}</h2>
@@ -44,21 +48,21 @@
 			<input type='text' class='maxboxsize' name='system.modifiers.skills.stamina.value' value='{{system.modifiers.skills.stamina.value}}' data-dtype='Number' />
 		</div>
 		{{#if (ne system.header.type.value '9')}}
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.skills.rangedCbt.value' class='resource-label'>{{localize 'ALIENRPG.SkillrangedCbt'}}
-					({{localize 'ALIENRPG.AbilityAbbagl'}})</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.skills.rangedCbt.value' value='{{system.modifiers.skills.rangedCbt.value}}' data-dtype='Number' />
-			</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.skills.rangedCbt.value' class='resource-label'>{{localize 'ALIENRPG.SkillrangedCbt'}}
+				({{localize 'ALIENRPG.AbilityAbbagl'}})</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.skills.rangedCbt.value' value='{{system.modifiers.skills.rangedCbt.value}}' data-dtype='Number' />
+		</div>
 		{{/if}}
 		<div class='modifiers flexrow flex-group-center'>
 			<label for='system.modifiers.skills.mobility.value' class='resource-label'>{{localize 'ALIENRPG.Skillmobility'}} ({{localize 'ALIENRPG.AbilityAbbagl'}})</label>
 			<input type='text' class='maxboxsize' name='system.modifiers.skills.mobility.value' value='{{system.modifiers.skills.mobility.value}}' data-dtype='Number' />
 		</div>
 		{{#if (ne system.header.type.value '9')}}
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.skills.piloting.value' class='resource-label'>{{localize 'ALIENRPG.Skillpiloting'}} ({{localize 'ALIENRPG.AbilityAbbagl'}})</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.skills.piloting.value' value='{{system.modifiers.skills.piloting.value}}' data-dtype='Number' />
-			</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.skills.piloting.value' class='resource-label'>{{localize 'ALIENRPG.Skillpiloting'}} ({{localize 'ALIENRPG.AbilityAbbagl'}})</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.skills.piloting.value' value='{{system.modifiers.skills.piloting.value}}' data-dtype='Number' />
+		</div>
 		{{/if}}
 		<div class='modifiers flexrow flex-group-center'>
 			<label for='system.modifiers.skills.command.value' class='resource-label'>{{localize 'ALIENRPG.Skillcommand'}} ({{localize 'ALIENRPG.AbilityAbbemp'}})</label>
@@ -75,21 +79,21 @@
 			<input type='text' class='maxboxsize' name='system.modifiers.skills.medicalAid.value' value='{{system.modifiers.skills.medicalAid.value}}' data-dtype='Number' />
 		</div>
 		{{#if (ne system.header.type.value '9')}}
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.skills.observation.value' class='resource-label'>{{localize 'ALIENRPG.Skillobservation'}}
-					({{localize 'ALIENRPG.AbilityAbbwit'}})</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.skills.observation.value' value='{{system.modifiers.skills.observation.value}}' data-dtype='Number' />
-			</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.skills.observation.value' class='resource-label'>{{localize 'ALIENRPG.Skillobservation'}}
+				({{localize 'ALIENRPG.AbilityAbbwit'}})</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.skills.observation.value' value='{{system.modifiers.skills.observation.value}}' data-dtype='Number' />
+		</div>
 		{{/if}}
 		<div class='modifiers flexrow flex-group-center'>
 			<label for='system.modifiers.skills.survival.value' class='resource-label'>{{localize 'ALIENRPG.Skillsurvival'}} ({{localize 'ALIENRPG.AbilityAbbwit'}})</label>
 			<input type='text' class='maxboxsize' name='system.modifiers.skills.survival.value' value='{{system.modifiers.skills.survival.value}}' data-dtype='Number' />
 		</div>
 		{{#if (ne system.header.type.value '9')}}
-			<div class='modifiers flexrow flex-group-center'>
-				<label for='system.modifiers.skills.comtech.value' class='resource-label'>{{localize 'ALIENRPG.Skillcomtech'}} ({{localize 'ALIENRPG.AbilityAbbwit'}})</label>
-				<input type='text' class='maxboxsize' name='system.modifiers.skills.comtech.value' value='{{system.modifiers.skills.comtech.value}}' data-dtype='Number' />
-			</div>
+		<div class='modifiers flexrow flex-group-center'>
+			<label for='system.modifiers.skills.comtech.value' class='resource-label'>{{localize 'ALIENRPG.Skillcomtech'}} ({{localize 'ALIENRPG.AbilityAbbwit'}})</label>
+			<input type='text' class='maxboxsize' name='system.modifiers.skills.comtech.value' value='{{system.modifiers.skills.comtech.value}}' data-dtype='Number' />
+		</div>
 		{{/if}}
 	</div>
-</div>
+	</div>

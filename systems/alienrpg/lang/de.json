@@ -606,6 +606,15 @@
     "YourPanicLevel": "Deine Panikstufe steigt auf ",
     "youTake": "Du erhältst "
   },
+  "ITEM": {
+    "TypePlanet-system": "Planet/System",
+    "TypeSkill-stunts": "Skill Stunts",
+    "TypeSpacecraft-crit": "Spaceship Crit",
+    "TypeSpacecraftmods": "Spaceship Modules/Upgrades",
+    "TypeSpacecraftweapons": "Spaceship Weapons",
+    "TypeSpecialty": "Speciality",
+    "TypeTalent": "Talent"
+  },
   "TYPES": {
     "Actor": {
       "character": "Akteur",

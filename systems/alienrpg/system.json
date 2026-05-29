@@ -18,11 +18,11 @@
             }
         ]
     },
-    "version": "4.0.11",
+    "version": "4.1.12",
     "compatibility": {
         "minimum": "13",
-        "verified": "13",
-        "maximum": "13"
+        "verified": "14",
+        "maximum": "14"
     },
     "scripts": [],
     "esmodules": [
@@ -220,7 +220,7 @@
     "background": "systems/alienrpg/images/egg.webp",
     "socket": true,
     "manifest": "https://github.com/pwatson100/alienrpg/releases/latest/download/system.json",
-    "download": "https://github.com/pwatson100/alienrpg/releases/download/4.0.11/master.zip",
+    "download": "https://github.com/pwatson100/alienrpg/releases/download/4.1.12/master.zip",
     "protected": false,
     "initiative": "1d10",
     "bugs": "https://github.com/pwatson100/alienrpg/issues",

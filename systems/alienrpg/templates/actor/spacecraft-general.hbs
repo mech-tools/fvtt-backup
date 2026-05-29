@@ -95,7 +95,11 @@
 				<label class="resource-label gSC1">{{localize 'ALIENRPG.Name'}}</label>
 				<label class="resource-label gSC2">{{localize 'ALIENRPG.Position'}}</label>
 				<label class="resource-label gSC3">{{localize 'ALIENRPG.Roll'}}</label>
+				{{#if isEvolved}}
+				<label class="resource-label gSC4">{{localize 'ALIENRPG.Stress'}}</label>
+				{{else}}
 				<label class="resource-label gSC4">{{localize 'ALIENRPG.Panic'}}</label>
+				{{/if}}
 			</div>
 			<br />
 			<div>
@@ -128,7 +132,11 @@
 						</h3>
 						{{/if}}
 
+						{{#if (ne isEvolved true)}}
+						<label type="button" class="crewPanic gSC9" data-shippanicbut="true" data-action="CrewPanic" data-crewpanic="{{ actor.id }}" data-panicroll="true" title="{{localize 'ALIENRPG.RollStress'}}"><i class="far fa-heart"></i></label>
+						{{else}}
 						<label type="button" class="crewPanic gSC9" data-shippanicbut="true" data-action="CrewPanic" data-crewpanic="{{ actor.id }}" data-panicroll="true" title="{{localize 'ALIENRPG.RollPanic'}}"><i class="far fa-heart"></i></label>
+						{{/if}}
 
 						{{!-- Buttons --}}
 						<div class="gSC10">
@@ -157,7 +165,10 @@
 							<div class="item-detail lCol11">{{localize "ALIENRPG.Range"}}</div>
 						</li>
 
-						{{#each inventory as |inv|}} {{#each inv.items as |item iid|}} {{#if (eq item.type 'spacecraftweapons')}} {{#if (eq item.system.header.type.value '1')}}
+						{{#each inventory as |inv|}}
+						{{#each inv.items as |item iid|}}
+						{{#if (eq item.type 'spacecraftweapons')}}
+						{{#if (eq item.system.header.type.value '1')}}
 						<li class="item grid-items" data-item-id="{{item._id}}">
 							<div class="item-image lCol5"><img src="{{item.img}}" title="{{item.name}}" width="24" height="24" /></div>
 							<span class="item-detail lCol6 rollItem" data-action="RollItem" data-item-id='{{item.id}}' data-item="{{item.name}}" data-mod="{{system.skills.rangedCbt.mod}}">{{item.name~}}</span>
@@ -169,7 +180,10 @@
 								<a class="item-control item-edit1" data-action='viewDoc' data-document-class='Item' data-item-id="{{item._id}}" title="{{localize 'ALIENRPG.EditItem'}}"><i class="fas fa-edit"></i></a>
 							</div>
 						</li>
-						{{/if}} {{/if}} {{/each}} {{/each}}
+						{{/if}}
+						{{/if}}
+						{{/each}}
+						{{/each}}
 
 						<h2 class="">{{localize "ALIENRPG.Defensive"}}</h2>
 						<li class="grid-items item-header">
@@ -178,7 +192,10 @@
 							<div class="item-detail lCol15">{{localize "ALIENRPG.Bonus"}}</div>
 							<div class="item-detail lCol11">{{localize "ALIENRPG.hardpoint"}}</div>
 						</li>
-						{{#each inventory as |inv|}} {{#each inv.items as |item iid|}} {{#if (eq item.type 'spacecraftweapons')}} {{#if (eq item.system.header.type.value '2')}}
+						{{#each inventory as |inv|}}
+						{{#each inv.items as |item iid|}}
+						{{#if (eq item.type 'spacecraftweapons')}}
+						{{#if (eq item.system.header.type.value '2')}}
 						<li class="item grid-items" data-item-id="{{item._id}}">
 							<div class="item-image lCol5"><img src="{{item.img}}" title="{{item.name}}" width="24" height="24" /></div>
 							<span class="item-detail lCol6 rollItem" data-action="RollItem" data-item-id='{{item.id}}' data-item="{{item.name}}" data-mod="{{system.skills.rangedCbt.mod}}">{{item.name~}}</span>
@@ -190,7 +207,10 @@
 								<a class="item-control item-edit1" data-action='viewDoc' data-document-class='Item' data-item-id="{{item._id}}" title="{{localize 'ALIENRPG.EditItem'}}"><i class="fas fa-edit"></i></a>
 							</div>
 						</li>
-						{{/if}} {{/if}} {{/each}} {{/each}}
+						{{/if}}
+						{{/if}}
+						{{/each}}
+						{{/each}}
 					</ol>
 				</div>
 			</div>

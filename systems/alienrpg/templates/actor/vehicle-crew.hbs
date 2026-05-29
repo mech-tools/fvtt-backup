@@ -3,7 +3,11 @@
 		<label class="resource-label gSC1">{{localize 'ALIENRPG.Name'}}</label>
 		<label class="resource-label gSC2">{{localize 'ALIENRPG.Position'}}</label>
 		<label class="resource-label gSC3">{{localize 'ALIENRPG.Roll'}}</label>
+		{{#if isEvolved}}
+		<label class="resource-label gSC4">{{localize 'ALIENRPG.Stress'}}</label>
+		{{else}}
 		<label class="resource-label gSC4">{{localize 'ALIENRPG.Panic'}}</label>
+		{{/if}}
 	</div>
 	<br />
 	<div>
@@ -24,8 +28,11 @@
 					{{localize 'ALIENRPG.Skillpiloting'}}
 				</h3>
 				{{/if}}
-
-				<label type="button" class="crewPanic gSC9" data-action="CrewPanic" data-shippanicbut="true" data-crewpanic="{{ actor.id }}" data-panicroll="true" title="{{localize 'ALIENRPG.RollPanic'}}"><i class="far fa-heart"></i></label>
+				{{#if (ne isEvolved true)}}
+				<label type="button" class="crewPanic gSC9" data-shippanicbut="true" data-action="CrewPanic" data-crewpanic="{{ actor.id }}" data-panicroll="true" title="{{localize 'ALIENRPG.RollStress'}}"><i class="far fa-heart"></i></label>
+				{{else}}
+				<label type="button" class="crewPanic gSC9" data-shippanicbut="true" data-action="CrewPanic" data-crewpanic="{{ actor.id }}" data-panicroll="true" title="{{localize 'ALIENRPG.RollPanic'}}"><i class="far fa-heart"></i></label>
+				{{/if}}
 
 				{{!-- Buttons --}}
 				<div class="gSC10">

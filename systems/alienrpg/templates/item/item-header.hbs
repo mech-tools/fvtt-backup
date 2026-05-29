@@ -41,7 +41,7 @@
 	{{#if (eq item.type 'skill-stunts')}}
 	<div class='header-fields'>
 		<span class='charname' style='width: 629px;'>
-			<select class='select-css' name='name' value='{{item.name}}' data-dcareer='{{item.name}}' style='max-width: -webkit-fill-available;'>
+			<select class='select-css' name='name' value='{{item.name}}' style='max-width: -webkit-fill-available;'>
 				{{selectOptions config.skills_list selected=item.name nameAttr='key' labelAttr='label' localize=true}}
 			</select>
 		</span>

@@ -4,7 +4,9 @@
 	<div class='header-fields'>
 		<span class='charname'><input name='name' type='text' value='{{actor.name}}' placeholder='{{localize "ALIENRPG.Name"}}' /></span>
 		<div class='grid-actor'>
-			<h2 for='system.health.value' class='resource-label gaItem1'>{{localize 'ALIENRPG.Health'}}</h2>
+			<h2 for='system.health.value' class='resource-label gaItem1' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.header.health.max}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{system.header.health.mod}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.header.health.calculatedMax}}</span>'>
+				{{localize 'ALIENRPG.Health'}}</h2>
 			<div class='resource-content gaItem2'>
 				<button type='button' class='minus-btn' data-action='plusMinusButton' data-pmbut='minusHealth'><i class='fas fa-minus-square' title='Minus'></i></button>
 			</div>
@@ -38,22 +40,26 @@
 			</div>
 			{{! Attributes }}
 			<div class='abilities grid-Char-Att'>
-				<h3 class='resource-label rollable gCol1' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.str.value}}' data-mod='{{system.attributes.str.mod}}' data-label='{{localize "ALIENRPG.AbilityStr"}}'>
+				<h3 class='resource-label rollable gCol1' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.str.value}}' data-mod='{{system.attributes.str.mod}}' data-label='{{localize "ALIENRPG.AbilityStr"}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.attributes.str.value}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{minusstats system.attributes.str.mod system.attributes.str.value}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.attributes.str.mod}}</span>'>
 					{{localize 'ALIENRPG.AbilityStr'}}
 				</h3>
 				<input type='text' class='maxboxsize gCol2' name='system.attributes.str.value' value='{{system.attributes.str.value}}' data-dtype='Number' />
 
-				<h3 class='resource-label rollable gCol3' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.wit.value}}' data-mod='{{system.attributes.wit.mod}}' data-label='{{localize "ALIENRPG.AbilityWit"}}'>
+				<h3 class='resource-label rollable gCol3' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.wit.value}}' data-mod='{{system.attributes.wit.mod}}' data-label='{{localize "ALIENRPG.AbilityWit"}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.attributes.wit.value}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{minusstats system.attributes.wit.mod system.attributes.wit.value}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.attributes.wit.mod}}</span>'>
 					{{localize 'ALIENRPG.AbilityWit'}}
 				</h3>
 				<input type='text' class='maxboxsize gCol4' name='system.attributes.wit.value' value='{{system.attributes.wit.value}}' data-dtype='Number' />
 
-				<h3 class='resource-label rollable gCol6' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.agl.value}}' data-mod='{{system.attributes.agl.mod}}' data-label='{{localize "ALIENRPG.AbilityAgl"}}'>
+				<h3 class='resource-label rollable gCol6' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.agl.value}}' data-mod='{{system.attributes.agl.mod}}' data-label='{{localize "ALIENRPG.AbilityAgl"}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.attributes.agl.value}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{minusstats system.attributes.agl.mod system.attributes.agl.value}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.attributes.agl.mod}}</span>'>
 					{{localize 'ALIENRPG.AbilityAgl'}}
 				</h3>
 				<input type='text' class='maxboxsize gCol7' name='system.attributes.agl.value' value='{{system.attributes.agl.value}}' data-dtype='Number' />
 
-				<h3 class='resource-label rollable gCol8' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.emp.value}}' data-mod='{{system.attributes.emp.mod}}' data-label='{{localize "ALIENRPG.AbilityEmp"}}'>
+				<h3 class='resource-label rollable gCol8' data-action='RollAbility' data-attr='attribute' data-roll='{{system.attributes.emp.value}}' data-mod='{{system.attributes.emp.mod}}' data-label='{{localize "ALIENRPG.AbilityEmp"}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.attributes.emp.value}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{minusstats system.attributes.emp.mod system.attributes.emp.value}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.attributes.emp.mod}}</span>'>
 					{{localize 'ALIENRPG.AbilityEmp'}}
 				</h3>
 				<input type='text' class='maxboxsize gCol9' name='system.attributes.emp.value' value='{{system.attributes.emp.value}}' data-dtype='Number' />

@@ -4,7 +4,8 @@
 	<div class='header-fields'>
 		<span class='charname'><input name='name' type='text' value='{{actor.name}}' placeholder='{{localize "ALIENRPG.Name"}}' /></span>
 		<div class='grid-actor'>
-			<h2 for='system.health.value' class='resource-label gaItem1'>{{localize 'ALIENRPG.Health'}}</h2>
+			<h2 for='system.health.value' class='resource-label gaItem1' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.header.health.max}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{system.header.health.mod}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.header.health.calculatedMax}}</span>'>{{localize 'ALIENRPG.Health'}}</h2>
 			<div class='resource-content gaItem2'>
 				<button type='button' class='minus-btn' data-action='plusMinusButton' data-pmbut='minusHealth'><i class='fas fa-minus-square' title='Minus'></i></button>
 			</div>
@@ -57,11 +58,11 @@
 				<input type='text' class='maxboxsize gCol9' name='system.attributes.emp.value' value='{{system.attributes.emp.value}}' data-dtype='Number' />
 
 				{{#if isGM}}
-					<div class='tooltip'>
-						<h3 class='resource-label gCol5 tooltip'>NPC?</h3>
-						<span class='tooltiptext' style="font-family: 'Times New Roman', Times, serif">{{localize 'ALIENRPG.NPCpopUp'}}</span>
-					</div>
-					<input class='gCol10 NPC' name='system.header.npc' type='checkbox' {{checked system.header.npc}} />
+				<div class='tooltip'>
+					<h3 class='resource-label gCol5 tooltip'>NPC?</h3>
+					<span class='tooltiptext' style="font-family: 'Times New Roman', Times, serif">{{localize 'ALIENRPG.NPCpopUp'}}</span>
+				</div>
+				<input class='gCol10 NPC' name='system.header.npc' type='checkbox' {{checked system.header.npc}} />
 				{{/if}}
 			</div>
 		</div>

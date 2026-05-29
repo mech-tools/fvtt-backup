@@ -1,0 +1,473 @@
+<div class="sra2-roll-result">
+    <div class="roll-header">
+        <img class="roller-portrait" src="{{attacker.img}}" alt="{{attacker.name}}" title="{{attacker.name}}" />
+        <div class="roller-info">
+            <div class="roller-name">{{attacker.name}}</div>
+            {{#if isDefend}}
+            <div class="roll-type roll-type-defense">
+                <i class="fas fa-shield-alt"></i> {{localize "SRA2.COMBAT.DEFEND"}} - {{skillName}}
+            </div>
+            {{else if isCounterAttack}}
+            <div class="roll-type roll-type-counterattack">
+                <i class="fas fa-fist-raised"></i> {{localize "SRA2.ROLL_DIALOG.COUNTERATTACK"}} - {{skillName}}
+            </div>
+            {{else if isAttack}}
+            <div class="roll-type roll-type-attack">
+                <i class="fas fa-sword"></i> {{#if itemName}}{{itemName}}{{else}}{{skillName}}{{/if}}{{#if damageValue}} <span class="defense-value">(VD: {{damageValue}})</span>{{/if}}
+            </div>
+            {{else}}
+            <div class="roll-type">
+                <i class="fas fa-book"></i> {{skillName}}
+            </div>
+            {{/if}}
+        </div>
+    </div>
+
+    <div class="roll-results">
+        <div class="total-successes {{#if (eq rollResult.totalSuccesses 0)}}failed-attack{{/if}}">
+            <span class="successes-label">{{#if (or isDefend isCounterAttack)}}{{localize "SRA2.ROLL_DIALOG.DEFENDS"}}{{else}}{{localize "SRA2.ROLL_DIALOG.SUCCESSES"}}{{/if}}:</span>
+            <span class="successes-value">{{rollResult.totalSuccesses}}</span>
+            {{#if (and isAttack (eq rollResult.totalSuccesses 0))}}
+            <div class="attack-failed-message">
+                <i class="fas fa-times-circle"></i> {{localize "SRA2.COMBAT.ATTACK_FAILED"}}
+            </div>
+            {{/if}}
+            {{#if (and isAttack (eq rollData.itemType "ice-attack"))}}
+            <div class="ice-threshold-info">
+                <i class="fas fa-info-circle"></i> {{localize "SRA2.ROLL_DIALOG.THRESHOLD"}} (ICE): {{rollData.threshold}} {{localize "SRA2.SKILLS.SUCCESSES_SHORT"}}
+            </div>
+            {{/if}}
+        </div>
+
+        <!-- Normal Dice Results -->
+        {{#if (and rollResult.normalDice.length (ne rollData.itemType "ice-attack"))}}
+        <div class="dice-results normal-dice">
+            <div class="dice-results-header">
+                <span class="dice-type-label">{{localize "SRA2.ROLL_DIALOG.NORMAL_DICE"}}</span>
+                <span class="dice-successes">{{rollResult.normalSuccesses}} {{localize
+                    "SRA2.SKILLS.SUCCESSES_SHORT"}}</span>
+            </div>
+            <div class="dice-list">
+                {{#each rollResult.normalDice}}
+                <div class="dice-result {{#if (isSuccess this ../rollData.rollMode)}}success{{else}}failure{{/if}}"
+                    data-dice-value="{{this}}">
+                    {{this}}
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Risk Dice Results -->
+        {{#if (and rollResult.riskDice.length (ne rollData.itemType "ice-attack"))}}
+        <div class="dice-results risk-dice">
+            <div class="dice-results-header">
+                <span class="dice-type-label risk-label">{{localize "SRA2.ROLL_DIALOG.RISK_DICE"}}</span>
+                <span class="dice-successes">{{rollResult.riskSuccesses}} × 2 = {{multiply rollResult.riskSuccesses 2}}
+                    {{localize "SRA2.SKILLS.SUCCESSES_SHORT"}}</span>
+            </div>
+            <div class="dice-list">
+                {{#each rollResult.riskDice}}
+                <div
+                    class="dice-result risk {{#if (eq this 1)}}critical-failure{{else if (isSuccess this ../rollData.rollMode)}}success{{else}}failure{{/if}}">
+                    {{this}}
+                </div>
+                {{/each}}
+            </div>
+            {{#if rollResult.criticalFailures}}
+            <div class="critical-failures">
+                {{localize "SRA2.SKILLS.CRITICAL_FAILURES"}}: {{rollResult.criticalFailures}}
+                {{#if rollResult.finalRR}}
+                - {{localize "SRA2.ROLL_DIALOG.RR"}} {{rollResult.finalRR}} = {{rollResult.remainingFailures}}
+                {{/if}}
+            </div>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        <!-- Complications -->
+        {{#if (ne rollResult.complication "none")}}
+        <div class="complication {{rollResult.complication}}">
+            {{#if (eq rollResult.complication "minor")}}
+            <i class="fas fa-exclamation-triangle"></i> {{localize "SRA2.SKILLS.MINOR_COMPLICATION"}}
+            {{else if (eq rollResult.complication "critical")}}
+            <i class="fas fa-exclamation-circle"></i> {{localize "SRA2.SKILLS.CRITICAL_COMPLICATION"}}
+            {{else if (eq rollResult.complication "disaster")}}
+            <i class="fas fa-skull"></i> {{localize "SRA2.SKILLS.DISASTER"}}
+            {{/if}}
+        </div>
+        {{/if}}
+
+        {{#if (gt aoeZone 0)}}
+        <div class="aoe-info" style="margin-top: 0.3rem; font-size: 0.85em; color: #f0a040;">
+            <i class="fas fa-bullseye"></i> {{localize "SRA2.ROLL_DIALOG.AOE_ZONE"}}: {{aoeZone}} (+{{aoeZone}} {{localize "SRA2.ROLL_DIALOG.AOE_THRESHOLD_BONUS"}})
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Defense Result -->
+    {{#if isDefend}}
+    {{#if defenseResult}}
+    <div class="defense-result">
+        <div class="defense-comparison">
+            <div class="comparison-header">
+                <i class="fas fa-balance-scale"></i> {{localize "SRA2.COMBAT.RESULT"}}
+            </div>
+            <div class="comparison-details">
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.ATTACK_SUCCESSES_LABEL"}}</span>
+                    <span class="comparison-value attack">{{defenseResult.attackSuccesses}}</span>
+                </div>
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.DEFENSE_SUCCESSES_LABEL"}}</span>
+                    <span class="comparison-value defense">{{defenseResult.defenseSuccesses}}</span>
+                </div>
+            </div>
+            {{#if defenseResult.attackFailed}}
+            <div class="defense-outcome failed">
+                <i class="fas fa-times-circle"></i> {{localize "SRA2.COMBAT.ATTACK_FAILED"}}
+            </div>
+            {{else}}
+            <div class="defense-outcome success">
+                <i class="fas fa-check-circle"></i> {{localize "SRA2.COMBAT.ATTACK_SUCCESS"}}
+            </div>
+            {{#if defenseResult.isIceAttack}}
+            <!-- ICE Attack Effects -->
+            <div class="ice-effects">
+                {{#if (eq defenseResult.iceType "blaster")}}
+                <div class="ice-effect">
+                    <i class="fas fa-lock"></i> <strong>{{localize "SRA2.COMBAT.CONNECTION_LOCK"}}</strong> : {{localize "SRA2.COMBAT.CONNECTION_LOCK_DESC"}}
+                </div>
+                {{#if (gt defenseResult.calculatedDamage 0)}}
+                <div class="calculated-damage">
+                    <span class="damage-label">{{localize "SRA2.COMBAT.MATRIX_DAMAGE_LABEL"}}</span>
+                    <span class="damage-value">{{defenseResult.calculatedDamage}}</span>
+                </div>
+                <button type="button" class="apply-damage-button" 
+                        data-damage="{{defenseResult.calculatedDamage}}"
+                        data-target-name="{{defenseResult.defenderName}}"
+                        data-target-uuid="{{defenseResult.defenderUuid}}"
+                        data-attacker-uuid="{{defenseResult.originalAttackerUuid}}"
+                        data-damage-type="{{defenseResult.damageType}}">
+                    <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.defenderName}})
+                </button>
+                {{/if}}
+                {{else if (eq defenseResult.iceType "black")}}
+                <div class="calculated-damage">
+                    <span class="damage-label">{{localize "SRA2.COMBAT.BIOFEEDBACK_DAMAGE_LABEL"}}</span>
+                    <span class="damage-value">{{defenseResult.calculatedDamage}}</span>
+                </div>
+                <button type="button" class="apply-damage-button" 
+                        data-damage="{{defenseResult.calculatedDamage}}"
+                        data-target-name="{{defenseResult.defenderName}}"
+                        data-target-uuid="{{defenseResult.defenderUuid}}"
+                        data-attacker-uuid="{{defenseResult.originalAttackerUuid}}"
+                        data-damage-type="{{defenseResult.damageType}}">
+                    <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.defenderName}})
+                </button>
+                {{else if (eq defenseResult.iceType "killer")}}
+                <div class="calculated-damage">
+                    <span class="damage-label">{{localize "SRA2.COMBAT.MATRIX_DAMAGE_LABEL"}}</span>
+                    <span class="damage-value">{{defenseResult.calculatedDamage}}</span>
+                </div>
+                <button type="button" class="apply-damage-button" 
+                        data-damage="{{defenseResult.calculatedDamage}}"
+                        data-target-name="{{defenseResult.defenderName}}"
+                        data-target-uuid="{{defenseResult.defenderUuid}}"
+                        data-attacker-uuid="{{defenseResult.originalAttackerUuid}}"
+                        data-damage-type="{{defenseResult.damageType}}">
+                    <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.defenderName}})
+                </button>
+                {{else if (eq defenseResult.iceType "acid")}}
+                <div class="ice-effect">
+                    <i class="fas fa-shield-alt"></i> <strong>{{localize "SRA2.COMBAT.FIREWALL_REDUCTION"}}</strong> : {{localize "SRA2.COMBAT.FIREWALL_REDUCTION_DESC"}}
+                </div>
+                {{else if (eq defenseResult.iceType "blocker")}}
+                <div class="ice-effect">
+                    <i class="fas fa-sword"></i> <strong>{{localize "SRA2.COMBAT.ATTACK_REDUCTION"}}</strong> : {{localize "SRA2.COMBAT.ATTACK_REDUCTION_DESC"}}
+                </div>
+                {{else if (eq defenseResult.iceType "glue")}}
+                <div class="ice-effect">
+                    <i class="fas fa-lock"></i> <strong>{{localize "SRA2.COMBAT.CONNECTION_LOCK"}}</strong> : {{localize "SRA2.COMBAT.CONNECTION_LOCK_DESC"}}
+                </div>
+                {{else if (eq defenseResult.iceType "tracker")}}
+                <div class="ice-effect">
+                    <i class="fas fa-map-marker-alt"></i> <strong>{{localize "SRA2.COMBAT.LOCATION_DISCOVERED"}}</strong> : {{localize "SRA2.COMBAT.LOCATION_DISCOVERED_DESC"}}
+                </div>
+                {{/if}}
+            </div>
+            {{else}}
+            <!-- Normal Attack Damage -->
+            <div class="calculated-damage">
+                <span class="damage-label">{{localize "SRA2.COMBAT.DAMAGE_LABEL"}}</span>
+                <span class="damage-value">{{defenseResult.calculatedDamage}}</span>
+            </div>
+            <button type="button" class="apply-damage-button" 
+                    data-damage="{{defenseResult.calculatedDamage}}"
+                    data-target-name="{{defenseResult.defenderName}}"
+                    data-target-uuid="{{defenseResult.defenderUuid}}"
+                    data-attacker-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-damage-type="{{defenseResult.damageType}}">
+                <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.defenderName}})
+            </button>
+            {{/if}}
+            {{/if}}
+        </div>
+    </div>
+    {{/if}}
+    {{/if}}
+
+    <!-- Counter-Attack Result -->
+    {{#if isCounterAttack}}
+    {{#if defenseResult}}
+    <div class="defense-result counterattack-result">
+        <div class="defense-comparison">
+            <div class="comparison-header">
+                <i class="fas fa-balance-scale"></i> {{localize "SRA2.COMBAT.RESULT"}}
+            </div>
+            <div class="comparison-details">
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.ATTACK_SUCCESSES_LABEL"}}</span>
+                    <span class="comparison-value attack">{{defenseResult.attackSuccesses}}</span>
+                </div>
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.COUNTERATTACK_SUCCESSES_LABEL"}}</span>
+                    <span class="comparison-value defense">{{defenseResult.counterAttackSuccesses}}</span>
+                </div>
+            </div>
+            {{#if defenseResult.isTie}}
+            <div class="defense-outcome tie">
+                <i class="fas fa-equals"></i> {{localize "SRA2.COMBAT.NO_DAMAGE_TO_APPLY"}}
+            </div>
+            {{else if (eq defenseResult.winner "attacker")}}
+            <div class="defense-outcome success">
+                <i class="fas fa-check-circle"></i> {{defenseResult.originalAttackerName}} - {{defenseResult.attackerDamage}} {{localize "SRA2.ROLL_DIALOG.DAMAGE"}}
+            </div>
+            <div class="calculated-damage">
+                <span class="damage-label">{{localize "SRA2.COMBAT.DAMAGE_DEALT_LABEL"}}</span>
+                <span class="damage-value">{{defenseResult.attackerDamage}}</span>
+            </div>
+            <button type="button" class="apply-damage-button" 
+                    data-damage="{{defenseResult.attackerDamage}}"
+                    data-target-name="{{defenseResult.damageReceiverName}}"
+                    data-target-uuid="{{defenseResult.damageReceiverUuid}}"
+                    data-attacker-uuid="{{defenseResult.damageInflicterUuid}}"
+                    data-damage-type="{{defenseResult.attackerDamageType}}">
+                <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.damageReceiverName}})
+            </button>
+            {{else if (eq defenseResult.winner "defender")}}
+            <div class="defense-outcome counterattack-win">
+                <i class="fas fa-check-circle"></i> {{defenseResult.originalDefenderName}} - {{defenseResult.defenderDamage}} {{localize "SRA2.ROLL_DIALOG.DAMAGE"}}
+            </div>
+            <div class="calculated-damage counterattack-damage">
+                <span class="damage-label">{{localize "SRA2.COMBAT.DAMAGE_DEALT_LABEL"}}</span>
+                <span class="damage-value">{{defenseResult.defenderDamage}}</span>
+            </div>
+            <button type="button" class="apply-damage-button" 
+                    data-damage="{{defenseResult.defenderDamage}}"
+                    data-target-name="{{defenseResult.damageReceiverName}}"
+                    data-target-uuid="{{defenseResult.damageReceiverUuid}}"
+                    data-attacker-uuid="{{defenseResult.damageInflicterUuid}}"
+                    data-damage-type="{{defenseResult.defenderDamageType}}">
+                <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.damageReceiverName}})
+            </button>
+            {{/if}}
+        </div>
+    </div>
+    {{/if}}
+    {{/if}}
+
+    <!-- Direct Spell Damage (no defense) — one per target -->
+    {{#if (and isAttack isSpellDirect (gt rollResult.totalSuccesses 0))}}
+    {{#if defenders}}
+    {{#each defenders}}
+    <div class="spell-direct-damage"
+         data-defender-uuid="{{this.uuid}}"
+         data-defender-token-uuid="{{this.tokenUuid}}">
+        <div class="defender-info">
+            {{#if this.img}}
+            <img class="defender-portrait" src="{{this.img}}" alt="{{this.name}}" title="{{this.name}}" />
+            {{else}}
+            <div class="defender-portrait-placeholder">
+                <i class="fas fa-user"></i>
+            </div>
+            {{/if}}
+            <span class="defender-name">{{this.name}}</span>
+        </div>
+        <div class="calculated-damage">
+            <span class="damage-label">{{localize "SRA2.COMBAT.DAMAGE_MENTAL_LABEL"}}</span>
+            <span class="damage-value">{{../rollResult.totalSuccesses}}</span>
+        </div>
+        <button type="button" class="apply-damage-button"
+                data-damage="{{../rollResult.totalSuccesses}}"
+                data-target-name="{{this.name}}"
+                data-target-uuid="{{this.uuid}}"
+                data-attacker-uuid="{{../attacker.uuid}}"
+                data-damage-type="{{../rollData.damageType}}">
+            <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{this.name}})
+        </button>
+    </div>
+    {{/each}}
+    {{/if}}
+    {{/if}}
+
+    <!-- Cyberdeck vs ICE auto-resolved result -->
+    {{#if isCyberdeckVsIce}}
+    {{#if defenseResult}}
+    <div class="defense-result">
+        <div class="defense-comparison">
+            <div class="comparison-header">
+                <i class="fas fa-balance-scale"></i> {{localize "SRA2.COMBAT.RESULT"}}
+            </div>
+            <div class="comparison-details">
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.ATTACK_SUCCESSES_LABEL"}}</span>
+                    <span class="comparison-value attack">{{defenseResult.attackSuccesses}}</span>
+                </div>
+                <div class="comparison-item">
+                    <span class="comparison-label">{{localize "SRA2.COMBAT.ICE_THRESHOLD_LABEL"}}</span>
+                    <span class="comparison-value defense">{{defenseResult.defenseSuccesses}}</span>
+                </div>
+            </div>
+            {{#if defenseResult.isDraw}}
+            <div class="defense-outcome">
+                <i class="fas fa-equals"></i> {{localize "SRA2.COMBAT.DRAW"}}
+            </div>
+            {{else if defenseResult.attackFailed}}
+            <div class="defense-outcome failed">
+                <i class="fas fa-times-circle"></i> {{localize "SRA2.COMBAT.ATTACK_FAILED"}}
+            </div>
+            {{#if (gt defenseResult.iceCounterDamage 0)}}
+            <div class="calculated-damage">
+                <span class="damage-label">{{#if (eq defenseResult.iceDamageType "biofeedback")}}{{localize "SRA2.COMBAT.BIOFEEDBACK_DAMAGE_LABEL"}}{{else}}{{localize "SRA2.COMBAT.MATRIX_DAMAGE_LABEL"}}{{/if}}</span>
+                <span class="damage-value">{{defenseResult.iceCounterDamage}}</span>
+            </div>
+            <button type="button" class="apply-damage-button"
+                    data-damage="{{defenseResult.iceCounterDamage}}"
+                    data-target-name="{{defenseResult.originalAttackerName}}"
+                    data-target-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-attacker-uuid="{{defenseResult.defenderUuid}}"
+                    data-damage-type="{{defenseResult.iceDamageType}}">
+                <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.originalAttackerName}})
+            </button>
+            {{/if}}
+            {{#if (gt defenseResult.blockerAttackReduction 0)}}
+            <div class="ice-effect">
+                <i class="fas fa-shield-alt"></i> <strong>{{localize "SRA2.COMBAT.ATTACK_REDUCTION"}}</strong> : -{{defenseResult.blockerAttackReduction}}
+            </div>
+            <button type="button" class="apply-cyberdeck-malus-button"
+                    data-malus-type="attackMalus"
+                    data-malus-value="{{defenseResult.blockerAttackReduction}}"
+                    data-target-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-cyberdeck-item-id="{{defenseResult.cyberdeckItemId}}"
+                    data-target-name="{{defenseResult.originalAttackerName}}">
+                <i class="fas fa-minus-circle"></i> {{localize "SRA2.COMBAT.APPLY_ATTACK_REDUCTION"}} ({{defenseResult.originalAttackerName}})
+            </button>
+            {{/if}}
+            {{#if (gt defenseResult.acidFirewallReduction 0)}}
+            <div class="ice-effect">
+                <i class="fas fa-shield-alt"></i> <strong>{{localize "SRA2.COMBAT.FIREWALL_REDUCTION"}}</strong> : -{{defenseResult.acidFirewallReduction}}
+            </div>
+            <button type="button" class="apply-cyberdeck-malus-button"
+                    data-malus-type="firewallMalus"
+                    data-malus-value="{{defenseResult.acidFirewallReduction}}"
+                    data-target-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-cyberdeck-item-id="{{defenseResult.cyberdeckItemId}}"
+                    data-target-name="{{defenseResult.originalAttackerName}}">
+                <i class="fas fa-minus-circle"></i> {{localize "SRA2.COMBAT.APPLY_FIREWALL_REDUCTION"}} ({{defenseResult.originalAttackerName}})
+            </button>
+            {{/if}}
+            {{#if defenseResult.connectionLock}}
+            <div class="ice-effect">
+                <i class="fas fa-lock"></i> <strong>{{localize "SRA2.COMBAT.CONNECTION_LOCK"}}</strong>
+            </div>
+            <button type="button" class="apply-cyberdeck-malus-button"
+                    data-malus-type="connectionLocked"
+                    data-malus-value="1"
+                    data-target-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-cyberdeck-item-id="{{defenseResult.cyberdeckItemId}}"
+                    data-target-name="{{defenseResult.originalAttackerName}}">
+                <i class="fas fa-lock"></i> {{localize "SRA2.COMBAT.APPLY_CONNECTION_LOCK"}} ({{defenseResult.originalAttackerName}})
+            </button>
+            {{/if}}
+            {{else}}
+            <div class="defense-outcome success">
+                <i class="fas fa-check-circle"></i> {{localize "SRA2.COMBAT.ATTACK_SUCCESS"}}
+            </div>
+            <div class="calculated-damage">
+                <span class="damage-label">{{localize "SRA2.COMBAT.MATRIX_DAMAGE_LABEL"}}</span>
+                <span class="damage-value">{{defenseResult.calculatedDamage}}</span>
+            </div>
+            <button type="button" class="apply-damage-button"
+                    data-damage="{{defenseResult.calculatedDamage}}"
+                    data-target-name="{{defenseResult.defenderName}}"
+                    data-target-uuid="{{defenseResult.defenderUuid}}"
+                    data-attacker-uuid="{{defenseResult.originalAttackerUuid}}"
+                    data-damage-type="matrix">
+                <i class="fas fa-heart-broken"></i> {{localize "SRA2.COMBAT.APPLY_DAMAGE"}} ({{defenseResult.defenderName}})
+            </button>
+            {{/if}}
+        </div>
+    </div>
+    {{/if}}
+    {{/if}}
+
+    <!-- Attack Actions (for defender) — one section per targeted token -->
+    {{#if isAttack}}
+    {{#unless isDefend}}
+    {{#unless isCounterAttack}}
+    {{#unless isSpellDirect}}
+    {{#unless isCyberdeckVsIce}}
+    {{#if defenders}}
+    {{#each defenders}}
+    <div class="attack-actions"
+        data-attacker-id="{{../attacker.id}}"
+        data-attacker-uuid="{{../attacker.uuid}}"
+        data-defender-id="{{this.id}}"
+        data-defender-uuid="{{this.uuid}}"
+        data-defender-token-uuid="{{this.tokenUuid}}">
+        <div class="defender-info">
+            {{#if this.img}}
+            <img class="defender-portrait" src="{{this.img}}" alt="{{this.name}}" title="{{this.name}}" />
+            {{else}}
+            <div class="defender-portrait-placeholder"><i class="fas fa-user"></i></div>
+            {{/if}}
+            <span class="defender-name">{{this.name}}</span>
+        </div>
+        <div class="attack-actions-buttons">
+            {{#if (or (eq ../rollData.itemType "cyberdeck-attack") (eq ../rollData.itemType "complex-form"))}}
+            {{!-- Cybercombat decker/technomancer vs decker: Défense Cyber + Contre-attaque Cyber --}}
+            {{#if (gt ../rollResult.totalSuccesses 0)}}
+            <button type="button" class="cyber-defend-button"
+                    data-defender-token-uuid="{{this.tokenUuid}}">
+                <i class="fas fa-shield-alt"></i> {{localize "SRA2.COMBAT.CYBER_DEFEND"}}
+            </button>
+            {{/if}}
+            <button type="button" class="cyber-counterattack-button"
+                    data-defender-token-uuid="{{this.tokenUuid}}">
+                <i class="fas fa-laptop-code"></i> {{localize "SRA2.COMBAT.CYBER_COUNTERATTACK"}}
+            </button>
+            {{else}}
+            {{#if (gt ../rollResult.totalSuccesses 0)}}
+            <button type="button" class="defend-button"
+                    data-defender-token-uuid="{{this.tokenUuid}}">
+                <i class="fas fa-shield-alt"></i> {{localize "SRA2.COMBAT.DEFEND"}}
+            </button>
+            {{/if}}
+            {{#if (eq ../rollData.skillName "Combat rapproché")}}
+            <button type="button" class="counter-attack-button"
+                    data-defender-token-uuid="{{this.tokenUuid}}">
+                <i class="fas fa-sword"></i> {{localize "SRA2.COMBAT.ATTACK"}}
+            </button>
+            {{/if}}
+            {{/if}}
+        </div>
+    </div>
+    {{/each}}
+    {{/if}}
+    {{/unless}}
+    {{/unless}}
+    {{/unless}}
+    {{/unless}}
+    {{/if}}
+</div>

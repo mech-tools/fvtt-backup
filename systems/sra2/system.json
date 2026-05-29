@@ -1,0 +1,160 @@
+{
+  "id": "sra2",
+  "version": "13.4.9",
+  "manifest": "https://raw.githubusercontent.com/VincentVk9373/sra2/master/public/system.json",
+  "download": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.9/foundry-sra2-v13.4.9.zip",
+  "download-13.0.2": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.2/foundry-sra2-v13.0.2.zip",
+  "url": "https://github.com/VincentVk9373/sra2",
+  "bugs": "https://github.com/VincentVk9373/sra2/issues",
+  "title": "Shadowrun Anarchy 2",
+  "description": "Shadowrun Anarchy 2 unofficial system for FoundryVTT",
+  "compatibility": {
+    "minimum": 13,
+    "verified": 13
+  },
+  "authors": [
+    {
+      "name": "Half",
+      "discord": "half3405",
+      "email": "cyril@dbyzero.com"
+    },
+    {
+      "name": "Vincent VK",
+      "email": "vincent.vandeme@gmail.com",
+      "discord": "vincentvk"
+    },
+    {
+      "name": "Los Brutos",
+      "discord": "losbrutos"
+    },
+    {
+      "name": "Cefyl",
+      "discord": "cefyl"
+    },
+    {
+      "name": "Dirt",
+      "discord": "dirtndust"
+    },
+    {
+      "name": "Romano",
+      "discord": "roms3559"
+    },
+    {
+      "name": "Carmody",
+      "discord": "carmody."
+    },
+    {
+      "name": "Asimov",
+      "discord": "asimov_"
+    }
+  ],
+  "flags": {
+    "allowBugReporter": true,
+    "hotReload": {
+      "extensions": [
+        "css",
+        "hbs",
+        "html",
+        "mjs",
+        "js"
+      ],
+      "paths": [
+        "index.mjs",
+        "style/",
+        "templates/"
+      ]
+    }
+  },
+  "license": "LICENSE.md",
+  "scripts": [],
+  "esmodules": [
+    "index.mjs"
+  ],
+  "styles": [
+    "style/sra2.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "anarchy-items-en",
+      "label": "Anarchy Items (EN)",
+      "type": "Item",
+      "system": "sra2",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "anarchy-items-fr",
+      "label": "Anarchy Items (FR)",
+      "type": "Item",
+      "system": "sra2",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "media": [
+    {
+      "type": "cover",
+      "url": "systems/sra2/style/sra2-logo.webp"
+    }
+  ],
+  "relationships": {},
+  "socket": true,
+  "protected": false,
+  "grid": {
+    "distance": 1,
+    "units": "m"
+  },
+  "primaryTokenAttribute": "state.health",
+  "documentTypes": {
+    "Actor": {
+      "character": {},
+      "vehicle": {},
+      "ice": {},
+      "server": {}
+    },
+    "Item": {
+      "skill": {},
+      "feat": {},
+      "specialization": {},
+      "metatype": {}
+    }
+  },
+  "download-13.0.17": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.17/foundry-sra2-v13.0.17.zip",
+  "download-13.0.18": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.18/foundry-sra2-v13.0.18.zip",
+  "download-13.0.19": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.19/foundry-sra2-v13.0.19.zip",
+  "download-13.0.20": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.20/foundry-sra2-v13.0.20.zip",
+  "download-13.0.22": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.22/foundry-sra2-v13.0.22.zip",
+  "download-13.0.26": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.26/foundry-sra2-v13.0.26.zip",
+  "download-13.0.27": "https://github.com/VincentVk9373/sra2/releases/download/v13.0.27/foundry-sra2-v13.0.27.zip",
+  "download-13.1.0": "https://github.com/VincentVk9373/sra2/releases/download/v13.1.0/foundry-sra2-v13.1.0.zip",
+  "download-13.1.1": "https://github.com/VincentVk9373/sra2/releases/download/v13.1.1/foundry-sra2-v13.1.1.zip",
+  "download-13.1.2": "https://github.com/VincentVk9373/sra2/releases/download/v13.1.2/foundry-sra2-v13.1.2.zip",
+  "download-13.2.0": "https://github.com/VincentVk9373/sra2/releases/download/v13.2.0/foundry-sra2-v13.2.0.zip",
+  "download-13.2.1": "https://github.com/VincentVk9373/sra2/releases/download/v13.2.1/foundry-sra2-v13.2.1.zip",
+  "download-13.2.3": "https://github.com/VincentVk9373/sra2/releases/download/v13.2.3/foundry-sra2-v13.2.3.zip",
+  "download-13.3.0": "https://github.com/VincentVk9373/sra2/releases/download/v13.3.0/foundry-sra2-v13.3.0.zip",
+  "download-13.3.1": "https://github.com/VincentVk9373/sra2/releases/download/v13.3.1/foundry-sra2-v13.3.1.zip",
+  "download-13.3.2": "https://github.com/VincentVk9373/sra2/releases/download/v13.3.2/foundry-sra2-v13.3.2.zip",
+  "download-13.4.0": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.0/foundry-sra2-v13.4.0.zip",
+  "download-13.4.1": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.1/foundry-sra2-v13.4.1.zip",
+  "download-13.4.3": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.3/foundry-sra2-v13.4.3.zip",
+  "download-13.4.4": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.4/foundry-sra2-v13.4.4.zip",
+  "download-13.4.7": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.7/foundry-sra2-v13.4.7.zip",
+  "download-13.4.9": "https://github.com/VincentVk9373/sra2/releases/download/v13.4.9/foundry-sra2-v13.4.9.zip"
+}

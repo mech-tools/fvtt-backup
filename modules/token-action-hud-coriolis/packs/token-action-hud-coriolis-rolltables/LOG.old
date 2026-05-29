@@ -1,5 +1,12 @@
-2026/05/04-09:05:50.398078 7058fddfa6c0 Log #3: 879 ops saved to Table #4 OK
-2026/05/04-09:05:50.398275 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables/000003.log: OK
-2026/05/04-09:05:50.398722 7058fddfa6c0 Table #4: 879 entries OK
-2026/05/04-09:05:50.398876 7058fddfa6c0 Archiving /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables/MANIFEST-000002: OK
-2026/05/04-09:05:50.400704 7058fddfa6c0 **** Repaired leveldb /home/ubuntu/foundry/bolt/foundrydata/Data/modules/token-action-hud-coriolis/packs/token-action-hud-coriolis-rolltables; recovered 1 files; 61619 bytes. Some data may have been lost. ****
+2026/05/04-09:05:50.407676 7058fddfa6c0 Delete type=3 #1
+2026/05/28-12:56:03.603282 7058aebff6c0 Level-0 table #8: started
+2026/05/28-12:56:03.605668 7058aebff6c0 Level-0 table #8: 30247 bytes OK
+2026/05/28-12:56:03.606844 7058aebff6c0 Delete type=0 #6
+2026/05/28-12:56:03.608633 7058aebff6c0 Manual compaction at level-0 from '!folders!VZQw73b1w3f2RPcz' @ 72057594037927935 : 1 .. '!tables.results!uWv34qX8W7TDXDp2.xX65gXvPhhA054Qv' @ 0 : 0; will stop at '!tables.results!uWv34qX8W7TDXDp2.xX65gXvPhhA054Qv' @ 1025 : 1
+2026/05/28-12:56:03.608645 7058aebff6c0 Compacting 2@0 + 0@1 files
+2026/05/28-12:56:03.611744 7058aebff6c0 Generated table #9@0: 152 keys, 31651 bytes
+2026/05/28-12:56:03.611767 7058aebff6c0 Compacted 2@0 + 0@1 files => 31651 bytes
+2026/05/28-12:56:03.612693 7058aebff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/05/28-12:56:03.612817 7058aebff6c0 Delete type=2 #8
+2026/05/28-12:56:03.613003 7058aebff6c0 Delete type=2 #4
+2026/05/28-12:56:03.616237 7058aebff6c0 Manual compaction at level-0 from '!tables.results!uWv34qX8W7TDXDp2.xX65gXvPhhA054Qv' @ 1025 : 1 .. '!tables.results!uWv34qX8W7TDXDp2.xX65gXvPhhA054Qv' @ 0 : 0; will stop at (end)

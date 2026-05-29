@@ -4,16 +4,17 @@
 		<!-- Col1 -->
 		<span class='Col1'>
 			{{#each system.skills as |skill key|}}
-				<span class='grid-attr'>
-					<h3 for='system.skills.{{key}}.value' class='resource-label rollable Attr1' data-action='RollAbility' data-roll='{{skill.mod}}' data-label='{{localize (alienConcat "ALIENRPG.Skill" key)}}'>
-						{{localize (alienConcat 'ALIENRPG.Skill' key)}}
-						({{localize (alienConcat 'ALIENRPG.AbilityAbb' skill.attrib)}})
-					</h3>
-					<input type='text' class='maxboxsize Attr2' name='system.skills.{{key}}.value' value='{{skill.value}}' data-dtype='Number' />
-					<div class='resource-content'>
-						<button type='button' class='stunt-btn Attr3' data-action='ShowStunt' data-pmbut='{{skill.description}}'><i class='fa-solid fa-screwdriver-wrench' title='Stunts'></i></button>
-					</div>
-				</span>
+			<span class='grid-attr'>
+				<h3 for='system.skills.{{key}}.value' class='resource-label rollable Attr1' data-action='RollAbility' data-roll='{{skill.mod}}' data-label='{{localize (alienConcat "ALIENRPG.Skill" key)}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{skill.value}}<br />{{localize "ALIENRPG.Attributes"}} {{skill.attrmod}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{minusstats skill.mod (addstats skill.value skill.attrmod)}}<br />{{localize "ALIENRPG.valueTotal"}} {{skill.mod}}</span>'>
+					{{localize (alienConcat 'ALIENRPG.Skill' key)}}
+					({{localize (alienConcat 'ALIENRPG.AbilityAbb' skill.attrib)}})
+				</h3>
+				<input type='text' class='maxboxsize Attr2' name='system.skills.{{key}}.value' value='{{skill.value}}' data-dtype='Number' />
+				<div class='resource-content'>
+					<button type='button' class='stunt-btn Attr3' data-action='ShowStunt' data-pmbut='{{skill.description}}'><i class='fa-solid fa-screwdriver-wrench' title='Stunts'></i></button>
+				</div>
+			</span>
 			{{/each}}
 		</span>
 
@@ -27,12 +28,12 @@
 				</li>
 				<div style='height: 155px; overflow-x: auto'>
 					{{#each talents as |item iid|}}
-						<li class='item grid-talents' data-item-id='{{item._id}}'>
-							<h4 class='item-name tal3 talent-btn' data-action='ShowTalentAgenda' data-pmbut='{{item._id}}'>{{item.name}}</h4>
-							<div class='tal4 item-controls'>
-								<a class='item-control item-edit1' data-action='viewDoc' data-item-id='{{item._id}}' data-document-class='Item' title='{{localize "ALIENRPG.EditItem"}}'><i class='fas fa-edit'></i></a>
-							</div>
-						</li>
+					<li class='item grid-talents' data-item-id='{{item._id}}'>
+						<h4 class='item-name tal3 talent-btn' data-action='ShowTalentAgenda' data-pmbut='{{item._id}}'>{{item.name}}</h4>
+						<div class='tal4 item-controls'>
+							<a class='item-control item-edit1' data-action='viewDoc' data-item-id='{{item._id}}' data-document-class='Item' title='{{localize "ALIENRPG.EditItem"}}'><i class='fas fa-edit'></i></a>
+						</div>
+					</li>
 					{{/each}}
 				</div>
 			</ol>
@@ -47,12 +48,12 @@
 				</li>
 				<div style='height: 70px; overflow-x: auto'>
 					{{#each agendas as |item iid|}}
-						<li class='item grid-talents' data-item-id='{{item._id}}'>
-							<h4 class='item-name tal3 talent-btn' data-action='ShowTalentAgenda' data-pmbut='{{item._id}}'>{{item.name}}</h4>
-							<div class='tal4 item-controls'>
-								<a class='item-control item-edit1' data-action='viewDoc' data-document-class='Item' data-item-id='{{item._id}}' title='{{localize "ALIENRPG.EditItem"}}'><i class='fas fa-edit'></i></a>
-							</div>
-						</li>
+					<li class='item grid-talents' data-item-id='{{item._id}}'>
+						<h4 class='item-name tal3 talent-btn' data-action='ShowTalentAgenda' data-pmbut='{{item._id}}'>{{item.name}}</h4>
+						<div class='tal4 item-controls'>
+							<a class='item-control item-edit1' data-action='viewDoc' data-document-class='Item' data-item-id='{{item._id}}' title='{{localize "ALIENRPG.EditItem"}}'><i class='fas fa-edit'></i></a>
+						</div>
+					</li>
 					{{/each}}
 				</div>
 			</ol>

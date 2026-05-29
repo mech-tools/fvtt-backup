@@ -1,0 +1,1790 @@
+{{!-- Nouvelle fiche de personnage V2 - Template de base --}}
+{{!-- Vous pouvez copier le contenu de actor-character-sheet.hbs et le modifier selon vos besoins --}}
+<form class="{{cssClass}} sra2-character-sheet-v2" autocomplete="off">
+    <header class="sheet-header {{#if hasSevereDamage}}has-severe-damage{{/if}}">
+        <div class="avatar-section">
+            <img class="profile-img" src="{{actor.prototypeToken.texture.src}}" data-edit="prototypeToken.texture.src" title="{{actor.name}}" />
+            <button type="button" class="advanced-mode-btn {{#if advancedMode}}active{{/if}}" data-action="toggle-advanced-mode" title="{{localize 'SRA2.COMMON.ADVANCED_MODE'}}">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+        <div class="name">
+            <h1 class="charname"><input name="name" type="text" value="{{actor.name}}"
+                    placeholder="{{localize 'SRA2.ACTOR.CHARACTER_NAME'}}" /></h1>
+        </div>
+        <div class="damage-anarchy-tracker">
+            <div class="damage-track">
+                <div class="damage-group light">
+                    <span class="track-label">{{localize "SRA2.DAMAGE.LIGHT"}}</span>
+                    <div class="track-boxes">
+                        {{#each system.damage.light}}
+                        <label class="track-box {{#if this}}checked{{/if}}">
+                            <input type="checkbox" name="system.damage.light.{{@index}}" {{#if this}}checked{{/if}} />
+                            <span class="box-circle"></span>
+                        </label>
+                        {{/each}}
+                    </div>
+                </div>
+                <div class="damage-group severe">
+                    <span class="track-label">{{localize "SRA2.DAMAGE.SEVERE"}}</span>
+                    <div class="track-boxes">
+                        {{#each system.damage.severe}}
+                        <label class="track-box {{#if this}}checked{{/if}}">
+                            <input type="checkbox" name="system.damage.severe.{{@index}}" {{#if this}}checked{{/if}} />
+                            <span class="box-circle"></span>
+                        </label>
+                        {{/each}}
+                    </div>
+                </div>
+                <div class="damage-group incapacitating">
+                    <span class="track-label">{{localize "SRA2.DAMAGE.INCAPACITATING"}}</span>
+                    <div class="track-boxes">
+                        <label class="track-box {{#if system.damage.incapacitating}}checked{{/if}}">
+                            <input type="checkbox" name="system.damage.incapacitating" {{#if
+                                system.damage.incapacitating}}checked{{/if}} />
+                            <span class="box-circle"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="anarchy-track">
+                <span class="track-label">{{localize "SRA2.RESOURCES.ANARCHY"}}</span>
+                <div class="track-boxes">
+                    {{#each baseAnarchySpent}}
+                    <label class="track-box {{#if this.value}}checked{{/if}}">
+                        <input type="checkbox" name="system.anarchySpent.{{this.index}}" {{#if this.value}}checked{{/if}} />
+                        <span class="box-circle"></span>
+                    </label>
+                    {{/each}}
+                    {{#if (gt tempAnarchy 0)}}
+                        {{#each tempAnarchySpent}}
+                        <label class="track-box {{#if this.value}}checked{{/if}}">
+                            <input type="checkbox" name="system.tempAnarchySpent.{{this.index}}" {{#if this.value}}checked{{/if}} />
+                            <span class="box-circle temp-anarchy"></span>
+                        </label>
+                        {{/each}}
+                    {{/if}}
+                </div>
+                <div class="temp-anarchy-section">
+                    <span class="track-label temp-anarchy-label" data-action="add-temp-anarchy" title="Ajouter un point d'anarchy bonus">+</span>
+                </div>
+            {{#if (gt bonusAnarchy 0)}}
+            <div class="anarchy-track">
+                <span class="track-label">{{localize "SRA2.RESOURCES.ANARCHY_BONUS_COMBAT"}}</span>
+                <div class="track-boxes">
+                    {{#each bonusAnarchySpent}}
+                    <label class="track-box {{#if this.value}}checked{{/if}}">
+                        <input type="checkbox" name="system.anarchySpent.{{this.index}}" {{#if this.value}}checked{{/if}} />
+                        <span class="box-circle"></span>
+                    </label>
+                    {{/each}}
+                </div>
+            </div>
+            </div>
+
+            {{/if}}
+        </div>
+        <div class="connection-mode-badge {{system.connectionMode}}" data-action="show-connection-mode-menu-header">
+            <i class="fas {{connectionModeIcon system.connectionMode}}"></i>
+            {{connectionModeLabel system.connectionMode}}
+            <div class="connection-mode-menu">
+                <div class="context-menu-item {{#if (eq system.connectionMode 'disconnected')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="disconnected">
+                    <i class="fas fa-plug-circle-xmark"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.DISCONNECTED"}}
+                </div>
+                <div class="context-menu-item {{#if (eq system.connectionMode 'offline')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="offline">
+                    <i class="fas fa-power-off"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.OFFLINE"}}
+                </div>
+                <div class="context-menu-item {{#if (eq system.connectionMode 'ar')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="ar">
+                    <i class="fas fa-glasses"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.AR"}}
+                </div>
+                <div class="context-menu-item {{#if (eq system.connectionMode 'cold-sim')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="cold-sim">
+                    <i class="fas fa-snowflake"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.COLD_SIM"}}
+                </div>
+                <div class="context-menu-item {{#if (eq system.connectionMode 'hot-sim')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="hot-sim">
+                    <i class="fas fa-fire"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.HOT_SIM"}}
+                </div>
+            </div>
+        </div>
+    </header>
+    <div>
+        <div class="bookmarks-list-compact">
+            <div class="bookmarks-header">
+                <i class="fas fa-star"></i>
+            </div>
+            {{#if bookmarkedItems.length}}
+            <div class="bookmarks-items">
+                {{#each bookmarkedItems}}
+                <div class="bookmark-item" data-item-id="{{this._id}}" data-item-type="{{this.type}}"
+                    title="{{localize 'SRA2.BOOKMARKS.CLICK_TO_ROLL'}}">
+                    <i class="fas fa-dice-d6"></i>
+                    <span class="bookmark-name">{{this.name}}</span>
+                </div>
+                {{/each}}
+            </div>
+            {{else}}
+            <div class="bookmarks-empty">
+                <i>{{localize "SRA2.BOOKMARKS.EMPTY"}}</i>
+            </div>
+            {{/if}}
+        </div>
+        <section class="sheet-body {{#if hasSevereDamage}}has-severe-damage{{/if}}">
+            <div>
+                {{#if featsByType.weapon}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.CHARACTER.SECTION.WEAPONS"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.weapon}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="weapon"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                        {{#if this.finalDamageValue}}
+                                        <span class="weapon-stats">
+                                            <span>VD: {{this.finalDamageValue}}</span>
+                                            <span>{{rangeLabel this.system.meleeRange}}/{{rangeLabel this.system.shortRange}}/{{rangeLabel this.system.mediumRange}}/{{rangeLabel this.system.longRange}}</span>
+                                        </span>
+                                        {{/if}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="weapon">
+                                        <div class="context-menu-item" data-action="roll-weapon" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-weapon" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{#if this.specializations}}
+                            {{#each this.specializations}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="specialization"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        <div class="context-menu-item" data-action="quick-roll-specialization" data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="quick-roll-specialization"
+                                    data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            {{/each}}
+                        </section>
+
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.cyberdeck}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.CYBERDECK"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.cyberdeck}}
+                            <div class="cyberdeck-group {{#if this.system.cyberdeckDamage.incapacitating}}is-incapacitating{{/if}}">
+                            <div class="row feat-item cyberdeck {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        <div class="context-menu-item" data-action="roll-cyberdeck-attack" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.FEATS.CYBERDECK.CYBER_ATTACK"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <hr/>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name clickable" data-action="roll-cyberdeck-attack" data-item-id="{{this._id}}"
+                                        title="{{localize 'SRA2.FEATS.CYBERDECK.CYBER_ATTACK_HINT'}}">{{localize 'SRA2.FEATS.CYBERDECK.CYBER_ATTACK'}} | VD: {{this.effectiveAttack}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-cyberdeck-attack" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.cyberAttackDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.cyberAttackRR}}
+                                </div>
+                            </div>
+                            {{#if this.system.cyberdeckBiofeedback}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.CYBERDECK.BIOFEEDBACK'}}</div></div></div>
+                            {{/if}}
+                            {{#if this.system.cyberdeckBiofeedbackFilter}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.CYBERDECK.BIOFEEDBACK_FILTER'}}</div></div></div>
+                            {{/if}}
+                            {{#if this.system.cyberdeckConnectionLock}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.CYBERDECK.CONNECTION_LOCK'}}</div></div></div>
+                            {{/if}}
+                            <div class="row feat-item cyberdeck-damage-row">
+                                <div class="damage-track cyberdeck-inline-damage">
+                                    <div class="damage-group light">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.LIGHT_SHORT"}}</span>
+                                        <div class="track-boxes">
+                                            {{#each this.system.cyberdeckDamage.light}}
+                                            <label class="track-box {{#if this}}checked{{/if}}">
+                                                <input type="checkbox" name="items.{{../_id}}.system.cyberdeckDamage.light.{{@index}}" {{#if this}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                            {{/each}}
+                                        </div>
+                                    </div>
+                                    <div class="damage-group severe">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.SEVERE_SHORT"}}</span>
+                                        <div class="track-boxes">
+                                            {{#each this.system.cyberdeckDamage.severe}}
+                                            <label class="track-box {{#if this}}checked{{/if}}">
+                                                <input type="checkbox" name="items.{{../_id}}.system.cyberdeckDamage.severe.{{@index}}" {{#if this}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                            {{/each}}
+                                        </div>
+                                    </div>
+                                    <div class="damage-group incapacitating">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.INCAPACITATING_SHORT2"}}</span>
+                                        <div class="track-boxes">
+                                            <label class="track-box {{#if this.system.cyberdeckDamage.incapacitating}}checked{{/if}}">
+                                                <input type="checkbox" name="items.{{this._id}}.system.cyberdeckDamage.incapacitating" {{#if this.system.cyberdeckDamage.incapacitating}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row feat-item cyberdeck-fw-row">
+                                <div class="cyberdeck-stat-group" title="{{localize 'SRA2.FEATS.CYBERDECK.FIREWALL_MALUS_HINT'}}">
+                                    <span class="stat-label">FW</span>
+                                    <span class="stat-value {{#if (gt this.system.firewallMalus 0)}}has-malus{{/if}}">{{this.effectiveFirewall}}</span>
+                                    {{#if (gt this.system.firewallMalus 0)}}
+                                    <span class="stat-malus-indicator">(-{{this.system.firewallMalus}})</span>
+                                    {{/if}}
+                                    <button type="button" class="stat-btn" data-action="increase-fw-malus" data-item-id="{{this._id}}"><i class="fas fa-minus"></i></button>
+                                    <button type="button" class="stat-btn" data-action="decrease-fw-malus" data-item-id="{{this._id}}"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <div class="cyberdeck-stat-group" title="{{localize 'SRA2.FEATS.CYBERDECK.ATTACK_MALUS_HINT'}}">
+                                    <span class="stat-label att">{{localize "SRA2.FEATS.CYBERDECK.ATTACK_SHORT"}}</span>
+                                    <span class="stat-value {{#if (gt this.system.attackMalus 0)}}has-malus{{/if}}">{{this.effectiveAttack}}</span>
+                                    {{#if (gt this.system.attackMalus 0)}}
+                                    <span class="stat-malus-indicator">(-{{this.system.attackMalus}})</span>
+                                    {{/if}}
+                                    <button type="button" class="stat-btn" data-action="increase-att-malus" data-item-id="{{this._id}}"><i class="fas fa-minus"></i></button>
+                                    <button type="button" class="stat-btn" data-action="decrease-att-malus" data-item-id="{{this._id}}"><i class="fas fa-plus"></i></button>
+                                </div>
+                                {{#if (or (eq ../system.connectionMode "cold-sim") (eq ../system.connectionMode "hot-sim"))}}
+                                <div class="cyberdeck-lock-toggle clickable" data-action="toggle-connection-lock" data-item-id="{{this._id}}" title="{{localize 'SRA2.FEATS.CYBERDECK.CONNECTION_LOCKED_HINT'}}">
+                                    {{#if this.system.connectionLocked}}
+                                    <span class="cyberdeck-lock-status cyberdeck-locked">{{localize "SRA2.FEATS.CYBERDECK.STATUS_LOCKED"}}</span>
+                                    <i class="fas fa-lock cyberdeck-locked"></i>
+                                    {{else}}
+                                    <span class="cyberdeck-lock-status cyberdeck-unlocked">{{localize "SRA2.FEATS.CYBERDECK.STATUS_UNLOCKED"}}</span>
+                                    <i class="fas fa-running cyberdeck-unlocked"></i>
+                                    {{/if}}
+                                </div>
+                                {{/if}}
+                            </div>
+                            </div>{{!-- close cyberdeck-group --}}
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.spell}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.SPELL"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.spell}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="spell"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                        {{#if this.displayVD}}
+                                        <span class="weapon-stats">
+                                            <span>{{this.displayVD}}</span>
+                                        </span>
+                                        {{/if}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="spell">
+                                        <div class="context-menu-item" data-action="roll-spell" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-spell" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{#if this.specializations}}
+                            {{#each this.specializations}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="specialization"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        <div class="context-menu-item" data-action="quick-roll-specialization" data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="quick-roll-specialization"
+                                    data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            {{/each}}
+                        </section>
+
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.complexForm}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.COMPLEX_FORM"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.complexForm}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="complex-form"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="complex-form">
+                                        <div class="context-menu-item" data-action="roll-complex-form" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-complex-form" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.power}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.POWER"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.power}}
+                            <div class="row skill-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="power"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="power">
+                                        <div class="context-menu-item" data-action="roll-power" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-power" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.awakened}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.CHARACTER.SECTION.AWAKENED"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.awakened}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{#if this.system.astralPerception}}
+                            <div class="row feat-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name">{{localize 'SRA2.FEATS.AWAKENED.ASTRAL_PERCEPTION'}}</div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{#if this.system.astralProjection}}
+                            <div class="row feat-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name">{{localize 'SRA2.FEATS.AWAKENED.ASTRAL_PROJECTION'}}</div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{#if this.system.sorcery}}
+                            <div class="row feat-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name">{{localize 'SRA2.FEATS.AWAKENED.SORCERY'}}</div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{#if this.system.conjuration}}
+                            <div class="row feat-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name">{{localize 'SRA2.FEATS.AWAKENED.CONJURATION'}}</div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{#if this.system.adept}}
+                            <div class="row feat-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name">{{localize 'SRA2.FEATS.AWAKENED.ADEPT'}}</div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.emerged}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.EMERGED"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.emerged}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{localize 'SRA2.SKILLS.EDIT'}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if this.system.matrixAccess}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.EMERGED.MATRIX_ACCESS'}}</div></div></div>
+                            {{/if}}
+                            {{#if this.system.complexFormWeaving}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.EMERGED.COMPLEX_FORM_WEAVING'}}</div></div></div>
+                            {{/if}}
+                            {{#if this.system.spriteCompilation}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.EMERGED.SPRITE_COMPILATION'}}</div></div></div>
+                            {{/if}}
+                            {{#if this.system.biofeedback}}
+                            <div class="row feat-item"><div class="name-wrapper spe"><div class="arrow fa fa-turn-up"></div><div class="name">{{localize 'SRA2.FEATS.EMERGED.BIOFEEDBACK'}}</div></div></div>
+                            {{/if}}
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.adeptPower}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.ADEPT_POWER"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.adeptPower}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{localize 'SRA2.SKILLS.EDIT'}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.vehicle}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.VEHICLE"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div class="ap">
+                            <div>AP</div>
+                            <div class="fa fa-dice-d6 ap"></div>
+                        </div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.vehicle}}
+                            {{#if (eq this.type "vehicle-actor")}}
+                            <div class="row feat-item {{#if this.hasSevereDamage}}has-severe-damage{{/if}} {{#if this.isIncapacitating}}is-incapacitating{{/if}}" data-vehicle-uuid="{{this.uuid}}">
+                                <div class="name-wrapper">
+                                    <div class="name" data-action="show-context-menu" data-vehicle-uuid="{{this.uuid}}"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{localize 'SRA2.FEATS.VEHICLE.OPEN_SHEET'}}{{/if}}"><span class="name">{{this.name}}</span>
+                                        <span class="weapon-stats"><span><i class="fas {{controlModeIcon this.system.controlMode}}"></i> {{controlModeLabel this.system.controlMode}}</span></span></div>
+                                    <div class="context-menu" data-vehicle-uuid="{{this.uuid}}">
+                                        <div class="context-menu-item" data-action="roll-vehicle-autopilot" data-vehicle-uuid="{{this.uuid}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.FEATS.VEHICLE.ROLL_AUTOPILOT_SHORT"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="open-vehicle" data-vehicle-uuid="{{this.uuid}}">
+                                            <i class="fas fa-folder-open"></i> {{localize "SRA2.FEATS.VEHICLE.OPEN_SHEET"}}
+                                        </div>
+                                        <hr/>
+                                        <div class="context-menu-item {{#if (eq this.system.controlMode 'autonomous')}}active{{/if}}" data-action="set-vehicle-control-mode" data-vehicle-uuid="{{this.uuid}}" data-control-mode="autonomous">
+                                            <i class="fas fa-robot"></i> {{localize "SRA2.VEHICLE.CONTROL_MODE.AUTONOMOUS"}}
+                                        </div>
+                                        <div class="context-menu-item {{#if (eq this.system.controlMode 'manual')}}active{{/if}}" data-action="set-vehicle-control-mode" data-vehicle-uuid="{{this.uuid}}" data-control-mode="manual">
+                                            <i class="fas fa-hand"></i> {{localize "SRA2.VEHICLE.CONTROL_MODE.MANUAL"}}
+                                        </div>
+                                        <div class="context-menu-item {{#if (eq this.system.controlMode 'rigged')}}active{{/if}}" data-action="set-vehicle-control-mode" data-vehicle-uuid="{{this.uuid}}" data-control-mode="rigged">
+                                            <i class="fas fa-vr-cardboard"></i> {{localize "SRA2.VEHICLE.CONTROL_MODE.RIGGED"}}
+                                        </div>
+                                        <div class="context-menu-item {{#if (eq this.system.controlMode 'captain')}}active{{/if}}" data-action="set-vehicle-control-mode" data-vehicle-uuid="{{this.uuid}}" data-control-mode="captain">
+                                            <i class="fas fa-chair"></i> {{localize "SRA2.VEHICLE.CONTROL_MODE.CAPTAIN"}}
+                                        </div>
+                                        <hr/>
+                                        <div class="context-menu-item delete" data-action="unlink-vehicle" data-vehicle-uuid="{{this.uuid}}">
+                                            <i class="fas fa-unlink"></i> {{localize "SRA2.FEATS.VEHICLE.UNLINK"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable autopilot" data-action="roll-vehicle-autopilot" data-vehicle-uuid="{{this.uuid}}"
+                                    title="{{localize 'SRA2.VEHICLE.ROLL_AUTOPILOT'}}">
+                                    {{this.system.autopilot}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.level}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{#if this.weapons}}
+                            {{#each this.weapons}}
+                            <div class="row skill-item" data-vehicle-uuid="{{../uuid}}" data-weapon-id="{{this.weaponId}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name clickable" data-action="roll-vehicle-weapon"
+                                        data-vehicle-uuid="{{../uuid}}" data-weapon-id="{{this.weaponId}}"
+                                        title="{{localize 'SRA2.VEHICLE.ROLL_WEAPON_WITH_CHARACTER_SKILLS'}}">{{this.name}}</div>
+                                </div>
+                                <div class="dice clickable" style="margin-right: 8px;" data-action="roll-vehicle-weapon"
+                                    data-vehicle-uuid="{{../uuid}}" data-weapon-id="{{this.weaponId}}"
+                                    title="{{localize 'SRA2.VEHICLE.ROLL_WEAPON_WITH_CHARACTER_SKILLS'}}">
+                                    {{#if this.totalDicePool}}{{this.totalDicePool}}{{else}}-{{/if}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="dice clickable autopilot" data-action="roll-vehicle-weapon-autopilot"
+                                    data-vehicle-uuid="{{../uuid}}" data-weapon-id="{{this.weaponId}}"
+                                    title="{{localize 'SRA2.VEHICLE.ROLL_WEAPON_WITH_AUTOPILOT'}}">
+                                    {{../system.autopilot}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            <div class="row feat-item cyberdeck-damage-row">
+                                <div class="damage-track cyberdeck-inline-damage">
+                                    <div class="damage-group light">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.LIGHT_SHORT"}}</span>
+                                        <div class="track-boxes">
+                                            {{#each this.system.damage.light}}
+                                            <label class="track-box {{#if this}}checked{{/if}}">
+                                                <input type="checkbox" name="vehicle-damage.{{../uuid}}.light.{{@index}}" {{#if this}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                            {{/each}}
+                                        </div>
+                                    </div>
+                                    <div class="damage-group severe">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.SEVERE_SHORT"}}</span>
+                                        <div class="track-boxes">
+                                            {{#each this.system.damage.severe}}
+                                            <label class="track-box {{#if this}}checked{{/if}}">
+                                                <input type="checkbox" name="vehicle-damage.{{../uuid}}.severe.{{@index}}" {{#if this}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                            {{/each}}
+                                        </div>
+                                    </div>
+                                    <div class="damage-group incapacitating">
+                                        <span class="damage-letter">{{localize "SRA2.DAMAGE.INCAPACITATING_SHORT2"}}</span>
+                                        <div class="track-boxes">
+                                            <label class="track-box {{#if this.system.damage.incapacitating}}checked{{/if}}">
+                                                <input type="checkbox" name="vehicle-damage.{{this.uuid}}.incapacitating" {{#if this.system.damage.incapacitating}}checked{{/if}} />
+                                                <span class="box-circle"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.trait}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.CHARACTER.SECTION.TRAITS"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.trait}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                            title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.cyberware}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.CYBERWARE"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.cyberware}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.equipment}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.EQUIPMENT"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.equipment}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.armor}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.ARMOR"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.armor}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{this.name}} | {{localize "SRA2.FEATS.ARMOR_VALUE"}}: {{this.system.armorValue}}
+                                        {{#if (gt this.system.armorValue 0)}}
+                                        <span class="armor-value-info" title="{{localize 'SRA2.FEATS.ARMOR_VALUE'}}">
+                                        </span>
+                                        {{/if}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.FEATS.ARMOR_VALUE"}}: {{this.system.armorValue}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.contact}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.CONTACT"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.contact}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                                title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">{{localize "SRA2.COMMON.LEVEL"}} {{this.system.rating}}</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if featsByType.connaissance}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.FEATS.FEAT_TYPE.KNOWLEDGE"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each featsByType.connaissance}}
+                            <div class="row feat-item {{#unless this.system.active}}feat-inactive{{/unless}}" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name {{#unless this.system.active}}feat-name-inactive{{/unless}}" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="feat"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">{{this.name}}</div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="feat">
+                                        {{#if (ne this.system.active undefined)}}
+                                        <div class="context-menu-item" data-action="toggle-active" data-item-id="{{this._id}}">
+                                            <i class="fas {{#if this.system.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i> {{#if this.system.active}}{{localize "SRA2.COMMON.DEACTIVATE"}}{{else}}{{localize "SRA2.COMMON.ACTIVATE"}}{{/if}}
+                                        </div>
+                                        {{/if}}
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+            </div>
+            <div>
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.SKILLS.LABEL"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#each skills}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper">
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="skill"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="skill">
+                                        <div class="context-menu-item" data-action="quick-roll-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="quick-roll-skill" data-item-id="{{this._id}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-level">
+                                    <input type="number" class="skill-rating-input" name="items.{{this._id}}.system.rating" value="{{this.system.rating}}" min="0" max="12" data-item-id="{{this._id}}" /> + ({{this.linkedAttributeLabel}})
+                                </span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{#if this.specializations}}
+                            {{#each this.specializations}}
+                            <div class="row skill-item" data-item-id="{{this._id}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="specialization"
+                                        title="{{#if this.narrativeEffectsTooltip}}{{this.narrativeEffectsTooltip}}{{else}}{{this.system.description}}{{/if}}">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        <div class="context-menu-item" data-action="quick-roll-specialization" data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}">
+                                            <i class="fas fa-dice-d6"></i> {{localize "SRA2.COMMON.ROLL_DICE"}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="toggle-bookmark" data-item-id="{{this._id}}">
+                                            <i class="fas fa-star" style="{{#if this.system.bookmarked}}color: gold;{{/if}}"></i> {{#if this.system.bookmarked}}{{localize "SRA2.BOOKMARKS.REMOVE"}}{{else}}{{localize "SRA2.BOOKMARKS.ADD"}}{{/if}}
+                                        </div>
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice clickable" data-action="quick-roll-specialization"
+                                    data-item-id="{{this._id}}" data-effective-rating="{{this.effectiveRating}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{#if ../../advancedMode}}
+                            <div class="row advanced-info spe">
+                                <span class="advanced-level">({{this.linkedAttributeLabel}})</span>
+                                <span class="advanced-cost">{{formatNumber this.system.calculatedCost}} ¥</span>
+                            </div>
+                            {{/if}}
+                            {{/each}}
+                            {{/if}}
+                            {{!-- Phantom specializations linked to this skill --}}
+                            {{#if this.phantomSpecializations.length}}
+                            {{#each this.phantomSpecializations}}
+                            <div class="row skill-item phantom-rr" title="{{localize 'SRA2.RR.PHANTOM_TOOLTIP'}}: {{this.linkedAttributeLabel}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name phantom-name clickable" data-action="roll-phantom-rr" data-phantom-name="{{this.name}}" data-phantom-slug="{{this.slug}}" data-phantom-type="{{this.type}}" data-attribute="{{this.linkedAttribute}}" data-rr="{{this.rr}}">
+                                        <i class="fas fa-ghost" style="margin-right: 4px; opacity: 0.6;"></i>{{this.name}}
+                                    </div>
+                                </div>
+                                <div class="dice clickable phantom-dice" data-action="roll-phantom-rr" data-phantom-name="{{this.name}}" data-phantom-slug="{{this.slug}}" data-phantom-type="{{this.type}}" data-attribute="{{this.linkedAttribute}}" data-rr="{{this.rr}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr phantom-rr-value">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            {{/each}}
+                            {{!-- Unlinked specializations (no linkedSkill defined) - not rollable --}}
+                            {{#if unlinkedSpecializations.length}}
+                            {{#each unlinkedSpecializations}}
+                            <div class="row skill-item orphan-specialization" data-item-id="{{this._id}}" title="{{localize 'SRA2.SPECIALIZATIONS.NO_LINKED_SKILL'}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                        <span class="missing-skill-hint">{{localize "SRA2.SPECIALIZATIONS.NO_LINKED_SKILL"}}</span>
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice orphan-dice">
+                                    - <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr orphan-rr-value">
+                                    -
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            {{!-- Orphan specializations (linked skill not on actor) - not rollable --}}
+                            {{#if orphanSpecializations.length}}
+                            {{#each orphanSpecializations}}
+                            <div class="row skill-item orphan-specialization" data-item-id="{{this._id}}" title="{{localize 'SRA2.SPECIALIZATIONS.MISSING_SKILL'}}: {{this.missingSkillName}}">
+                                <div class="name-wrapper spe">
+                                    <div class="arrow fa fa-turn-up"></div>
+                                    <div class="name" data-action="show-context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        {{#if this.system.bookmarked}}<i class="fas fa-star" style="color: gold; margin-right: 4px;"></i>{{/if}}{{this.name}}
+                                        <span class="missing-skill-hint">({{this.missingSkillName}})</span>
+                                    </div>
+                                    <div class="context-menu" data-item-id="{{this._id}}" data-item-type="specialization">
+                                        <div class="context-menu-item" data-action="edit-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-edit"></i> {{localize "SRA2.COMMON.EDIT"}}
+                                        </div>
+                                        <div class="context-menu-item delete" data-action="delete-skill" data-item-id="{{this._id}}">
+                                            <i class="fas fa-trash"></i> {{localize "SRA2.COMMON.DELETE"}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dice orphan-dice">
+                                    - <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr orphan-rr-value">
+                                    -
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                            {{!-- Phantom RRs (RR on skills/specs not owned) --}}
+                            {{#if phantomRRs.length}}
+                            {{#each phantomRRs}}
+                            <div class="row skill-item phantom-rr" title="{{localize 'SRA2.RR.PHANTOM_TOOLTIP'}}: {{this.linkedAttributeLabel}}">
+                                <div class="name-wrapper {{#if (eq this.type 'specialization')}}spe{{/if}}">
+                                    {{#if (eq this.type 'specialization')}}<div class="arrow fa fa-turn-up"></div>{{/if}}
+                                    <div class="name phantom-name clickable" data-action="roll-phantom-rr" data-phantom-name="{{this.name}}" data-phantom-slug="{{this.slug}}" data-phantom-type="{{this.type}}" data-attribute="{{this.linkedAttribute}}" data-rr="{{this.rr}}">
+                                        <i class="fas fa-ghost" style="margin-right: 4px; opacity: 0.6;"></i>{{this.name}}
+                                        <span class="phantom-hint">({{this.linkedAttributeLabel}})</span>
+                                    </div>
+                                </div>
+                                <div class="dice clickable phantom-dice" data-action="roll-phantom-rr" data-phantom-name="{{this.name}}" data-phantom-slug="{{this.slug}}" data-phantom-type="{{this.type}}" data-attribute="{{this.linkedAttribute}}" data-rr="{{this.rr}}"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{this.totalDicePool}} <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr phantom-rr-value">
+                                    {{this.rr}}
+                                </div>
+                            </div>
+                            {{/each}}
+                            {{/if}}
+                        </section>
+                    </div>
+                </section>
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.CHARACTER.SECTION.ATTRIBUTES"}}</div>
+                        <div class="fa fa-dice-d6"></div>
+                        <div>RR</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            <div class="row feat-item">
+                                <div class="name-wrapper">
+                                    <div class="name clickable" data-action="roll-attribute" data-attribute="strength"
+                                        title="{{localize 'SRA2.SKILLS.ROLL'}}">{{localize "SRA2.ATTRIBUTES.STRENGTH"}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-attribute" data-attribute="strength"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{#if advancedMode}}
+                                    <input type="number" name="system.attributes.strength" value="{{this.system.attributes.strength}}" min="1" max="{{system.attributeMaxes.strength}}" class="attribute-input" />
+                                    {{else}}
+                                    {{this.system.attributes.strength}}
+                                    {{/if}}
+                                    <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{attributesRR.strength}}
+                                </div>
+                            </div>
+                            {{#if advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-cost">{{formatNumber system.attributeCosts.strength}} ¥</span>
+                            </div>
+                            {{/if}}
+                        </section>
+                        <section>
+                            <div class="row feat-item">
+                                <div class="name-wrapper">
+                                    <div class="name clickable" data-action="roll-attribute" data-attribute="agility"
+                                        title="{{localize 'SRA2.SKILLS.ROLL'}}">{{localize "SRA2.ATTRIBUTES.AGILITY"}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-attribute" data-attribute="agility"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{#if advancedMode}}
+                                    <input type="number" name="system.attributes.agility" value="{{this.system.attributes.agility}}" min="1" max="{{system.attributeMaxes.agility}}" class="attribute-input" />
+                                    {{else}}
+                                    {{this.system.attributes.agility}}
+                                    {{/if}}
+                                    <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{attributesRR.agility}}
+                                </div>
+                            </div>
+                            {{#if advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-cost">{{formatNumber system.attributeCosts.agility}} ¥</span>
+                            </div>
+                            {{/if}}
+                        </section>
+                        <section>
+                            <div class="row feat-item">
+                                <div class="name-wrapper">
+                                    <div class="name clickable" data-action="roll-attribute" data-attribute="willpower"
+                                        title="{{localize 'SRA2.SKILLS.ROLL'}}">{{localize "SRA2.ATTRIBUTES.WILLPOWER"}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-attribute" data-attribute="willpower"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{#if advancedMode}}
+                                    <input type="number" name="system.attributes.willpower" value="{{this.system.attributes.willpower}}" min="1" max="{{system.attributeMaxes.willpower}}" class="attribute-input" />
+                                    {{else}}
+                                    {{this.system.attributes.willpower}}
+                                    {{/if}}
+                                    <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{attributesRR.willpower}}
+                                </div>
+                            </div>
+                            {{#if advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-cost">{{formatNumber system.attributeCosts.willpower}} ¥</span>
+                            </div>
+                            {{/if}}
+                        </section>
+                        <section>
+                            <div class="row feat-item">
+                                <div class="name-wrapper">
+                                    <div class="name clickable" data-action="roll-attribute" data-attribute="logic"
+                                        title="{{localize 'SRA2.SKILLS.ROLL'}}">{{localize "SRA2.ATTRIBUTES.LOGIC"}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-attribute" data-attribute="logic"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{#if advancedMode}}
+                                    <input type="number" name="system.attributes.logic" value="{{this.system.attributes.logic}}" min="1" max="{{system.attributeMaxes.logic}}" class="attribute-input" />
+                                    {{else}}
+                                    {{this.system.attributes.logic}}
+                                    {{/if}}
+                                    <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{attributesRR.logic}}
+                                </div>
+                            </div>
+                            {{#if advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-cost">{{formatNumber system.attributeCosts.logic}} ¥</span>
+                            </div>
+                            {{/if}}
+                        </section>
+                        <section>
+                            <div class="row feat-item">
+                                <div class="name-wrapper">
+                                    <div class="name clickable" data-action="roll-attribute" data-attribute="charisma"
+                                        title="{{localize 'SRA2.SKILLS.ROLL'}}">{{localize "SRA2.ATTRIBUTES.CHARISMA"}}</div>
+                                </div>
+                                <div class="dice clickable" data-action="roll-attribute" data-attribute="charisma"
+                                    title="{{localize 'SRA2.SKILLS.ROLL'}}">
+                                    {{#if advancedMode}}
+                                    <input type="number" name="system.attributes.charisma" value="{{this.system.attributes.charisma}}" min="1" max="{{system.attributeMaxes.charisma}}" class="attribute-input" />
+                                    {{else}}
+                                    {{this.system.attributes.charisma}}
+                                    {{/if}}
+                                    <div class="fa fa-dice-d6"></div>
+                                </div>
+                                <div class="rr">
+                                    {{attributesRR.charisma}}
+                                </div>
+                            </div>
+                            {{#if advancedMode}}
+                            <div class="row advanced-info">
+                                <span class="advanced-cost">{{formatNumber system.attributeCosts.charisma}} ¥</span>
+                            </div>
+                            {{/if}}
+                        </section>
+                        <section>
+                            <div class="row feat-item essence-row">
+                                <div class="name-wrapper">
+                                    <div class="name essence-label">{{localize "SRA2.RESOURCES.ESSENCE"}}</div>
+                                </div>
+                                <div class="dice"></div>
+                                <div class="rr essence-value">
+                                    {{this.system.currentEssence}}
+                                </div>
+                            </div>
+                        </section>
+                </section>
+            </div>
+            <div>
+                <section class="char-section avatar-large-section">
+                    <div class="connection-mode-selector">
+                        <span class="connection-mode-current {{#if (or (eq system.connectionMode 'disconnected') (eq system.connectionMode 'offline'))}}offline{{/if}}" data-action="show-connection-mode-menu">
+                            <i class="fas {{connectionModeIcon system.connectionMode}}"></i>
+                            {{connectionModeLabel system.connectionMode}}
+                        </span>
+                        <div class="connection-mode-menu">
+                            <div class="context-menu-item {{#if (eq system.connectionMode 'disconnected')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="disconnected">
+                                <i class="fas fa-plug-circle-xmark"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.DISCONNECTED"}}
+                            </div>
+                            <div class="context-menu-item {{#if (eq system.connectionMode 'offline')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="offline">
+                                <i class="fas fa-power-off"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.OFFLINE"}}
+                            </div>
+                            <div class="context-menu-item {{#if (eq system.connectionMode 'ar')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="ar">
+                                <i class="fas fa-glasses"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.AR"}}
+                            </div>
+                            <div class="context-menu-item {{#if (eq system.connectionMode 'cold-sim')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="cold-sim">
+                                <i class="fas fa-snowflake"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.COLD_SIM"}}
+                            </div>
+                            <div class="context-menu-item {{#if (eq system.connectionMode 'hot-sim')}}active{{/if}}" data-action="set-character-connection-mode" data-connection-mode="hot-sim">
+                                <i class="fas fa-fire"></i> {{localize "SRA2.FEATS.CYBERDECK.CONNECTION_MODE.HOT_SIM"}}
+                            </div>
+                        </div>
+                        {{#if (eq system.connectionMode 'cold-sim')}}
+                        <div class="connection-mode-effects">
+                            <span class="effect"><i class="fas fa-bolt"></i> {{localize "SRA2.CONNECTION_MODE.FREE_CYBERCOMBAT_ACTION"}}</span>
+                            <span class="effect"><i class="fas fa-brain"></i> {{localize "SRA2.CONNECTION_MODE.BIOFEEDBACK_STUN"}}</span>
+                            <span class="effect"><i class="fas fa-heart-crack"></i> {{localize "SRA2.CONNECTION_MODE.EJECTION_LIGHT"}}</span>
+                        </div>
+                        {{/if}}
+                        {{#if (eq system.connectionMode 'hot-sim')}}
+                        <div class="connection-mode-effects">
+                            <span class="effect"><i class="fas fa-bolt"></i> {{localize "SRA2.CONNECTION_MODE.FREE_CYBERCOMBAT_ACTION"}}</span>
+                            <span class="effect hot-sim"><i class="fas fa-arrow-up"></i> {{localize "SRA2.CONNECTION_MODE.ADVANTAGE_CYBERCOMBAT"}}</span>
+                            <span class="effect hot-sim"><i class="fas fa-skull"></i> {{localize "SRA2.CONNECTION_MODE.BIOFEEDBACK_PHYSICAL"}}</span>
+                            <span class="effect hot-sim"><i class="fas fa-heart-crack"></i> {{localize "SRA2.CONNECTION_MODE.EJECTION_SEVERE"}}</span>
+                        </div>
+                        {{/if}}
+                    </div>
+                    <img class="profile-img-large" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+                    {{#if (and geminiAvailable advancedMode)}}
+                    <button type="button" class="gemini-generate-btn" data-action="generate-gemini-portrait" title="{{localize 'SRA2.NPC_GENERATOR.GENERATE_PORTRAIT'}}">
+                        <i class="fas fa-image"></i> {{localize 'SRA2.NPC_GENERATOR.GENERATE_PORTRAIT'}}
+                    </button>
+                    {{/if}}
+                </section>
+                {{#if advancedMode}}
+                <section class="char-section metatype-advanced-section">
+                    <header>
+                        <div>{{localize "SRA2.METATYPES.TITLE"}}</div>
+                    </header>
+                    <div class="metatype-drop-zone-advanced" data-drop-zone="metatype">
+                        {{#if metatype}}
+                        <div class="metatype-item-advanced" data-item-id="{{metatype._id}}">
+                            <img class="metatype-img-small" src="{{metatype.img}}" alt="{{metatype.name}}" />
+                            <span class="metatype-name-advanced">{{metatype.name}}</span>
+                            <div class="metatype-controls-advanced">
+                                <a class="metatype-edit-btn" data-action="edit-metatype" data-item-id="{{metatype._id}}" title="{{localize 'SRA2.METATYPES.EDIT'}}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a class="metatype-delete-btn" data-action="delete-metatype" data-item-id="{{metatype._id}}" title="{{localize 'SRA2.METATYPES.DELETE'}}">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {{else}}
+                        <div class="empty-metatype-advanced">
+                            <i class="fas fa-user-plus"></i>
+                            <span>{{localize "SRA2.METATYPES.DROP_HERE"}}</span>
+                        </div>
+                        {{/if}}
+                    </div>
+                </section>
+                <section class="char-section item-search-section">
+                    <header>
+                        <div><i class="fas fa-search"></i> {{localize "SRA2.SEARCH.ADD_ITEMS"}}</div>
+                    </header>
+                    <div class="item-search-container">
+                        <div class="search-type-tabs">
+                            <button type="button" class="search-tab active" data-search-type="skill">{{localize "SRA2.SEARCH.SKILLS"}}</button>
+                            <button type="button" class="search-tab" data-search-type="specialization">{{localize "SRA2.SEARCH.SPECIALIZATIONS"}}</button>
+                            <button type="button" class="search-tab" data-search-type="feat">{{localize "SRA2.SEARCH.FEATS"}}</button>
+                        </div>
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="item-search-input" placeholder="{{localize 'SRA2.SEARCH.PLACEHOLDER'}}" data-search-type="skill" />
+                        </div>
+                        <div class="item-search-results"></div>
+                    </div>
+                </section>
+                {{/if}}
+                <section class="char-section thresholds-section">
+                    <div class="char-section-row">
+                        <section>
+                            <table class="thresholds-table">
+                                <thead>
+                                    <tr>
+                                        <th class="threshold-title">{{localize "SRA2.CHARACTER.SECTION.THRESHOLD"}}</th>
+                                        <th>{{localize "SRA2.ARMOR_THRESHOLDS.LIGHT"}}</th>
+                                        <th>{{localize "SRA2.ARMOR_THRESHOLDS.SEVERE"}}</th>
+                                        <th>{{localize "SRA2.ARMOR_THRESHOLDS.INCAPACITATING_SHORT"}}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="threshold-label">{{localize "SRA2.ARMOR_THRESHOLDS.WITHOUT_ARMOR"}}
+                                        </td>
+                                        <td>{{system.damageThresholds.withoutArmor.light}}</td>
+                                        <td>{{system.damageThresholds.withoutArmor.severe}}</td>
+                                        <td>{{system.damageThresholds.withoutArmor.incapacitating}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="threshold-label">{{localize "SRA2.ARMOR_THRESHOLDS.WITH_ARMOR"}}</td>
+                                        <td>{{system.damageThresholds.withArmor.light}}</td>
+                                        <td>{{system.damageThresholds.withArmor.severe}}</td>
+                                        <td>{{system.damageThresholds.withArmor.incapacitating}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="threshold-label">{{localize "SRA2.ARMOR_THRESHOLDS.MENTAL"}}</td>
+                                        <td>{{system.damageThresholds.mental.light}}</td>
+                                        <td>{{system.damageThresholds.mental.severe}}</td>
+                                        <td>{{system.damageThresholds.mental.incapacitating}}</td>
+                                    </tr>
+                                    {{#if hasMatrixAccess}}
+                                    <tr>
+                                        <td class="threshold-label">{{localize "SRA2.ARMOR_THRESHOLDS.MATRIX"}}</td>
+                                        <td>{{system.damageThresholds.matrix.light}}</td>
+                                        <td>{{system.damageThresholds.matrix.severe}}</td>
+                                        <td>{{system.damageThresholds.matrix.incapacitating}}</td>
+                                    </tr>
+                                    {{/if}}
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+                </section>
+                {{#if (or advancedMode system.catchphrases.catchphrase1 system.catchphrases.catchphrase2 system.catchphrases.catchphrase3 system.catchphrases.catchphrase4)}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.CATCHPHRASES.LABEL"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#if advancedMode}}
+                            <div class="catchphrases-fields">
+                                <div class="catchphrase-field">
+                                    <div class="catchphrase-input-wrapper">
+                                        <input type="text" name="system.catchphrases.catchphrase1"
+                                            value="{{system.catchphrases.catchphrase1}}"
+                                            placeholder="{{localize 'SRA2.CATCHPHRASES.PLACEHOLDER'}}" />
+                                        {{#if system.catchphrases.catchphrase1}}
+                                        <a class="catchphrase-send" data-action="send-catchphrase"
+                                            data-catchphrase="{{system.catchphrases.catchphrase1}}"
+                                            title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                                <div class="catchphrase-field">
+                                    <div class="catchphrase-input-wrapper">
+                                        <input type="text" name="system.catchphrases.catchphrase2"
+                                            value="{{system.catchphrases.catchphrase2}}"
+                                            placeholder="{{localize 'SRA2.CATCHPHRASES.PLACEHOLDER'}}" />
+                                        {{#if system.catchphrases.catchphrase2}}
+                                        <a class="catchphrase-send" data-action="send-catchphrase"
+                                            data-catchphrase="{{system.catchphrases.catchphrase2}}"
+                                            title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                                <div class="catchphrase-field">
+                                    <div class="catchphrase-input-wrapper">
+                                        <input type="text" name="system.catchphrases.catchphrase3"
+                                            value="{{system.catchphrases.catchphrase3}}"
+                                            placeholder="{{localize 'SRA2.CATCHPHRASES.PLACEHOLDER'}}" />
+                                        {{#if system.catchphrases.catchphrase3}}
+                                        <a class="catchphrase-send" data-action="send-catchphrase"
+                                            data-catchphrase="{{system.catchphrases.catchphrase3}}"
+                                            title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                                <div class="catchphrase-field">
+                                    <div class="catchphrase-input-wrapper">
+                                        <input type="text" name="system.catchphrases.catchphrase4"
+                                            value="{{system.catchphrases.catchphrase4}}"
+                                            placeholder="{{localize 'SRA2.CATCHPHRASES.PLACEHOLDER'}}" />
+                                        {{#if system.catchphrases.catchphrase4}}
+                                        <a class="catchphrase-send" data-action="send-catchphrase"
+                                            data-catchphrase="{{system.catchphrases.catchphrase4}}"
+                                            title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                            </div>
+                            {{else}}
+                            <div class="catchphrases-display">
+                                {{#if system.catchphrases.catchphrase1}}
+                                <div class="catchphrase-item">
+                                    <span class="catchphrase-text">"{{system.catchphrases.catchphrase1}}"</span>
+                                    <a class="catchphrase-send" data-action="send-catchphrase"
+                                        data-catchphrase="{{system.catchphrases.catchphrase1}}"
+                                        title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                        <i class="fas fa-comment"></i>
+                                    </a>
+                                </div>
+                                {{/if}}
+                                {{#if system.catchphrases.catchphrase2}}
+                                <div class="catchphrase-item">
+                                    <span class="catchphrase-text">"{{system.catchphrases.catchphrase2}}"</span>
+                                    <a class="catchphrase-send" data-action="send-catchphrase"
+                                        data-catchphrase="{{system.catchphrases.catchphrase2}}"
+                                        title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                        <i class="fas fa-comment"></i>
+                                    </a>
+                                </div>
+                                {{/if}}
+                                {{#if system.catchphrases.catchphrase3}}
+                                <div class="catchphrase-item">
+                                    <span class="catchphrase-text">"{{system.catchphrases.catchphrase3}}"</span>
+                                    <a class="catchphrase-send" data-action="send-catchphrase"
+                                        data-catchphrase="{{system.catchphrases.catchphrase3}}"
+                                        title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                        <i class="fas fa-comment"></i>
+                                    </a>
+                                </div>
+                                {{/if}}
+                                {{#if system.catchphrases.catchphrase4}}
+                                <div class="catchphrase-item">
+                                    <span class="catchphrase-text">"{{system.catchphrases.catchphrase4}}"</span>
+                                    <a class="catchphrase-send" data-action="send-catchphrase"
+                                        data-catchphrase="{{system.catchphrases.catchphrase4}}"
+                                        title="{{localize 'SRA2.CATCHPHRASES.SEND_TO_CHAT'}}">
+                                        <i class="fas fa-comment"></i>
+                                    </a>
+                                </div>
+                                {{/if}}
+                            </div>
+                            {{/if}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if (or advancedMode system.behaviors.behavior1 system.behaviors.behavior2 system.behaviors.behavior3 system.behaviors.behavior4)}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.BEHAVIORS.LABEL"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            {{#if advancedMode}}
+                            <div class="behaviors-fields-compact">
+                                <input type="text" name="system.behaviors.behavior1" value="{{system.behaviors.behavior1}}"
+                                    placeholder="{{localize 'SRA2.BEHAVIORS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.behaviors.behavior2" value="{{system.behaviors.behavior2}}"
+                                    placeholder="{{localize 'SRA2.BEHAVIORS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.behaviors.behavior3" value="{{system.behaviors.behavior3}}"
+                                    placeholder="{{localize 'SRA2.BEHAVIORS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.behaviors.behavior4" value="{{system.behaviors.behavior4}}"
+                                    placeholder="{{localize 'SRA2.BEHAVIORS.PLACEHOLDER'}}" />
+                            </div>
+                            {{else}}
+                            <div class="behaviors-display">
+                                {{#if system.behaviors.behavior1}}<span class="behavior-tag">{{system.behaviors.behavior1}}</span>{{/if}}
+                                {{#if system.behaviors.behavior2}}<span class="behavior-tag">{{system.behaviors.behavior2}}</span>{{/if}}
+                                {{#if system.behaviors.behavior3}}<span class="behavior-tag">{{system.behaviors.behavior3}}</span>{{/if}}
+                                {{#if system.behaviors.behavior4}}<span class="behavior-tag">{{system.behaviors.behavior4}}</span>{{/if}}
+                            </div>
+                            {{/if}}
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+                {{#if advancedMode}}
+                <section class="char-section">
+                    <header>
+                        <div>{{localize "SRA2.KEYWORDS.LABEL"}}</div>
+                    </header>
+                    <div class="char-section-row">
+                        <section>
+                            <div class="keywords-fields-compact">
+                                <input type="text" name="system.keywords.keyword1" value="{{system.keywords.keyword1}}"
+                                    placeholder="{{localize 'SRA2.KEYWORDS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.keywords.keyword2" value="{{system.keywords.keyword2}}"
+                                    placeholder="{{localize 'SRA2.KEYWORDS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.keywords.keyword3" value="{{system.keywords.keyword3}}"
+                                    placeholder="{{localize 'SRA2.KEYWORDS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.keywords.keyword4" value="{{system.keywords.keyword4}}"
+                                    placeholder="{{localize 'SRA2.KEYWORDS.PLACEHOLDER'}}" />
+                                <input type="text" name="system.keywords.keyword5" value="{{system.keywords.keyword5}}"
+                                    placeholder="{{localize 'SRA2.KEYWORDS.PLACEHOLDER'}}" />
+                            </div>
+                        </section>
+                    </div>
+                </section>
+                {{/if}}
+            </div>
+        </section>
+        <footer class="sheet-footer {{#if hasSevereDamage}}has-severe-damage{{/if}}">
+            <div class="footer-content">
+                        {{#if advancedMode}}
+                        <div class="footer-reference">
+                            <label class="reference-label">{{localize "SRA2.COMMON.REFERENCE"}}:</label>
+                            <input type="text" name="system.reference" value="{{system.reference}}" class="reference-input" placeholder="p.XX" />
+                        </div>
+                        {{else if system.reference}}
+                        <div class="footer-reference">
+                            <span class="reference-value">{{system.reference}}</span>
+                        </div>
+                        {{/if}}
+                <div class="footer-keywords">
+                    <div class="keywords-list">
+                        {{#if system.keywords.keyword1}}
+                        <span class="keyword-tag">{{system.keywords.keyword1}} / </span>
+                        {{/if}}
+                        {{#if system.keywords.keyword2}}
+                        <span class="keyword-tag">{{system.keywords.keyword2}} / </span>
+                        {{/if}}
+                        {{#if system.keywords.keyword3}}
+                        <span class="keyword-tag">{{system.keywords.keyword3}} / </span>
+                        {{/if}}
+                        {{#if system.keywords.keyword4}}
+                        <span class="keyword-tag">{{system.keywords.keyword4}} / </span>
+                        {{/if}}
+                        {{#if system.keywords.keyword5}}
+                        <span class="keyword-tag">{{system.keywords.keyword5}}</span>
+                        {{/if}}
+                    </div>
+                </div>
+                <div class="footer-price">
+                    <div class="footer-cash">
+                        <span class="yen-symbol">{{localize "SRA2.RESOURCES.CASH"}} : </span>
+                        <input type="text" name="system.resources.yens" value="{{formatNumber system.resources.yens}}" class="cash-input" />
+                        <span class="yen-symbol">{{localize "SRA2.RESOURCES.YENS"}}</span>
+                    </div>
+                    <span class="cost-label">{{localize "SRA2.RESOURCES.COST"}} : </span>
+                    <span class="price-value">{{formatNumber system.totalCost}} <span class="yen-symbol">{{localize
+                            "SRA2.RESOURCES.YENS"}}</span></span>
+                </div>
+            </div>
+        </footer>
+        <div class="bio-section">
+            <div class="bio-tabs">
+                <button type="button" class="bio-tab active" data-tab="background">{{localize "SRA2.BIO"}}</button>
+                <button type="button" class="bio-tab" data-tab="notes">{{localize "SRA2.NOTES"}}</button>
+            </div>
+            <div class="bio-tab-content active" data-tab="background">
+                <div class="editor-content">{{editor system.bio.background target="system.bio.background" button=false engine="prosemirror" collaborate=false}}</div>
+            </div>
+            <div class="bio-tab-content" data-tab="notes">
+                <div class="editor-content">{{editor system.bio.notes target="system.bio.notes" button=false engine="prosemirror" collaborate=false}}</div>
+            </div>
+        </div>
+        {{#if (and isGM advancedMode)}}
+        <div class="gm-description-section">
+            <h3><i class="fas fa-eye-slash"></i> {{localize "SRA2.GM_DESCRIPTION"}}</h3>
+            <div class="editor-content">{{editor system.bio.gmDescription target="system.bio.gmDescription" button=false engine="prosemirror" collaborate=false}}</div>
+        </div>
+        {{/if}}
+    </div>
+</form>
+</form>

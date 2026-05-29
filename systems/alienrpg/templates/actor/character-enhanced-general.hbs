@@ -2,7 +2,7 @@
 	<div class='grid-genPage-enh'>
 		<!-- Col1 -->
 		<div class='Item1' style='height: 147px;'>
-			<div style='margin-bottom: 10px; width: 200px; margin-left: auto; margin-right: auto; margin-top: 5px;'>
+			<div style='margin-bottom: 10px; width: 246px; margin-left: auto; margin-right: auto; margin-top: 5px;'>
 				<h4 class='resource-label'>{{localize 'ALIENRPG.XP'}}</h4>
 				<div class='newdots click-xp-stat-level' data-action='ClickXPStatLevel'>
 					{{#times system.XPcurrent}}
@@ -137,9 +137,10 @@
 		<!-- Col 2 -->
 		<div class='Item2' style='height: 85px;'>
 			<div class='grid-two' style='margin-top: 10px; '>
-				<h3 class='resource-label rollable' data-action='RollResolve' data-roll='{{system.header.resolve.value}}' data-mod='{{system.header.resolve.mod}}' data-label='{{localize "ALIENRPG.Resolve"}}' title='{{localize "ALIENRPG.RollStress"}}'>{{localize 'ALIENRPG.Resolve'}}
+				<h3 class='resource-label rollable' data-action='RollResolve' data-roll='{{system.header.resolve.value}}' data-mod='{{system.header.resolve.mod}}' data-label='{{localize "ALIENRPG.Resolve"}}' title='{{localize "ALIENRPG.RollStress"}}' data-tooltip='<span>{{localize "ALIENRPG.value"}}
+										{{system.header.resolve.value}}<br />{{localize "ALIENRPG.ModifierTotal"}} {{system.header.resolve.mod}}<br />{{localize "ALIENRPG.valueTotal"}} {{system.header.resolve.calculatedMax}}</span>'>{{localize 'ALIENRPG.Resolve'}}
 				</h3>
-				<input type='text' class='maxboxsize' name='header.resolve.value' value='{{system.header.resolve.value}}' data-dtype='Number' disabled />
+				<input type='text' class='maxboxsize' name='header.resolve.calculatedMax' value='{{system.header.resolve.calculatedMax}}' data-dtype='Number' disabled />
 
 				<div class='box3 resource-label'>
 					<label class='speciality-label' style='font-weight: bold'>{{localize 'ALIENRPG.Career'}}</label>
