@@ -247,6 +247,37 @@ interface HasTint<T> {
   tint(inColor: number | HEX): T;
 }
 
+interface HasBlendMode<T> {
+  /**
+   * Sets the blend mode used when compositing this effect onto the canvas.
+   * Accepts either a string name (e.g. "multiply", "screen", "soft-light")
+   * or a numeric PIXI.BLEND_MODES constant.
+   */
+  blendMode(mode: number | string): T;
+}
+
+interface HasElevation<T> {
+  /**
+   * Sets the section's elevation, either as a single Z value or as an
+   * elevation range `[bottom, top]`. The range form makes the section
+   * visible on every scene level it reaches on Foundry v14+.
+   */
+  elevation(
+    inElevation: number | [number, number],
+    inOptions?: ElevationOptions
+  ): T;
+}
+
+interface HasLevels<T> {
+  /**
+   * Restricts this section to one or more scene levels on Foundry v14+.
+   * Accepts a level id, level name, Level document, or an array mixing
+   * any of those. Pass null to clear. Doesn't do anything on older
+   * Foundry versions.
+   */
+  onLevels(inLevels: LevelReference | LevelReference[] | null): T;
+}
+
 interface HasUsers<T> {
   /**
    * Causes section to be executed only locally, and not push to other connected clients.
@@ -767,8 +798,15 @@ declare global {
   };
 
   type ElevationOptions = {
-    absolute: boolean;
+    absolute?: boolean;
+    topInclusive?: boolean;
   };
+
+  /**
+   * Anything `.onLevels()` accepts: a level id string, a level name string,
+   * or a Level document (any object with an `id` field).
+   */
+  type LevelReference = string | { id: string };
 
   type LoopOptions = {
     loopDelay: number;
@@ -796,6 +834,8 @@ declare global {
       Section<EffectSection>,
       HasFiles<EffectSection>,
       HasAudio<EffectSection>,
+      HasElevation<EffectSection>,
+      HasLevels<EffectSection>,
       HasMovement<EffectSection>,
       HasOpacity<EffectSection>,
       HasRotation<EffectSection>,
@@ -805,6 +845,7 @@ declare global {
       HasAnimations<EffectSection>,
       HasFilters<EffectSection>,
       HasTint<EffectSection>,
+      HasBlendMode<EffectSection>,
       HasLocation<EffectSection>,
       HasText<EffectSection>,
       HasName<EffectSection> {}
@@ -980,11 +1021,6 @@ declare global {
     aboveLighting(inBool?: boolean): this;
 
     /**
-     * Changes the effect's elevation
-     */
-    elevation(inElevation?: number, inOptions?: ElevationOptions): this;
-
-    /**
      * Changes the effect's sortLayer, potentially displaying effects below tiles, above tokens or even weather effects
      * in case of identical elevations
      */
@@ -1060,7 +1096,17 @@ declare global {
     /**
      * Masks the effect to the given object or objects. If no object is given, the effect will be masked to the source of the effect.
      */
-    mask(inObject?: VisibleFoundryTypes | Array<VisibleFoundryTypes>): this;
+    mask(
+      inObject?:
+        | VisibleFoundryTypes
+        | Region.Implementation
+        | RegionDocument.Implementation
+        | Array<
+            | VisibleFoundryTypes
+            | Region.Implementation
+            | RegionDocument.Implementation
+          >
+    ): this;
 
     /**
      * Causes the effect to be visible through walls
@@ -1178,6 +1224,8 @@ declare global {
       Section<SoundSection>,
       HasFiles<SoundSection>,
       HasAudio<SoundSection>,
+      HasElevation<SoundSection>,
+      HasLevels<SoundSection>,
       HasName<SoundSection>,
       HasTime<SoundSection>,
       HasMovement<SoundSection>,

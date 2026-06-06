@@ -13,8 +13,20 @@
 <hr/>
 <p>Welcome to the official release of FXMaster V8! This release brings brand new handling for V14 Scene Levels, new Manage Layers functionality to order particle and filter effects, new macro API with improved flexibility, and more! Hope everyone enjoys!</p>
 
-**<p>Any support via the <a href="https://www.patreon.com/GambitsLounge" target="_blank" rel="nofollow noopener">Patreon</a> or <a href="https://ko-fi.com/gambit07" target="_blank" rel="nofollow noopener">Ko-fi</a> is greatly appreciated! If you are a Patreon subscriber you will receive access to the FXMaster+ module. FXMaster+ can be accessed from Patreon, and it's where I will be adding new particle effects and filters moving forward. For the month of April, it will get you access to the ⚪Wind, ⚪Wind Wisp, 🔵Water, 🟡Lightning Bolts, 🔵Fish, 🟢Glitch, 🔵Ice, 🟤Duststorm, 🟤Sandstorm, 🟢Ghosts, 🟡Sunlight, 🟢Magic Crystals, 🟡Fireflies, 🌸Sakura Bloom, and 🌸Sakura Blossoms Effects - Effects are previewed below:</p>**
+**<p>Any support via the <a href="https://www.patreon.com/GambitsLounge" target="_blank" rel="nofollow noopener">Patreon</a> or <a href="https://ko-fi.com/gambit07" target="_blank" rel="nofollow noopener">Ko-fi</a> is greatly appreciated! If you are a Patreon subscriber you will receive access to the FXMaster+ module. FXMaster+ can be accessed from Patreon, and it's where I will be adding new particle effects and filters moving forward. For the month of April, it will get you access to the 🟢Aurora Borealis, ⚪Wind, ⚪Wind Wisp, 🔵Water, 🟡Lightning Bolts, 🔵Fish, 🟢Glitch, 🔵Ice, 🟤Duststorm, 🟤Sandstorm, 🟢Ghosts, 🟡Sunlight, 🟢Magic Crystals, 🟡Fireflies, 🌸Sakura Bloom, and 🌸Sakura Blossoms Effects - Effects are previewed below:</p>**
 
+
+  <video
+    autoplay
+    muted
+    playsinline
+    loop
+    preload="auto"
+    src="https://github.com/user-attachments/assets/b65e2a90-6e46-4f8d-a857-40773ffc2ad0">
+  </video>
+
+<details>
+  <summary>Wind (click to expand - Map: <a href="https://angelamaps.com/" target="_blank" rel="nofollow noopener">Angela's Maps</a>)</summary>
   <video
     autoplay
     muted
@@ -23,9 +35,10 @@
     preload="auto"
     src="https://github.com/user-attachments/assets/1cafe9e1-2763-40a6-b47e-7c5d03de5fbf">
   </video>
+</details>
 
 <details>
-  <summary>Water (click to expand)</summary>
+  <summary>Water (click to expand - Map: <a href="https://angelamaps.com/" target="_blank" rel="nofollow noopener">Angela's Maps</a>)</summary>
   <video
     autoplay
     muted
@@ -37,7 +50,7 @@
 </details>
 
 <details>
-  <summary>Lightning Bolts (click to expand)</summary>
+  <summary>Lightning Bolts (click to expand - Map: <a href="https://angelamaps.com/" target="_blank" rel="nofollow noopener">Angela's Maps</a>)</summary>
   <video
     autoplay
     muted
@@ -49,7 +62,7 @@
 </details>
 
 <details>
-  <summary>Fish (click to expand)</summary>
+  <summary>Fish (click to expand - Map: <a href="https://moonlight-maps.com/" target="_blank" rel="nofollow noopener">Moonlight Maps</a>)</summary>
   <video
     autoplay
     muted
@@ -61,7 +74,7 @@
 </details>
 
 <details>
-  <summary>Glitch (click to expand)</summary>
+  <summary>Glitch (click to expand - Map: <a href="https://www.czepeku.com/" target="_blank" rel="nofollow noopener">Cze & Peku</a>)</summary>
   <video
     autoplay
     muted
@@ -73,7 +86,7 @@
 </details>
 
 <details>
-  <summary>Ice (click to expand)</summary>
+  <summary>Ice (click to expand - Map: <a href="https://www.czepeku.com/" target="_blank" rel="nofollow noopener">Cze & Peku</a>)</summary>
   <video
     autoplay
     muted
@@ -85,7 +98,7 @@
 </details>
 
 <details>
-  <summary>Duststorm + Sandstorm (click to expand)</summary>
+  <summary>Duststorm + Sandstorm (click to expand - Map: <a href="https://www.czepeku.com/" target="_blank" rel="nofollow noopener">Cze & Peku</a>)</summary>
   <video
     autoplay
     muted
@@ -97,7 +110,7 @@
 </details>
 
 <details>
-  <summary>Ghosts (click to expand)</summary>
+  <summary>Ghosts (click to expand - Map: <a href="https://angelamaps.com/" target="_blank" rel="nofollow noopener">Angela's Maps</a>)</summary>
   <video
     autoplay
     muted
@@ -121,7 +134,7 @@
 </details>
   
 <details>
-  <summary>Magic Crystals (click to expand)</summary>
+  <summary>Magic Crystals (click to expand - Map: <a href="https://www.patreon.com/zachmoeller" target="_blank" rel="nofollow noopener">Zach Moeller</a>)</summary>
 
   <video
     autoplay
@@ -186,9 +199,9 @@ This module also provides ways to easily configure these effects.
     - [API Effects UI Manager](#api-effects-ui-manager)
     - [Save Particle and Filter Effects as a Macro](#save-particle-and-filter-effects-as-a-macro)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/floppy-disk-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/floppy-disk-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/floppy-disk-dark.svg" alt="Save Particle and Filter Effects as a Macro Icon" height="20" width="20" style="vertical-align:middle;"></picture>
     - [Clear Particle and Filter Effects](#clear-particle-and-filter-effects)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/trash-light.svg" media="(prefers-color-scheme: dark)"> <source srcset="./media/font-awesome/trash-dark.svg" media="(prefers-color-scheme: light)"> <img src="./media/font-awesome/trash-dark.svg" alt="Clear Particle and Filter Effects Icon" height="20" width="20" style="vertical-align:middle;"></picture>
-  - [Levels](#levels)
+  - [Levels](#levels)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/clone-light.svg" media="(prefers-color-scheme: dark)"><source srcset="./media/font-awesome/clone-dark.svg" media="(prefers-color-scheme: light)"><img src="./media/font-awesome/clone-dark.svg" alt="" aria-hidden="true" role="presentation" height="20" width="20" style="vertical-align:middle;"></picture>
     - [Using Levels with Scene Effects](#using-levels-with-scene-effects)
-  - [Layers](#layers)
+  - [Layers](#layers)&nbsp;&nbsp;<picture style="display:inline-block; vertical-align:bottom;"><source srcset="./media/font-awesome/clone-light.svg" media="(prefers-color-scheme: dark)"><source srcset="./media/font-awesome/clone-dark.svg" media="(prefers-color-scheme: light)"><img src="./media/font-awesome/clone-dark.svg" alt="" aria-hidden="true" role="presentation" height="20" width="20" style="vertical-align:middle;"></picture>
     - [Manage Layers Window](#manage-layers-window)
   - [Developer API](#developer-api)
     - [Presets API](#presets-api)
@@ -794,6 +807,10 @@ Core FXMaster currently registers these filter types:
 
 `bloom`, `color`, `fog`, `lightning`, `oldfilm`, `predator`, `underwater`
 
+FXMaster+ registers additional filter effect types:
+
+`water`, `lightningbolts`, `ice`, `sunlight`, `duststorm`, `glitch`, `wind`, `auroraborealis`
+
 You can inspect the currently registered filter types in a running world with:
 
 ```js
@@ -808,7 +825,9 @@ Core FXMaster currently registers these particle types:
 
 `autumnleaves`, `bats`, `birds`, `bubbles`, `clouds`, `crows`, `eagles`, `embers`, `fog`, `hail`, `rain`, `rats`, `snow`, `snowstorm`, `spiders`, `stars`
 
-FXMaster+ may register additional particle effect types.
+FXMaster+ registers additional particle effect types:
+
+`sakurabloom`, `sakurablossom`, `magiccrystals`, `fireflies`, `ghosts`, `sandstorm`, `fish`, `windwisps`
 
 You can inspect the currently registered particle types in a running world with:
 

@@ -40,7 +40,73 @@ const CONSTANTS = {
     INVALID_PLACEMENT: "invalidPlacement",
     PLACED: "placed",
     CANCEL: "cancel"
-  }
+  },
+  /**
+   * Map of user-friendly blend mode names to PIXI.BLEND_MODES numeric values.
+   * Keys are lowercase, alphanumeric, and underscore-tolerant. Multiple aliases
+   * (e.g. "soft_light", "soft-light", "softlight") are all accepted via the
+   * normalization in the blendMode trait.
+   */
+  BLEND_MODES: {
+    normal: 0,
+    add: 1,
+    multiply: 2,
+    screen: 3,
+    overlay: 4,
+    darken: 5,
+    lighten: 6,
+    color_dodge: 7,
+    color_burn: 8,
+    hard_light: 9,
+    soft_light: 10,
+    difference: 11,
+    exclusion: 12,
+    hue: 13,
+    saturation: 14,
+    color: 15,
+    luminosity: 16,
+    normal_npm: 17,
+    add_npm: 18,
+    screen_npm: 19,
+    none: 20,
+    subtract: 28,
+    erase: 29
+  },
+  /**
+   * Blend modes that PIXI v7 exposes by name but does not actually implement.
+   * Their entries in PIXI's WebGL state table (mapWebGLBlendModesToPixi) are
+   * aliased to the same [gl.ONE, gl.ONE_MINUS_SRC_ALPHA] pair as NORMAL, so
+   * the GPU composites them as normal blending. Listed here so the blendMode
+   * trait can warn the user when one is requested.
+   */
+  UNSUPPORTED_BLEND_MODES: /* @__PURE__ */ new Set([
+    4,
+    // overlay
+    5,
+    // darken
+    6,
+    // lighten
+    7,
+    // color_dodge
+    8,
+    // color_burn
+    9,
+    // hard_light
+    10,
+    // soft_light
+    11,
+    // difference
+    12,
+    // exclusion
+    13,
+    // hue
+    14,
+    // saturation
+    15,
+    // color
+    16
+    // luminosity
+  ])
 };
 CONSTANTS.TOOLS = {
   SELECT: `${CONSTANTS.MODULE_NAME}-select-effect`,
@@ -51,7 +117,6 @@ CONSTANTS.TOOLS = {
 CONSTANTS.EFFECTS_FLAG = `flags.${CONSTANTS.MODULE_NAME}.${CONSTANTS.EFFECTS_FLAG_NAME}`;
 CONSTANTS.REMOVE_EFFECTS_FLAG = `flags.${CONSTANTS.MODULE_NAME}.-=${CONSTANTS.EFFECTS_FLAG_NAME}`;
 CONSTANTS.SOUNDS_FLAG = `flags.${CONSTANTS.MODULE_NAME}.${CONSTANTS.SOUNDS_FLAG_NAME}`;
-CONSTANTS.REMOVE_SOUNDS_FLAG = `flags.${CONSTANTS.MODULE_NAME}.-=${CONSTANTS.SOUNDS_FLAG_NAME}`;
 function registerEase(easeName, easeFunction, overwrite = false) {
   if (typeof easeName !== "string")
     throw custom_error("registerEase", "easeName must be of type string");
@@ -393,7 +458,7 @@ function get_all_documents_from_scene(inSceneId = false) {
   const scene = inSceneId ? game.scenes.get(inSceneId) : game.scenes.get(game.user?.viewedScene);
   if (!scene) return [];
   return [
-    ...canvas.layers.map((layer2) => layer2?.children ?? [].concat(layer2?.preview?.children ?? [])),
+    ...canvas.layers.map((layer) => layer?.children ?? [].concat(layer?.preview?.children ?? [])),
     ...Array.from(scene?.tokens ?? []),
     ...Array.from(scene?.lights ?? []),
     ...Array.from(scene?.sounds ?? []),
@@ -440,10 +505,10 @@ function throttled_custom_warning(inClassName, warning, delay = 1e4, notify = fa
     delete throttledWarnings[warning];
   }, delay);
 }
-function custom_error(inClassName, error, notify = true) {
+function custom_error(inClassName, error) {
   inClassName = inClassName !== "Sequencer" ? "Sequencer | Module: " + inClassName : inClassName;
   error = `${inClassName} | ${error}`;
-  if (notify) ui.notifications.error(error, { console: false });
+  ui.notifications.error(error, { console: false });
   return new Error(error.replace("<br>", "\n"));
 }
 function user_can_do(inSetting) {
@@ -8611,6 +8676,7 @@ class ColorMatrixFilter extends globalThis.PIXI.ColorMatrixFilter {
     this.isValid = true;
     this.values = /* @__PURE__ */ new Map();
     for (let [key, value] of Object.entries(inData)) {
+      if (value === void 0 || value === null) continue;
       this.setValue(key, value);
       if (!this.isValid) break;
     }
@@ -9212,8 +9278,18 @@ const flagManager = {
   flagAddBuffer: /* @__PURE__ */ new Map(),
   flagRemoveBuffer: /* @__PURE__ */ new Map(),
   _latestFlagVersion: false,
+  _databaseId: null,
   get database() {
-    return game.journal.getName(CONSTANTS.DATABASE_NAME);
+    if (this._databaseId) {
+      const cached = game.journal.get(this._databaseId);
+      if (cached) return cached;
+      this._databaseId = null;
+    }
+    const database = game.journal.getName(CONSTANTS.DATABASE_NAME);
+    if (database) {
+      this._databaseId = database.id;
+    }
+    return database;
   },
   setup() {
     Hooks.on("renderJournalDirectory", async (app) => {
@@ -9264,13 +9340,11 @@ const flagManager = {
    * Sanitizes the effect data, accounting for changes to the structure in previous versions
    *
    * @param inDocument
-   * @param databaseFlags
    * @returns {array}
    */
-  getEffectFlags(inDocument, databaseFlags = null) {
+  getEffectFlags(inDocument) {
     if (!inDocument?.uuid) return [];
-    let allEffects = databaseFlags ?? this.getDatabaseFlags().effects;
-    let effects = allEffects[inDocument.uuid] ?? [];
+    let effects = this.getDatabaseFlags().effects[inDocument.uuid] ?? [];
     if (!effects?.length) return [];
     effects = foundry.utils.deepClone(effects);
     const changes = [];
@@ -9630,16 +9704,14 @@ const flagManager = {
   }, 250),
   soundMigrations: {},
   /**
-   * Sanitizes the effect data, accounting for changes to the structure in previous versions
+   * Sanitizes the sound data, accounting for changes to the structure in previous versions
    *
    * @param inDocument
-   * @param databaseFlags
    * @returns {array}
    */
-  getSoundFlags(inDocument, databaseFlags = null) {
+  getSoundFlags(inDocument) {
     if (!inDocument?.uuid) return [];
-    let allSounds = databaseFlags ?? this.getDatabaseFlags().sounds;
-    let sounds = allSounds[inDocument.uuid] ?? [];
+    let sounds = this.getDatabaseFlags().sounds[inDocument.uuid] ?? [];
     if (!sounds?.length) return [];
     sounds = foundry.utils.deepClone(sounds);
     const changes = [];
@@ -9678,6 +9750,62 @@ function calculate_pan_factor(ray_distance_pixels, inner_radius_pixels, outer_ra
   const t = (ray_distance_pixels - inner_radius_pixels) / (outer_radius_pixels - inner_radius_pixels);
   return smoothstep(0, 1, t);
 }
+const PASTE_BATCH_STALE_MS = 5e3;
+const PasteManager = {
+  userId: null,
+  documentName: null,
+  sourceUuids: null,
+  cursor: 0,
+  capturedAt: 0,
+  consumed: /* @__PURE__ */ new WeakMap(),
+  setup() {
+    for (const documentName of ["Token", "Drawing", "Tile", "MeasuredTemplate", "Region"]) {
+      Hooks.on(`paste${documentName}`, (objects, data, opts) => {
+        if (opts?.cut) return;
+        this.capture(documentName, objects.map((o) => o.document.uuid));
+      });
+    }
+  },
+  /**
+   * Records the source UUIDs of a paste operation on the originating client, keyed by document type and
+   * cursor position. Consumed in lockstep order by the matching createDocumentName hook handlers.
+   *
+   * @param {string} documentName
+   * @param {string[]} sourceUuids
+   */
+  capture(documentName, sourceUuids) {
+    this.userId = game.user.id;
+    this.documentName = documentName;
+    this.sourceUuids = sourceUuids;
+    this.cursor = 0;
+    this.capturedAt = Date.now();
+  },
+  /**
+   * Returns the source UUID corresponding to the given newly-created document, or null if no paste batch is
+   * available for this client and document type. The result is memoized per document instance, so multiple
+   * managers (effect and sound) hooking the same createDocumentName event resolve to the same source UUID.
+   *
+   * @param {foundry.abstract.Document} inDocument
+   * @returns {string|null}
+   */
+  consume(inDocument) {
+    if (this.consumed.has(inDocument)) return this.consumed.get(inDocument);
+    if (!this.sourceUuids) return null;
+    if (this.userId !== game.user.id) return null;
+    if (this.documentName !== inDocument.documentName) return null;
+    if (Date.now() - this.capturedAt > PASTE_BATCH_STALE_MS) {
+      this.sourceUuids = null;
+      return null;
+    }
+    if (this.cursor >= this.sourceUuids.length) {
+      this.sourceUuids = null;
+      return null;
+    }
+    const sourceUuid = this.sourceUuids[this.cursor++];
+    this.consumed.set(inDocument, sourceUuid);
+    return sourceUuid;
+  }
+};
 const SOUND_STATES = {
   STARTING: 0,
   PLAYING: 1,
@@ -9733,11 +9861,13 @@ const placed_sound_mixin = (base_class) => class extends base_class {
       easing = true,
       walls = false,
       gmAlways = false,
-      sourceData = {},
+      sourceData,
       radius = 1,
       muffledEffect = { type: "lowpass", intensity: 5 }
     } = this.data.locationOptions ?? {};
     let sourcePosition = this.sourcePosition;
+    sourceData ??= this._emptySourceData ??= {};
+    const resolvedSourceData = this._resolveLevelForSourceData(sourceData, sourcePosition);
     const source2 = new CONFIG.Canvas.soundSourceClass({ object: null });
     source2.initialize({
       x: sourcePosition.x,
@@ -9745,7 +9875,7 @@ const placed_sound_mixin = (base_class) => class extends base_class {
       elevation: sourcePosition.elevation ?? 0,
       radius: canvas.dimensions.distancePixels * radius,
       walls,
-      ...sourceData
+      ...resolvedSourceData
     });
     const config = { sound: this.sound, source: source2, listener: void 0, volume: 0, walls, muffled: false, pan: 0 };
     const listeners2 = gmAlways && game.user.isGM ? [sourcePosition] : canvas.sounds.getListenerPositions();
@@ -9816,6 +9946,8 @@ const placed_sound_mixin = (base_class) => class extends base_class {
         volume = 0;
       }
     }
+    const baseSourceData = this.data.locationOptions?.sourceData ?? (this._emptySourceData ??= {});
+    const sourceData = this._resolveLevelForSourceData(baseSourceData, this.sourcePosition);
     return {
       easing: true,
       walls: false,
@@ -9823,9 +9955,68 @@ const placed_sound_mixin = (base_class) => class extends base_class {
       radius: 1,
       muffledEffect: { type: "lowpass", intensity: 5 },
       ...this.data.locationOptions,
+      sourceData,
       playbackOptions: this.playbackOptions,
       volume
     };
+  }
+  /**
+   * Merge a scene level id into the PointSoundSource init payload
+   * so Foundry's cross-level attenuation works. Honors `.onLevels()`.
+   *
+   * Called per frame for moving sounds via the update ticker, so
+   * the result is memoized on `(baseSourceData ref, elevation)`.
+   * The `.onLevels()` restriction Set is built once and resolves
+   * names against the scene the sound is playing in.
+   *
+   * @param {object} baseSourceData
+   * @param {{elevation?: number}|undefined} position
+   * @returns {object}
+   * @private
+   */
+  _resolveLevelForSourceData(baseSourceData, position) {
+    if (!CONSTANTS.IS_V14) return baseSourceData;
+    if (baseSourceData?.level !== void 0) return baseSourceData;
+    if (typeof canvas?.inferLevelFromElevation !== "function") return baseSourceData;
+    const elevation2 = position?.elevation ?? 0;
+    if (this._levelResolvedSourceData && this._levelResolvedBase === baseSourceData && this._levelResolvedElevation === elevation2) {
+      return this._levelResolvedSourceData;
+    }
+    if (this._levelRestrictionSet === void 0) {
+      this._levelRestrictionSet = this._buildLevelRestrictionSet();
+    }
+    const level = canvas.inferLevelFromElevation(elevation2, {
+      levels: this._levelRestrictionSet || void 0
+    });
+    const resolved = level ? { ...baseSourceData, level: level.id } : baseSourceData;
+    this._levelResolvedBase = baseSourceData;
+    this._levelResolvedElevation = elevation2;
+    this._levelResolvedSourceData = resolved;
+    return resolved;
+  }
+  /**
+   * Resolve `.onLevels()` entries (ids or names) to a Set of ids
+   * against the scene the sound is playing in. Returns null when
+   * no restriction is set, an empty Set when entries were given
+   * but none resolved (so Foundry sees no allowed levels).
+   *
+   * @returns {Set<string>|null}
+   * @private
+   */
+  _buildLevelRestrictionSet() {
+    const entries = this.data.levels;
+    if (!entries?.length) return null;
+    const sceneLevels = canvas?.scene?.levels;
+    const ids = /* @__PURE__ */ new Set();
+    for (const entry of entries) {
+      if (sceneLevels?.get(entry)) {
+        ids.add(entry);
+        continue;
+      }
+      const byName = sceneLevels?.getName?.(entry);
+      if (byName) ids.add(byName.id);
+    }
+    return ids;
   }
   animate() {
     super.animate();
@@ -10021,17 +10212,27 @@ class SequencerSound {
       if (!this.isSourceDestroyed) {
         let position = get_object_position(this.source);
         let offset2 = getOffsetFromData(this.data, { type: "source", twister: this.twister });
-        let elevation = this.data.attachTo.bindElevation ? position.elevation : 0;
+        let elevation2 = this.data.attachTo.bindElevation ? position.elevation ?? 0 : 0;
         this._sourcePosition = {
           x: position.x - offset2.x,
           y: position.y - offset2.y,
-          elevation
+          elevation: this._applyElevationOverride(elevation2)
         };
       }
     } else if (!this._sourcePosition) {
-      this._sourcePosition = this.data.source ? getPositionFromData(this.data, "source", this.twister) : false;
+      const fromData = this.data.source ? getPositionFromData(this.data, "source", this.twister) : false;
+      if (fromData) {
+        fromData.elevation = this._applyElevationOverride(fromData.elevation ?? 0);
+      }
+      this._sourcePosition = fromData;
     }
     return this._sourcePosition;
+  }
+  _applyElevationOverride(baseElevation) {
+    const override = this.data.elevation;
+    if (!override) return baseElevation;
+    if (override.absolute) return override.elevation ?? 0;
+    return baseElevation + (override.elevation ?? 0);
   }
   get targetPosition() {
     if (!this._targetPosition) {
@@ -10378,35 +10579,11 @@ class SequencerPersistentPlacedSound extends placed_sound_mixin(persistent_sound
 class SequencerSoundManager {
   static states = SOUND_STATES;
   static setup() {
-    Hooks.on("preCreateToken", this._patchCreationData.bind(this));
-    Hooks.on("preCreateDrawing", this._patchCreationData.bind(this));
-    Hooks.on("preCreateTile", this._patchCreationData.bind(this));
-    Hooks.on("preCreateMeasuredTemplate", this._patchCreationData.bind(this));
-    Hooks.on("preCreateRegion", this._patchCreationData.bind(this));
     Hooks.on("createToken", this._documentCreated.bind(this));
     Hooks.on("createDrawing", this._documentCreated.bind(this));
     Hooks.on("createTile", this._documentCreated.bind(this));
     Hooks.on("createMeasuredTemplate", this._documentCreated.bind(this));
     Hooks.on("createRegion", this._documentCreated.bind(this));
-  }
-  static async _patchCreationData(inDocument, data, options) {
-    const sounds = flagManager.getSoundFlags(inDocument);
-    if (!sounds?.length) return;
-    const updates = {};
-    let documentUuid;
-    if (!inDocument._id) {
-      const documentId = foundry.utils.randomID();
-      documentUuid = inDocument.uuid + documentId;
-      updates["_id"] = documentId;
-      options.keepId = true;
-    } else {
-      documentUuid = inDocument.uuid;
-    }
-    updates[CONSTANTS.SOUNDS_FLAG] = this._patchSoundDataForDocument(
-      documentUuid,
-      sounds
-    );
-    return flagManager.updateFlags(inDocument, updates);
   }
   static _patchSoundDataForDocument(inDocumentUuid, sounds) {
     return sounds.map((sound) => {
@@ -10437,6 +10614,19 @@ class SequencerSoundManager {
         );
       }
       sounds = sounds.concat(actorSounds);
+    }
+    const sourceUuid = PasteManager.consume(inDocument);
+    if (sourceUuid) {
+      const sourceSounds = flagManager.getSoundFlags({ uuid: sourceUuid });
+      if (sourceSounds.length) {
+        const rekeyed = this._patchSoundDataForDocument(inDocument.uuid, sourceSounds);
+        const soundDatas = rekeyed.map(([, data]) => data);
+        flagManager.addFlags(inDocument.uuid, { sounds: soundDatas });
+        for (const soundData of soundDatas) {
+          sequencerSocket.executeForOthers(SOCKET_HANDLERS.PLAY_SOUND, soundData, false);
+        }
+        sounds = sounds.concat(rekeyed);
+      }
     }
     if (!sounds?.length) return;
     return this._playSoundsMap(sounds, inDocument);
@@ -11508,15 +11698,7 @@ class SequencerEffectManager {
         "gu"
       );
     }
-    let effects = this.effects;
-    if (inFilter.sceneId && inFilter.sceneId !== canvas.scene?.id) {
-      effects = get_all_documents_from_scene(inFilter.sceneId).map((doc) => {
-        return foundry.utils.getProperty(doc, CONSTANTS.EFFECTS_FLAG);
-      }).filter((flags2) => !!flags2).map((flags2) => {
-        return flags2.map((flag) => CanvasEffect.make(flag[1]));
-      }).deepFlatten();
-    }
-    return effects.filter((effect2) => {
+    return this.effects.filter((effect2) => {
       return (!inFilter.effects || inFilter.effects.includes(effect2.id)) && (!inFilter.name || effect2.data.name && effect2.data.name.match(inFilter.name)?.length) && (!inFilter.source || inFilter.source === effect2.data.source) && (!inFilter.target || inFilter.target === effect2.data.target) && (!inFilter.origin || inFilter.origin === effect2.data.origin);
     });
   }
@@ -11783,43 +11965,11 @@ class SequencerEffectManager {
     );
   }
   static setup() {
-    Hooks.on("preCreateToken", this._patchCreationData.bind(this));
-    Hooks.on("preCreateDrawing", this._patchCreationData.bind(this));
-    Hooks.on("preCreateTile", this._patchCreationData.bind(this));
-    Hooks.on("preCreateMeasuredTemplate", this._patchCreationData.bind(this));
-    Hooks.on("preCreateRegion", this._patchCreationData.bind(this));
     Hooks.on("createToken", this._documentCreated.bind(this));
     Hooks.on("createDrawing", this._documentCreated.bind(this));
     Hooks.on("createTile", this._documentCreated.bind(this));
     Hooks.on("createMeasuredTemplate", this._documentCreated.bind(this));
     Hooks.on("createRegion", this._documentCreated.bind(this));
-  }
-  /**
-   * Patches an object's creation data before it's created so that the effect plays on it correctly
-   *
-   * @param inDocument
-   * @param data
-   * @param options
-   * @returns {*}
-   */
-  static async _patchCreationData(inDocument, data, options) {
-    const effects = flagManager.getEffectFlags(inDocument);
-    if (!effects?.length) return;
-    const updates = {};
-    let documentUuid;
-    if (!inDocument._id) {
-      const documentId = foundry.utils.randomID();
-      documentUuid = inDocument.uuid + documentId;
-      updates["_id"] = documentId;
-      options.keepId = true;
-    } else {
-      documentUuid = inDocument.uuid;
-    }
-    updates[CONSTANTS.EFFECTS_FLAG] = this._patchEffectDataForDocument(
-      documentUuid,
-      effects
-    );
-    return flagManager.addFlags(documentUuid, updates);
   }
   static _patchEffectDataForDocument(inDocumentUuid, effects) {
     return effects.map((effect2) => {
@@ -11854,6 +12004,19 @@ class SequencerEffectManager {
         );
       }
       effects = effects.concat(actorEffects);
+    }
+    const sourceUuid = PasteManager.consume(inDocument);
+    if (sourceUuid) {
+      const sourceEffects = flagManager.getEffectFlags({ uuid: sourceUuid });
+      if (sourceEffects.length) {
+        const rekeyed = this._patchEffectDataForDocument(inDocument.uuid, sourceEffects);
+        const effectDatas = rekeyed.map(([, data]) => data);
+        flagManager.addFlags(inDocument.uuid, { effects: effectDatas });
+        for (const effectData of effectDatas) {
+          sequencerSocket.executeForOthers(SOCKET_HANDLERS.PLAY_EFFECT, effectData, false);
+        }
+        effects = effects.concat(rekeyed);
+      }
     }
     if (!effects?.length) return;
     return this._playEffectMap(effects, inDocument);
@@ -11960,23 +12123,18 @@ class SequencerEffectManager {
    * @returns {Promise}
    */
   static objectDeleted(inUUID) {
-    const documentsToCheck = game.scenes.filter((scene) => scene.id !== game.user.viewedScene).map((scene) => [scene, ...get_all_documents_from_scene(scene.id)]).deepFlatten();
-    const documentEffectsToEnd = documentsToCheck.map((obj) => {
-      const objEffects = flagManager.getEffectFlags(obj);
-      const effectsToEnd = objEffects.filter(
-        ([effectId, effectData]) => this._effectContextFilter(inUUID, effectData)
-      );
-      return {
-        document: obj,
-        effects: effectsToEnd.map((effect2) => effect2[0])
-      };
-    }).filter((obj) => obj.effects.length);
+    const databaseEffects = flagManager.getDatabaseFlags().effects;
+    const flagRemovals = [];
+    for (const [ownerUuid, effects] of Object.entries(databaseEffects)) {
+      const idsToEnd = effects.filter(([, effectData]) => this._effectContextFilter(inUUID, effectData)).map(([effectId]) => effectId);
+      if (idsToEnd.length) {
+        flagRemovals.push(flagManager.removeFlags(ownerUuid, { effects: idsToEnd }));
+      }
+    }
     const visibleEffectsToEnd = this.effects.filter((effect2) => this._effectContextFilter(inUUID, effect2.data)).map((e) => e.id);
     return Promise.allSettled([
       this._endManyEffects(visibleEffectsToEnd),
-      ...documentEffectsToEnd.map((obj) => {
-        return flagManager.removeFlags(obj.document.uuid, { effects: obj.effects });
-      })
+      ...flagRemovals
     ]);
   }
   /**
@@ -12360,6 +12518,10 @@ class UIEffectsLayer extends foundry.canvas.layers.InteractionLayer {
       name: "sequencerEffectsAboveEverything"
     });
   }
+  async _draw(options) {
+    await super._draw(options);
+    this.sortableChildren = true;
+  }
   updateTransform() {
     if (this.sortableChildren && this.sortDirty) {
       this.sortChildren();
@@ -12374,7 +12536,7 @@ class UIEffectsLayer extends foundry.canvas.layers.InteractionLayer {
     }
   }
 }
-let layer = false;
+let ABOVE_UI_LAYER = false;
 class SequencerAboveUILayer {
   constructor(name2, zIndex = 0.1) {
     this.canvas = document.createElement("canvas");
@@ -12401,41 +12563,50 @@ class SequencerAboveUILayer {
     this.app.resizeTo = window;
     this.app.stage.renderable = false;
     this.app.stage.sortableChildren = true;
-  }
-  static setup() {
-    if (!game.settings.get("sequencer", "enable-above-ui-screenspace")) return;
-    layer = new this("sequencerUILayerAbove", 1e4);
+    PIXI.Ticker.shared.remove(this.app.render, this.app);
+    this._renderTickerActive = false;
   }
   static getLayer() {
-    return layer ? layer.app.stage : canvas.sequencerEffectsUILayer;
+    return ABOVE_UI_LAYER ? ABOVE_UI_LAYER.app.stage : canvas.sequencerEffectsUILayer;
   }
   static addChild(...args) {
-    const layer2 = this.getLayer();
-    const result = layer2.addChild(...args);
-    layer2.renderable = layer2.children.length > 0;
+    if (!ABOVE_UI_LAYER && game.settings.get("sequencer", "enable-above-ui-screenspace")) {
+      ABOVE_UI_LAYER = new this("sequencerUILayerAbove", 1e4);
+    }
+    const targetLayer = this.getLayer();
+    const result = targetLayer.addChild(...args);
+    if (ABOVE_UI_LAYER && targetLayer === ABOVE_UI_LAYER.app.stage) {
+      targetLayer.renderable = targetLayer.children.length > 0;
+      if (targetLayer.renderable && !ABOVE_UI_LAYER._renderTickerActive) {
+        PIXI.Ticker.shared.add(
+          ABOVE_UI_LAYER.app.render,
+          ABOVE_UI_LAYER.app,
+          PIXI.UPDATE_PRIORITY.LOW
+        );
+        ABOVE_UI_LAYER._renderTickerActive = true;
+      }
+    }
     return result;
   }
   static sortChildren() {
     this.getLayer().sortDirty = true;
   }
   static removeContainerByEffect(inEffect) {
-    const layer2 = this.getLayer();
-    if (!(layer2 instanceof SequencerAboveUILayer)) return;
-    const child2 = layer2.children.find((child3) => child3 === inEffect);
-    if (!child2) return;
-    layer2.removeChild(child2);
-    layer2.renderable = layer2.children.length > 0;
-  }
-  updateTransform() {
-    if (this.app.stage.sortableChildren && this.app.stage.sortDirty) {
-      this.app.stage.sortChildren();
-    }
-    this.app.stage._boundsID++;
-    this.app.stage.transform.updateTransform(PIXI.Transform.IDENTITY);
-    this.app.stage.worldAlpha = this.app.stage.alpha;
-    for (let child2 of this.app.stage.children) {
-      if (child2.visible) {
-        child2.updateTransform();
+    const targetLayer = this.getLayer();
+    if (!targetLayer) return;
+    targetLayer.removeChild(inEffect);
+    if (ABOVE_UI_LAYER && targetLayer === ABOVE_UI_LAYER.app.stage) {
+      targetLayer.renderable = targetLayer.children.length > 0;
+      if (!targetLayer.renderable && ABOVE_UI_LAYER._renderTickerActive) {
+        try {
+          ABOVE_UI_LAYER.app.render();
+        } finally {
+          PIXI.Ticker.shared.remove(
+            ABOVE_UI_LAYER.app.render,
+            ABOVE_UI_LAYER.app
+          );
+          ABOVE_UI_LAYER._renderTickerActive = false;
+        }
       }
     }
   }
@@ -13540,6 +13711,14 @@ class SequencerSpriteManager extends PIXI.Container {
       this.managedSprite.tint = typeof value === "number" ? Math.floor(value) : value;
     }
   }
+  get blendMode() {
+    return this.managedSprite?.blendMode ?? PIXI.BLEND_MODES.NORMAL;
+  }
+  set blendMode(value) {
+    if (this.managedSprite) {
+      this.managedSprite.blendMode = value;
+    }
+  }
   get scale() {
     return this.managedSprite?.scale || super.scale;
   }
@@ -14310,9 +14489,9 @@ class GrapeJuiceIsometrics extends Plugin {
   }
   sourcePosition({ effect: effect2, position, height } = {}) {
     if (this.isIsometricActive(effect2) && effect2.source instanceof PlaceableObject) {
-      const elevation = (effect2.sourceDocument.elevation ?? 0) / canvas.scene.grid.distance * canvas.grid.size;
-      position.x += elevation;
-      position.y -= elevation;
+      const elevation2 = (effect2.sourceDocument.elevation ?? 0) / canvas.scene.grid.distance * canvas.grid.size;
+      position.x += elevation2;
+      position.y -= elevation2;
       if (effect2.data.isometric?.overlay || effect2.target instanceof PlaceableObject) {
         position.x += height / 2;
         position.y -= height / 2;
@@ -14323,9 +14502,9 @@ class GrapeJuiceIsometrics extends Plugin {
   targetPosition({ effect: effect2, position, height } = {}) {
     if (this.isIsometricActive(effect2) && effect2.target instanceof PlaceableObject) {
       const targetHeight = height / 2;
-      const elevation = (effect2.targetDocument.elevation ?? 0) / canvas.scene.grid.distance * canvas.grid.size;
-      position.x += elevation + targetHeight;
-      position.y -= elevation + targetHeight;
+      const elevation2 = (effect2.targetDocument.elevation ?? 0) / canvas.scene.grid.distance * canvas.grid.size;
+      position.x += elevation2 + targetHeight;
+      position.y -= elevation2 + targetHeight;
     }
     return position;
   }
@@ -14531,6 +14710,57 @@ const SyncGroups = {
     }
   }
 };
+function isDocOnViewedLevel(doc, viewedLevel) {
+  if (!doc || !viewedLevel) return false;
+  if (doc.includedInLevel?.(viewedLevel.id) === true) return true;
+  const cross = viewedLevel.visibility?.levels;
+  if (!cross?.size) return false;
+  if (doc.levels?.size) {
+    for (const id of doc.levels) {
+      if (cross.has(id)) return true;
+    }
+  } else if (typeof doc.level === "string") {
+    if (cross.has(doc.level)) return true;
+  }
+  return false;
+}
+function isAttachedPlaceableVisible(placeable) {
+  if (!placeable) return false;
+  const Token = foundry.canvas.placeables.Token;
+  if (!(placeable instanceof Token)) return true;
+  return placeable.isVisible !== false;
+}
+function isPositionCulled(scene, viewedLevel, x, y, zMin, zMax) {
+  const { bottom, top } = viewedLevel.elevation;
+  let lo, hi;
+  if (zMax < bottom) {
+    lo = Math.nextUp(zMax);
+    hi = bottom;
+  } else if (zMin >= top) {
+    lo = top;
+    hi = zMin;
+  } else {
+    return false;
+  }
+  const probe = { x, y };
+  for (const surface of scene.getSurfaces({ culling: true, level: viewedLevel })) {
+    if (surface.elevation > hi) break;
+    if (surface.elevation < lo) continue;
+    if (surface.region.polygonTree.testPoint(probe)) return true;
+  }
+  return false;
+}
+function intervalsOverlap(a0, a1, b0, b1, aTopInclusive = false) {
+  const aIsRange = a0 < a1;
+  const bIsRange = b0 < b1;
+  const lo = Math.max(a0, b0);
+  const hi = Math.min(a1, b1);
+  if (lo > hi) return false;
+  if (lo < hi) return true;
+  if (bIsRange && hi === b1) return false;
+  if (aIsRange && hi === a1) return aTopInclusive;
+  return true;
+}
 class CanvasEffect extends PIXI.Container {
   #elevation = 0;
   #sort = 0;
@@ -15023,8 +15253,9 @@ class CanvasEffect extends PIXI.Container {
     }
     let crosshairPos = this.source instanceof CrosshairsPlaceable ? this.sourceDocument.getOrientation() : false;
     crosshairPos = crosshairPos?.source;
-    let position = this.source instanceof foundry.canvas.placeables.PlaceableObject && !this.isSourceTemporary ? get_object_position(this.source) : crosshairPos || this.source?.worldPosition || this.source?.center || this.source;
-    const { width, height } = crosshairPos || get_object_dimensions(this.source);
+    const positionSource = this.source instanceof foundry.canvas.placeables.PlaceableObject && !this.isSourceTemporary ? this.source : this.sourceDocument ?? this.source;
+    let position = crosshairPos || (positionSource ? get_object_position(positionSource) : null) || this.source?.worldPosition || this.source?.center || this.source;
+    const { width, height } = crosshairPos || get_object_dimensions(positionSource);
     position = PluginsManager.sourcePosition({ effect: this, position, height });
     if (position !== void 0) {
       this._cachedSourceData.position = position;
@@ -15077,8 +15308,9 @@ class CanvasEffect extends PIXI.Container {
     }
     let crosshairPos = this.target instanceof CrosshairsPlaceable ? this.targetDocument.getOrientation() : false;
     crosshairPos = crosshairPos?.target ?? crosshairPos?.source;
-    let position = this.target instanceof foundry.canvas.placeables.PlaceableObject && !this.isTargetTemporary && !this.isTargetDestroyed ? get_object_position(this.target, { measure: true }) : crosshairPos || this.target?.worldPosition || this.target?.center || this.target;
-    const { width, height } = crosshairPos || get_object_dimensions(this.target);
+    const positionTarget = this.target instanceof foundry.canvas.placeables.PlaceableObject && !this.isTargetTemporary && !this.isTargetDestroyed ? this.target : this.targetDocument ?? this.target;
+    let position = crosshairPos || (positionTarget ? get_object_position(positionTarget, { measure: true }) : null) || this.target?.worldPosition || this.target?.center || this.target;
+    const { width, height } = crosshairPos || get_object_dimensions(positionTarget);
     position = PluginsManager.targetPosition({ effect: this, position, height });
     if (width !== void 0 && height !== void 0) {
       this._cachedTargetData.width = width;
@@ -15423,7 +15655,8 @@ class CanvasEffect extends PIXI.Container {
    * @private
    */
   async _reinitialize() {
-    this.renderable = false;
+    this._initializing = true;
+    this._recomputeRenderable();
     if (!this.shouldPlay) {
       return Sequencer.EffectManager._removeEffect(this);
     }
@@ -15449,6 +15682,9 @@ class CanvasEffect extends PIXI.Container {
     this._maskContainer = null;
     this._maskSprite = null;
     this._stageMasks = [];
+    this._wallMaskGraphics = null;
+    this._wallMaskDirty = false;
+    this._verticalExtent = [0, 0, false];
     this._timeouts = /* @__PURE__ */ new Set();
     this._file = null;
     this._loopOffset = 0;
@@ -15539,13 +15775,11 @@ class CanvasEffect extends PIXI.Container {
       }
       this._stageMasks.length = 0;
     }
+    this._wallMaskGraphics = null;
     this.sprite?.destroy();
     this.sprite = null;
-    try {
-      if (this.data.screenSpace) {
-        SequencerAboveUILayer.removeContainerByEffect(this);
-      }
-    } catch (err) {
+    if (this.data.screenSpaceAboveUI) {
+      SequencerAboveUILayer.removeContainerByEffect(this);
     }
     if (this.data.syncGroup) {
       SyncGroups.remove(this);
@@ -15615,23 +15849,23 @@ class CanvasEffect extends PIXI.Container {
    * @private
    */
   _addToContainer() {
-    let layer2;
+    let layer;
     let registerVoidProxy = false;
     if (this.data.screenSpaceAboveUI) {
-      layer2 = SequencerAboveUILayer;
+      layer = SequencerAboveUILayer;
     } else if (this.data.screenSpace) {
-      layer2 = canvas.sequencerEffectsUILayer;
+      layer = canvas.sequencerEffectsUILayer;
     } else if (this.data.aboveInterface) {
-      layer2 = canvas.controls;
+      layer = canvas.controls;
     } else if (this.data.aboveLighting) {
-      layer2 = canvas.interface;
+      layer = canvas.interface;
     } else {
-      layer2 = canvas.primary;
+      layer = canvas.primary;
       registerVoidProxy = true;
     }
-    if (!layer2 || typeof layer2.addChild !== "function") return;
-    layer2.addChild(this);
-    layer2.sortChildren?.();
+    if (!layer || typeof layer.addChild !== "function") return;
+    layer.addChild(this);
+    layer.sortChildren?.();
     if (registerVoidProxy) this._registerVoidProxy();
   }
   /* -------------------------------------------------------------- */
@@ -15682,9 +15916,9 @@ class CanvasEffect extends PIXI.Container {
     }
   }
   static _sceneHasActiveRegionHighlights() {
-    const layer2 = canvas?.regions;
-    if (!layer2) return false;
-    const placeables = layer2.placeables;
+    const layer = canvas?.regions;
+    if (!layer) return false;
+    const placeables = layer.placeables;
     if (!placeables?.length) return false;
     for (let i = 0; i < placeables.length; i++) {
       const region = placeables[i];
@@ -15957,18 +16191,18 @@ class CanvasEffect extends PIXI.Container {
   async _createFile() {
     if (this.data.copySprite) {
       let targetDocument = fromUuidSync(this.data.copySprite.uuid);
-      let clonedObject = targetDocument.object.clone();
-      await clonedObject.draw();
-      let clonedMesh = clonedObject.mesh;
-      clonedMesh.position.set(0, 0);
-      if (targetDocument?.ring?.enabled) {
+      if (targetDocument?.ring?.enabled && targetDocument.object) {
+        let clonedObject = targetDocument.object.clone();
+        await clonedObject.draw();
+        let clonedMesh = clonedObject.mesh;
+        clonedMesh.position.set(0, 0);
         clonedMesh.setShaderClass(CONFIG.Token.ring.shaderClass);
+        this._renderTexture = canvas.app.renderer.generateTexture(clonedMesh, {
+          resolution: clonedMesh.texture.resolution
+        });
+        clonedObject.destroy();
+        return;
       }
-      this._renderTexture = canvas.app.renderer.generateTexture(clonedMesh, {
-        resolution: clonedMesh.texture.resolution
-      });
-      clonedObject.destroy();
-      return;
     }
     if (this.data.file === "") {
       return;
@@ -15999,7 +16233,7 @@ class CanvasEffect extends PIXI.Container {
     this._isRangeFind = file?.rangeFind;
   }
   _updateCurrentFilePath(distance, showDistanceWarning = false) {
-    if (this.data.copySprite) {
+    if (this.data.copySprite && this._renderTexture) {
       this._currentFilePath = this.data.copySprite.uuid;
       return;
     }
@@ -16028,7 +16262,8 @@ class CanvasEffect extends PIXI.Container {
     if (this.data.copySprite?.offsetX !== void 0 && this.data.copySprite?.offsetY !== void 0) {
       this.rotationContainer.position.set(this.data.copySprite.offsetX, this.data.copySprite.offsetY);
     }
-    this.renderable = false;
+    this._initializing = true;
+    this._recomputeRenderable();
     const spriteData = {
       texture: this._renderTexture,
       antialiasing: this.data?.fileOptions?.antialiasing,
@@ -16043,6 +16278,13 @@ class CanvasEffect extends PIXI.Container {
     this.sprite.currentTime = this._startTime;
     this.sprite.loop = this.loops;
     await this.sprite.activate(this._currentFilePath);
+    if (this.data.copySprite && !this._renderTexture && !this.data.time?.start) {
+      const sourcePlaceable = fromUuidSync(this.data.copySprite.uuid)?.object ?? null;
+      const sourceTime = sourcePlaceable?.sourceElement?.currentTime;
+      if (Number.isFinite(sourceTime) && sourceTime > 0) {
+        this.sprite.currentTime = sourceTime;
+      }
+    }
     this.sprite.volume = (this.data.volume ?? 0) * game.settings.get("core", "globalInterfaceVolume");
     if (this._isRangeFind && this.data.stretchTo && (this.data.attachTo?.active || this.data.stretchTo?.attachTo?.active)) {
       this.sprite.preloadVariants();
@@ -16108,6 +16350,9 @@ class CanvasEffect extends PIXI.Container {
     if (this.data.tint) {
       this.sprite.tint = this.data.tint;
     }
+    if (this.data.blendMode != null) {
+      this.sprite.blendMode = this.data.blendMode;
+    }
     if (this.shouldShowFadedVersion) {
       this.alpha = game.settings.get(CONSTANTS.MODULE_NAME, "user-effect-opacity") / 100;
       this.filters = [
@@ -16130,16 +16375,147 @@ class CanvasEffect extends PIXI.Container {
       this.shapes[shape?.name ?? "shape-" + foundry.utils.randomID()] = graphic;
     }
   }
+  /**
+   * Single place to write to this.renderable. Other code paths set their
+   * gate slot (e.g. _baseRenderable) and call this; don't bypass.
+   *
+   * @private
+   */
+  _recomputeRenderable() {
+    if (this._initializing) {
+      this.renderable = false;
+      return;
+    }
+    const base = this._baseRenderable ?? this.shouldPlayVisible;
+    const paused = this._pauseRenderable !== false;
+    this.renderable = base && paused && this._isOnViewedLevel();
+  }
+  /**
+   * Whether this effect is visible on the currently viewed scene level.
+   * Always true on Foundry v13, and on `.screenSpace()`,
+   * `.screenSpaceAboveUI()`, and `.aboveInterface()` effects.
+   *
+   * @returns {boolean}
+   * @private
+   */
+  _isOnViewedLevel() {
+    if (!CONSTANTS.IS_V14) return true;
+    const currentLevel = canvas?.level;
+    if (!currentLevel) return true;
+    if (this.data.screenSpace || this.data.screenSpaceAboveUI || this.data.aboveInterface) {
+      return true;
+    }
+    const crossLevels = currentLevel.visibility?.levels;
+    const sceneLevels = canvas.scene?.levels;
+    if (this.data.levels?.length) {
+      for (const entry of this.data.levels) {
+        let id = entry;
+        if (sceneLevels && !sceneLevels.get(id)) {
+          id = sceneLevels.getName?.(entry)?.id ?? entry;
+        }
+        if (id === currentLevel.id) return true;
+        if (crossLevels?.has(id)) return true;
+      }
+      return false;
+    }
+    const hasExplicitSpatial = !!this.data.elevation && (typeof this.data.elevation.top === "number" || this.data.elevation.absolute === true);
+    const sourceAttached = !hasExplicitSpatial && this.data.attachTo?.active && typeof this.sourceDocument?.viewed === "boolean";
+    const targetAttached = !hasExplicitSpatial && (this.data.stretchTo?.attachTo || this.data.rotateTowards?.attachTo) && typeof this.targetDocument?.viewed === "boolean";
+    if (sourceAttached || targetAttached) {
+      if (sourceAttached && isDocOnViewedLevel(this.sourceDocument, currentLevel)) return true;
+      if (targetAttached && isDocOnViewedLevel(this.targetDocument, currentLevel)) return true;
+      return false;
+    }
+    if (sceneLevels?.size === 1 && sceneLevels.has(foundry.documents.BaseScene.metadata.defaultLevelId)) {
+      return true;
+    }
+    const [zMin, zMax, topInclusive] = this._getEffectiveVerticalExtent();
+    const viewed = currentLevel.elevation;
+    let levelMatch = intervalsOverlap(zMin, zMax, viewed.bottom, viewed.top, topInclusive);
+    if (!levelMatch && crossLevels?.size) {
+      const allLevels = canvas.scene?.levels;
+      for (const otherId of crossLevels) {
+        const other = allLevels?.get(otherId)?.elevation;
+        if (!other) continue;
+        if (intervalsOverlap(zMin, zMax, other.bottom, other.top, topInclusive)) {
+          levelMatch = true;
+          break;
+        }
+      }
+    }
+    if (!levelMatch) return false;
+    const pos = this.sourcePosition;
+    if (!pos || !canvas.scene) return true;
+    return !isPositionCulled(canvas.scene, currentLevel, pos.x, pos.y, zMin, zMax);
+  }
+  /**
+   * The effect's vertical `[zMin, zMax, topInclusive]` in scene elevation
+   * units. Pinned by an explicit `.elevation()`; otherwise inherits the
+   * source/target's extent (Token depth, Region elevation range and its
+   * `topInclusive` flag).
+   *
+   * @returns {[number, number, boolean]}
+   * @private
+   */
+  _getEffectiveVerticalExtent() {
+    const out = this._verticalExtent;
+    if (this.data.elevation) {
+      out[0] = typeof this.elevationBottom === "number" ? this.elevationBottom : this.elevation;
+      out[1] = typeof this.elevationTop === "number" ? this.elevationTop : out[0];
+      out[2] = !!this.data.elevation.topInclusive;
+      return out;
+    }
+    const sourceExtent = get_object_vertical_extent(this.sourceDocument);
+    const targetExtent = get_object_vertical_extent(this.targetDocument);
+    if (sourceExtent && targetExtent) {
+      out[0] = Math.min(sourceExtent[0], targetExtent[0]);
+      out[1] = Math.max(sourceExtent[1], targetExtent[1]);
+      out[2] = !!(sourceExtent[1] >= targetExtent[1] ? sourceExtent[2] : false) || !!(targetExtent[1] >= sourceExtent[1] ? targetExtent[2] : false);
+      return out;
+    }
+    if (sourceExtent) {
+      out[0] = sourceExtent[0];
+      out[1] = sourceExtent[1];
+      out[2] = !!sourceExtent[2];
+      return out;
+    }
+    if (targetExtent) {
+      out[0] = targetExtent[0];
+      out[1] = targetExtent[1];
+      out[2] = !!targetExtent[2];
+      return out;
+    }
+    out[0] = this.elevation;
+    out[1] = this.elevation;
+    out[2] = false;
+    return out;
+  }
   updateElevation() {
     let targetElevation = Math.max(
       get_object_elevation(this.source ?? {}),
       get_object_elevation(this.target ?? {})
     );
-    let effectElevation = this.data.elevation?.elevation ?? 0;
-    if (!this.data.elevation?.absolute) {
-      effectElevation += targetElevation;
+    const offset2 = this.data.elevation?.absolute ? 0 : targetElevation;
+    const bottom = (this.data.elevation?.elevation ?? 0) + offset2;
+    const top = typeof this.data.elevation?.top === "number" ? this.data.elevation.top + offset2 : null;
+    this.elevationBottom = bottom;
+    this.elevationTop = top;
+    let renderElevation = bottom;
+    const onDefaultRoute = !this.data.aboveLighting && !this.data.aboveInterface && !this.data.screenSpace && !this.data.screenSpaceAboveUI;
+    if (onDefaultRoute) {
+      const [, extentTop, extentTopInclusive] = this._getEffectiveVerticalExtent();
+      const effectiveTop = typeof extentTop === "number" ? extentTop : bottom;
+      const sceneLevels = canvas?.scene?.levels;
+      if (sceneLevels) {
+        for (const level of sceneLevels) {
+          const lvlBottom = level.elevation?.bottom;
+          if (!Number.isFinite(lvlBottom)) continue;
+          const crosses = extentTopInclusive ? effectiveTop >= lvlBottom : effectiveTop > lvlBottom;
+          if (crosses && lvlBottom > renderElevation) renderElevation = lvlBottom;
+        }
+      }
     }
-    this.elevation = effectElevation;
+    this.elevation = renderElevation;
     let sort = !is_real_number(this.data.zIndex) ? this?.parent?.children?.length ?? 0 : 1e5;
     sort = PluginsManager.elevation({ effect: this, sort });
     sort += 100;
@@ -16153,6 +16529,7 @@ class CanvasEffect extends PIXI.Container {
     if (this.parent) {
       this.parent.sortDirty = true;
     }
+    this._recomputeRenderable();
   }
   updateTransform() {
     super.updateTransform();
@@ -16187,15 +16564,33 @@ class CanvasEffect extends PIXI.Container {
   }
   async _setupMasks() {
     const maskShapes = this.data.shapes.filter((shape) => shape.isMask);
-    if (!this.data?.masks?.length && !maskShapes.length) return;
+    if (!this.data?.masks?.length && !maskShapes.length && !this.data?.constrainedByWalls) return;
     const maskFilter = MaskFilter.create();
-    for (const uuid of this.data.masks) {
+    if (this.data.constrainedByWalls) {
+      this._setupWallMask(maskFilter);
+    }
+    for (const entry of this.data.masks) {
+      if (entry && typeof entry === "object" && entry.__shape) {
+        const rawShape = deserializeShape(entry.__shape);
+        if (!rawShape) continue;
+        const graphics = new PIXI.LegacyGraphics().beginFill().drawShape(rawShape).endFill();
+        graphics.cullable = true;
+        graphics.custom = true;
+        graphics.renderable = false;
+        graphics.uuid = "__rawShape-" + foundry.utils.randomID();
+        canvas.stage.addChild(graphics);
+        this._stageMasks.push(graphics);
+        maskFilter.masks.push(graphics);
+        continue;
+      }
+      const uuid = entry;
       const documentObj = fromUuidSync(uuid);
       if (!documentObj || documentObj.parent.id !== this.data.sceneId) continue;
       const obj = documentObj.object;
+      const docName = documentObj.documentName;
       let shape = obj?.mesh;
       let shapeToAdd = shape;
-      if (obj instanceof foundry.canvas.placeables.Region) {
+      if (docName === "Region") {
         shape = new PIXI.LegacyGraphics();
         for (let polygon of documentObj.polygons) {
           if (polygon.isPositive) {
@@ -16217,8 +16612,15 @@ class CanvasEffect extends PIXI.Container {
         shapeToAdd.uuid = uuid;
         canvas.stage.addChild(shapeToAdd);
         this._stageMasks.push(shapeToAdd);
-      } else if (obj instanceof foundry.canvas.placeables.MeasuredTemplate || obj instanceof foundry.canvas.placeables.Drawing) {
-        shape = obj?.shape?.geometry?.graphicsData?.[0]?.shape ?? obj?.shape;
+      } else if (docName === "MeasuredTemplate" || docName === "Drawing") {
+        if (obj) {
+          shape = obj?.shape?.geometry?.graphicsData?.[0]?.shape ?? obj?.shape;
+        } else if (docName === "Drawing") {
+          shape = create_drawing_mask_shape(documentObj);
+        } else {
+          continue;
+        }
+        if (!shape) continue;
         shape = PluginsManager.masking({
           effect: this,
           doc: documentObj,
@@ -16226,7 +16628,7 @@ class CanvasEffect extends PIXI.Container {
           shape
         });
         shapeToAdd = new PIXI.LegacyGraphics().beginFill().drawShape(shape).endFill();
-        if (obj instanceof foundry.canvas.placeables.MeasuredTemplate) {
+        if (docName === "MeasuredTemplate") {
           shapeToAdd.position.set(documentObj.x, documentObj.y);
         } else {
           const {
@@ -16245,6 +16647,8 @@ class CanvasEffect extends PIXI.Container {
         shapeToAdd.uuid = uuid;
         canvas.stage.addChild(shapeToAdd);
         this._stageMasks.push(shapeToAdd);
+      } else {
+        continue;
       }
       shapeToAdd.obj = obj;
       const updateMethod = (doc) => {
@@ -16253,7 +16657,7 @@ class CanvasEffect extends PIXI.Container {
         if (!mask) return;
         if (!mask.custom) return;
         mask.clear();
-        if (obj instanceof foundry.canvas.placeables.Region) {
+        if (docName === "Region") {
           for (let polygon of documentObj.polygons) {
             if (polygon.isPositive) {
               mask.beginFill();
@@ -16267,10 +16671,10 @@ class CanvasEffect extends PIXI.Container {
               mask.endHole();
             }
           }
-        } else if (obj instanceof foundry.canvas.placeables.MeasuredTemplate) {
+        } else if (docName === "MeasuredTemplate") {
           mask.position.set(documentObj.x, documentObj.y);
           let maskObj = documentObj.object;
-          shape = obj?.shape?.geometry?.graphicsData?.[0]?.shape ?? obj?.shape;
+          shape = maskObj?.shape?.geometry?.graphicsData?.[0]?.shape ?? maskObj?.shape;
           shape = PluginsManager.masking({
             effect: this,
             doc: documentObj,
@@ -16278,7 +16682,7 @@ class CanvasEffect extends PIXI.Container {
             shape
           });
           mask.beginFill().drawShape(shape).endFill();
-        } else {
+        } else if (docName === "Drawing") {
           const {
             x,
             y,
@@ -16288,7 +16692,13 @@ class CanvasEffect extends PIXI.Container {
           mask.pivot.set(width / 2, height / 2);
           mask.position.set(x + width / 2, y + height / 2);
           mask.angle = rotation2;
-          mask.beginFill().drawShape(shape).endFill();
+          let updatedShape;
+          if (documentObj.object) {
+            updatedShape = documentObj.object?.shape?.geometry?.graphicsData?.[0]?.shape ?? documentObj.object?.shape;
+          } else {
+            updatedShape = create_drawing_mask_shape(documentObj);
+          }
+          if (updatedShape) mask.beginFill().drawShape(updatedShape).endFill();
         }
       };
       PluginsManager.maskingHooks.forEach((hook) => {
@@ -16317,6 +16727,118 @@ class CanvasEffect extends PIXI.Container {
     this.sprite.filters.push(maskFilter);
   }
   /**
+   * Builds the initial wall-constrained mask graphic and wires hooks that recompute
+   * the sweep when walls change or when the attached source moves.
+   *
+   * @param {MaskFilter} maskFilter
+   * @private
+   */
+  _setupWallMask(maskFilter) {
+    const shape = this._computeWallPolygon();
+    if (!shape) return;
+    const graphics = new PIXI.LegacyGraphics().beginFill().drawShape(shape).endFill();
+    graphics.cullable = true;
+    graphics.custom = true;
+    graphics.renderable = false;
+    graphics.uuid = "__constrainedByWalls";
+    canvas.stage.addChild(graphics);
+    this._stageMasks.push(graphics);
+    maskFilter.masks.push(graphics);
+    this._wallMaskGraphics = graphics;
+    const recompute = () => {
+      if (!this._wallMaskGraphics || this._ended) return;
+      const next = this._computeWallPolygon();
+      if (!next) return;
+      this._wallMaskGraphics.clear().beginFill().drawShape(next).endFill();
+    };
+    const debouncedRecompute = () => {
+      if (this._wallMaskDirty) return;
+      this._wallMaskDirty = true;
+      this._setTimeout(() => {
+        this._wallMaskDirty = false;
+        recompute();
+      }, 100);
+    };
+    for (const hook of ["createWall", "updateWall", "deleteWall"]) {
+      hooksManager.addHook(this.uuid, hook, debouncedRecompute);
+    }
+    if (CONSTANTS.IS_V14) {
+      for (const hook of ["createLevel", "updateLevel", "deleteLevel"]) {
+        hooksManager.addHook(this.uuid, hook, (level) => {
+          if (level?.parent?.id !== this.data.sceneId) return;
+          debouncedRecompute();
+        });
+      }
+    }
+    const attachedToSource = this.data.attachTo?.active && is_UUID(this.data.source);
+    const sourceRefreshHook = attachedToSource && this.getSourceHook("refresh");
+    if (sourceRefreshHook) {
+      hooksManager.addHook(this.uuid, sourceRefreshHook, (placeable) => {
+        if (placeable?.document?.uuid !== this.data.source) return;
+        recompute();
+      });
+    }
+  }
+  /**
+   * Computes the wall-constrained polygon for this effect from the source position.
+   *
+   * @returns {PIXI.Polygon|null}
+   * @private
+   */
+  _computeWallPolygon() {
+    const cfg = this.data.constrainedByWalls;
+    if (!cfg) return null;
+    const origin = cfg.origin ?? this.sourcePosition;
+    if (!origin || !is_real_number(origin.x) || !is_real_number(origin.y)) return null;
+    const elevation2 = is_real_number(origin.elevation) ? origin.elevation : get_object_elevation(this.source ?? this.sourceDocument ?? {});
+    return computeWallPolygon({ ...origin, elevation: elevation2 }, {
+      type: cfg.type,
+      radius: cfg.radius,
+      level: cfg.level ?? this._resolveWallSweepLevel()
+    });
+  }
+  /**
+   * Resolves which scene Level the wall sweep should consult on Foundry v14.
+   * Returns null on v13 (where Levels do not exist) and when no clear
+   * affinity is available, in which case the polygon backend falls back to
+   * `canvas.level` (the currently viewed level).
+   *
+   * Priority: an attached source's `document.level`, then a single-entry
+   * `.onLevels()` selection, then the lowest-elevation Level whose vertical
+   * range overlaps the effect.
+   *
+   * @returns {foundry.documents.Level|null}
+   * @private
+   */
+  _resolveWallSweepLevel() {
+    if (!CONSTANTS.IS_V14) return null;
+    const sceneLevels = canvas.scene?.levels;
+    if (!sceneLevels?.size) return null;
+    const sourceDoc = this.sourceDocument;
+    const attachedLevelId = this.data.attachTo?.active ? sourceDoc?.level : null;
+    if (attachedLevelId) {
+      const fromSource = sceneLevels.get(attachedLevelId);
+      if (fromSource) return fromSource;
+    }
+    if (this.data.levels?.length === 1) {
+      const entry = this.data.levels[0];
+      const fromSection = sceneLevels.get(entry) ?? sceneLevels.getName?.(entry);
+      if (fromSection) return fromSection;
+    }
+    const [zMin, zMax, topInclusive] = this._getEffectiveVerticalExtent();
+    let best = null;
+    for (const level of sceneLevels) {
+      const ext = level.elevation;
+      if (!ext) continue;
+      if (intervalsOverlap(zMin, zMax, ext.bottom, ext.top, topInclusive)) {
+        if (!best || (ext.bottom ?? -Infinity) < (best.elevation.bottom ?? -Infinity)) {
+          best = level;
+        }
+      }
+    }
+    return best;
+  }
+  /**
    * Sets up the hooks relating to this effect's source and target
    *
    * @private
@@ -16325,7 +16847,6 @@ class CanvasEffect extends PIXI.Container {
     const attachedToSource = this.data.attachTo?.active && is_UUID(this.data.source);
     const attachedToTarget = (this.data.stretchTo?.attachTo || this.data.rotateTowards?.attachTo) && is_UUID(this.data.target);
     const baseRenderable = this.shouldPlayVisible;
-    let renderable = baseRenderable;
     let alpha = null;
     if (attachedToSource) {
       hooksManager.addHook(this.uuid, this.getSourceHook("delete"), (doc) => {
@@ -16343,12 +16864,13 @@ class CanvasEffect extends PIXI.Container {
           this.uuid,
           "sightRefresh",
           () => {
-            const sourceVisible = this.source && !this.sourceMesh?.occluded;
+            if (this._ended) return;
+            const sourceVisible = this.source && isAttachedPlaceableVisible(this.source) && !this.sourceMesh?.occluded;
             const sourceHidden = this.sourceDocument && (this.sourceDocument?.hidden ?? false);
-            const targetVisible = this.target && (!attachedToTarget || (this.targetMesh?.occluded ?? true));
-            this.renderable = baseRenderable && (!sourceHidden || game.user.isGM) && (sourceVisible || targetVisible) && this._checkWallCollisions();
+            const targetVisible = this.target && isAttachedPlaceableVisible(this.target) && (!attachedToTarget || (this.targetMesh?.occluded ?? true));
+            this._baseRenderable = baseRenderable && (!sourceHidden || game.user.isGM) && (sourceVisible || targetVisible) && this._checkWallCollisions();
             this.alpha = sourceVisible && sourceHidden ? 0.5 : 1;
-            renderable = baseRenderable && this.renderable;
+            this._recomputeRenderable();
           },
           { effect: this, callNow: true }
         );
@@ -16362,6 +16884,13 @@ class CanvasEffect extends PIXI.Container {
           if (this.data.attachTo?.bindElevation) {
             this.updateElevation();
           }
+        });
+      }
+      if (CONSTANTS.IS_V14) {
+        hooksManager.addHook(this.uuid, this.getSourceHook("update"), (doc, changed) => {
+          if (doc !== this.sourceDocument) return;
+          if (changed?.level === void 0) return;
+          this._recomputeRenderable();
         });
       }
       if (this.data.attachTo?.bindAlpha) {
@@ -16382,6 +16911,19 @@ class CanvasEffect extends PIXI.Container {
         if (doc !== this.target) return;
         this.updateElevation();
       });
+      if (CONSTANTS.IS_V14) {
+        hooksManager.addHook(this.uuid, this.getTargetHook("update"), (doc, changed) => {
+          if (doc !== this.targetDocument) return;
+          if (changed?.level === void 0) return;
+          this._recomputeRenderable();
+        });
+      }
+    }
+    if (CONSTANTS.IS_V14) {
+      hooksManager.addHook(this.uuid, "updateLevel", (level) => {
+        if (level.parent?.id !== this.data.sceneId) return;
+        this._recomputeRenderable();
+      });
     }
     for (let uuid of this.data?.tiedDocuments ?? []) {
       const tiedDocument = fromUuidSync(uuid);
@@ -16398,7 +16940,12 @@ class CanvasEffect extends PIXI.Container {
     }
     this._setTimeout(() => {
       if (this._ended) return;
-      this.renderable = renderable;
+      if (this._baseRenderable === void 0) {
+        this._baseRenderable = baseRenderable;
+      }
+      this._pauseRenderable = true;
+      this._initializing = false;
+      this._recomputeRenderable();
       if (this.spriteContainer) this.spriteContainer.alpha = alpha ?? 1;
     }, 25);
   }
@@ -17160,12 +17707,13 @@ class CanvasEffect extends PIXI.Container {
       await this.pauseMedia();
       this.mediaCurrentTime = this._endTime;
       if (this.sprite.texture) {
-        const oldRenderable = this.renderable;
-        this.renderable = false;
+        this._pauseRenderable = false;
+        this._recomputeRenderable();
         this._setTimeout(() => {
           this.updateTexture();
           this._setTimeout(() => {
-            this.renderable ||= oldRenderable;
+            this._pauseRenderable = true;
+            this._recomputeRenderable();
           }, 150);
         }, 150);
       }
@@ -17359,6 +17907,64 @@ function createShape(shape) {
   }
   return graphic;
 }
+function serializeShape(shape) {
+  if (shape instanceof PIXI.Polygon) {
+    return { type: "Polygon", points: Array.from(shape.points) };
+  }
+  if (shape instanceof PIXI.Circle) {
+    return { type: "Circle", x: shape.x, y: shape.y, radius: shape.radius };
+  }
+  if (shape instanceof PIXI.Rectangle) {
+    return { type: "Rectangle", x: shape.x, y: shape.y, width: shape.width, height: shape.height };
+  }
+  throw new Error("serializeShape: unsupported shape type");
+}
+function deserializeShape(data) {
+  if (!data || typeof data !== "object") return null;
+  switch (data.type) {
+    case "Polygon":
+      return new PIXI.Polygon(data.points ?? []);
+    case "Circle":
+      return new PIXI.Circle(data.x ?? 0, data.y ?? 0, data.radius ?? 0);
+    case "Rectangle":
+      return new PIXI.Rectangle(data.x ?? 0, data.y ?? 0, data.width ?? 0, data.height ?? 0);
+  }
+  return null;
+}
+function computeWallPolygon(origin, options = {}) {
+  if (!origin || typeof origin.x !== "number" || typeof origin.y !== "number") {
+    throw new Error("computeWallPolygon: origin must be { x: number, y: number }");
+  }
+  const {
+    type = "sight",
+    radius = null,
+    level = null
+  } = options;
+  const validTypes = ["sight", "sound", "move", "light"];
+  if (!validTypes.includes(type)) {
+    throw new Error(`computeWallPolygon: type must be one of ${validTypes.join(", ")}`);
+  }
+  const config = { type };
+  if (typeof radius === "number") {
+    config.radius = radius;
+  }
+  if (level) {
+    let resolved = level;
+    if (typeof level === "string") {
+      const sceneLevels = canvas.scene?.levels;
+      resolved = sceneLevels?.get(level) ?? sceneLevels?.getName?.(level) ?? null;
+    }
+    if (resolved) config.level = resolved;
+  }
+  const PolygonBackend = CONFIG.Canvas.polygonBackends[type];
+  if (!PolygonBackend) {
+    throw new Error(`computeWallPolygon: no polygon backend registered for type "${type}"`);
+  }
+  return PolygonBackend.create(
+    { x: origin.x, y: origin.y, elevation: origin.elevation ?? 0 },
+    config
+  );
+}
 function calculate_missed_position(source2, target, twister) {
   const sourcePosition = get_object_position(source2);
   const sourceDimensions = get_object_dimensions(source2, true);
@@ -17446,6 +18052,10 @@ function get_object_position(obj, { measure = false, exact = false } = {}) {
       x: obj.document.x,
       y: obj.document.y
     };
+    if (!exact) {
+      pos.x += Math.abs(obj.document.width / 2);
+      pos.y += Math.abs(obj.document.height / 2);
+    }
   } else if (obj instanceof foundry.canvas.placeables.Token) {
     const halfSize = get_object_dimensions(obj, true);
     pos = {
@@ -17466,11 +18076,27 @@ function get_object_position(obj, { measure = false, exact = false } = {}) {
       pos.x += halfSize.width;
       pos.y += halfSize.height;
     }
+  } else {
+    const docBounds = compute_document_bounds(obj, { measure });
+    if (docBounds) {
+      if (exact) {
+        pos.x = docBounds.x;
+        pos.y = docBounds.y;
+      } else {
+        pos.x = docBounds.x + docBounds.width / 2;
+        pos.y = docBounds.y + docBounds.height / 2;
+      }
+      const directional = compute_region_directional_endpoint(obj, { measure });
+      if (directional) {
+        pos.x = directional.x;
+        pos.y = directional.y;
+      }
+    }
   }
   pos = {
     x: pos.x ?? obj?.x ?? obj?.position?.x ?? obj?.position?._x ?? obj?.document?.x ?? obj?.document?.position?.x ?? null,
     y: pos.y ?? obj?.y ?? obj?.position?.y ?? obj?.position?._y ?? obj?.document?.y ?? obj?.document?.position?.y ?? null,
-    elevation: obj?.elevation ?? obj?.document?.elevation ?? null
+    elevation: (obj?.elevation ?? obj?.document?.elevation) != null ? get_object_elevation(obj) : null
   };
   if (pos.x === null) delete pos["x"];
   if (pos.y === null) delete pos["y"];
@@ -17521,12 +18147,315 @@ function get_object_dimensions(inObj, half = false) {
       height: inObj.document.height / (half ? 2 : 1)
     };
   }
+  const docBounds = compute_document_bounds(inObj);
+  if (docBounds) {
+    return {
+      width: docBounds.width / (half ? 2 : 1),
+      height: docBounds.height / (half ? 2 : 1)
+    };
+  }
   let width = inObj?.hitArea?.width ?? inObj?.w ?? inObj?.shape?.width ?? (inObj?.shape?.radius ? inObj?.shape?.radius * 2 : void 0) ?? inObj?.bounds?.width ?? inObj?.width ?? canvas.grid.size;
   let height = inObj?.hitArea?.height ?? inObj?.h ?? inObj?.shape?.height ?? (inObj?.shape?.radius ? inObj?.shape?.radius * 2 : void 0) ?? inObj?.bounds?.height ?? inObj?.height ?? canvas.grid.size;
   return {
     width: width / (half ? 2 : 1),
     height: height / (half ? 2 : 1)
   };
+}
+const _warnedUnknownTypes = /* @__PURE__ */ new Set();
+function _warnUnknownType(category, type) {
+  const key = category + ":" + type;
+  if (_warnedUnknownTypes.has(key)) return;
+  _warnedUnknownTypes.add(key);
+  debug(`Sequencer | unhandled ${category} type "${type}"`);
+}
+function compute_document_bounds(doc, { measure = false } = {}) {
+  if (!doc || typeof doc !== "object") return null;
+  const docName = doc.documentName;
+  if (!docName) return null;
+  const scene = doc.parent ?? canvas?.scene;
+  const gridSize = scene?.grid?.size ?? canvas?.grid?.size ?? 100;
+  const gridDistance = scene?.grid?.distance ?? canvas?.grid?.distance ?? 5;
+  const distancePixels = scene?.dimensions?.distancePixels ?? gridSize / gridDistance;
+  switch (docName) {
+    case "Token": {
+      const w = (doc.width ?? 1) * gridSize;
+      const h = (doc.height ?? 1) * gridSize;
+      return { x: doc.x ?? 0, y: doc.y ?? 0, width: w, height: h };
+    }
+    case "Tile": {
+      return {
+        x: doc.x ?? 0,
+        y: doc.y ?? 0,
+        width: doc.width ?? 0,
+        height: doc.height ?? 0
+      };
+    }
+    case "Drawing": {
+      const shape = doc.shape ?? {};
+      const baseX = doc.x ?? 0;
+      const baseY = doc.y ?? 0;
+      switch (shape.type) {
+        case "r":
+        // rectangle
+        case "e":
+          return { x: baseX, y: baseY, width: shape.width ?? 0, height: shape.height ?? 0 };
+        case "c": {
+          const r = shape.radius ?? 0;
+          return { x: baseX, y: baseY, width: r * 2, height: r * 2 };
+        }
+        case "p":
+        // polygon
+        case "f": {
+          const pts = shape.points;
+          if (!pts?.length) return { x: baseX, y: baseY, width: 0, height: 0 };
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (let i = 0; i < pts.length; i += 2) {
+            const px = pts[i], py = pts[i + 1];
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+          return { x: baseX + minX, y: baseY + minY, width: maxX - minX, height: maxY - minY };
+        }
+        default:
+          _warnUnknownType("drawing shape", shape.type);
+          return { x: baseX, y: baseY, width: shape.width ?? 0, height: shape.height ?? 0 };
+      }
+    }
+    case "Region": {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let any = false;
+      for (const shape of doc.shapes ?? []) {
+        const sb = compute_region_shape_bounds(shape);
+        if (!sb) continue;
+        any = true;
+        if (sb.x < minX) minX = sb.x;
+        if (sb.y < minY) minY = sb.y;
+        if (sb.x + sb.width > maxX) maxX = sb.x + sb.width;
+        if (sb.y + sb.height > maxY) maxY = sb.y + sb.height;
+      }
+      if (!any) return null;
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    case "MeasuredTemplate": {
+      const baseX = doc.x ?? 0;
+      const baseY = doc.y ?? 0;
+      const distance = doc.distance ?? 0;
+      const r = distance * distancePixels;
+      switch (doc.t) {
+        case "circle":
+        case "cone":
+          return { x: baseX - r, y: baseY - r, width: r * 2, height: r * 2 };
+        case "rect":
+          return { x: baseX, y: baseY, width: r, height: r };
+        case "ray": {
+          const w = (doc.width ?? 1) * distancePixels;
+          return { x: baseX, y: baseY - w / 2, width: r, height: w };
+        }
+        default:
+          return { x: baseX - r, y: baseY - r, width: r * 2, height: r * 2 };
+      }
+    }
+    case "AmbientLight": {
+      const radius = Math.max(doc.config?.dim ?? 0, doc.config?.bright ?? 0) * distancePixels;
+      if (radius > 0) {
+        return { x: (doc.x ?? 0) - radius, y: (doc.y ?? 0) - radius, width: radius * 2, height: radius * 2 };
+      }
+      return { x: doc.x ?? 0, y: doc.y ?? 0, width: gridSize, height: gridSize };
+    }
+    case "AmbientSound": {
+      const radius = (doc.radius ?? 0) * distancePixels;
+      if (radius > 0) {
+        return { x: (doc.x ?? 0) - radius, y: (doc.y ?? 0) - radius, width: radius * 2, height: radius * 2 };
+      }
+      return { x: doc.x ?? 0, y: doc.y ?? 0, width: gridSize, height: gridSize };
+    }
+    case "Wall": {
+      const c = doc.c ?? [0, 0, 0, 0];
+      const [x1, y1, x2, y2] = c;
+      return {
+        x: Math.min(x1, x2),
+        y: Math.min(y1, y2),
+        width: Math.abs(x2 - x1),
+        height: Math.abs(y2 - y1)
+      };
+    }
+    case "Note": {
+      const s = doc.iconSize ?? gridSize;
+      return { x: (doc.x ?? 0) - s / 2, y: (doc.y ?? 0) - s / 2, width: s, height: s };
+    }
+    default:
+      _warnUnknownType("document", docName);
+      return null;
+  }
+}
+function create_drawing_mask_shape(doc) {
+  const shape = doc?.shape;
+  if (!shape) return null;
+  switch (shape.type) {
+    case "r":
+      return new PIXI.Rectangle(0, 0, shape.width ?? 0, shape.height ?? 0);
+    case "e": {
+      const w = shape.width ?? 0;
+      const h = shape.height ?? 0;
+      return new PIXI.Ellipse(w / 2, h / 2, w / 2, h / 2);
+    }
+    case "c": {
+      const r = shape.radius ?? 0;
+      return new PIXI.Circle(r, r, r);
+    }
+    case "p":
+    case "f": {
+      const pts = shape.points;
+      if (!pts?.length) return null;
+      return new PIXI.Polygon(pts.slice());
+    }
+    default:
+      _warnUnknownType("drawing shape", shape.type);
+      return null;
+  }
+}
+function compute_region_directional_endpoint(doc, { measure = false } = {}) {
+  if (doc?.documentName !== "Region") return null;
+  const shapes = doc.shapes;
+  if (!shapes || shapes.length !== 1) return null;
+  const shape = shapes[0];
+  if (shape?.type !== "line" && shape?.type !== "cone") return null;
+  const ox = shape.x ?? 0;
+  const oy = shape.y ?? 0;
+  if (!measure) return { x: ox, y: oy };
+  const extent = shape.type === "line" ? shape.length ?? 0 : shape.radius ?? 0;
+  const rot = (shape.rotation ?? 0) * Math.PI / 180;
+  return {
+    x: ox + extent * Math.cos(rot),
+    y: oy + extent * Math.sin(rot)
+  };
+}
+function compute_region_shape_bounds(shape) {
+  if (!shape) return null;
+  switch (shape.type) {
+    case "rectangle": {
+      return {
+        x: shape.x ?? 0,
+        y: shape.y ?? 0,
+        width: shape.width ?? 0,
+        height: shape.height ?? 0
+      };
+    }
+    case "circle": {
+      const r = shape.radius ?? 0;
+      return {
+        x: (shape.x ?? 0) - r,
+        y: (shape.y ?? 0) - r,
+        width: r * 2,
+        height: r * 2
+      };
+    }
+    case "ellipse": {
+      const rx = shape.radiusX ?? 0;
+      const ry = shape.radiusY ?? 0;
+      return {
+        x: (shape.x ?? 0) - rx,
+        y: (shape.y ?? 0) - ry,
+        width: rx * 2,
+        height: ry * 2
+      };
+    }
+    case "emanation": {
+      const base = compute_region_shape_bounds(shape.base);
+      if (!base) return null;
+      const r = shape.radius ?? 0;
+      return {
+        x: base.x - r,
+        y: base.y - r,
+        width: base.width + r * 2,
+        height: base.height + r * 2
+      };
+    }
+    case "cone": {
+      const r = shape.radius ?? 0;
+      return {
+        x: (shape.x ?? 0) - r,
+        y: (shape.y ?? 0) - r,
+        width: r * 2,
+        height: r * 2
+      };
+    }
+    case "ring": {
+      const outer = (shape.radius ?? 0) + (shape.outerWidth ?? 0);
+      return {
+        x: (shape.x ?? 0) - outer,
+        y: (shape.y ?? 0) - outer,
+        width: outer * 2,
+        height: outer * 2
+      };
+    }
+    case "line": {
+      const ox = shape.x ?? 0;
+      const oy = shape.y ?? 0;
+      const len = shape.length ?? 0;
+      const w = shape.width ?? 0;
+      const rot = (shape.rotation ?? 0) * Math.PI / 180;
+      const ex = ox + len * Math.cos(rot);
+      const ey = oy + len * Math.sin(rot);
+      const halfW = w / 2;
+      const minX = Math.min(ox, ex) - halfW;
+      const maxX = Math.max(ox, ex) + halfW;
+      const minY = Math.min(oy, ey) - halfW;
+      const maxY = Math.max(oy, ey) + halfW;
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    case "polygon": {
+      const pts = shape.points;
+      if (!pts?.length) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < pts.length; i += 2) {
+        const px = pts[i], py = pts[i + 1];
+        if (px < minX) minX = px;
+        if (py < minY) minY = py;
+        if (px > maxX) maxX = px;
+        if (py > maxY) maxY = py;
+      }
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    case "token": {
+      const grid = canvas?.scene?.grid ?? canvas?.grid;
+      const gridSize = grid?.size ?? 100;
+      return {
+        x: shape.x ?? 0,
+        y: shape.y ?? 0,
+        width: (shape.width ?? 1) * gridSize,
+        height: (shape.height ?? 1) * gridSize
+      };
+    }
+    case "grid": {
+      const offsets = shape.offsets;
+      if (!offsets?.length) return null;
+      const grid = canvas?.scene?.grid ?? canvas?.grid;
+      const gridSize = grid?.size ?? 100;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const off of offsets) {
+        let cellX, cellY;
+        if (grid && typeof grid.getTopLeftPoint === "function") {
+          const tl = grid.getTopLeftPoint(off);
+          cellX = tl.x;
+          cellY = tl.y;
+        } else {
+          cellX = (off.j ?? 0) * gridSize;
+          cellY = (off.i ?? 0) * gridSize;
+        }
+        if (cellX < minX) minX = cellX;
+        if (cellY < minY) minY = cellY;
+        if (cellX + gridSize > maxX) maxX = cellX + gridSize;
+        if (cellY + gridSize > maxY) maxY = cellY + gridSize;
+      }
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    default:
+      _warnUnknownType("region shape", shape.type);
+      return null;
+  }
 }
 const alignments = {
   "top-left": { x: 0.5, y: 0.5 },
@@ -17577,7 +18506,26 @@ function get_object_canvas_data(inObject, { measure = false, uuid = true } = {})
   return data;
 }
 function get_object_elevation(inObject) {
-  return inObject?.document?.elevation ?? inObject?.elevation ?? 0;
+  const e = inObject?.document?.elevation ?? inObject?.elevation ?? 0;
+  return typeof e === "object" ? e?.bottom ?? e?.top ?? 0 : e;
+}
+function get_object_vertical_extent(inObject) {
+  const doc = inObject?.document ?? inObject;
+  if (!doc) return null;
+  const elevation2 = doc.elevation;
+  if (elevation2 && typeof elevation2 === "object") {
+    const bottom = elevation2.bottom ?? -Infinity;
+    const top = elevation2.top ?? Infinity;
+    return [bottom, top, !!elevation2.topInclusive];
+  }
+  if (typeof elevation2 === "number" && typeof doc.depth === "number") {
+    const gridDistance = doc.parent?.grid?.distance ?? canvas?.scene?.grid?.distance ?? 1;
+    return [elevation2, elevation2 + doc.depth * gridDistance, false];
+  }
+  if (typeof elevation2 === "number") {
+    return [elevation2, elevation2, false];
+  }
+  return null;
 }
 function get_mouse_position(snapToGrid = false) {
   const pos = getCanvasMouse().getLocalPosition(canvas.app.stage);
@@ -17599,10 +18547,14 @@ function getPositionFromData(data, type = "source", twister = false) {
   const source2 = data.nameOffsetMap[data[type]] ? data.nameOffsetMap[data[type]][type] : validateObject(data[type], data.sceneId);
   const position = source2 instanceof foundry.canvas.placeables.PlaceableObject ? get_object_position(source2) : source2?.worldPosition || source2?.center || source2;
   let offset2 = getOffsetFromData(data, { source: source2, type, twister });
-  return {
+  const result = {
     x: position.x - offset2.x,
     y: position.y - offset2.y
   };
+  if (typeof position?.elevation === "number") {
+    result.elevation = position.elevation;
+  }
+  return result;
 }
 function getOffsetFromData(data, { source: source2 = false, type = "source", twister = false } = {}) {
   if (!source2) {
@@ -18692,12 +19644,12 @@ var root_1$3 = /* @__PURE__ */ from_html(`<div class="no-effects"><h2> </h2></di
 var root_3$2 = /* @__PURE__ */ from_html(`<h2> </h2> <div></div>`, 1);
 var root_5$1 = /* @__PURE__ */ from_html(`<hr/>`);
 var root_6$1 = /* @__PURE__ */ from_html(`<h2> </h2> <div></div>`, 1);
-var root_2$3 = /* @__PURE__ */ from_html(`<button class="w-100 end-all-effects mb-2 svelte-sequencer-nc5j73" type="button"> </button> <div class="effects svelte-sequencer-nc5j73"><!> <!> <!></div>`, 1);
+var root_2$3 = /* @__PURE__ */ from_html(`<button class="w-100 end-all-effects mb-2 svelte-sequencer-1mx9u4v" type="button"> </button> <div class="effects svelte-sequencer-1mx9u4v"><!> <!> <!></div>`, 1);
 var root_9 = /* @__PURE__ */ from_html(`<h2> </h2> <div></div>`, 1);
 var root_11 = /* @__PURE__ */ from_html(`<hr/>`);
 var root_12 = /* @__PURE__ */ from_html(`<h2> </h2> <div></div>`, 1);
-var root_8 = /* @__PURE__ */ from_html(`<button class="w-100 end-all-effects mb-2 svelte-sequencer-nc5j73" type="button"> </button> <div><!> <!> <!></div>`, 1);
-var root$c = /* @__PURE__ */ from_html(`<div class="effects-container svelte-sequencer-nc5j73"><!> <!> <!></div>`);
+var root_8 = /* @__PURE__ */ from_html(`<button class="w-100 end-all-effects mb-2 svelte-sequencer-1mx9u4v" type="button"> </button> <div><!> <!> <!></div>`, 1);
+var root$c = /* @__PURE__ */ from_html(`<div class="effects-container svelte-sequencer-1mx9u4v"><!> <!> <!></div>`);
 function Manager($$anchor, $$props) {
   push($$props, false);
   const $VisibleEffects = () => store_get(VisibleEffects, "$VisibleEffects", $$stores);
@@ -20815,6 +21767,72 @@ const audio = {
     return this;
   }
 };
+const elevation = {
+  _elevation: null,
+  /**
+   * Sets the section's elevation, either as a single Z value or as an
+   * elevation range `[bottom, top]`. The range form makes the section
+   * visible on every scene level it reaches on Foundry v14+.
+   *
+   * @param {number|[number, number]} inElevation
+   * @param {Object} inOptions
+   * @param {boolean} [inOptions.absolute=false]
+   * @param {boolean} [inOptions.topInclusive=false] Range form only.
+   *   When true, the top value is part of the range, matching Foundry
+   *   Region `elevation.topInclusive`. By default an effect whose top
+   *   equals the next level's bottom sits just below that level rather
+   *   than reaching into it.
+   * @returns {this}
+   */
+  elevation(inElevation, inOptions = {}) {
+    let bottom;
+    let top;
+    if (typeof inElevation === "number") {
+      bottom = inElevation;
+    } else if (Array.isArray(inElevation) && inElevation.length === 2 && inElevation.every((n) => typeof n === "number")) {
+      bottom = Math.min(inElevation[0], inElevation[1]);
+      top = Math.max(inElevation[0], inElevation[1]);
+    } else {
+      throw this.sequence._customError(
+        this,
+        "elevation",
+        "inElevation must be a number or a [bottom, top] array of two numbers"
+      );
+    }
+    if (typeof inOptions !== "object")
+      throw this.sequence._customError(
+        this,
+        "elevation",
+        `inOptions must be of type object`
+      );
+    inOptions = foundry.utils.mergeObject(
+      {
+        absolute: false,
+        topInclusive: false
+      },
+      inOptions
+    );
+    if (typeof inOptions.absolute !== "boolean")
+      throw this.sequence._customError(
+        this,
+        "elevation",
+        "inOptions.absolute must be of type boolean"
+      );
+    if (typeof inOptions.topInclusive !== "boolean")
+      throw this.sequence._customError(
+        this,
+        "elevation",
+        "inOptions.topInclusive must be of type boolean"
+      );
+    this._elevation = {
+      elevation: bottom,
+      top,
+      absolute: inOptions.absolute,
+      topInclusive: inOptions.topInclusive
+    };
+    return this;
+  }
+};
 const files = {
   /**
    * Base properties
@@ -20923,6 +21941,41 @@ const files = {
       applyWildCard: true,
       softFail: this.sequence.softFail
     });
+  }
+};
+const levels = {
+  _levels: null,
+  /**
+   * Restricts this section to one or more scene levels on Foundry v14+.
+   * Accepts a level id, level name, Level document, or an array mixing
+   * any of those. Pass null to clear. Doesn't do anything on older
+   * Foundry versions.
+   *
+   * Strings (ids or names) are resolved against the scene the section
+   * is playing in, not the scene that was viewed when the section was
+   * built. Level documents resolve to their id at build time.
+   *
+   * @param {string|foundry.documents.Level|Array<string|foundry.documents.Level>|null} inLevels
+   * @returns {this}
+   */
+  onLevels(inLevels) {
+    if (!CONSTANTS.IS_V14) return this;
+    if (inLevels === null || inLevels === void 0) {
+      this._levels = null;
+      return this;
+    }
+    const arr = Array.isArray(inLevels) ? inLevels : [inLevels];
+    const entries = arr.map((item) => {
+      if (item && typeof item === "object" && item.documentName === "Level" && typeof item.id === "string") return item.id;
+      if (typeof item === "string") return item;
+      throw this.sequence._customError(
+        this,
+        "onLevels",
+        "expected a level id, level name, Level document, or an array of any combination"
+      );
+    });
+    this._levels = entries.length ? entries : null;
+    return this;
   }
 };
 const moves = {
@@ -21625,6 +22678,87 @@ const tint = {
     return this;
   }
 };
+const BLEND_MODE_NAMES = new Map(
+  Object.entries(CONSTANTS.BLEND_MODES).map(([name2, value]) => [value, name2])
+);
+function normalizeBlendModeName(name2) {
+  return String(name2).toLowerCase().replace(/[\s\-]+/g, "_").replace(/_+/g, "_").trim();
+}
+function resolveBlendMode(value) {
+  if (is_real_number(value)) {
+    const knownValues = Object.values(CONSTANTS.BLEND_MODES);
+    return knownValues.includes(value) ? value : null;
+  }
+  if (typeof value !== "string") return null;
+  let key = normalizeBlendModeName(value);
+  const aliases = {
+    none: "none",
+    dodge: "color_dodge",
+    burn: "color_burn",
+    hardlight: "hard_light",
+    softlight: "soft_light",
+    colordodge: "color_dodge",
+    colorburn: "color_burn",
+    normalnpm: "normal_npm",
+    addnpm: "add_npm",
+    screennpm: "screen_npm"
+  };
+  const compact = key.replace(/_/g, "");
+  if (aliases[compact]) key = aliases[compact];
+  const resolved = CONSTANTS.BLEND_MODES[key];
+  return is_real_number(resolved) ? resolved : null;
+}
+const blendMode = {
+  _blendMode: null,
+  /**
+   * Sets the blend mode used when compositing this effect onto the canvas.
+   *
+   * Accepts either a string name (case-insensitive, hyphens/underscores/spaces
+   * tolerated) or a numeric PIXI.BLEND_MODES constant.
+   *
+   * "normal", "add", "multiply", "screen", "subtract", and "erase" render
+   * correctly on the GPU's blend unit. The "advanced" modes (overlay,
+   * soft-light, hard-light, color-dodge, color-burn, darken, lighten,
+   * difference, exclusion, hue, saturation, color, luminosity) are exposed
+   * by name in PIXI v7 but are not implemented by the renderer; requesting
+   * them logs a one-time warning and falls back to normal blending.
+   *
+   * @example
+   *   .blendMode("multiply")
+   *   .blendMode("add")
+   *   .blendMode(PIXI.BLEND_MODES.SCREEN)
+   *
+   * @param {number|string} mode
+   * @returns this
+   */
+  blendMode(mode) {
+    if (!is_real_number(mode) && typeof mode !== "string") {
+      throw this.sequence._customError(
+        this,
+        "blendMode",
+        'mode must be a string (e.g. "multiply") or a number (PIXI.BLEND_MODES constant)'
+      );
+    }
+    const resolved = resolveBlendMode(mode);
+    if (resolved === null) {
+      const valid = Object.keys(CONSTANTS.BLEND_MODES).join(", ");
+      throw this.sequence._customError(
+        this,
+        "blendMode",
+        `unknown blend mode "${mode}". Valid modes are: ${valid}`
+      );
+    }
+    if (CONSTANTS.UNSUPPORTED_BLEND_MODES.has(resolved)) {
+      const name2 = BLEND_MODE_NAMES.get(resolved) ?? String(mode);
+      throttled_custom_warning(
+        "Sequencer",
+        `Effect | .blendMode("${name2}") is not supported by PIXI v7 and will render as normal blending. Supported modes: normal, add, multiply, screen, subtract, erase.`
+      );
+    }
+    this._blendMode = resolved;
+    return this;
+  }
+};
 const location = {
   /**
    * Base properties
@@ -21827,7 +22961,9 @@ const name = {
 const traits = {
   animation,
   audio,
+  elevation,
   files,
+  levels,
   moves,
   opacity,
   rotation,
@@ -21836,6 +22972,7 @@ const traits = {
   users,
   filter,
   tint,
+  blendMode,
   location,
   offset,
   text,
@@ -22010,6 +23147,7 @@ class EffectSection extends Section {
     this._screenSpaceScale = null;
     this._elevation = null;
     this._sortLayer = 800;
+    this._levels = null;
     this._masks = [];
     this._tiedDocuments = [];
     this._selfMask = false;
@@ -22026,6 +23164,7 @@ class EffectSection extends Section {
     this._isometric = null;
     this._shapes = [];
     this._xray = null;
+    this._constrainedByWalls = null;
     this._playEffect = true;
   }
   static niceName = "Effect";
@@ -23208,45 +24347,6 @@ class EffectSection extends Section {
     return this;
   }
   /**
-   * Changes the effect's elevation
-   *
-   * @param {Number} inElevation
-   * @param {Object} inOptions
-   * @returns {EffectSection}
-   */
-  elevation(inElevation, inOptions = {}) {
-    if (typeof inElevation !== "number")
-      throw this.sequence._customError(
-        this,
-        "elevation",
-        "inElevation must be of type number"
-      );
-    if (typeof inOptions !== "object")
-      throw this.sequence._customError(
-        this,
-        "elevation",
-        `inOptions must be of type object`
-      );
-    inOptions = foundry.utils.mergeObject(
-      {
-        elevation: 1,
-        absolute: false
-      },
-      inOptions
-    );
-    if (typeof inOptions.absolute !== "boolean")
-      throw this.sequence._customError(
-        this,
-        "elevation",
-        "inOptions.absolute must be of type boolean"
-      );
-    this._elevation = {
-      elevation: inElevation,
-      absolute: inOptions.absolute
-    };
-    return this;
-  }
-  /**
    * Changes the effect's sortLayer, potentially displaying effects below tiles, above tokens or even weather effects
    * in case of identical elevations
    *
@@ -23605,10 +24705,11 @@ class EffectSection extends Section {
     return this;
   }
   /**
-   *  Masks the effect to the given object or objects. If no object is given, the effect will be masked to the source
-   *  of the effect.
+   *  Masks the effect to the given object, objects, or raw PIXI shape. If no object is given, the effect will be
+   *  masked to the source of the effect. Raw shapes (PIXI.Polygon, PIXI.Circle, PIXI.Rectangle) are masked in
+   *  scene coordinates; combine with `Sequencer.Helpers.computeWallPolygon` for wall-aware clipping.
    *
-   * @param {Token/TokenDocument/Tile/TileDocument/Drawing/DrawingDocument/MeasuredTemplate/MeasuredTemplateDocument/Array} inObject
+   * @param {Token/TokenDocument/Tile/TileDocument/Drawing/DrawingDocument/MeasuredTemplate/MeasuredTemplateDocument/Region/RegionDocument/PIXI.Polygon/PIXI.Circle/PIXI.Rectangle/Array} inObject
    * @returns {Section}
    */
   mask(inObject) {
@@ -23622,13 +24723,17 @@ class EffectSection extends Section {
       }
       return this;
     }
+    if (inObject instanceof PIXI.Polygon || inObject instanceof PIXI.Circle || inObject instanceof PIXI.Rectangle) {
+      this._masks.push({ __shape: serializeShape(inObject) });
+      return this;
+    }
     const validatedObject = this._validateLocation(inObject);
-    const isValidObject = validatedObject instanceof TokenDocument || validatedObject instanceof TileDocument || validatedObject instanceof DrawingDocument || validatedObject instanceof MeasuredTemplateDocument;
+    const isValidObject = validatedObject instanceof TokenDocument || validatedObject instanceof TileDocument || validatedObject instanceof DrawingDocument || validatedObject instanceof MeasuredTemplateDocument || validatedObject instanceof RegionDocument;
     if (!isValidObject) {
       throw this.sequence._customError(
         this,
         "mask",
-        "A foundry object was provided, but only Tokens, Tiles, Drawings, and MeasuredTemplates may be used to create effect masks"
+        "A foundry object was provided, but only Tokens, Tiles, Drawings, MeasuredTemplates, Regions, or raw PIXI shapes may be used to create effect masks"
       );
     }
     this._masks.push(get_object_identifier(validatedObject));
@@ -23648,6 +24753,79 @@ class EffectSection extends Section {
         "inBool must be of type boolean"
       );
     this._xray = inBool;
+    return this;
+  }
+  /**
+   * Clips the effect to a wall-bounded sweep from its source position, independent of the
+   * Walled Templates module. The sweep is a full 360° polygon; pass `radius` to bound it.
+   * Pass `false` to clear.
+   *
+   * @param {boolean|object} [inOptions=true]
+   * @param {"sight"|"sound"|"move"|"light"} [inOptions.type="sight"]   Collision type
+   * @param {number|null} [inOptions.radius=null]                      Bounding circle radius in pixels
+   * @param {{x: number, y: number}|null} [inOptions.origin=null]      Override origin; defaults to source position
+   * @param {string|foundry.documents.Level|null} [inOptions.level=null]
+   *        Foundry v14+. The scene level whose walls the sweep should consult. Accepts a
+   *        level id, level name, or Level document. When omitted, the level is inferred
+   *        from the attached source, then from `.onLevels()`, then from the effect's
+   *        elevation extent. Ignored on Foundry v13.
+   * @returns {EffectSection}
+   */
+  constrainedByWalls(inOptions = true) {
+    if (inOptions === false || inOptions === null) {
+      this._constrainedByWalls = null;
+      return this;
+    }
+    if (inOptions === true) inOptions = {};
+    if (typeof inOptions !== "object") {
+      throw this.sequence._customError(
+        this,
+        "constrainedByWalls",
+        "inOptions must be of type object or boolean"
+      );
+    }
+    inOptions = foundry.utils.mergeObject({
+      type: "sight",
+      radius: null,
+      origin: null,
+      level: null
+    }, inOptions);
+    const validTypes = ["sight", "sound", "move", "light"];
+    if (!validTypes.includes(inOptions.type)) {
+      throw this.sequence._customError(
+        this,
+        "constrainedByWalls",
+        `inOptions.type must be one of ${validTypes.join(", ")}`
+      );
+    }
+    if (inOptions.radius !== null && !is_real_number(inOptions.radius)) {
+      throw this.sequence._customError(
+        this,
+        "constrainedByWalls",
+        "inOptions.radius must be a number or null"
+      );
+    }
+    if (inOptions.origin !== null) {
+      if (typeof inOptions.origin !== "object" || !is_real_number(inOptions.origin.x) || !is_real_number(inOptions.origin.y)) {
+        throw this.sequence._customError(
+          this,
+          "constrainedByWalls",
+          "inOptions.origin must be null or { x: number, y: number }"
+        );
+      }
+    }
+    if (inOptions.level !== null) {
+      if (typeof inOptions.level === "object" && typeof inOptions.level?.id === "string") {
+        inOptions.level = inOptions.level.id;
+      } else if (typeof inOptions.level !== "string") {
+        throw this.sequence._customError(
+          this,
+          "constrainedByWalls",
+          "inOptions.level must be null, a level id/name, or a Level document"
+        );
+      }
+    }
+    this._constrainedByWalls = inOptions;
     return this;
   }
   /**
@@ -23823,6 +25001,8 @@ class EffectSection extends Section {
   _applyTraits() {
     Object.assign(this.constructor.prototype, traits.files);
     Object.assign(this.constructor.prototype, traits.audio);
+    Object.assign(this.constructor.prototype, traits.elevation);
+    Object.assign(this.constructor.prototype, traits.levels);
     Object.assign(this.constructor.prototype, traits.moves);
     Object.assign(this.constructor.prototype, traits.opacity);
     Object.assign(this.constructor.prototype, traits.rotation);
@@ -23832,6 +25012,7 @@ class EffectSection extends Section {
     Object.assign(this.constructor.prototype, traits.animation);
     Object.assign(this.constructor.prototype, traits.filter);
     Object.assign(this.constructor.prototype, traits.tint);
+    Object.assign(this.constructor.prototype, traits.blendMode);
     Object.assign(this.constructor.prototype, traits.location);
     Object.assign(this.constructor.prototype, traits.offset);
     Object.assign(this.constructor.prototype, traits.text);
@@ -23844,17 +25025,25 @@ class EffectSection extends Section {
     this._mirrorX = this._mirrorX || this._randomMirrorX && Math.random() < 0.5;
     this._mirrorY = this._mirrorY || this._randomMirrorY && Math.random() < 0.5;
     if (this._copySprite && !this._file) {
+      const ringEnabled = this._copySprite.object instanceof TokenDocument && this._copySprite.object.ring?.enabled;
+      if (!ringEnabled) {
+        this._file = this._copySprite.object?.texture?.src ?? "";
+      }
       if (this._source === null) {
         this._source = this._validateLocation(this._copySprite.object);
       }
       if (this._size === null) {
-        const size = get_object_dimensions(this._copySprite.object);
+        const placeable = this._copySprite.object.object ?? null;
+        const meshWidth = placeable?.mesh?.width;
+        const meshHeight = placeable?.mesh?.height;
+        const hasMeshSize = Number.isFinite(meshWidth) && meshWidth > 0 && Number.isFinite(meshHeight) && meshHeight > 0;
+        const fallback = get_object_dimensions(this._copySprite.object);
         this._size = {
-          width: size?.width ?? canvas.grid.size,
-          height: size?.height ?? canvas.grid.size,
+          width: hasMeshSize ? meshWidth : fallback?.width ?? canvas.grid.size,
+          height: hasMeshSize ? meshHeight : fallback?.height ?? canvas.grid.size,
           gridUnits: false
         };
-        if (this._copySprite.object instanceof TokenDocument && this._copySprite.object.ring?.enabled) {
+        if (ringEnabled) {
           const tokenSize = this._copySprite.object.getSize();
           this._copySprite.options.offsetX = (tokenSize.width - this._size.width) / 2;
           this._copySprite.options.offsetY = (tokenSize.height - this._size.height) / 2;
@@ -23911,7 +25100,7 @@ class EffectSection extends Section {
       this._playEffect = false;
       return;
     }
-    if (this._copySprite) {
+    if (this._copySprite && !this._file) {
       return;
     }
     let fileData = this._file ? await this._determineFile(this._file) : {
@@ -23990,7 +25179,7 @@ class EffectSection extends Section {
     let file = "";
     let forcedIndex = null;
     let customRange = null;
-    if (!this._copySprite) {
+    if (!this._copySprite || this._file) {
       const fileData = this._file && this._playEffect ? await this._determineFile(this._file) : {
         file: this._file,
         forcedIndex: false,
@@ -24105,9 +25294,11 @@ class EffectSection extends Section {
       scaleToObject: this._scaleToObject,
       elevation: this._elevation,
       sortLayer: this._sortLayer,
+      levels: this._levels,
       aboveLighting: this._aboveLighting,
       aboveInterface: this._aboveInterface,
       xray: this._xray,
+      constrainedByWalls: this._constrainedByWalls,
       // Appearance
       zIndex: this._zIndex,
       opacity: is_real_number(this._opacity) ? this._opacity : 1,
@@ -24116,6 +25307,7 @@ class EffectSection extends Section {
       spriteRotation: this._spriteRotation,
       randomSpriteRotation: this._randomSpriteRotation,
       tint: this._tint?.decimal,
+      blendMode: this._blendMode,
       flipX: this._mirrorX,
       flipY: this._mirrorY,
       /**
@@ -24225,6 +25417,8 @@ class SoundSection extends Section {
     this._loopOptions = false;
     this._panSound = false;
     this._extraEndDuration = false;
+    this._levels = null;
+    this._elevation = null;
   }
   get _target() {
     return this._toLocation || this._moveTowards || false;
@@ -24258,6 +25452,13 @@ class SoundSection extends Section {
     this._overrides.push(inFunc);
     return this;
   }
+  /**
+   * Sets the radius (in scene units) within which the sound is audible. Requires `.atLocation()` to be set,
+   * otherwise the sound remains global.
+   *
+   * @param {number} inNumber
+   * @returns {SoundSection}
+   */
   radius(inNumber) {
     if (!is_real_number(inNumber))
       throw this.sequence._customError(
@@ -24268,6 +25469,13 @@ class SoundSection extends Section {
     this._locationOptions["radius"] = inNumber;
     return this;
   }
+  /**
+   * Whether the sound is completely blocked by walls. Requires `.atLocation()` to be set. If `true`, the
+   * `.muffledEffect()` will have no effect.
+   *
+   * @param {boolean} [inBool=true]
+   * @returns {SoundSection}
+   */
   constrainedByWalls(inBool = true) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24278,6 +25486,12 @@ class SoundSection extends Section {
     this._locationOptions["walls"] = inBool;
     return this;
   }
+  /**
+   * Whether the sound's volume is eased by the distance from its origin. Requires `.atLocation()` to be set.
+   *
+   * @param {boolean} [inBool=true]
+   * @returns {SoundSection}
+   */
   distanceEasing(inBool = true) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24288,6 +25502,13 @@ class SoundSection extends Section {
     this._locationOptions["easing"] = inBool;
     return this;
   }
+  /**
+   * Sets the audio channel the sound is played through. Accepts any channel name available on `game.audio` that
+   * is an `AudioContext` (eg. `"music"`, `"environment"`, `"interface"`).
+   *
+   * @param {string} inString
+   * @returns {SoundSection}
+   */
   audioChannel(inString) {
     if (typeof inString !== "string")
       throw this.sequence._customError(
@@ -24306,6 +25527,13 @@ class SoundSection extends Section {
     this._channel = inString;
     return this;
   }
+  /**
+   * Whether GMs always hear the sound as if standing at its origin, regardless of token position. Requires
+   * `.atLocation()` to be set.
+   *
+   * @param {boolean} [inBool=true]
+   * @returns {SoundSection}
+   */
   alwaysForGMs(inBool = true) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24317,10 +25545,13 @@ class SoundSection extends Section {
     return this;
   }
   /**
-   * Allows you to control the number of loops and the delays between each loop
+   * Allows you to control the number of loops and the delays between each loop.
    *
-   * @param {Object} inOptions
-   * @returns {EffectSection}
+   * @param {object} [inOptions]
+   * @param {number} [inOptions.loopDelay=0] - delay (in ms) between each loop
+   * @param {number} [inOptions.loops=0] - number of loops before ending, 0 for indefinite
+   * @param {boolean} [inOptions.endOnLastLoop=false] - whether the sound should end when reaching the last loop
+   * @returns {SoundSection}
    */
   loopOptions(inOptions = {}) {
     if (typeof inOptions !== "object")
@@ -24358,6 +25589,15 @@ class SoundSection extends Section {
     this._loopOptions = inOptions;
     return this;
   }
+  /**
+   * Sets an audio effect to be applied while the sound is heard normally (no walls between source and listener).
+   * Requires `.atLocation()` to be set.
+   *
+   * @param {object} [options]
+   * @param {string} [options.type] - one of the keys in `CONFIG.soundEffects` (eg. `"lowpass"`, `"highpass"`, `"reverb"`)
+   * @param {number} [options.intensity=0] - intensity of the effect
+   * @returns {SoundSection}
+   */
   baseEffect(options = {}) {
     options = foundry.utils.mergeObject({
       type: "",
@@ -24381,6 +25621,15 @@ class SoundSection extends Section {
     };
     return this;
   }
+  /**
+   * Sets an audio effect to be applied while the sound is heard through a wall. Requires `.atLocation()` to be
+   * set and `.constrainedByWalls()` to be `false` (the default).
+   *
+   * @param {object} [options]
+   * @param {string} [options.type] - one of the keys in `CONFIG.soundEffects` (eg. `"lowpass"`, `"highpass"`, `"reverb"`)
+   * @param {number} [options.intensity=0] - intensity of the effect
+   * @returns {SoundSection}
+   */
   muffledEffect(options = {}) {
     options = foundry.utils.mergeObject({
       type: "",
@@ -24404,6 +25653,19 @@ class SoundSection extends Section {
     };
     return this;
   }
+  /**
+   * Sets the target location of the sound, used together with `.atLocation()` so the sound has a direction (for
+   * `.panSound()`, distance falloff, etc).
+   *
+   * @param {object|string} inLocation - reference to a placeable, document, canvas coordinate, or a string name (see `.name()`)
+   * @param {object} [inOptions]
+   * @param {boolean} [inOptions.cacheLocation=false] - cache the target's location at sequence build time instead of resolving it at runtime
+   * @param {object|boolean} [inOptions.offset=false] - offset the target by `{ x, y }`
+   * @param {number|boolean} [inOptions.randomOffset=false] - offset the target by a random amount; if a number, used as a multiplier on the object size
+   * @param {boolean} [inOptions.gridUnits=false] - treat the offset's `x` and `y` as grid units
+   * @param {boolean} [inOptions.local=false] - offset relative to the sound's rotation rather than world axes
+   * @returns {SoundSection}
+   */
   toLocation(inLocation, inOptions = {}) {
     if (!inLocation || !(typeof inLocation === "object" || typeof inLocation === "string")) {
       throw this.sequence._customError(
@@ -24465,6 +25727,12 @@ class SoundSection extends Section {
     this._toLocation = inOptions.cacheLocation && typeof inLocation !== "string" ? get_object_canvas_data(inLocation, { uuid: false }) : inLocation;
     return this;
   }
+  /**
+   * Forces the sound to be heard globally, ignoring `.atLocation()`, `.radius()`, walls, and distance easing.
+   *
+   * @param {boolean} [inBool=true]
+   * @returns {SoundSection}
+   */
   globalSound(inBool = true) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24475,6 +25743,15 @@ class SoundSection extends Section {
     this._global = inBool;
     return this;
   }
+  /**
+   * Causes the sound to pan stereo (left/right) based on the position of the sound relative to the listener.
+   *
+   * @param {boolean} [inBool=true]
+   * @param {object} [inOptions]
+   * @param {number} [inOptions.innerEaseDistance=0] - distance within which the pan is at full strength
+   * @param {number} [inOptions.outerEaseDistance=0] - distance beyond which the pan stops easing; must be greater than `innerEaseDistance` when both are non-zero
+   * @returns {SoundSection}
+   */
   panSound(inBool = true, inOptions = {}) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24520,6 +25797,12 @@ class SoundSection extends Section {
     };
     return this;
   }
+  /**
+   * Adds extra time (in ms) before a persisted sound is considered ended. Only meaningful on `.persist()`ed sounds.
+   *
+   * @param {number} inExtraDuration
+   * @returns {SoundSection}
+   */
   extraEndDuration(inExtraDuration) {
     if (typeof inExtraDuration !== "number")
       throw this.sequence._customError(
@@ -24530,6 +25813,14 @@ class SoundSection extends Section {
     this._extraEndDuration = inExtraDuration;
     return this;
   }
+  /**
+   * Causes the sound to persist on the canvas. The sound can be ended later via the Sound Manager.
+   *
+   * @param {boolean} [inBool=true]
+   * @param {object} [inOptions]
+   * @param {boolean} [inOptions.persistTokenPrototype=false] - when attached to a token, persist the sound on the token's prototype data
+   * @returns {SoundSection}
+   */
   persist(inBool = true, inOptions = {}) {
     if (typeof inBool !== "boolean")
       throw this.sequence._customError(
@@ -24622,6 +25913,8 @@ class SoundSection extends Section {
   _applyTraits() {
     Object.assign(this.constructor.prototype, traits.files);
     Object.assign(this.constructor.prototype, traits.audio);
+    Object.assign(this.constructor.prototype, traits.elevation);
+    Object.assign(this.constructor.prototype, traits.levels);
     Object.assign(this.constructor.prototype, traits.time);
     Object.assign(this.constructor.prototype, traits.users);
     Object.assign(this.constructor.prototype, traits.name);
@@ -24800,7 +26093,9 @@ class SoundSection extends Section {
       persist: this._persist,
       persistOptions: this._persistOptions,
       panSound: this._panSound,
-      extraEndDuration: this._extraEndDuration
+      extraEndDuration: this._extraEndDuration,
+      levels: this._levels,
+      elevation: this._elevation
     };
     for (let override of this._overrides) {
       data = await override(this, data);
@@ -29418,7 +30713,7 @@ marked.walkTokens;
 marked.parseInline;
 _Parser.parse;
 _Lexer.lex;
-const changelogText = '## Changelog\n\n# Version 4.0.2\n- *Sequencer* - Fixed the Effect Player\'s Alt hotkey leaving attach mode and stretch-to-attach stuck on after release\n- *Sequencer* - Fixed `TypeError: Failed to fetch` (CORS) when previewing a remote asset (e.g. S3) in the Sequencer Database before playing it on the canvas\n- *Sequencer* - Fixed `Sequencer.Presets.get()` freezing Foundry when given a dotted preset name whose fallbacks were not registered\n- *Sequencer* - Fixed `.thenDo()` silently accepting non-function input and failing later mid-sequence with an unhelpful error\n- *Sequencer* - Fixed `Sequencer.Database.registerEntries` with `override: true` not unmarking a module\'s previous private state\n- *Sequencer* - Fixed declining the overwrite prompt while saving an Effect Player preset throwing a `ReferenceError`\n- *Sequencer* - Fixed the Sequencer Database spritesheet preview leaking object URLs and failing to release frames when switching entries\n- *Sequencer* - Fixed deprecation warnings by using `foundry.applications.apps.FilePicker`, `foundry.applications.api.DialogV2`, `foundry.canvas.containers.PreciseText`, `foundry.canvas.geometry.Ray`, and `ui.notifications` progress bars instead of their deprecated globals\n- *Sequencer* - Fixed `.forUsers()` throwing when given `User` objects instead of user IDs, even though both are documented to work\n- *Effects* - Fixed forced-index database keys ending in two or more digits (e.g. `effect.12`) playing the wrong frame\n- *Effects* - Fixed `.zIndex()` having no effect on `.screenSpaceAboveUI()` effects\n- *Effects* - Fixed sequences erroring out for users that did not have permission to play effects, or were excluded by `.forUsers()`\n- *Effects* - Fixed sequences getting stuck waiting forever when an effect failed to load or was ended before it had finished setting up\n- *Effects* - Fixed `.moveTowards()` with `cacheLocation: true` throwing instead of caching the target\'s position\n- *Effects* - Fixed clicking overlapping effects in the Sequencer Manager not consistently selecting the visually top-most one\n- *Effects* - Fixed effect assets being loaded twice and leaking the duplicate when the same file was spawned in rapid succession\n- *Effects* - Fixed memory leak in spritesheet generation\n- *Effects* - Fixed effect file cache where the most recently used files were evicted first instead of the least recently used\n- *Sounds* - Fixed `.forUsers()` being ignored, causing sounds to play for every connected user instead of only the listed users\n- *Sounds* - Fixed persistent sound data being saved into the wrong storage on world load, causing sounds to not migrate correctly between Sequencer versions\n- *Sounds* - Fixed the `endedSequencerSound` hook never firing for persistent sounds when they end\n- *Animations* - Fixed `.repeats()` on animation sections only running once and `_abort()` not interrupting a mid-flight animation\n- *Crosshairs* - Fixed `.borderColor()` always throwing when called without an `alpha` option\n- *Crosshairs* - Fixed `.repeats()` on crosshair sections only running once and `_abort()` not interrupting a pending placement\n- *Crosshairs* - Fixed the crosshair clobbering other modules\' canvas wheel handlers on activation and teardown\n- *Crosshairs* - Fixed cancelling a crosshair with `.persist()` still creating a template on the scene at the cursor position\n- *Canvas Pan* - Fixed `.canvasPan()` ignoring its `duration` and `speed` arguments when called positionally\n- *Canvas Pan* - Fixed `.canvasPan().speed()` being ignored by the pan animation and mistiming any `.lockView()` or `.shake()` set on the same section\n\n# Version 4.0.1\n- *Sequencer* - Reverted `Sequencer.Database.entryExists` to accept partial segment matches (e.g. `"attack"` matching `"attack1"`), which was unintentionally broken in 4.0.0. A console warning is now logged when a partial segment match occurs; this behavior will be tightened in a future version\n- *Sequencer* - Added Portuguese localization (Thank you Kharmans on GitHub!)\n- *Effects* - Fixed `.mask()` not working on Foundry v13 due to the mask filter\'s fragment shader not being passed to the PIXI filter constructor\n- *Effects* - Fixed non-persistent effects not disappearing from the Sequencer Manager after finishing playback\n\n# Version 4.0.0\n- *Sequencer* - Updated to support FoundryVTT v14\n- *Sequencer* - Removed support for FoundryVTT v12\n- *Sequencer* - Removed the socketlib dependency; Sequencer now manages its own data internally\n- *Sequencer* - Introduced a new internal UI foundation with proper dark mode support\n- *Sequencer* - Fixed `preloadForClients` blocking indefinitely when a client is tabbed away or disconnects mid-preload\n- *Effects* - Reworked internal effect storage to use a centralized hidden journal, reducing token and actor update overhead and improving performance in effect-heavy games\n- *Effects* - Removed deprecated methods, warnings are now errors\n- *Effects* - Due to the changes to the storage of effect data, setting `local: true` on the Sequence\'s `play()` method will no longer make the effect entirely local, and still store it in the DB without anyone else seeing it\n- *Effects* - Effects now visually "punch through" region highlights (matches how Foundry\'s own tokens behave with always displayed regions)\n- *Effects* - `.sortLayer()`, `.zIndex()`, `.belowTokens()`, and `.belowTiles()` now work as documented on Foundry v13 & v14\n- *Effects* - `.aboveLighting()` now actually anchors the effect above all lighting elements within the interface layer, but not its interface elements\n- *Effects* - Fixed `.copySprite()` only capturing the subject texture on dynamic-ring tokens; the ring is now included via render-to-texture\n- *Sounds* - Added `.persist()`, which causes the sound to persist on the scene, very cool!\n- *Sounds* - Added `.attachTo()`, which attaches the sound to the target (only supports `bindVisibility` and `bindElevation` at this moment)\n- *Sounds* - Added `.panSound()` which causes the sound to pan left and right when the token you have selected moves to the right or left of the sound\n  - You can control the distance from which it starts panning with `innerEaseDistance`, which is how many grid units away from the source that the ease starts. Use `outerEaseDistance` to control where the sound will be fully panning - if `innerEaseDirstance` is set to 10, and `outerEaseDistance` is set to 30, within 10 grid units the sound will not be panning, between 10 and 30 it will slowly blend to a panning sound, and beyond 30 it will be fully panning\n- *Sounds* - Added `.extraEndDuration()`, which adds additional ending duration to persisted sounds\n- *Sounds* - Added `.loopOptions()`, which controls the looping options of the sounds\n- *Sounds* - Added `.toLocation()`, which will evaluate the target location, but still play at the `.atLocation()` position - this is useful when the sound has multiple files for different ranges\n- *Sounds* - Added `.moveTowards()`, which will cause the sound to move towards the target location - best **not** used with `.toLocation()`\n- *Sounds* - Added `.globalSound()`, which prevents any `.atLocation()` sound from only playing on the canvas, and instead always plays globally.\n- *Sounds* - Added support for the database range-finding implementation typically found in effects; sounds can be defined with 5ft, 15ft, 30ft, 60ft, and 90ft files, and using the above methods will select the correct sound file to play\n- *Animations* - Fixed chained light animations reading the origin position before the previous animation\'s document update had committed, causing the second animation to start from the wrong location\n\nSequencer now has a Patreon if you wish to support its development! Join us now at:\nhttps://www.patreon.com/cw/fantasycomputerworks\n\n# Version 3.6.11\n- *Sequencer* - Fixed `remote` on `.play()` not forcing local on the executing user\'s machine\n- *Sequencer* - Added a one-time dialog promoting our patreon\n- *Effects* - Fixed `.copySprite()` using the wrong texture with `.file()` being set\n\n# Version 3.6.10\n- *Effects* - Fixed `.copySprite()` not copying dynamic token rings (thank you ChasarooniZ on github!)\n- *Effects* - Fixed `.rotateTowards()` with `attach: true` not working properly (thank you RobinCodesStuff on github!)\n- *Effects* - Upgraded `.from()` into a loud deprecation - please use `.copySprite()` instead \n- *Effects* - Upgraded `.attachTo()` with `followRotation` into a loud deprecation - please use `bindRotation` instead \n- *Effects* - Upgraded `.noLoop()` into a loud deprecation - please use `.loopOptions({ loops: 1 })` instead\n- *Scrolling Text* - Fixed inputting `"CENTER"` to `.anchor()` not working\n- *Effects* - Fixed `.screenSpace()` on isometric scenes \n\n# Version 3.6.9\n- *Animations* - Fixed animations not working at all\n\n# Version 3.6.8\n- *Crosshairs* - Fix right click drag, when mouse up happens after holding cursor still (Thanks dmrickey on Github!)\n- *Crosshairs* - Fixed some issues with limit max range on gridless scenes\n- *Sequencer* - Updated all Sequencer types (Thanks LukeAbby on Github!)\n- *Sequencer* - Made crosshair data types optional (Thanks MrVauxs on Github!)\n- *Animations* - Removed token support for `ease` from the following methods due to Foundry removing support for custom easing of token movement:\n  - `.moveTowards()`\n  - `.rotateTowards()`\n  - `.rotateIn()`\n  - `.rotateOut()`\n  - `.fadeIn()`\n  - `.fadeOut()`\n\n# Version 3.6.7\n- *Effects* - Fixed persistent effects not actually being persistent\n- *Effects* - Fixed `.shape()`\'s `fillColor` not liking `#000000` and overriding it to white\n\n# Version 3.6.2\n- *Crosshairs* - Added `.texture()` (Thank you david aka claudekennilol on Discord!)\n- *Crosshairs* - Added `alpha` as an option to `.border()` and `.fillColor()` (Thank you david aka claudekennilol on Discord!)\n- *Sounds* - Fixed sounds with `.atLocation()` not working together with crosshairs \n\n# Version 3.6.1\n- *Sequencer* - Fixed some lingering issues in Foundry v13\n\n## Version 3.6.0\n- *Sequencer* - Updated Sequencer for Foundry v13 while still remaining compatible with v12\n\n## Version 3.5.4\n- *Effects* - Fixed minor issue with isometric & walled templates plugin implementation\n\n## Version 3.5.3\n- *Sequencer* - Fixed overly aggressive welcome chat message\n- *Sequencer* - Sequencer will now fully prevent from launching if socketlib is not properly set up or installed \n\n## Version 3.5.2\n- *Effects* - Fixed `complete` effect versions not playing correctly without `.persist()`\n- *Effects* - Fixed isometric support with better plugin implementation\n\n## Version 3.5.1\n- *Effects* - Fixed issue where effects would get "stuck" on scenes after being played through Automated Animations\n- *Effects* - Fixed issue where the effect manager would break if opened with an effect that had pre-defined ranges in its `.file()` method \n- *Effects* - Fixed .webm\'s with sounds would not play its sound if played as an effect \n- *Crosshairs* - Fixed snap position resolution being undefined by default, causing it to not snap if not defined \n- *Crosshairs* - Elaborated on some crosshairs function documentation\n\n## Version 3.5.0\n- *Sequencer* - Updated TJS implementation to latest versions\n- *Sequencer* - Updated Italian and Polish localization (thank you GregoryWarn and Lioheart on Github!)\n- *Effects* - Improved the sprite sheet generator\'s premultiplied alpha handling (Thanks Codas!)\n- *Effects* - Fixed issues with effects trying to play before the canvas had been fully initialized (Thanks Codas!)\n\n## Version 3.4.9\n- *Sequencer* - Added tooltips to Sequencer database viewer buttons\n- *Animations* - Fixed animation sections with tint throwing error due to missing import\n- *Crosshairs* - Fixed resolution 0 resulting in Foundry crashing (due to internal Foundry handling of 0 resolution)\n- *Effects* - Fixed `binary/octet-stream` not being considered a valid content type\n- *Effects* - Fixed screenspace effects scaling based on the grid-size of the current scene (thank you Vauxs!)\n- *Sounds* - Fixed once-off location-based sounds crashing Foundry  (thank you Vauxs!)\n\n# Version 3.4.8\n- *Sequencer* - Added Italian localization (thanks GregoryWarn!)\n- *Sequencer* - Added `override` to `Sequencer.Database.registerEntries` (thanks MrVauxs)\n- *Effects* - Fixed `.tint()` not working in v12 (thanks MrVauxs)\n- *Effects* - Added `.sortLayer()` to typing (thanks MrVauxs)\n- *Sounds* - Fixed sound breaking because of missing offset function implementation (thanks MrVauxs)\n- *Crosshairs* - Added grid-snapping resolution to the snap property (thanks Spappz)\n\n# Version 3.4.7\n- *Effects* - Fixed `.stretchTo(target, { attachTo: true })` with range-finding effects not properly preloading its different files\n- *Effects* - Fixed `.playbackRate()` not working well with `.fadeOut()` and similar `out` animations\n- *Effects* - Fixed `.stretchTo`\'s `tiling` option not working on scenes with non-100px grid sizes (thanks Codas!)\n- *Sequencer* - Updated Polish localization (thanks Lioheart!)\n\n# Version 3.4.6\n- *Effects* - Added `effect` as a valid `.animateProperty()` and `.loopProperty()` target\n- *Effects* - Added `sourceOffset` and `targetOffset` to `.animateProperty()` and `.loopProperty()` property target\n  - This is used as such: `.animateProperty("effect", "targetOffset.x", { from: 0, to: 200, duration: 5000 })`\n- *Effects* - Deprecated `.from()` in favor for `.copySprite()` which is a more descriptive method name\n- *Effects* - Fixed `anchor` not being optional for `.shape()` (Thanks Codas!)\n- *Effects* - Fixed `scale()` for tiling textures using `stretchTo()` overly stretching the effect (Thanks Codas!)\n- *Effects* - Fixed some issues with caching of generated spritesheets (Thanks Codas!)\n- *Effects* - Disabled spriteshet generation for animated tiling textures - too many visual defects at the moment (Thanks Codas!)\n- *Sequencer* - Fixed audio controls in the Sequencer Database viewer (Thanks Vauxs!)\n- *Sequencer* - Added audio filtering in the Sequencer Database viewer (Thanks Vauxs!)\n- *Crosshairs* - Fixed issue with `updateCrosshair` causing label text to break the canvas\n\n# Version 3.4.5\n- *Effects* - Added `anchor` as an optional argument to `.shape()` (see docs)\n- *Effects* - Fixed `.shape()` not working if no `.file()` was used with `.screenSpace()` and `.screenSpaceScale({ fitX: true, fitY: true })`\n- *Effects* - Fixed calculation of dimensions for canvas tiles (thanks Codas!)\n- *Effects* - Fixed spritesheets generated by just-in-time conversion not having the correct framerate (thanks Codas!)\n- *Effects* - Fixed `.stretchTo()` not having the correct scale after using `.scale()`\n- *Crosshairs* - Fixed `Sequencer.Crosshair.collect()` being broken due to missing import \n\n# Version 3.4.4\n- *Canvas Pan* - Added support for named locations with in-sequence crosshairs\n- *Scrolling Text* - Added support for named locations with in-sequence crosshairs\n- *Effects* - Fixed effects that should have been invisible to users being visible when utilizing `.attachTo()` with `bindVisibility` set to `true` (Thanks Codas!)\n- *Effects* - Fixed `.file()` with specific range-based effects not correctly using the default grid template data (Thanks Codas!)\n- *Effects* - Fixed `.aboveLighting()` being above lighting but not over certain elements\n- *Effects* - Fixed some effects sticking around on tokens even after being deleted\n- *Effects* - Added missing `anchor` documentation to the `.text()` method\n\n# Version 3.4.3\n- *Sequencer* - Fixed slight performance issue with the Sequencer layer querying mouse position even when not active (thanks Codas!)\n- *Effects* - Fixed `.shape()` and `.text()` not working on effects without an underlying sprite (thanks Codas!)\n- *Effects* - Fixed `.xray()` not working (thanks Codas!)\n- *Effects* - Fixed `.screenSpace()` not working due to upgrades to `.animateProperty()` messing with sprite width and such\n- *Crosshairs* - Fixed `displayRangePoly` not working due to missing import\n\n# Version 3.4.2\n- *Effects* - Fixed canvas breaking after playing some types of effects\n\n# Version 3.4.1\n- *Effects* - Fixed effects with internal loops not playing & looping correctly (thanks Codas!)\n- *Effects* - Tweaked just-in-time spritesheet generation to not scale resulting spritesheets as much (thanks Codas!) \n\n# Version 3.4.0\n- *Sequencer* - Added support for custom FPS for flipbooks through an `_fps` database tag\n- *Sequencer* - Added support for spritesheet type effects through linking the spritesheet `.json` manifest in the database\n- *Sequencer* - Added a just-in-time compiler to transform webm video-based effects to gpu-optimized spritesheets\n  - This greatly improves performance when many instances of the same persisted effects are playing at once\n  - Persisted effects are automatically transformed to spritesheets in background threads. Once the compiled spritesheets are available, video effects are seamlessly replaced with spritesheets, greatly reducing the overhead for video decoding for those effects. Depending on size of the effect, spritesheet generation is expected to take anywhere from 5 seconds to 90 seconds. The size of generated Spritesheet textures is limited to 8192x8192px to maximize compatibility and limit memory usage\n  - Generated spritesheets are cached client-side in a semi-persistent, file-based browser cache\n  - Spritesheet generation for video files is only supported in trusted contexts (meaning https or hosted and connected locally on the same machine). This is a hard limitation by the browser vendors and not expected to be lifted in the future\n- *Sequencer* - Tweaked `Sequencer.Presets.get()` to support fall-backs to lower-complexity named entries\n  - If you have added a preset named `spell.ranged` and attempt to get a non-existent `spell.ranged.fire`, it will return the `spell.ranged` entry as a fallback\n  - You can enable the previous behavior by passing `true` as a secondary argument, which causes the method to require an exact match\n- *Crosshairs* - Added `displayRangePoly` to `.location()` and the `Sequencer.Crosshair.show()` API\n- *Crosshairs* - Fixed some minor crosshair issues surrounding utilizing them for effects\n- *Crosshairs* - Fixed `Sequencer.Crosshair.collect()` not working correctly with some crosshair shapes\n- *Effects* - Fixed flipbook animations framerate being tied to canvas FPS\n- *Effects* - Fixed offset from `.rotateTowards()` applying to the source location instead of the target\n- *Effects* - Fixed effects with added text and `.rotateTowards()` having their anchor point moved to an unexpected location\n- *Effects* - Fixed persisted `.stretchTo()` effects not correctly looping the effect in certain cases\n- *Effects* - Fixed `.loopOptions()` not working correctly for persisted effects when combined with `.timeRange()`\n- *Effects* - Fixed `.scaleOut()` end value being multiplied by a potentially set `.scaleIn()` value.\n  - `scaleIn(0.25).scaleOut(2)` now scales the effect in from 0.25 to 1. Plays the animation at 1x size and then scales the animation out to 2x default animation size. Previously, the animation would scale out to 0.5x the default effect size.\n- *Effects* - Fixed `attachTo()` not working on in-flight crosshairs\n\nBig thanks to Codas for his incredible work on the just-in-time compiler, general optimizations, and many fixes! Please support him at the following link: <https://ko-fi.com/Codas>\n\n# Version 3.3.8\n- *Effects* - Fixed `screenSpace` being a required property instead of optional for `.animateProperty()` and `.loopProperty()`\n\n# Version 3.3.7\n- *Sequencer* - Fully removed custom PIXI filters in favor of dedicated Sequencer implementation\n- *Crosshairs* - Added `.width()` for ray-type crosshairs\n- *Effects* - Added `screenspace` (boolean) parameter to `.animateProperty()` and `.loopProperty()`\n  - This makes the values used in these methods for position, width, or height to take the screen-size into account, meaning an `.animateProperty()` with the x position going from 0.0 to 1.0 will have the effect move from the left side of the screen to the right\n- *Effects* - Fixed `.screenSpace()` effects not supporting animating their width when `.screenSpaceScale({ fitX: true, fitY: true })` was set\n- *Effects* - Fixed `.screenSpaceAboveUI()` not correctly setting its renderable status when effects were played on its layer  (thank you Codas!)\n- *Effects* - Fixed `.shape()` not being affected by `.fadeIn()`, `.fadeOut()`, or `.opacity()`  (thank you Codas!)\n\n# Version 3.3.6\n- *Sequencer* - Reverted PIXI filters plugin to more compatible version\n- *Sounds* - Fixed `.startTime()` and `.endTime()` not working\n\n# Version 3.3.5\n- *Effects* - Fixed `.screenSpaceAboveUI()` not correctly falling back to the below UI screenspace layer if the above UI layer is disabled\n- *Animations* - Fixed named sequence-crosshairs not working as a target position\n- *Sequencer* - Fixed minor Foundry v12 deprecation warnings\n- *Sequencer* - Updated PIXI filters\n\n# Version 3.3.4\n- *Crosshairs* - Fixed `.crosshair()`\'s `.persist()` option not working with subsequent `.effect()` sections\n- *Crosshairs* - Fixed typos on `.gridHighlight()` (thanks Vauxs!)\n- *Crosshairs* - Fixed crosshair documentation and typing (thanks Vauxs and Spappz on github!)\n- *Crosshairs* - Fixed `.crosshair()`\'s default size being smaller than the grid\n- *Effects* - Removed `.attachTo()` warning when using `.attachTo()` with a named location (specifically `.persist()`ing crosshairs)\n- *Effects* - Fixed `.name()` not passing mirrorX/Y, rotation, and random rotation to the subsequent effects\n- *Sounds* - Added `.audioChannel()` to sounds, which controls which output they are played through (thank you Oxy949 on github!)\n\n# Version 3.3.3\n- *Crosshairs* - Added `Sequencer.Crosshair.CALLBACKS.STOP_COLLIDING` callback\n- *Crosshairs* - Added `updateCrosshair` method to crosshairs\n- *Crosshairs* - Fixed invalid placement positions being cached and then used even if the crosshair was placed somewhere else\n- *Effects* - Fixed `.attachTo()`\'s `align` not playing well with `.stretchTo()`\n- *Effects* - Fixed `.persist(true, { persistTokenPrototype: true })` not storing more than one persistent effect on the token\n\n# Version 3.3.2\n- *Sequencer* - Fixed `.thenDo()` typing (thank you Vauxs!)\n- *Sequencer* - Tweaked `.addNamedLocation()` to better handle nonconforming inputs\n- *Effects* - Fixed `.screenSpaceAboveUI()` not working with recent optimizations (thanks you Codas!)\n- *Effects* - Fixed `.text()` not utilizing the `PreciseText` Foundry class\n\n# Version 3.3.1\n- *Sequencer* - Added `.addNamedLocation()` which allows you to store and cache locations as a string for later use in the sequence\n- *Effects* - Fixed `.tint()` and `.fadeIn()`/`.fadeOut()` not working properly (thank you Codas!)\n- *Effects* - Fixed `.from()` breaking antialiasing on token textures\n- *Animations* - Fixed using named locations and named crosshairs not working in animations\n\n# Version 3.3.0\n- *Crosshairs* - Added crosshairs! It can be used with `Sequencer.Crosshair.show()` (like warpgate) or with `.crosshair()` on a sequence. See the documentation ([here](https://fantasycomputer.works/FoundryVTT-Sequencer/#/crosshair) and [here](https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/crosshair)) for more info.\n- *Sequencer* - Fixed issues with preloading arrays of files\n- *Sequencer* - Added polish localization (thank you Lioheart!)\n- *Effects* - Greatly improved effect efficiency by improving batching capabilities (thank you Codas, you\'re a legend)\n\nUnfortunately, Sequencer is now a V12 only module.\n\n## Version 3.2.17\n- *Sequencer* - Updated types (Thanks Vauxs on github!)\n- *Effects* - Fixed some issues with the vision masking shader relating to the batch batching optimizations (Thanks Codas on github!)\n- *Effects* - Fixed above UI layer not working with recent render batching optimizations (Thanks Codas on github!)\n\n## Version 3.2.16\n- *Effects* - Major improvements to the way that effects are rendered to better support render batching (thank you Codas, you damn legend!)\n- *Effects* - Tweaked flag manager to better handle effects with broken IDs\n- *Animations* - Fixed `.teleportTo()` triggering regions that react upon movement (thanks Michael on github!)\n- *Sounds* - Fixed sounds not playing on the right channel in v12\n- *Sounds* - Fixed sounds not working with `.fadeInAudio()` and `.fadeOutAudio()`\n- *Sounds* - Fixed sounds with `.atLocation()` and `randomOffset` in v12 not synchronizing the exact location between clients \n\n## Version 3.2.15\n- *Effects* - Fixed non-`.xray()` effects showing in the fog of war\n- *Sounds* - Removed stray debugger\n\n## Version 3.2.14 Hotfix\n- *Sounds* - Fixed sounds again (thank you, Vauxs!)\n\n## Version 3.2.13\n- *Sequencer* - Tweaks and fixes to documentation (thank you, Vauxs!)\n- *Effects* - Fixed templates getting deleted shortly after being used for an effect would cause a Foundry crash\n- *Effects* - Fixed effects sticking around after documents that they were attached to had been deleted\n- *Sounds* - Fixed sounds not working properly in certain macros\n\n## Version 3.2.12\n- *Sequencer* - Further updates to typing information (thank you, Vauxs!)\n- *Sequencer* - Tweaked `preload` optional argument on `Sequence#play` to batch preload files (thank you, Codas!)\n- *Sequencer* - Fixed `local` optional argument on `Sequence#play` to actually only play effects and sounds locally\n- *Sequencer* - Tweaked Sequencer Manager to be more robust and less error prone when invalid effects are active\n- *Effects* - Added `absolute` optional argument to `.animateProperty()` and `.loopProperty()`\n- *Effects* - Fixed some effects not playing in the correct location, which fixes effect position issues with the Isometric module\n- *Sounds* - Fixed sounds not playing in v11 (thank you, Vauxs!)\n- *Canvas Pan* - Fixed initiating a shake with a frequency or duration of 0 would cause the canvas to freeze\n\n## Version 3.2.11\n- *Sequencer* - Updated `Sequence#play` to have two additional secondary parameters:\n  - `preload: boolean` - causes any section with `.file()` entries to preload all files that would be played\n  - `local: boolean` - causes sections to be played only locally to the user executing the sequence\n- *Sequencer* - Improved typing information (thank you, Vauxs!)\n- *Effects* - Fixed non-ASCII text breaking some effects played with Automated Animations due to its usage with the Effect Manager\n- *Effects* - Fixed the alpha of tokens and tiles not being respected with `attachTo()`\n- *Effects* - Fixed `.template()` on effects not overwriting database templates\n- *Effects* - Fixed `CanvasEffect#addAnimatedProperties` causing errors when used twice in a row as it would try to incorrectly serialize entire PIXI sprites\n\n## Version 3.2.10\n- *Sequencer* - Fixed `{ name }` filters on `Sequencer.EffectManager` and `Sequencer.SoundManager` methods not working with regex-like strings\n- *Effects* - Tweaked and improved the animation engine to better handle stacked animations on the same property\n- *Effects* - Fixed `.persist()`ing effects with internal loop assets not finishing the ending portion when the effect was ended\n- *Effects* - Fixed one shot effects replaying the first frame before disappearing\n- *Effects* - Fixed `.aboveInterface()` effects blocking mouse interactions\n- *Effects* - Fixed some looping inconsistencies with `.loopOptions()`\n- *Effects* - Fixed being unable to snap effects to the grid when moved with the Sequencer Player\n\n## Version 3.2.9\n- *Effects* - Fixed effects with `.attachTo()` sometimes throwing errors and causing the scene to freeze\n- *Effects* - Fixed `.mask()`ed effects not following measured templates correctly\n\n## Version 3.2.8\n- *Sequencer* - Fixed Sequencer Manager throwing A DIFFERENT error when trying to see active\n- *Effects* - Fixed `.persist()` effects not looping when first created (but would loop if enough time had passed & user had refreshed - very odd)\n\n## Version 3.2.7 Hotfix\n- *Effects* - Fixed `.persist()` effects not looping\n\n## Version 3.2.6\n- *Sequencer* - Fixed Sequencer Manager throwing an error when trying to see active Sequences\n- *Effects* - Added `.sortLayer()` to be able to more directly control which layer the effect lands on (only in Foundry v12)\n  - This also fixes `.belowTokens()` being below tiles\n  - Thank you Codas on GitHub!\n- *Effects* - Added `.loopOptions()` to allow users to control how an effect loops\n- *Effects* - Deprecated `.noLoop()` in favor of the above, will be elevated to loud deprecation in a future major version\n\n## Version 3.2.5\n- *Effects* - Updated documentation to include `.volume()`, `.fadeInAudio()`, and `.fadeOutAudio()`\n- *Effects* - Fixed some issues with effect scaling when using `.loopProperty()` and `.animateProperty()`\n- *Sounds* - Fixed `Sequencer.SoundManager.endAllSounds()` not ending all sounds\n- *Sounds* - Fixed `Sequencer.SoundManager.endSounds()` sometimes not correctly ending the right sounds\n- *Sounds* - Fixed calling `.sound()` would break sequences in both Foundry v11 and v12\n\n## Version 3.2.4\n- *Sequencer* - Fixed `.preset()` not working when called directly on a sequence (thanks MrVauxs!)\n- *Effects* - Added deprecation warning to `.file()` instead of an error when giving it a second boolean parameter\n- *Effects* - Fixes to the isometric module - may still not be 100%, but it shouldn\'t error anymore\n- *Sounds* - Fixed sounds not playing on v11 (again!)\n\n## Version 3.2.3 Hotfix\n- *Effects* - Fixed issue with effects not playing their full duration\n\n## Version 3.2.2\n- *Sequencer* - ACTUALLY fixed welcome message being posted multiple times in bigger worlds (will also get rid of duplicates)\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` not working when used on `alphaFilter`\n- *Effects* - Fixed effects that were attached to temporary templates (like warpgate\'s crosshairs) not disappearing after the crosshair had been placed\n- *Effects* - Fixed issue with `complete`-loop type effects not playing correctly\n\n## Version 3.2.1\n- *Sequencer* - Fixed welcome message being posted multiple times on The Forge - my apologies for this\n- *Sequencer* - Fixed `Sequencer.Preloader` not being properly set up (thanks Codas on github!)\n- *Effects* - Added `antialiasing` optional argument to `.file()` - expects `PIXI.SCALEMODES.LINEAR` or `PIXI.SCALEMODES.NEAREST`\n- *Effects* - Fixed `.moveTowards()` not working\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` not properly animating effects\n- *Effects* - Fixed `.timeRange()` and `.endTime()` not working properly\n- *Sounds* - Fixed `.atLocation()` incorrectly throwing errors when on Foundry v12 (thanks Codas on github!)\n- *Sounds* - Fixed sounds not working on Foundry v11\n\n## Version 3.2.0\n- *Sequencer* - Added support for FoundryVTT v12 while remaining backwards compatible with v11\n- *Sequencer* - Added startup chat message with links to relevant external resources\n- *Sequencer* - Added support for the [Isometric module](https://foundryvtt.com/packages/grape_juice-isometrics) (thanks grape_juice for their assistance with this integration!) \n- *Sequencer* - Added `Sequencer.SoundManager` which is a sound interface that mirrors `Sequencer.EffectManager`\n- *Effects* - Greatly improved responsiveness of attached effects actually following their targets more accurately\n- *Effects* - Removed deprecated methods `.offset()` and `.randomOffset()` as those should now be done with the relevant location-based secondary parameters\n- *Effects* - Added `.syncGroup()` which allows you to synchronize the playback of multiple effects in the same scene\n- *Effects* - Tweaked `.scaleToObject()` to cache its target\'s scale when first created, unless paired with `.attachTo()` and `bindScale` (see below)\n- *Effects* - Added `bindScale` (defaults to `true`) to `.attachTo()`, that if combined with `.scaleToObject()` it will always scale with the object\n- *Effects* - Fixed `.tint()` not being applied when used with `.attachTo()` and `.stretchTo()` with `{ attachTo: true }`\n- *Effects* - Tweaked `.attachTo()`\'s `followRotation` to be named `bindRotation` (will remain backwards compatible until 3.3.0 before becoming deprecated)\n- *Sounds* - Added support for the following methods (see the [`.sound()` documentation](https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/sound) for more info):\n  - `.name()`\n  - `.origin()`\n  - Below only in Foundry v12:\n    - `.atLocation()`\n    - `.radius()`\n    - `.constrainedByWalls()`\n    - `.distanceEasing()`\n    - `.alwaysForGMs()`\n    - `.baseEffect()`\n    - `.muffledEffect()`\n\n## Version 3.1.4\n- *Effects* - Added better support for the Walled Templates module\n- *Effects* - Fixed effects becoming invisible when using both `offset` and `local` with just a source location and no target\n- *Effects* - Fixed `.shape()`s `isMask` property not working when the shape type was set to `polygon`\n- *Sounds* - Fixed "End All Sounds" button not working in the Sequencer Manager\n\n## Version 3.1.3\n- *Sequencer* - Removed stray debugger, whoops\n- *Animations* - Fixed `.rotateTowards()` being off by a few degrees\n- *Effects* - Added `.temporary()`, which causes an effect to not set any flags on any objects, which means a refresh will make the effect disappear\n- *Effects* - Fixed `.zIndex()` not working with `.screenSpace()`\n- *Effects* - Fixed `offset`\'s `local` modifier not applying correctly when using `.stretchTo()` and the like\n\n## Version 3.1.2\n- *Sequencer* - Fixed Sequencer\'s ready hooks sometimes not firing when canvas was fully ready\n- *Effects* - Improved persistent effects behavior when pasted across scenes \n\n## Version 3.1.1\n- *Effects* - Fixed `.shape()` with `mask: true` not masking its parent\n- *Effects* - Hopefully fixed issues surrounding effects sometimes not being cleared properly\n- *Effects* - Fixed effects in v11 sometimes ending up in the top left corner after switching scenes\n\n## Version 3.1.0\n- *Sequencer* - Fixed a bug in the database when copying some file paths would not work properly\n- *Effects* - Added `.aboveInterface()`\n\n## Version 3.0.14\n- *Sequencer* - Improved Database-to-Database binding when considering custom metadata\n- *Animations* - Fixed cases where if a newly created token had `.animation()`s applied to them would sometimes fail due to `Token#mesh` not being initialized (Thanks LukeAbby & TMinz)\n- *Effects* - Vastly improved `.mask()` performance and behavior all thanks to dev7355608!\n- *Effects* - Fixed a rare case where range-finding effects would fail to determine the right video file to play\n\n## Version 3.0.13\n- *Effects* - Added `.randomSpriteRotation()`\n- *Effects* - Fixed a bug with cached locations and `.mask()`\n- *Effects* - Fixed database-to-database mappings\n\n## Version 3.0.12\n- *Sequencer* - Fixed console error caused by the clean-up of old expired effects (Thanks LukeAbby on Github!)\n- *Sequencer* - Added `fullyQualified` secondary parameter to `Sequencer.Database.getPathsUnder()` (Thanks LukeAbby on Github!)\n- *Animations* - Added support for elevation in `.teleportTo()`\n- *Canvas Pan* - Fixed `.canvasPan()` not working other clients than the executing client\n- *Effects* - Slightly adjusted how `.missed()` interacts with `.stretchTo()` when two tokens are right next to each other\n- *Effects* - Fixed `.playbackRate()` causing effects to have the incorrect amount of playback time\n- *Effects* - Fixed `.rotateTowards()` not working with `.text()`\n\n## Version 3.0.11\n- *Sequencer* - Made PIXI fix settings default to being turned off\n- *Sequencer* - Fixed strange interaction with `.preset()` not working when certain functions were called in the preset\n- *Sequencer* - In Foundry v11, `.macro()` now requires the secondary parameter to be an object, as the behavior of Advanced Macros have been partially integrated in v11\n- *Effects* - Fixed some persistent effects not being deleted from scenes after their attached sources were deleted\n- *Effects* - Fixed effects targeting drawings not properly using the drawing position and dimensions\n- *Effects* - Fixed `.playbackRate()` not working well with internal loops and `.persist()`\n\n## Version 3.0.10\n- *Sequencer* - Fixed Effect Player not working in Foundry v11\n- *Sequencer* - Fixed private modules showing up in the Database Viewer\n\n## Version 3.0.9\n- *Canvas Pan* - Added `.shake()` which can be used to add camera shake to the canvas\n- *Effects* - Fixed glow filter not working in v11\n- *Effects* - Fixed `.belowTokens()` being below tiles as well\n\n## Version 3.0.8\n- *Effects* - Fixed `stretchTo()` effects sometimes not being visible\n\n## Version 3.0.7\n- *Effects* - Added `requiresLineOfSight` and `hideLineOfSight` to the secondary arguments of `.stretchTo()`\n  - This requires `attachTo` to be true in `stretchTo()`\n  - `requiresLineOfSight` causes the effect to immediately end if the line of sight between the source and target is broken\n  - `hideLineOfSight` modifies the above behavior to temporarily hide the effect until the line of sight is unbroken\n- *Effects* - Fixed the "External Effect Opacity" setting, which causes effects playing for other players to show up as faint for GMs to let them know that players has effects playing for them, but would not work if the opacity was set to 0\n- *Effects* - Improved dual-attached effects performance\n\n## Version 3.0.6\n- *Sequencer* - Fixed issue with Sequencer trying to make users migrate tokens and effects they do not own \n- *Effects* - Fixed effects not updating reliably when the target\'s opacity and/or hidden status changes\n\n## Version 3.0.5\n- *Effects* - Fixed support for google bucket files (it meant to be `video/x-webm` instead of `video/webm-x`)\n- *Effects* - Fixed dual attached effects disappearing once going beyond the range of the initial effect\n\n## Version 3.0.4\n- *Effects* - Added support for file buckets that contain `video/webm-x` files (mostly Google Buckets)\n- *Effects* - Fixed `.scaleToObject()` taking into account token scale when it should not (unless `considerTokenScale` is set to `true`)\n\n## Version 3.0.3\n- *Sequencer* - Fixed edge case with `.addSequence()` that would cause a sequence to ignore `softFail`\n- *Effects & Sounds* - Removed secondary boolean argument for `.file()` as it is covered by the Sequence-wide soft fail\n\n### Version 3.0.2\n- *Sequencer* - Added backwards compatibility to the old format of `new Sequence(moduleName, softFail)`\n- *Sequencer* - Added `remote` support for `.wait()`\n- *Sequencer* - Added `moduleName` and `softFail` support for `remote`\n- *Animations* - Fixed `.snapToGrid()` sometimes not working well on hex scenes \n- *Effects* - Fixed `.xray()` causing effects to disappear\n- *Sounds* - Fixed `softFail` not working properly\n\n### Version 3.0.1\n- *Effects* - Fixed `cacheLocation` not working on effect locations\n- *Effects* - Fixed dual attached effects not working\n\n### Version 3.0.0\n- *Sequencer* - Updated Sequencer Database Viewer:\n  - Improved UI and added nested tree view\n  - Added ctrl modifier to buttons that copy paths, which adds quotes around the copied paths\n- *Sequencer* - Updated Sequencer Effect Player:\n  - Improved UI based on the design of MatthijsKok on github - thanks a lot for the inspiration!\n- *Sequencer* - Reworked the Sequencer Effect Manager to the Sequencer Manager:\n  - Added the ability to stop running sounds\n  - Added a Sequence view where you can see the sequences as they are running, and stop the entire execution or their individual sections\n- *Sequencer* - Added `.scrollingText()` which allows playing scrolling text on the canvas for users\n- *Sequencer* - Added `.canvasPan()` which allows panning the canvas for connected users\n- *Sequencer* - Added `.toJSON()` and `.fromJSON()` to Sequences to be able to be serialized and deserialized; only sequences with effects, sounds, and scrolling texts can be serialized\n- *Sequencer* - Added options to `.play()`, which may contain an object; currently supports `{ remote: true/false }` which will serialize the sequence (see above), and send it to each client for local playback, instead of the person running the sequence sending data to clients as it is being executed\n- *Sequencer* - Added database support for `_timestamps` metadata on effect files, which will trigger the `sequencerEffectTimestamp` hook when effects reach the point of the timestamps for that file\n- *Sequencer* - Added support for flipbook-type effects through a `_flipbook` database tag\n- *Animations* - Improved playback of movement, fade in/out, and rotation animations on tokens\n- *Effects* - Added `CanvasEffect#addAnimatedProperties`, which will allow you to easily add animations to properties of existing effects\n- *Effects* - Improved screenspace above UI effect performance by not rendering the extra canvas when not in use\n- *Effects* - Fixed screenspace effects being affected by the vision mask\n- *Effects* - Fixed `.stretchTo()` effects would be visible when not in vision\n- *Effects* - Fixed `.fadeOut()` and `.scaleOut()` not working at all\n- *Effects* - Reworked how effects are replicated on linked tokens when `.persist()`\'s `persistPrototypeToken` is enabled, improving performance\n\n### Version 2.414\n- *Sequencer* - Included missing CSS file\n\n### Version 2.413\n- *Sequencer* - Added support for database paths that resolve to other database paths\n- *Sequencer* - Isolated Sequencer\'s styling so that it doesn\'t leak out into other modules or systems\n- *Effects* - Fixed `.loopProperty()` not respecting `loops: 0`\n- *Effects* - Fixed `.animateProperty()` not keeping track of relative values when animating the same property multiple times\n- *Effects* - Fixed named screenspace effects without a specific location not playing and throwing errors\n- *Sounds* - Fixed `softFail` not allowing sounds to softly fail\n\n### Version 2.412\n- *Sequencer* - Added setting to hide/show the Sequencer buttons in the left sidebar when in the token controls\n- *Animation* - Fixed `.moveTowards()` going into infinite loop if the source and targets are on top of each other\n- *Effects* - Fixed `.shape()` taking grid size into account multiple times\n- *Effects* - Fixed `.volume()`, `.fadeInAudio()`, and `.fadeOutAudio()` not working on webms with embedded audio \n\n### Version 2.411\n- *Sequencer* - Fixed infinite recursion when using `.waitUntilFinished()` in the middle of a sequence\n- *Sequencer* - Undid some minor issues in the database viewer\n\n### Version 2.410\n- *Sequencer* - Added support for playing sounds in the Sequencer Database (thank you ZotyDev for the pull request!)\n- *Sequencer* - Calling methods on the sequence that it does not have will be attempted to be cast to the last section\n- *Sequencer* - You can now provide `false` as an argument to `.waitUntilFinished()`, which will negate its call\n- *Effects* - Fixed animations on `alphaFilter`\'s `alpha` not working\n\n### Version 2.49\n- We don\'t talk about this version\n\n### Version 2.4.8\n- *Effects* - Fixed rectangle measurable templates would be off by 45 degrees\n- *Effects* - Fixed tokens with locked rotation would cause attached effects to be rotated anyway\n- *Effects* - Fixed `.tint()` not applying to `.stretchTo()` effects\n\n### Version 2.4.7\n- *Effects* - Actually fixed shapes\n\n### Version 2.4.6\n- *Effects* - Fixed effects with only shapes would not play properly\n- *Effects* - Fixed error when users tried to play effects even when `softFail` was set to `true`\n\n### Version 2.4.5\n- *Effects* - Fixed effects playing on the same scene as the user\'s current scene, even if the target of the effect was on another scene\n- *Effects* - Fixed `.from()` not working with the new `softFail` sequence parameter\n- *Effects* - Fixed being able to pass non-valid parameters to `.atLocation()` and similar functions without errors\n\n### Version 2.4.4\n- *Sequencer* - Tweaked the arguments to `new Sequence("moduleName")` to `new Sequence(inOptions)` - it now takes a single object that can contain:\n  - `moduleName` <string> - The name of the module that is creating this sequence - this is for other users to know which module used Sequencer\n  - `softFail` <boolean> - Setting this to `true` causes any failures to find files for effects, sounds, or macros to softly fail, rather than halt the entire sequence\n- *Effects* - Tweaked `.shape()`s parent to be the `spriteContainer` rather than the `sprite`, so that animations to the sprite doesn\'t affect the shapes\n- *Effects* - Fixed `.shape()` not considering their offset with `isMask` enabled  \n\n### Version 2.4.3\n- *Sequencer* - Switched `Disable Pixi Fix` to `Enable Pixi Fix` to make it more consistent with other settings\n- *Sequencer* - Added `Enable Global Pixi Fix` which fixes the alpha on animated tiles if enabled (use with caution) \n- *Effects* - Fixed `.atLocation()` and `.persist()` throwing errors and thus failing to persist the effect on the scene\n- *Effects* - Slight tweaks to visibility logic of effects to be more consistent\n- *Effects* - Tweaked `.attachTo()`\'s `align` and `edge` to not consider token scale when determining the edge of the token\n\n### Version 2.4.2\n- *Sequencer* - Added `Sequencer.Presets` which allows you to create and save reusable bits of sequences\n- *Sequencer* - Added `.preset()` which allows you to use the aforementioned presets\n- *Sequencer* - Added optional `considerTokenScale` to the optional `options` parameter to `.scaleToObject()`, you can set it to `true` in order for the visual effect to also consider the token scale\n- *Sequencer* - Added support for persistent visual effects on "fake" tokens created by Multilevel Tokens (only supports effects that are applied to the prototype token) \n- *Sequencer* - Slightly improved the speed of document updates when visual effects are first applied\n- *Sequencer* - Added a throttled console warning when the Photosensitive Mode is enabled and a client is trying to play effects (only warns once every 10 seconds when effects are played)\n- *Effects* - Fixed `.scaleToObject()` always taking token scale into account, which it shouldn\'t do by default\n\n### Version 2.4.1\n- *Effects* - Fixed minor typo in `.mask()`\n\n### Version 2.4.0\n- *Sequencer* - Added `Seqencer.EffectManager` to the autocomplete types\n- *Sequencer* - Fixed minor issue with the Effect Manager sometimes trying to load non-existent effect data\n- *Effects* - Added `.shape()`, which allows you to create simple shapes on the canvas\n  - See: <https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/effect?id=shape>\n- *Effects* - Fixed `.attachTo()` would attempt to apply flags on temporary templates such as warpgate crosshairs\n\n### Version 2.3.21\n- *Sequencer* - Fixed interaction with the `Advanced Macros` module past version 1.19.2 (Thanks MrVaux!)\n- *Sequencer* - Fixed issue with `Sequencer.Helpers.shuffle_array` not handling complex arrays very well\n- *Effects* - Fixed `.from()` not taking token scale into account\n\n### Version 2.3.20\n- *Sounds* - Fixed sounds not working\n\n### Version 2.3.19\n- *Sequencer* - Created a new wiki for Sequencer:\n  - <https://fantasycomputer.works/FoundryVTT-Sequencer/> \n- *Sequencer* - Added full support for Sequencer typings in the ***Monaco Macro Editor*** (thanks to laquasicinque for your initial work!)\n- *Sequencer* - Changed all settings to use Foundry v10\'s `requiresReload` instead of reloading the app\n- *Sequencer* - Removed compendium of sample macros, in favor of the new wiki\n- *Effects* - Added further support for webm\'s loaded through S3 buckets (files with type `application/octet-stream` now supported)\n- *Sounds* - Sounds\' `.file()` now has a secondary parameter to allow a false-y primary input to soft fail, instead of halting the entire Sequence\n\n### Version 2.3.18\n- *Sequencer* - Added support for Foundry\'s photosensitive setting, which disables all effects without impacting other functionality \n- *Sequencer* - Fixed incompatibility with the Foundry team\'s ***A House Divided*** adventure, the scenes should no longer appear to have a dark overlay\n- *Sequencer* - Updated `.macro()` to work with the latest version of the ***Advanced Macros*** module\n\n### Version 2.3.17\n- *Effects* - Fixed `.tieToDocuments()` not working for embedded documents on unlinked tokens\n\n### Version 2.3.16\n- *Effects* - Adjusted approach when ending effects when using `.tieToDocuments()`\n\n### Version 2.3.15\n- *Sequencer* - Fixed registering similar named modules in the database would cause the second to not register properly \n\n### Version 2.3.14\n- *Effects* - ACTUALLY fixed `.tieToDocuments()` (send help)\n\n### Version 2.3.13\n- *Effects* - Fixed deeper issue with `.tieToDocuments()` as it was not recognizing actors or items as parents in respect to UUIDs\n\n### Version 2.3.12\n- *Effects* - Fixed `.missed()` and `.stretchTo()`\'s `randomOffset` having weird interactions when `.name()` was used to play effects at target locations\n- *Effects* - Fixed `.tieToDocuments()` throwing errors and not removing effects when the tied documents were deleted \n\n### Version 2.3.11\n- *Sequencer* - Added `Sequencer.Database.inverseFlattenedEntries` which is a map object with the key being the file path and the value being the database path for that file\n- *Effects* - Added `bindElevation` (default `true`) as a secondary argument to `.attachTo()` which can be used to make effects not follow the target\'s elevation\n- *Effects* - Made `.elevation()` be relative to the target of the effect by default, you can pass a secondary object with `absolute: true` to make it absolutely elevated on the scene\n- *Effects* - Improved internal logic when trying to play effects on clients who have disabled them - previously it had a chance to throw an error when clients with effects disabled would run sequences that included effects (as they would not know the duration of the effect)\n\n### Version 2.3.10\n- *Effects* - Fixed race condition when deleting multiple attached effects in a row would leave some lingering effects\n\n### Version 2.3.9\n- *Effects* - Fixed effects sticking around after deleting the document they were attached to\n- *Effects* - Fixed error when deleting documents relating to named effects\n- *Effects* - Fixed setting the position of screenspace effects would not work\n\n### Version 2.3.8\n- *Sequencer* - Removed double declaration of socketlib hook\n- *Effects* - Fixed error if no scenes has been created yet\n- *Effects* - Fixed screenspace effects not working without setting its location\n- *Effects* - Fixed `.animateProperty()` not working very well with `width` and `height`\n- *Effects* - Improved the way effects interacts with Foundry hooks (it is more efficient)\n\n### Version 2.3.7\n- *Effects* - Fixed `.rotateTowards()`\'s `rotationOffset` parameter not working properly\n\n### Version 2.3.6\n- *Effects* - Fixed multiple `.attachTo()` and `.strechTo()` with `attach: true` sometimes causing crashes due to overloading Foundry\'s tick function\n- *Effects* - Fixed ColorMatrix `hue` and `.animateProperty()` not working well together\n- *Effects* - Fixed `.atLocation()` with `randomOffset: true` would cause weird effects with `.stretchTo()`\n\n### Version 2.3.5\n- *Sequencer* - Removed Ouija Board example macros, this is now a separate module made by md-mention2reply, check it out!\n    - <https://foundryvtt.com/packages/ouija-board-for-sequencer>\n- *Sequencer* - Updated module manifest to be more V10 compatible\n- *Effects* - Fixed ColorMatrix `hue` property to be able to be animated with `animateProperty()` and `.loopProperty()`\n- *Effects* - Fixed `.mask()` not working with tiles or measurable templates\n- *Effects* - Fixed mirror and random mirror X/Y not actually flipping the effect\n\n### Version 2.3.4\n- *Animations* - Fixed `.rotateTowards()` throwing update error\n\n### Version 2.3.3\n- *Effects* - Fixed code to remove deprecation warning when both `.mask()` and `.persist()` was used\n- *Effects* - Fixed rare issue where the temporary template layer would not be initialized and would cause Sequencer to error and stop working \n- *Effects* - Fixed Sequencer Effects Player deprecation warnings\n- *Effects* - Added warning to console for players trying to play effects when they do not have permission to do so\n  - I realize warnings is not desired in most cases, but this has been an ongoing point of support, so to preserve my own sanity, this is just how it is now.\n\n### Version 2.3.2 (Both Foundry V9 and V10)\n- *Animation* - Fixed `.rotateTowards()` throwing errors\n- *Effects* - Fixed `.loopProperty()` with property `scale` would incorrectly scale effect\n\n### Version 2.3.1\n- *Effects* - Fixed `.from()` and `.mask()` throwing errors about missing files\n\n### Version 2.3.0 (V10 only)\n- *Sequencer* - Added Spanish localization (thanks to Git-GoR!)\n- *Effects* - Re-enabled `scale.x` and `scale.y` on `.animateProperty()` and `.loopProperty()` \n- *Effects* - Deprecated `.belowTokens()` and `.belowTiles()` in favor of `.elevation()` due to fundamental changes in Foundry\'s V10 update. These methods will be removed in a future update\n- *Effects* - Fully removed deprecated methods: `.addPostOverride()`, `.reachTowards()`, `.gridSize()`, `.startPoint()`, `.endPoint()`\n\n### Version 2.2.4\n- *Effects* - Fixed `.rotateTowards()`\'s `rotationOffset` parameter not working properly\n- \n### Version 2.2.3\n- Re-released 2.2.2, git pulled a fast one and the changes in that version never got out\n\n### Version 2.2.2\n- *Animation* - Fixed `.rotateTowards()` throwing errors (again)\n- *Effects* - Fixed `.atLocation()` with `randomOffset: true` would cause weird effects with `.stretchTo()`\n- *Effects* - Fixed error that would sometimes pop up during startup if the template layer has not been initialized\n\n### Version 2.2.1\n- *Animation* - Fixed `.rotateTowards()` throwing errors\n- *Effects* - Fixed `.loopProperty()` with property `scale` would incorrectly scale effect\n- \n### Version 2.2.0 (last V9 update, except maybe some bug fixes)\n**Additions:**\n- *Effects* - Added `.tieToDocuments()` which allows you to tie an effect to Foundry documents - such as Active Effects or Tokens. When these are deleted, the effect is automatically ended.\n- *Effects* - Added secondary `offset` parameter to `.atLocation()`, `.attachTo()`, `.rotateTowards()`, `.from()`, and `.stretchTo()` which can be used to offset the location of the source or target\n  - Note: This means that `.offset()` is becoming deprecated - it will remain for a few versions with a silent warning\n- *Effects* - Added `.spriteScale()` which can be used to scale the sprite of the effect separately from `.scale()`\n\n**Tweaks:**\n- *Animations* - Renamed `.rotateTowards()`\'s secondary parameter\'s `offset` property to be more accurately named `rotationOffset`\n- *Effects* - Upgraded `.animateProperty()` and `.loopProperty()` to be additive, which means two animations can now target the same property on the same effect\n- *Effects* - Renamed `.rotateTowards()`\'s secondary parameter\'s `offset` property to be more accurately named `rotationOffset`\n\n**Fixes:**\n- *Sequencer* - Fixed issue where copying the file path of a Database entry that has multiple ranges would always copy the file path for the middle-most range\n- *Sequencer* - Rewrote the database traversal method to be more robust and carry metadata down to lower children\n- *Effects* - Fixed long-running issue with lag and performance impact from Sequencer on some computers - the cause was the `.screenSpace()` layers, which have now been reworked. A setting to disable the Above UI Screenspace effects layer has been added to further support impacted individuals.\n- *Effects* - Fixed `randomOffset` secondary option on `.attachTo()` not working\n- *Effects* - Fixed `.scaleToObject()` and `.scale()` not playing nicely together\n- *Effects* - Fixed loop markers not properly working\n\n### Version 2.1.14\n- *Sequencer* - Removed PIXI fix for Foundry .webm tiles to apply premultiplied alpha, native Foundry behavior is now active\n- *Effects* - Fixed fatal canvas errors when `persistTokenPrototype` was active and masked to the target of the effect\n- *Effects* - Added warning when using `persistTokenPrototype` with masks _other_ than masks applied to the source target\n- *Effects* - Added support for `.file()` to override `.from()`\'s file while keeping the other settings intact\n- *Effects* - Improved robustness of placeable object document retrieval\n\n### Version 2.1.13\n- *Sequencer* - Removed stray `console.log`\n- *Sequencer* - Fixed Ouija board macro error, slightly improved effect positioning\n- *Effects* - Added `.spriteRotation()` which allows you set the rotation of the effect in place - this differs from `.rotate()` in the sense that this is applied only locally to the sprite, after any other offsets or transformations\n\n### Version 2.1.12\n- *Effects* - Fixed `.strechTo()` with parameter `attachTo: true` resulting in no stretching\n\n### Version 2.1.11\n- *Effects* - Fixed effects attached to temporary templates causing errors in core Foundry code\n- *Effects* - Effects attached to temporary objects (like warpgate cursors) are now propagated to other clients (call `.locally()` to make it only appear for the creator)\n\n### Version 2.1.10\n- *Sequencer* - Fixed Sequencer Effect Manager not accepting Foundry documents as object references when filtering for effects\n- *Sequencer* - Fixed Sequencer Effect Player showing private database entries\n- *Effects* - Fixed attached effects not showing up for non-GMs\n\n### Version 2.1.9 \n- *Sequencer* - Unlocked keybinds so that users may configure their own keybinds for Sequencer\'s layers\n- *Sequencer* - Added support for `minDelay` and `maxDelay` on `.waitUntilFinished()`, so you can now have a random wait delay between sections\n- *Effects* - Added `fromEnd` to `.animateProperty()` which causes the animation to play at the end of the effect\'s duration\n- *Effects* - Added `gridUnits` support to `.animateProperty()` and `.loopProperty()` when using `position.x` or `position.y` as the animated target\n- *Effects* - Added `gridUnits` as a secondary option to both `.offset()` and `.spriteOffset()`\n- *Effects* - Fixed persistent prototype token effects not applying on every instance of its token\n- *Effects* - Fixed `.playbackRate()` only adjusting effect duration, and not the actual playback rate\n\n### Version 2.1.8\n- *Sequencer* - Added setting to allow clients to disable Sequencer\'s PIXI alpha fix for base textures\n\n### Version 2.1.7\n- *Effects* - Fixed string normalization\n\n### Version 2.1.6\n- *Sequencer* - Updated compendium of Sequencer macro samples\n- *Effects* - Fixed finding effects by name with accents in them silently failing\n- *Effects* - Fixed `.attachTo()` not following the target\'s rotation\n\n### Version 2.1.5\n- *Effects* - Fixed switching scenes would sometimes break effects\n\n### Version 2.1.4\n- *Effects* - Fixed issue with hovering over persistent effects attached to objects sometimes causing Foundry\'s layers to crash\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` applying grid-size ratio on animated scales\n\n### Version 2.1.3\n- *Effects* - Fixed attached effects disappearing\n- *Effects* - Fixed `.randomOffset()` not randomly offsetting effects (still deprecated, see 2.1.0 release notes)\n\n### Version 2.1.2 Hotfix\n- *Effects* - Fixed effects sometimes not becoming visible\n\n### Version 2.1.1\n- *Sequencer* - Fixed canvas layer bug that caused performance issues for some users\n- *Sequencer* - Fixed missing default template causing some effects to not play properly\n- Added `.aboveLighting()`, which causes the effect to always be visible, regardless of sight, fog of war, or walls.\n  - Note that if an effect is attached to an object via `.attachTo()`, you may need to disable `bindVisibilty` if the object is hidden\n- *Effects* - Fixed `.from()`, it now uses the object\'s image when the effect plays, rather than when the Sequence was first created\n- *Effects* - Fixed highlight box when hovering over effects in the Effect Manager UI not taking effect rotation into account\n- *Effects* - Fixed effects sometimes not fully following its attached object \n\n### Version 2.1.0\n**Additions:**\n- *Sequencer* - Added support for the Effect Manager to be able to manipulate effects on other scenes, which means you can now end effects on other scenes than the one you\'re on via the API\n- *Sequencer* - Added secondary options parameter to `Sequencer.Database.getEntry`, where `softFail: true` will cause the method to not throw errors when an entry was not found. \n- *Sequencer* - Added `Sequencer.EffectManager.getEffectPositionByName` which will allow you retrieve an effect\'s position by name, in real time\n- *Effects* - Added `.mask()`, which can now clip-mask effects to only show them within tokens, templates, tiles, or drawings - this supports the [Walled Templates module](https://foundryvtt.com/packages/walledtemplates)!\n- *Effects* - Added a secondary options parameter to `.persist()`, which can accept `persistTokenPrototype: true` to persist the effect on the token\'s prototype data, useful for active effect-based VFX\n- *Effects* - Added vision masking - now token vision affects how much of an effect they can see\n- *Effects* - Added `.xray()` which can be used to turn off vision masking on individual effects \n- *Effects* - Added support in the Sequencer Database for internal effect loops, see the [documentation for more information](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/How-to:-Sequencer-Database#Internal-loops)\n- *Effects* - Added `edge` option to `.attachTo()`, which can be set to `inner`, `on`, or `outer` to align the effect on the attached object\'s edge when used with `align` \n- *Effects* - Added `.screenSpaceAboveUI()`, which causes `.screenSpace()` effects to play above _all_ UI elements in Foundry (use with caution)\n- *Effects* - Added options parameter to `.scaleToObject()`, which can be passed `uniform: true` to cause the scaling to always be uniform (it picks the largest dimension of the object)\n- *Macros* - Added the ability to reference compendiums when creating `.macro()`s in sequences\n\n**Fixes:**\n- *Sequencer* - As `SequencerDatabase` was deprecated in 2.0.0 in favor of `Sequencer.Database`, the former has now been removed\n- *Sequencer* - Adjusted Database methods with more validation so that searching with empty strings won\'t throw hard to read errors\n- *Sequencer* - Removed bogus Effect Player warning about permissions that no longer reflects what Sequencer does\n- *Sequencer* - Fixed some issues when copying and playing effects through the Database Viewer\n- *Effects* - Fixed effects being invisible to players if the effect was created out of sight (thanks @dev7355608!)\n- *Effects* - Fixed `align` on `.attachTo()` not working as expected when an effect\'s scale or size was set\n- *Effects* - Fixed blur filter not taking given properties into account\n- *Effects* - The following functions now have loud deprecation warnings:\n    - `.addPostOverride()`\n    - `.reachTowards()`\n    - `.gridSize()`\n    - `.startPoint()`\n    - `.endPoint()`\n- *Effects* - Deprecated `.randomOffset()` in favor of adding `randomOffset` as a secondary argument on `.atLocation()`, `.stretchTo()`, `.rotateTowards()`, and `.attachTo()`\n\n### Version 2.0.16\n- *Sequencer* - Added japanese localization (thanks to the illustrious Brother Sharp#6921!)\n\n### Version 2.0.15\n- *Effects* - Fixed errors relating to tiling textures\n- *Effects* - Fixed drifting effect animations when FPS dropped\n- *Effects* - Improved performance relating to always updating the position of the sprites, even when attached objects weren\'t moving\n- *Effects* - Hopefully fixed some memory leaks relating to assets not being deleted properly \n- *Effects* - Fixed attached effects\' rotations being funky\n- *Effects* - Fixed effects attached to temporary objects (such as the warpgate crosshair) would not be properly removed from the effect manager \n\n### Version 2.0.14\n- *Database* - Fixed the database sometimes getting confused by paths that have `ft` in them without being range-finding\n- *Effects* - Fixed double-attached effects sometimes resulting in the sprite freezing (or in rare cases, browser crashes), though this type of effect is still expensive!\n- *Effects* - Fixed `rotateTowards` with `attachTo` enabled not respecting actual target position end position\n- *Effects* - Fixed `.rotation()` with `.loopProperty()` on the `spriteContainer`\'s `rotation` causing rotational strangeness\n- *Effects* - Fixed `.repeat()` with partial database path not picking random images for each repetition\n- *Sounds* - Fixed error when playing sounds\n\n### Version 2.0.13\n- *Effects* - Fixed flipped tiles and measurable templates (with negative width or height) causing effects to not play on the correct location\n- *Effects* - Fixed `.rotateTowards()` not following the rotation of attached objects\n- *Sounds* - Fixed `.fadeInAudio()` and `.fadeOutAudio()` being broken\n\n### Version 2.0.12\n- *Effects* - Fixed effects with only `.text()` and no `.file()` not working properly\n- *Effects* - Fixed `.text()` combined with `.screenSpace()` would not be scaled properly \n\n### Version 2.0.11\n- *Effects* - Fixed `.extraEndDuration()` not working properly when `.waitUntilFinished()` was provided a negative number\n- *Effects* - Fixed `.noLoop()` effects sometimes not reaching their proper end time when `.endTime()`, `.endTimePerc()` or `.timeRange()` was used\n\n### Version 2.0.10\n- *Sequencer* - Fixed error in `Database.validateEntries()`\n- *Sequencer* - Updated `pre` hooks to cancel the action if any function return `false`\n- *Sequencer* - Updated Rope and Chain macros in compendium\n- *Effects* - Added `.tilingTexture()` - this will replace the `tiling` parameter on `.stretchTo()` in the long term\n- *Effects* - Deleting the object an effect is attached to will now actually trigger the effect\'s `.fadeOut()`, `.scaleOut()` etc\n\n### Version 2.0.9 Hotfix\n- *Effects* - Fixed nasty issue with rotation on effects\n- *Effects* - Made all effects have an assumed internal grid size of 100\n\n### Version 2.0.8\n- *Sequencer* - Added rope and chain sample macros to the Sequencer macro compendium\n- *Sequencer* - Removed non-functional Chain Lightning macro from macro collection\n- *Sequencer* - Added warnings to Preloader when it is given invalid parameters\n- *Effects* - Added `tiling` as an option to `.stretchTo()`\n- *Effects* - Fixed `.randomRotation()` not working with `.attachTo()`\n- *Effects* - Fixed issue with effects with a defined width and height were still being scaled by the scene-effect grid size difference\n\n### Version 2.0.7\n- *Sequencer* - Fixed broken macro in the Ouija example\n- *Animations* - Fixed various animation methods not resulting accurate movement or teleportation\n- *Effects* - Fixed `.randomRotation()` not working\n\n### Version 2.0.6\n- *Sequencer* - Improved intelligence of webm cache \n- *Effects* - Added `.private()` method to hide effects in the effect manager - DO NOT USE IF YOU DO NOT KNOW WHAT YOU ARE DOING\n- *Effects* - Fixed issue where ending effects by name would cause other effects without a name to get _ended\n- *Effects* - Fixed issue where filtering for effects with the Effect Manager would cause it to split the given name on each whitespace \n\n### Version 2.0.5 Hotfix Hotfix\n- *Effects* - Hotfix for the hotfix. It\'s just hotfixes all the way down, man.\n\n### Version 2.0.4 Hotfix\n- *Effects* - Fixed some modules causing Sequencer to complain \n- *Effects* - Actually fixed copying objects would not copy the effects on it\n\n### Version 2.0.3\n- *Effects* - Fixed some issues regarding file paths on ForgeVTT, though they did most of the legwork on their side\n- *Effects* - Fixed issue where `.scaleToObject()` would fail to scale to the object properly\n- *Effects* - Fixed Effect Manager not finding effects to end when it was only provided an object\n- *Effects* - Fixed copying tokens and other objects with ongoing effects would not properly play it for everyone\n- *Effects* - Fixed screenspace effects would sometimes not play properly \n\n### Version 2.0.2\n- *Sequencer* - Fixed the preloader throwing error about recursion\n- *Effects* - Fixed rotational animations not working properly\n- *Effects* - Fixed the update interface not allowing attribute paths like core Foundry does\n- *Effects* - Fixed effects lingering for other users after their attached objects were deleted\n- *Effects* - Fixed issues with using `.from()` on tiles\n\n### Version 2.0.1\n- *Sequencer* - Fixed preloader throwing error about missing functions\n- *Sequencer* - Fixed Effect Manager complaining if trying to filter effects by name while some effects didn\'t have a valid name\n- *Effects* - Added the ability to use Effects as elements to play other Effects on\n- *Effects* - Added cache-busting for when the Sequencer .webm cache would get larger than 1GB\n- *Effects* - Fixed persistent effects attached to WarpGate crosshairs throwing errors\n- *Effects* - Fixed `cacheLocation` throwing errors regarding missing function\n- *Effects* - Fixed `endedSequencerEffect` being called too late for users to be able to use its parameters\n- *Effects* - Fixed error when deleting the object an effect was attached to through both `.attachTo()` and `.stretchTo()` \n\n### Version 2.0.0\n**Breaking changes:**\n- *Sequencer* - Sequencer now requires the `socketlib` module\n- *Sequencer* - All existing persistent effects created using 1.X.X Sequencer will be updated to the 2.0.0 system, but it\'s nigh impossible to catch all the edge cases, so please report any strangeness!\n- *Effects* - Removed support for audio methods on effects (hardly used and caused a whole host of problems)\n- *Effects* - Deprecated `.reachTowards()` and renamed it to `.stretchTo()`. The deprecated method will be removed in 2.1.0.\n- *Effects* - Deprecated `.addPostOverride()`, please use `.addOverride()` instead. The deprecated method will be removed in 2.1.0.\n- *Effects* - Deprecated `.gridSize()`, `.startPoint()`, and `.endPoint()` in favor for `.template({ gridSize, startPoint, endPoint })`. The deprecated methods will be removed in 2.1.0.\n- *Effects* - Removed deprecated method `.JB2A()`\n\n**Tweaks:**\n- *Sounds & Effects* - Tweaked `.forUsers()` to also accept player names (case-sensitive) instead of just IDs\n- *Effects* - Tweaked attached effects\' layer handling - effects can now be attached but exist below _all_ Tokens, for example\n- *Effects* - Tweaked `.filter()` to allow being called multiple times, which now layers the filters in the order they were created\n\n**Additions:**\n- *Sequencer* - Added selection tool to the Effect Layer - select, move, reattach, and delete effects on the canvas!\n- *Sequencer* - Added `updateEffects` to the Effect Manager\'s API\n- *Sequencer* - Added `updateSequencerEffect` hook\n- *Sequencer* - Added support to `.macro()`s to be able to supply additional arguments (requires the Advanced Macros module)\n- *Sequencer* - Added wildcard support when filtering for named effects in the Effect Manager\'s API (such as `getEffects`, `endEffects`, etc)\n- *Sequencer* - Added support to filter for `source` and `target` in the Effect Manager\'s API (such as `getEffects`, `endEffects`, etc)\n- *Sequencer* - Added "private" boolean flag to `Sequencer.Database.registerEntries()` which causes the entries to not be visible in the Database Viewer and Effect Player\n- *Sequencer* - Added Setting to be able to hide Sequencer\'s tools on the toolbar\n- *Sequencer* - Added checkbox to Database Viewer to show all ranges of a single effect, which is by default set to false\n- *Sequencer* - Added `Sequencer.Helpers`, a library of useful methods - check them out on the wiki: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Helper-Functions\n- *Animations* - Added `.hide()` and `.show()` to hide or show the animated object\n- *Effects* - Added more secondary options parameters to `.stretchTo()`, which accepts:\n    - At long last, this can now `attachTo` (boolean) to the given target. Combine with `.attachTo()` to link an effect between two tokens!\n    - `onlyX` (boolean), if set to true, this will cause stretchTo to only stretch the X axis of the sprite towards the target (keeping Y at 1.0, or your given scale)\n- *Effects* - Added support to `.file()` for an object map containing the feet range and filepath key-value pair. Check out the file wiki entry to understand what this means: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#file\n- *Effects* - Added secondary options parameter to `.attachTo()`, which accepts:\n    - `align` (string, default "center"), accepts `top-left`, `center`, `left`, `bottom-right`, etc. Read the wiki: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#attach-to\n    - `bindVisibility` (boolean, default true), if set to false, the effect will not be hidden if the attached object is hidden\n    - `bindAlpha` (boolean, default true), if set to false, the effect\'s alpha will be independent of the attached object\n    - `followRotation` (boolean, default true), if set to false, the effect will not follow the rotation of the attached object\n- *Effects* - Added options to `.size()` which allows for `{ gridUnits: true }` - this makes the size given to the method scale to the scene\'s grid, instead of setting the exact width and height\n- *Effects* - Added the same option as above to `.animateProperty()` and `.loopProperty()`, which only works if you animate the `width` or `height`\n\n**Fixes:**\n- *Sequencer* - Fixed module permissions settings being slightly wonky\n- *Sequencer* - Fixed number inputs not throwing errors on `NaN` values\n- *Animations* - Fixed users not being able to teleport or move tokens they do not own\n- *Animations* - Fixed `.moveSpeed()` not affecting the duration of the animation\n- *Animations* - Fixed `.delay()` not being respected\n- *Effects* - Fixed memory leak where effect textures were not properly destroyed\n- *Effects* - Adjusted `.origin()` to be able to accept a `Document` object to infer the UUID from\n- *Effects* - Fixed `.from()` not taking mirror x/y into account on tokens\n- *Effects* - Tokens with effects attached to them can now be _ended by anyone who can update the token (owners of the token, GMs, etc)\n- *Effects* - Increased default resolution of `.text()` to 10 (should increase quality)\n- *Effects* - Fixed `.screenSpace()` effects still being affected by grid size normalization\n\n### Version 1.3.5\n- *Sequencer* - Fixed Permissions being broken in the latest Foundry update, and moved Sequencer specific permissions into module settings instead\n- *Effects* - <img src="images/siren.gif" width="18px" height="18px" alt="Siren"> Breaking change <img src="images/siren.gif" width="18px" height="18px" alt="Siren"> - Fixed issue where setting the `.size()` of an effect and then scaling it would result in unexpected behavior. As a result, `.scaleIn()` and `.scaleOut()` now function as _multipliers_ to the existing scale on the effect\n\n### Version 1.3.4\n- *Sequencer* - Added popup warning the first time a GM opens the Effect Player to tell them about the custom Permissions\n- *Sequencer* - Added button to open Foundry\'s Permissions directly from the Effect Player how-to page\n\n### Version 1.3.3\n- *Sounds* - Fixed `.fadeInAudio()` and `.fadeOutAudio()` being broken\n\n### Version 1.3.2\n- *Sequencer* - Minor backend updates to flag handling\n- *Effects* - Fixed static images failing to load in v9\n- *Effects* - Fixed effects attached to tokens that were copied to another scene would not play\n- *Effects* - Suppressed recent deprecation warnings until the next release\n- *Effects* - Reverted some code that would break persisting effects\n\n### Version 1.3.1\n- *Sequencer* - Fixed minor spelling issue\n\n### Version 1.3.0\n- *Sequencer* - Sequencer is now v9 ready!\n- *Sequencer* - Improved search accuracy functionality on the Effect Player\n- *Animations* - Added `relativeToCenter` option to `.teleportTo()` and `.moveTowards()`, which will offset the location relative to the object\'s center, effectively centering the animated object on the location - use with `.snapToGrid()` for reliable snapping!\n- *Animations* - Fixed `.fadeOut()`, `.fadeOutAudio()`, and `.rotateOut()` not correctly setting the duration of the animation, causing `.waitUntilFinished()` to not actually wait for the animation to finish\n- *Effects* - Deprecated `.JB2A()` as the recommended workflow is now to use Database paths\n\n### Version 1.2.12 Hotfix\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` applying animations that were already complete\n\n### Version 1.2.11\n- *Sequencer* - Added French localization (thanks to Elfenduil)\n- *Sequencer* - Fixed error with `Sequencer.Database.validateEntries()` throwing an error\n- *Effects* - Improved handling of the `Glow` filter when used with `.fadeIn()` and `.fadeOut()`\n    - Due to this change, it is now recommended that if you use `.animateProperty()` or `.loopProperty()` on the `sprite`\'s `alpha` property to instead use it on the `alphaFilter`\'s `alpha` property\n- *Macros* - Updated the Misty Step macro to be more generic and not specifically _require_ MidiQOL\n\n### Version 1.2.10\n- *Sequencer* - Fixed misspelled permission which caused players to not be able to see the toolbar buttons\n- *Sequencer* - Added `End All Effects` button to the Effect Manager\n\n### Version 1.2.9\n- *Sequencer* - Removed error from the Effect Manager when no effects were removed\n- *Effects* - Fixed `.randomOffset()` on tiles would result in pretty crazy behavior\n\n### Version 1.2.8\n- *Sequencer* - Added sidebar tool permissions, you can now hide them from players\n- *Effects* - Added `.origin()` which provides a way to tag an effect with a string you can then search for with the Effect Manager\n- *Effects* - Added support for using both `.reachTowards()` and `.scale()` and will now scale the effect whilst keeping the range finding correct\n\n### Version 1.2.7 Hotfix\n- *Sounds* - ACTUALLY Fixed sounds being broken\n\n### Version 1.2.6 Hotfix\n- *Sounds* - Fixed sounds being broken\n\n### Version 1.2.5\n- *Sequencer* - Made hooks `createSequencerEffect` and `endedSequencerEffect` instead supply the CanvasEffect itself, rather than its data\n- *Effects* - Fixed bug that caused effects to linger for other clients after having been _ended\n\n### Version 1.2.4\n- *Sequencer* - Fixed error caused by preload option on Sequencer Effect Player\n- *Sequencer* - Fixed error when pressing ESC in the Sequencer Layer\n- *Sequencer* - Fixed permissions not being loaded properly\n- *Effects & Animations* - Added `.tint()` which allows you to tint effects, tokens, and tiles\n\n### Version 1.2.3\n- *Sequencer* - Added granular permissions - check it out in Configure Settings -> Open Permissions Configuration\n- *Sequencer* - Added localization support\n- *Sequencer* - Fixed the Sequencer Player throwing an error if the layer was active while switching scene\n\n### Version 1.2.2\n- *Sequencer* - Added Stretch or Move checkbox to Sequencer Player\n- *Sequencer* - Added Move Speed input to Sequencer Player\n\n### Version 1.2.1\n- *Sequencer* - Fixed file picker being broken\n\n### Version 1.2.0\n- *Sequencer* - Added the [Sequencer Effect Player](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Effect-Player)!\n- *Sequencer* - Refactored the Sequencer Animation Engine, which fixes some animation funkiness\n- *Sequencer* - Fixed the Sequencer Preloader sometimes not succeeding and getting stuck\n- *Animations* - Removed the `.snapToSquare()` method, use `.snapToGrid()` instead\n- *Effects* - Added `.spriteOffset()` which allows you to add an offset to the effect\'s sprite\'s location\n- *Effects* - Added optional boolean parameters to `.randomizeMirrorX()` and `.randomizeMirrorY()`\n\n### Version 1.1.5\n- *Effects* - Fixed bug that caused all effects to stay transparent after playing an effect for specific user\n- *Effects* - Fixed bug with `.missed()` and `.reachTowards()` failing to play any effect\n- *Effects* - Fixed all effects sharing users\n\n### Version 1.1.4\n- *Sequencer* - Fixed error in the Sequencer Preloader when pre-loading files from Database paths\n- *Effects* - Fixed bug that caused persistent effects to end when a client connected after it was created\n\n### Version 1.1.3\n- *Sequencer* - Added `sequencerEffectManagerReady` hook which is called when every effect has been set up on the scene that\'s currently loaded\n- *Sequencer* - Added `validateEntries` method to the Sequencer Database, which is helpful for module creators to validate their asset collections to the database\n- *Sequencer* - Added `getPathsUnder` method to the Sequencer Database, which retrieves valid collections under a certain database path\n- *Sequencer* - Minor speed improvements to how the database retrieves files\n- *Sequencer* - Removed the requirement for a user to be trusted to use the Database Viewer\n- *Sequencer* - Fixed `Sequencer.EffectManager.endEffects` not throwing error when incorrect or incomplete parameters were given, and instead _ended all effects (whoops)\n- *Effects* - Made user-created effects that were made to be displayed only for other users also show up for GMs, though saturated and with 50% opacity. This is to ensure no player-to-player abuse would occur\n- *Effects* - Fixed scaled tokens causing effects to not play on the correct location\n- *Effects* - Fixed temporary effects attached to warpgate cursors no longer stays around for longer than they should\n\n### Version 1.1.2\n- *Sequencer* - Removed compatibility warning regarding Perfect Vision as the module was updated to support Sequencer\n- *Sequencer* - Added warning when trying to register database collections under a module name containing dots (as it uses dot-notated paths)\n\n### Version 1.1.1\n- *Sequencer* - Removed Hyperspace sample from compendiums, as it was getting too big\n- *Sequencer* - Added compatibility warning if user has Perfect Vision installed\n- *Sequencer* - Added warning for Hyperspace assets that are going to be removed in a future update, and instead put into a separate module:\n    - https://foundryvtt.com/packages/nrsap by Nachtrose#9287 on Discord\n- *Sequencer* - Prepared Sequencer for v9, it _should_ be compatible to test\n- *Effects* - Added `.text()` which allows you to create text snippets on the canvas\n- *Effects* - Added `.from()` which creates an effect based on the given object, effectively copying the object as an effect\n- *Effects* - Added support for `.attachTo()` for temporary measured templates before they have been created, for use with WarpGate\n- *Effects* - Removed warning when `.attachTo()` and `.atLocation()` are used on the same effect - `.attachTo()` always wins out\n\n### Version 1.1.0\n- *Sequencer* - Added hooks:\n    - `createSequencerSequence`\n    - `endedSequencerSequence`\n    - Effects:\n        - `preCreateSequencerEffect` - Provides the effect\'s data\n        - `createSequencerEffect` - Provides the effect\'s data\n        - `endedSequencerEffect` - Provides the effect\'s data\n    - Sounds:\n        - `preCreateSequencerSound` - Provides the sound\'s data\n        - `createSequencerSound` - Provides the sound\'s data\n        - `endedSequencerSound` - Provides the sound\'s data\n- *Sequencer* - Hook for `sequencer.ready` is becoming deprecated in favor for `sequencerReady`\n- *Sequencer* - Vastly improved the speed of the Database Viewer (thanks to Naito#1235 on discord!)\n- *Effects* - Added screen space layer for UI effects!\n    - Added `.screenSpace()` which causes the effect to be played on the screen rather than in the game canvas\n    - Added `.screenSpaceAnchor()` which causes the effect to anchor itself to a side on the screen space layer\n    - Added `.screenSpacePosition()`, pretty straightforward what this does, sets the position of the effect in screen space\n    - Added `.screenSpaceScale()` which can help you stretch and fit the effect to the screen, even on different screen sizes\n- *Effects* - Added `.spriteAnchor()` which controls the effect\'s core anchor point within its container (defaults to 0.5 on X and Y)\n- *Effects* - Added support on `.atLocation()` for a secondary options object, which currently accepts:\n    - `cacheLocation: boolean` - causes the given object\'s location to be cached immediately rather than retrieved during the Sequence\'s runtime\n- *Effects* - Added `.snapToGrid()` which snaps the effect to the given location\'s closest grid section\n- *Effects* - Added `.scaleToObject()` which scales the effect to the bounds of the object, with an optional scalar on top of that\n- *Effects* - Added `.zeroSpriteRotation()` which causes an effect\'s sprite to remain un-rotated when its container rotates in animations\n- *Effects* - Tweaked `.size()` to also accept only one of height or width, the other will be automatically resized to keep the effect\'s ratio\n- *Effects* - Fixed `.persist()`ing effects with an end duration that doesn\'t loop would not properly stop at its end duration\n- *Effects* - Improved look of transparent .webm files\n- *Animations* - Renamed `.snapToSquare()` method to `.snapToGrid()` - the old method will be fully removed in 1.2.0\n- *Foundry* - Added libwrapper patch for .webm transparency not playing correctly in Foundry\n- *Sequencer* - Updated some sample macros\n- *Sequencer* - The `SequencerDatabase` accessor has been removed, and is now accessible with `Sequencer.Database`\n- *Sequencer* - The `SequencerDatabaseViewer` accessor has been removed, and is now accessible with `Sequencer.DatabaseViewer`\n- *Sequencer* - The `SequencerPreloader` accessor is deprecated, and is now accessible with `Sequencer.Preloader`\n\n### Version 1.0.3\n- *Sequencer* - Added animated space backgrounds (thanks to Keirsti on the Foundry VTT discord server)\n- *Sequencer* - Fixed Hyperspace macro placing the hyperspace intro and out incorrectly\n\n### Version 1.0.2 Hotfix\n- *Sequencer* - Changed Effect Viewer icon to something less controversial\n\n### Version 1.0.1\n- *Sequencer* - Renamed `.sequence()` method on Sequences to `.addSequence()` due to internal code conflicts\n- *Effects* - Added `.filter()` - was technically added in 1.0.0, but was left undocumented\n- *Effects* - Fixed `.size()` being scaled to account for grid size differences - it should now set the exact width/height in pixels\n\n### Version 1.0.0\n- *Sequencer* - Added recent Sequencer tools to the menu in the top left - you can disable these in the module settings\n- *Sequencer* - Added `Sequencer.EffectManager` to manage persistent effects - [read more here](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Effect-Manager)\n- *Sequencer* - Added the ability for you to implement your own Sequencer functions - [read more here](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Section-Manager)\n- *Sequencer* - `SequencerDatabase` is deprecated, and is now accessible with `Sequencer.Database` - 1.1.0 will remove the old path entirely\n- *Sequencer* - `SequencerDatabaseViewer` is deprecated, and is now accessible with `Sequencer.DatabaseViewer` - 1.1.0 will remove the old path entirely\n- *Sequencer* - `SequencerPreloader` is deprecated, and is now accessible with `Sequencer.Preloader` - 1.1.0 will remove the old path entirely\n- *Sequencer* - Fixed Documents sometimes not properly resolving to their PlaceableObject\n- *Sequencer* - Fixed settings not being client side - whoops\n- *Effects* - Added `.attachTo()` which causes the effect to be attached to a given object\n- *Effects* - Added `.persist()` which causes the effect to become permanent on the canvas until removed\n- *Effects* - Added `.extraEndDuration()` which allows `.persist()`-ed effects to stick around for a bit longer instead of end immediately\n- *Effects* - Tweaked `.missed()` to hit an area only facing the origin of the effect, if it had an origin and target\n- *Effects & Sounds* - Added support for wildcard paths, like `modules/jb2a_patreon/Library/1st_Level/Bardic_Inspiration/BardicInspiration_01_*_400x400.webm`\n\n### Version 0.6.12\n- *Sequencer* - Fixed an issue where the preloader would sometimes fail to preload\n- *Effects* - Fixed effects not playing on hex grids\n\n### Version 0.6.11 Hotfix\n- *Effects* - Fixed range-finding effects sometimes not picking the right distance\n\n### Version 0.6.10\n- *Sequencer* - Improved the search speed of the Database Viewer\n- *Sequencer* - Fixed previewing static images through the Database Viewer\n- *Sequencer* - Fixed bugs that caused the Database to sometimes fail registering new files\n- *Effects* - Fixed issue where `.delay()` would incorrectly contribute towards the effect\'s `.waitUntilFinished()` duration\n\n### Version 0.6.9 Hotfix\n- *Sequencer* - Fixed the database sometimes failing to get the correct file\n\n### Version 0.6.8 Hotfix\n- *Sequencer* - Fixed database not correctly finding range-based effects\n\n### Version 0.6.7\n- *Effects & Sounds* - Fixed `.locally()` and `.forUsers()` sometimes erroneously remembering users between different effects & sounds\n- *Effects* - Fixed `.scaleIn()` would not take a custom `.size()` into account\n- *Effects* - Fixed static images sometimes not playing due to duration being set to 0ms\n\n### Version 0.6.6\n- *Sequencer* - Added support for preloading files based on database paths\n- *Effects & Sounds* - Added `.locally()` and `.forUsers()`, which allow you to control which users will have the effect and sounds played for them\n- *Effects* - Improved positional handling of Tiles and TileDocuments\n\n### Version 0.6.5\n- *Sequencer* - Updated Sequencer Database Viewer layout to be more user friendly\n- *Effects* - Fixed bug with templates and raw positions not being respected\n\n### Version 0.6.4\n- *Sequencer* - Added Sequencer Database Viewer to the module settings, it allows you to preview effects and copy any files registered with Sequencer by other modules\n- *Sequencer* - Added client-side settings for users to be able to turn off effects and sounds being played locally\n- *Effects & Sounds* - Fixed effects and sounds playing on scenes they did not originate from\n- *Effects* - Added `.size()`, which sets the width and height of the effect in pixels\n- *Effects* - Added `rotate` option to `.moveTowards()`, which defaults to true. If set to false, the effect will not rotate towards the end location.\n- *Effects* - Fixed duration of effects using `.moveTowards()` not being calculated correctly\n- *Effects* - Fixed static image effects\' durations also not being calculated correctly\n\n### Version 0.6.3 Hotfix\n- *Effects* - Fixed effects failing to play static images\n\n### Version 0.6.2\n- *Sequencer* - Further small fixes to how the database registers files\n\n### Version 0.6.1\n- *Sequencer* - Removed the need for `.playIf()` to have to be given a function or a boolean\n- *Sequencer* - Fixed issues with the database when files were listed in arrays\n\n### Version 0.6.0\n**Breaking:**\n- *Effects* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.JB2A()` has been altered to set the gridsize to 200, as it was previously set to 100 - this will halve the size all JB2A on-the-spot effects, sorry! <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n**Additions:**\n- *Sequencer* - Added `SequencerPreloader` - you can now preload images, effects, and sounds for your players, read more on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Preloader)\n- *Sequencer* - Added support for templates and time ranges in database structure, more info on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/How-to:-Sequencer-Database)\n- *Effects* - Added support for static images such as webp, pngs, jpgs, etc\n- *Effects & Sounds* - Added `.startTime()`, `.startTimePerc()`, `.endTime()`, `.endTimePerc()`, and `.timeRange()`, more info on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#start-time)\n- *Sounds* - Added `.addOverride()`, `.baseFolder()`, and `.setMustache()` support to sounds\n\n**Updates & Fixes:**\n- *Sequencer* - `.play()` now reliably resolves its promise at the end of the entire sequence\n- *Effects* - *Vastly* improved effect caching and loading speed of effects and sounds\n- *Effects* - Improved object position handling slightly when providing non-foundry class objects to `.atLocation()` and alike\n- *Effects* - Generally improved compatibility with `TokenDocument` and Foundry D&D 5E documents when getting their positions\n\n### Version 0.5.9\n- *Effects* - Added `.addPostOverride()` as an alternative to `.addOverride()`, which executes at the end of the effect data sanitation\n- *Effects* - Fixed `.gridSize()`, `.startPoint()`, and `.endPoint()` not being respected and being overridden by internal logic\n\n### Version 0.5.8 Hotfix\n- *Macros* - Fixed macros throwing error when playing sequence\n\n### Version 0.5.7\n- *Effects* - Fixed templates sometimes not being found\n- *Effects* - Re-added backwards compatibility with old macros that still use `data.distance` in overrides\n\n### Version 0.5.6\n- *Sequencer* - Added alpha version of the Sequencer Database Viewer\n- *Effects* - Added `.randomOffset()` which can add a random offset similar to `.missed()`, but *within* the bounds of the target token / tile / other. Check out the docs!\n- *Effects* - Fixed `.waitUntilFinished()` not being respected\n- *Effects* - Fixed `.offset()` throwing an error about a missing function\n- *Effects* - Fixed `.repeats()` throwing an error, because the entire function went missing in the last update >.>\n\n### Version 0.5.5 Hotfix\n- *Effects* - Fixed effects sometimes not playing\n\n### Version 0.5.4 Hotfix\n- *Effects* - Fixed melee attacks not picking the right JB2A template\n\n### Version 0.5.3\n- *Sequencer* - Added sound to the Hyperspeed Sample thanks to the wonderful AurelTristen over at [HellScape Tabletop Assets](https://www.patreon.com/HellScapeAssets) (even though they\'re not specifically focused on sound effects)\n- *Effects* - Fixed major issue with JB2A templates, causing effects to pick the wrong ranged attacks & other shenanigans\n- *Effects* - Fixed effect scale inconsistencies across scenes with different grid sizes\n\n### Version 0.5.2\n- *Sequencer* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> Removed support for Foundry Version 0.7.x <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Refactored animations into a dedicated animation engine\n- *Effects* - Added support for static image effects (.jpeg, .png, etc)\n- *Effects* - Fixed grid size sometimes not being taken into account when playing effects with `.reachTowards()`\n- *Sounds* - Vastly improved and fixed sound implementation, big thanks to ghost#2000!\n- *Sounds* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> Removed support for `.fadeIn()` and `.fadeOut()` in Sounds <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n### Version 0.5.1\n- *Sequencer* - Added two sample scenes with macros and accompanying art:\n    - An animated Oujia board made by md-mention2reply\n    - A Star Wars inspired hyperspeed scene-switching scene, effects, and macro\n- *Sequencer* - Removed Token Ease as dependency until we can solve its conflicts with other modules\n- *Effects* - Fixed effects not auto-centering on tokens\n- *Effects* - Fixed effects not finding the proper location when a previous effect\'s `.name()` was given\n- *Animations* - Fixed `.rotate()`, `.opacity()`, and `.volume()`, now they work even without having to use their respective in/out functions\n\n### Version 0.5.0\n- *Sequencer* - Module now depends on [Token Ease](https://github.com/fantasycalendar/FoundryVTT-TokenEase)\n- *Sequencer* - Added the Sequencer Database to help content creators! Read more on the [database documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Database) how to use it!\n- *Effects & Sounds* - Added support for database collections to the `.file()` method - more info can be found in the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#file)\n- *Animations, Effects & Sounds* - Added the following functions:\n    - `.audioVolume()`\n    - `.fadeInAudio()`\n    - `.fadeOutAudio()`\n- *Effects* - Added support for delays on these methods (e.g. a delay of -500 means it will finish 500ms before the end of the duration):\n    - `.rotateOut()`\n    - `.fadeOut()`\n    - `.scaleOut()`\n    - `.fadeOutAudio()`\n- *Animations* - Fixed `.rotateTowards()` to properly rotate towards the target without having to add an offset to properly line them up\n- *Effects* - Made effects more intelligent when determining locations when given partial object data with `id` collections\n- *Effects* - Fixed issues surrounding delays and fades\n- *Sounds* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.fadeIn()` and `.fadeOut()` will become deprecated in a future version, please switch to `.fadeInAudio()` and `.fadeOutAudio()` <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n### Version 0.4.6 Hotfix\n- *Effects* - Fixed effects not playing on tokens on 0.7.10 and below\n\n### Version 0.4.5\n- *Effects* - Added `.offset()` so that you can offset the effect - an optional parameter allows you to offset in local or canvas space\n- *Animations* - Added `.snapToSquare()`, which causes the given object to be snapped to the square it is moving or teleported towards\n- *Animations* - Fixed `.rotateIn()` and `.rotateOut()` not properly calculating rotation\n- *Animations* - Adjusted `.rotateTowards()` to instead consider the target position as the rotation origin, rather than the object\'s current position\n\n### Version 0.4.4\n- *Animations* - Added `.animation()` section - animate tokens and tiles! Check out the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Animations) how to use it!\n- *Effects* - Added official support for tiles in `.atLocation()`, `.moveTowards()`, etc\n- *Effects* - Tweaked how effects get locations when dealing with raw template data\n- *Sequencer* - Added `.sequence()` so you can combine multiple sequences into one\n- *Sequencer* - Updated all sample macros to 0.8.x conventions\n\n### Version 0.4.3 Minor Fixes\n- *Effects* - Removed error catch in `.file()` when providing it with something else than string or array\n- *Effects* - Fixed `.belowTokens()` and `.belowTiles()` throwing errors if no boolean was provided\n\n### Version 0.4.2 Hotfix\n- *Effects* - Added `.rotate()` which adds an offset to the effect\'s rotation\n- *Effects* - Fixed `.moveTowards()` not respecting given easing\n\n### Version 0.4.1\n- *Sequencer* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> **Breaking Changes**: Removed deprecated `.then()` method <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Tweaked `.play()` to now return a promise\n- *Sequencer* - Reworked module class structure\n- *Sequencer* - Added debug setting\n\n### Version 0.4.0\n- *Sequencer* - Renamed `.then()` to `.thenDo()` due to JavaScript reasons — <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.then()` will be removed in 0.4.1 <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Removed the requirement to pass `true` as a second argument to `.then()` (now `.thenDo()`) if the function was async, it will now wait for it to finish if it is an `async function`\n- *Effects* - Added `.mirrorX()` and `.mirrorY()` to mirror the effect on that axis\n- *Effects* - Improved `.JB2A()` to better handle melee weapon attacks\n- *Effects* - Tweaked `.belowTiles()` and `.belowTokens()` to accept an optional boolean parameter whether the effect should play behind the respective element\n- *Effects* - Tweaked effects to assume that .webms have a base 100px internal grid for size consistency\n\n### Version 0.3.13 Hotfix\n- *Effects* - Fixed ANOTHER bug with `.belowTiles()` sometimes not playing below tiles\n\n### Version 0.3.12\n- *Effects* - Added `.opacity()` which controls the alpha of the effect being played\n- *Effects* - Fixed bug with `.belowTiles()` sometimes not playing below tiles\n\n### Version 0.3.11\n- *Effects* - Added `.belowTiles()` to play effects below tiles\n- *Effects* - Implemented better order handling - the effects created first will always be on top, each subsequent effect will be played below the previous\n- *Effects* - Added `.zIndex()` for you to have direct control over the order of effects\n- *Effects & Sounds* - Added `.duration()` which can override the duration of an effect or sound\n- *Effects & Sounds* - Tweaked `.waitUntilFinished()` to accept a single number parameter as a delay or to end the effect or sound earlier - read more in the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki#wait-until-finished)\n- *Sounds* - Added support for `.fadeIn()` and `.fadeOut()` - easing sadly doesn\'t work for sounds yet\n\n### Version 0.3.10\n- *Sequencer* - Added macro pack containing examples of Sequencer usages\n- *Effects* - Added the following animated functions:\n    - `.scaleIn()`\n    - `.scaleOut()`\n    - `.rotateIn()`\n    - `.rotateOut()`\n    - All of these can utilize any of the easings listed here: https://easings.net/\n    - Read the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#scale-in) how to use these\n- *Effects* - Added better error reporting when something goes wrong in the sequence\n- *Effects* - Fixed bug with scale sometimes overriding `.reachTowards()`\n\n### Version 0.3.9\n- *Effects* - Added `.belowTokens()` so you can now play effects, well, below tokens\n- *Effects* - Fixed effects not replicating properly (AGAIN)\n- *Effects* - Fixed effects not being able to use `.name()`d effects if they didn\'t miss - now any effect can be named and be used in future effects\n\n### Version 0.3.8 Hotfix\n- *Effects* - Fixed effects that were supposed to be once-off instead looping\n\n### Version 0.3.7\n- *Effects* - Added `.moveTowards()` and `.moveSpeed()` for missile-like behavior\n- *Effects* - Tweaked the way the effects layer is applied to the canvas\' layers\n- *Effects* - Fixed major issue with the way effects that were using `.missed()` and `.name()` were cached\n- *Sequencer* - Removed stray debug code\n\n### Version 0.3.6\n- *Effects* - Added `.fadeIn()` and `.fadeOut()` - you can now make your effects look slightly nicer!\n- *Effects* - Added support for cone and line templates with `.reachTowards()` and `.rotateTowards()` - it now reaches towards the end point of the template\n- *Effects* - Added `.name()` to effects - this will cause the effect\'s position to be stored and can then be used with `.atLocation()`, `.reachTowards()`, and `.rotateTowards()` to refer to previous effects\' locations\n    - Example: naming an impact effect with `.name("hit_location")` and making it miss with `.missed()`, and then have a subsequent effect use `.rotateTowards("hit_location")` to rotate towards the previous effect\'s calculated location\n- *Effects* - Fixed `.scale()` bug that caused it to not properly set the scale and then cause an error upon calling `.play()`\n- *Effects* - Removed `.moves()` for future implementation\n- *Sequencer* - Tweaked `.async()` and `.waitUntilFinished()` handling\n    - They now act the same on effect and sounds that only play once, but if it `.repeats()`, `.async()` causes the effect or sound to wait between each repetition, `.waitUntilFinished()` causes the sequencer to wait until the effect or sound has finished executing all of its repetitions, which may or may not wait for each effect or sound to play with `.async()`\n- *Sequencer* - Calling `.play()` now returns the sequence\n- *Sequencer* - Removed `FXMaster` dependency and implemented a custom canvas layer and effects class\n\n### Version 0.3.5 Hotfix\n- *Sequencer* - Fixed `.wait()` breaking due to the `.async()` and `.waitUntilFinished()` swap\n\n### Version 0.3.4 Hotfix\n- *Effects* - Fixed issue that caused the wrong scale to be applied when using `.reachTowards()`\n\n### Version 0.3.3\n- *Effects* - Added `.playIf()` ([docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki#play-if)); this allows you to completely ignore playing an effect or sound, depending on a boolean or a function\n- *Sounds* - Added support for `.async()` and `.waitUntilFinished()` for sounds - requires both to be `true` due to code weirdness, I\'ll be refactoring this in the future\n- *Effects* - Refactored `.scale()` when it was provided with a minimum and maximum value, it now randomizes the scale of the effect when executed instead of when the method was called\n- *Effects & Sounds* - Refactored `.file()` for both effects and sounds so that providing an array of files no longer immediately picks one from the array, but randomly picks a file each time the section is executed\n- *Effects & Sounds* - Refactored how `.delay()` interacted with `.repeats()`, which should result in more consistent behavior\n- *Sequencer* - Swapped the functionality of `.async()` and `.waitUntilFinished()`, and clarified in the docs\n- *Sequencer* - Added support for random range within a `.wait()` block (like, `.wait(500, 1000)` etc)\n\n### Version 0.3.2 - 0.8.x ready!\n* *Effects* - Added `.playbackRate()` to effects, you can now speed up the play rate of your effects\n* *Sequencer* - Tweaked internal handling of `.async()` together with `.waitUntilFinished()` improved\n* *Sequencer* - Tweaked to use `ready` instead of `init` to load module\n\n### Version 0.3.1\n- *Effects* - Refactored `.randomizeMirror()` into `.randomizeMirrorX()` and `.randomizeMirrorY()`\n- *Effects* - Refactored scaling algorithm for `.reachTowards()`\n- *Sequencer* - Added support for random `.wait()` interval\n\n### Version 0.3.0\n- *Effects* - Refactored `.aimTowards()` into `.rotateTowards()` and `.reachTowards()`\n- *Effects* - Refactored how `.missed()` chooses the location to hit and now takes token size into account\n- *Effects* - Added `.JB2A()` to automatically set the effect to handle their sprites in the best way possible\n- *Effects* - Added `.randomizeMirror()` to randomly mirror sprites on the Y axis\n- *Effects* - Added Mustache support in file names\n\n### Version 0.2.0\n- *Sequencer* - Added support for executing macros\n- *Sequencer* - Added support for playing sounds\n- *Sequencer* - Wrapped classes in proxies to simplify fluid interface (gets rid of `.done()` on effects and sounds)\n\n### Version 0.1.0\n- First implementation\n';
+const changelogText = '## Changelog\n\n# Version 4.2.1\n- *Effects* - Fixed effects not appearing on scenes that only have the default scene level on Foundry v14\n\n# Version 4.2.0\n- *Sequencer* - Fixed the Sequencer Manager not scrolling when the list of running effects and sounds was taller than the window\n- *Effects* - Greatly improved lookup speed of effects that needed to be deleted across scenes\n- *Effects* - Added `.onLevels()` to limit an effect to specific scene levels on Foundry v14\n- *Effects* - Added support for `.elevation([bottom, top])` to give an effect a vertical elevation range that stays visible on every scene level it reaches on Foundry v14\n- *Effects* - Added a `topInclusive` option to `.elevation([bottom, top])` that mirrors the same property on Foundry Regions, including the top boundary in the range so the effect counts as part of the level above\n- *Effects* - Fixed `.zIndex()` not working with `.screenSpace()` effects\n- *Effects* - Fixed effects showing across every scene level on Foundry v14\n- *Effects* - Fixed `.copySprite()` no longer animating when used on animated webm tokens, and ignoring the token\'s Scale setting and copying at the grid footprint size instead of the visible size\n- *Effects* - Fixed `.filter("ColorMatrix", ...)` breaking when any of `hue`, `brightness`, `contrast`, or `saturate` was given `null` or `undefined`\n- *Effects* - Fixed attached persistent effects not coming along when copy/pasting a token, drawing, tile, template, or region\n- *Effects* - Tweaked `.blendMode()` to create a warning when using `"overlay"`, `"soft-light"`, `"hard-light"`, `"color-dodge"`, `"color-burn"`, `"darken"`, `"lighten"`, `"difference"`, `"exclusion"`, `"hue"`, `"saturation"`, `"color"`, or `"luminosity"`; as these modes are not available in Foundry\'s renderer\n- *Sounds* - Added `.elevation()` to override or offset a positional sound\'s Z, used by the level-distance attenuation\n- *Sounds* - Added `.onLevels()` to limit a sound to specific scene levels on Foundry v14\n- *Sounds* - Fixed sounds played at a position not attenuating across scene levels on Foundry v14\n- *Sounds* - Fixed attached persistent sounds not coming along when copy/pasting a token, drawing, tile, template, or region\n\n# Version 4.1.0\n- *Sequencer* - Added Czech localization, and updated Polish localization (thank you, Lethrendis and Lioheart on github!)\n- *Effects* - Added `.blendMode()` to effect sections, accepting either a string name (e.g. `"multiply"`, `"screen"`, `"soft-light"`) or the `PIXI.BLEND_MODES` const\n- *Effects* - Added `.constrainedByWalls()` for clipping effects to wall-bounded line of sight, independent of the Walled Templates module\n- *Effects* - Added `Sequencer.Helpers.computeWallPolygon()` and extended `.mask()` to accept raw `PIXI.Polygon`, `PIXI.Circle`, or `PIXI.Rectangle` shapes\n- *Effects* - Fixed effects attached to or targeting a Region rendering below tiles that should sit beneath them\n- *Effects* - Fixed `.mask()` rejecting Regions even though Regions were already supported by the effect mask renderer\n- *Effects* - Fixed .atLocation(tile) placing effects at the tile\'s top-left instead of centering them on the tile (thanks aljames-arctic on GitHub)\n\n# Version 4.0.2\n- *Sequencer* - Fixed the Effect Player\'s Alt hotkey leaving attach mode and stretch-to-attach stuck on after release\n- *Sequencer* - Fixed `TypeError: Failed to fetch` (CORS) when previewing a remote asset (e.g. S3) in the Sequencer Database before playing it on the canvas\n- *Sequencer* - Fixed `Sequencer.Presets.get()` freezing Foundry when given a dotted preset name whose fallbacks were not registered\n- *Sequencer* - Fixed `.thenDo()` silently accepting non-function input and failing later mid-sequence with an unhelpful error\n- *Sequencer* - Fixed `Sequencer.Database.registerEntries` with `override: true` not unmarking a module\'s previous private state\n- *Sequencer* - Fixed declining the overwrite prompt while saving an Effect Player preset throwing a `ReferenceError`\n- *Sequencer* - Fixed the Sequencer Database spritesheet preview leaking object URLs and failing to release frames when switching entries\n- *Sequencer* - Fixed deprecation warnings by using `foundry.applications.apps.FilePicker`, `foundry.applications.api.DialogV2`, `foundry.canvas.containers.PreciseText`, `foundry.canvas.geometry.Ray`, and `ui.notifications` progress bars instead of their deprecated globals\n- *Sequencer* - Fixed `.forUsers()` throwing when given `User` objects instead of user IDs, even though both are documented to work\n- *Effects* - Fixed forced-index database keys ending in two or more digits (e.g. `effect.12`) playing the wrong frame\n- *Effects* - Fixed `.zIndex()` having no effect on `.screenSpaceAboveUI()` effects\n- *Effects* - Fixed sequences erroring out for users that did not have permission to play effects, or were excluded by `.forUsers()`\n- *Effects* - Fixed sequences getting stuck waiting forever when an effect failed to load or was ended before it had finished setting up\n- *Effects* - Fixed `.moveTowards()` with `cacheLocation: true` throwing instead of caching the target\'s position\n- *Effects* - Fixed clicking overlapping effects in the Sequencer Manager not consistently selecting the visually top-most one\n- *Effects* - Fixed effect assets being loaded twice and leaking the duplicate when the same file was spawned in rapid succession\n- *Effects* - Fixed memory leak in spritesheet generation\n- *Effects* - Fixed effect file cache where the most recently used files were evicted first instead of the least recently used\n- *Sounds* - Fixed `.forUsers()` being ignored, causing sounds to play for every connected user instead of only the listed users\n- *Sounds* - Fixed persistent sound data being saved into the wrong storage on world load, causing sounds to not migrate correctly between Sequencer versions\n- *Sounds* - Fixed the `endedSequencerSound` hook never firing for persistent sounds when they end\n- *Animations* - Fixed `.repeats()` on animation sections only running once and `_abort()` not interrupting a mid-flight animation\n- *Crosshairs* - Fixed `.borderColor()` always throwing when called without an `alpha` option\n- *Crosshairs* - Fixed `.repeats()` on crosshair sections only running once and `_abort()` not interrupting a pending placement\n- *Crosshairs* - Fixed the crosshair clobbering other modules\' canvas wheel handlers on activation and teardown\n- *Crosshairs* - Fixed cancelling a crosshair with `.persist()` still creating a template on the scene at the cursor position\n- *Canvas Pan* - Fixed `.canvasPan()` ignoring its `duration` and `speed` arguments when called positionally\n- *Canvas Pan* - Fixed `.canvasPan().speed()` being ignored by the pan animation and mistiming any `.lockView()` or `.shake()` set on the same section\n\n# Version 4.0.1\n- *Sequencer* - Reverted `Sequencer.Database.entryExists` to accept partial segment matches (e.g. `"attack"` matching `"attack1"`), which was unintentionally broken in 4.0.0. A console warning is now logged when a partial segment match occurs; this behavior will be tightened in a future version\n- *Sequencer* - Added Portuguese localization (Thank you Kharmans on GitHub!)\n- *Effects* - Fixed `.mask()` not working on Foundry v13 due to the mask filter\'s fragment shader not being passed to the PIXI filter constructor\n- *Effects* - Fixed non-persistent effects not disappearing from the Sequencer Manager after finishing playback\n\n# Version 4.0.0\n- *Sequencer* - Updated to support FoundryVTT v14\n- *Sequencer* - Removed support for FoundryVTT v12\n- *Sequencer* - Removed the socketlib dependency; Sequencer now manages its own data internally\n- *Sequencer* - Introduced a new internal UI foundation with proper dark mode support\n- *Sequencer* - Fixed `preloadForClients` blocking indefinitely when a client is tabbed away or disconnects mid-preload\n- *Effects* - Reworked internal effect storage to use a centralized hidden journal, reducing token and actor update overhead and improving performance in effect-heavy games\n- *Effects* - Removed deprecated methods, warnings are now errors\n- *Effects* - Due to the changes to the storage of effect data, setting `local: true` on the Sequence\'s `play()` method will no longer make the effect entirely local, and still store it in the DB without anyone else seeing it\n- *Effects* - Effects now visually "punch through" region highlights (matches how Foundry\'s own tokens behave with always displayed regions)\n- *Effects* - `.sortLayer()`, `.zIndex()`, `.belowTokens()`, and `.belowTiles()` now work as documented on Foundry v13 & v14\n- *Effects* - `.aboveLighting()` now actually anchors the effect above all lighting elements within the interface layer, but not its interface elements\n- *Effects* - Fixed `.copySprite()` only capturing the subject texture on dynamic-ring tokens; the ring is now included via render-to-texture\n- *Sounds* - Added `.persist()`, which causes the sound to persist on the scene, very cool!\n- *Sounds* - Added `.attachTo()`, which attaches the sound to the target (only supports `bindVisibility` and `bindElevation` at this moment)\n- *Sounds* - Added `.panSound()` which causes the sound to pan left and right when the token you have selected moves to the right or left of the sound\n  - You can control the distance from which it starts panning with `innerEaseDistance`, which is how many grid units away from the source that the ease starts. Use `outerEaseDistance` to control where the sound will be fully panning - if `innerEaseDirstance` is set to 10, and `outerEaseDistance` is set to 30, within 10 grid units the sound will not be panning, between 10 and 30 it will slowly blend to a panning sound, and beyond 30 it will be fully panning\n- *Sounds* - Added `.extraEndDuration()`, which adds additional ending duration to persisted sounds\n- *Sounds* - Added `.loopOptions()`, which controls the looping options of the sounds\n- *Sounds* - Added `.toLocation()`, which will evaluate the target location, but still play at the `.atLocation()` position - this is useful when the sound has multiple files for different ranges\n- *Sounds* - Added `.moveTowards()`, which will cause the sound to move towards the target location - best **not** used with `.toLocation()`\n- *Sounds* - Added `.globalSound()`, which prevents any `.atLocation()` sound from only playing on the canvas, and instead always plays globally.\n- *Sounds* - Added support for the database range-finding implementation typically found in effects; sounds can be defined with 5ft, 15ft, 30ft, 60ft, and 90ft files, and using the above methods will select the correct sound file to play\n- *Animations* - Fixed chained light animations reading the origin position before the previous animation\'s document update had committed, causing the second animation to start from the wrong location\n\nSequencer now has a Patreon if you wish to support its development! Join us now at:\nhttps://www.patreon.com/cw/fantasycomputerworks\n\n# Version 3.6.11\n- *Sequencer* - Fixed `remote` on `.play()` not forcing local on the executing user\'s machine\n- *Sequencer* - Added a one-time dialog promoting our patreon\n- *Effects* - Fixed `.copySprite()` using the wrong texture with `.file()` being set\n\n# Version 3.6.10\n- *Effects* - Fixed `.copySprite()` not copying dynamic token rings (thank you ChasarooniZ on github!)\n- *Effects* - Fixed `.rotateTowards()` with `attach: true` not working properly (thank you RobinCodesStuff on github!)\n- *Effects* - Upgraded `.from()` into a loud deprecation - please use `.copySprite()` instead \n- *Effects* - Upgraded `.attachTo()` with `followRotation` into a loud deprecation - please use `bindRotation` instead \n- *Effects* - Upgraded `.noLoop()` into a loud deprecation - please use `.loopOptions({ loops: 1 })` instead\n- *Scrolling Text* - Fixed inputting `"CENTER"` to `.anchor()` not working\n- *Effects* - Fixed `.screenSpace()` on isometric scenes \n\n# Version 3.6.9\n- *Animations* - Fixed animations not working at all\n\n# Version 3.6.8\n- *Crosshairs* - Fix right click drag, when mouse up happens after holding cursor still (Thanks dmrickey on Github!)\n- *Crosshairs* - Fixed some issues with limit max range on gridless scenes\n- *Sequencer* - Updated all Sequencer types (Thanks LukeAbby on Github!)\n- *Sequencer* - Made crosshair data types optional (Thanks MrVauxs on Github!)\n- *Animations* - Removed token support for `ease` from the following methods due to Foundry removing support for custom easing of token movement:\n  - `.moveTowards()`\n  - `.rotateTowards()`\n  - `.rotateIn()`\n  - `.rotateOut()`\n  - `.fadeIn()`\n  - `.fadeOut()`\n\n# Version 3.6.7\n- *Effects* - Fixed persistent effects not actually being persistent\n- *Effects* - Fixed `.shape()`\'s `fillColor` not liking `#000000` and overriding it to white\n\n# Version 3.6.2\n- *Crosshairs* - Added `.texture()` (Thank you david aka claudekennilol on Discord!)\n- *Crosshairs* - Added `alpha` as an option to `.border()` and `.fillColor()` (Thank you david aka claudekennilol on Discord!)\n- *Sounds* - Fixed sounds with `.atLocation()` not working together with crosshairs \n\n# Version 3.6.1\n- *Sequencer* - Fixed some lingering issues in Foundry v13\n\n## Version 3.6.0\n- *Sequencer* - Updated Sequencer for Foundry v13 while still remaining compatible with v12\n\n## Version 3.5.4\n- *Effects* - Fixed minor issue with isometric & walled templates plugin implementation\n\n## Version 3.5.3\n- *Sequencer* - Fixed overly aggressive welcome chat message\n- *Sequencer* - Sequencer will now fully prevent from launching if socketlib is not properly set up or installed \n\n## Version 3.5.2\n- *Effects* - Fixed `complete` effect versions not playing correctly without `.persist()`\n- *Effects* - Fixed isometric support with better plugin implementation\n\n## Version 3.5.1\n- *Effects* - Fixed issue where effects would get "stuck" on scenes after being played through Automated Animations\n- *Effects* - Fixed issue where the effect manager would break if opened with an effect that had pre-defined ranges in its `.file()` method \n- *Effects* - Fixed .webm\'s with sounds would not play its sound if played as an effect \n- *Crosshairs* - Fixed snap position resolution being undefined by default, causing it to not snap if not defined \n- *Crosshairs* - Elaborated on some crosshairs function documentation\n\n## Version 3.5.0\n- *Sequencer* - Updated TJS implementation to latest versions\n- *Sequencer* - Updated Italian and Polish localization (thank you GregoryWarn and Lioheart on Github!)\n- *Effects* - Improved the sprite sheet generator\'s premultiplied alpha handling (Thanks Codas!)\n- *Effects* - Fixed issues with effects trying to play before the canvas had been fully initialized (Thanks Codas!)\n\n## Version 3.4.9\n- *Sequencer* - Added tooltips to Sequencer database viewer buttons\n- *Animations* - Fixed animation sections with tint throwing error due to missing import\n- *Crosshairs* - Fixed resolution 0 resulting in Foundry crashing (due to internal Foundry handling of 0 resolution)\n- *Effects* - Fixed `binary/octet-stream` not being considered a valid content type\n- *Effects* - Fixed screenspace effects scaling based on the grid-size of the current scene (thank you Vauxs!)\n- *Sounds* - Fixed once-off location-based sounds crashing Foundry  (thank you Vauxs!)\n\n# Version 3.4.8\n- *Sequencer* - Added Italian localization (thanks GregoryWarn!)\n- *Sequencer* - Added `override` to `Sequencer.Database.registerEntries` (thanks MrVauxs)\n- *Effects* - Fixed `.tint()` not working in v12 (thanks MrVauxs)\n- *Effects* - Added `.sortLayer()` to typing (thanks MrVauxs)\n- *Sounds* - Fixed sound breaking because of missing offset function implementation (thanks MrVauxs)\n- *Crosshairs* - Added grid-snapping resolution to the snap property (thanks Spappz)\n\n# Version 3.4.7\n- *Effects* - Fixed `.stretchTo(target, { attachTo: true })` with range-finding effects not properly preloading its different files\n- *Effects* - Fixed `.playbackRate()` not working well with `.fadeOut()` and similar `out` animations\n- *Effects* - Fixed `.stretchTo`\'s `tiling` option not working on scenes with non-100px grid sizes (thanks Codas!)\n- *Sequencer* - Updated Polish localization (thanks Lioheart!)\n\n# Version 3.4.6\n- *Effects* - Added `effect` as a valid `.animateProperty()` and `.loopProperty()` target\n- *Effects* - Added `sourceOffset` and `targetOffset` to `.animateProperty()` and `.loopProperty()` property target\n  - This is used as such: `.animateProperty("effect", "targetOffset.x", { from: 0, to: 200, duration: 5000 })`\n- *Effects* - Deprecated `.from()` in favor for `.copySprite()` which is a more descriptive method name\n- *Effects* - Fixed `anchor` not being optional for `.shape()` (Thanks Codas!)\n- *Effects* - Fixed `scale()` for tiling textures using `stretchTo()` overly stretching the effect (Thanks Codas!)\n- *Effects* - Fixed some issues with caching of generated spritesheets (Thanks Codas!)\n- *Effects* - Disabled spriteshet generation for animated tiling textures - too many visual defects at the moment (Thanks Codas!)\n- *Sequencer* - Fixed audio controls in the Sequencer Database viewer (Thanks Vauxs!)\n- *Sequencer* - Added audio filtering in the Sequencer Database viewer (Thanks Vauxs!)\n- *Crosshairs* - Fixed issue with `updateCrosshair` causing label text to break the canvas\n\n# Version 3.4.5\n- *Effects* - Added `anchor` as an optional argument to `.shape()` (see docs)\n- *Effects* - Fixed `.shape()` not working if no `.file()` was used with `.screenSpace()` and `.screenSpaceScale({ fitX: true, fitY: true })`\n- *Effects* - Fixed calculation of dimensions for canvas tiles (thanks Codas!)\n- *Effects* - Fixed spritesheets generated by just-in-time conversion not having the correct framerate (thanks Codas!)\n- *Effects* - Fixed `.stretchTo()` not having the correct scale after using `.scale()`\n- *Crosshairs* - Fixed `Sequencer.Crosshair.collect()` being broken due to missing import \n\n# Version 3.4.4\n- *Canvas Pan* - Added support for named locations with in-sequence crosshairs\n- *Scrolling Text* - Added support for named locations with in-sequence crosshairs\n- *Effects* - Fixed effects that should have been invisible to users being visible when utilizing `.attachTo()` with `bindVisibility` set to `true` (Thanks Codas!)\n- *Effects* - Fixed `.file()` with specific range-based effects not correctly using the default grid template data (Thanks Codas!)\n- *Effects* - Fixed `.aboveLighting()` being above lighting but not over certain elements\n- *Effects* - Fixed some effects sticking around on tokens even after being deleted\n- *Effects* - Added missing `anchor` documentation to the `.text()` method\n\n# Version 3.4.3\n- *Sequencer* - Fixed slight performance issue with the Sequencer layer querying mouse position even when not active (thanks Codas!)\n- *Effects* - Fixed `.shape()` and `.text()` not working on effects without an underlying sprite (thanks Codas!)\n- *Effects* - Fixed `.xray()` not working (thanks Codas!)\n- *Effects* - Fixed `.screenSpace()` not working due to upgrades to `.animateProperty()` messing with sprite width and such\n- *Crosshairs* - Fixed `displayRangePoly` not working due to missing import\n\n# Version 3.4.2\n- *Effects* - Fixed canvas breaking after playing some types of effects\n\n# Version 3.4.1\n- *Effects* - Fixed effects with internal loops not playing & looping correctly (thanks Codas!)\n- *Effects* - Tweaked just-in-time spritesheet generation to not scale resulting spritesheets as much (thanks Codas!) \n\n# Version 3.4.0\n- *Sequencer* - Added support for custom FPS for flipbooks through an `_fps` database tag\n- *Sequencer* - Added support for spritesheet type effects through linking the spritesheet `.json` manifest in the database\n- *Sequencer* - Added a just-in-time compiler to transform webm video-based effects to gpu-optimized spritesheets\n  - This greatly improves performance when many instances of the same persisted effects are playing at once\n  - Persisted effects are automatically transformed to spritesheets in background threads. Once the compiled spritesheets are available, video effects are seamlessly replaced with spritesheets, greatly reducing the overhead for video decoding for those effects. Depending on size of the effect, spritesheet generation is expected to take anywhere from 5 seconds to 90 seconds. The size of generated Spritesheet textures is limited to 8192x8192px to maximize compatibility and limit memory usage\n  - Generated spritesheets are cached client-side in a semi-persistent, file-based browser cache\n  - Spritesheet generation for video files is only supported in trusted contexts (meaning https or hosted and connected locally on the same machine). This is a hard limitation by the browser vendors and not expected to be lifted in the future\n- *Sequencer* - Tweaked `Sequencer.Presets.get()` to support fall-backs to lower-complexity named entries\n  - If you have added a preset named `spell.ranged` and attempt to get a non-existent `spell.ranged.fire`, it will return the `spell.ranged` entry as a fallback\n  - You can enable the previous behavior by passing `true` as a secondary argument, which causes the method to require an exact match\n- *Crosshairs* - Added `displayRangePoly` to `.location()` and the `Sequencer.Crosshair.show()` API\n- *Crosshairs* - Fixed some minor crosshair issues surrounding utilizing them for effects\n- *Crosshairs* - Fixed `Sequencer.Crosshair.collect()` not working correctly with some crosshair shapes\n- *Effects* - Fixed flipbook animations framerate being tied to canvas FPS\n- *Effects* - Fixed offset from `.rotateTowards()` applying to the source location instead of the target\n- *Effects* - Fixed effects with added text and `.rotateTowards()` having their anchor point moved to an unexpected location\n- *Effects* - Fixed persisted `.stretchTo()` effects not correctly looping the effect in certain cases\n- *Effects* - Fixed `.loopOptions()` not working correctly for persisted effects when combined with `.timeRange()`\n- *Effects* - Fixed `.scaleOut()` end value being multiplied by a potentially set `.scaleIn()` value.\n  - `scaleIn(0.25).scaleOut(2)` now scales the effect in from 0.25 to 1. Plays the animation at 1x size and then scales the animation out to 2x default animation size. Previously, the animation would scale out to 0.5x the default effect size.\n- *Effects* - Fixed `attachTo()` not working on in-flight crosshairs\n\nBig thanks to Codas for his incredible work on the just-in-time compiler, general optimizations, and many fixes! Please support him at the following link: <https://ko-fi.com/Codas>\n\n# Version 3.3.8\n- *Effects* - Fixed `screenSpace` being a required property instead of optional for `.animateProperty()` and `.loopProperty()`\n\n# Version 3.3.7\n- *Sequencer* - Fully removed custom PIXI filters in favor of dedicated Sequencer implementation\n- *Crosshairs* - Added `.width()` for ray-type crosshairs\n- *Effects* - Added `screenspace` (boolean) parameter to `.animateProperty()` and `.loopProperty()`\n  - This makes the values used in these methods for position, width, or height to take the screen-size into account, meaning an `.animateProperty()` with the x position going from 0.0 to 1.0 will have the effect move from the left side of the screen to the right\n- *Effects* - Fixed `.screenSpace()` effects not supporting animating their width when `.screenSpaceScale({ fitX: true, fitY: true })` was set\n- *Effects* - Fixed `.screenSpaceAboveUI()` not correctly setting its renderable status when effects were played on its layer  (thank you Codas!)\n- *Effects* - Fixed `.shape()` not being affected by `.fadeIn()`, `.fadeOut()`, or `.opacity()`  (thank you Codas!)\n\n# Version 3.3.6\n- *Sequencer* - Reverted PIXI filters plugin to more compatible version\n- *Sounds* - Fixed `.startTime()` and `.endTime()` not working\n\n# Version 3.3.5\n- *Effects* - Fixed `.screenSpaceAboveUI()` not correctly falling back to the below UI screenspace layer if the above UI layer is disabled\n- *Animations* - Fixed named sequence-crosshairs not working as a target position\n- *Sequencer* - Fixed minor Foundry v12 deprecation warnings\n- *Sequencer* - Updated PIXI filters\n\n# Version 3.3.4\n- *Crosshairs* - Fixed `.crosshair()`\'s `.persist()` option not working with subsequent `.effect()` sections\n- *Crosshairs* - Fixed typos on `.gridHighlight()` (thanks Vauxs!)\n- *Crosshairs* - Fixed crosshair documentation and typing (thanks Vauxs and Spappz on github!)\n- *Crosshairs* - Fixed `.crosshair()`\'s default size being smaller than the grid\n- *Effects* - Removed `.attachTo()` warning when using `.attachTo()` with a named location (specifically `.persist()`ing crosshairs)\n- *Effects* - Fixed `.name()` not passing mirrorX/Y, rotation, and random rotation to the subsequent effects\n- *Sounds* - Added `.audioChannel()` to sounds, which controls which output they are played through (thank you Oxy949 on github!)\n\n# Version 3.3.3\n- *Crosshairs* - Added `Sequencer.Crosshair.CALLBACKS.STOP_COLLIDING` callback\n- *Crosshairs* - Added `updateCrosshair` method to crosshairs\n- *Crosshairs* - Fixed invalid placement positions being cached and then used even if the crosshair was placed somewhere else\n- *Effects* - Fixed `.attachTo()`\'s `align` not playing well with `.stretchTo()`\n- *Effects* - Fixed `.persist(true, { persistTokenPrototype: true })` not storing more than one persistent effect on the token\n\n# Version 3.3.2\n- *Sequencer* - Fixed `.thenDo()` typing (thank you Vauxs!)\n- *Sequencer* - Tweaked `.addNamedLocation()` to better handle nonconforming inputs\n- *Effects* - Fixed `.screenSpaceAboveUI()` not working with recent optimizations (thanks you Codas!)\n- *Effects* - Fixed `.text()` not utilizing the `PreciseText` Foundry class\n\n# Version 3.3.1\n- *Sequencer* - Added `.addNamedLocation()` which allows you to store and cache locations as a string for later use in the sequence\n- *Effects* - Fixed `.tint()` and `.fadeIn()`/`.fadeOut()` not working properly (thank you Codas!)\n- *Effects* - Fixed `.from()` breaking antialiasing on token textures\n- *Animations* - Fixed using named locations and named crosshairs not working in animations\n\n# Version 3.3.0\n- *Crosshairs* - Added crosshairs! It can be used with `Sequencer.Crosshair.show()` (like warpgate) or with `.crosshair()` on a sequence. See the documentation ([here](https://fantasycomputer.works/FoundryVTT-Sequencer/#/crosshair) and [here](https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/crosshair)) for more info.\n- *Sequencer* - Fixed issues with preloading arrays of files\n- *Sequencer* - Added polish localization (thank you Lioheart!)\n- *Effects* - Greatly improved effect efficiency by improving batching capabilities (thank you Codas, you\'re a legend)\n\nUnfortunately, Sequencer is now a V12 only module.\n\n## Version 3.2.17\n- *Sequencer* - Updated types (Thanks Vauxs on github!)\n- *Effects* - Fixed some issues with the vision masking shader relating to the batch batching optimizations (Thanks Codas on github!)\n- *Effects* - Fixed above UI layer not working with recent render batching optimizations (Thanks Codas on github!)\n\n## Version 3.2.16\n- *Effects* - Major improvements to the way that effects are rendered to better support render batching (thank you Codas, you damn legend!)\n- *Effects* - Tweaked flag manager to better handle effects with broken IDs\n- *Animations* - Fixed `.teleportTo()` triggering regions that react upon movement (thanks Michael on github!)\n- *Sounds* - Fixed sounds not playing on the right channel in v12\n- *Sounds* - Fixed sounds not working with `.fadeInAudio()` and `.fadeOutAudio()`\n- *Sounds* - Fixed sounds with `.atLocation()` and `randomOffset` in v12 not synchronizing the exact location between clients \n\n## Version 3.2.15\n- *Effects* - Fixed non-`.xray()` effects showing in the fog of war\n- *Sounds* - Removed stray debugger\n\n## Version 3.2.14 Hotfix\n- *Sounds* - Fixed sounds again (thank you, Vauxs!)\n\n## Version 3.2.13\n- *Sequencer* - Tweaks and fixes to documentation (thank you, Vauxs!)\n- *Effects* - Fixed templates getting deleted shortly after being used for an effect would cause a Foundry crash\n- *Effects* - Fixed effects sticking around after documents that they were attached to had been deleted\n- *Sounds* - Fixed sounds not working properly in certain macros\n\n## Version 3.2.12\n- *Sequencer* - Further updates to typing information (thank you, Vauxs!)\n- *Sequencer* - Tweaked `preload` optional argument on `Sequence#play` to batch preload files (thank you, Codas!)\n- *Sequencer* - Fixed `local` optional argument on `Sequence#play` to actually only play effects and sounds locally\n- *Sequencer* - Tweaked Sequencer Manager to be more robust and less error prone when invalid effects are active\n- *Effects* - Added `absolute` optional argument to `.animateProperty()` and `.loopProperty()`\n- *Effects* - Fixed some effects not playing in the correct location, which fixes effect position issues with the Isometric module\n- *Sounds* - Fixed sounds not playing in v11 (thank you, Vauxs!)\n- *Canvas Pan* - Fixed initiating a shake with a frequency or duration of 0 would cause the canvas to freeze\n\n## Version 3.2.11\n- *Sequencer* - Updated `Sequence#play` to have two additional secondary parameters:\n  - `preload: boolean` - causes any section with `.file()` entries to preload all files that would be played\n  - `local: boolean` - causes sections to be played only locally to the user executing the sequence\n- *Sequencer* - Improved typing information (thank you, Vauxs!)\n- *Effects* - Fixed non-ASCII text breaking some effects played with Automated Animations due to its usage with the Effect Manager\n- *Effects* - Fixed the alpha of tokens and tiles not being respected with `attachTo()`\n- *Effects* - Fixed `.template()` on effects not overwriting database templates\n- *Effects* - Fixed `CanvasEffect#addAnimatedProperties` causing errors when used twice in a row as it would try to incorrectly serialize entire PIXI sprites\n\n## Version 3.2.10\n- *Sequencer* - Fixed `{ name }` filters on `Sequencer.EffectManager` and `Sequencer.SoundManager` methods not working with regex-like strings\n- *Effects* - Tweaked and improved the animation engine to better handle stacked animations on the same property\n- *Effects* - Fixed `.persist()`ing effects with internal loop assets not finishing the ending portion when the effect was ended\n- *Effects* - Fixed one shot effects replaying the first frame before disappearing\n- *Effects* - Fixed `.aboveInterface()` effects blocking mouse interactions\n- *Effects* - Fixed some looping inconsistencies with `.loopOptions()`\n- *Effects* - Fixed being unable to snap effects to the grid when moved with the Sequencer Player\n\n## Version 3.2.9\n- *Effects* - Fixed effects with `.attachTo()` sometimes throwing errors and causing the scene to freeze\n- *Effects* - Fixed `.mask()`ed effects not following measured templates correctly\n\n## Version 3.2.8\n- *Sequencer* - Fixed Sequencer Manager throwing A DIFFERENT error when trying to see active\n- *Effects* - Fixed `.persist()` effects not looping when first created (but would loop if enough time had passed & user had refreshed - very odd)\n\n## Version 3.2.7 Hotfix\n- *Effects* - Fixed `.persist()` effects not looping\n\n## Version 3.2.6\n- *Sequencer* - Fixed Sequencer Manager throwing an error when trying to see active Sequences\n- *Effects* - Added `.sortLayer()` to be able to more directly control which layer the effect lands on (only in Foundry v12)\n  - This also fixes `.belowTokens()` being below tiles\n  - Thank you Codas on GitHub!\n- *Effects* - Added `.loopOptions()` to allow users to control how an effect loops\n- *Effects* - Deprecated `.noLoop()` in favor of the above, will be elevated to loud deprecation in a future major version\n\n## Version 3.2.5\n- *Effects* - Updated documentation to include `.volume()`, `.fadeInAudio()`, and `.fadeOutAudio()`\n- *Effects* - Fixed some issues with effect scaling when using `.loopProperty()` and `.animateProperty()`\n- *Sounds* - Fixed `Sequencer.SoundManager.endAllSounds()` not ending all sounds\n- *Sounds* - Fixed `Sequencer.SoundManager.endSounds()` sometimes not correctly ending the right sounds\n- *Sounds* - Fixed calling `.sound()` would break sequences in both Foundry v11 and v12\n\n## Version 3.2.4\n- *Sequencer* - Fixed `.preset()` not working when called directly on a sequence (thanks MrVauxs!)\n- *Effects* - Added deprecation warning to `.file()` instead of an error when giving it a second boolean parameter\n- *Effects* - Fixes to the isometric module - may still not be 100%, but it shouldn\'t error anymore\n- *Sounds* - Fixed sounds not playing on v11 (again!)\n\n## Version 3.2.3 Hotfix\n- *Effects* - Fixed issue with effects not playing their full duration\n\n## Version 3.2.2\n- *Sequencer* - ACTUALLY fixed welcome message being posted multiple times in bigger worlds (will also get rid of duplicates)\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` not working when used on `alphaFilter`\n- *Effects* - Fixed effects that were attached to temporary templates (like warpgate\'s crosshairs) not disappearing after the crosshair had been placed\n- *Effects* - Fixed issue with `complete`-loop type effects not playing correctly\n\n## Version 3.2.1\n- *Sequencer* - Fixed welcome message being posted multiple times on The Forge - my apologies for this\n- *Sequencer* - Fixed `Sequencer.Preloader` not being properly set up (thanks Codas on github!)\n- *Effects* - Added `antialiasing` optional argument to `.file()` - expects `PIXI.SCALEMODES.LINEAR` or `PIXI.SCALEMODES.NEAREST`\n- *Effects* - Fixed `.moveTowards()` not working\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` not properly animating effects\n- *Effects* - Fixed `.timeRange()` and `.endTime()` not working properly\n- *Sounds* - Fixed `.atLocation()` incorrectly throwing errors when on Foundry v12 (thanks Codas on github!)\n- *Sounds* - Fixed sounds not working on Foundry v11\n\n## Version 3.2.0\n- *Sequencer* - Added support for FoundryVTT v12 while remaining backwards compatible with v11\n- *Sequencer* - Added startup chat message with links to relevant external resources\n- *Sequencer* - Added support for the [Isometric module](https://foundryvtt.com/packages/grape_juice-isometrics) (thanks grape_juice for their assistance with this integration!) \n- *Sequencer* - Added `Sequencer.SoundManager` which is a sound interface that mirrors `Sequencer.EffectManager`\n- *Effects* - Greatly improved responsiveness of attached effects actually following their targets more accurately\n- *Effects* - Removed deprecated methods `.offset()` and `.randomOffset()` as those should now be done with the relevant location-based secondary parameters\n- *Effects* - Added `.syncGroup()` which allows you to synchronize the playback of multiple effects in the same scene\n- *Effects* - Tweaked `.scaleToObject()` to cache its target\'s scale when first created, unless paired with `.attachTo()` and `bindScale` (see below)\n- *Effects* - Added `bindScale` (defaults to `true`) to `.attachTo()`, that if combined with `.scaleToObject()` it will always scale with the object\n- *Effects* - Fixed `.tint()` not being applied when used with `.attachTo()` and `.stretchTo()` with `{ attachTo: true }`\n- *Effects* - Tweaked `.attachTo()`\'s `followRotation` to be named `bindRotation` (will remain backwards compatible until 3.3.0 before becoming deprecated)\n- *Sounds* - Added support for the following methods (see the [`.sound()` documentation](https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/sound) for more info):\n  - `.name()`\n  - `.origin()`\n  - Below only in Foundry v12:\n    - `.atLocation()`\n    - `.radius()`\n    - `.constrainedByWalls()`\n    - `.distanceEasing()`\n    - `.alwaysForGMs()`\n    - `.baseEffect()`\n    - `.muffledEffect()`\n\n## Version 3.1.4\n- *Effects* - Added better support for the Walled Templates module\n- *Effects* - Fixed effects becoming invisible when using both `offset` and `local` with just a source location and no target\n- *Effects* - Fixed `.shape()`s `isMask` property not working when the shape type was set to `polygon`\n- *Sounds* - Fixed "End All Sounds" button not working in the Sequencer Manager\n\n## Version 3.1.3\n- *Sequencer* - Removed stray debugger, whoops\n- *Animations* - Fixed `.rotateTowards()` being off by a few degrees\n- *Effects* - Added `.temporary()`, which causes an effect to not set any flags on any objects, which means a refresh will make the effect disappear\n- *Effects* - Fixed `.zIndex()` not working with `.screenSpace()`\n- *Effects* - Fixed `offset`\'s `local` modifier not applying correctly when using `.stretchTo()` and the like\n\n## Version 3.1.2\n- *Sequencer* - Fixed Sequencer\'s ready hooks sometimes not firing when canvas was fully ready\n- *Effects* - Improved persistent effects behavior when pasted across scenes \n\n## Version 3.1.1\n- *Effects* - Fixed `.shape()` with `mask: true` not masking its parent\n- *Effects* - Hopefully fixed issues surrounding effects sometimes not being cleared properly\n- *Effects* - Fixed effects in v11 sometimes ending up in the top left corner after switching scenes\n\n## Version 3.1.0\n- *Sequencer* - Fixed a bug in the database when copying some file paths would not work properly\n- *Effects* - Added `.aboveInterface()`\n\n## Version 3.0.14\n- *Sequencer* - Improved Database-to-Database binding when considering custom metadata\n- *Animations* - Fixed cases where if a newly created token had `.animation()`s applied to them would sometimes fail due to `Token#mesh` not being initialized (Thanks LukeAbby & TMinz)\n- *Effects* - Vastly improved `.mask()` performance and behavior all thanks to dev7355608!\n- *Effects* - Fixed a rare case where range-finding effects would fail to determine the right video file to play\n\n## Version 3.0.13\n- *Effects* - Added `.randomSpriteRotation()`\n- *Effects* - Fixed a bug with cached locations and `.mask()`\n- *Effects* - Fixed database-to-database mappings\n\n## Version 3.0.12\n- *Sequencer* - Fixed console error caused by the clean-up of old expired effects (Thanks LukeAbby on Github!)\n- *Sequencer* - Added `fullyQualified` secondary parameter to `Sequencer.Database.getPathsUnder()` (Thanks LukeAbby on Github!)\n- *Animations* - Added support for elevation in `.teleportTo()`\n- *Canvas Pan* - Fixed `.canvasPan()` not working other clients than the executing client\n- *Effects* - Slightly adjusted how `.missed()` interacts with `.stretchTo()` when two tokens are right next to each other\n- *Effects* - Fixed `.playbackRate()` causing effects to have the incorrect amount of playback time\n- *Effects* - Fixed `.rotateTowards()` not working with `.text()`\n\n## Version 3.0.11\n- *Sequencer* - Made PIXI fix settings default to being turned off\n- *Sequencer* - Fixed strange interaction with `.preset()` not working when certain functions were called in the preset\n- *Sequencer* - In Foundry v11, `.macro()` now requires the secondary parameter to be an object, as the behavior of Advanced Macros have been partially integrated in v11\n- *Effects* - Fixed some persistent effects not being deleted from scenes after their attached sources were deleted\n- *Effects* - Fixed effects targeting drawings not properly using the drawing position and dimensions\n- *Effects* - Fixed `.playbackRate()` not working well with internal loops and `.persist()`\n\n## Version 3.0.10\n- *Sequencer* - Fixed Effect Player not working in Foundry v11\n- *Sequencer* - Fixed private modules showing up in the Database Viewer\n\n## Version 3.0.9\n- *Canvas Pan* - Added `.shake()` which can be used to add camera shake to the canvas\n- *Effects* - Fixed glow filter not working in v11\n- *Effects* - Fixed `.belowTokens()` being below tiles as well\n\n## Version 3.0.8\n- *Effects* - Fixed `stretchTo()` effects sometimes not being visible\n\n## Version 3.0.7\n- *Effects* - Added `requiresLineOfSight` and `hideLineOfSight` to the secondary arguments of `.stretchTo()`\n  - This requires `attachTo` to be true in `stretchTo()`\n  - `requiresLineOfSight` causes the effect to immediately end if the line of sight between the source and target is broken\n  - `hideLineOfSight` modifies the above behavior to temporarily hide the effect until the line of sight is unbroken\n- *Effects* - Fixed the "External Effect Opacity" setting, which causes effects playing for other players to show up as faint for GMs to let them know that players has effects playing for them, but would not work if the opacity was set to 0\n- *Effects* - Improved dual-attached effects performance\n\n## Version 3.0.6\n- *Sequencer* - Fixed issue with Sequencer trying to make users migrate tokens and effects they do not own \n- *Effects* - Fixed effects not updating reliably when the target\'s opacity and/or hidden status changes\n\n## Version 3.0.5\n- *Effects* - Fixed support for google bucket files (it meant to be `video/x-webm` instead of `video/webm-x`)\n- *Effects* - Fixed dual attached effects disappearing once going beyond the range of the initial effect\n\n## Version 3.0.4\n- *Effects* - Added support for file buckets that contain `video/webm-x` files (mostly Google Buckets)\n- *Effects* - Fixed `.scaleToObject()` taking into account token scale when it should not (unless `considerTokenScale` is set to `true`)\n\n## Version 3.0.3\n- *Sequencer* - Fixed edge case with `.addSequence()` that would cause a sequence to ignore `softFail`\n- *Effects & Sounds* - Removed secondary boolean argument for `.file()` as it is covered by the Sequence-wide soft fail\n\n### Version 3.0.2\n- *Sequencer* - Added backwards compatibility to the old format of `new Sequence(moduleName, softFail)`\n- *Sequencer* - Added `remote` support for `.wait()`\n- *Sequencer* - Added `moduleName` and `softFail` support for `remote`\n- *Animations* - Fixed `.snapToGrid()` sometimes not working well on hex scenes \n- *Effects* - Fixed `.xray()` causing effects to disappear\n- *Sounds* - Fixed `softFail` not working properly\n\n### Version 3.0.1\n- *Effects* - Fixed `cacheLocation` not working on effect locations\n- *Effects* - Fixed dual attached effects not working\n\n### Version 3.0.0\n- *Sequencer* - Updated Sequencer Database Viewer:\n  - Improved UI and added nested tree view\n  - Added ctrl modifier to buttons that copy paths, which adds quotes around the copied paths\n- *Sequencer* - Updated Sequencer Effect Player:\n  - Improved UI based on the design of MatthijsKok on github - thanks a lot for the inspiration!\n- *Sequencer* - Reworked the Sequencer Effect Manager to the Sequencer Manager:\n  - Added the ability to stop running sounds\n  - Added a Sequence view where you can see the sequences as they are running, and stop the entire execution or their individual sections\n- *Sequencer* - Added `.scrollingText()` which allows playing scrolling text on the canvas for users\n- *Sequencer* - Added `.canvasPan()` which allows panning the canvas for connected users\n- *Sequencer* - Added `.toJSON()` and `.fromJSON()` to Sequences to be able to be serialized and deserialized; only sequences with effects, sounds, and scrolling texts can be serialized\n- *Sequencer* - Added options to `.play()`, which may contain an object; currently supports `{ remote: true/false }` which will serialize the sequence (see above), and send it to each client for local playback, instead of the person running the sequence sending data to clients as it is being executed\n- *Sequencer* - Added database support for `_timestamps` metadata on effect files, which will trigger the `sequencerEffectTimestamp` hook when effects reach the point of the timestamps for that file\n- *Sequencer* - Added support for flipbook-type effects through a `_flipbook` database tag\n- *Animations* - Improved playback of movement, fade in/out, and rotation animations on tokens\n- *Effects* - Added `CanvasEffect#addAnimatedProperties`, which will allow you to easily add animations to properties of existing effects\n- *Effects* - Improved screenspace above UI effect performance by not rendering the extra canvas when not in use\n- *Effects* - Fixed screenspace effects being affected by the vision mask\n- *Effects* - Fixed `.stretchTo()` effects would be visible when not in vision\n- *Effects* - Fixed `.fadeOut()` and `.scaleOut()` not working at all\n- *Effects* - Reworked how effects are replicated on linked tokens when `.persist()`\'s `persistPrototypeToken` is enabled, improving performance\n\n### Version 2.414\n- *Sequencer* - Included missing CSS file\n\n### Version 2.413\n- *Sequencer* - Added support for database paths that resolve to other database paths\n- *Sequencer* - Isolated Sequencer\'s styling so that it doesn\'t leak out into other modules or systems\n- *Effects* - Fixed `.loopProperty()` not respecting `loops: 0`\n- *Effects* - Fixed `.animateProperty()` not keeping track of relative values when animating the same property multiple times\n- *Effects* - Fixed named screenspace effects without a specific location not playing and throwing errors\n- *Sounds* - Fixed `softFail` not allowing sounds to softly fail\n\n### Version 2.412\n- *Sequencer* - Added setting to hide/show the Sequencer buttons in the left sidebar when in the token controls\n- *Animation* - Fixed `.moveTowards()` going into infinite loop if the source and targets are on top of each other\n- *Effects* - Fixed `.shape()` taking grid size into account multiple times\n- *Effects* - Fixed `.volume()`, `.fadeInAudio()`, and `.fadeOutAudio()` not working on webms with embedded audio \n\n### Version 2.411\n- *Sequencer* - Fixed infinite recursion when using `.waitUntilFinished()` in the middle of a sequence\n- *Sequencer* - Undid some minor issues in the database viewer\n\n### Version 2.410\n- *Sequencer* - Added support for playing sounds in the Sequencer Database (thank you ZotyDev for the pull request!)\n- *Sequencer* - Calling methods on the sequence that it does not have will be attempted to be cast to the last section\n- *Sequencer* - You can now provide `false` as an argument to `.waitUntilFinished()`, which will negate its call\n- *Effects* - Fixed animations on `alphaFilter`\'s `alpha` not working\n\n### Version 2.49\n- We don\'t talk about this version\n\n### Version 2.4.8\n- *Effects* - Fixed rectangle measurable templates would be off by 45 degrees\n- *Effects* - Fixed tokens with locked rotation would cause attached effects to be rotated anyway\n- *Effects* - Fixed `.tint()` not applying to `.stretchTo()` effects\n\n### Version 2.4.7\n- *Effects* - Actually fixed shapes\n\n### Version 2.4.6\n- *Effects* - Fixed effects with only shapes would not play properly\n- *Effects* - Fixed error when users tried to play effects even when `softFail` was set to `true`\n\n### Version 2.4.5\n- *Effects* - Fixed effects playing on the same scene as the user\'s current scene, even if the target of the effect was on another scene\n- *Effects* - Fixed `.from()` not working with the new `softFail` sequence parameter\n- *Effects* - Fixed being able to pass non-valid parameters to `.atLocation()` and similar functions without errors\n\n### Version 2.4.4\n- *Sequencer* - Tweaked the arguments to `new Sequence("moduleName")` to `new Sequence(inOptions)` - it now takes a single object that can contain:\n  - `moduleName` <string> - The name of the module that is creating this sequence - this is for other users to know which module used Sequencer\n  - `softFail` <boolean> - Setting this to `true` causes any failures to find files for effects, sounds, or macros to softly fail, rather than halt the entire sequence\n- *Effects* - Tweaked `.shape()`s parent to be the `spriteContainer` rather than the `sprite`, so that animations to the sprite doesn\'t affect the shapes\n- *Effects* - Fixed `.shape()` not considering their offset with `isMask` enabled  \n\n### Version 2.4.3\n- *Sequencer* - Switched `Disable Pixi Fix` to `Enable Pixi Fix` to make it more consistent with other settings\n- *Sequencer* - Added `Enable Global Pixi Fix` which fixes the alpha on animated tiles if enabled (use with caution) \n- *Effects* - Fixed `.atLocation()` and `.persist()` throwing errors and thus failing to persist the effect on the scene\n- *Effects* - Slight tweaks to visibility logic of effects to be more consistent\n- *Effects* - Tweaked `.attachTo()`\'s `align` and `edge` to not consider token scale when determining the edge of the token\n\n### Version 2.4.2\n- *Sequencer* - Added `Sequencer.Presets` which allows you to create and save reusable bits of sequences\n- *Sequencer* - Added `.preset()` which allows you to use the aforementioned presets\n- *Sequencer* - Added optional `considerTokenScale` to the optional `options` parameter to `.scaleToObject()`, you can set it to `true` in order for the visual effect to also consider the token scale\n- *Sequencer* - Added support for persistent visual effects on "fake" tokens created by Multilevel Tokens (only supports effects that are applied to the prototype token) \n- *Sequencer* - Slightly improved the speed of document updates when visual effects are first applied\n- *Sequencer* - Added a throttled console warning when the Photosensitive Mode is enabled and a client is trying to play effects (only warns once every 10 seconds when effects are played)\n- *Effects* - Fixed `.scaleToObject()` always taking token scale into account, which it shouldn\'t do by default\n\n### Version 2.4.1\n- *Effects* - Fixed minor typo in `.mask()`\n\n### Version 2.4.0\n- *Sequencer* - Added `Seqencer.EffectManager` to the autocomplete types\n- *Sequencer* - Fixed minor issue with the Effect Manager sometimes trying to load non-existent effect data\n- *Effects* - Added `.shape()`, which allows you to create simple shapes on the canvas\n  - See: <https://fantasycomputer.works/FoundryVTT-Sequencer/#/api/effect?id=shape>\n- *Effects* - Fixed `.attachTo()` would attempt to apply flags on temporary templates such as warpgate crosshairs\n\n### Version 2.3.21\n- *Sequencer* - Fixed interaction with the `Advanced Macros` module past version 1.19.2 (Thanks MrVaux!)\n- *Sequencer* - Fixed issue with `Sequencer.Helpers.shuffle_array` not handling complex arrays very well\n- *Effects* - Fixed `.from()` not taking token scale into account\n\n### Version 2.3.20\n- *Sounds* - Fixed sounds not working\n\n### Version 2.3.19\n- *Sequencer* - Created a new wiki for Sequencer:\n  - <https://fantasycomputer.works/FoundryVTT-Sequencer/> \n- *Sequencer* - Added full support for Sequencer typings in the ***Monaco Macro Editor*** (thanks to laquasicinque for your initial work!)\n- *Sequencer* - Changed all settings to use Foundry v10\'s `requiresReload` instead of reloading the app\n- *Sequencer* - Removed compendium of sample macros, in favor of the new wiki\n- *Effects* - Added further support for webm\'s loaded through S3 buckets (files with type `application/octet-stream` now supported)\n- *Sounds* - Sounds\' `.file()` now has a secondary parameter to allow a false-y primary input to soft fail, instead of halting the entire Sequence\n\n### Version 2.3.18\n- *Sequencer* - Added support for Foundry\'s photosensitive setting, which disables all effects without impacting other functionality \n- *Sequencer* - Fixed incompatibility with the Foundry team\'s ***A House Divided*** adventure, the scenes should no longer appear to have a dark overlay\n- *Sequencer* - Updated `.macro()` to work with the latest version of the ***Advanced Macros*** module\n\n### Version 2.3.17\n- *Effects* - Fixed `.tieToDocuments()` not working for embedded documents on unlinked tokens\n\n### Version 2.3.16\n- *Effects* - Adjusted approach when ending effects when using `.tieToDocuments()`\n\n### Version 2.3.15\n- *Sequencer* - Fixed registering similar named modules in the database would cause the second to not register properly \n\n### Version 2.3.14\n- *Effects* - ACTUALLY fixed `.tieToDocuments()` (send help)\n\n### Version 2.3.13\n- *Effects* - Fixed deeper issue with `.tieToDocuments()` as it was not recognizing actors or items as parents in respect to UUIDs\n\n### Version 2.3.12\n- *Effects* - Fixed `.missed()` and `.stretchTo()`\'s `randomOffset` having weird interactions when `.name()` was used to play effects at target locations\n- *Effects* - Fixed `.tieToDocuments()` throwing errors and not removing effects when the tied documents were deleted \n\n### Version 2.3.11\n- *Sequencer* - Added `Sequencer.Database.inverseFlattenedEntries` which is a map object with the key being the file path and the value being the database path for that file\n- *Effects* - Added `bindElevation` (default `true`) as a secondary argument to `.attachTo()` which can be used to make effects not follow the target\'s elevation\n- *Effects* - Made `.elevation()` be relative to the target of the effect by default, you can pass a secondary object with `absolute: true` to make it absolutely elevated on the scene\n- *Effects* - Improved internal logic when trying to play effects on clients who have disabled them - previously it had a chance to throw an error when clients with effects disabled would run sequences that included effects (as they would not know the duration of the effect)\n\n### Version 2.3.10\n- *Effects* - Fixed race condition when deleting multiple attached effects in a row would leave some lingering effects\n\n### Version 2.3.9\n- *Effects* - Fixed effects sticking around after deleting the document they were attached to\n- *Effects* - Fixed error when deleting documents relating to named effects\n- *Effects* - Fixed setting the position of screenspace effects would not work\n\n### Version 2.3.8\n- *Sequencer* - Removed double declaration of socketlib hook\n- *Effects* - Fixed error if no scenes has been created yet\n- *Effects* - Fixed screenspace effects not working without setting its location\n- *Effects* - Fixed `.animateProperty()` not working very well with `width` and `height`\n- *Effects* - Improved the way effects interacts with Foundry hooks (it is more efficient)\n\n### Version 2.3.7\n- *Effects* - Fixed `.rotateTowards()`\'s `rotationOffset` parameter not working properly\n\n### Version 2.3.6\n- *Effects* - Fixed multiple `.attachTo()` and `.strechTo()` with `attach: true` sometimes causing crashes due to overloading Foundry\'s tick function\n- *Effects* - Fixed ColorMatrix `hue` and `.animateProperty()` not working well together\n- *Effects* - Fixed `.atLocation()` with `randomOffset: true` would cause weird effects with `.stretchTo()`\n\n### Version 2.3.5\n- *Sequencer* - Removed Ouija Board example macros, this is now a separate module made by md-mention2reply, check it out!\n    - <https://foundryvtt.com/packages/ouija-board-for-sequencer>\n- *Sequencer* - Updated module manifest to be more V10 compatible\n- *Effects* - Fixed ColorMatrix `hue` property to be able to be animated with `animateProperty()` and `.loopProperty()`\n- *Effects* - Fixed `.mask()` not working with tiles or measurable templates\n- *Effects* - Fixed mirror and random mirror X/Y not actually flipping the effect\n\n### Version 2.3.4\n- *Animations* - Fixed `.rotateTowards()` throwing update error\n\n### Version 2.3.3\n- *Effects* - Fixed code to remove deprecation warning when both `.mask()` and `.persist()` was used\n- *Effects* - Fixed rare issue where the temporary template layer would not be initialized and would cause Sequencer to error and stop working \n- *Effects* - Fixed Sequencer Effects Player deprecation warnings\n- *Effects* - Added warning to console for players trying to play effects when they do not have permission to do so\n  - I realize warnings is not desired in most cases, but this has been an ongoing point of support, so to preserve my own sanity, this is just how it is now.\n\n### Version 2.3.2 (Both Foundry V9 and V10)\n- *Animation* - Fixed `.rotateTowards()` throwing errors\n- *Effects* - Fixed `.loopProperty()` with property `scale` would incorrectly scale effect\n\n### Version 2.3.1\n- *Effects* - Fixed `.from()` and `.mask()` throwing errors about missing files\n\n### Version 2.3.0 (V10 only)\n- *Sequencer* - Added Spanish localization (thanks to Git-GoR!)\n- *Effects* - Re-enabled `scale.x` and `scale.y` on `.animateProperty()` and `.loopProperty()` \n- *Effects* - Deprecated `.belowTokens()` and `.belowTiles()` in favor of `.elevation()` due to fundamental changes in Foundry\'s V10 update. These methods will be removed in a future update\n- *Effects* - Fully removed deprecated methods: `.addPostOverride()`, `.reachTowards()`, `.gridSize()`, `.startPoint()`, `.endPoint()`\n\n### Version 2.2.4\n- *Effects* - Fixed `.rotateTowards()`\'s `rotationOffset` parameter not working properly\n- \n### Version 2.2.3\n- Re-released 2.2.2, git pulled a fast one and the changes in that version never got out\n\n### Version 2.2.2\n- *Animation* - Fixed `.rotateTowards()` throwing errors (again)\n- *Effects* - Fixed `.atLocation()` with `randomOffset: true` would cause weird effects with `.stretchTo()`\n- *Effects* - Fixed error that would sometimes pop up during startup if the template layer has not been initialized\n\n### Version 2.2.1\n- *Animation* - Fixed `.rotateTowards()` throwing errors\n- *Effects* - Fixed `.loopProperty()` with property `scale` would incorrectly scale effect\n- \n### Version 2.2.0 (last V9 update, except maybe some bug fixes)\n**Additions:**\n- *Effects* - Added `.tieToDocuments()` which allows you to tie an effect to Foundry documents - such as Active Effects or Tokens. When these are deleted, the effect is automatically ended.\n- *Effects* - Added secondary `offset` parameter to `.atLocation()`, `.attachTo()`, `.rotateTowards()`, `.from()`, and `.stretchTo()` which can be used to offset the location of the source or target\n  - Note: This means that `.offset()` is becoming deprecated - it will remain for a few versions with a silent warning\n- *Effects* - Added `.spriteScale()` which can be used to scale the sprite of the effect separately from `.scale()`\n\n**Tweaks:**\n- *Animations* - Renamed `.rotateTowards()`\'s secondary parameter\'s `offset` property to be more accurately named `rotationOffset`\n- *Effects* - Upgraded `.animateProperty()` and `.loopProperty()` to be additive, which means two animations can now target the same property on the same effect\n- *Effects* - Renamed `.rotateTowards()`\'s secondary parameter\'s `offset` property to be more accurately named `rotationOffset`\n\n**Fixes:**\n- *Sequencer* - Fixed issue where copying the file path of a Database entry that has multiple ranges would always copy the file path for the middle-most range\n- *Sequencer* - Rewrote the database traversal method to be more robust and carry metadata down to lower children\n- *Effects* - Fixed long-running issue with lag and performance impact from Sequencer on some computers - the cause was the `.screenSpace()` layers, which have now been reworked. A setting to disable the Above UI Screenspace effects layer has been added to further support impacted individuals.\n- *Effects* - Fixed `randomOffset` secondary option on `.attachTo()` not working\n- *Effects* - Fixed `.scaleToObject()` and `.scale()` not playing nicely together\n- *Effects* - Fixed loop markers not properly working\n\n### Version 2.1.14\n- *Sequencer* - Removed PIXI fix for Foundry .webm tiles to apply premultiplied alpha, native Foundry behavior is now active\n- *Effects* - Fixed fatal canvas errors when `persistTokenPrototype` was active and masked to the target of the effect\n- *Effects* - Added warning when using `persistTokenPrototype` with masks _other_ than masks applied to the source target\n- *Effects* - Added support for `.file()` to override `.from()`\'s file while keeping the other settings intact\n- *Effects* - Improved robustness of placeable object document retrieval\n\n### Version 2.1.13\n- *Sequencer* - Removed stray `console.log`\n- *Sequencer* - Fixed Ouija board macro error, slightly improved effect positioning\n- *Effects* - Added `.spriteRotation()` which allows you set the rotation of the effect in place - this differs from `.rotate()` in the sense that this is applied only locally to the sprite, after any other offsets or transformations\n\n### Version 2.1.12\n- *Effects* - Fixed `.strechTo()` with parameter `attachTo: true` resulting in no stretching\n\n### Version 2.1.11\n- *Effects* - Fixed effects attached to temporary templates causing errors in core Foundry code\n- *Effects* - Effects attached to temporary objects (like warpgate cursors) are now propagated to other clients (call `.locally()` to make it only appear for the creator)\n\n### Version 2.1.10\n- *Sequencer* - Fixed Sequencer Effect Manager not accepting Foundry documents as object references when filtering for effects\n- *Sequencer* - Fixed Sequencer Effect Player showing private database entries\n- *Effects* - Fixed attached effects not showing up for non-GMs\n\n### Version 2.1.9 \n- *Sequencer* - Unlocked keybinds so that users may configure their own keybinds for Sequencer\'s layers\n- *Sequencer* - Added support for `minDelay` and `maxDelay` on `.waitUntilFinished()`, so you can now have a random wait delay between sections\n- *Effects* - Added `fromEnd` to `.animateProperty()` which causes the animation to play at the end of the effect\'s duration\n- *Effects* - Added `gridUnits` support to `.animateProperty()` and `.loopProperty()` when using `position.x` or `position.y` as the animated target\n- *Effects* - Added `gridUnits` as a secondary option to both `.offset()` and `.spriteOffset()`\n- *Effects* - Fixed persistent prototype token effects not applying on every instance of its token\n- *Effects* - Fixed `.playbackRate()` only adjusting effect duration, and not the actual playback rate\n\n### Version 2.1.8\n- *Sequencer* - Added setting to allow clients to disable Sequencer\'s PIXI alpha fix for base textures\n\n### Version 2.1.7\n- *Effects* - Fixed string normalization\n\n### Version 2.1.6\n- *Sequencer* - Updated compendium of Sequencer macro samples\n- *Effects* - Fixed finding effects by name with accents in them silently failing\n- *Effects* - Fixed `.attachTo()` not following the target\'s rotation\n\n### Version 2.1.5\n- *Effects* - Fixed switching scenes would sometimes break effects\n\n### Version 2.1.4\n- *Effects* - Fixed issue with hovering over persistent effects attached to objects sometimes causing Foundry\'s layers to crash\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` applying grid-size ratio on animated scales\n\n### Version 2.1.3\n- *Effects* - Fixed attached effects disappearing\n- *Effects* - Fixed `.randomOffset()` not randomly offsetting effects (still deprecated, see 2.1.0 release notes)\n\n### Version 2.1.2 Hotfix\n- *Effects* - Fixed effects sometimes not becoming visible\n\n### Version 2.1.1\n- *Sequencer* - Fixed canvas layer bug that caused performance issues for some users\n- *Sequencer* - Fixed missing default template causing some effects to not play properly\n- Added `.aboveLighting()`, which causes the effect to always be visible, regardless of sight, fog of war, or walls.\n  - Note that if an effect is attached to an object via `.attachTo()`, you may need to disable `bindVisibilty` if the object is hidden\n- *Effects* - Fixed `.from()`, it now uses the object\'s image when the effect plays, rather than when the Sequence was first created\n- *Effects* - Fixed highlight box when hovering over effects in the Effect Manager UI not taking effect rotation into account\n- *Effects* - Fixed effects sometimes not fully following its attached object \n\n### Version 2.1.0\n**Additions:**\n- *Sequencer* - Added support for the Effect Manager to be able to manipulate effects on other scenes, which means you can now end effects on other scenes than the one you\'re on via the API\n- *Sequencer* - Added secondary options parameter to `Sequencer.Database.getEntry`, where `softFail: true` will cause the method to not throw errors when an entry was not found. \n- *Sequencer* - Added `Sequencer.EffectManager.getEffectPositionByName` which will allow you retrieve an effect\'s position by name, in real time\n- *Effects* - Added `.mask()`, which can now clip-mask effects to only show them within tokens, templates, tiles, or drawings - this supports the [Walled Templates module](https://foundryvtt.com/packages/walledtemplates)!\n- *Effects* - Added a secondary options parameter to `.persist()`, which can accept `persistTokenPrototype: true` to persist the effect on the token\'s prototype data, useful for active effect-based VFX\n- *Effects* - Added vision masking - now token vision affects how much of an effect they can see\n- *Effects* - Added `.xray()` which can be used to turn off vision masking on individual effects \n- *Effects* - Added support in the Sequencer Database for internal effect loops, see the [documentation for more information](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/How-to:-Sequencer-Database#Internal-loops)\n- *Effects* - Added `edge` option to `.attachTo()`, which can be set to `inner`, `on`, or `outer` to align the effect on the attached object\'s edge when used with `align` \n- *Effects* - Added `.screenSpaceAboveUI()`, which causes `.screenSpace()` effects to play above _all_ UI elements in Foundry (use with caution)\n- *Effects* - Added options parameter to `.scaleToObject()`, which can be passed `uniform: true` to cause the scaling to always be uniform (it picks the largest dimension of the object)\n- *Macros* - Added the ability to reference compendiums when creating `.macro()`s in sequences\n\n**Fixes:**\n- *Sequencer* - As `SequencerDatabase` was deprecated in 2.0.0 in favor of `Sequencer.Database`, the former has now been removed\n- *Sequencer* - Adjusted Database methods with more validation so that searching with empty strings won\'t throw hard to read errors\n- *Sequencer* - Removed bogus Effect Player warning about permissions that no longer reflects what Sequencer does\n- *Sequencer* - Fixed some issues when copying and playing effects through the Database Viewer\n- *Effects* - Fixed effects being invisible to players if the effect was created out of sight (thanks @dev7355608!)\n- *Effects* - Fixed `align` on `.attachTo()` not working as expected when an effect\'s scale or size was set\n- *Effects* - Fixed blur filter not taking given properties into account\n- *Effects* - The following functions now have loud deprecation warnings:\n    - `.addPostOverride()`\n    - `.reachTowards()`\n    - `.gridSize()`\n    - `.startPoint()`\n    - `.endPoint()`\n- *Effects* - Deprecated `.randomOffset()` in favor of adding `randomOffset` as a secondary argument on `.atLocation()`, `.stretchTo()`, `.rotateTowards()`, and `.attachTo()`\n\n### Version 2.0.16\n- *Sequencer* - Added japanese localization (thanks to the illustrious Brother Sharp#6921!)\n\n### Version 2.0.15\n- *Effects* - Fixed errors relating to tiling textures\n- *Effects* - Fixed drifting effect animations when FPS dropped\n- *Effects* - Improved performance relating to always updating the position of the sprites, even when attached objects weren\'t moving\n- *Effects* - Hopefully fixed some memory leaks relating to assets not being deleted properly \n- *Effects* - Fixed attached effects\' rotations being funky\n- *Effects* - Fixed effects attached to temporary objects (such as the warpgate crosshair) would not be properly removed from the effect manager \n\n### Version 2.0.14\n- *Database* - Fixed the database sometimes getting confused by paths that have `ft` in them without being range-finding\n- *Effects* - Fixed double-attached effects sometimes resulting in the sprite freezing (or in rare cases, browser crashes), though this type of effect is still expensive!\n- *Effects* - Fixed `rotateTowards` with `attachTo` enabled not respecting actual target position end position\n- *Effects* - Fixed `.rotation()` with `.loopProperty()` on the `spriteContainer`\'s `rotation` causing rotational strangeness\n- *Effects* - Fixed `.repeat()` with partial database path not picking random images for each repetition\n- *Sounds* - Fixed error when playing sounds\n\n### Version 2.0.13\n- *Effects* - Fixed flipped tiles and measurable templates (with negative width or height) causing effects to not play on the correct location\n- *Effects* - Fixed `.rotateTowards()` not following the rotation of attached objects\n- *Sounds* - Fixed `.fadeInAudio()` and `.fadeOutAudio()` being broken\n\n### Version 2.0.12\n- *Effects* - Fixed effects with only `.text()` and no `.file()` not working properly\n- *Effects* - Fixed `.text()` combined with `.screenSpace()` would not be scaled properly \n\n### Version 2.0.11\n- *Effects* - Fixed `.extraEndDuration()` not working properly when `.waitUntilFinished()` was provided a negative number\n- *Effects* - Fixed `.noLoop()` effects sometimes not reaching their proper end time when `.endTime()`, `.endTimePerc()` or `.timeRange()` was used\n\n### Version 2.0.10\n- *Sequencer* - Fixed error in `Database.validateEntries()`\n- *Sequencer* - Updated `pre` hooks to cancel the action if any function return `false`\n- *Sequencer* - Updated Rope and Chain macros in compendium\n- *Effects* - Added `.tilingTexture()` - this will replace the `tiling` parameter on `.stretchTo()` in the long term\n- *Effects* - Deleting the object an effect is attached to will now actually trigger the effect\'s `.fadeOut()`, `.scaleOut()` etc\n\n### Version 2.0.9 Hotfix\n- *Effects* - Fixed nasty issue with rotation on effects\n- *Effects* - Made all effects have an assumed internal grid size of 100\n\n### Version 2.0.8\n- *Sequencer* - Added rope and chain sample macros to the Sequencer macro compendium\n- *Sequencer* - Removed non-functional Chain Lightning macro from macro collection\n- *Sequencer* - Added warnings to Preloader when it is given invalid parameters\n- *Effects* - Added `tiling` as an option to `.stretchTo()`\n- *Effects* - Fixed `.randomRotation()` not working with `.attachTo()`\n- *Effects* - Fixed issue with effects with a defined width and height were still being scaled by the scene-effect grid size difference\n\n### Version 2.0.7\n- *Sequencer* - Fixed broken macro in the Ouija example\n- *Animations* - Fixed various animation methods not resulting accurate movement or teleportation\n- *Effects* - Fixed `.randomRotation()` not working\n\n### Version 2.0.6\n- *Sequencer* - Improved intelligence of webm cache \n- *Effects* - Added `.private()` method to hide effects in the effect manager - DO NOT USE IF YOU DO NOT KNOW WHAT YOU ARE DOING\n- *Effects* - Fixed issue where ending effects by name would cause other effects without a name to get _ended\n- *Effects* - Fixed issue where filtering for effects with the Effect Manager would cause it to split the given name on each whitespace \n\n### Version 2.0.5 Hotfix Hotfix\n- *Effects* - Hotfix for the hotfix. It\'s just hotfixes all the way down, man.\n\n### Version 2.0.4 Hotfix\n- *Effects* - Fixed some modules causing Sequencer to complain \n- *Effects* - Actually fixed copying objects would not copy the effects on it\n\n### Version 2.0.3\n- *Effects* - Fixed some issues regarding file paths on ForgeVTT, though they did most of the legwork on their side\n- *Effects* - Fixed issue where `.scaleToObject()` would fail to scale to the object properly\n- *Effects* - Fixed Effect Manager not finding effects to end when it was only provided an object\n- *Effects* - Fixed copying tokens and other objects with ongoing effects would not properly play it for everyone\n- *Effects* - Fixed screenspace effects would sometimes not play properly \n\n### Version 2.0.2\n- *Sequencer* - Fixed the preloader throwing error about recursion\n- *Effects* - Fixed rotational animations not working properly\n- *Effects* - Fixed the update interface not allowing attribute paths like core Foundry does\n- *Effects* - Fixed effects lingering for other users after their attached objects were deleted\n- *Effects* - Fixed issues with using `.from()` on tiles\n\n### Version 2.0.1\n- *Sequencer* - Fixed preloader throwing error about missing functions\n- *Sequencer* - Fixed Effect Manager complaining if trying to filter effects by name while some effects didn\'t have a valid name\n- *Effects* - Added the ability to use Effects as elements to play other Effects on\n- *Effects* - Added cache-busting for when the Sequencer .webm cache would get larger than 1GB\n- *Effects* - Fixed persistent effects attached to WarpGate crosshairs throwing errors\n- *Effects* - Fixed `cacheLocation` throwing errors regarding missing function\n- *Effects* - Fixed `endedSequencerEffect` being called too late for users to be able to use its parameters\n- *Effects* - Fixed error when deleting the object an effect was attached to through both `.attachTo()` and `.stretchTo()` \n\n### Version 2.0.0\n**Breaking changes:**\n- *Sequencer* - Sequencer now requires the `socketlib` module\n- *Sequencer* - All existing persistent effects created using 1.X.X Sequencer will be updated to the 2.0.0 system, but it\'s nigh impossible to catch all the edge cases, so please report any strangeness!\n- *Effects* - Removed support for audio methods on effects (hardly used and caused a whole host of problems)\n- *Effects* - Deprecated `.reachTowards()` and renamed it to `.stretchTo()`. The deprecated method will be removed in 2.1.0.\n- *Effects* - Deprecated `.addPostOverride()`, please use `.addOverride()` instead. The deprecated method will be removed in 2.1.0.\n- *Effects* - Deprecated `.gridSize()`, `.startPoint()`, and `.endPoint()` in favor for `.template({ gridSize, startPoint, endPoint })`. The deprecated methods will be removed in 2.1.0.\n- *Effects* - Removed deprecated method `.JB2A()`\n\n**Tweaks:**\n- *Sounds & Effects* - Tweaked `.forUsers()` to also accept player names (case-sensitive) instead of just IDs\n- *Effects* - Tweaked attached effects\' layer handling - effects can now be attached but exist below _all_ Tokens, for example\n- *Effects* - Tweaked `.filter()` to allow being called multiple times, which now layers the filters in the order they were created\n\n**Additions:**\n- *Sequencer* - Added selection tool to the Effect Layer - select, move, reattach, and delete effects on the canvas!\n- *Sequencer* - Added `updateEffects` to the Effect Manager\'s API\n- *Sequencer* - Added `updateSequencerEffect` hook\n- *Sequencer* - Added support to `.macro()`s to be able to supply additional arguments (requires the Advanced Macros module)\n- *Sequencer* - Added wildcard support when filtering for named effects in the Effect Manager\'s API (such as `getEffects`, `endEffects`, etc)\n- *Sequencer* - Added support to filter for `source` and `target` in the Effect Manager\'s API (such as `getEffects`, `endEffects`, etc)\n- *Sequencer* - Added "private" boolean flag to `Sequencer.Database.registerEntries()` which causes the entries to not be visible in the Database Viewer and Effect Player\n- *Sequencer* - Added Setting to be able to hide Sequencer\'s tools on the toolbar\n- *Sequencer* - Added checkbox to Database Viewer to show all ranges of a single effect, which is by default set to false\n- *Sequencer* - Added `Sequencer.Helpers`, a library of useful methods - check them out on the wiki: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Helper-Functions\n- *Animations* - Added `.hide()` and `.show()` to hide or show the animated object\n- *Effects* - Added more secondary options parameters to `.stretchTo()`, which accepts:\n    - At long last, this can now `attachTo` (boolean) to the given target. Combine with `.attachTo()` to link an effect between two tokens!\n    - `onlyX` (boolean), if set to true, this will cause stretchTo to only stretch the X axis of the sprite towards the target (keeping Y at 1.0, or your given scale)\n- *Effects* - Added support to `.file()` for an object map containing the feet range and filepath key-value pair. Check out the file wiki entry to understand what this means: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#file\n- *Effects* - Added secondary options parameter to `.attachTo()`, which accepts:\n    - `align` (string, default "center"), accepts `top-left`, `center`, `left`, `bottom-right`, etc. Read the wiki: https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#attach-to\n    - `bindVisibility` (boolean, default true), if set to false, the effect will not be hidden if the attached object is hidden\n    - `bindAlpha` (boolean, default true), if set to false, the effect\'s alpha will be independent of the attached object\n    - `followRotation` (boolean, default true), if set to false, the effect will not follow the rotation of the attached object\n- *Effects* - Added options to `.size()` which allows for `{ gridUnits: true }` - this makes the size given to the method scale to the scene\'s grid, instead of setting the exact width and height\n- *Effects* - Added the same option as above to `.animateProperty()` and `.loopProperty()`, which only works if you animate the `width` or `height`\n\n**Fixes:**\n- *Sequencer* - Fixed module permissions settings being slightly wonky\n- *Sequencer* - Fixed number inputs not throwing errors on `NaN` values\n- *Animations* - Fixed users not being able to teleport or move tokens they do not own\n- *Animations* - Fixed `.moveSpeed()` not affecting the duration of the animation\n- *Animations* - Fixed `.delay()` not being respected\n- *Effects* - Fixed memory leak where effect textures were not properly destroyed\n- *Effects* - Adjusted `.origin()` to be able to accept a `Document` object to infer the UUID from\n- *Effects* - Fixed `.from()` not taking mirror x/y into account on tokens\n- *Effects* - Tokens with effects attached to them can now be _ended by anyone who can update the token (owners of the token, GMs, etc)\n- *Effects* - Increased default resolution of `.text()` to 10 (should increase quality)\n- *Effects* - Fixed `.screenSpace()` effects still being affected by grid size normalization\n\n### Version 1.3.5\n- *Sequencer* - Fixed Permissions being broken in the latest Foundry update, and moved Sequencer specific permissions into module settings instead\n- *Effects* - <img src="images/siren.gif" width="18px" height="18px" alt="Siren"> Breaking change <img src="images/siren.gif" width="18px" height="18px" alt="Siren"> - Fixed issue where setting the `.size()` of an effect and then scaling it would result in unexpected behavior. As a result, `.scaleIn()` and `.scaleOut()` now function as _multipliers_ to the existing scale on the effect\n\n### Version 1.3.4\n- *Sequencer* - Added popup warning the first time a GM opens the Effect Player to tell them about the custom Permissions\n- *Sequencer* - Added button to open Foundry\'s Permissions directly from the Effect Player how-to page\n\n### Version 1.3.3\n- *Sounds* - Fixed `.fadeInAudio()` and `.fadeOutAudio()` being broken\n\n### Version 1.3.2\n- *Sequencer* - Minor backend updates to flag handling\n- *Effects* - Fixed static images failing to load in v9\n- *Effects* - Fixed effects attached to tokens that were copied to another scene would not play\n- *Effects* - Suppressed recent deprecation warnings until the next release\n- *Effects* - Reverted some code that would break persisting effects\n\n### Version 1.3.1\n- *Sequencer* - Fixed minor spelling issue\n\n### Version 1.3.0\n- *Sequencer* - Sequencer is now v9 ready!\n- *Sequencer* - Improved search accuracy functionality on the Effect Player\n- *Animations* - Added `relativeToCenter` option to `.teleportTo()` and `.moveTowards()`, which will offset the location relative to the object\'s center, effectively centering the animated object on the location - use with `.snapToGrid()` for reliable snapping!\n- *Animations* - Fixed `.fadeOut()`, `.fadeOutAudio()`, and `.rotateOut()` not correctly setting the duration of the animation, causing `.waitUntilFinished()` to not actually wait for the animation to finish\n- *Effects* - Deprecated `.JB2A()` as the recommended workflow is now to use Database paths\n\n### Version 1.2.12 Hotfix\n- *Effects* - Fixed `.animateProperty()` and `.loopProperty()` applying animations that were already complete\n\n### Version 1.2.11\n- *Sequencer* - Added French localization (thanks to Elfenduil)\n- *Sequencer* - Fixed error with `Sequencer.Database.validateEntries()` throwing an error\n- *Effects* - Improved handling of the `Glow` filter when used with `.fadeIn()` and `.fadeOut()`\n    - Due to this change, it is now recommended that if you use `.animateProperty()` or `.loopProperty()` on the `sprite`\'s `alpha` property to instead use it on the `alphaFilter`\'s `alpha` property\n- *Macros* - Updated the Misty Step macro to be more generic and not specifically _require_ MidiQOL\n\n### Version 1.2.10\n- *Sequencer* - Fixed misspelled permission which caused players to not be able to see the toolbar buttons\n- *Sequencer* - Added `End All Effects` button to the Effect Manager\n\n### Version 1.2.9\n- *Sequencer* - Removed error from the Effect Manager when no effects were removed\n- *Effects* - Fixed `.randomOffset()` on tiles would result in pretty crazy behavior\n\n### Version 1.2.8\n- *Sequencer* - Added sidebar tool permissions, you can now hide them from players\n- *Effects* - Added `.origin()` which provides a way to tag an effect with a string you can then search for with the Effect Manager\n- *Effects* - Added support for using both `.reachTowards()` and `.scale()` and will now scale the effect whilst keeping the range finding correct\n\n### Version 1.2.7 Hotfix\n- *Sounds* - ACTUALLY Fixed sounds being broken\n\n### Version 1.2.6 Hotfix\n- *Sounds* - Fixed sounds being broken\n\n### Version 1.2.5\n- *Sequencer* - Made hooks `createSequencerEffect` and `endedSequencerEffect` instead supply the CanvasEffect itself, rather than its data\n- *Effects* - Fixed bug that caused effects to linger for other clients after having been _ended\n\n### Version 1.2.4\n- *Sequencer* - Fixed error caused by preload option on Sequencer Effect Player\n- *Sequencer* - Fixed error when pressing ESC in the Sequencer Layer\n- *Sequencer* - Fixed permissions not being loaded properly\n- *Effects & Animations* - Added `.tint()` which allows you to tint effects, tokens, and tiles\n\n### Version 1.2.3\n- *Sequencer* - Added granular permissions - check it out in Configure Settings -> Open Permissions Configuration\n- *Sequencer* - Added localization support\n- *Sequencer* - Fixed the Sequencer Player throwing an error if the layer was active while switching scene\n\n### Version 1.2.2\n- *Sequencer* - Added Stretch or Move checkbox to Sequencer Player\n- *Sequencer* - Added Move Speed input to Sequencer Player\n\n### Version 1.2.1\n- *Sequencer* - Fixed file picker being broken\n\n### Version 1.2.0\n- *Sequencer* - Added the [Sequencer Effect Player](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Effect-Player)!\n- *Sequencer* - Refactored the Sequencer Animation Engine, which fixes some animation funkiness\n- *Sequencer* - Fixed the Sequencer Preloader sometimes not succeeding and getting stuck\n- *Animations* - Removed the `.snapToSquare()` method, use `.snapToGrid()` instead\n- *Effects* - Added `.spriteOffset()` which allows you to add an offset to the effect\'s sprite\'s location\n- *Effects* - Added optional boolean parameters to `.randomizeMirrorX()` and `.randomizeMirrorY()`\n\n### Version 1.1.5\n- *Effects* - Fixed bug that caused all effects to stay transparent after playing an effect for specific user\n- *Effects* - Fixed bug with `.missed()` and `.reachTowards()` failing to play any effect\n- *Effects* - Fixed all effects sharing users\n\n### Version 1.1.4\n- *Sequencer* - Fixed error in the Sequencer Preloader when pre-loading files from Database paths\n- *Effects* - Fixed bug that caused persistent effects to end when a client connected after it was created\n\n### Version 1.1.3\n- *Sequencer* - Added `sequencerEffectManagerReady` hook which is called when every effect has been set up on the scene that\'s currently loaded\n- *Sequencer* - Added `validateEntries` method to the Sequencer Database, which is helpful for module creators to validate their asset collections to the database\n- *Sequencer* - Added `getPathsUnder` method to the Sequencer Database, which retrieves valid collections under a certain database path\n- *Sequencer* - Minor speed improvements to how the database retrieves files\n- *Sequencer* - Removed the requirement for a user to be trusted to use the Database Viewer\n- *Sequencer* - Fixed `Sequencer.EffectManager.endEffects` not throwing error when incorrect or incomplete parameters were given, and instead _ended all effects (whoops)\n- *Effects* - Made user-created effects that were made to be displayed only for other users also show up for GMs, though saturated and with 50% opacity. This is to ensure no player-to-player abuse would occur\n- *Effects* - Fixed scaled tokens causing effects to not play on the correct location\n- *Effects* - Fixed temporary effects attached to warpgate cursors no longer stays around for longer than they should\n\n### Version 1.1.2\n- *Sequencer* - Removed compatibility warning regarding Perfect Vision as the module was updated to support Sequencer\n- *Sequencer* - Added warning when trying to register database collections under a module name containing dots (as it uses dot-notated paths)\n\n### Version 1.1.1\n- *Sequencer* - Removed Hyperspace sample from compendiums, as it was getting too big\n- *Sequencer* - Added compatibility warning if user has Perfect Vision installed\n- *Sequencer* - Added warning for Hyperspace assets that are going to be removed in a future update, and instead put into a separate module:\n    - https://foundryvtt.com/packages/nrsap by Nachtrose#9287 on Discord\n- *Sequencer* - Prepared Sequencer for v9, it _should_ be compatible to test\n- *Effects* - Added `.text()` which allows you to create text snippets on the canvas\n- *Effects* - Added `.from()` which creates an effect based on the given object, effectively copying the object as an effect\n- *Effects* - Added support for `.attachTo()` for temporary measured templates before they have been created, for use with WarpGate\n- *Effects* - Removed warning when `.attachTo()` and `.atLocation()` are used on the same effect - `.attachTo()` always wins out\n\n### Version 1.1.0\n- *Sequencer* - Added hooks:\n    - `createSequencerSequence`\n    - `endedSequencerSequence`\n    - Effects:\n        - `preCreateSequencerEffect` - Provides the effect\'s data\n        - `createSequencerEffect` - Provides the effect\'s data\n        - `endedSequencerEffect` - Provides the effect\'s data\n    - Sounds:\n        - `preCreateSequencerSound` - Provides the sound\'s data\n        - `createSequencerSound` - Provides the sound\'s data\n        - `endedSequencerSound` - Provides the sound\'s data\n- *Sequencer* - Hook for `sequencer.ready` is becoming deprecated in favor for `sequencerReady`\n- *Sequencer* - Vastly improved the speed of the Database Viewer (thanks to Naito#1235 on discord!)\n- *Effects* - Added screen space layer for UI effects!\n    - Added `.screenSpace()` which causes the effect to be played on the screen rather than in the game canvas\n    - Added `.screenSpaceAnchor()` which causes the effect to anchor itself to a side on the screen space layer\n    - Added `.screenSpacePosition()`, pretty straightforward what this does, sets the position of the effect in screen space\n    - Added `.screenSpaceScale()` which can help you stretch and fit the effect to the screen, even on different screen sizes\n- *Effects* - Added `.spriteAnchor()` which controls the effect\'s core anchor point within its container (defaults to 0.5 on X and Y)\n- *Effects* - Added support on `.atLocation()` for a secondary options object, which currently accepts:\n    - `cacheLocation: boolean` - causes the given object\'s location to be cached immediately rather than retrieved during the Sequence\'s runtime\n- *Effects* - Added `.snapToGrid()` which snaps the effect to the given location\'s closest grid section\n- *Effects* - Added `.scaleToObject()` which scales the effect to the bounds of the object, with an optional scalar on top of that\n- *Effects* - Added `.zeroSpriteRotation()` which causes an effect\'s sprite to remain un-rotated when its container rotates in animations\n- *Effects* - Tweaked `.size()` to also accept only one of height or width, the other will be automatically resized to keep the effect\'s ratio\n- *Effects* - Fixed `.persist()`ing effects with an end duration that doesn\'t loop would not properly stop at its end duration\n- *Effects* - Improved look of transparent .webm files\n- *Animations* - Renamed `.snapToSquare()` method to `.snapToGrid()` - the old method will be fully removed in 1.2.0\n- *Foundry* - Added libwrapper patch for .webm transparency not playing correctly in Foundry\n- *Sequencer* - Updated some sample macros\n- *Sequencer* - The `SequencerDatabase` accessor has been removed, and is now accessible with `Sequencer.Database`\n- *Sequencer* - The `SequencerDatabaseViewer` accessor has been removed, and is now accessible with `Sequencer.DatabaseViewer`\n- *Sequencer* - The `SequencerPreloader` accessor is deprecated, and is now accessible with `Sequencer.Preloader`\n\n### Version 1.0.3\n- *Sequencer* - Added animated space backgrounds (thanks to Keirsti on the Foundry VTT discord server)\n- *Sequencer* - Fixed Hyperspace macro placing the hyperspace intro and out incorrectly\n\n### Version 1.0.2 Hotfix\n- *Sequencer* - Changed Effect Viewer icon to something less controversial\n\n### Version 1.0.1\n- *Sequencer* - Renamed `.sequence()` method on Sequences to `.addSequence()` due to internal code conflicts\n- *Effects* - Added `.filter()` - was technically added in 1.0.0, but was left undocumented\n- *Effects* - Fixed `.size()` being scaled to account for grid size differences - it should now set the exact width/height in pixels\n\n### Version 1.0.0\n- *Sequencer* - Added recent Sequencer tools to the menu in the top left - you can disable these in the module settings\n- *Sequencer* - Added `Sequencer.EffectManager` to manage persistent effects - [read more here](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Effect-Manager)\n- *Sequencer* - Added the ability for you to implement your own Sequencer functions - [read more here](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Section-Manager)\n- *Sequencer* - `SequencerDatabase` is deprecated, and is now accessible with `Sequencer.Database` - 1.1.0 will remove the old path entirely\n- *Sequencer* - `SequencerDatabaseViewer` is deprecated, and is now accessible with `Sequencer.DatabaseViewer` - 1.1.0 will remove the old path entirely\n- *Sequencer* - `SequencerPreloader` is deprecated, and is now accessible with `Sequencer.Preloader` - 1.1.0 will remove the old path entirely\n- *Sequencer* - Fixed Documents sometimes not properly resolving to their PlaceableObject\n- *Sequencer* - Fixed settings not being client side - whoops\n- *Effects* - Added `.attachTo()` which causes the effect to be attached to a given object\n- *Effects* - Added `.persist()` which causes the effect to become permanent on the canvas until removed\n- *Effects* - Added `.extraEndDuration()` which allows `.persist()`-ed effects to stick around for a bit longer instead of end immediately\n- *Effects* - Tweaked `.missed()` to hit an area only facing the origin of the effect, if it had an origin and target\n- *Effects & Sounds* - Added support for wildcard paths, like `modules/jb2a_patreon/Library/1st_Level/Bardic_Inspiration/BardicInspiration_01_*_400x400.webm`\n\n### Version 0.6.12\n- *Sequencer* - Fixed an issue where the preloader would sometimes fail to preload\n- *Effects* - Fixed effects not playing on hex grids\n\n### Version 0.6.11 Hotfix\n- *Effects* - Fixed range-finding effects sometimes not picking the right distance\n\n### Version 0.6.10\n- *Sequencer* - Improved the search speed of the Database Viewer\n- *Sequencer* - Fixed previewing static images through the Database Viewer\n- *Sequencer* - Fixed bugs that caused the Database to sometimes fail registering new files\n- *Effects* - Fixed issue where `.delay()` would incorrectly contribute towards the effect\'s `.waitUntilFinished()` duration\n\n### Version 0.6.9 Hotfix\n- *Sequencer* - Fixed the database sometimes failing to get the correct file\n\n### Version 0.6.8 Hotfix\n- *Sequencer* - Fixed database not correctly finding range-based effects\n\n### Version 0.6.7\n- *Effects & Sounds* - Fixed `.locally()` and `.forUsers()` sometimes erroneously remembering users between different effects & sounds\n- *Effects* - Fixed `.scaleIn()` would not take a custom `.size()` into account\n- *Effects* - Fixed static images sometimes not playing due to duration being set to 0ms\n\n### Version 0.6.6\n- *Sequencer* - Added support for preloading files based on database paths\n- *Effects & Sounds* - Added `.locally()` and `.forUsers()`, which allow you to control which users will have the effect and sounds played for them\n- *Effects* - Improved positional handling of Tiles and TileDocuments\n\n### Version 0.6.5\n- *Sequencer* - Updated Sequencer Database Viewer layout to be more user friendly\n- *Effects* - Fixed bug with templates and raw positions not being respected\n\n### Version 0.6.4\n- *Sequencer* - Added Sequencer Database Viewer to the module settings, it allows you to preview effects and copy any files registered with Sequencer by other modules\n- *Sequencer* - Added client-side settings for users to be able to turn off effects and sounds being played locally\n- *Effects & Sounds* - Fixed effects and sounds playing on scenes they did not originate from\n- *Effects* - Added `.size()`, which sets the width and height of the effect in pixels\n- *Effects* - Added `rotate` option to `.moveTowards()`, which defaults to true. If set to false, the effect will not rotate towards the end location.\n- *Effects* - Fixed duration of effects using `.moveTowards()` not being calculated correctly\n- *Effects* - Fixed static image effects\' durations also not being calculated correctly\n\n### Version 0.6.3 Hotfix\n- *Effects* - Fixed effects failing to play static images\n\n### Version 0.6.2\n- *Sequencer* - Further small fixes to how the database registers files\n\n### Version 0.6.1\n- *Sequencer* - Removed the need for `.playIf()` to have to be given a function or a boolean\n- *Sequencer* - Fixed issues with the database when files were listed in arrays\n\n### Version 0.6.0\n**Breaking:**\n- *Effects* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.JB2A()` has been altered to set the gridsize to 200, as it was previously set to 100 - this will halve the size all JB2A on-the-spot effects, sorry! <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n**Additions:**\n- *Sequencer* - Added `SequencerPreloader` - you can now preload images, effects, and sounds for your players, read more on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Preloader)\n- *Sequencer* - Added support for templates and time ranges in database structure, more info on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/How-to:-Sequencer-Database)\n- *Effects* - Added support for static images such as webp, pngs, jpgs, etc\n- *Effects & Sounds* - Added `.startTime()`, `.startTimePerc()`, `.endTime()`, `.endTimePerc()`, and `.timeRange()`, more info on the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#start-time)\n- *Sounds* - Added `.addOverride()`, `.baseFolder()`, and `.setMustache()` support to sounds\n\n**Updates & Fixes:**\n- *Sequencer* - `.play()` now reliably resolves its promise at the end of the entire sequence\n- *Effects* - *Vastly* improved effect caching and loading speed of effects and sounds\n- *Effects* - Improved object position handling slightly when providing non-foundry class objects to `.atLocation()` and alike\n- *Effects* - Generally improved compatibility with `TokenDocument` and Foundry D&D 5E documents when getting their positions\n\n### Version 0.5.9\n- *Effects* - Added `.addPostOverride()` as an alternative to `.addOverride()`, which executes at the end of the effect data sanitation\n- *Effects* - Fixed `.gridSize()`, `.startPoint()`, and `.endPoint()` not being respected and being overridden by internal logic\n\n### Version 0.5.8 Hotfix\n- *Macros* - Fixed macros throwing error when playing sequence\n\n### Version 0.5.7\n- *Effects* - Fixed templates sometimes not being found\n- *Effects* - Re-added backwards compatibility with old macros that still use `data.distance` in overrides\n\n### Version 0.5.6\n- *Sequencer* - Added alpha version of the Sequencer Database Viewer\n- *Effects* - Added `.randomOffset()` which can add a random offset similar to `.missed()`, but *within* the bounds of the target token / tile / other. Check out the docs!\n- *Effects* - Fixed `.waitUntilFinished()` not being respected\n- *Effects* - Fixed `.offset()` throwing an error about a missing function\n- *Effects* - Fixed `.repeats()` throwing an error, because the entire function went missing in the last update >.>\n\n### Version 0.5.5 Hotfix\n- *Effects* - Fixed effects sometimes not playing\n\n### Version 0.5.4 Hotfix\n- *Effects* - Fixed melee attacks not picking the right JB2A template\n\n### Version 0.5.3\n- *Sequencer* - Added sound to the Hyperspeed Sample thanks to the wonderful AurelTristen over at [HellScape Tabletop Assets](https://www.patreon.com/HellScapeAssets) (even though they\'re not specifically focused on sound effects)\n- *Effects* - Fixed major issue with JB2A templates, causing effects to pick the wrong ranged attacks & other shenanigans\n- *Effects* - Fixed effect scale inconsistencies across scenes with different grid sizes\n\n### Version 0.5.2\n- *Sequencer* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> Removed support for Foundry Version 0.7.x <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Refactored animations into a dedicated animation engine\n- *Effects* - Added support for static image effects (.jpeg, .png, etc)\n- *Effects* - Fixed grid size sometimes not being taken into account when playing effects with `.reachTowards()`\n- *Sounds* - Vastly improved and fixed sound implementation, big thanks to ghost#2000!\n- *Sounds* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> Removed support for `.fadeIn()` and `.fadeOut()` in Sounds <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n### Version 0.5.1\n- *Sequencer* - Added two sample scenes with macros and accompanying art:\n    - An animated Oujia board made by md-mention2reply\n    - A Star Wars inspired hyperspeed scene-switching scene, effects, and macro\n- *Sequencer* - Removed Token Ease as dependency until we can solve its conflicts with other modules\n- *Effects* - Fixed effects not auto-centering on tokens\n- *Effects* - Fixed effects not finding the proper location when a previous effect\'s `.name()` was given\n- *Animations* - Fixed `.rotate()`, `.opacity()`, and `.volume()`, now they work even without having to use their respective in/out functions\n\n### Version 0.5.0\n- *Sequencer* - Module now depends on [Token Ease](https://github.com/fantasycalendar/FoundryVTT-TokenEase)\n- *Sequencer* - Added the Sequencer Database to help content creators! Read more on the [database documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Sequencer-Database) how to use it!\n- *Effects & Sounds* - Added support for database collections to the `.file()` method - more info can be found in the [docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#file)\n- *Animations, Effects & Sounds* - Added the following functions:\n    - `.audioVolume()`\n    - `.fadeInAudio()`\n    - `.fadeOutAudio()`\n- *Effects* - Added support for delays on these methods (e.g. a delay of -500 means it will finish 500ms before the end of the duration):\n    - `.rotateOut()`\n    - `.fadeOut()`\n    - `.scaleOut()`\n    - `.fadeOutAudio()`\n- *Animations* - Fixed `.rotateTowards()` to properly rotate towards the target without having to add an offset to properly line them up\n- *Effects* - Made effects more intelligent when determining locations when given partial object data with `id` collections\n- *Effects* - Fixed issues surrounding delays and fades\n- *Sounds* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.fadeIn()` and `.fadeOut()` will become deprecated in a future version, please switch to `.fadeInAudio()` and `.fadeOutAudio()` <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n\n### Version 0.4.6 Hotfix\n- *Effects* - Fixed effects not playing on tokens on 0.7.10 and below\n\n### Version 0.4.5\n- *Effects* - Added `.offset()` so that you can offset the effect - an optional parameter allows you to offset in local or canvas space\n- *Animations* - Added `.snapToSquare()`, which causes the given object to be snapped to the square it is moving or teleported towards\n- *Animations* - Fixed `.rotateIn()` and `.rotateOut()` not properly calculating rotation\n- *Animations* - Adjusted `.rotateTowards()` to instead consider the target position as the rotation origin, rather than the object\'s current position\n\n### Version 0.4.4\n- *Animations* - Added `.animation()` section - animate tokens and tiles! Check out the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Animations) how to use it!\n- *Effects* - Added official support for tiles in `.atLocation()`, `.moveTowards()`, etc\n- *Effects* - Tweaked how effects get locations when dealing with raw template data\n- *Sequencer* - Added `.sequence()` so you can combine multiple sequences into one\n- *Sequencer* - Updated all sample macros to 0.8.x conventions\n\n### Version 0.4.3 Minor Fixes\n- *Effects* - Removed error catch in `.file()` when providing it with something else than string or array\n- *Effects* - Fixed `.belowTokens()` and `.belowTiles()` throwing errors if no boolean was provided\n\n### Version 0.4.2 Hotfix\n- *Effects* - Added `.rotate()` which adds an offset to the effect\'s rotation\n- *Effects* - Fixed `.moveTowards()` not respecting given easing\n\n### Version 0.4.1\n- *Sequencer* - <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> **Breaking Changes**: Removed deprecated `.then()` method <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Tweaked `.play()` to now return a promise\n- *Sequencer* - Reworked module class structure\n- *Sequencer* - Added debug setting\n\n### Version 0.4.0\n- *Sequencer* - Renamed `.then()` to `.thenDo()` due to JavaScript reasons — <img src="images/siren.gif" width="12px" height="12px" alt="Siren"> `.then()` will be removed in 0.4.1 <img src="images/siren.gif" width="12px" height="12px" alt="Siren">\n- *Sequencer* - Removed the requirement to pass `true` as a second argument to `.then()` (now `.thenDo()`) if the function was async, it will now wait for it to finish if it is an `async function`\n- *Effects* - Added `.mirrorX()` and `.mirrorY()` to mirror the effect on that axis\n- *Effects* - Improved `.JB2A()` to better handle melee weapon attacks\n- *Effects* - Tweaked `.belowTiles()` and `.belowTokens()` to accept an optional boolean parameter whether the effect should play behind the respective element\n- *Effects* - Tweaked effects to assume that .webms have a base 100px internal grid for size consistency\n\n### Version 0.3.13 Hotfix\n- *Effects* - Fixed ANOTHER bug with `.belowTiles()` sometimes not playing below tiles\n\n### Version 0.3.12\n- *Effects* - Added `.opacity()` which controls the alpha of the effect being played\n- *Effects* - Fixed bug with `.belowTiles()` sometimes not playing below tiles\n\n### Version 0.3.11\n- *Effects* - Added `.belowTiles()` to play effects below tiles\n- *Effects* - Implemented better order handling - the effects created first will always be on top, each subsequent effect will be played below the previous\n- *Effects* - Added `.zIndex()` for you to have direct control over the order of effects\n- *Effects & Sounds* - Added `.duration()` which can override the duration of an effect or sound\n- *Effects & Sounds* - Tweaked `.waitUntilFinished()` to accept a single number parameter as a delay or to end the effect or sound earlier - read more in the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki#wait-until-finished)\n- *Sounds* - Added support for `.fadeIn()` and `.fadeOut()` - easing sadly doesn\'t work for sounds yet\n\n### Version 0.3.10\n- *Sequencer* - Added macro pack containing examples of Sequencer usages\n- *Effects* - Added the following animated functions:\n    - `.scaleIn()`\n    - `.scaleOut()`\n    - `.rotateIn()`\n    - `.rotateOut()`\n    - All of these can utilize any of the easings listed here: https://easings.net/\n    - Read the [documentation](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki/Effects#scale-in) how to use these\n- *Effects* - Added better error reporting when something goes wrong in the sequence\n- *Effects* - Fixed bug with scale sometimes overriding `.reachTowards()`\n\n### Version 0.3.9\n- *Effects* - Added `.belowTokens()` so you can now play effects, well, below tokens\n- *Effects* - Fixed effects not replicating properly (AGAIN)\n- *Effects* - Fixed effects not being able to use `.name()`d effects if they didn\'t miss - now any effect can be named and be used in future effects\n\n### Version 0.3.8 Hotfix\n- *Effects* - Fixed effects that were supposed to be once-off instead looping\n\n### Version 0.3.7\n- *Effects* - Added `.moveTowards()` and `.moveSpeed()` for missile-like behavior\n- *Effects* - Tweaked the way the effects layer is applied to the canvas\' layers\n- *Effects* - Fixed major issue with the way effects that were using `.missed()` and `.name()` were cached\n- *Sequencer* - Removed stray debug code\n\n### Version 0.3.6\n- *Effects* - Added `.fadeIn()` and `.fadeOut()` - you can now make your effects look slightly nicer!\n- *Effects* - Added support for cone and line templates with `.reachTowards()` and `.rotateTowards()` - it now reaches towards the end point of the template\n- *Effects* - Added `.name()` to effects - this will cause the effect\'s position to be stored and can then be used with `.atLocation()`, `.reachTowards()`, and `.rotateTowards()` to refer to previous effects\' locations\n    - Example: naming an impact effect with `.name("hit_location")` and making it miss with `.missed()`, and then have a subsequent effect use `.rotateTowards("hit_location")` to rotate towards the previous effect\'s calculated location\n- *Effects* - Fixed `.scale()` bug that caused it to not properly set the scale and then cause an error upon calling `.play()`\n- *Effects* - Removed `.moves()` for future implementation\n- *Sequencer* - Tweaked `.async()` and `.waitUntilFinished()` handling\n    - They now act the same on effect and sounds that only play once, but if it `.repeats()`, `.async()` causes the effect or sound to wait between each repetition, `.waitUntilFinished()` causes the sequencer to wait until the effect or sound has finished executing all of its repetitions, which may or may not wait for each effect or sound to play with `.async()`\n- *Sequencer* - Calling `.play()` now returns the sequence\n- *Sequencer* - Removed `FXMaster` dependency and implemented a custom canvas layer and effects class\n\n### Version 0.3.5 Hotfix\n- *Sequencer* - Fixed `.wait()` breaking due to the `.async()` and `.waitUntilFinished()` swap\n\n### Version 0.3.4 Hotfix\n- *Effects* - Fixed issue that caused the wrong scale to be applied when using `.reachTowards()`\n\n### Version 0.3.3\n- *Effects* - Added `.playIf()` ([docs](https://github.com/fantasycalendar/FoundryVTT-Sequencer/wiki#play-if)); this allows you to completely ignore playing an effect or sound, depending on a boolean or a function\n- *Sounds* - Added support for `.async()` and `.waitUntilFinished()` for sounds - requires both to be `true` due to code weirdness, I\'ll be refactoring this in the future\n- *Effects* - Refactored `.scale()` when it was provided with a minimum and maximum value, it now randomizes the scale of the effect when executed instead of when the method was called\n- *Effects & Sounds* - Refactored `.file()` for both effects and sounds so that providing an array of files no longer immediately picks one from the array, but randomly picks a file each time the section is executed\n- *Effects & Sounds* - Refactored how `.delay()` interacted with `.repeats()`, which should result in more consistent behavior\n- *Sequencer* - Swapped the functionality of `.async()` and `.waitUntilFinished()`, and clarified in the docs\n- *Sequencer* - Added support for random range within a `.wait()` block (like, `.wait(500, 1000)` etc)\n\n### Version 0.3.2 - 0.8.x ready!\n* *Effects* - Added `.playbackRate()` to effects, you can now speed up the play rate of your effects\n* *Sequencer* - Tweaked internal handling of `.async()` together with `.waitUntilFinished()` improved\n* *Sequencer* - Tweaked to use `ready` instead of `init` to load module\n\n### Version 0.3.1\n- *Effects* - Refactored `.randomizeMirror()` into `.randomizeMirrorX()` and `.randomizeMirrorY()`\n- *Effects* - Refactored scaling algorithm for `.reachTowards()`\n- *Sequencer* - Added support for random `.wait()` interval\n\n### Version 0.3.0\n- *Effects* - Refactored `.aimTowards()` into `.rotateTowards()` and `.reachTowards()`\n- *Effects* - Refactored how `.missed()` chooses the location to hit and now takes token size into account\n- *Effects* - Added `.JB2A()` to automatically set the effect to handle their sprites in the best way possible\n- *Effects* - Added `.randomizeMirror()` to randomly mirror sprites on the Y axis\n- *Effects* - Added Mustache support in file names\n\n### Version 0.2.0\n- *Sequencer* - Added support for executing macros\n- *Sequencer* - Added support for playing sounds\n- *Sequencer* - Wrapped classes in proxies to simplify fluid interface (gets rid of `.done()` on effects and sounds)\n\n### Version 0.1.0\n- First implementation\n';
 var root_2 = /* @__PURE__ */ from_html(`<div class="sequencer-changelog-status sequencer-changelog-error"><p> </p> <p><a target="_blank" rel="noopener noreferrer">View on GitHub</a></p></div>`);
 var root_3 = /* @__PURE__ */ from_html(`<div class="sequencer-changelog-status">No changelog entries found.</div>`);
 var root_6 = /* @__PURE__ */ from_html(`<span class="sequencer-changelog-latest-badge">Latest</span>`);
@@ -29519,6 +30814,7 @@ function showChangelog() {
 let moduleValid = false;
 let moduleReady = false;
 let canvasReady = false;
+let lastSceneId = null;
 Hooks.once("init", async function() {
   moduleValid = true;
   CONSTANTS.IS_V14 = foundry.utils.isNewerVersion(game.version, "14");
@@ -29536,7 +30832,8 @@ Hooks.once("ready", async function() {
     await runMigrations();
     await migrateSettings();
     await PlayerSettings.migrateOldPresets();
-    await createJournalDatabase();
+    const database = await createJournalDatabase();
+    flagManager._databaseId = database?.id ?? null;
   }
   SequencerFoundryReplicator.registerHooks();
   InteractionManager.initialize();
@@ -29561,9 +30858,10 @@ const setupModule = foundry.utils.debounce(() => {
   }
 }, 25);
 Hooks.on("canvasReady", () => {
-  setTimeout(() => {
-    setupModule();
-  }, 450);
+  const currentSceneId = canvas.scene?.id ?? null;
+  const isSceneSwitch = currentSceneId !== lastSceneId;
+  lastSceneId = currentSceneId;
+  setTimeout(setupModule, isSceneSwitch ? 450 : 100);
 });
 Hooks.on("refreshToken", setupModule);
 Hooks.on("refreshDrawing", setupModule);
@@ -29594,7 +30892,8 @@ function initializeModule() {
       shuffle_array,
       random_array_element,
       random_object_element,
-      make_array_unique
+      make_array_unique,
+      computeWallPolygon
     },
     Crosshair,
     showChangelog
@@ -29606,7 +30905,7 @@ function initializeModule() {
   registerBatchShader();
   SequencerEffectManager.setup();
   SequencerSoundManager.setup();
-  SequencerAboveUILayer.setup();
+  PasteManager.setup();
   PluginsManager.initialize();
   Hooks.on("renderChatMessageHTML", (_message, html2) => {
     const links = html2.querySelectorAll('[data-action="sequencer-show-changelog"]');

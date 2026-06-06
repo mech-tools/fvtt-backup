@@ -2,7 +2,7 @@
   "id": "torch",
   "title": "Torch",
   "description": "Torch HUD Controls",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "authors": [
     {
       "name": "Deuce",
@@ -57,6 +57,12 @@
       "flags": {}
     },
     {
+      "lang": "pl",
+      "name": "Polski",
+      "path": "lang/pl.json",
+      "flags": {}
+    },
+    {
       "lang": "pt-BR",
       "name": "Português (Brasil)",
       "path": "lang/pt-BR.json",
@@ -76,12 +82,12 @@
   "styles": [
     "torch.css"
   ],
-  "manifest": "https://github.com/League-of-Foundry-Developers/torch/releases/download/v3.2.0/module.json",
-  "download": "https://github.com/League-of-Foundry-Developers/torch/releases/download/v3.2.0/torch-v3.2.0.zip",
+  "manifest": "https://github.com/League-of-Foundry-Developers/torch/releases/download/v3.3.0/module.json",
+  "download": "https://github.com/League-of-Foundry-Developers/torch/releases/download/v3.3.0/torch-v3.3.0.zip",
   "url": "https://github.com/League-of-Foundry-Developers/torch",
   "compatibility": {
     "minimum": "13",
-    "verified": "14.359",
+    "verified": "14.363",
     "maximum": "14"
   }
 }

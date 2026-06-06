@@ -1,3 +1,7 @@
 2026/05/28-12:56:50.216470 7058fcdf86c0 Recovering log #498
 2026/05/28-12:56:50.221209 7058fcdf86c0 Delete type=3 #496
 2026/05/28-12:56:50.221253 7058fcdf86c0 Delete type=0 #498
+2026/06/05-09:02:07.908380 7058aebff6c0 Level-0 table #503: started
+2026/06/05-09:02:07.908418 7058aebff6c0 Level-0 table #503: 0 bytes OK
+2026/06/05-09:02:07.909332 7058aebff6c0 Delete type=0 #501
+2026/06/05-09:02:07.909460 7058aebff6c0 Manual compaction at level-0 from '!journal!MassEditMetaData' @ 72057594037927935 : 1 .. '!journal!MassEditMetaData' @ 0 : 0; will stop at (end)

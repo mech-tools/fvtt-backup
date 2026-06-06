@@ -235,13 +235,14 @@ The following is the current status of translation. Some features have arrived, 
 | fr    | `[########################]` 24/24 (100%) | Diraen, Aymeeric |
 | it    | `[################--------]` 16/24 (67%) | GregoryWarn |
 | ja    | `[################--------]` 16/24 (67%) | doumoku |
+| pl    | `[########################]` 24/24 (100%) | delgar89 |
 | pt-br | `[################--------]` 16/24 (67%) | Innocenti, Andersants |
 | zh-cn | `[######------------------]` 06/24 (25%) | xticime |
 | zh-tw | `[########----------------]` 08/24 (33%) | zeteticl |
 
 PRs for further translations will be dealt with promptly. While Korean is most especially desired (thank you, doumoku for Japanese, also on the short list) - all others are welcome. 
 
-Even now, it's only 22 strings, a satisfying afternoon, even for someone who's never committed to an open source project before, and your name will go into the readme right here next to the language. Fork, clone, update, _test locally_, commit, and then submit a PR. Holler for `@lupestro` on Discord if you need help getting started.
+Even now, it's only 24 strings, a satisfying afternoon, even for someone who's never committed to an open source project before, and your name will go into the readme right here next to the language. Fork, clone, update, _test locally_, commit, and then submit a PR. Holler for `@lupestro` on Discord if you need help getting started.
 
 ## History
 
