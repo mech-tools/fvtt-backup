@@ -1,0 +1,30 @@
+<form class="limbes-mod limbes-forms"
+  style="background: no-repeat url('modules/cleenmain-cthack-limbes/assets/artwork/divers/fond_form_ap.webp');"
+  autocomplete="off">
+  <div>
+    <h2>Accomplissements personnels</h2>
+    <p><em>Pense à donner aux joueurs un accomplissement personnel à chaque scénario à partir du scénario 2. Coche ici
+        les
+        accomplissements personnels (AP) atteints. Il te revient de décider, en tant que meneur de jeu, si un AP est
+        atteint ou non à la fin du scénario.</em></p>
+    <table>
+      <tr>
+        <th></th>
+        <th>AP A (scénario 2)</th>
+        <th>AP B (scénario 3)</th>
+        <th>AP C (scénario 4)</th>
+      </tr>
+      {{#each formdata as |singlebox id|}}
+      <tr>
+        <td>{{singlebox.pj}}</td>
+        <td><input class="checkbox" data-field="{{id}}" data-el="valueA" name="boxelement" type="checkbox" {{checked
+            singlebox.valueA}} /></td>
+        <td><input class="checkbox" data-field="{{id}}" data-el="valueB" name="boxelement" type="checkbox" {{checked
+            singlebox.valueB}} /></td>
+        <td><input class="checkbox" data-field="{{id}}" data-el="valueC" name="boxelement" type="checkbox" {{checked
+            singlebox.valueC}} /></td>
+      </tr>
+      {{/each}}
+    </table>
+  </div>
+</form>

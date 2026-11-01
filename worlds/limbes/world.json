@@ -1,0 +1,14 @@
+{
+  "title": "Limbes",
+  "system": "cleenmain",
+  "id": "limbes",
+  "coreVersion": "14.369",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "systemVersion": "3.2.0",
+  "lastPlayed": "Wed Oct 28 2026 18:29:21 GMT+0100 (Central European Standard Time)",
+  "description": "",
+  "flags": {}
+}

@@ -1,0 +1,20 @@
+{
+  "CREATINGAWORLD.Title": "Créer un monde",
+  "CREATINGAWORLD.Description": "Cette visite vous guidera dans la création de votre premier Monde",
+  "CREATINGAWORLD.WorldsTabTitle": "L'onglet Mondes",
+  "CREATINGAWORLD.WorldsTabContent": "Cet onglet vous montre tous vos mondes actuellement créés. Vous n'en avez pas encore créé actuellement, nous allons donc vous guider pour en créer un.",
+  "CREATINGAWORLD.CreateWorldTitle": "Créer un monde",
+  "CREATINGAWORLD.CreateWorldContent": "Le bouton Créer un monde se trouve en bas à droite et ouvre une fenêtre de configuration.",
+  "CREATINGAWORLD.WorldTitleTitle": "Titre du Monde",
+  "CREATINGAWORLD.WorldTitleContent": "Le titre du monde est le nom de votre monde. Il est utilisé pour identifier votre monde dans l'onglet Mondes.",
+  "CREATINGAWORLD.WorldIdTitle": "ID du monde",
+  "CREATINGAWORLD.WorldIdContent": "L'ID du monde est l'identifiant unique de votre monde. Un dossier du même ID sera créé pour stocker les données de votre monde. L'ID est automatiquement défini comme une version du titre adaptée pour le code de Foundry (pas d'espaces ...), mais il peut être modifié si vous le souhaitez.",
+  "CREATINGAWORLD.WorldSystemTitle": "Système de jeu",
+  "CREATINGAWORLD.WorldSystemContent": "Le menu déroulant Système vous permet de choisir le système de jeu pour lequel vous souhaitez créer votre monde. Vous pouvez choisir n'importe quel système de jeu que vous avez installé sur votre machine. Pour l'instant, nous allons choisir le système que vous venez d'installer.",
+  "CREATINGAWORLD.WorldDescriptionTitle": "Divers",
+  "CREATINGAWORLD.WorldDescriptionContent": "D'autres champs comme la description ne sont pas obligatoires. Vous pouvez en savoir plus sur eux dans la Documentation en ligne (en anglais) : <a href='https://foundryvtt.com/article/game-worlds/' target='_blank'>Monde</a>.",
+  "CREATINGAWORLD.CreateTitle": "Créer un monde",
+  "CREATINGAWORLD.CreateContent": "Lorsque vous avez terminé la configuration, le bouton \"Créer un monde\" permet d'enregistrer et créer votre monde. Vous pouvez modifier la plupart des paramètres du monde plus tard en éditant un monde existant.",
+  "CREATINGAWORLD.LaunchingTitle": "Lancer",
+  "CREATINGAWORLD.LaunchingContent": "Vous êtes prêt ! Vous pouvez maintenant commencer à jouer dans votre monde en cliquant sur le bouton Lancer le monde."
+}

@@ -1,0 +1,1322 @@
+@font-face {
+  font-family: "Angel tear";
+  src: url("./assets/fonts/angel_tear.ttf");
+}
+@font-face {
+  font-family: "Bagpack";
+  src: url("./assets/fonts/bagpack.ttf");
+}
+@font-face {
+  font-family: "DK Abysmal Gaze";
+  src: url("./assets/fonts/dk__abysmal_gaze.ttf");
+}
+@font-face {
+  font-family: "DnD3Attack_Regular";
+  src: url("./assets/fonts/dnd3attack_regular.ttf");
+}
+@font-face {
+  font-family: "Ornaments";
+  src: url("./assets/fonts/ornaments.ttf");
+}
+@font-face {
+  font-family: "LiberationSerif";
+  src: url("./assets/fonts/LiberationSerif-Regular.ttf");
+}
+@font-face {
+  font-family: "LiberationSerif";
+  src: url("./assets/fonts/LiberationSerif-Italic.ttf");
+  font-style: italic;
+}
+@font-face {
+  font-family: "LiberationSerif";
+  src: url("./assets/fonts/LiberationSerif-Bold.ttf");
+  font-weight: bold;
+}
+@font-face {
+  font-family: "LiberationSerif";
+  src: url("./assets/fonts/LiberationSerif-BoldItalic.ttf");
+  font-style: italic;
+  font-weight: bold;
+}
+@font-face {
+  font-family: "Eutemia Ornaments";
+  src: url("./assets/fonts/eutemia_ornaments.ttf");
+}
+@font-face {
+  font-family: "nymphette";
+  src: url("./assets/fonts/nymphette.ttf");
+}
+input {
+  color: #456;
+}
+.limbes-mod {
+  font: 1.1rem "LiberationSerif";
+}
+.limbes-mod h2 {
+  font-family: "Bagpack";
+  font-size: 3em;
+  color: black;
+  margin: 0 0.2em 0.5em 0.2em;
+  border-bottom: double black;
+}
+.limbes-mod h3 {
+  font-family: "DK Abysmal Gaze";
+  font-size: 2em;
+  text-transform: uppercase;
+  color: black;
+  padding-top: 0.5em;
+  border-bottom: double black;
+  margin-bottom: none;
+  margin-left: 10px;
+}
+.limbes-mod h4 {
+  font-family: "DK Abysmal Gaze";
+  font-size: 1.8em;
+  color: black;
+  padding: none;
+  border: none;
+  margin-bottom: none;
+  margin-left: 10px;
+}
+.limbes-mod p {
+  background: transparent;
+  margin: 10px;
+  text-align: justify;
+}
+.limbes-mod .introend {
+  font-family: "nymphette";
+  font-size: 8rem;
+  text-align: center;
+  transform: rotate(180deg);
+}
+.limbes-mod li {
+  padding-top: 0.3em;
+  margin-right: 10px;
+  text-align: justify;
+}
+.limbes-mod .content-link {
+  background: none;
+  padding: 0px;
+  border: none;
+  white-space: nowrap;
+  word-break: break-all;
+  font-weight: bold;
+  color: black;
+  min-width: 25em;
+  min-height: 4em;
+  background-color: #11ffee00;
+  border: 5px;
+}
+.limbes-mod .encart {
+  background-color: #b3b3b3;
+  margin: 5em;
+  padding-top: 0;
+  padding-bottom: 0.5em;
+  border: 2px solid black;
+}
+.limbes-mod .encart h3 {
+  font-family: "Bagpack";
+  text-align: center;
+  color: black;
+  border-bottom-style: double;
+  border-bottom-color: black;
+  font-size: 1.8em;
+  padding: 0.5em 0 0.5em 0;
+}
+.limbes-mod .insertcenter {
+  padding: 0 5px 5px 5px;
+  margin-top: 0px;
+  margin-right: 10px;
+  margin-bottom: 5px;
+  margin-left: 10px;
+  break-inside: avoid;
+  font-style: normal;
+  border: none;
+  text-align: center;
+}
+.limbes-mod .creditstitle {
+  font-family: "Bagpack";
+  font-size: 3em;
+  color: black;
+  padding-top: 0.5em;
+  margin: 0.5em 0;
+  text-align: center;
+}
+.limbes-mod .creditssubtitle {
+  font-family: "Bagpack";
+  font-size: 1.5em;
+  color: black;
+  text-align: center;
+}
+.limbes-mod .credits {
+  text-align: center;
+}
+.limbes-mod .creditsstrong {
+  font-family: "Bagpack";
+  font-size: 1.3em;
+  padding-top: 0.5em;
+  color: black;
+  text-align: center;
+}
+.limbes-mod .creditsend {
+  text-align: center;
+}
+.limbes-mod .tabletitle {
+  font-family: "Bagpack";
+  font-size: 1.5em;
+  color: black;
+  text-align: center;
+}
+.limbes-mod table {
+  table-layout: fixed;
+  background-color: transparent;
+}
+.limbes-mod tr {
+  text-align: center;
+}
+.limbes-mod td {
+  text-align: center;
+}
+.limbes-mod .conseil-image {
+  width: 50px;
+  height: 50px;
+  border: none;
+  float: left;
+  margin-right: 10px;
+}
+.limbes-mod .conseil {
+  height: 10px;
+  margin-left: 20px;
+}
+.limbes-mod .conseil-foundry {
+  background-color: #ff66008e;
+  text-indent: 0cm;
+  border-style: solid;
+  border: 2px solid black;
+  border-radius: 8px 8px 8px 8px;
+  box-shadow: 0 8px 8px -7px var(--color-shadow-dark);
+  padding: 10px 14px 16px 18px;
+  font-size: larger;
+}
+.limbes-mod .imgcenter {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+  border: none;
+}
+.limbes-mod .imgsmall {
+  width: 200px;
+}
+.limbes-mod .insertright {
+  max-width: 40%;
+  padding-right: 5px;
+  padding-left: 5px;
+  margin-right: 10px;
+  break-inside: avoid;
+  font-style: normal;
+  float: right;
+  border: none;
+  text-align: center;
+}
+.limbes-mod .img_cerf {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/cerf.webp");
+  width: 288px;
+  height: 356px;
+  vertical-align: middle;
+  background-size: 288px;
+  border: 0;
+}
+.limbes-mod .img_grimoire {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/grimoire.webp");
+  width: 239px;
+  height: 313px;
+  vertical-align: middle;
+  background-size: 239px;
+  border: 0;
+}
+.limbes-mod .img_orage {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/orage.webp");
+  width: 328px;
+  height: 294px;
+  vertical-align: middle;
+  background-size: 328px;
+  border: 0;
+}
+.limbes-mod .img_parfum {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/parfum.webp");
+  width: 290px;
+  height: 356px;
+  vertical-align: middle;
+  background-size: 290px;
+  border: 0;
+}
+.limbes-mod .img_pentacle {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/pentacle.webp");
+  width: 288px;
+  height: 312px;
+  vertical-align: middle;
+  background-size: 288px;
+  border: 0;
+}
+.limbes-mod .img_toupie {
+  display: inline-block;
+  background: no-repeat url("./assets/artwork/ambiance/toupie.webp");
+  width: 290px;
+  height: 342px;
+  vertical-align: middle;
+  background-size: 290px;
+  border: 0;
+}
+.limbes-forms {
+  color: black;
+}
+.limbes-forms .jauge {
+  font-family: "Bagpack";
+  font-size: 3em;
+  padding-top: 0.5em;
+  margin: 0.5em 0.2e;
+  text-align: center;
+}
+.limbes-forms .bilantitle {
+  font-family: "Bagpack";
+  font-size: 2em;
+  padding-top: 1em;
+  text-align: center;
+}
+.limbes-forms .boxlisttitle {
+  font-family: "Bagpack";
+  font-size: 2em;
+  padding-top: 1em;
+  text-align: center;
+}
+.limbes-forms .boxlist {
+  text-align: center;
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+.limbes-forms .modjauge {
+  font-family: "DK Abysmal Gaze";
+  margin-left: 1em;
+}
+.limbes-forms .jauge-input {
+  margin-left: 1em;
+  width: 2em;
+}
+.cleenmain.sheet.player h1 {
+  font: 1.2rem "Bagpack";
+  color: black;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.player h2 {
+  font: 1rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.player .window-content {
+  background: no-repeat url('./assets/artwork/divers/fong_pc.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "LiberationSerif";
+}
+.cleenmain.sheet.player textarea {
+  resize: none;
+}
+.cleenmain.sheet.player .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.player input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+}
+.cleenmain.sheet.player input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.player select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.player form {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .right-icon {
+  margin-left: auto;
+}
+.cleenmain.sheet.player .main {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.cleenmain.sheet.player .main .leftcolumn {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  flex-shrink: 0;
+  width: 235px;
+  margin-right: 50px;
+}
+.cleenmain.sheet.player .main .leftcolumn .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 0 0 2em 0;
+  font: 1.3rem "Bagpack";
+}
+.cleenmain.sheet.player .main .leftcolumn .skills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line {
+  font: 1rem "DK Abysmal Gaze";
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-name {
+  width: 70%;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-value {
+  background: #fffdfc;
+  border: 1px solid #928e8e;
+  border-radius: 5px;
+  width: 10%;
+  text-align: center;
+  margin-right: 5px;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-dev {
+  width: 10%;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .skill-roll {
+  width: 20%;
+  text-align: center;
+}
+.cleenmain.sheet.player .main .leftcolumn .skills .skill-line .item-delete {
+  width: 10%;
+}
+.cleenmain.sheet.player .main .central {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.cleenmain.sheet.player .main .central .intro-block {
+  display: flex;
+  flex-direction: row;
+  margin: 0 0 1em 0;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-left {
+  align-self: center;
+  width: 100px;
+  height: 129px;
+  object-fit: contain;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right {
+  display: flex;
+  flex-flow: column nowrap;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .right-icon {
+  align-self: flex-end;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .space-between {
+  justify-content: space-between;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line {
+  font: 1rem "DK Abysmal Gaze";
+  display: flex;
+  flex-flow: row nowrap;
+  margin: 0.5em;
+  white-space: nowrap;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .pcname {
+  font: 1.4rem "Bagpack";
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .input-heroism {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .input-heroism input {
+  width: 2em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .right-icon {
+  margin: 0 0 0 0.5em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .name-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .heroism-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-text,
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  margin: 0.3em 0.3em 0 0.3em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .activity-text {
+  font: 1.2rem "DK Abysmal Gaze";
+  white-space: normal;
+  margin-top: 0.3em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block .health-input {
+  width: 2em;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .health-block .badshape-text {
+  color: #912828;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block select {
+  margin: 0 0.5em 0 0;
+}
+.cleenmain.sheet.player .main .central .intro-block .intro-block-right .central-line .wounds-block .wounds-input {
+  width: 1em;
+}
+.cleenmain.sheet.player .main .central .sheet-tabs {
+  display: flex;
+  flex-direction: row;
+  font-size: 1,5em;
+}
+.cleenmain.sheet.player .main .central .tab-name {
+  background: #fffdfc;
+  font: 1rem "LiberationSerif";
+  color: #726e6e;
+  border: 1px solid #456;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  text-align: center;
+  padding: 0.5em 0.5em 0.3em 0.5em;
+}
+.cleenmain.sheet.player .main .central .tab-name.active {
+  border: 1px solid black;
+  color: #456;
+  border-bottom-width: 0;
+}
+.cleenmain.sheet.player .main .central .sheet-body {
+  background: none ;
+}
+.cleenmain.sheet.player .right-icon {
+  font: 1.1rem "LiberationSerif";
+  font-size: 1.2rem;
+  color: #705a10;
+}
+.cleenmain.sheet.npc h1 {
+  font: 1.2rem "Bagpack";
+  color: black;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.npc h2 {
+  font: 1rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.npc .input-short {
+  width: 2em;
+}
+.cleenmain.sheet.npc .input-verylong {
+  width: 20em;
+}
+.cleenmain.sheet.npc .input-long {
+  width: 10em;
+}
+.cleenmain.sheet.npc .window-content {
+  background: no-repeat url('./assets/artwork/divers/fond_pnj.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "LiberationSerif";
+}
+.cleenmain.sheet.npc .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.npc input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+}
+.cleenmain.sheet.npc input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.npc select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.npc .npc-main {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 70%;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .name-line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .name-line .name-text {
+  font: 2em "Bagpack";
+  color: black;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .name-line input {
+  height: 2em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .name-line .sheet-change-lock {
+  margin-left: auto;
+  padding-left: 1em;
+  color: #705a10;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .activity-line {
+  margin: 0 0.5em 1em 1em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .activity-line .activity-text {
+  font: 1.1em "Bagpack";
+  color: black;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .level-line {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .level-line select {
+  margin: 0.5em 0.5em;
+  width: 12em;
+  height: auto;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line {
+  display: flex;
+  flex-direction: row;
+  margin: 0.5em 0.5em;
+  font: 1.2rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .line-label {
+  font-weight: bold;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .weapon-el {
+  margin: 0 0 0 1rem;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .weapons .weapon-line .item-create {
+  padding-left: 0.5em;
+  color: #705a10;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line {
+  font: 1.2rem "DK Abysmal Gaze";
+  color: black;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block {
+  display: flex;
+  flex-direction: row;
+  padding: 0.5em 0.5em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-label {
+  font-weight: bold;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-value {
+  display: flex;
+  flex-direction: row;
+  padding: 0 0.2em 0 0.2em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-nonedit {
+  width: 25%;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .skills .skill-line .skill-block .skill-edit {
+  width: 50%;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .npchealth-line {
+  display: flex;
+  flex-direction: row;
+  margin: 1rem;
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .npchealth-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .npchealth-line input {
+  padding-bottom: 0.2rem;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-left .npchealth-line .health-block {
+  display: flex;
+  flex-direction: row;
+  margin-left: 1em;
+}
+.cleenmain.sheet.npc .npc-main .npcstat-block .npcstat-block-right {
+  flex-basis: 30%;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.cleenmain.sheet.item h1 {
+  font: 1.2rem "Bagpack";
+  color: black;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.item h2 {
+  font: 1rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.item .window-content {
+  background: no-repeat url('./assets/artwork/divers/fond_form_ap.webp');
+  background-color: #fffdfc;
+  font: 1.1rem "LiberationSerif";
+}
+.cleenmain.sheet.item .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+  font: 1rem "LiberationSerif";
+}
+.cleenmain.sheet.item input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.item select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.item input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.item .sheet-header input {
+  font-size: 2rem;
+  text-align: center;
+}
+.cleenmain.sheet.item {
+  background-color: #fffdfc;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content .boon-line {
+  display: flex;
+  flex-direction: row;
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.cleenmain.sheet.item .sheet-content .boon-line .boon-block {
+  display: flex;
+  flex-direction: row;
+  flex-basis: 50%;
+}
+.cleenmain.sheet.item .sheet-content .boon-line .boon-block .label-dev {
+  padding-top: 0.4em;
+}
+.cleenmain.sheet.vehicle h1 {
+  font: 1.2rem "Bagpack";
+  color: black;
+  text-transform: uppercase;
+  border: none;
+}
+.cleenmain.sheet.vehicle h2 {
+  font: 1rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.vehicle .input-short {
+  width: 2em;
+}
+.cleenmain.sheet.vehicle .input-verylong {
+  width: 20em;
+}
+.cleenmain.sheet.vehicle .input-long {
+  width: 10em;
+}
+.cleenmain.sheet.vehicle .window-content {
+  background: repeat url('../../../ui/parchment-white.jpg');
+  background-color: #fffdfc;
+  font: 1.1rem "LiberationSerif";
+}
+.cleenmain.sheet.vehicle .editor {
+  height: 100%;
+  width: 100%;
+  background: #f5fdfb;
+  box-shadow: inset 0 0 6px black;
+}
+.cleenmain.sheet.vehicle input {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+}
+.cleenmain.sheet.vehicle input:focus {
+  background-color: #c3d4d0;
+}
+.cleenmain.sheet.vehicle select {
+  background-color: #f5fdfb;
+  box-shadow: inset 0 0 3px black;
+  height: 1.5em;
+}
+.cleenmain.sheet.vehicle .vehicle-main {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 70%;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line .name-text {
+  font: 2em "Bagpack";
+  color: black;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line input {
+  height: 2em;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .name-line .sheet-change-lock {
+  margin-left: auto;
+  padding-left: 1em;
+  color: #705a10;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .line {
+  margin: 0.5em;
+  display: flex;
+  flex-direction: row;
+  font: 1.1rem "DK Abysmal Gaze";
+  color: black;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .line label {
+  font-weight: bold;
+  padding-right: 10px;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .line input {
+  width: 40px;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line {
+  display: flex;
+  flex-direction: row;
+  margin: 1rem;
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line .central-text {
+  margin: 0 0.2em 0 0.1em;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line input {
+  padding-bottom: 0.2rem;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-left .vehiclehealth-line .health-block {
+  display: flex;
+  flex-direction: row;
+  margin-left: 1em;
+}
+.cleenmain.sheet.vehicle .vehicle-main .vehiclestat-block .vehiclestat-block-right {
+  flex-basis: 30%;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.cleenmain.sheet.vehicle .vehicle-main .editor {
+  min-height: 5em;
+}
+.cleenmain.sheet.vehicle .vehicle-main .editor .editor-content {
+  min-height: 5em;
+}
+.cleenmain.sheet.vehicle .vehicle-main .editor .tox.tox-tinymce {
+  min-height: 10em;
+}
+.cleenmain.sheet.vehicle .description-block {
+  font: 1rem "LiberationSerif";
+  padding: 0.5em;
+}
+.cleenmain.sheet.vehicle .description-title {
+  font: 1rem "Bagpack";
+  border-bottom: 2px solid black;
+}
+.cleenmain.sheet.item {
+  background-color: #fffdfc;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.item .sheet-content .skill-block {
+  display: flex;
+  flex-direction: row;
+}
+.cleenmain.sheet.item .sheet-content .skill-block input {
+  width: 2em;
+}
+.cleenmain.sheet.item form {
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.item .sheet-content select {
+  margin: 0 0.5em 0 0;
+}
+.cleenmain.sheet.item .sheet-content .boon-line {
+  display: flex;
+  flex-direction: row;
+}
+.boons-tab .item-create {
+  margin-left: auto;
+}
+.boons-tab .boon-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.boons-tab .boon-group .boon-card {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  width: 50%;
+  padding: 1em 0.5em 0 0.5em;
+}
+.boons-tab .boon-group .boon-card .boon-name-line {
+  display: flex;
+  flex-flow: row wrap;
+}
+.boons-tab .boon-group .boon-card .boon-name-line .boxicon {
+  padding: 0.3em 0.5em 0 0;
+  font-size: 0.8em;
+}
+.boons-tab .boon-group .boon-card .boon-name-line .boon-name {
+  font: 1.2rem "DK Abysmal Gaze";
+  color: black;
+}
+.boons-tab .boon-group .boon-card .boon-used-line {
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.boons-tab .boon-group .boon-card .boon-description {
+  background: repeat url('../../../ui/parchment-white.jpg');
+  padding: 0.5em;
+  box-shadow: inset 0 0 3px black;
+  color: black;
+  font: 1rem "LiberationSerif";
+  max-width: 400px;
+}
+.boons-tab .boon-group .boon-card .icon-group {
+  margin-left: auto;
+}
+.tab-bio {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2em 0;
+}
+.tab-bio .line-label {
+  color: black;
+}
+.tab-bio .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 1em 0 0.5em 0;
+}
+.tab-bio .title-line .item-create {
+  margin-left: auto;
+}
+.tab-bio .bioelement-title {
+  font: 1rem "Bagpack";
+  border-bottom: 2px solid black;
+}
+.tab-bio .description-block {
+  font: 1rem "LiberationSerif";
+  padding: 0.5em;
+}
+.tab-bio .traits-block {
+  font: 1rem "LiberationSerif";
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+.tab-bio .editor {
+  min-height: 5em;
+}
+.tab-bio .editor .editor-content {
+  min-height: 5em;
+}
+.tab-bio .editor .tox.tox-tinymce {
+  min-height: 10em;
+}
+.cleenmain.sheet.player .main .tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+}
+.cleenmain.sheet.player .main .tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.cleenmain.sheet.player .main h1 .tooltiptext {
+  font: 1rem "LiberationSerif";
+  font-weight: normal;
+  text-transform: none;
+}
+.cleenmain.sheet.player .main .central .combat-tab {
+  margin: 1em 0 0.5em 0;
+  display: flex;
+  flex-direction: column;
+}
+.cleenmain.sheet.player .main .central .combat-tab .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.cleenmain.sheet.player .main .central .combat-tab .item-create {
+  margin-left: auto;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list {
+  font: 1.1rem "LiberationSerif";
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-bottom: 0.5em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .combat-group-label {
+  font-style: italic;
+  padding-right: 0.5em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .trainings-group {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.cleenmain.sheet.player .main .central .combat-tab .trainings-list .trainings-group .trainings-name {
+  margin: 0 0.6em 0 0.2em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list {
+  font: 1.1rem "LiberationSerif";
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line .bonus-name {
+  padding: 0 0.5em 0 1em;
+}
+.cleenmain.sheet.player .main .central .combat-tab .bonus-list .bonus-line .bonus-text {
+  background: #fffdfc;
+  border: 1px solid #928e8e;
+  border-radius: 5px;
+  width: 10%;
+  text-align: center;
+}
+.cleenmain.sheet.player .main .central .combat-tab .combat-table-head {
+  font: 1.2rem "DK Abysmal Gaze";
+}
+.cleenmain.sheet.player .main .central .combat-tab .combat-table {
+  font: normal 1rem "LiberationSerif";
+}
+.notes-tab {
+  display: flex;
+  flex-direction: column;
+  margin: 1em;
+  font: 1rem "LiberationSerif";
+}
+.notes-tab .editor {
+  min-height: 200px;
+  max-height: 400px;
+  width: auto;
+}
+.notes-tab .editor .editor-content {
+  min-height: 200px;
+  max-height: 400px;
+  margin: 1em;
+}
+.notes-tab .editor .tox.tox-tinymce {
+  min-height: auto;
+}
+.equipment-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2em 0;
+}
+.equipment-tab .title-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 1em 0 0.5em 0;
+}
+.equipment-tab .title-line .item-create {
+  margin-left: auto;
+}
+.equipment-tab .equipment-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+.equipment-tab .equipment-column .equipment-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  margin: 0.3em 0.3em 0 0.3em;
+  border-bottom: 1px solid black;
+}
+.equipment-tab .equipment-column .equipment-line .image-container {
+  background-size: 26px;
+  background-repeat: no-repeat;
+  height: 26px;
+  width: 26px;
+  align-self: center;
+  object-fit: contain;
+}
+.equipment-tab .equipment-column .equipment-line .equipment-name {
+  font: 0.9rem "LiberationSerif";
+  padding-left: 0.5em;
+  align-self: center;
+}
+.equipment-tab .equipment-column .equipment-line .icon-group {
+  margin-left: auto;
+}
+.equipment-tab label {
+  display: flex;
+  flex-direction: row;
+}
+.equipment-tab label .item-create {
+  margin-left: auto;
+}
+.dialog {
+  background-color: #fffdfc;
+  display: flex;
+  flex-direction: column;
+  font: 1rem "LiberationSerif";
+  /* Tooltip text */
+}
+.dialog .tooltip {
+  position: relative;
+  display: inline-block;
+}
+.dialog .tooltip .tooltiptext {
+  visibility: hidden;
+  width: 160px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1;
+}
+.dialog .tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.dialog .intro {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.dialog .intro .introImg {
+  border: none;
+  padding: 5px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  object-position: center;
+  align-self: center;
+}
+.dialog .intro .introtext {
+  font: bold 1.2rem "Bagpack";
+  margin: 0.5em;
+  padding-top: 1.5em;
+  text-align: center;
+}
+.dialog .formula {
+  text-align: center;
+  margin: 0.5em;
+  font: bold 1.2rem "DK Abysmal Gaze";
+}
+.dialog .rollmodifier {
+  display: flex;
+  flex-direction: row;
+  margin: 0 0 1em 1em;
+}
+.dialog .rollmodifier input {
+  width: 5em;
+  margin: 0 0 1em 1em;
+}
+.dialog .rollmodifier select {
+  width: 5em;
+  margin: 0 0 1em 1em;
+}
+.dialog .paddingend {
+  padding: 0 0 5em 0;
+}
+.dialog .bonus-label {
+  font: 1rem "LiberationSerif";
+}
+.dialog .bonus h2 {
+  font-weight: bold;
+}
+.dialog table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+.dialog td {
+  width: 25%;
+}
+.dialog td input {
+  width: 2em;
+}
+.dialog td input[type=number]::-webkit-inner-spin-button,
+.dialog td input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+}
+.chatroll {
+  background: none;
+  background-color: #fffdfc;
+  display: flex;
+  flex-direction: column;
+  font: 1.1rem "DK Abysmal Gaze";
+  color: black;
+}
+.chatroll .intro {
+  background: none;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.chatroll .intro .introImg {
+  border: none;
+  padding: 5px;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  object-position: center;
+  align-self: center;
+}
+.chatroll .intro .introText {
+  width: 210px;
+  min-height: 60px;
+  padding-top: 0.5em;
+  font: 1.4rem "DK Abysmal Gaze";
+  text-align: center;
+}
+.chatroll .dice.d6 {
+  position: relative;
+  width: 24px;
+  line-height: 24px;
+  margin-right: 5px;
+  /* float: left; */
+  /* background-image: url('assets/image/d6-grey.svg'); */
+  /* background-repeat: no-repeat; */
+  /* background-size: 100px; */
+  font-size: var(--font-size-16);
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+}
+.chatroll .modifierText {
+  margin-bottom: 5px;
+  color: #555353;
+  font: italic 0.9rem "Bagpack";
+  text-align: center;
+}
+.chatroll .formulaText {
+  padding: 1em 0 0 0;
+  font: 1.2rem "DK Abysmal Gaze";
+  color: black;
+  text-align: center;
+}
+.chatroll .formulaTooltip {
+  position: relative;
+  display: inline-block;
+}
+.chatroll .formulaTooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1;
+}
+.chatroll .formulaTooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.chatroll .finalText {
+  font: 1.2rem "DK Abysmal Gaze";
+  color: black;
+  text-align: center;
+}
+.chatroll .finalText .tooltip {
+  position: relative;
+  display: inline-block;
+}
+.chatroll .finalText .tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+}
+.chatroll .finalText .tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.chatroll .endimg {
+  background: center / contain no-repeat url('./assets/artwork/divers/chat_end.webp');
+  height: 70px;
+}
+#combat-tracker .combatant .token-name .player {
+  background-color: #1d351d;
+}
+#combat-tracker .combatant .token-name .npc {
+  background-color: #5c5353;
+}

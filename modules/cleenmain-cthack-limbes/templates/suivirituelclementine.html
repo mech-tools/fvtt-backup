@@ -1,0 +1,54 @@
+<form class="limbes-mod limbes-forms" autocomplete="off">
+  <h2>Jauges</h2>
+  <p>Une jauge permet de gérer la corruption de Clémentine :</p>
+  <p>Jauge corruption : <a class="boxlist">
+    {{#each formdata.boxes_corruption as |singlebox id|}}
+    <input class="checkbox" data-group="boxes_corruption" data-field="{{id}}" name="boxelement" type="checkbox" {{checked singlebox.value}} />
+    {{/each}}
+  </a></p>
+  <ul>
+          <li>Si les PJ ont raté les tests de <strong>Langues</strong> pour lire le grimoire, coche deux
+                  cases.</li>
+          <li>Chaque fois que le fantôme parvient à toucher Clémentine, coche deux cases.</li>
+          <li>À chaque fin de round, coche une case.</li>
+  </ul>
+  <p> Quand la jauge est pleine, passe au paragraphe Conséquence désastreuse.</p>
+  <p>Une deuxième jauge permet de gérer l’avancée du rituel <em>(tu noteras que le rituel est en 8 étapes
+                  – une action puis une phrase et ainsi de suite – ce qui te permettra d’adapter l’avancée
+                  du rituel en fonction de la jauge ci-dessous)</em>.</p>
+  <p>Jauge rituel :  <a class="boxlist">
+    {{#each formdata.boxes_rituel as |singlebox id|}}
+    <input class="checkbox" data-group="boxes_rituel" data-field="{{id}}" name="boxelement" type="checkbox" {{checked singlebox.value}} />
+    {{/each}}
+  </a></p>
+  <ul>
+          <li>À 2 PJ, la jauge commence avec 4 cases cochées. À 3 PJ, la jauge commence avec 2 cases
+                  cochées. À 4 PJ, la jauge commence avec 1 case cochée. À 5 PJ ou +, la jauge commence
+                  avec aucune case cochée.</li>
+          <li>À chaque début de round, coche une case, à condition qu’au moins 1 PJ continue le rituel et
+                  réussisse les tests suivants, dans l'ordre :</li>
+          <li>Pour nettoyer la myrrhe : test de <strong>Soins / 15</strong> ;</li>
+          <li>Pour mélanger le vin et l’eau : test de <strong>Réflexes / 15</strong> ;</li>
+          <li>Pour broyer les crottes de lapin : test de <strong>Force / 15</strong> ;</li>
+          <li>Pour déposer l’argent autour du chaudron : test d’<strong>Athlétisme / 15</strong>.</li>
+  </ul>
+  <p> Quand la jauge est pleine, passe au paragraphe Conséquence bienheureuse</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</form>

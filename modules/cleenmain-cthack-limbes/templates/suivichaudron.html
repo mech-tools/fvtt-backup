@@ -1,0 +1,10 @@
+<form class="limbes-mod limbes-forms"
+  style="background: url('modules/cleenmain-cthack-limbes/assets/artwork/divers/suivichaudron.webp');"
+  autocomplete="off">
+      <div style="padding-top: 334px" class="boxlist">
+        {{#each formdata.boxes as |singlebox id|}}
+        <a style="padding-left: 16px">&nbsp;</a>
+        <input class="checkbox" data-field="{{id}}" name="boxelement" type="checkbox" {{checked singlebox.value}} />
+        {{/each}}
+      </div>
+</form>

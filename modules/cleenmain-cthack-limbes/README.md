@@ -1,0 +1,1 @@
+Ce module contient l'intégralité de la campagne Limbes pour les systèmes Clé en main et Cthulhu hack.

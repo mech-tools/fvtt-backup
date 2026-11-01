@@ -1,0 +1,41 @@
+<div class="equipment-tab">
+    <div class="title-line">
+        {{#if unlocked}}
+        <a class="item-create right-icon" data-action="itemCreate" data-type="equipment" title="{{localize 'CLEENMAIN.equipment.add'}}"><i
+                class="fas fa-plus"></i></a>
+        {{/if}}
+    </div>
+    <div class="equipment-column droppable">
+        {{#each equipments as |item id|}}
+        <details>
+            <summary class="equipment-line item" data-item-id="{{_id}}">
+                {{#if (ne item.img "icons/svg/item-bag.svg")}}
+                <div class="image-container">
+                    <img src="{{item.img}}" title="{{item.name}}" />
+                </div>
+                {{/if}}
+                <div class="equipment-name">{{item.name}}</div>
+                <div class="icon-group">
+                    {{#ife item.system.state "active"}}
+                    <a data-action="itemState" data-item-id="{{_id}}" title="{{localize 'CLEENMAIN.equipment.active'}}"><i
+                            class="fas fa-hand"></i></a>
+                    {{else ife item.system.state "equipped"}}
+                    <a data-action="itemState" data-item-id="{{_id}}" title="{{localize 'CLEENMAIN.equipment.equipped'}}"><i
+                            class="fas fa-backpack"></i></a>
+                    {{else}}
+                    <a data-action="itemState" data-item-id="{{_id}}" title="{{localize 'CLEENMAIN.equipment.other'}}"><i
+                            class="fas fa-house"></i></a>
+                    {{/ife}}
+                    <a data-action="itemEdit" data-item-id="{{item._id}}" data-type="equipment" title="{{localize 'CLEENMAIN.sheet.edit'}}"><i
+                            class="fas fa-pen"></i></a>
+                    {{#if ../unlocked}}
+                    <a data-action="itemDelete" data-item-id="{{item._id}}" data-type="equipment" title="{{localize 'CLEENMAIN.sheet.delete'}}"><i
+                            class="fas fa-trash"></i></a>
+                    {{/if}}
+                </div>
+            </summary>
+            {{{item.system.descriptionhtml}}}
+        </details>
+        {{/each}}
+    </div>
+</div>

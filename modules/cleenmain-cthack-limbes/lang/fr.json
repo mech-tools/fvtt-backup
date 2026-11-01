@@ -1,0 +1,11 @@
+{
+  "limbes": {
+    "label": {
+      "character": "personnage"
+    },
+    "gmtools": {
+      "thisformtitle": "CASES D’INCIDENTS",
+      "suivi_small": "Petit formulaire"      
+    }
+  }
+}

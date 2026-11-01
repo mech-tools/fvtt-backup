@@ -1,0 +1,204 @@
+<form autocomplete="off">
+  <div class="limbes-mod">
+    <div class="limbes-forms">
+      <div class="jauge">Jauge Oussomate : {{formdata.jauge_oussomate_consolidee}}</div>
+      <div class="jauge">Jauge Démon : {{formdata.jauge_demon_consolidee}}</div>
+
+      <div style="padding-top:3rem;" class="modjauge">Modificateur libre pour la jauge Démon : 
+        <input class="jauge-input" name="inputtext" data-field="jauge_demon_free" type="number"
+          value="{{formdata.jauge_demon_free}}" />
+      </div>
+      <div class="modjauge">Modificateur libre pour la jauge Oussomate : 
+        <input class="jauge-input" name="inputtext" data-field="jauge_oussomate_free" type="number"
+          value="{{formdata.jauge_oussomate_free}}" />
+      </div>
+      <div class="bilantitle">Bilan Scénario 1 : Le Manoir</div>
+      <table>
+        <tr>
+          <td style="width:50px"><input class="checkbox" data-field="box1" data-group="scenario1" name="jaugebox"
+              type="checkbox" {{checked formdata.scenario1.box1.value}}>
+          </td>
+          <td>Les PJ ont ouvert les volets clos</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box2" data-group="scenario1" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario1.box2.value}}>
+          </td>
+          <td>Les PJ ont trouvé la clef de la chambre de Clémentine</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box3" data-group="scenario1" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario1.box3.value}}>
+          </td>
+          <td>Le corps du cerf n’a pas été brûlé ou enterré</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box4" data-group="scenario1" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario1.box4.value}}>
+          </td>
+          <td>Marion n’a jamais rechigné à donner son sang</td>
+          <td>Jauge Oussomaté +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box5" data-group="scenario1" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario1.box5.value}}>
+          </td>
+          <td>Sophie a du utiliser son couteau pour prendre le sang de Marion</td>
+          <td>Jauge Oussomaté -1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box6" data-group="scenario1" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario1.box6.value}}>
+          </td>
+          <td>Au moins un des PJ a compris que les larmes de Sophie étaient des larmes de bonheur</td>
+          <td>Jauge Oussomaté +1</td>
+        </tr>
+      </table>
+      <div class="bilantitle">Bilan Scénario 2 : Le dîner</div>
+      <table>
+        <tr>
+          <td style="width:50px"><input class="checkbox" data-field="box1" data-group="scenario2" name="jaugebox"
+              type="checkbox" {{checked formdata.scenario2.box1.value}}>
+          </td>
+          <td>Quelqu’un a goûté au faon</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box2" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box2.value}}>
+          </td>
+          <td>Personne n'a goûté au faon</td>
+          <td>Jauge démon -1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box3" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box3.value}}>
+          </td>
+          <td>Les PJ n'ont empêché ni Didier de chanter son horrible comptine ni le prêtre de prononcer sa prière impie
+          </td>
+          <td>Jauge démon +2</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box4" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box4.value}}>
+          </td>
+          <td>Le chat Perséphone a été tué</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box5" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box5.value}}>
+          </td>
+          <td>Le livre a été forcé et non ouvert avec la clef</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box6" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box6.value}}>
+          </td>
+          <td>Le chaudron est tombé dans l’escalier</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box7" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box7.value}}>
+          </td>
+          <td>L’âme de la deuxième fille a été vaincue</td>
+          <td>Jauge Oussomaté +2 et Jauge démon -1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box8" data-group="scenario2" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario2.box8.value}}>
+          </td>
+          <td>Clémentine a été corrompue</td>
+          <td>Jauge démon +2</td>
+        </tr>
+      </table>
+      <div class="bilantitle">Bilan Scénario 3 : La sorcière</div>
+      <table>
+        <tr><td>{{#if formdata.boxes_combatmental.box1.value}}<i class="fas fa-check-square"></i>{{/if}}
+          {{#if formdata.boxes_combatmental.box2.value}}<i class="fas fa-check-square"></i>{{/if}}
+          {{#if formdata.boxes_combatmental.box3.value}}<i class="fas fa-check-square"></i>{{/if}}
+          {{#if formdata.boxes_combatmental.box4.value}}<i class="fas fa-check-square"></i>{{/if}}
+          </td>
+          <td><a class="content-link" draggable="false" data-type="Macro"
+            data-uuid="Macro.ygdrdCfttzCSRLZc">Jauge de temps du combat mental</a> </td>
+          <td>Jauge démon +1 par case cochée</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box1" data-group="scenario3" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario3.box1.value}}>
+          </td>
+          <td>L’âme de la première fille a été vaincue</td>
+          <td>Jauge Oussomaté +2 et Jauge démon -1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box2" data-group="scenario3" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario3.box2.value}}>
+          </td>
+          <td>Aurélia a été corrompue</td>
+          <td>Jauge démon +2</td>
+        </tr>
+      </table>
+      <div class="bilantitle">Bilan Scénario 4 : Le culte</div>
+      <table>
+        <tr>
+          <td style="width:50px"><input class="checkbox" data-field="box1" data-group="scenario4" name="jaugebox"
+              type="checkbox" {{checked formdata.scenario4.box1.value}}>
+          </td>
+          <td>Au moins 1 membre de la tribu a été sauvé lors de l’effondrement de la grotte</td>
+          <td>Jauge démon -1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box2" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box2.value}}>
+          </td>
+          <td>Les PJ ont compris qu’Oussomaté et Sophie sont la même personne (avant la révélation)</td>
+          <td>Jauge Oussomaté +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box3" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box3.value}}>
+            <input class="checkbox" data-field="box8" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box8.value}}>
+            <input class="checkbox" data-field="box9" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box9.value}}>
+          </td>
+          <td>Si les PJ ont tué les filles d’Oussomaté ou laissé mourir les filles d’Oussomaté</td>
+          <td>Jauge Oussomaté -1 par fille morte</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box4" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box4.value}}>
+          </td>
+          <td>Si les PJ ont parlé d’Aurélia et/ou Clémentine à Oussomaté avant la naissance des enfants</td>
+          <td>Jauge démon +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box5" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box5.value}}>
+          </td>
+          <td>Si les PJ ont sauvé Oussomaté lors de l’accouchement, même pour quelques heures</td>
+          <td>Jauge Oussomaté +1</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box6" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box6.value}}>
+          </td>
+          <td>Si les PJ ont libéré l’âme d’Oussomaté</td>
+          <td>Jauge Oussomaté +2 Jauge démon +1 (il ressent la libération de l’âme)</td>
+        </tr>
+        <tr>
+          <td><input class="checkbox" data-field="box7" data-group="scenario4" name="jaugebox" type="checkbox" {{checked
+              formdata.scenario4.box7.value}}>
+          </td>
+          <td>Si les PJ ont libéré la première femme du Démon</td>
+          <td>Jauge démon +1 (il est agacé par cet affront)</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</form>

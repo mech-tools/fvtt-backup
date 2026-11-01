@@ -1,0 +1,18 @@
+<div class="chatroll" data-actor-id="{{actorId}}">
+    <div class="intro">
+        {{#if (ne actingCharImg "icons/svg/mystery-man.svg")}}
+        <div class="introImg">
+            <img src="{{actingCharImg}}" title="{{actingCharName}}" />
+        </div>
+        {{/if}}
+        <div class="introText">{{introText}}</div>
+    </div>
+        <div class="formulaText">{{localize "CLEENMAIN.chatmessage.rollformula"}}  {{formula}}</div>
+    <div class="finalText">
+        <div class="tooltip" data-tooltip="{{{tooltip.string}}}"></div>>
+            <p>{{localize "CLEENMAIN.chatmessage.rollresult"}} {{result}}</p>
+        </div>
+        <div class="introText">{{resultText}}</div>
+    </div>
+    <div class="endimg"></div>
+</div>

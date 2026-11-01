@@ -1,0 +1,87 @@
+{
+    "id": "cleenmain-cthack-limbes",
+    "title": "Limbes",
+    "description": "Module contenant la campagne Limbes pour Cl\u00e9 en main et Cthulhu Hack",
+    "version": "2.0.1",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "12"
+    },
+    "relationships": {
+        "systems": [
+            {
+                "id": "cleenmain",
+                "type": "system",
+                "manifest": "https://github.com/12-Monkeys-Developers/cleenmain/releases/latest/download/system.json",
+                "compatibility": {
+                    "verified": "2.7.0"
+                }
+            },
+            {
+                "id": "cthack",
+                "type": "system",
+                "manifest": "",
+                "compatibility": {
+                    "verified": "3.0.0"
+                }
+            }
+        ]
+    },
+    "authors": [
+        {
+            "name": "Khaali"
+        },
+        {
+            "name": "Kristov"
+        }
+    ],
+    "esmodules": [
+        "module/limbes.js"
+    ],
+    "styles": [
+        "limbes.css"
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        },
+        {
+            "lang": "fr",
+            "name": "Fran\u00e7ais",
+            "path": "lang/fr.json"
+        }
+    ],
+    "packs": [
+        {
+            "name": "cleenmain-limbes",
+            "label": "cleenmain-limbes pour Cl\u00e9 en main",
+            "path": "packs/cleenmain-limbes_adventure.db",
+            "type": "Adventure",
+            "module": "cleenmain-cthack-limbes",
+            "system": "cleenmain",
+            "ownership": {
+                "PLAYER": "NONE",
+                "TRUSTED": "OBSERVER",
+                "ASSISTANT": "OWNER"
+            }
+        },
+        {
+            "name": "cthack-limbes",
+            "label": "cthack-limbes pour Cthulhu hack",
+            "path": "packs/cthack-limbes_adventure.db",
+            "type": "Adventure",
+            "module": "cleenmain-cthack-limbes",
+            "system": "cthack",
+            "ownership": {
+                "PLAYER": "NONE",
+                "TRUSTED": "OBSERVER",
+                "ASSISTANT": "OWNER"
+            }
+        }
+    ],
+    "protected": true,
+    "manifest": "https://r2.foundryvtt.com/packages-public/cleenmain-cthack-limbes/module.json",
+    "url": "https://www.les12singes.com/cle-en-main/439-cem-limbes-module-foundry-vtt.html"
+}

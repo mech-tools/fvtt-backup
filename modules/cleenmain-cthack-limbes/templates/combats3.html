@@ -1,0 +1,46 @@
+<form class="limbes-mod limbes-forms" autocomplete="off">
+        <h2>La sorcière</h2>
+        <h3>Suivi de l'assault et du combat mental</h3>
+
+        <p>Sorcière repérée (cf. round 4) : <input class="checkbox" data-group="boxes_sor_rep" data-field="box1"
+                        name="boxelement" type="checkbox" {{checked formdata.boxes_sor_rep.box1.value}} /></p>
+        <p>Aurélia est morte : <input class="checkbox" data-group="boxes_aurelia" data-field="box1" name="boxelement"
+                        type="checkbox" {{checked formdata.boxes_aurelia.box1.value}} /></p>
+        <p>Tous les animaux sont morts avant la fin du 7e round : <input class="checkbox" data-group="boxes_animaux"
+                        data-field="box1" name="boxelement" type="checkbox" {{checked
+                        formdata.boxes_animaux.box1.value}} /></p>
+        <p>Échelle de progression de la sorcière : <a class="boxlist">
+                        {{#each formdata.boxes_prog_sor as |singlebox id|}}
+                        <input class="checkbox" data-group="boxes_prog_sor" data-field="{{id}}" name="boxelement"
+                                type="checkbox" {{checked singlebox.value}} />
+                        {{/each}}
+                </a></p>
+        <p>Échelle de progression des PJ : <a class="boxlist">
+                        {{#each formdata.boxes_prog_pj as |singlebox id|}}
+                        <input class="checkbox" data-group="boxes_prog_pj" data-field="{{id}}" name="boxelement"
+                                type="checkbox" {{checked singlebox.value}} />
+                        {{/each}}
+                </a></p>
+        <p>Sorcière attrapée avant d’arriver chez elle : <input class="checkbox" data-group="boxes_sor_attrapee"
+                        data-field="box1" name="boxelement" type="checkbox" {{checked
+                        formdata.boxes_sor_attrapee.box1.value}} /></p>
+        <p>Jauge de temps du combat mental : <a class="boxlist">
+                        {{#each formdata.boxes_combatmental as |singlebox id|}}
+                        <input class="checkbox" data-group="boxes_combatmental" data-field="{{id}}" name="boxelement"
+                                type="checkbox" {{checked singlebox.value}} />
+                        {{/each}}
+                </a></p>
+        <p>Par défaut,
+                il faut cocher les trois premières cases et il ne reste qu’un seul round avant que la fiole
+                disparaissent
+                définitivement. La jauge de temps est également influencée par les réussites des PJ tout au long de ce
+                scénario :</p>
+        <ul>
+                <li><em>Si la sorcière a été repérée pendant le combat, <strong>diminue la jauge de 1.</strong></em>
+                </li>
+                <li><em>S’il a fallu 7 rounds ou moins pour tuer tous les animaux, <strong>diminue la jauge de
+                                        1.</strong></em>
+                </li>
+                <li><em>Si Aurélia est morte, <strong>augmente la jauge de 2.</strong></em></li>
+        </ul>
+</form>
